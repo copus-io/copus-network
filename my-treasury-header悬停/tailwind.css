@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    @apply appearance-none bg-transparent border-0 outline-none;
+  }
+}
+
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .all-\[unset\] {
+    all: unset;
+  }
+}
+
+:root {
+  --audio-blue: rgba(116, 179, 206, 1);
+  --blue: rgba(33, 145, 251, 1);
+  --button: 3px 3px 2px 0px rgba(212, 201, 253, 0.7);
+  --card-white: 0px 0px 12px 0px rgba(185, 181, 181, 0.5);
+  --dark-grey: rgba(69, 69, 69, 1);
+  --f-p-font-family: "Maven Pro", Helvetica;
+  --f-p-font-size: 16px;
+  --f-p-font-style: normal;
+  --f-p-font-weight: 400;
+  --f-p-letter-spacing: 0px;
+  --f-p-line-height: 25px;
+  --green: rgba(43, 134, 73, 1);
+  --h-2-font-family: "Maven Pro", Helvetica;
+  --h-2-font-size: 38px;
+  --h-2-font-style: normal;
+  --h-2-font-weight: 500;
+  --h-2-letter-spacing: 0px;
+  --h-2-line-height: 48px;
+  --h-3-font-family: "Lato", Helvetica;
+  --h-3-font-size: 24px;
+  --h-3-font-style: normal;
+  --h-3-font-weight: 600;
+  --h-3-letter-spacing: 0px;
+  --h-3-line-height: 139.9999976158142%;
+  --h-4-font-family: "Lato", Helvetica;
+  --h-4-font-size: 20px;
+  --h-4-font-style: normal;
+  --h-4-font-weight: 400;
+  --h-4-letter-spacing: 0px;
+  --h-4-line-height: 139.9999976158142%;
+  --h3-s-font-family: "Lato", Helvetica;
+  --h3-s-font-size: 22px;
+  --h3-s-font-style: normal;
+  --h3-s-font-weight: 600;
+  --h3-s-letter-spacing: 0px;
+  --h3-s-line-height: 150%;
+  --home-subtitle-font-family: "Archivo", Helvetica;
+  --home-subtitle-font-size: 40px;
+  --home-subtitle-font-style: normal;
+  --home-subtitle-font-weight: 300;
+  --home-subtitle-letter-spacing: 0px;
+  --home-subtitle-line-height: 129.99999523162842%;
+  --light-grey: rgba(255, 255, 255, 1);
+  --light-grey-transparent: rgba(255, 255, 255, 1);
+  --medium-dark-grey: rgba(105, 105, 105, 1);
+  --medium-grey: rgba(169, 169, 169, 1);
+  --mobile-dropdown-menu: 0px 2px 5px 0px rgba(118, 118, 118, 0.5);
+  --off-black: rgba(35, 31, 32, 1);
+  --p-font-family: "Lato", Helvetica;
+  --p-font-size: 16px;
+  --p-font-style: normal;
+  --p-font-weight: 400;
+  --p-l-font-family: "Lato", Helvetica;
+  --p-l-font-size: 18px;
+  --p-l-font-style: normal;
+  --p-l-font-weight: 400;
+  --p-l-letter-spacing: 0px;
+  --p-l-line-height: 139.9999976158142%;
+  --p-l-link-font-family: "Maven Pro", Helvetica;
+  --p-l-link-font-size: 18px;
+  --p-l-link-font-style: normal;
+  --p-l-link-font-weight: 500;
+  --p-l-link-letter-spacing: 0px;
+  --p-l-link-line-height: 139.9999976158142%;
+  --p-lato-font-family: "Lato", Helvetica;
+  --p-lato-font-size: 18px;
+  --p-lato-font-style: normal;
+  --p-lato-font-weight: 400;
+  --p-lato-letter-spacing: 0px;
+  --p-lato-line-height: 120.00000476837158%;
+  --p-letter-spacing: 0px;
+  --p-line-height: 23px;
+  --p-link-font-family: "Maven Pro", Helvetica;
+  --p-link-font-size: 16px;
+  --p-link-font-style: normal;
+  --p-link-font-weight: 500;
+  --p-link-letter-spacing: 0px;
+  --p-link-line-height: 23px;
+  --p-s-font-family: "Maven Pro", Helvetica;
+  --p-s-font-size: 14px;
+  --p-s-font-style: normal;
+  --p-s-font-weight: 400;
+  --p-s-letter-spacing: 0px;
+  --p-s-line-height: 139.9999976158142%;
+  --p-s-link-font-family: "Maven Pro", Helvetica;
+  --p-s-link-font-size: 14px;
+  --p-s-link-font-style: normal;
+  --p-s-link-font-weight: 400;
+  --p-s-link-letter-spacing: -0.28px;
+  --p-s-link-line-height: 129.99999523162842%;
+  --pink: rgba(234, 125, 183, 1);
+  --pop-up: 1px 1px 10px 0px rgba(198, 198, 198, 1);
+  --red: rgba(242, 58, 0, 1);
+  --white: rgba(255, 255, 255, 1);
+  --yellow: rgba(225, 159, 29, 1);
+}
+
+:root {
+  --animate-spin: spin 1s linear infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-fade-up {
+  animation: fade-up 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) infinite linear;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 8s infinite;
+}
+
+.animate-spin {
+  animation: var(--animate-spin);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes image-glow {
+  0% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.74, 0.25, 0.76, 1);
+  }
+
+  10% {
+    opacity: 0.7;
+    animation-timing-function: cubic-bezier(0.12, 0.01, 0.08, 0.99);
+  }
+
+  to {
+    opacity: 0.4;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  90%,
+  to {
+    background-position: calc(-100% - var(--shimmer-width)) 0;
+  }
+
+  30%,
+  60% {
+    background-position: calc(100% + var(--shimmer-width)) 0;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate(0);
+  }
+
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}

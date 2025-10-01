@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm cache clean:*)",
+      "Bash(yarn install)",
+      "Bash(npx:*)",
+      "Bash(sudo chown:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(lsof:*)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "Bash(xargs kill:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(for file in /Users/dadao/Desktop/copus_final_design_-_notification_wovthd/src/routes/MyTreasury*/*/*.tsx)",
+      "Bash(do sed -i '' 's/pt-\\[90px\\]/pt-[120px]/g' \"$file\")",
+      "Bash(done)",
+      "Read(//Users/dadao/Desktop/**)",
+      "Read(//private/tmp/**)",
+      "Bash(node:*)",
+      "Bash(timeout 10s npm run dev)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
