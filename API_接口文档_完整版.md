@@ -298,6 +298,43 @@ curl --location --request POST 'https://api-test.copus.network/client/author/art
 
 ---
 
+### 5️⃣ 删除文章
+
+**接口地址：**
+```
+POST https://api-test.copus.network/client/author/article/delete
+```
+
+**请求头：**
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求参数：**
+```json
+{
+    "uuid": "string"
+}
+```
+
+**响应格式：**
+```
+"string"
+```
+
+**测试命令：**
+```bash
+curl --location --request POST 'https://api-test.copus.network/client/author/article/delete' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer {your_token}' \
+--data-raw '{
+    "uuid": "your_article_uuid"
+}'
+```
+
+---
+
 ## 📸 图片上传接口
 
 ### 5️⃣ 上传图片到S3
@@ -341,6 +378,7 @@ file: File (图片文件)
 | 验证码获取 | GET | `/client/common/getVerificationCode` | ✅ |
 | 获取用户信息 | GET | `/client/user/userInfo` | ✅ |
 | **文章创建** | **POST** | **`/client/author/article/edit`** | **✅ 已修复** |
+| **文章删除** | **POST** | **`/client/author/article/delete`** | **✅ 新增** |
 | 图片上传 | POST | `/client/common/uploadImage2S3` | ✅ |
 | 获取社交链接 | GET | `/client/user/socialLink/links` | ✅ |
 | 编辑社交链接 | POST | `/client/user/socialLink/edit` | ✅ |
@@ -365,6 +403,7 @@ const ENDPOINTS = {
 
     // 文章相关 (已修复)
     createArticle: '/client/author/article/edit',
+    deleteArticle: '/client/author/article/delete',
 
     // 文件上传
     uploadImage: '/client/common/uploadImage2S3',
