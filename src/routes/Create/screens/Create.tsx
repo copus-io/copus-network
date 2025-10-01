@@ -23,9 +23,13 @@ export const Create = (): JSX.Element => {
         const response = await AuthService.getCategoryList();
         console.log('📋 分类API响应:', response);
 
-        if (response.data && Array.isArray(response.data)) {
+        // 处理双层data结构
+        const categoriesData = response.data?.data || response.data;
+        console.log('📋 处理后的分类数据:', categoriesData);
+
+        if (categoriesData && Array.isArray(categoriesData)) {
           // 为每个分类添加样式信息
-          const categoriesWithStyles = response.data.map((category: any) => {
+          const categoriesWithStyles = categoriesData.map((category: any) => {
             const style = getCategoryStyle(category.name);
             return {
               ...category,
@@ -40,13 +44,22 @@ export const Create = (): JSX.Element => {
         }
       } catch (error) {
         console.error('❌ 获取分类列表失败:', error);
-        // 使用fallback数据
-        setCategories([
-          { id: 1, name: "Life", styleColor: "border-[#ea7db7] bg-[linear-gradient(0deg,rgba(234,125,183,0.2)_0%,rgba(234,125,183,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]", textColor: "text-pink", selected: false },
-          { id: 2, name: "Art", styleColor: "border-[#2b8649]", textColor: "text-green", selected: false },
-          { id: 3, name: "Design", styleColor: "border-[#2191fb]", textColor: "text-blue", selected: false },
-          { id: 4, name: "Technology", styleColor: "border-[#c9b71f]", textColor: "text-[#c9b71f]", selected: false }
-        ]);
+        // 使用fallback数据（中文分类）
+        const fallbackCategories = [
+          { id: 1, name: "科技", color: "red", articleCount: 0 },
+          { id: 2, name: "艺术", color: "green", articleCount: 0 },
+          { id: 3, name: "体育", color: "blue", articleCount: 0 },
+          { id: 4, name: "生活", color: "pink", articleCount: 0 }
+        ].map(category => {
+          const style = getCategoryStyle(category.name);
+          return {
+            ...category,
+            styleColor: style.border + ' ' + style.bg,
+            textColor: style.text,
+            selected: false
+          };
+        });
+        setCategories(fallbackCategories);
       } finally {
         setIsLoadingCategories(false);
       }
