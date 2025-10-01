@@ -479,6 +479,7 @@ export const MainContentSection = (): JSX.Element => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        console.log('🗑️ 点击删除按钮, 文章信息:', card);
                         setArticleToDelete(card);
                         setDeleteDialogOpen(true);
                       }}
@@ -497,16 +498,35 @@ export const MainContentSection = (): JSX.Element => {
 
   // 处理删除文章
   const handleDeleteArticle = async () => {
-    if (!articleToDelete) return;
+    if (!articleToDelete) {
+      console.log('❌ 没有要删除的文章');
+      return;
+    }
 
+    console.log('🚀 开始删除文章:', articleToDelete);
     setIsDeleting(true);
     try {
       // 调用删除API
-      await AuthService.deleteArticle(articleToDelete.id);
+      console.log('📡 调用删除API, 文章ID:', articleToDelete.id);
+      const deleteResult = await AuthService.deleteArticle(articleToDelete.id);
 
-      showToast("文章已成功删除", "success");
+      console.log('📋 删除API返回结果:', deleteResult);
+
+      // 检查删除是否真正成功
+      if (deleteResult.data === true) {
+        console.log('✅ 删除成功，显示成功提示');
+        showToast("文章已成功删除", "success");
+      } else {
+        console.log('⚠️ 删除API返回false，可能删除失败');
+        showToast("删除失败，可能文章不存在或无权限删除", "warning");
+        setDeleteDialogOpen(false);
+        setArticleToDelete(null);
+        setIsDeleting(false);
+        return;
+      }
 
       // 刷新文章列表
+      console.log('🔄 刷新文章列表...');
       if (refetchMyArticles) {
         refetchMyArticles();
       }

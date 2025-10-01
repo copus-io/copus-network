@@ -1,40 +1,66 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
+import { AuthService } from "../../../services/authService";
+import { getCategoryStyle } from "../../../utils/categoryStyles";
 
-const topicData = [
-  {
-    label: "Life",
-    color:
-      "border-[#ea7db7] bg-[linear-gradient(0deg,rgba(234,125,183,0.2)_0%,rgba(234,125,183,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]",
-    textColor: "text-pink",
-    selected: true,
-  },
-  {
-    label: "Art",
-    color: "border-[#2b8649]",
-    textColor: "text-green",
-    selected: false,
-  },
-  {
-    label: "Design",
-    color: "border-[#2191fb]",
-    textColor: "text-blue",
-    selected: false,
-  },
-  {
-    label: "Technology",
-    color: "border-[#c9b71f]",
-    textColor: "text-[#c9b71f]",
-    selected: false,
-  },
-];
+// 移除硬编码的分类数据，改为从API获取
 
 export const Create = (): JSX.Element => {
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+
+  // 获取分类列表
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        console.log('🏷️ 获取分类列表...');
+        const response = await AuthService.getCategoryList();
+        console.log('📋 分类API响应:', response);
+
+        if (response.data && Array.isArray(response.data)) {
+          // 为每个分类添加样式信息
+          const categoriesWithStyles = response.data.map((category: any) => {
+            const style = getCategoryStyle(category.name);
+            return {
+              ...category,
+              styleColor: style.border + ' ' + style.bg,
+              textColor: style.text,
+              selected: false
+            };
+          });
+
+          setCategories(categoriesWithStyles);
+          console.log('✅ 分类列表加载成功:', categoriesWithStyles);
+        }
+      } catch (error) {
+        console.error('❌ 获取分类列表失败:', error);
+        // 使用fallback数据
+        setCategories([
+          { id: 1, name: "Life", styleColor: "border-[#ea7db7] bg-[linear-gradient(0deg,rgba(234,125,183,0.2)_0%,rgba(234,125,183,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]", textColor: "text-pink", selected: false },
+          { id: 2, name: "Art", styleColor: "border-[#2b8649]", textColor: "text-green", selected: false },
+          { id: 3, name: "Design", styleColor: "border-[#2191fb]", textColor: "text-blue", selected: false },
+          { id: 4, name: "Technology", styleColor: "border-[#c9b71f]", textColor: "text-[#c9b71f]", selected: false }
+        ]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // 处理分类选择
+  const handleCategorySelect = (categoryId: number) => {
+    setSelectedCategoryId(categoryId);
+    console.log('🏷️ 选择分类:', categoryId);
+  };
+
   return (
     <div className="w-[1440px] flex bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
       <div className="flex w-[1440px] h-[1124px] relative flex-col items-start">
@@ -155,20 +181,36 @@ export const Create = (): JSX.Element => {
                   Choose a topic
                 </div>
 
-                <div className="gap-2.5 inline-flex items-start relative flex-[0_0_auto]">
-                  {topicData.map((topic, index) => (
-                    <Badge
-                      key={index}
-                      variant="outline"
-                      className={`${topic.color} inline-flex items-center gap-[5px] px-2.5 py-2 relative flex-[0_0_auto] rounded-[50px] border border-solid`}
-                    >
-                      <div
-                        className={`font-semibold relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] ${topic.textColor} text-sm tracking-[0] leading-[14px] whitespace-nowrap`}
+                <div className="gap-2.5 inline-flex items-start relative flex-[0_0_auto] flex-wrap">
+                  {isLoadingCategories ? (
+                    <div className="text-gray-500">加载分类中...</div>
+                  ) : (
+                    categories.map((category) => (
+                      <Badge
+                        key={category.id}
+                        variant="outline"
+                        className={`${
+                          selectedCategoryId === category.id
+                            ? category.styleColor
+                            : 'border-medium-grey bg-white hover:border-dark-grey'
+                        } inline-flex items-center gap-[5px] px-2.5 py-2 relative flex-[0_0_auto] rounded-[50px] border border-solid cursor-pointer transition-all`}
+                        onClick={() => handleCategorySelect(category.id)}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={selectedCategoryId === category.id}
                       >
-                        {topic.label}
-                      </div>
-                    </Badge>
-                  ))}
+                        <div
+                          className={`font-semibold relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] ${
+                            selectedCategoryId === category.id
+                              ? category.textColor
+                              : 'text-medium-dark-grey'
+                          } text-sm tracking-[0] leading-[14px] whitespace-nowrap`}
+                        >
+                          {category.name}
+                        </div>
+                      </Badge>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
