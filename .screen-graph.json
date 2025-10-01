@@ -48,7 +48,7 @@
       "isRoot": true
     },
     {
-      "id": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "label": "MyTreasury",
       "routes": [
         "/my-treasury"
@@ -185,9 +185,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -297,9 +297,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -425,9 +425,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -537,9 +537,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -649,9 +649,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -761,9 +761,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -889,9 +889,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -1001,9 +1001,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -1113,9 +1113,9 @@
       }
     },
     {
-      "id": "src/routes/LinkPreview/screens/LinkPreview.tsx:59:10-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/routes/LinkPreview/screens/LinkPreview.tsx:59:10-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/routes/LinkPreview/screens/LinkPreview.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -1241,9 +1241,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {

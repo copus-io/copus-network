@@ -168,6 +168,23 @@ export class AuthService {
   }
 
   /**
+   * 获取作品分类列表
+   */
+  static async getCategoryList(): Promise<{
+    data: Array<{
+      id: number;
+      name: string;
+      color: string;
+      articleCount: number;
+    }>;
+  }> {
+    return apiRequest('/client/author/article/categoryList', {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
    * 获取文章详情
    */
   static async getArticleInfo(uuid: string): Promise<any> {

@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../../components/ui/dialog";
-import { useToast } from "../../../../hooks/use-toast";
+import { useToast } from "../../../../components/ui/toast";
 
 
 const collectionItems = [
@@ -103,7 +103,7 @@ const myShareItems = [
 
 export const MainContentSection = (): JSX.Element => {
   const { user, socialLinks: socialLinksData } = useUser();
-  const { toast } = useToast();
+  const { showToast } = useToast();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<any>(null);
@@ -504,10 +504,7 @@ export const MainContentSection = (): JSX.Element => {
       // 调用删除API
       await AuthService.deleteArticle(articleToDelete.id);
 
-      toast({
-        title: "删除成功",
-        description: "文章已成功删除",
-      });
+      showToast("文章已成功删除", "success");
 
       // 刷新文章列表
       if (refetchMyArticles) {
@@ -524,17 +521,9 @@ export const MainContentSection = (): JSX.Element => {
 
       // 如果是因为后端接口未实现，给出特别提示
       if (error.message?.includes('404') || error.message?.includes('Not Found')) {
-        toast({
-          title: "功能暂未开放",
-          description: "删除功能正在开发中，敬请期待",
-          variant: "destructive",
-        });
+        showToast("删除功能正在开发中，敬请期待", "warning");
       } else {
-        toast({
-          title: "删除失败",
-          description: error.message || "删除文章时出错，请稍后重试",
-          variant: "destructive",
-        });
+        showToast(error.message || "删除文章时出错，请稍后重试", "error");
       }
     } finally {
       setIsDeleting(false);
