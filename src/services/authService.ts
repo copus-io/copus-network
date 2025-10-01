@@ -157,6 +157,19 @@ export class AuthService {
   }
 
   /**
+   * 删除文章
+   * 注意: 后端接口尚未提供，此为预留接口
+   */
+  static async deleteArticle(uuid: string): Promise<any> {
+    // 暂时使用假定的接口路径，等后端提供后更新
+    return apiRequest(`/client/author/article/delete`, {
+      method: 'DELETE',
+      requiresAuth: true,
+      body: JSON.stringify({ uuid }),
+    });
+  }
+
+  /**
    * 获取文章详情
    */
   static async getArticleInfo(uuid: string): Promise<any> {

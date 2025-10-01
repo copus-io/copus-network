@@ -15,6 +15,15 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../../components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../../../components/ui/dialog";
+import { useToast } from "../../../../hooks/use-toast";
 
 
 const collectionItems = [
@@ -94,10 +103,14 @@ const myShareItems = [
 
 export const MainContentSection = (): JSX.Element => {
   const { user, socialLinks: socialLinksData } = useUser();
+  const { toast } = useToast();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // 获取我创作的文章数据
-  const { articles: myCreatedData, loading: myCreatedLoading, error: myCreatedError } = useMyCreatedArticles({
+  const { articles: myCreatedData, loading: myCreatedLoading, error: myCreatedError, refetch: refetchMyArticles } = useMyCreatedArticles({
     pageIndex: 0,
     pageSize: 10
   });
@@ -466,8 +479,8 @@ export const MainContentSection = (): JSX.Element => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('删除文章:', card.id);
-                        // TODO: 实现删除功能
+                        setArticleToDelete(card);
+                        setDeleteDialogOpen(true);
                       }}
                     >
                       <Trash2 className="w-4 h-4 text-red-600" />
@@ -481,6 +494,52 @@ export const MainContentSection = (): JSX.Element => {
       </Link>
     </div>
   );
+
+  // 处理删除文章
+  const handleDeleteArticle = async () => {
+    if (!articleToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // 调用删除API
+      await AuthService.deleteArticle(articleToDelete.id);
+
+      toast({
+        title: "删除成功",
+        description: "文章已成功删除",
+      });
+
+      // 刷新文章列表
+      if (refetchMyArticles) {
+        refetchMyArticles();
+      }
+
+      // 如果是收藏的文章，也从收藏列表中移除
+      setLikedArticles(prev => prev.filter(article => article.uuid !== articleToDelete.id));
+
+      setDeleteDialogOpen(false);
+      setArticleToDelete(null);
+    } catch (error: any) {
+      console.error('删除文章失败:', error);
+
+      // 如果是因为后端接口未实现，给出特别提示
+      if (error.message?.includes('404') || error.message?.includes('Not Found')) {
+        toast({
+          title: "功能暂未开放",
+          description: "删除功能正在开发中，敬请期待",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "删除失败",
+          description: error.message || "删除文章时出错，请稍后重试",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
@@ -644,8 +703,41 @@ export const MainContentSection = (): JSX.Element => {
           </TabsContent>
         </Tabs>
       </section>
-      
+
       <div className="h-[50px]" />
+
+      {/* 删除确认对话框 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+            <DialogDescription>
+              你确定要删除文章 "{articleToDelete?.title}" 吗？
+              <br />
+              此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setArticleToDelete(null);
+              }}
+              disabled={isDeleting}
+            >
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteArticle}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

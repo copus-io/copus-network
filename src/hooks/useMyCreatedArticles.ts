@@ -14,6 +14,7 @@ export const useMyCreatedArticles = (params: MyCreatedArticleParams = {}) => {
     loading: false,
     error: null,
   });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const fetchMyCreatedArticles = async () => {
@@ -44,11 +45,10 @@ export const useMyCreatedArticles = (params: MyCreatedArticleParams = {}) => {
     };
 
     fetchMyCreatedArticles();
-  }, [JSON.stringify(params)]);
+  }, [JSON.stringify(params), refreshKey]);
 
   const refetch = () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-    // Re-trigger the effect by updating params if needed
+    setRefreshKey(prev => prev + 1);
   };
 
   return {

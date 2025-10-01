@@ -48,7 +48,7 @@
       "isRoot": true
     },
     {
-      "id": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "label": "MyTreasury",
       "routes": [
         "/my-treasury"
@@ -98,7 +98,7 @@
       ]
     },
     {
-      "id": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx",
       "label": "Screen",
       "routes": [
         "/screen"
@@ -185,9 +185,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -297,9 +297,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -425,9 +425,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -537,9 +537,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -649,9 +649,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -761,9 +761,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -889,9 +889,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -1001,9 +1001,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -1113,9 +1113,9 @@
       }
     },
     {
-      "id": "src/routes/LinkPreview/screens/LinkPreview.tsx:59:10-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/routes/LinkPreview/screens/LinkPreview.tsx:59:10-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/routes/LinkPreview/screens/LinkPreview.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -1241,9 +1241,9 @@
       }
     },
     {
-      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:119:18-to-src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
@@ -1289,8 +1289,8 @@
       }
     },
     {
-      "id": "src/routes/Screen26/screens/Screen.tsx:30:14-to-src/screens/Setting/Setting.tsx",
-      "source": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx:30:14-to-src/screens/Setting/Setting.tsx",
+      "source": "src/routes/Screen27/screens/Screen.tsx",
       "target": "src/screens/Setting/Setting.tsx",
       "data": {
         "viaRoute": "/setting",
@@ -1300,13 +1300,13 @@
           "endLine": 34,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
         }
       }
     },
     {
-      "id": "src/routes/Screen26/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
-      "source": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
+      "source": "src/routes/Screen27/screens/Screen.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
         "viaRoute": "/",
@@ -1316,7 +1316,7 @@
           "endLine": 46,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
         }
       }
     },
