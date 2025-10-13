@@ -20,7 +20,8 @@
       "Read(//Users/dadao/Desktop/**)",
       "Read(//private/tmp/**)",
       "Bash(node:*)",
-      "Bash(timeout 10s npm run dev)"
+      "Bash(timeout 10s npm run dev)",
+      "Bash(brew:*)"
     ],
     "deny": [],
     "ask": []
