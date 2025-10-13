@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Badge } from "../../../../components/ui/badge";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
-import { Card, CardContent } from "../../../../components/ui/card";
 import { AuthService } from "../../../../services/authService";
 import { useUser } from "../../../../contexts/UserContext";
 import { useToast } from "../../../../components/ui/toast";
-import { getCategoryStyle, formatCount, formatDate } from "../../../../utils/categoryStyles";
-import { Article } from "../../../../types/article";
+import { formatDate } from "../../../../utils/categoryStyles";
+import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 
 // Demo数据，用于token无效时的展示
 const getDemoTreasuryData = () => ({
@@ -86,26 +84,14 @@ const getDemoTreasuryData = () => ({
   ]
 });
 
-interface TreasuryArticle {
-  id: string;
-  uuid: string;
-  title: string;
-  description: string;
-  coverImage: string;
-  category: string;
-  userName: string;
-  userAvatar: string;
-  date: string;
-  treasureCount: number;
-  visitCount: string;
-  isLiked: boolean;
-  targetUrl: string;
-  website: string;
+interface TreasuryArticle extends ArticleData {
+  // 继承ArticleData，保持类型一致性
 }
 
 export const TreasuryContentSection = (): JSX.Element => {
-  const { user, articleLikeStates } = useUser();
+  const { user, articleLikeStates, socialLinks, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [likedArticles, setLikedArticles] = useState<TreasuryArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,25 +102,12 @@ export const TreasuryContentSection = (): JSX.Element => {
     myArticleLikedCount: 0
   });
 
-  // 用户社交链接数据（只读显示）
-  const [socialLinksData, setSocialLinksData] = useState<Array<{
-    iconUrl: string;
-    id: number;
-    linkUrl: string;
-    sortOrder: number;
-    title: string;
-    userId: number;
-  }>>([]);
 
   // 获取用户收藏的文章
   useEffect(() => {
     const fetchLikedArticles = async () => {
-      console.log('🔍 宝藏页面初始化检查:');
-      console.log('👤 用户状态:', user ? '已登录' : '未登录');
-      console.log('👤 用户信息:', user);
 
       if (!user) {
-        console.log('⚠️ 用户未登录，清空收藏列表');
         setLikedArticles([]);
         setLoading(false);
         return;
@@ -143,60 +116,39 @@ export const TreasuryContentSection = (): JSX.Element => {
       try {
         setLoading(true);
         setError(null);
-        console.log('🏆 获取用户收藏的文章...');
 
-        // 同时获取宝藏信息、收藏文章列表和社交链接
-        const [treasuryInfoResponse, likedArticlesResponse, socialLinksResponse] = await Promise.all([
+        // 同时获取宝藏信息和收藏文章列表
+        const [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
           AuthService.getUserTreasuryInfo(),
           AuthService.getUserLikedArticles(1, 20), // 获取前20篇文章
-          AuthService.getUserSocialLinks() // 获取社交链接
         ]);
 
-        console.log('🏆 用户宝藏信息响应:', treasuryInfoResponse);
-        console.log('📚 用户收藏文章响应:', likedArticlesResponse);
-        console.log('🔗 用户社交链接响应:', socialLinksResponse);
 
         // 处理统计信息
         const treasuryInfo = treasuryInfoResponse.data || treasuryInfoResponse;
         if (treasuryInfo.statistics) {
           setTreasuryStats(treasuryInfo.statistics);
-          console.log(`🎉 用户共收藏了 ${treasuryInfo.statistics.likedArticleCount} 篇文章`);
         }
 
-        // 处理社交链接数据
-        const socialLinksArray = socialLinksResponse.data || socialLinksResponse || [];
-        if (Array.isArray(socialLinksArray)) {
-          setSocialLinksData(socialLinksArray);
-          console.log(`🔗 用户共有 ${socialLinksArray.length} 个社交链接`);
-        } else {
-          console.log('⚠️ 社交链接数据格式异常:', socialLinksArray);
-        }
+        // 社交链接数据直接从UserContext获取，无需额外API调用
 
         // 处理文章列表，转换为组件需要的格式
         const articlesData = likedArticlesResponse.data || likedArticlesResponse;
-        console.log('📝 原始文章数据结构:', articlesData);
-        console.log('📝 文章数据类型:', typeof articlesData);
-        console.log('📝 是否有data字段:', 'data' in articlesData);
 
         // 尝试多种可能的数据结构
         let articlesArray = [];
         if (articlesData && Array.isArray(articlesData.data)) {
           // 标准结构：{ data: [...] }
           articlesArray = articlesData.data;
-          console.log('✅ 使用标准结构 articlesData.data');
         } else if (Array.isArray(articlesData)) {
           // 直接是数组：[...]
           articlesArray = articlesData;
-          console.log('✅ 使用数组结构 articlesData');
         } else {
-          console.warn('⚠️ 未识别的数据结构:', articlesData);
           articlesArray = [];
         }
 
-        console.log('📊 找到的文章数量:', articlesArray.length);
 
         const articles = articlesArray.map((article: any, index: number): TreasuryArticle => {
-          console.log(`📝 处理第${index + 1}篇文章:`, article.title);
 
           try {
             return {
@@ -206,7 +158,9 @@ export const TreasuryContentSection = (): JSX.Element => {
               description: article.content,
               coverImage: article.coverUrl,
               category: article.categoryInfo?.name || 'General',
+              categoryColor: article.categoryInfo?.color,
               userName: article.authorInfo?.username || 'Anonymous',
+              userId: article.authorInfo?.id,
               userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
               date: new Date(article.createAt * 1000).toLocaleDateString(),
               treasureCount: article.likeCount || 0,
@@ -222,8 +176,6 @@ export const TreasuryContentSection = (): JSX.Element => {
         }).filter(Boolean) as TreasuryArticle[]; // 过滤掉转换失败的文章
 
         setLikedArticles(articles);
-        console.log('🎯 转换后的收藏文章:', articles);
-        console.log('🎯 最终文章数量:', articles.length);
 
       } catch (error) {
         console.error('❌ 获取收藏文章失败:', error);
@@ -231,14 +183,12 @@ export const TreasuryContentSection = (): JSX.Element => {
 
         // 检查是否是认证相关错误
         if (errorMessage.includes('认证失败') || errorMessage.includes('重新登录') || errorMessage.includes('token')) {
-          console.log('🎭 认证失败，切换到Demo模式');
           setIsDemoMode(true);
           setError(null); // 清除错误状态
 
           // 加载Demo数据
           const demoData = getDemoTreasuryData();
           setTreasuryStats(demoData.treasuryStats);
-          setSocialLinksData(demoData.socialLinks);
           setLikedArticles(demoData.articles as TreasuryArticle[]);
 
           showToast('😊 正在展示演示数据，登录后可查看真实宝藏', 'info');
@@ -258,85 +208,71 @@ export const TreasuryContentSection = (): JSX.Element => {
   // 监听全局点赞状态变化，动态更新收藏列表
   useEffect(() => {
     if (Object.keys(articleLikeStates).length > 0) {
-      console.log('🔄 检测到全局点赞状态变化，更新宝藏页面');
       // 这里可以添加逻辑来实时同步新点赞的文章
     }
   }, [articleLikeStates]);
 
+  // 处理点赞
+  const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
+    if (!user) {
+      showToast('请先登录', 'error');
+      return;
+    }
+
+    // 使用全局toggleLike函数，包含乐观更新和API调用
+    const result = await toggleLike(
+      articleId,
+      currentIsLiked,
+      currentLikeCount,
+      // 本地乐观更新回调（可选，因为全局状态已经处理了）
+      (isLiked: boolean, likeCount: number) => {
+        setLikedArticles(prev => prev.map(art =>
+          art.id === articleId
+            ? { ...art, isLiked, treasureCount: likeCount }
+            : art
+        ));
+      }
+    );
+
+  };
+
+  // 处理用户点击
+  const handleUserClick = (userId: number) => {
+    // 如果是当前用户自己的文章，跳转到我的宝藏页面
+    if (user && user.id === userId) {
+      navigate('/my-treasury');
+    } else {
+      // 如果是其他用户的文章，跳转到该用户的宝藏页面
+      navigate(`/user/${userId}/treasury`);
+    }
+  };
+
   // 渲染单个文章卡片
   const renderArticleCard = (article: TreasuryArticle) => {
-    const categoryStyle = getCategoryStyle(article.category);
+    // 获取当前文章的点赞状态
+    const articleLikeState = getArticleLikeState(article.id, article.isLiked, article.treasureCount);
+
+    // 更新文章的点赞状态
+    const articleData = {
+      ...article,
+      isLiked: articleLikeState.isLiked,
+      treasureCount: articleLikeState.likeCount
+    };
 
     return (
       <div key={article.id} className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
-        <Link to={`/content/${article.id}`}>
-          <Card className="bg-white rounded-lg border-0 shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group">
-            <CardContent className="flex flex-col gap-[25px] p-[30px]">
-              <div className="flex flex-col gap-5">
-                <div className="relative h-48 rounded-lg overflow-hidden bg-gray-200">
-                  <img
-                    src={article.coverImage || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI0MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4='}
-                    alt={article.title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-
-                  <div className="absolute inset-0 flex flex-col justify-between p-[15px]">
-                    <Badge
-                      variant="outline"
-                      className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border border-solid ${categoryStyle.border} ${categoryStyle.bg} w-fit`}
-                    >
-                      <span className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${categoryStyle.text}`}>
-                        {article.category}
-                      </span>
-                    </Badge>
-
-                    {/* 宝藏标记 */}
-                    <div className="flex justify-end">
-                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-[#E19F1D] rounded-[10px]">
-                        <img
-                          className="w-3 h-3.5"
-                          alt="Treasure icon"
-                          src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
-                          style={{ filter: 'brightness(0) invert(1)' }}
-                        />
-                        <span className="text-white text-xs font-medium">收藏</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-[15px]">
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-7">
-                    {article.title}
-                  </h3>
-
-                  <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
-                    <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[24px] line-clamp-2">
-                      "{article.description}"
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <img
-                          className="w-4 h-4 rounded-full object-cover"
-                          src={article.userAvatar}
-                          alt={article.userName}
-                        />
-                        <span className="[font-family:'Lato',Helvetica] font-medium text-medium-dark-grey text-sm tracking-[0] leading-[20px]">
-                          {article.userName}
-                        </span>
-                      </div>
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[20px]">
-                        {formatDate(article.date)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+        <ArticleCard
+          article={articleData}
+          layout="treasury"
+          actions={{
+            showTreasure: true,
+            showVisits: true,
+            showWebsite: true, // 显示网站信息
+            showBranchIt: true // 显示Branch It图标
+          }}
+          onLike={handleLike}
+          onUserClick={handleUserClick}
+        />
       </div>
     );
   };
@@ -373,7 +309,7 @@ export const TreasuryContentSection = (): JSX.Element => {
           {isAuthError && (
             <div className="flex gap-3">
               <Button
-                onClick={() => window.location.href = '/login'}
+                onClick={() => { window.location.href = '/login'; }}
                 className="bg-red hover:bg-red/90 text-white px-6 py-2 rounded-lg"
               >
                 重新登录
@@ -409,9 +345,9 @@ export const TreasuryContentSection = (): JSX.Element => {
           </div>
 
           {/* 社交链接显示区域（只读） */}
-          {socialLinksData.length > 0 && (
+          {socialLinks.length > 0 && (
             <div className="flex items-center gap-4 flex-wrap">
-              {socialLinksData
+              {socialLinks
                 .filter(link => link.linkUrl && link.linkUrl.trim())
                 .map((link) => (
                   <a
@@ -457,7 +393,7 @@ export const TreasuryContentSection = (): JSX.Element => {
             </Button>
             <Button
               className="h-10 gap-3 px-5 py-[15px] rounded-[100px] bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-              onClick={() => window.location.href = '/login'}
+              onClick={() => { window.location.href = '/login'; }}
             >
               登录查看真实宝藏
             </Button>
@@ -490,7 +426,7 @@ export const TreasuryContentSection = (): JSX.Element => {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[60px] w-full px-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full px-5">
           {likedArticles.map((article) => renderArticleCard(article))}
         </div>
       )}

@@ -29,11 +29,9 @@ export const SignUp = (): JSX.Element => {
   };
 
   const handleSendCode = () => {
-    console.log("Sending verification code to:", formData.email);
   };
 
   const handleSignUp = () => {
-    console.log("Signing up with:", formData);
   };
 
   return (

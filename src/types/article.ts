@@ -46,12 +46,16 @@ export interface Article {
   title: string;
   description: string;
   category: string;
+  categoryColor?: string; // 添加分类颜色字段
   coverImage: string;
   userName: string;
+  userId: number;
+  namespace?: string; // 添加用户namespace字段
   userAvatar: string;
   date: string;
   treasureCount: number;
   visitCount: number;
+  isLiked: boolean; // 添加点赞状态字段
   website: string;
   url?: string;
   createdAt?: string;

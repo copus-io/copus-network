@@ -1,6 +1,11 @@
 import React from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { queryClient } from "./lib/queryClient";
 import { UserProvider } from "./contexts/UserContext";
+import { CategoryProvider } from "./contexts/CategoryContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import { ToastProvider } from "./components/ui/toast";
 import { Discovery } from "./screens/Discovery/Discovery";
 import { MainFrame } from "./screens/MainFrame/MainFrame";
@@ -25,7 +30,9 @@ import { Screen as Screen25 } from "./routes/Screen25/screens/Screen";
 import { Screen as Screen26 } from "./routes/Screen26/screens/Screen";
 import { Screen as Screen27 } from "./routes/Screen27/screens/Screen";
 import { SignUp } from "./routes/SignUp/screens/SignUp";
-import { PopUp } from "./routes/PopUp/screens/PopUp";
+import { SwitchDemo } from "./components/demo/SwitchDemo";
+import { AuthGuard } from "./components/guards/AuthGuard";
+import { UserProfile } from "./screens/UserProfile/UserProfile";
 
 const router = createBrowserRouter([
   {
@@ -42,58 +49,98 @@ const router = createBrowserRouter([
   },
   {
     path: "/treasury",
-    element: <Treasury />,
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Treasury />
+      </AuthGuard>
+    ),
   },
   {
     path: "/notification",
-    element: <Notification />,
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Notification />
+      </AuthGuard>
+    ),
   },
   {
     path: "/setting",
-    element: <Setting />,
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Setting />
+      </AuthGuard>
+    ),
   },
   {
     path: "/login",
     element: <Login />,
   },
   {
-    path: "/new-explore",
+    path: "/explore/new",
     element: <NewExplore />,
   },
   {
     path: "/my-treasury",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <MyTreasury />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/user/:namespace",
+    element: <UserProfile />,
+  },
+  {
+    path: "/user/:namespace/treasury",
     element: <MyTreasury />,
   },
   {
-    path: "/my-treasury30",
-    element: <MyTreasury30 />,
+    path: "/my-treasury/v30",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <MyTreasury30 />
+      </AuthGuard>
+    ),
   },
   {
-    path: "/my-treasury32",
-    element: <MyTreasury32 />,
+    path: "/my-treasury/v32",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <MyTreasury32 />
+      </AuthGuard>
+    ),
   },
   {
-    path: "/my-treasury34",
-    element: <MyTreasury34 />,
+    path: "/my-treasury/v34",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <MyTreasury34 />
+      </AuthGuard>
+    ),
   },
   {
     path: "/create",
-    element: <Create />,
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Create />
+      </AuthGuard>
+    ),
   },
   {
-    path: "/content/:id",
+    path: "/work/:id",
     element: <Content />,
   },
   {
-    path: "/not-logged-in",
+    path: "/auth/unauthorized",
     element: <NotLogIn />,
   },
   {
-    path: "/link-preview",
+    path: "/preview/link/:id?",
     element: <LinkPreview />,
   },
   {
-    path: "/delete-account",
+    path: "/account/delete",
     element: <DeleteAccount />,
   },
   {
@@ -101,23 +148,23 @@ const router = createBrowserRouter([
     element: <Published />,
   },
   {
-    path: "/screen",
+    path: "/screen/default",
     element: <Screen />,
   },
   {
-    path: "/screen24",
+    path: "/screen/v24",
     element: <Screen24 />,
   },
   {
-    path: "/screen25",
+    path: "/screen/v25",
     element: <Screen25 />,
   },
   {
-    path: "/screen26",
+    path: "/screen/v26",
     element: <Screen26 />,
   },
   {
-    path: "/screen27",
+    path: "/screen/v27",
     element: <Screen27 />,
   },
   {
@@ -125,17 +172,24 @@ const router = createBrowserRouter([
     element: <SignUp />,
   },
   {
-    path: "/popup",
-    element: <PopUp />,
+    path: "/demo/components/switch",
+    element: <SwitchDemo />,
   },
 ]);
 
 export const App = () => {
   return (
-    <UserProvider>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
-    </UserProvider>
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <CategoryProvider>
+          <NotificationProvider>
+            <ToastProvider>
+              <RouterProvider router={router} />
+            </ToastProvider>
+          </NotificationProvider>
+        </CategoryProvider>
+      </UserProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 };

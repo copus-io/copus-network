@@ -29,14 +29,8 @@ export const useArticleDetail = (uuid: string) => {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
       try {
-        console.log('🚀 Fetching article detail for:', uuid);
         const article = await getArticleDetail(uuid);
 
-        console.log('📋 API返回的原始数据:', article);
-        console.log('🖼️ 封面图URL:', article?.coverUrl);
-        console.log('📝 内容描述:', article?.content);
-        console.log('👤 作者信息:', article?.authorInfo);
-        console.log('🏷️ 分类信息:', article?.categoryInfo);
 
         setState({
           article,
@@ -44,7 +38,6 @@ export const useArticleDetail = (uuid: string) => {
           error: null,
         });
 
-        console.log('✨ Article detail loaded successfully!');
       } catch (error) {
         console.error('💥 Error fetching article detail:', error);
         setState({

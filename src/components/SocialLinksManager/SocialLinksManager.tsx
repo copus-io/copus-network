@@ -68,7 +68,6 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
       // 上传到S3
       const uploadResult = await AuthService.uploadImage(file);
 
-      console.log('✅ 图标上传成功:', uploadResult.url);
       return uploadResult.url;
     } catch (error) {
       console.error('❌ 图标上传失败:', error);
@@ -178,7 +177,6 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
       try {
         const fileName = `social-icon-${selectedPlatform}-${Date.now()}.svg`;
         iconUrl = await uploadBase64Icon(platform.icon, fileName);
-        console.log('✅ 图标已上传到S3:', iconUrl);
       } catch (error) {
         console.error('❌ 图标上传失败，使用备用方案:', error);
         // 如果上传失败，显示错误并终止操作

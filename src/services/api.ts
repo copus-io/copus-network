@@ -9,7 +9,6 @@ export const apiRequest = async <T>(
   const { requiresAuth, ...fetchOptions } = options;
   const url = `${API_BASE_URL}${endpoint}`;
 
-  console.log('🚀 API Request:', url);
 
   const defaultHeaders: Record<string, string> = {};
 
@@ -20,18 +19,15 @@ export const apiRequest = async <T>(
 
   // 如果需要认证或者有token，添加到headers
   const token = localStorage.getItem('copus_token');
-  console.log('🔍 检查token状态:', { hasToken: !!token, tokenLength: token?.length });
 
   if (requiresAuth) {
     if (!token || token.trim() === '') {
-      console.error('❌ 需要认证但token无效或不存在');
       throw new Error('未找到有效的认证令牌，请重新登录');
     }
 
     // 检查token格式（JWT通常有3部分，用.分隔）
     const tokenParts = token.split('.');
     if (tokenParts.length !== 3) {
-      console.error('❌ Token格式不正确:', { tokenParts: tokenParts.length });
       // 清除无效token
       localStorage.removeItem('copus_token');
       localStorage.removeItem('copus_user');
@@ -39,7 +35,6 @@ export const apiRequest = async <T>(
     }
 
     defaultHeaders.Authorization = `Bearer ${token}`;
-    console.log('🔐 添加认证头部，token有效');
   }
 
   try {
@@ -52,16 +47,12 @@ export const apiRequest = async <T>(
       },
     });
 
-    console.log('📡 API Response status:', response.status);
-    console.log('📡 API Response headers:', response.headers);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ API Error response:', errorText);
 
       // 特殊处理认证相关错误
       if (response.status === 401 || response.status === 403) {
-        console.error('🚨 认证失败，清除本地存储');
         localStorage.removeItem('copus_token');
         localStorage.removeItem('copus_user');
 
@@ -81,30 +72,7 @@ export const apiRequest = async <T>(
     }
 
     const data = await response.json();
-    console.log('✅ API Response data:', data);
 
-    // 如果是用户信息接口，显示详细的字段信息
-    if (endpoint.includes('/client/user/userInfo')) {
-      console.log('🔍 用户信息接口详细响应:', {
-        原始数据: data,
-        用户名字段: {
-          'data.username': data.username,
-          'data.data.username': data.data?.username,
-          'data.name': data.name,
-          'data.data.name': data.data?.name,
-          'data.nickname': data.nickname,
-          'data.data.nickname': data.data?.nickname
-        },
-        头像字段: {
-          'data.faceUrl': data.faceUrl,
-          'data.data.faceUrl': data.data?.faceUrl,
-          'data.avatar': data.avatar,
-          'data.data.avatar': data.data?.avatar,
-          'data.avatarUrl': data.avatarUrl,
-          'data.data.avatarUrl': data.data?.avatarUrl
-        }
-      });
-    }
 
     return data;
   } catch (error) {
@@ -112,7 +80,6 @@ export const apiRequest = async <T>(
 
     // 检查是否是CORS错误
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.error('🚨 Possible CORS issue detected');
       throw new Error(`CORS or network error when accessing ${url}. Check if the API allows cross-origin requests.`);
     }
 

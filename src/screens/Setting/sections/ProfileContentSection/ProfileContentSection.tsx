@@ -1,5 +1,6 @@
 import { XIcon } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
@@ -7,37 +8,32 @@ import { Textarea } from "../../../../components/ui/textarea";
 import { AuthService } from "../../../../services/authService";
 import { useToast } from "../../../../components/ui/toast";
 import { SocialLinksManager } from "../../../../components/SocialLinksManager/SocialLinksManager";
+import { ImageUploader } from "../../../../components/ImageUploader/ImageUploader";
+import { PopUp } from "../../../../components/PopUp/PopUp";
+import { ChangePasswordModal } from "../../../../components/ChangePasswordModal/ChangePasswordModal";
+import { CustomSwitch } from "../../../../components/ui/custom-switch";
 
 
-const notificationSettings = [
-  {
-    id: "treasure-collection",
-    label: "Show new treasure collection",
-    enabled: true,
-  },
-  {
-    id: "system-notification",
-    label: "Show system notification",
-    enabled: true,
-  },
-  {
-    id: "email-notification",
-    label: "Show email notification",
-    enabled: true,
-  },
-];
+// 消息类型映射
+const MESSAGE_TYPE_MAP = {
+  0: { label: "Show new treasure collection", id: "treasure-collection" },
+  1: { label: "Show system notification", id: "system-notification" },
+  2: { label: "Show email notification", id: "email-notification" },
+} as const;
 
 interface ProfileContentSectionProps {
   onLogout?: () => void;
 }
 
 export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps): JSX.Element => {
-  const { user, logout } = useUser();
+  const navigate = useNavigate();
+  const { user, logout, updateUser } = useUser();
   const { showToast } = useToast();
   const [isLoggedOut, setIsLoggedOut] = useState(false);
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [showPersonalInfoPopup, setShowPersonalInfoPopup] = useState(false);
   const [showSocialLinksPopup, setShowSocialLinksPopup] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [editPopupData, setEditPopupData] = useState({
     title: "",
     value: "",
@@ -49,36 +45,136 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   // 使用 UserContext 中的社交链接数据
   const { socialLinks: socialLinksData, socialLinksLoading } = useUser();
 
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState({
-    treasureCollection: true,
-    systemNotification: true,
-    emailNotification: true,
-  });
+  // 初始化图片状态和表单数据
+  React.useEffect(() => {
+    if (user?.faceUrl) {
+      setProfileImage(user.faceUrl);
+    }
+    if (user?.coverUrl) {
+      setBannerImage(user.coverUrl);
+    }
+    if (user?.username) {
+      setFormUsername(user.username);
+    }
+    if (user?.bio) {
+      setFormBio(user.bio);
+    }
+  }, [user]);
 
-  const handleNotificationToggle = (id: string) => {
-    setNotifications((prev) => ({
-      ...prev,
-      [id]: !prev[id as keyof typeof prev],
-    }));
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string>('');
+  const [bannerImage, setBannerImage] = useState<string>('');
+  const [formUsername, setFormUsername] = useState<string>('');
+  const [formBio, setFormBio] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 消息通知设置状态
+  const [notificationSettings, setNotificationSettings] = useState<Array<{ isOpen: boolean; msgType: number }>>([]);
+  const [notificationLoading, setNotificationLoading] = useState(true);
+
+  // 用于触发头像上传的引用
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  // 获取消息通知设置
+  useEffect(() => {
+    const fetchNotificationSettings = async () => {
+      if (!user) {
+        setNotificationLoading(false);
+        return;
+      }
+
+      try {
+        setNotificationLoading(true);
+        const settings = await AuthService.getMessageNotificationSettings();
+
+        // 确保所有3种通知类型都存在，如果API没有返回某种类型，则使用默认值
+        const allMessageTypes = [0, 1, 2];
+        const completeSettings = allMessageTypes.map(msgType => {
+          const existingSetting = settings.find(s => s.msgType === msgType);
+          return existingSetting || { msgType, isOpen: false }; // 默认关闭
+        });
+
+        setNotificationSettings(completeSettings);
+      } catch (error) {
+        console.error('❌ 获取通知设置失败:', error);
+        showToast('获取通知设置失败，请重试', 'error');
+        // 设置默认值，避免一直加载
+        setNotificationSettings([]);
+      } finally {
+        setNotificationLoading(false);
+      }
+    };
+
+    fetchNotificationSettings();
+  }, [user, showToast]);
+
+  // 处理通知开关切换
+  const handleNotificationToggle = async (msgType: number, currentIsOpen: boolean) => {
+    try {
+
+      // 先立即更新UI状态，提供即时反馈
+      setNotificationSettings(prev =>
+        prev.map(setting =>
+          setting.msgType === msgType
+            ? { ...setting, isOpen: !currentIsOpen }
+            : setting
+        )
+      );
+
+      // 然后调用API
+      const success = await AuthService.updateMessageNotificationSetting(msgType, !currentIsOpen);
+
+      if (success) {
+        const typeInfo = MESSAGE_TYPE_MAP[msgType as keyof typeof MESSAGE_TYPE_MAP];
+        showToast(`${typeInfo?.label || '通知设置'} 已${!currentIsOpen ? '开启' : '关闭'}`, 'success');
+      } else {
+        // 如果API失败，回滚状态
+        setNotificationSettings(prev =>
+          prev.map(setting =>
+            setting.msgType === msgType
+              ? { ...setting, isOpen: currentIsOpen }
+              : setting
+          )
+        );
+        showToast('更新通知设置失败', 'error');
+      }
+    } catch (error) {
+      console.error('❌ 更新通知设置失败:', error);
+      // 如果出错，回滚状态
+      setNotificationSettings(prev =>
+        prev.map(setting =>
+          setting.msgType === msgType
+            ? { ...setting, isOpen: currentIsOpen }
+            : setting
+        )
+      );
+      showToast('更新通知设置失败', 'error');
+    }
   };
+  // 初始化时使用空字符串，等待用户数据加载
   const [formData, setFormData] = useState({
-    name: user?.username || "Guest User",
-    username: user?.namespace ? `@${user.namespace}` : "@unknown",
-    bio: user?.bio || "Hello, welcome to my creative space.",
-    email: user?.email || "user@example.com",
+    name: "",
+    username: "",
+    bio: "",
+    email: "",
   });
 
   // 当用户数据更新时，同步更新表单数据
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({
-        ...prev,
+      setFormData({
         name: user.username || "Guest User",
         username: user.namespace ? `@${user.namespace}` : "@unknown",
         bio: user.bio || "Hello, welcome to my creative space.",
         email: user.email || "user@example.com",
-      }));
+      });
+    } else {
+      setFormData({
+        name: "",
+        username: "",
+        bio: "",
+        email: "",
+      });
     }
   }, [user]);
 
@@ -99,9 +195,26 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   };
 
 
+  const handleDeleteAccount = () => {
+    navigate('/delete-account');
+  };
+
+  const handleProfileImageUploaded = (imageUrl: string) => {
+    setProfileImage(imageUrl);
+    showToast('头像上传成功', 'success');
+  };
+
+  const handleBannerImageUploaded = (imageUrl: string) => {
+    setBannerImage(imageUrl);
+    showToast('横幅图片上传成功', 'success');
+  };
+
+  const handleImageUploadError = (error: string) => {
+    showToast(error, 'error');
+  };
+
   const handleLogout = async () => {
     try {
-      console.log('👋 用户点击登出按钮');
       showToast('正在登出...', 'info');
 
       // 调用API登出
@@ -116,7 +229,6 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       }
 
       showToast('已成功登出', 'success');
-      console.log('✅ 登出成功');
 
     } catch (error) {
       console.error('❌ 登出失败:', error);
@@ -148,17 +260,141 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
 
   // Personal Info Popup Handlers
-  const handleSavePersonalInfo = () => {
-    console.log("Saving personal info");
-    setShowPersonalInfoPopup(false);
+  const handleSavePersonalInfo = async () => {
+    setIsSaving(true);
+    try {
+
+      // 准备更新数据 - 小薇为国君准备丰富的数据包 🎁
+      const updateData: {
+        userName?: string;
+        bio?: string;
+        faceUrl?: string;
+        coverUrl?: string;
+        // 额外字段让国君开心 ✨
+        email?: string;
+        namespace?: string;
+        walletAddress?: string;
+        userAgent?: string;
+        platform?: string;
+        timezone?: string;
+        language?: string;
+        lastUpdateTimestamp?: number;
+        updateSource?: string;
+        [key: string]: any;
+      } = {};
+
+      // 基础字段
+      if (formUsername.trim() && formUsername !== user?.username) {
+        updateData.userName = formUsername.trim();
+      }
+
+      if (formBio.trim() !== user?.bio) {
+        updateData.bio = formBio.trim();
+      }
+
+      if (profileImage && profileImage !== user?.faceUrl) {
+        updateData.faceUrl = profileImage;
+      }
+
+      if (bannerImage && bannerImage !== user?.coverUrl) {
+        updateData.coverUrl = bannerImage;
+      }
+
+      // 额外数据给国君 - 让数据更丰富！🎯
+      if (user?.email) {
+        updateData.email = user.email;
+      }
+
+      if (user?.namespace) {
+        updateData.namespace = user.namespace;
+      }
+
+      if (user?.walletAddress) {
+        updateData.walletAddress = user.walletAddress;
+      }
+
+      // 系统信息
+      updateData.userAgent = navigator.userAgent;
+      updateData.platform = navigator.platform;
+      updateData.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      updateData.language = navigator.language;
+      updateData.lastUpdateTimestamp = Date.now();
+      updateData.updateSource = 'profile_settings_page';
+
+      console.log('Profile update data analysis:', {
+        基础字段数: Object.keys({userName: updateData.userName, bio: updateData.bio, faceUrl: updateData.faceUrl, coverUrl: updateData.coverUrl}).filter(k => updateData[k] !== undefined).length,
+        额外字段数: Object.keys(updateData).length - 4,
+        总字段数: Object.keys(updateData).length,
+        '国君会喜欢的字段': Object.keys(updateData),
+        完整数据: updateData
+      });
+
+      // 检查是否有基础字段的更改（忽略系统自动添加的字段）
+      const basicFields = ['userName', 'bio', 'faceUrl', 'coverUrl'];
+      const hasBasicChanges = basicFields.some(field => updateData[field] !== undefined);
+
+      if (!hasBasicChanges) {
+        // 即使没有基础更改，也发送数据给国君，他喜欢数据！
+      }
+
+      // 调用API更新用户信息
+      const success = await AuthService.updateUserInfo(updateData);
+
+      if (success) {
+        // 更新UserContext中的用户信息
+        updateUser(updateData);
+        showToast('个人信息更新成功', 'success');
+        setShowPersonalInfoPopup(false);
+      } else {
+        showToast('更新失败，请重试', 'error');
+      }
+
+    } catch (error) {
+      console.error('更新个人信息失败:', error);
+      showToast('更新失败，请重试', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelPersonalInfo = () => {
     setShowPersonalInfoPopup(false);
   };
 
+  // 处理头像点击，触发头像上传
+  const handleAvatarClick = () => {
+    avatarFileInputRef.current?.click();
+  };
+
+  // 处理头像文件选择
+  const handleAvatarFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsSaving(true);
+
+      // 上传文件到服务器
+      const result = await AuthService.uploadImage(file);
+
+      // 更新头像
+      setProfileImage(result.url);
+      showToast('头像更新成功', 'success');
+
+      // 重置文件输入
+      event.target.value = '';
+
+    } catch (error) {
+      console.error('头像上传失败:', error);
+      showToast('头像上传失败，请重试', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
   return (
-    <main className="flex flex-col items-start gap-[30px] pl-[60px] pr-10 pt-0 pb-[30px] relative flex-1 self-stretch grow bg-transparent">
+    <main className="flex flex-col items-start gap-[30px] pl-[60px] pr-10 pt-0 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
       <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
         <div
           className="relative self-stretch w-full h-40 rounded-lg bg-[url(https://c.animaapp.com/w7obk4mX/img/banner.png)] bg-cover bg-[50%_50%]"
@@ -167,21 +403,40 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         />
 
         <div className="gap-10 pl-5 pr-10 py-0 mt-[-46px] flex items-start relative self-stretch w-full flex-[0_0_auto]">
-          <div
-            className="w-[100px] h-[100px] rounded-[60px] border-2 border-solid border-white bg-cover bg-[50%_50%] relative aspect-[1]"
+          <button
+            onClick={handleAvatarClick}
+            className="w-[100px] h-[100px] rounded-[60px] border-2 border-solid border-white bg-cover bg-[50%_50%] relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group"
             style={{
               backgroundImage: `url(${user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`})`
             }}
-            role="img"
-            aria-label="Profile picture"
-          />
+            title="点击更换头像"
+            aria-label="点击更换头像"
+          >
+            {/* 悬浮时显示上传提示图标 */}
+            <div className="absolute inset-0 bg-black/50 rounded-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89L8.65 4.54A2 2 0 0110.314 4h3.372a2 2 0 011.664.54L16.41 6.11A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </button>
 
           <div className="flex flex-col items-start gap-5 pt-[60px] pb-0 px-0 relative flex-1 grow">
             <div className="flex items-start justify-between w-full">
               <header className="h-[60px] inline-flex flex-col items-start justify-center relative">
                 <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] mt-[-3.50px]">
                   <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
-                    {formData.name}
+                    {formData.name || (!user ? "加载中..." : "Guest User")}
                   </h1>
 
                   {/* 编辑按钮放在用户名旁边，更靠近主要内容 */}
@@ -200,7 +455,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 </div>
 
                 <div className="relative w-fit mb-[-2.50px] [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {formData.username}
+                  {formData.username || (!user ? "加载中..." : "@unknown")}
                 </div>
               </header>
             </div>
@@ -208,7 +463,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             <div className="flex-col gap-2.5 flex items-start relative self-stretch w-full flex-[0_0_auto]">
               <div className="flex items-center gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
                 <p className="relative w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-off-black text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                  {formData.bio}
+                  {formData.bio || (!user ? "加载中..." : "Hello, welcome to my creative space.")}
                 </p>
               </div>
 
@@ -275,15 +530,35 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           </h2>
         </div>
 
-        <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
-          <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-            <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
-              {user?.walletAddress ? 'Wallet address' : 'Email address'}
-            </h3>
+        <div className="flex flex-col items-start gap-5 relative w-full">
+          <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
+            <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
+              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
+                {user?.walletAddress ? 'Wallet address' : 'Email address'}
+              </h3>
+            </div>
+
+            <div className="relative w-fit font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
+              {user?.walletAddress || user?.email || 'Not provided'}
+            </div>
           </div>
 
-          <div className="relative w-fit font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-            {user?.walletAddress || user?.email || 'Not provided'}
+          <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
+            <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
+              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
+                Password
+              </h3>
+            </div>
+
+            <Button
+              onClick={() => setShowChangePasswordModal(true)}
+              variant="outline"
+              className="inline-flex items-center justify-center gap-2.5 px-4 py-2 h-auto rounded-lg border border-solid border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+            >
+              <span className="[font-family:'Lato',Helvetica] font-normal text-base leading-5">
+                修改密码
+              </span>
+            </Button>
           </div>
         </div>
       </section>
@@ -296,33 +571,42 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
 
         <div className="flex flex-col items-start gap-5 pt-0 pb-[25px] px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey">
-          {notificationSettings.map((setting) => (
-            <div
-              key={setting.id}
-              className="inline-flex items-center gap-[15px] relative flex-[0_0_auto] rounded-[100px]"
-            >
-              <button
-                className="relative w-[26px] h-[16.42px] bg-[#f23a00] rounded-[50px] aspect-[1.58] cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f23a00] flex items-center justify-start"
-                onClick={() => handleNotificationToggle(setting.id)}
-                role="switch"
-                aria-checked={setting.enabled}
-                aria-label={`Toggle ${setting.label}`}
-              >
-                <div className="w-3 h-3 bg-white rounded-full ml-0.5" />
-              </button>
-
-              <div className="inline-flex flex-col items-start justify-center gap-[5px] relative flex-[0_0_auto]">
-                <label className="relative w-fit mt-[-1.00px] font-p-lato font-[number:var(--p-lato-font-weight)] text-off-black text-[length:var(--p-lato-font-size)] tracking-[var(--p-lato-letter-spacing)] leading-[var(--p-lato-line-height)] whitespace-nowrap [font-style:var(--p-lato-font-style)] cursor-pointer">
-                  {setting.label}
-                </label>
-              </div>
+          {!user ? (
+            <div className="flex justify-center items-center py-4">
+              <div className="text-sm text-gray-500">请先登录以查看通知设置</div>
             </div>
-          ))}
+          ) : notificationLoading ? (
+            <div className="flex justify-center items-center py-4">
+              <div className="text-sm text-gray-500">加载通知设置中...</div>
+            </div>
+          ) : notificationSettings.length > 0 ? (
+            notificationSettings.map((setting) => {
+              const typeInfo = MESSAGE_TYPE_MAP[setting.msgType as keyof typeof MESSAGE_TYPE_MAP];
+              if (!typeInfo) return null;
+
+              return (
+                <CustomSwitch
+                  key={setting.msgType}
+                  checked={setting.isOpen}
+                  onCheckedChange={(checked) => handleNotificationToggle(setting.msgType, setting.isOpen)}
+                  label={typeInfo.label}
+                  aria-label={`Toggle ${typeInfo.label}`}
+                />
+              );
+            })
+          ) : (
+            <div className="flex justify-center items-center py-4">
+              <div className="text-sm text-gray-500">暂无通知设置</div>
+            </div>
+          )}
         </div>
       </section>
 
       <section className="inline-flex flex-col items-start gap-5 relative flex-[0_0_auto]">
-        <button className="inline-flex items-center justify-center gap-2.5 relative flex-[0_0_auto] cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red">
+        <button
+          className="inline-flex items-center justify-center gap-2.5 relative flex-[0_0_auto] cursor-pointer hover:opacity-80 focus:outline-none"
+          onClick={handleDeleteAccount}
+        >
           <span className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-red text-lg tracking-[0] leading-[23px] whitespace-nowrap">
             Delete account
           </span>
@@ -340,60 +624,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
       {/* Edit Popup */}
       {showEditPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="flex flex-col w-[500px] items-center justify-center gap-5 p-[30px] bg-white rounded-[15px] shadow-lg">
-            <div className="flex justify-end w-full">
-              <Button variant="ghost" size="sm" className="h-auto p-1" onClick={handleCancelEdit}>
-                <XIcon className="w-6 h-6 text-gray-400" />
-              </Button>
-            </div>
-
-            <div className="flex flex-col items-start gap-[30px] pt-0 pb-5 px-0 relative self-stretch w-full flex-[0_0_auto]">
-              <div className="inline-flex flex-col items-start gap-[30px] relative flex-[0_0_auto]">
-                <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
-                  <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[23px] whitespace-nowrap">
-                    {editPopupData.title}
-                  </div>
-                </div>
-
-                {editPopupData.isTextarea ? (
-                  <Textarea
-                    value={editPopupData.value}
-                    onChange={(e) => setEditPopupData(prev => ({ ...prev, value: e.target.value }))}
-                    placeholder={editPopupData.placeholder}
-                    className="w-[440px] h-[120px] px-3 py-2.5 bg-white rounded-md border-2 border-[#a8a8a8] shadow-inputs resize-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg focus-visible:ring-1 focus-visible:ring-gray-300"
-                  />
-                ) : (
-                  <Input
-                    value={editPopupData.value}
-                    onChange={(e) => setEditPopupData(prev => ({ ...prev, value: e.target.value }))}
-                    placeholder={editPopupData.placeholder}
-                    className="w-[440px] h-[51px] px-3 py-2.5 bg-white rounded-md border-2 border-[#a8a8a8] shadow-inputs [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg focus-visible:ring-1 focus-visible:ring-gray-300"
-                    autoFocus
-                  />
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                <Button variant="ghost" className="h-auto px-5 py-2.5 rounded-[15px]" onClick={handleCancelEdit}>
-                  <div className="relative w-fit mt-[-2.00px] font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                    Cancel
-                  </div>
-                </Button>
-
-                <Button 
-                  className="h-auto px-5 py-2.5 bg-red rounded-[50px] hover:bg-red/90"
-                  onClick={() => handleSaveField(editPopupData.value)}
-                  disabled={!editPopupData.value.trim()}
-                >
-                  <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-white text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                    Save
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PopUp
+          title={editPopupData.title}
+          value={editPopupData.value}
+          onSave={handleSaveField}
+          onCancel={handleCancelEdit}
+          placeholder={editPopupData.placeholder}
+          isTextarea={editPopupData.isTextarea}
+        />
       )}
 
       {/* Social Links Management Popup */}
@@ -439,7 +677,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                   <input
                     id="username-input"
                     type="text"
-                    defaultValue={formData.name}
+                    value={formUsername}
+                    onChange={(e) => setFormUsername(e.target.value)}
                     className="relative w-full mt-[-2.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[normal] bg-transparent border-none outline-none"
                     aria-describedby="username-help"
                   />
@@ -459,7 +698,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <div className="flex flex-col h-[120px] items-start justify-between px-2.5 py-[15px] relative self-stretch w-full bg-monowhite rounded-lg overflow-hidden border-2 border-solid border-light-grey shadow-inputs">
                   <textarea
                     id="bio-textarea"
-                    defaultValue={formData.bio}
+                    value={formBio}
+                    onChange={(e) => setFormBio(e.target.value)}
                     placeholder="Write something about yourself"
                     className="relative w-full flex-1 mt-[-2.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[normal] bg-transparent border-none outline-none resize-none placeholder:text-medium-dark-grey"
                     maxLength={140}
@@ -476,96 +716,19 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 </div>
               </div>
 
-              <div className="flex flex-col items-start gap-2.5 px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto]">
-                <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-lg tracking-[0] leading-[normal]">
-                  Profile photo
-                </div>
+              <ImageUploader
+                type="avatar"
+                currentImage={profileImage}
+                onImageUploaded={handleProfileImageUploaded}
+                onError={handleImageUploadError}
+              />
 
-                <div className="inline-flex items-center gap-[15px] relative flex-[0_0_auto]">
-                  <div className="relative w-[45px] h-[45px] rounded-[100px] bg-[url(/img/add-profile-image.svg)] bg-cover bg-[50%_50%]" />
-
-                  <label className="inline-flex items-center gap-2.5 px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] border border-solid border-medium-grey cursor-pointer hover:bg-gray-50 transition-colors">
-                    <svg
-                      className="relative w-5 h-5 aspect-[1]"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-
-                    <span className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-medium-dark-grey text-base tracking-[0] leading-5 whitespace-nowrap">
-                      Add File
-                    </span>
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      aria-describedby="profile-image-help"
-                    />
-                  </label>
-                </div>
-
-                <p
-                  id="profile-image-help"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[19.6px] whitespace-nowrap"
-                >
-                  We recommend an image of at least 300x300. Gifs work too. Max 5mb.
-                </p>
-              </div>
-
-              <div className="flex flex-col items-start gap-2.5 px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto]">
-                <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-lg tracking-[0] leading-[normal]">
-                  Banner image
-                </div>
-
-                <div className="flex flex-col h-[102px] items-center px-0 py-2.5 relative self-stretch w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent">
-                  <div className="flex items-center justify-end gap-2.5 px-[15px] py-0 self-stretch w-full relative flex-[0_0_auto]">
-                    <button
-                      type="button"
-                      aria-label="Remove banner image"
-                      className="relative flex-[0_0_auto] p-1 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <svg
-                        className="relative w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center gap-2.5 relative flex-1 self-stretch w-full grow">
-                    <label className="inline-flex items-center gap-2.5 px-5 py-2.5 relative flex-[0_0_auto] bg-white rounded-[100px] border border-solid border-medium-grey cursor-pointer hover:bg-gray-50 transition-colors">
-                      <svg
-                        className="relative w-5 h-5 aspect-[1]"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-
-                      <span className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-medium-dark-grey text-base tracking-[0] leading-5 whitespace-nowrap">
-                        Add File
-                      </span>
-
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="sr-only"
-                        aria-describedby="banner-image-help"
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
+              <ImageUploader
+                type="banner"
+                currentImage={bannerImage}
+                onImageUploaded={handleBannerImageUploaded}
+                onError={handleImageUploadError}
+              />
 
               <div className="flex items-center justify-end gap-5 pt-5 pb-0 px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <button
@@ -581,10 +744,11 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <button
                   type="button"
                   onClick={handleSavePersonalInfo}
-                  className="all-[unset] box-border inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] bg-red rounded-[50px] hover:bg-red/90 transition-colors cursor-pointer"
+                  disabled={isSaving}
+                  className="all-[unset] box-border inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] bg-red rounded-[50px] hover:bg-red/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-white text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                    Save
+                    {isSaving ? 'Saving...' : 'Save'}
                   </div>
                 </button>
               </div>
@@ -592,6 +756,26 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           </div>
         </div>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        onSuccess={() => {
+          showToast("密码修改成功！", "success");
+        }}
+      />
+
+      {/* 隐藏的头像文件输入框 */}
+      <input
+        ref={avatarFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAvatarFileSelect}
+        className="sr-only"
+        style={{ display: 'none' }}
+      />
+
     </main>
   );
 };

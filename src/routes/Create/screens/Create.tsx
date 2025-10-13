@@ -6,7 +6,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { AuthService } from "../../../services/authService";
-import { getCategoryStyle } from "../../../utils/categoryStyles";
+import { getCategoryStyle, getCategoryInlineStyle } from "../../../utils/categoryStyles";
 
 // 移除硬编码的分类数据，改为从API获取
 
@@ -17,20 +17,18 @@ export const Create = (): JSX.Element => {
 
   // 获取分类列表
   useEffect(() => {
+
     const fetchCategories = async () => {
       try {
-        console.log('🏷️ 获取分类列表...');
         const response = await AuthService.getCategoryList();
-        console.log('📋 分类API响应:', response);
 
         // 处理双层data结构
         const categoriesData = response.data?.data || response.data;
-        console.log('📋 处理后的分类数据:', categoriesData);
 
         if (categoriesData && Array.isArray(categoriesData)) {
           // 为每个分类添加样式信息
           const categoriesWithStyles = categoriesData.map((category: any) => {
-            const style = getCategoryStyle(category.name);
+            const style = getCategoryStyle(category.name, category.color);
             return {
               ...category,
               styleColor: style.border + ' ' + style.bg,
@@ -40,10 +38,10 @@ export const Create = (): JSX.Element => {
           });
 
           setCategories(categoriesWithStyles);
-          console.log('✅ 分类列表加载成功:', categoriesWithStyles);
         }
       } catch (error) {
         console.error('❌ 获取分类列表失败:', error);
+        console.error('❌ 错误详情:', error.message);
         // 使用fallback数据（中文分类）
         const fallbackCategories = [
           { id: 1, name: "科技", color: "red", articleCount: 0 },
@@ -51,7 +49,7 @@ export const Create = (): JSX.Element => {
           { id: 3, name: "体育", color: "blue", articleCount: 0 },
           { id: 4, name: "生活", color: "pink", articleCount: 0 }
         ].map(category => {
-          const style = getCategoryStyle(category.name);
+          const style = getCategoryStyle(category.name, category.color);
           return {
             ...category,
             styleColor: style.border + ' ' + style.bg,
@@ -71,7 +69,6 @@ export const Create = (): JSX.Element => {
   // 处理分类选择
   const handleCategorySelect = (categoryId: number) => {
     setSelectedCategoryId(categoryId);
-    console.log('🏷️ 选择分类:', categoryId);
   };
 
   return (
@@ -202,25 +199,18 @@ export const Create = (): JSX.Element => {
                       <Badge
                         key={category.id}
                         variant="outline"
+                        style={selectedCategoryId === category.id ? getCategoryInlineStyle(category.color) : undefined}
                         className={`${
-                          selectedCategoryId === category.id
-                            ? category.styleColor
-                            : 'border-medium-grey bg-white hover:border-dark-grey'
-                        } inline-flex items-center gap-[5px] px-2.5 py-2 relative flex-[0_0_auto] rounded-[50px] border border-solid cursor-pointer transition-all`}
+                          selectedCategoryId !== category.id
+                            ? 'border-medium-grey bg-white hover:border-dark-grey'
+                            : ''
+                        } cursor-pointer transition-all`}
                         onClick={() => handleCategorySelect(category.id)}
                         role="button"
                         tabIndex={0}
                         aria-pressed={selectedCategoryId === category.id}
                       >
-                        <div
-                          className={`font-semibold relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] ${
-                            selectedCategoryId === category.id
-                              ? category.textColor
-                              : 'text-medium-dark-grey'
-                          } text-sm tracking-[0] leading-[14px] whitespace-nowrap`}
-                        >
-                          {category.name}
-                        </div>
+                        {category.name}
                       </Badge>
                     ))
                   )}
@@ -240,11 +230,9 @@ export const Create = (): JSX.Element => {
                   <div className="flex-col h-[188px] items-start justify-between p-2.5 self-stretch w-full [background:url(https://c.animaapp.com/mftvplqrDArMzQ/img/cover.png)_50%_50%_/_cover] relative flex">
                     <Badge
                       variant="outline"
-                      className="border-[#ea7db7] bg-[linear-gradient(0deg,rgba(234,125,183,0.2)_0%,rgba(234,125,183,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] inline-flex items-center gap-[5px] px-2.5 py-2 relative flex-[0_0_auto] rounded-[50px] border border-solid"
+                      style={getCategoryInlineStyle('#ea7db7')}
                     >
-                      <div className="font-bold relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] text-pink text-sm tracking-[0] leading-[14px] whitespace-nowrap">
-                        Life
-                      </div>
+                      Life
                     </Badge>
 
                     <div className="flex flex-col items-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">

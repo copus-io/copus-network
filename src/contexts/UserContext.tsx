@@ -48,6 +48,7 @@ interface UserContextValue {
   updateArticleLikeState: (articleId: string, isLiked: boolean, likeCount: number) => void;
   getArticleLikeState: (articleId: string, defaultIsLiked: boolean, defaultLikeCount: number) => { isLiked: boolean; likeCount: number };
   toggleLike: (articleId: string, currentIsLiked: boolean, currentLikeCount: number, onOptimisticUpdate?: (isLiked: boolean, likeCount: number) => void) => Promise<{ success: boolean; isLiked: boolean; likeCount: number }>;
+  syncArticleStates: (articles: Array<{ id: string; uuid?: string; isLiked: boolean; likeCount: number; }>) => void;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -61,7 +62,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [socialLinksLoading, setSocialLinksLoading] = useState(false);
 
   // 使用文章状态管理hook
-  const { articleLikeStates, updateArticleLikeState, getArticleLikeState, toggleLike } = useArticleState();
+  const { articleLikeStates, updateArticleLikeState, getArticleLikeState, toggleLike, syncArticleStates } = useArticleState();
 
   // 从localStorage恢复用户状态
   useEffect(() => {
@@ -121,12 +122,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 更新用户namespace
   const updateUserNamespace = async (namespace: string): Promise<boolean> => {
     if (!user) {
-      console.error('❌ 用户未登录，无法更新namespace');
       return false;
     }
 
     try {
-      console.log('✏️ 开始更新用户namespace:', namespace);
 
       const success = await AuthService.updateUserNamespace(namespace);
 
@@ -136,7 +135,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(updatedUser);
         localStorage.setItem('copus_user', JSON.stringify(updatedUser));
 
-        console.log('✅ namespace更新成功，本地状态已同步');
         return true;
       } else {
         console.error('❌ namespace更新失败');
@@ -151,7 +149,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Token自动刷新功能
   const tryRefreshToken = async (): Promise<boolean> => {
     try {
-      console.log('🔄 尝试刷新token...');
       // 这里可以调用刷新token的API
       // const refreshResponse = await AuthService.refreshToken();
       // 暂时返回false，表示需要重新登录
@@ -167,13 +164,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       // 如果传入了token，优先使用；否则从localStorage获取
       const tokenToUse = authToken || localStorage.getItem('copus_token');
-      console.log('🔍 fetchUserInfo使用的token:', tokenToUse ? '有token' : '无token');
 
       const userInfo = await AuthService.getUserInfo(tokenToUse || undefined);
-      console.log('🔍 获取到的用户详细信息:', userInfo);
-      console.log('🔍 用户名:', userInfo.username);
-      console.log('🔍 邮箱:', userInfo.email);
-      console.log('🔍 头像URL:', userInfo.faceUrl);
 
       setUser(userInfo);
       localStorage.setItem('copus_user', JSON.stringify(userInfo));
@@ -261,7 +253,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!user) return false;
 
     try {
-      console.log('✏️ 更新社交链接:', { id, linkData });
 
       // 找到要更新的链接
       const existingLink = socialLinks.find(link => link.id === id);
@@ -276,7 +267,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
 
       const response = await AuthService.editSocialLink(requestData);
-      console.log('✅ 社交链接更新响应:', response);
 
       // 更新本地状态
       setSocialLinks(prev =>
@@ -296,10 +286,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!user) return false;
 
     try {
-      console.log('🗑️ 删除社交链接:', { id });
 
       await AuthService.deleteSocialLink(id);
-      console.log('✅ 社交链接删除成功');
 
       // 更新本地状态
       setSocialLinks(prev => prev.filter(link => link.id !== id));
@@ -345,7 +333,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         articleLikeStates,
         updateArticleLikeState,
         getArticleLikeState,
-        toggleLike
+        toggleLike,
+        syncArticleStates
       }}
     >
       {children}

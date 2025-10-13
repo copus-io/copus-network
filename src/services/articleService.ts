@@ -21,42 +21,38 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
   // 验证和处理图片URL
   const processImageUrl = (coverUrl: string | null | undefined): string => {
     if (!coverUrl || coverUrl.trim() === '') {
-      console.warn('Empty coverUrl from backend for article:', backendArticle.uuid, backendArticle.title);
       return '';
     }
 
     // 检查是否是有效的URL
     try {
       new URL(coverUrl);
-      console.log('Valid coverUrl:', coverUrl);
       return coverUrl;
     } catch (error) {
-      console.warn('Invalid coverUrl from backend:', coverUrl, 'for article:', backendArticle.uuid);
       return '';
     }
   };
+
 
   const transformedArticle = {
     id: backendArticle.uuid,
     title: backendArticle.title,
     description: backendArticle.content,
     category: backendArticle.categoryInfo.name,
+    categoryColor: backendArticle.categoryInfo.color, // 保存后端返回的分类颜色
     coverImage: processImageUrl(backendArticle.coverUrl),
     userName: backendArticle.authorInfo.username,
-    userAvatar: backendArticle.authorInfo.faceUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/-profile-image-4.png', // 默认头像
+    userId: backendArticle.authorInfo.id,
+    namespace: backendArticle.authorInfo.namespace, // 添加namespace字段
+    userAvatar: backendArticle.authorInfo.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendArticle.authorInfo.username}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`, // 动态生成默认头像
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
+    isLiked: backendArticle.isLiked, // 保留服务器返回的点赞状态
     website: getWebsiteFromUrl(backendArticle.targetUrl),
     url: backendArticle.targetUrl,
   };
 
-  console.log('Transformed article:', {
-    id: transformedArticle.id,
-    title: transformedArticle.title,
-    originalCoverUrl: backendArticle.coverUrl,
-    transformedCoverImage: transformedArticle.coverImage
-  });
 
   return transformedArticle;
 };
@@ -91,19 +87,16 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
 
 // 获取文章详情
 export const getArticleDetail = async (uuid: string): Promise<ArticleDetailResponse> => {
-  console.log('🔍 Getting article detail for uuid:', uuid);
 
   const endpoint = `/client/reader/article/info?uuid=${uuid}`;
 
   try {
     const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, { requiresAuth: true });
-    console.log('✅ Article detail API response:', response);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
     }
 
-    console.log('📋 Extracted article data:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ Failed to fetch article detail:', error);
@@ -113,7 +106,6 @@ export const getArticleDetail = async (uuid: string): Promise<ArticleDetailRespo
 
 // 获取我创作的作品
 export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}): Promise<MyCreatedArticleResponse> => {
-  console.log('🔍 Getting my created articles with params:', params);
 
   const queryParams = new URLSearchParams();
   if (params.pageIndex !== undefined) queryParams.append('pageIndex', params.pageIndex.toString());
@@ -123,19 +115,11 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
 
   try {
     const response = await apiRequest<{status: number, msg: string, data: MyCreatedArticleResponse}>(endpoint, { requiresAuth: true });
-    console.log('✅ My created articles API response:', response);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
     }
 
-    console.log('📋 提取的真实数据:', response.data);
-    console.log('📊 数据详情:', {
-      hasData: !!response.data.data,
-      dataLength: response.data.data?.length,
-      pageCount: response.data.pageCount,
-      totalCount: response.data.totalCount
-    });
 
     return response.data;
   } catch (error) {
@@ -144,15 +128,15 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
   }
 };
 
-// 发布文章
+// 发布文章（支持创建和编辑）
 export const publishArticle = async (articleData: {
+  uuid?: string; // 编辑模式时传递
   title: string;
   content: string;
   coverUrl: string;
   targetUrl: string;
   categoryId: number;
 }): Promise<{ uuid: string }> => {
-  console.log('📝 Publishing article with data:', articleData);
 
   const endpoint = '/client/author/article/edit';
 
@@ -163,13 +147,11 @@ export const publishArticle = async (articleData: {
       requiresAuth: true,
     });
 
-    console.log('✅ Publish article API response:', response);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'Failed to publish article');
     }
 
-    console.log('🎉 Article published successfully with UUID:', response.data.uuid);
     return response.data;
   } catch (error) {
     console.error('❌ Failed to publish article:', error);

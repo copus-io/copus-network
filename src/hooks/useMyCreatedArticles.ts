@@ -21,11 +21,8 @@ export const useMyCreatedArticles = (params: MyCreatedArticleParams = {}) => {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
       try {
-        console.log('🚀 Fetching my created articles with params:', params);
         const articles = await getMyCreatedArticles(params);
 
-        console.log('📋 API返回的我的创作数据:', articles);
-        console.log('📝 文章数量:', articles.data.length);
 
         setState({
           articles,
@@ -33,7 +30,6 @@ export const useMyCreatedArticles = (params: MyCreatedArticleParams = {}) => {
           error: null,
         });
 
-        console.log('✨ My created articles loaded successfully!');
       } catch (error) {
         console.error('💥 Error fetching my created articles:', error);
         setState({

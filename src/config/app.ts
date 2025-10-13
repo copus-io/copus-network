@@ -40,13 +40,11 @@ export const APP_CONFIG = {
 if (import.meta.env.DEV) {
   // 开发环境配置
   APP_CONFIG.API.DEV_MODE.AUTO_FALLBACK_TO_DEMO = true;
-  console.log('🔧 开发模式已启用，API失败时将自动降级到Demo模式');
 }
 
 if (import.meta.env.PROD) {
   // 生产环境配置
   APP_CONFIG.API.DEV_MODE.AUTO_FALLBACK_TO_DEMO = false;
-  console.log('🏭 生产模式，严格的API验证');
 }
 
 // 导出便捷的检查函数

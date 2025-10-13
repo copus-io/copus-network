@@ -9,21 +9,20 @@ import { HeaderSection } from "../../components/shared/HeaderSection/HeaderSecti
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
-import { useArticleDetail } from "../../hooks/useArticleDetail";
+import { useArticleDetail } from "../../hooks/queries";
 import { getCategoryStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
+import { TreasureButton } from "../../components/ui/TreasureButton";
 
 
 // 图片URL验证和fallback函数
 const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
   if (!imageUrl || imageUrl.trim() === '') {
-    console.warn('Empty or undefined coverImage for detail page');
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
   }
 
   // 检查是否是blob URL（来自文件上传）- 这些URL在新会话中不会工作
   if (imageUrl.startsWith('blob:')) {
-    console.warn('Blob URL detected in detail page (will fail in new session):', imageUrl);
     // 返回占位符，因为blob URL在刷新页面后无效
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5VcGxvYWRlZCBJbWFnZTwvdGV4dD48L3N2Zz4=';
   }
@@ -34,11 +33,9 @@ const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
     if (url.protocol === 'http:' || url.protocol === 'https:') {
       return imageUrl;
     } else {
-      console.warn('Non-HTTP URL in detail page:', imageUrl);
       return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbnZhbGlkIFVSTDwvdGV4dD48L3N2Zz4=';
     }
   } catch (error) {
-    console.warn('Invalid coverImage URL in detail page:', imageUrl);
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbnZhbGlkIFVSTDwvdGV4dD48L3N2Zz4=';
   }
 };
@@ -62,9 +59,10 @@ export const Content = (): JSX.Element => {
     coverImage: article.coverUrl,
     url: article.targetUrl,
     category: article.categoryInfo?.name || 'General',
-    categoryColor: `${getCategoryStyle(article.categoryInfo?.name || 'General').border} ${getCategoryStyle(article.categoryInfo?.name || 'General').bg}`,
-    categoryTextColor: getCategoryStyle(article.categoryInfo?.name || 'General').text,
+    categoryColor: `${getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).border} ${getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).bg}`,
+    categoryTextColor: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).text,
     userName: article.authorInfo?.username || 'Anonymous',
+    userId: article.authorInfo?.id,
     userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`,
     date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
@@ -77,9 +75,6 @@ export const Content = (): JSX.Element => {
   // 当获取到文章数据时，设置点赞状态
   useEffect(() => {
     if (content && article) {
-      console.log('🎯 转换后的content数据:', content);
-      console.log('🖼️ 转换后的封面图:', content.coverImage);
-      console.log('📝 转换后的描述:', content.description);
 
       // 获取全局状态或使用API数据
       const globalState = getArticleLikeState(article.uuid, content.isLiked, content.likes);
@@ -108,8 +103,15 @@ export const Content = (): JSX.Element => {
   }
 
   const handleLike = async () => {
-    if (!content || !user || !article) {
-      showToast('请先登录', 'error');
+    if (!content || !article) return;
+
+    if (!user) {
+      showToast('Please log in to treasure this content', 'error', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/login')
+        }
+      });
       return;
     }
 
@@ -125,7 +127,6 @@ export const Content = (): JSX.Element => {
       updateArticleLikeState(article.uuid, newIsLiked, newLikesCount);
 
       // 调用API
-      console.log('💖 正在点赞文章，UUID:', article.uuid);
       await AuthService.likeArticle(article.uuid);
       showToast(newIsLiked ? '已点赞 💖' : '已取消点赞', 'success');
 
@@ -154,6 +155,28 @@ export const Content = (): JSX.Element => {
     });
   };
 
+  const handleUserClick = () => {
+    if (!content?.userId) return;
+
+    if (!user) {
+      showToast('Please log in to view user profiles', 'error', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/login')
+        }
+      });
+      return;
+    }
+
+    // 如果是当前用户自己的文章，跳转到我的宝藏页面
+    if (user.id === content.userId) {
+      navigate('/my-treasury');
+    } else {
+      // 如果是其他用户的文章，暂时也跳转到我的宝藏页面
+      navigate('/my-treasury');
+    }
+  };
+
   return (
     <div
       className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
@@ -162,7 +185,7 @@ export const Content = (): JSX.Element => {
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection isLoggedIn={!!user} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[120px] pb-10 px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
+        <main className="flex flex-col items-start gap-[30px] pt-[120px] pb-[100px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
           <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
@@ -200,14 +223,22 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <cite className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic">
+                <cite
+                  className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                  onClick={handleUserClick}
+                  title={`查看 ${content.userName} 的个人主页`}
+                >
                   <img
-                    className="w-[25px] h-[25px] object-cover relative aspect-[1]"
+                    className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
                     alt="Profile image"
-                    src={content.userAvatar}
+                    src={
+                      content.userAvatar ||
+                      (user && user.id === content.userId ? user.faceUrl : null) ||
+                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${content.userName}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
+                    }
                   />
 
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
                     {content.userName}
                   </span>
                 </cite>
@@ -243,28 +274,13 @@ export const Content = (): JSX.Element => {
 
           <div className="flex justify-between self-stretch w-full items-center relative flex-[0_0_auto]">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
-              <button
+              {/* 使用统一的宝石按钮组件 - 大尺寸适合详情页 */}
+              <TreasureButton
+                isLiked={isLiked}
+                likesCount={likesCount}
                 onClick={handleLike}
-                className={`all-[unset] box-border inline-flex items-center justify-center gap-[10px] px-[15px] py-2 w-[86px] h-[38px] rounded-[50px] border border-solid relative transition-all duration-200 ${
-                  isLiked
-                    ? 'bg-[#E19F1D] border-[#E19F1D]'
-                    : 'bg-[#e19e1d1a] border-[#E19F1D]'
-                }`}
-              >
-                <img
-                  className={`relative w-3.5 h-[22px] aspect-[0.65] transition-all duration-200 ${
-                    isLiked ? 'filter brightness-0 invert' : ''
-                  }`}
-                  alt="Treasure icon"
-                  src="https://c.animaapp.com/5EW1c9Rn/img/treasure-icon.svg"
-                />
-
-                <span className={`relative w-fit [font-family:'Lato',Helvetica] font-normal text-lg text-center tracking-[0] leading-5 whitespace-nowrap transition-colors duration-200 ${
-                  isLiked ? 'text-white' : 'text-[#454545]'
-                }`}>
-                  {likesCount}
-                </span>
-              </button>
+                size="large"
+              />
 
               <button
                 onClick={handleShare}

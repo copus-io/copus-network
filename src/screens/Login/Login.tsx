@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { GemSpinner, BookFlip } from "../../components/ui/copus-loading";
 import CryptoJS from 'crypto-js';
+import { AuthService } from "../../services/authService";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Checkbox } from "../../components/ui/checkbox";
@@ -39,6 +40,7 @@ export const Login = (): JSX.Element => {
   const { login, fetchUserInfo } = useUser();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
   // 登录表单状态
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -68,6 +70,257 @@ export const Login = (): JSX.Element => {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
 
+  // 处理社交登录OAuth回调
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const code = searchParams.get('code');
+      const state = searchParams.get('state');
+      const provider = searchParams.get('provider'); // 识别登录提供商
+
+      if (code && state) {
+        setIsLoginLoading(true);
+
+        try {
+          let response;
+
+          // 根据提供商类型调用不同的登录方法
+          if (provider === 'facebook') {
+            const token = localStorage.getItem('copus_token');
+            const hasToken = !!token;
+
+            response = await AuthService.facebookLogin(code, state, hasToken);
+
+            if (response.isBinding) {
+              // 账号绑定模式
+              showToast('Facebook 账号绑定成功！🎉', 'success');
+
+              // Facebook绑定后可能会返回新的token，重新获取用户信息
+              await fetchUserInfo(response.token || token);
+
+              // 跳转到设置页面
+              setTimeout(() => {
+                navigate('/setting');
+              }, 1000);
+            } else {
+              // 第三方登录模式
+              showToast('Facebook 登录成功！欢迎回来 🎉', 'success');
+
+              // 获取用户信息
+              await fetchUserInfo(response.token);
+
+              // 跳转到首页
+              setTimeout(() => {
+                navigate('/');
+              }, 1000);
+            }
+          } else if (provider === 'google') {
+            const token = localStorage.getItem('copus_token');
+            const hasToken = !!token;
+
+            response = await AuthService.googleLogin(code, state, hasToken);
+
+            if (response.isBinding) {
+              // 账号绑定模式
+              showToast('Google 账号绑定成功！🎉', 'success');
+
+              // Google绑定后可能会返回新的token，重新获取用户信息
+              await fetchUserInfo(response.token || token);
+
+              // 跳转到设置页面
+              setTimeout(() => {
+                navigate('/setting');
+              }, 1000);
+            } else {
+              // 第三方登录模式
+              showToast('Google 登录成功！欢迎回来 🎉', 'success');
+
+              // 获取用户信息
+              await fetchUserInfo(response.token);
+
+              // 跳转到首页
+              setTimeout(() => {
+                navigate('/');
+              }, 1000);
+            }
+          } else {
+            // 默认处理为X登录（兼容之前的实现）
+            response = await AuthService.xLogin(code, state);
+            showToast('X 登录成功！欢迎回来 🎉', 'success');
+
+            // 获取用户信息
+            await fetchUserInfo(response.data?.token);
+
+            // 跳转到首页
+            setTimeout(() => {
+              navigate('/');
+            }, 1000);
+          }
+        } catch (error) {
+          console.error(`❌ ${provider || 'X'} 登录失败:`, error);
+          showToast(`${provider || 'X'} 登录失败，请重试`, 'error');
+        } finally {
+          setIsLoginLoading(false);
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, [searchParams, fetchUserInfo, navigate, showToast]);
+
+  // 处理社交登录
+  const handleSocialLogin = async (provider: string) => {
+
+    if (provider === 'X') {
+      try {
+        // 检查用户是否已登录
+        const token = localStorage.getItem('copus_token');
+
+        if (token) {
+          // 已登录用户，使用API获取OAuth URL（账号绑定）
+          const oauthUrl = await AuthService.getXOAuthUrl();
+          window.location.href = oauthUrl;
+        } else {
+          // 未登录用户，使用手动构建的OAuth URL（第三方登录）
+          const CLIENT_ID = 'YOUR_X_CLIENT_ID'; // 需要替换为实际的 X 客户端 ID
+          const REDIRECT_URI = encodeURIComponent(window.location.origin + '/login');
+          const STATE = Math.random().toString(36).substring(7); // 生成随机 state 防止 CSRF
+
+          // 构建 X OAuth URL
+          const xOAuthUrl = `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=tweet.read%20users.read%20follows.read&state=${STATE}&code_challenge=challenge&code_challenge_method=plain`;
+
+          // 跳转到 X 授权页面
+          window.location.href = xOAuthUrl;
+        }
+      } catch (error) {
+        console.error('❌ X OAuth处理失败:', error);
+        showToast('X登录失败，请重试', 'error');
+      }
+    } else if (provider === 'Facebook') {
+      try {
+        // 检查用户是否已登录
+        const token = localStorage.getItem('copus_token');
+
+        if (token) {
+          // 已登录用户，使用API获取OAuth URL（账号绑定）
+          const oauthUrl = await AuthService.getFacebookOAuthUrl();
+          // 添加provider参数以便回调时识别
+          const urlWithProvider = oauthUrl.includes('?')
+            ? `${oauthUrl}&provider=facebook`
+            : `${oauthUrl}?provider=facebook`;
+          window.location.href = urlWithProvider;
+        } else {
+          // 未登录用户，使用手动构建的OAuth URL（第三方登录）
+          const CLIENT_ID = 'YOUR_FACEBOOK_CLIENT_ID'; // 需要替换为实际的 Facebook 客户端 ID
+          const REDIRECT_URI = encodeURIComponent(window.location.origin + '/login?provider=facebook');
+          const STATE = Math.random().toString(36).substring(7); // 生成随机 state 防止 CSRF
+
+          // 构建 Facebook OAuth URL
+          const facebookOAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}&scope=email,public_profile&response_type=code`;
+
+          // 跳转到 Facebook 授权页面
+          window.location.href = facebookOAuthUrl;
+        }
+      } catch (error) {
+        console.error('❌ Facebook OAuth处理失败:', error);
+        showToast('Facebook登录失败，请重试', 'error');
+      }
+    } else if (provider === 'Google') {
+      try {
+        // 检查用户是否已登录
+        const token = localStorage.getItem('copus_token');
+
+        if (token) {
+          // 已登录用户，使用API获取OAuth URL（账号绑定）
+          const oauthUrl = await AuthService.getGoogleOAuthUrl();
+          // 添加provider参数以便回调时识别
+          const urlWithProvider = oauthUrl.includes('?')
+            ? `${oauthUrl}&provider=google`
+            : `${oauthUrl}?provider=google`;
+          window.location.href = urlWithProvider;
+        } else {
+          // 未登录用户，使用手动构建的OAuth URL（第三方登录）
+          const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // 需要替换为实际的 Google 客户端 ID
+          const REDIRECT_URI = encodeURIComponent(window.location.origin + '/login?provider=google');
+          const STATE = Math.random().toString(36).substring(7); // 生成随机 state 防止 CSRF
+
+          // 构建 Google OAuth URL
+          const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&state=${STATE}&scope=email%20profile&response_type=code&access_type=offline`;
+
+          // 跳转到 Google 授权页面
+          window.location.href = googleOAuthUrl;
+        }
+      } catch (error) {
+        console.error('❌ Google OAuth处理失败:', error);
+        showToast('Google登录失败，请重试', 'error');
+      }
+    } else if (provider === 'Metamask') {
+      try {
+        // 检查Metamask是否安装
+        if (!window.ethereum) {
+          showToast('请先安装Metamask钱包', 'error');
+          return;
+        }
+
+        setIsLoginLoading(true);
+
+        // 1. 连接Metamask获取账户
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!accounts || accounts.length === 0) {
+          throw new Error('未能获取Metamask账户');
+        }
+
+        const address = accounts[0];
+
+        // 2. 获取签名数据
+        const signatureData = await AuthService.getMetamaskSignatureData(address);
+
+        // 3. 用户签名（这里需要根据API返回的实际数据格式调整）
+        const messageToSign = `Welcome to Copus! Please sign this message to authenticate your wallet: ${signatureData}`;
+
+        const signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [messageToSign, address],
+        });
+
+
+        // 4. 提交登录
+        const token = localStorage.getItem('copus_token');
+        const hasToken = !!token;
+
+        const response = await AuthService.metamaskLogin(address, signature, hasToken);
+
+        if (response.isBinding) {
+          // 账号绑定模式
+          showToast('Metamask 账号绑定成功！🎉', 'success');
+
+          // 绑定后重新获取用户信息
+          await fetchUserInfo(response.token || token);
+
+          // 跳转到设置页面
+          setTimeout(() => {
+            navigate('/setting');
+          }, 1000);
+        } else {
+          // 第三方登录模式
+          showToast('Metamask 登录成功！欢迎回来 🎉', 'success');
+
+          // 获取用户信息
+          await fetchUserInfo(response.token);
+
+          // 跳转到首页
+          setTimeout(() => {
+            navigate('/');
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('❌ Metamask登录失败:', error);
+        showToast(`Metamask登录失败: ${error instanceof Error ? error.message : '请重试'}`, 'error');
+      } finally {
+        setIsLoginLoading(false);
+      }
+    }
+  };
+
   // 检查邮箱是否已存在
   const checkEmailExist = async (emailToCheck: string) => {
     if (!emailToCheck || !emailToCheck.includes('@')) {
@@ -87,7 +340,6 @@ export const Login = (): JSX.Element => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('邮箱检查API响应:', data);
         // API返回格式: {"status":1,"msg":"success","data":false}
         // data为true表示邮箱已存在，false表示可用
         if (data.status === 1 && data.data === false) {
@@ -140,7 +392,7 @@ export const Login = (): JSX.Element => {
       // MD5加密密码
       const encryptedPassword = CryptoJS.MD5(loginPassword).toString();
 
-      console.log('准备发送登录请求:', {
+      console.log('登录信息:', {
         username: loginEmail,
         password: '***MD5加密***'
       });
@@ -156,7 +408,7 @@ export const Login = (): JSX.Element => {
         }),
       });
 
-      console.log('收到登录响应:', {
+      console.log('响应信息:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
@@ -164,11 +416,7 @@ export const Login = (): JSX.Element => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 登录成功，完整响应数据:', data);
-        console.log('🔍 data.token:', data.token);
-        console.log('🔍 data.access_token:', data.access_token);
-        console.log('🔍 data.data:', data.data);
-        console.log('🔍 所有可能的token字段:', {
+        console.log('登录成功数据:', {
           token: data.token,
           access_token: data.access_token,
           accessToken: data.accessToken,
@@ -179,7 +427,6 @@ export const Login = (): JSX.Element => {
 
         // 尝试从不同可能的字段获取token
         const possibleToken = data.data?.token || data.token || data.access_token || data.accessToken || data.authToken || data.data?.access_token;
-        console.log('🎯 最终使用的token:', possibleToken);
 
         // 保存token到全局状态
         if (data.user) {
@@ -202,7 +449,6 @@ export const Login = (): JSX.Element => {
         try {
           await fetchUserInfo(possibleToken);
         } catch (userInfoError) {
-          console.warn('获取用户详情失败，但登录成功:', userInfoError);
         }
 
         // 跳转到首页
@@ -249,7 +495,7 @@ export const Login = (): JSX.Element => {
       // MD5加密密码
       const encryptedPassword = CryptoJS.MD5(password).toString();
 
-      console.log('准备发送注册请求:', {
+      console.log('注册信息:', {
         username: username,
         email: email,
         password: '***MD5加密***',
@@ -269,19 +515,17 @@ export const Login = (): JSX.Element => {
         }),
       });
 
-      console.log('收到注册响应:', {
+      console.log('registration response info:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
       });
 
       const data = await response.json();
-      console.log('注册API响应数据:', data);
 
       // 判断注册是否真正成功
       // response.ok表示HTTP状态码2xx，data.status=1表示业务逻辑成功
       if (response.ok && data.status === 1) {
-        console.log('注册真正成功:', data);
         showToast('注册成功！请登录', 'success');
         // 成功时清空所有注册表单
         setUsername('');
@@ -340,13 +584,19 @@ export const Login = (): JSX.Element => {
         // 不再显示弹窗，用户能从按钮状态看出已发送
       } else {
         // 静默处理错误，不显示弹窗
-        console.error('发送验证码失败');
       }
     } catch (error) {
       console.error('发送验证码失败:', error);
       // 静默处理网络错误
     } finally {
       setIsCodeSending(false);
+    }
+  };
+
+  // 处理Enter键登录
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleLogin();
     }
   };
 
@@ -360,7 +610,6 @@ export const Login = (): JSX.Element => {
     setIsForgotPasswordLoading(true);
 
     try {
-      console.log('准备发送忘记密码验证码:', { email: forgotPasswordEmail });
 
       // 发送忘记密码验证码 (codeType=1)
       const response = await fetch(`https://api-test.copus.network/client/common/getVerificationCode?codeType=1&email=${encodeURIComponent(forgotPasswordEmail)}`, {
@@ -370,14 +619,13 @@ export const Login = (): JSX.Element => {
         },
       });
 
-      console.log('忘记密码验证码响应:', {
+      console.log('forgot password response info:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
       });
 
       const data = await response.json();
-      console.log('忘记密码验证码API响应数据:', data);
 
       if (response.ok && data.status === 1) {
         showToast('重置密码验证码已发送，请查收邮箱', 'success');
@@ -454,6 +702,7 @@ export const Login = (): JSX.Element => {
                         placeholder="Email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         className="flex items-center gap-[213px] p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
                       />
 
@@ -462,6 +711,7 @@ export const Login = (): JSX.Element => {
                         placeholder="Password"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         className="flex items-center gap-64 p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
                       />
 
@@ -720,6 +970,8 @@ export const Login = (): JSX.Element => {
                       key={`social-${index}`}
                       variant="ghost"
                       className="flex flex-col items-center justify-center w-[70px] h-[60px] gap-[8px] p-2 hover:bg-transparent transition-all duration-200 hover:scale-105"
+                      onClick={() => handleSocialLogin(provider.name)}
+                      disabled={isLoginLoading}
                     >
                       <div className="flex items-center justify-center w-[30px] h-[30px] flex-shrink-0">
                         <img

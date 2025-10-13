@@ -1,14 +1,10 @@
-import { ShareIcon, Edit2, Trash2 } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
-import { useMyCreatedArticles } from "../../../../hooks/useMyCreatedArticles";
-import { getCategoryStyle } from "../../../../utils/categoryStyles";
+import { useMyCreatedArticles } from "../../../../hooks/queries";
 import { AuthService } from "../../../../services/authService";
 import { Avatar, AvatarImage } from "../../../../components/ui/avatar";
-import { Badge } from "../../../../components/ui/badge";
 import { Button } from "../../../../components/ui/button";
-import { Card, CardContent } from "../../../../components/ui/card";
 import {
   Tabs,
   TabsContent,
@@ -24,6 +20,8 @@ import {
   DialogTitle,
 } from "../../../../components/ui/dialog";
 import { useToast } from "../../../../components/ui/toast";
+import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
+import { ImagePreviewModal } from "../../../../components/ui/image-preview-modal";
 
 
 const collectionItems = [
@@ -102,12 +100,18 @@ const myShareItems = [
 ];
 
 export const MainContentSection = (): JSX.Element => {
-  const { user, socialLinks: socialLinksData } = useUser();
+  const navigate = useNavigate();
+  const { namespace } = useParams<{ namespace?: string }>();
+  const { user, socialLinks: socialLinksData, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // 图片预览相关状态
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
+  const [previewImageAlt, setPreviewImageAlt] = useState("");
 
   // 获取我创作的文章数据
   const { articles: myCreatedData, loading: myCreatedLoading, error: myCreatedError, refetch: refetchMyArticles } = useMyCreatedArticles({
@@ -124,17 +128,26 @@ export const MainContentSection = (): JSX.Element => {
     articleCount: 0,
     myArticleLikedCount: 0
   });
+  const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
+
+  // 判断是否在查看其他用户的宝藏
+  const isViewingOtherUser = !!namespace;
+  const targetNamespace = namespace || user?.namespace;
 
   // 获取用户收藏的文章
   useEffect(() => {
     const fetchLikedArticles = async () => {
-      console.log('🔍 宝藏页面初始化检查:');
-      console.log('👤 用户状态:', user ? '已登录' : '未登录');
-      console.log('👤 用户信息:', user);
 
-      if (!user) {
-        console.log('⚠️ 用户未登录，清空收藏列表');
+      // 如果查看自己的宝藏但未登录
+      if (!isViewingOtherUser && !user) {
         setLikedArticles([]);
+        setTreasuryLoading(false);
+        return;
+      }
+
+      // 如果查看其他用户但没有namespace
+      if (isViewingOtherUser && !targetNamespace) {
+        setTreasuryError('用户namespace无效');
         setTreasuryLoading(false);
         return;
       }
@@ -142,49 +155,51 @@ export const MainContentSection = (): JSX.Element => {
       try {
         setTreasuryLoading(true);
         setTreasuryError(null);
-        console.log('🏆 获取用户收藏的文章...');
 
-        // 同时获取宝藏信息和收藏文章列表
-        const [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
-          AuthService.getUserTreasuryInfo(),
-          AuthService.getUserLikedArticles(1, 20) // 获取前20篇文章
-        ]);
+        // 根据是否查看其他用户，使用不同的API
+        let treasuryInfoResponse, likedArticlesResponse;
 
-        console.log('🏆 用户宝藏信息响应:', treasuryInfoResponse);
-        console.log('📚 用户收藏文章响应:', likedArticlesResponse);
+        if (isViewingOtherUser && targetNamespace) {
+          // 查看其他用户的宝藏
+          [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
+            AuthService.getOtherUserTreasuryInfoByNamespace(targetNamespace),
+            AuthService.getOtherUserLikedArticlesByNamespace(targetNamespace, 1, 20)
+          ]);
+        } else {
+          // 查看自己的宝藏
+          [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
+            AuthService.getUserTreasuryInfo(),
+            AuthService.getUserLikedArticles(1, 20)
+          ]);
+        }
+
 
         // 处理统计信息
         const treasuryInfo = treasuryInfoResponse.data || treasuryInfoResponse;
-        if (treasuryInfo.statistics) {
-          setTreasuryStats(treasuryInfo.statistics);
-          console.log(`🎉 用户共收藏了 ${treasuryInfo.statistics.likedArticleCount} 篇文章`);
+        if (treasuryInfo) {
+          setTreasuryUserInfo(treasuryInfo);
+          if (treasuryInfo.statistics) {
+            setTreasuryStats(treasuryInfo.statistics);
+          }
         }
 
         // 处理文章列表，转换为组件需要的格式
         const articlesData = likedArticlesResponse.data || likedArticlesResponse;
-        console.log('📝 原始文章数据结构:', articlesData);
-        console.log('📝 文章数据类型:', typeof articlesData);
-        console.log('📝 是否有data字段:', 'data' in articlesData);
 
         // 尝试多种可能的数据结构
         let articlesArray = [];
         if (articlesData && Array.isArray(articlesData.data)) {
           // 标准结构：{ data: [...] }
           articlesArray = articlesData.data;
-          console.log('✅ 使用标准结构 articlesData.data');
         } else if (Array.isArray(articlesData)) {
           // 直接是数组：[...]
           articlesArray = articlesData;
-          console.log('✅ 使用数组结构 articlesData');
         } else {
-          console.warn('⚠️ 未识别的数据结构:', articlesData);
           articlesArray = [];
         }
 
-        console.log('📊 找到的文章数量:', articlesArray.length);
 
         const articles = articlesArray.map((article: any, index: number) => {
-          console.log(`📝 处理第${index + 1}篇文章:`, article.title);
 
           try {
             return {
@@ -196,6 +211,8 @@ export const MainContentSection = (): JSX.Element => {
               category: article.categoryInfo?.name || 'General',
               userName: article.authorInfo?.username || 'Anonymous',
               userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+              userId: article.authorInfo?.id,
+              userNamespace: article.authorInfo?.namespace,
               date: new Date(article.createAt * 1000).toLocaleDateString(),
               treasureCount: article.likeCount || 0,
               visitCount: `${article.viewCount || 0} Visits`,
@@ -210,8 +227,6 @@ export const MainContentSection = (): JSX.Element => {
         }).filter(Boolean); // 过滤掉转换失败的文章
 
         setLikedArticles(articles);
-        console.log('🎯 转换后的收藏文章:', articles);
-        console.log('🎯 最终文章数量:', articles.length);
 
       } catch (error) {
         console.error('❌ 获取收藏文章失败:', error);
@@ -224,300 +239,203 @@ export const MainContentSection = (): JSX.Element => {
     };
 
     fetchLikedArticles();
-  }, [user]);
+  }, [user, namespace, isViewingOtherUser, targetNamespace]);
 
   // 将API数据转换为收藏卡片格式
-  const transformLikedApiToCard = (article: any) => {
-    const categoryStyle = getCategoryStyle(article.category);
+  const transformLikedApiToCard = (article: any): ArticleData => {
     return {
       id: article.uuid,
-      category: article.category,
-      categoryColor: `${categoryStyle.border} ${categoryStyle.bg}`,
-      categoryTextColor: categoryStyle.text,
-      coverImage: article.coverImage || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      uuid: article.uuid,
       title: article.title,
       description: article.description,
-      url: article.website,
-      userImage: article.userAvatar,
+      coverImage: article.coverImage || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.category,
+      categoryColor: article.categoryColor,
       userName: article.userName,
+      userAvatar: article.userAvatar,
+      userId: user?.id,
       date: article.date,
       treasureCount: article.treasureCount,
       visitCount: article.visitCount,
-      cardBg: "bg-white",
+      isLiked: article.isLiked || true,
+      targetUrl: article.targetUrl,
+      website: article.website
     };
   };
 
-  const renderCard = (card: any) => (
-    <Link key={card.id} to={`/content/${card.id}`}>
-      <Card className={`${card.cardBg} rounded-lg border-0 shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group`}>
-        <CardContent className="flex flex-col gap-[25px] p-[30px]">
-          <div className="flex flex-col gap-5">
-            <div
-              className="flex flex-col h-60 justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${card.coverImage})` }}
-            >
-              <Badge
-                variant="outline"
-                className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border border-solid ${card.categoryColor} w-fit`}
-              >
-                <span
-                  className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${card.categoryTextColor}`}
-                >
-                  {card.category}
-                </span>
-              </Badge>
+  // 处理点赞
+  const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
+    if (!user) {
+      showToast('请先登录', 'error');
+      return;
+    }
+    await toggleLike(articleId, currentIsLiked, currentLikeCount);
+  };
 
-              <div className="flex justify-end">
-                <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
-                  <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
-                    {card.url}
-                  </span>
-                </div>
-              </div>
-            </div>
+  // 处理用户点击 - 现在需要传递namespace
+  const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
+    // 如果没有userId和namespace，直接返回
+    if (!userId && !userNamespace) {
+      return;
+    }
 
-            <div className="flex flex-col gap-[15px]">
-              <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9">
-                {card.title}
-              </h3>
+    // 如果没有namespace，尝试从文章数据中查找
+    if (!userNamespace && userId !== undefined) {
+      // 在likedArticles中查找 - 这些是收藏的文章，作者信息在authorInfo中
+      const likedArticle = likedArticles.find(a => a.userId === userId);
+      if (likedArticle) {
+        userNamespace = likedArticle.userNamespace;
+      }
 
-              <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
-                <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px]">
-                  &quot;{card.description}&quot;
-                </p>
+      // 如果还没找到，在myCreatedData中查找 - 这些是我创建的文章
+      if (!userNamespace && myCreatedData?.data) {
+        const myArticle = myCreatedData.data.find(a =>
+          a.authorInfo?.id === userId || a.userId === userId
+        );
+        if (myArticle) {
+          userNamespace = myArticle.authorInfo?.namespace || myArticle.userNamespace;
+        }
+      }
+    }
 
-                <div className="flex items-start justify-between">
-                  <div className="inline-flex items-center gap-2.5">
-                    <Avatar className="w-[18px] h-[18px]">
-                      <AvatarImage src={card.userImage} alt="Profile image" className="object-cover" />
-                    </Avatar>
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                      {card.userName}
-                    </span>
-                  </div>
+    // 判断是否是当前用户
+    // 优先使用namespace判断（更准确），其次才是id
+    const isCurrentUser = (user && userNamespace && user.namespace === userNamespace) ||
+                         (user && userId && user.id === userId && !userNamespace);
 
-                  <div className="inline-flex h-[25px] items-center">
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
-                      {card.date}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    if (isCurrentUser) {
+      // 如果是点击自己，跳转到自己的宝藏页面
+      navigate('/my-treasury');
+    } else if (userNamespace) {
+      // 跳转到其他用户的宝藏页面
+      navigate(`/user/${userNamespace}/treasury`);
+    } else if (userId) {
+      // 如果没有namespace，使用userId作为降级方案
+      navigate(`/user/${userId}/treasury`);
+    }
+  };
 
-          <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-[15px]">
-              <div className="inline-flex items-center gap-2">
-                <img
-                  className="w-[13px] h-5"
-                  alt="Treasure icon"
-                  src="https://c.animaapp.com/mftam89xRJwsqQ/img/treasure-icon.svg"
-                />
-                <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
-                  {card.treasureCount}
-                </span>
-              </div>
+  // 处理头像点击预览
+  const handleAvatarClick = () => {
+    const avatarUrl = user?.faceUrl ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`;
 
-              <div className="inline-flex items-center gap-2">
-                <img
-                  className="w-5 h-3.5"
-                  alt="Ic view"
-                  src="https://c.animaapp.com/mftam89xRJwsqQ/img/ic-view.svg"
-                />
-                <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
-                  {card.visitCount}
-                </span>
-              </div>
-            </div>
+    setPreviewImageUrl(avatarUrl);
+    setPreviewImageAlt(`${user?.username || '用户'} 的头像`);
+    setIsImagePreviewOpen(true);
+  };
 
-            <img
-              className="flex-shrink-0"
-              alt="Branch it"
-              src="https://c.animaapp.com/mftam89xRJwsqQ/img/branch-it.svg"
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
+  // 关闭图片预览
+  const handleCloseImagePreview = () => {
+    setIsImagePreviewOpen(false);
+    setPreviewImageUrl("");
+    setPreviewImageAlt("");
+  };
 
-  // 将API数据转换为卡片格式
-  const transformApiToCard = (article: any) => {
-    const categoryStyle = getCategoryStyle(article.categoryInfo?.name || 'General');
+  const renderCard = (card: ArticleData) => {
+    const articleLikeState = getArticleLikeState(card.id, card.isLiked || true, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+
+    // 更新文章的点赞状态
+    const articleData = {
+      ...card,
+      isLiked: articleLikeState.isLiked,
+      treasureCount: articleLikeState.likeCount
+    };
+
+    return (
+      <ArticleCard
+        key={card.id}
+        article={articleData}
+        layout="treasury"
+        actions={{
+          showTreasure: true,
+          showVisits: true,
+          showWebsite: true,
+          showBranchIt: true
+        }}
+        onLike={handleLike}
+        onUserClick={handleUserClick}
+      />
+    );
+  };
+
+  // 将API数据转换为我的分享卡片格式
+  const transformApiToCard = (article: any): ArticleData => {
     return {
       id: article.uuid,
-      category: article.categoryInfo?.name || 'General',
-      categoryColor: `${categoryStyle.border} ${categoryStyle.bg}`,
-      categoryTextColor: categoryStyle.text,
-      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      uuid: article.uuid,
       title: article.title,
       description: article.content,
-      url: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
-      userImage: article.authorInfo?.faceUrl || user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}&backgroundColor=b6e3f4`,
+      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.categoryInfo?.name || 'General',
+      categoryColor: article.categoryInfo?.color || 'gray',
       userName: article.authorInfo?.username || user?.username || 'Anonymous',
+      userAvatar: article.authorInfo?.faceUrl || user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}&backgroundColor=b6e3f4`,
+      userId: article.authorInfo?.id || user?.id,
+      userNamespace: article.authorInfo?.namespace || user?.namespace,
       date: new Date(article.createAt * 1000).toLocaleDateString(),
       treasureCount: article.likeCount || 0,
       visitCount: `${article.viewCount || 0} Visits`,
-      cardBg: "bg-white",
+      isLiked: false,
+      targetUrl: article.targetUrl,
+      website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
     };
   };
 
+  // 处理编辑
+  const handleEdit = (articleId: string) => {
+    // 导航到编辑页面，传递文章ID
+    navigate(`/create?edit=${articleId}`);
+  };
+
+  // 处理删除
+  const handleDelete = (articleId: string) => {
+    const article = myCreatedData?.data.find(a => a.uuid === articleId);
+    if (article) {
+      const card = transformApiToCard(article);
+      setArticleToDelete(card);
+      setDeleteDialogOpen(true);
+    }
+  };
+
   // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
-  const renderMyShareCard = (card: any) => (
-    <div
+  const renderMyShareCard = (card: ArticleData) => (
+    <ArticleCard
       key={card.id}
-      className="relative"
+      article={card}
+      layout="treasury"
+      actions={{
+        showTreasure: false, // My Share不显示点赞按钮
+        showVisits: true,
+        showWebsite: true,
+        showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
+        showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
+      }}
+      isHovered={hoveredCard === card.id}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      onUserClick={handleUserClick}
       onMouseEnter={() => setHoveredCard(card.id)}
       onMouseLeave={() => setHoveredCard(null)}
-    >
-      <Link to={`/content/${card.id}`}>
-        <Card className={`${card.cardBg} rounded-lg border-0 shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group`}>
-          <CardContent className="flex flex-col gap-[25px] p-[30px]">
-            <div className="flex flex-col gap-5">
-              <div
-                className="flex flex-col h-60 justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${card.coverImage})` }}
-              >
-                <Badge
-                  variant="outline"
-                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border border-solid ${card.categoryColor} w-fit`}
-                >
-                  <span
-                    className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${card.categoryTextColor}`}
-                  >
-                    {card.category}
-                  </span>
-                </Badge>
-
-                <div className="flex justify-end">
-                  <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
-                    <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
-                      {card.url}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-[15px]">
-                <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9">
-                  {card.title}
-                </h3>
-
-                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px]">
-                    &quot;{card.description}&quot;
-                  </p>
-
-                  <div className="flex items-start justify-between">
-                    <div className="inline-flex items-center gap-2.5">
-                      <Avatar className="w-[18px] h-[18px]">
-                        <AvatarImage src={card.userImage} alt="Profile image" className="object-cover" />
-                      </Avatar>
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                        {card.userName}
-                      </span>
-                    </div>
-
-                    <div className="inline-flex h-[25px] items-center">
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
-                        {card.date}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="inline-flex items-center gap-[15px]">
-                <div className="inline-flex items-center gap-2">
-                  <img
-                    className="w-[13px] h-5"
-                    alt="Treasure icon"
-                    src="https://c.animaapp.com/mftam89xRJwsqQ/img/treasure-icon.svg"
-                  />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
-                    {card.treasureCount}
-                  </span>
-                </div>
-
-                <div className="inline-flex items-center gap-2">
-                  <img
-                    className="w-5 h-3.5"
-                    alt="Ic view"
-                    src="https://c.animaapp.com/mftam89xRJwsqQ/img/ic-view.svg"
-                  />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
-                    {card.visitCount}
-                  </span>
-                </div>
-              </div>
-
-              {/* 悬浮时显示编辑删除按钮，非悬浮时保持空白区域 */}
-              <div className="flex items-center gap-2 min-h-[24px]">
-                {hoveredCard === card.id && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-blue-50 transition-colors"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('编辑文章:', card.id);
-                        // TODO: 实现编辑功能
-                      }}
-                    >
-                      <Edit2 className="w-4 h-4 text-blue-600" />
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-red-50 transition-colors"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('🗑️ 点击删除按钮, 文章信息:', card);
-                        setArticleToDelete(card);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
-    </div>
+    />
   );
 
   // 处理删除文章
   const handleDeleteArticle = async () => {
     if (!articleToDelete) {
-      console.log('❌ 没有要删除的文章');
       return;
     }
 
-    console.log('🚀 开始删除文章:', articleToDelete);
     setIsDeleting(true);
     try {
       // 调用删除API
-      console.log('📡 调用删除API, 文章ID:', articleToDelete.id);
       const deleteResult = await AuthService.deleteArticle(articleToDelete.id);
 
-      console.log('📋 删除API返回结果:', deleteResult);
 
       // 检查删除是否真正成功
       if (deleteResult.data === true) {
-        console.log('✅ 删除成功，显示成功提示');
         showToast("文章已成功删除", "success");
       } else {
-        console.log('⚠️ 删除API返回false，可能删除失败');
         showToast("删除失败，可能文章不存在或无权限删除", "warning");
         setDeleteDialogOpen(false);
         setArticleToDelete(null);
@@ -526,7 +444,6 @@ export const MainContentSection = (): JSX.Element => {
       }
 
       // 刷新文章列表
-      console.log('🔄 刷新文章列表...');
       if (refetchMyArticles) {
         refetchMyArticles();
       }
@@ -555,12 +472,16 @@ export const MainContentSection = (): JSX.Element => {
       <section className="flex flex-col items-start w-full">
         <div className="relative self-stretch w-full h-[200px] rounded-lg [background:url(https://c.animaapp.com/mftam89xRJwsqQ/img/banner.png)_50%_50%_/_cover]" />
 
-        <div className="gap-10 pl-5 pr-10 py-0 mt-[-46px] flex items-start w-full">
-          <Avatar className="w-[100px] h-[100px] border-2 border-solid border-[#ffffff]">
+        <div className="gap-6 pl-5 pr-10 py-0 mt-[-46px] flex items-start w-full">
+          <Avatar
+            className="w-[100px] h-[100px] border-2 border-solid border-[#ffffff] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200"
+            onClick={handleAvatarClick}
+            title="点击查看头像大图"
+          >
             <AvatarImage
               src={
-                user?.faceUrl ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
+                (isViewingOtherUser ? treasuryUserInfo?.faceUrl : user?.faceUrl) ||
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${(isViewingOtherUser ? treasuryUserInfo?.username : user?.username) || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
               }
               className="object-cover"
             />
@@ -570,7 +491,7 @@ export const MainContentSection = (): JSX.Element => {
             <div className="inline-flex flex-col items-start justify-center">
               <div className="inline-flex items-center gap-[15px]">
                 <h1 className="mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42px] whitespace-nowrap">
-                  {user?.username || "Guest User"}
+                  {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Guest User")}
                 </h1>
 
                 <Button variant="ghost" size="sm" className="p-0 h-auto">
@@ -583,21 +504,24 @@ export const MainContentSection = (): JSX.Element => {
               </div>
 
               <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                @{user?.namespace || 'unknown'}
+                @{isViewingOtherUser ? (treasuryUserInfo?.namespace || 'loading') : (user?.namespace || 'unknown')}
               </p>
             </div>
 
             <div className="flex-col gap-[15px] flex items-start w-full">
               <div className="flex items-center gap-2.5 w-full">
                 <p className="mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                  {user?.bio || "Hello, welcome to my creative space. Design, travel, and everyday life."}
+                  {isViewingOtherUser
+                    ? (treasuryUserInfo?.bio || "Welcome to this user's creative space.")
+                    : (user?.bio || "Hello, welcome to my creative space. Design, travel, and everyday life.")}
                 </p>
               </div>
 
               <div className="inline-flex items-center gap-[30px]">
-                {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).map((link) => (
+                {(isViewingOtherUser ? treasuryUserInfo?.socialLinks : socialLinksData) &&
+                 (isViewingOtherUser ? treasuryUserInfo?.socialLinks : socialLinksData).filter(link => link.linkUrl && link.linkUrl.trim()).map((link, index) => (
                   <a
-                    key={link.id}
+                    key={link.id || index}
                     href={link.linkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -634,7 +558,7 @@ export const MainContentSection = (): JSX.Element => {
             >
               <div className="inline-flex items-center justify-center px-[15px] py-2.5">
                 <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  My collection
+                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s collection` : 'My collection'}
                 </span>
               </div>
             </TabsTrigger>
@@ -645,7 +569,7 @@ export const MainContentSection = (): JSX.Element => {
             >
               <div className="justify-center px-[15px] py-2.5 w-full flex items-center gap-2.5">
                 <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  My share
+                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s share` : 'My share'}
                 </span>
               </div>
             </TabsTrigger>
@@ -661,13 +585,13 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">加载失败: {treasuryError}</div>
               </div>
             ) : likedArticles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[60px] w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                 {likedArticles.map((article) => {
                   const card = transformLikedApiToCard(article);
                   return (
                     <div
                       key={card.id}
-                      className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]"
+                      className="flex flex-col gap-6 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]"
                     >
                       {renderCard(card)}
                     </div>
@@ -691,13 +615,13 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">加载失败: {myCreatedError}</div>
               </div>
             ) : myCreatedData && myCreatedData.data.length > 0 ? (
-              <div className="flex items-start gap-[60px] w-full">
+              <div className="flex items-start gap-6 w-full">
                 {myCreatedData.data.slice(0, 2).map((article) => {
                   const card = transformApiToCard(article);
                   return (
                     <div
                       key={card.id}
-                      className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]"
+                      className="flex flex-col gap-6 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]"
                     >
                       {renderMyShareCard(card)}
                     </div>
@@ -747,6 +671,14 @@ export const MainContentSection = (): JSX.Element => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 图片预览模态框 */}
+      <ImagePreviewModal
+        isOpen={isImagePreviewOpen}
+        imageUrl={previewImageUrl}
+        alt={previewImageAlt}
+        onClose={handleCloseImagePreview}
+      />
     </div>
   );
 };

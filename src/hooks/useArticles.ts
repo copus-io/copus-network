@@ -33,10 +33,8 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
       });
 
       // 调试文章数据，特别是图片URL
-      console.log('📚 Articles fetched:', response.articles.length);
-      console.log('📋 完整的文章列表API响应:', response);
       response.articles.forEach((article, index) => {
-        console.log(`📄 Article ${index + 1}:`, {
+        console.log(`Article ${index}:`, {
           id: article.id,
           title: article.title,
           userName: article.userName,

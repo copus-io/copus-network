@@ -1,12 +1,93 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useUser } from "../../../contexts/UserContext";
+import { useToast } from "../../../components/ui/toast";
+import { AuthService } from "../../../services/authService";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
+import { getCategoryStyle, getCategoryInlineStyle } from "../../../utils/categoryStyles";
 
 export const LinkPreview = (): JSX.Element => {
-  const [isClicked, setIsClicked] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(999);
+  const [isLiking, setIsLiking] = useState(false);
+  const { id } = useParams();
+  const { user, isLoggedIn } = useUser();
+  const { showToast } = useToast();
+
+  // 模拟文章数据（实际应该从API获取）
+  const [articleData, setArticleData] = useState({
+    category: "科技",
+    categoryColor: "red", // 从服务器返回的颜色名称
+    title: "We overestimate AI's impact in the short-term and underestimate it long-term",
+    url: "https://example.com"
+  });
+
+  // 模拟获取文章数据
+  useEffect(() => {
+    if (id) {
+      // 这里可以根据id获取真实的文章数据
+      // 示例：模拟从API获取数据
+      // const fetchArticle = async () => {
+      //   const data = await ArticleService.getById(id);
+      //   setArticleData(data);
+      // };
+      // fetchArticle();
+    }
+  }, [id]);
+
+  const handleLikeClick = async () => {
+    if (!isLoggedIn) {
+      showToast('请先登录再点赞', 'error');
+      return;
+    }
+
+    if (isLiking) return;
+
+    setIsLiking(true);
+    try {
+      if (id) {
+        // 调用真实的点赞API
+        await AuthService.likeArticle(id);
+
+        // 更新本地状态
+        setIsLiked(!isLiked);
+        setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+
+        showToast(isLiked ? '取消点赞成功' : '点赞成功', 'success');
+      } else {
+        // 如果没有ID，只更新本地状态
+        setIsLiked(!isLiked);
+        setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+      }
+    } catch (error) {
+      console.error('点赞操作失败:', error);
+      showToast('操作失败，请重试', 'error');
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleVisitClick = () => {
+    // 使用文章数据中的URL
+    window.open(articleData.url, '_blank');
+  };
+
+  const handleShareClick = () => {
+    // 分享功能
+    if (navigator.share) {
+      navigator.share({
+        title: articleData.title,
+        url: window.location.href,
+      });
+    } else {
+      // 复制链接到剪贴板
+      navigator.clipboard.writeText(window.location.href);
+      showToast('链接已复制到剪贴板', 'success');
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
@@ -75,15 +156,25 @@ export const LinkPreview = (): JSX.Element => {
               <div className="flex flex-col items-start gap-5 w-full">
                 <div className="flex justify-start w-full">
                   <Badge
-                    variant="secondary"
-                    className="flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-normal text-yellow text-base text-center tracking-[0] leading-5 whitespace-nowrap bg-transparent border-0"
+                    variant="outline"
+                    className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border-2 w-fit ${
+                      articleData.categoryColor ? '' : `${getCategoryStyle(articleData.category).border} ${getCategoryStyle(articleData.category).bg}`
+                    }`}
+                    style={articleData.categoryColor ? getCategoryInlineStyle(articleData.categoryColor) : undefined}
                   >
-                    Academic
+                    <span
+                      className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
+                        articleData.categoryColor ? '' : getCategoryStyle(articleData.category).text
+                      }`}
+                      style={articleData.categoryColor ? { color: getCategoryInlineStyle(articleData.categoryColor).color } : undefined}
+                    >
+                      {articleData.category}
+                    </span>
                   </Badge>
                 </div>
 
                 <h1 className="w-full [font-family:'Lato',Helvetica] font-medium text-off-black text-[40px] tracking-[0] leading-[56px]">
-                  We overestimate AI's impact in the short-term and underestimate it long-term
+                  {articleData.title}
                 </h1>
               </div>
 
@@ -138,7 +229,10 @@ export const LinkPreview = (): JSX.Element => {
             </article>
 
             <div className="flex justify-between w-full items-center">
-              <Button className="inline-flex items-center justify-center gap-[15px] px-[30px] py-2 bg-red rounded-[100px] border border-solid border-[#f23a00] text-white hover:bg-red/90 h-auto">
+              <Button
+                className="inline-flex items-center justify-center gap-[15px] px-[30px] py-2 bg-red rounded-[100px] border border-solid border-[#f23a00] text-white hover:bg-red/90 h-auto transition-colors"
+                onClick={handleVisitClick}
+              >
                 <div className="flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-bold text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                   Visit
                 </div>
@@ -153,29 +247,36 @@ export const LinkPreview = (): JSX.Element => {
               <div className="inline-flex items-center gap-[15px]">
                 <Button
                   className={`inline-flex items-center justify-center gap-2.5 px-[15px] py-2 rounded-[50px] border border-solid border-[#e19e1d] transition-all ${
-                    isClicked 
-                      ? 'bg-[#e19e1d] text-white' 
+                    isLiked
+                      ? 'bg-[#e19e1d] text-white'
                       : 'bg-white text-dark-grey hover:bg-[#e19e1d]/10'
-                  }`}
-                  onClick={() => setIsClicked(!isClicked)}
+                  } ${isLiking ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                  onClick={handleLikeClick}
+                  disabled={isLiking}
                 >
                   <img
-                    className="w-3.5 h-[22px]"
+                    className="w-3.5 h-[22px] transition-all"
                     alt="Treasure icon"
                     src="https://c.animaapp.com/mfuxsdcbXwMuVe/img/treasure-icon.svg"
-                    style={{ filter: isClicked ? 'brightness(0) invert(1)' : 'none' }}
+                    style={{ filter: isLiked ? 'brightness(0) invert(1)' : 'none' }}
                   />
 
                   <div className="[font-family:'Lato',Helvetica] font-normal text-lg text-center tracking-[0] leading-5 whitespace-nowrap">
-                    999
+                    {likeCount}
                   </div>
                 </Button>
 
-                <img
-                  className="w-[38px]"
-                  alt="Share"
-                  src="https://c.animaapp.com/mfuxsdcbXwMuVe/img/share.svg"
-                />
+                <button
+                  className="w-[38px] h-[38px] hover:opacity-70 transition-opacity cursor-pointer"
+                  onClick={handleShareClick}
+                  title="分享文章"
+                >
+                  <img
+                    className="w-[38px]"
+                    alt="Share"
+                    src="https://c.animaapp.com/mfuxsdcbXwMuVe/img/share.svg"
+                  />
+                </button>
 
                 <div className="inline-flex items-center gap-[5px]">
                   <img
@@ -185,7 +286,7 @@ export const LinkPreview = (): JSX.Element => {
                   />
 
                   <div className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg text-center tracking-[0] leading-5 whitespace-nowrap">
-                    999
+                    1.2K
                   </div>
                 </div>
               </div>
