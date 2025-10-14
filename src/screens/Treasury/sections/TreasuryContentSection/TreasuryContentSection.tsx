@@ -337,7 +337,7 @@ export const TreasuryContentSection = (): JSX.Element => {
           article={articleData}
           layout="treasury"
           actions={{
-            showTreasure: !isOwnArticle, // Hide treasure button for own articles
+            showTreasure: true, // Show treasure button for all articles
             showVisits: true,
             showWebsite: true, // 显示网站信息
             showBranchIt: true // 显示Branch It图标

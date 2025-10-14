@@ -294,15 +294,13 @@ export const Content = (): JSX.Element => {
 
           <div className="flex justify-between self-stretch w-full items-center relative flex-[0_0_auto]">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
-              {/* 只有当用户不是文章创建者时才显示宝石按钮 */}
-              {user && content && user.id !== content.userId && (
-                <TreasureButton
-                  isLiked={isLiked}
-                  likesCount={likesCount}
-                  onClick={handleLike}
-                  size="large"
-                />
-              )}
+              {/* 使用统一的宝石按钮组件 - 大尺寸适合详情页 */}
+              <TreasureButton
+                isLiked={isLiked}
+                likesCount={likesCount}
+                onClick={handleLike}
+                size="large"
+              />
 
               <button
                 onClick={handleShare}

@@ -57,7 +57,7 @@
       ]
     },
     {
-      "id": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
+      "id": "src/routes/MyTreasury/screens/MyTreasury.tsx",
       "label": "MyTreasury",
       "routes": [
         "/user/:namespace/treasury",
@@ -94,7 +94,7 @@
       ]
     },
     {
-      "id": "src/routes/Screen27/screens/Screen.tsx",
+      "id": "src/routes/Screen26/screens/Screen.tsx",
       "label": "Screen",
       "routes": [
         "/screen/default"
@@ -924,6 +924,22 @@
       }
     },
     {
+      "id": "src/routes/MyTreasury/screens/sections/MainContentSection.tsx:312:6-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "target": "src/components/guards/AuthGuard.tsx",
+      "data": {
+        "viaRoute": "/my-treasury",
+        "trigger": {
+          "element": "navigate('/my-treasury')",
+          "line": 312,
+          "endLine": 312,
+          "column": 6,
+          "endColumn": 30,
+          "sourceFile": "src/routes/MyTreasury/screens/sections/MainContentSection.tsx"
+        }
+      }
+    },
+    {
       "id": "src/screens/Content/Content.tsx:97:10-to-src/screens/Discovery/Discovery.tsx",
       "source": "src/screens/Content/Content.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
@@ -1468,8 +1484,8 @@
       }
     },
     {
-      "id": "src/routes/Screen27/screens/Screen.tsx:30:14-to-src/components/guards/AuthGuard.tsx",
-      "source": "src/routes/Screen27/screens/Screen.tsx",
+      "id": "src/routes/Screen26/screens/Screen.tsx:30:14-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/routes/Screen26/screens/Screen.tsx",
       "target": "src/components/guards/AuthGuard.tsx",
       "data": {
         "viaRoute": "/setting",
@@ -1479,13 +1495,13 @@
           "endLine": 34,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
         }
       }
     },
     {
-      "id": "src/routes/Screen27/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
-      "source": "src/routes/Screen27/screens/Screen.tsx",
+      "id": "src/routes/Screen26/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
+      "source": "src/routes/Screen26/screens/Screen.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
         "viaRoute": "/",
@@ -1495,7 +1511,7 @@
           "endLine": 46,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
         }
       }
     },
