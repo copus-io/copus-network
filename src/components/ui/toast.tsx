@@ -1,15 +1,21 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: string;
   message: string;
   type: 'success' | 'error' | 'info' | 'warning';
   duration?: number;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
   toasts: Toast[];
-  showToast: (message: string, type: Toast['type'], duration?: number) => void;
+  showToast: (message: string, type: Toast['type'], options?: { duration?: number; action?: ToastAction }) => void;
   removeToast: (id: string) => void;
 }
 
@@ -18,9 +24,10 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((message: string, type: Toast['type'], duration: number = 3000) => {
+  const showToast = useCallback((message: string, type: Toast['type'], options: { duration?: number; action?: ToastAction } = {}) => {
+    const { duration = 1000, action } = options;
     const id = Math.random().toString(36).substr(2, 9);
-    const toast: Toast = { id, message, type, duration };
+    const toast: Toast = { id, message, type, duration, action };
 
     setToasts(prev => [...prev, toast]);
 
@@ -48,7 +55,7 @@ const ToastContainer: React.FC<{
   onRemove: (id: string) => void;
 }> = ({ toasts, onRemove }) => {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 space-y-2">
       {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
@@ -60,37 +67,25 @@ const ToastItem: React.FC<{
   toast: Toast;
   onRemove: (id: string) => void;
 }> = ({ toast, onRemove }) => {
-  const getToastStyles = (type: Toast['type']) => {
-    switch (type) {
-      case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-      case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
-      default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
-    }
-  };
-
   return (
     <div
-      className={`
-        max-w-sm px-4 py-3 rounded-lg border shadow-lg transform transition-all duration-300
-        ${getToastStyles(toast.type)}
-        animate-in slide-in-from-right-5 fade-in-0
-      `}
+      className="px-6 py-3 bg-[#fdf2f2] border border-[#fbb6b6] rounded-full shadow-sm transform transition-all duration-300 animate-in slide-in-from-top-2 fade-in-0"
     >
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium">{toast.message}</p>
-        <button
-          onClick={() => onRemove(toast.id)}
-          className="ml-3 text-lg leading-none opacity-50 hover:opacity-100"
-        >
-          ×
-        </button>
+      <div className="flex items-center gap-3">
+        <p className="text-[#e53e3e] text-sm font-medium whitespace-nowrap">
+          {toast.message}
+        </p>
+        {toast.action && (
+          <button
+            onClick={() => {
+              toast.action!.onClick();
+              onRemove(toast.id);
+            }}
+            className="text-[#e53e3e] text-sm font-semibold underline hover:no-underline whitespace-nowrap"
+          >
+            {toast.action.label}
+          </button>
+        )}
       </div>
     </div>
   );

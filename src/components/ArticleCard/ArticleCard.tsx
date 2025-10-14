@@ -10,7 +10,7 @@ import { ImagePreviewModal } from "../ui/image-preview-modal";
 import { LazyImage } from "../ui/lazy-image";
 import { getCategoryStyle, getCategoryInlineStyle, formatCount, formatDate } from "../../utils/categoryStyles";
 
-// 通用文章数据接口
+// Generic article data interface
 export interface ArticleData {
   id: string;
   uuid?: string;
@@ -32,10 +32,10 @@ export interface ArticleData {
   website?: string;
 }
 
-// 布局模式
+// Layout mode
 export type LayoutMode = 'discovery' | 'treasury' | 'published' | 'compact';
 
-// 操作按钮配置
+// Action button configuration
 export interface ActionConfig {
   showEdit?: boolean;
   showDelete?: boolean;
@@ -45,13 +45,13 @@ export interface ActionConfig {
   showWebsite?: boolean;
 }
 
-// 组件Props
+// Component Props
 export interface ArticleCardProps {
   article: ArticleData;
   layout?: LayoutMode;
   actions?: ActionConfig;
   isHovered?: boolean;
-  onLike?: (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => Promise<void>; // 现在是可选的，用于向后兼容
+  onLike?: (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => Promise<void>; // Now optional for backward compatibility
   onEdit?: (articleId: string) => void;
   onDelete?: (articleId: string) => void;
   onUserClick?: (userId: number | undefined, userNamespace?: string) => void;
@@ -80,12 +80,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const categoryStyle = getCategoryStyle(article.category, article.categoryColor);
   const categoryInlineStyle = getCategoryInlineStyle(article.categoryColor);
 
-  // 图片预览相关状态
+  // Image preview related state
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [previewImageAlt, setPreviewImageAlt] = useState("");
 
-  // 处理点赞
+  // Handle like action
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -98,17 +98,17 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     }
   };
 
-  // 处理用户点击
+  // Handle user click
   const handleUserClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (onUserClick) {
-      // 优先使用 namespace，如果不存在则使用 userNamespace 作为兜底
+      // Prefer namespace, fall back to userNamespace if not available
       onUserClick(article.userId, article.namespace || article.userNamespace);
     }
   };
 
-  // 处理编辑
+  // Handle edit
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -117,7 +117,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     }
   };
 
-  // 处理删除
+  // Handle delete
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -126,7 +126,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     }
   };
 
-  // 处理图片预览
+  // Handle image preview
   const handleImagePreview = (imageUrl: string, alt: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -135,14 +135,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     setIsImagePreviewOpen(true);
   };
 
-  // 关闭图片预览
+  // Close image preview
   const handleCloseImagePreview = () => {
     setIsImagePreviewOpen(false);
     setPreviewImageUrl("");
     setPreviewImageAlt("");
   };
 
-  // 根据布局模式渲染不同的卡片内容
+  // Render different card content based on layout mode
   const renderCardContent = () => {
     switch (layout) {
       case 'treasury':
@@ -150,12 +150,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <CardContent className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
               <div
-                className="flex flex-col h-[240px] justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
+                className="flex flex-col aspect-[4/3] w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
                 style={{ backgroundImage: `url(${article.coverImage})` }}
-                onClick={handleImagePreview(article.coverImage, `${article.title} 封面图`)}
-                title="点击查看大图"
+                onClick={handleImagePreview(article.coverImage, `${article.title} cover image`)}
+                title="Click to view full size"
               >
-                {/* 分类标签 */}
+                {/* Category badge */}
                 <Badge
                   variant="outline"
                   className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border-2 w-fit ${
@@ -173,7 +173,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                {/* 网站链接或收藏标记 */}
+                {/* Website link or favorite mark */}
                 <div className="flex justify-end">
                   {actions.showWebsite && article.website ? (
                     <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
@@ -189,7 +189,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
                         style={{ filter: 'brightness(0) invert(1)' }}
                       />
-                      <span className="text-white text-xs font-medium">收藏</span>
+                      <span className="text-white text-xs font-medium">Favorite</span>
                     </div>
                   )}
                 </div>
@@ -210,7 +210,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       <Avatar
                         className="w-[18px] h-[18px] cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all duration-200"
                         onClick={handleUserClick}
-                        title={`查看 ${article.userName} 的宝藏`}
+                        title={`View ${article.userName}'s treasures`}
                       >
                         <AvatarImage src={article.userAvatar} alt="Profile image" className="object-cover" />
                       </Avatar>
@@ -232,10 +232,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
             </div>
 
-            {/* 操作按钮区域 */}
+            {/* Action buttons area */}
             <div className="flex items-center justify-between mt-auto">
-              <div className="inline-flex items-center gap-[15px]">
-                {/* 宝石按钮 */}
+              <div className="flex items-center gap-[15px]">
+                {/* Treasure button */}
                 {actions.showTreasure && (
                   <TreasureButton
                     isLiked={article.isLiked || false}
@@ -245,9 +245,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   />
                 )}
 
-                {/* 访问量 */}
+                {/* Visit count - always show if showVisits is true */}
                 {actions.showVisits && (
-                  <div className="inline-flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     <img
                       className="w-5 h-3.5"
                       alt="Ic view"
@@ -260,7 +260,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 )}
               </div>
 
-              {/* 编辑删除按钮区域 */}
+              {/* Edit and delete buttons area */}
               <div className="flex items-center gap-2 min-h-[24px]">
                 {isHovered && (actions.showEdit || actions.showDelete) && (
                   <>
@@ -288,7 +288,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </>
                 )}
 
-                {/* Branch It 图标 */}
+                {/* Branch It icon */}
                 {actions.showBranchIt && !isHovered && (
                   <img
                     className="flex-shrink-0"
@@ -306,7 +306,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         return (
           <CardContent className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
-              <div className="relative h-[240px] rounded-lg overflow-hidden bg-gray-200">
+              <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden bg-gray-200">
                 <LazyImage
                   src={article.coverImage || ''}
                   alt={article.title}
@@ -332,7 +332,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     </span>
                   </Badge>
 
-                  {/* 网站链接 */}
+                  {/* Website link */}
                   <div className="flex justify-end">
                     {article.website && (
                       <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
@@ -360,7 +360,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       <Avatar
                         className="w-[18px] h-[18px] cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all duration-200"
                         onClick={handleUserClick}
-                        title={`查看 ${article.userName} 的宝藏`}
+                        title={`View ${article.userName}'s treasures`}
                       >
                         <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
                       </Avatar>
@@ -379,16 +379,18 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
             </div>
 
-            {/* 添加点赞按钮区域 */}
-            {actions.showTreasure && (
+            {/* Add like button area */}
+            {(actions.showTreasure || actions.showVisits) && (
               <div className="flex items-center justify-between px-[5px]">
-                <div className="inline-flex items-center gap-[15px]">
-                  <TreasureButton
-                    isLiked={article.isLiked || false}
-                    likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
-                    onClick={handleLikeClick}
-                    size="medium"
-                  />
+                <div className="flex items-center gap-[15px]">
+                  {actions.showTreasure && (
+                    <TreasureButton
+                      isLiked={article.isLiked || false}
+                      likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
+                      onClick={handleLikeClick}
+                      size="medium"
+                    />
+                  )}
 
                   {actions.showVisits && (
                     <div className="inline-flex items-center gap-2">
@@ -422,7 +424,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         </Card>
       </Link>
 
-      {/* 图片预览模态框 */}
+      {/* Image preview modal */}
       <ImagePreviewModal
         isOpen={isImagePreviewOpen}
         imageUrl={previewImageUrl}

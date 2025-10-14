@@ -1,81 +1,81 @@
 import { QueryClient } from '@tanstack/react-query';
 
-// 创建 QueryClient 实例
+// Create QueryClient instance
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // 全局默认配置
-      staleTime: 5 * 60 * 1000, // 5分钟内数据被认为是新鲜的
-      cacheTime: 30 * 60 * 1000, // 30分钟后清除缓存
-      retry: 2, // 失败时重试2次
-      refetchOnWindowFocus: false, // 窗口聚焦时不重新获取
-      refetchOnReconnect: true, // 网络重连时重新获取
+      // Global default configuration
+      staleTime: 5 * 60 * 1000, // Data is considered fresh within 5 minutes
+      cacheTime: 30 * 60 * 1000, // Clear cache after 30 minutes
+      retry: 2, // Retry 2 times on failure
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      refetchOnReconnect: true, // Refetch on network reconnect
     },
     mutations: {
-      retry: 1, // mutation 失败时重试1次
+      retry: 1, // Retry 1 time on mutation failure
     },
   },
 });
 
-// 查询键工厂 - 统一管理查询键
+// Query key factory - unified query key management
 export const queryKeys = {
-  // 文章相关
+  // Article related
   articles: ['articles'] as const,
   articlesList: (params?: any) => [...queryKeys.articles, 'list', params] as const,
   articlesInfinite: (params?: any) => [...queryKeys.articles, 'infinite', params] as const,
 
-  // 分类相关
+  // Category related
   categories: ['categories'] as const,
   categoriesList: () => [...queryKeys.categories, 'list'] as const,
 
-  // 用户相关
+  // User related
   user: ['user'] as const,
   userProfile: (userId?: string) => [...queryKeys.user, 'profile', userId] as const,
   userArticles: (userId: string) => [...queryKeys.user, userId, 'articles'] as const,
 
-  // 通知相关
+  // Notification related
   notifications: ['notifications'] as const,
   notificationsList: () => [...queryKeys.notifications, 'list'] as const,
   notificationsUnread: () => [...queryKeys.notifications, 'unread'] as const,
 
-  // 社交链接
+  // Social links
   socialLinks: ['socialLinks'] as const,
   socialLinksList: (userId?: string) => [...queryKeys.socialLinks, 'list', userId] as const,
 
-  // 宝藏/点赞文章
+  // Treasured/liked articles
   treasures: ['treasures'] as const,
   treasuresList: (userId?: string) => [...queryKeys.treasures, 'list', userId] as const,
 } as const;
 
-// 缓存策略配置
+// Cache strategy configuration
 export const cacheConfig = {
-  // 静态数据 - 长时间缓存
+  // Static data - long-term caching
   static: {
-    staleTime: 30 * 60 * 1000, // 30分钟
-    cacheTime: 60 * 60 * 1000, // 1小时
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    cacheTime: 60 * 60 * 1000, // 1 hour
   },
 
-  // 用户数据 - 中等缓存
+  // User data - medium-term caching
   user: {
-    staleTime: 10 * 60 * 1000, // 10分钟
-    cacheTime: 30 * 60 * 1000, // 30分钟
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    cacheTime: 30 * 60 * 1000, // 30 minutes
     refetchOnWindowFocus: true,
   },
 
-  // 内容数据 - 较短缓存
+  // Content data - short-term caching
   content: {
-    staleTime: 5 * 60 * 1000, // 5分钟
-    cacheTime: 15 * 60 * 1000, // 15分钟
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 15 * 60 * 1000, // 15 minutes
   },
 
-  // 实时数据 - 最小缓存
+  // Real-time data - minimal caching
   realtime: {
-    staleTime: 0, // 立即过期
-    cacheTime: 5 * 60 * 1000, // 5分钟后清除
-    refetchInterval: 30000, // 30秒轮询
+    staleTime: 0, // Expires immediately
+    cacheTime: 5 * 60 * 1000, // Clear after 5 minutes
+    refetchInterval: 30000, // 30 second polling
   },
 
-  // 敏感数据 - 不缓存
+  // Sensitive data - no caching
   sensitive: {
     staleTime: 0,
     cacheTime: 0,

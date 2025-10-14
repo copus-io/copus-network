@@ -117,17 +117,30 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       const notifications = await notificationService.getNotifications(page, pageSize, msgType);
       dispatch({ type: 'SET_NOTIFICATIONS', payload: notifications });
     } catch (error) {
-      console.error('❌ 小薇获取通知失败:', error);
+      console.error('❌ Failed to fetch notifications:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   const fetchUnreadCount = async (): Promise<void> => {
     try {
+      // Check if there is a valid authentication token
+      const token = localStorage.getItem('copus_token');
+      if (!token || token.trim() === '') {
+        // When no token exists, set unread count to 0 without error
+        dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
+        return;
+      }
+
       const unreadCount = await AuthService.getUnreadMessageCount();
       dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount });
     } catch (error) {
-      console.error('❌ 小薇获取未读消息数量失败:', error);
+      // If authentication error, handle silently and set unread count to 0
+      if (error instanceof Error && error.message.includes('Valid authentication token not found')) {
+        dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
+      } else {
+        console.error('❌ Failed to fetch unread message count:', error);
+      }
     }
   };
 

@@ -1,9 +1,9 @@
 import { apiRequest } from './api';
 import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams } from '../types/article';
 
-// 将后端数据转换为前端需要的格式
+// Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
-  // 从URL中提取域名作为website
+  // Extract domain from URL as website
   const getWebsiteFromUrl = (url: string): string => {
     try {
       const urlObj = new URL(url);
@@ -13,18 +13,18 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     }
   };
 
-  // 时间戳转日期字符串
+  // Convert timestamp to date string
   const formatTimestamp = (timestamp: number): string => {
     return new Date(timestamp * 1000).toISOString();
   };
 
-  // 验证和处理图片URL
+  // Validate and process image URL
   const processImageUrl = (coverUrl: string | null | undefined): string => {
     if (!coverUrl || coverUrl.trim() === '') {
       return '';
     }
 
-    // 检查是否是有效的URL
+    // Check if it's a valid URL
     try {
       new URL(coverUrl);
       return coverUrl;
@@ -39,16 +39,16 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     title: backendArticle.title,
     description: backendArticle.content,
     category: backendArticle.categoryInfo.name,
-    categoryColor: backendArticle.categoryInfo.color, // 保存后端返回的分类颜色
+    categoryColor: backendArticle.categoryInfo.color, // Save category color returned from backend
     coverImage: processImageUrl(backendArticle.coverUrl),
     userName: backendArticle.authorInfo.username,
     userId: backendArticle.authorInfo.id,
-    namespace: backendArticle.authorInfo.namespace, // 添加namespace字段
-    userAvatar: backendArticle.authorInfo.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendArticle.authorInfo.username}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`, // 动态生成默认头像
+    namespace: backendArticle.authorInfo.namespace, // Add namespace field
+    userAvatar: backendArticle.authorInfo.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendArticle.authorInfo.username}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`, // Dynamically generate default avatar
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
-    isLiked: backendArticle.isLiked, // 保留服务器返回的点赞状态
+    isLiked: backendArticle.isLiked, // Preserve like status returned from server
     website: getWebsiteFromUrl(backendArticle.targetUrl),
     url: backendArticle.targetUrl,
   };
@@ -57,7 +57,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
   return transformedArticle;
 };
 
-// 获取分页文章列表
+// Get paginated article list
 export const getPageArticles = async (params: PageArticleParams = {}): Promise<PageArticleResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -68,7 +68,20 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
 
   const endpoint = `/client/home/pageArticle${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
-  const backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: true });
+  // Try with authentication first for personalized data, fallback to no-auth for guests
+  let backendResponse: BackendApiResponse;
+  try {
+    // Check if user is logged in by looking for token
+    const token = localStorage.getItem('copus_token');
+    if (token) {
+      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: true });
+    } else {
+      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
+    }
+  } catch (error) {
+    // If auth fails, try without authentication
+    backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
+  }
 
   if (backendResponse.status !== 1) {
     throw new Error(backendResponse.msg || 'API request failed');
@@ -85,7 +98,7 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
   };
 };
 
-// 获取文章详情
+// Get article details
 export const getArticleDetail = async (uuid: string): Promise<ArticleDetailResponse> => {
 
   const endpoint = `/client/reader/article/info?uuid=${uuid}`;
@@ -104,7 +117,7 @@ export const getArticleDetail = async (uuid: string): Promise<ArticleDetailRespo
   }
 };
 
-// 获取我创作的作品
+// Get my created articles
 export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}): Promise<MyCreatedArticleResponse> => {
 
   const queryParams = new URLSearchParams();
@@ -128,9 +141,9 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
   }
 };
 
-// 发布文章（支持创建和编辑）
+// Publish article (supports creation and editing)
 export const publishArticle = async (articleData: {
-  uuid?: string; // 编辑模式时传递
+  uuid?: string; // Pass when in edit mode
   title: string;
   content: string;
   coverUrl: string;

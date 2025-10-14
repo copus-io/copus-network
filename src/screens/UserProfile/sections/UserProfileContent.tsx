@@ -160,20 +160,25 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
 
       {/* 文章列表 */}
       <section className="grid grid-cols-2 gap-8">
-        {articles.map((article) => (
-          <ArticleCard
-            key={article.id}
-            article={article}
-            layout="treasury"
-            actions={{
-              showTreasure: true,
-              showVisits: true,
-              showWebsite: true
-            }}
-            onLike={handleLike}
-            onUserClick={handleUserClick}
-          />
-        ))}
+        {articles.map((article) => {
+          // Check if this is the current user's own article
+          const isOwnArticle = user && user.id === article.userId;
+
+          return (
+            <ArticleCard
+              key={article.id}
+              article={article}
+              layout="treasury"
+              actions={{
+                showTreasure: !isOwnArticle, // Hide treasure button for own articles
+                showVisits: true,
+                showWebsite: true
+              }}
+              onLike={handleLike}
+              onUserClick={handleUserClick}
+            />
+          );
+        })}
       </section>
 
       {articles.length === 0 && userInfo && (

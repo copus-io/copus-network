@@ -164,7 +164,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     if (user) {
       setFormData({
         name: user.username || "Guest User",
-        username: user.namespace ? `@${user.namespace}` : "@unknown",
+        username: user.username ? `@${user.username}` : "@unknown",
         bio: user.bio || "Hello, welcome to my creative space.",
         email: user.email || "user@example.com",
       });
