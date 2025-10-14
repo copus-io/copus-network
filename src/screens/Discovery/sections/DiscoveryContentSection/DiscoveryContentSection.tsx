@@ -187,18 +187,17 @@ export const DiscoveryContentSection = (): JSX.Element => {
     articleData.treasureCount = articleLikeState.likeCount;
 
     return (
-      <div key={post.id} className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
-        <ArticleCard
-          article={articleData}
-          layout="discovery"
-          actions={{
-            showTreasure: true,
-            showVisits: true
-          }}
-          onLike={handleLike}
-          onUserClick={handleUserClick}
+      <ArticleCard
+        key={post.id}
+        article={articleData}
+        layout="discovery"
+        actions={{
+          showTreasure: true,
+          showVisits: true
+        }}
+        onLike={handleLike}
+        onUserClick={handleUserClick}
         />
-      </div>
     );
   };
 
@@ -282,11 +281,11 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
       {/* Content Cards Section */}
       <section className="flex items-start gap-8 pt-0 pb-[30px] min-h-screen w-full">
-        <div className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
+        <div className="flex flex-col gap-8 pt-0 pb-5 flex-1">
           {leftColumnPosts.map((post, index) => renderPostCard(post, index))}
         </div>
 
-        <div className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
+        <div className="flex flex-col gap-8 pt-0 pb-5 flex-1">
           {rightColumnPosts.map((post, index) => renderPostCard(post, index))}
         </div>
       </section>
