@@ -11,7 +11,10 @@ interface UseArticlesState {
   total: number;
 }
 
-export const useArticles = (initialParams: PageArticleParams = {}) => {
+export const useArticles = (
+  initialParams: PageArticleParams = {},
+  options: { autoRefresh?: boolean } = { autoRefresh: true }
+) => {
   const [state, setState] = useState<UseArticlesState>({
     articles: [],
     loading: false,
@@ -25,12 +28,15 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const response = await getPageArticles({
-        page: 1,
-        pageSize: 20,
+      const finalParams = {
+        page: append ? (params.page || 1) : 1, // 如果是追加模式使用传入的页码，否则从第1页开始
+        pageSize: 10, // 优化加载性能，提升用户体验
         ...initialParams,
         ...params,
-      });
+      };
+
+      console.log('📄 获取文章数据，参数:', finalParams);
+      const response = await getPageArticles(finalParams);
 
       // Debug article data, especially image URLs
       response.articles.forEach((article, index) => {
@@ -82,7 +88,9 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
   }, [fetchArticles]);
 
   useEffect(() => {
-    fetchArticles();
+    if (options.autoRefresh) {
+      fetchArticles();
+    }
   }, []); // Only execute on component first render
 
   return {

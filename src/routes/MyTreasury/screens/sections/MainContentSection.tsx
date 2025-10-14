@@ -116,14 +116,19 @@ export const MainContentSection = (): JSX.Element => {
   const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [previewImageAlt, setPreviewImageAlt] = useState("");
 
-  // 宝藏页面状态管理
-  const [likedArticles, setLikedArticles] = useState<any[]>([]);
-  const [treasuryLoading, setTreasuryLoading] = useState(true);
-  const [treasuryError, setTreasuryError] = useState<string | null>(null);
+  // 统一状态管理
+  const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
+  const [userInfoLoading, setUserInfoLoading] = useState(true);
+  const [userInfoError, setUserInfoError] = useState<string | null>(null);
 
-  // 创作文章状态管理
+  // 收藏文章状态
+  const [likedArticles, setLikedArticles] = useState<any[]>([]);
+  const [likedArticlesLoading, setLikedArticlesLoading] = useState(false);
+  const [likedArticlesError, setLikedArticlesError] = useState<string | null>(null);
+
+  // 创作文章状态
   const [createdArticles, setCreatedArticles] = useState<any[]>([]);
-  const [createdArticlesLoading, setCreatedArticlesLoading] = useState(true);
+  const [createdArticlesLoading, setCreatedArticlesLoading] = useState(false);
   const [createdArticlesError, setCreatedArticlesError] = useState<string | null>(null);
 
   const [treasuryStats, setTreasuryStats] = useState({
@@ -131,7 +136,6 @@ export const MainContentSection = (): JSX.Element => {
     articleCount: 0,
     myArticleLikedCount: 0
   });
-  const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
 
   // 判断是否在查看其他用户的宝藏
   const isViewingOtherUser = !!namespace;
@@ -144,167 +148,165 @@ export const MainContentSection = (): JSX.Element => {
     user: user?.username,
     namespace: user?.namespace,
     likedArticles: likedArticles.length,
-    treasuryLoading,
-    treasuryError,
-    isViewingOtherUser
+    userInfoLoading,
+    userInfoError,
+    isViewingOtherUser,
+    activeTab
   });
 
-  // 获取用户收藏的文章
+  // 1. 首先获取用户信息和ID
   useEffect(() => {
-    const fetchLikedArticles = async () => {
-
-      // 如果查看自己的宝藏但未登录
+    const fetchUserInfo = async () => {
       if (!isViewingOtherUser && !user) {
-        setLikedArticles([]);
-        setTreasuryLoading(false);
+        setTreasuryUserInfo(null);
+        setUserInfoLoading(false);
         return;
       }
 
-      // 如果查看其他用户但没有namespace
       if (isViewingOtherUser && !targetNamespace) {
-        setTreasuryError('User namespace is invalid');
-        setTreasuryLoading(false);
+        setUserInfoError('User namespace is invalid');
+        setUserInfoLoading(false);
         return;
       }
 
       try {
-        setTreasuryLoading(true);
-        setTreasuryError(null);
+        setUserInfoLoading(true);
+        setUserInfoError(null);
 
-        // 根据是否查看其他用户，使用不同的API
-        let treasuryInfoResponse, likedArticlesResponse;
-
-        // 使用正确的API端点获取数据
+        let userInfo;
         if (isViewingOtherUser && targetNamespace) {
-          // 查看其他用户的宝藏
-          [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
-            AuthService.getUserHomeInfo(targetNamespace),
-            // 暂时还是显示统计信息，因为需要targetUserId
-            Promise.resolve({ data: [], pageCount: 0, pageIndex: 1, pageSize: 20, totalCount: 0 })
-          ]);
+          // 查看其他用户的信息
+          userInfo = await AuthService.getUserHomeInfo(targetNamespace);
         } else if (user?.namespace) {
-          // 查看自己的宝藏，使用正确的API
-          [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
-            AuthService.getUserHomeInfo(user.namespace),
-            AuthService.getMyLikedArticlesCorrect(1, 20)
-          ]);
+          // 查看自己的信息，通过namespace获取完整信息
+          userInfo = await AuthService.getUserHomeInfo(user.namespace);
         } else {
-          // 查看自己的宝藏但没有namespace
-          [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
-            AuthService.getUserTreasuryInfo(),
-            AuthService.getMyLikedArticlesCorrect(1, 20)
-          ]);
+          // 降级方案
+          userInfo = await AuthService.getUserTreasuryInfo();
         }
 
-
-        // 处理统计信息
-        const treasuryInfo = treasuryInfoResponse.data || treasuryInfoResponse;
         console.log('🏆📚 用户详情API响应数据:', {
           namespace: targetNamespace,
           isViewingOtherUser,
-          raw: treasuryInfoResponse,
-          processed: treasuryInfo
+          userInfo
         });
 
-        if (treasuryInfo) {
-          setTreasuryUserInfo(treasuryInfo);
-          if (treasuryInfo.statistics) {
-            setTreasuryStats(treasuryInfo.statistics);
-          }
-        }
-
-        // 直接使用API响应数据，不需要在这里转换格式
-        console.log('🏆📚 收藏文章API响应数据 - 详细分析:', {
-          完整响应: likedArticlesResponse,
-          数据数组: likedArticlesResponse?.data,
-          数据长度: likedArticlesResponse?.data?.length,
-          总数统计: likedArticlesResponse?.totalCount,
-          页面信息: {
-            pageIndex: likedArticlesResponse?.pageIndex,
-            pageSize: likedArticlesResponse?.pageSize,
-            pageCount: likedArticlesResponse?.pageCount
-          },
-          用户信息: {
-            username: user?.username,
-            namespace: user?.namespace,
-            id: user?.id
-          }
-        });
-
-        if (likedArticlesResponse.data && Array.isArray(likedArticlesResponse.data)) {
-          setLikedArticles(likedArticlesResponse.data);
-        } else {
-          setLikedArticles([]);
+        const processedInfo = userInfo.data || userInfo;
+        setTreasuryUserInfo(processedInfo);
+        if (processedInfo.statistics) {
+          setTreasuryStats(processedInfo.statistics);
         }
 
       } catch (error) {
-        console.error('❌ 获取收藏文章失败:', error);
-        console.error('❌ 错误详情:', {
-          user: user?.username,
-          namespace: targetNamespace,
-          isViewingOtherUser,
-          errorMessage: error instanceof Error ? error.message : error,
-          errorStack: error instanceof Error ? error.stack : undefined
-        });
-        setTreasuryError(`获取收藏文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
-        // 暂时使用空数组，避免页面崩溃
-        setLikedArticles([]);
+        console.error('❌ 获取用户信息失败:', error);
+        setUserInfoError(`获取用户信息失败: ${error instanceof Error ? error.message : '未知错误'}`);
       } finally {
-        setTreasuryLoading(false);
+        setUserInfoLoading(false);
       }
     };
 
-    fetchLikedArticles();
+    fetchUserInfo();
   }, [user, namespace, isViewingOtherUser, targetNamespace]);
 
-  // 获取创作文章数据
+  // 2. 根据当前标签页和用户信息获取相应的文章数据
   useEffect(() => {
-    if (!user && !namespace) {
-      setCreatedArticlesLoading(false);
-      return;
+    if (userInfoLoading || !treasuryUserInfo) {
+      return; // 等待用户信息加载完成
     }
 
-    const fetchCreatedArticles = async () => {
-      setCreatedArticlesLoading(true);
-      setCreatedArticlesError(null);
+    const fetchArticleData = async () => {
+      const userId = treasuryUserInfo.id || user?.id;
+      if (!userId) {
+        console.warn('⚠️ 无法获取用户ID，跳过文章数据加载');
+        return;
+      }
 
       try {
-        let response;
-
-        if (isViewingOtherUser && targetNamespace) {
-          // 查看其他用户时，传递targetUserId
-          const userInfo = await AuthService.getUserHomeInfo(targetNamespace);
-          response = await AuthService.getMyCreatedArticles(1, 20, userInfo.id);
-        } else if (user?.namespace) {
-          // 查看自己的创作
-          response = await AuthService.getMyCreatedArticles(1, 20);
-        } else {
-          response = await AuthService.getMyCreatedArticles(1, 20);
+        if (activeTab === 'collection') {
+          // 只在收藏标签页时加载收藏文章
+          await fetchLikedArticles(userId);
+        } else if (activeTab === 'share') {
+          // 只在创作标签页时加载创作文章
+          await fetchCreatedArticles(userId);
         }
-
-        console.log('✅ 获取创作文章成功:', {
-          dataLength: response.data?.length || 0,
-          totalCount: response.totalCount,
-          response
-        });
-
-        if (response.data && Array.isArray(response.data)) {
-          setCreatedArticles(response.data);
-        } else {
-          setCreatedArticles([]);
-        }
-
       } catch (error) {
-        console.error('❌ 获取创作文章失败:', error);
-        setCreatedArticlesError(`获取创作文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
-        setCreatedArticles([]);
-      } finally {
-        setCreatedArticlesLoading(false);
+        console.error('❌ 加载文章数据失败:', error);
       }
     };
 
-    fetchCreatedArticles();
-  }, [user, namespace, isViewingOtherUser, targetNamespace]);
+    fetchArticleData();
+  }, [treasuryUserInfo, activeTab, userInfoLoading]);
+
+  // 收藏文章加载函数
+  const fetchLikedArticles = async (userId: number) => {
+    setLikedArticlesLoading(true);
+    setLikedArticlesError(null);
+
+    try {
+      console.log('🔄 开始加载收藏文章, 用户ID:', userId);
+      const response = await AuthService.getMyLikedArticlesCorrect(1, 10, userId); // 优化加载性能
+
+      console.log('🔍🏆📚 收藏文章API响应数据:', response);
+
+      const articlesArray = extractArticlesFromResponse(response, '收藏');
+      setLikedArticles(articlesArray);
+
+    } catch (error) {
+      console.error('❌ 获取收藏文章失败:', error);
+      setLikedArticlesError(`获取收藏文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setLikedArticles([]);
+    } finally {
+      setLikedArticlesLoading(false);
+    }
+  };
+
+  // 创作文章加载函数
+  const fetchCreatedArticles = async (userId: number) => {
+    setCreatedArticlesLoading(true);
+    setCreatedArticlesError(null);
+
+    try {
+      console.log('🔄 开始加载创作文章, 用户ID:', userId);
+      const response = await AuthService.getMyCreatedArticles(1, 10, userId); // 优化加载性能
+
+      console.log('🔍✨ 创作文章API响应数据:', response);
+
+      const articlesArray = extractArticlesFromResponse(response, '创作');
+      setCreatedArticles(articlesArray);
+
+    } catch (error) {
+      console.error('❌ 获取创作文章失败:', error);
+      setCreatedArticlesError(`获取创作文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setCreatedArticles([]);
+    } finally {
+      setCreatedArticlesLoading(false);
+    }
+  };
+
+  // 统一的文章数据提取函数
+  const extractArticlesFromResponse = (response: any, type: string) => {
+    if (response?.data?.data && Array.isArray(response.data.data)) {
+      console.log(`✅ ${type}文章使用嵌套结构 response.data.data:`, response.data.data.length, '条记录');
+      return response.data.data;
+    } else if (response?.data && Array.isArray(response.data)) {
+      console.log(`✅ ${type}文章使用标准结构 response.data:`, response.data.length, '条记录');
+      return response.data;
+    } else if (Array.isArray(response)) {
+      console.log(`✅ ${type}文章使用直接数组结构:`, response.length, '条记录');
+      return response;
+    } else if (response?.data === '' || response?.data === null) {
+      console.log(`📭 ${type}文章API返回空数据`);
+      return [];
+    } else {
+      console.warn(`⚠️ ${type}文章未识别的API响应结构:`, {
+        type: typeof response,
+        hasData: !!response?.data,
+        dataType: typeof response?.data,
+        keys: response ? Object.keys(response) : []
+      });
+      return [];
+    }
+  };
 
   // 将API数据转换为收藏卡片格式
   const transformLikedApiToCard = (article: any): ArticleData => {
@@ -411,6 +413,19 @@ export const MainContentSection = (): JSX.Element => {
     setIsImagePreviewOpen(false);
     setPreviewImageUrl("");
     setPreviewImageAlt("");
+  };
+
+  // 分享个人主页 - 复制Instagram风格短链接 ✨
+  const handleShare = () => {
+    const currentNamespace = isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace;
+    if (currentNamespace) {
+      const shortLink = `${window.location.origin}/@${currentNamespace}`;
+      navigator.clipboard.writeText(shortLink).then(() => {
+        showToast('已复制专属链接到剪贴板！快去分享吧～ 🎉', 'success');
+      }).catch(() => {
+        showToast('复制链接失败，请手动复制: ' + shortLink, 'error');
+      });
+    }
   };
 
   const renderCard = (card: ArticleData) => {
@@ -520,8 +535,9 @@ export const MainContentSection = (): JSX.Element => {
       }
 
       // 刷新文章列表
-      if (refetchMyArticles) {
-        refetchMyArticles();
+      const userId = treasuryUserInfo?.id || user?.id;
+      if (userId) {
+        await fetchCreatedArticles(userId);
       }
 
       // 如果是收藏的文章，也从收藏列表中移除
@@ -570,7 +586,13 @@ export const MainContentSection = (): JSX.Element => {
                   {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Guest User")}
                 </h1>
 
-                <Button variant="ghost" size="sm" className="p-0 h-auto">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-0 h-auto hover:scale-110 transition-transform duration-200"
+                  onClick={handleShare}
+                  title={`分享 @${isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace} 的专属链接`}
+                >
                   <img
                     className="w-[38px] h-[38px]"
                     alt="Share"
@@ -580,7 +602,7 @@ export const MainContentSection = (): JSX.Element => {
               </div>
 
               <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                @{isViewingOtherUser ? (treasuryUserInfo?.username || 'loading') : (user?.username || 'unknown')}
+                @{isViewingOtherUser ? (treasuryUserInfo?.namespace || 'loading') : (user?.namespace || 'unknown')}
               </p>
             </div>
 
@@ -662,23 +684,13 @@ export const MainContentSection = (): JSX.Element => {
           </TabsList>
 
           <TabsContent value="collection" className="mt-[30px]">
-            {/* 调试信息 */}
-            <div className="text-xs text-gray-500 mb-4 p-2 bg-gray-100 rounded">
-              <div>🔍 调试信息:</div>
-              <div>• 加载状态: {String(treasuryLoading)}</div>
-              <div>• 错误信息: {treasuryError || '无'}</div>
-              <div>• 收藏文章数量: {likedArticles.length}</div>
-              <div>• 用户: {user?.username}</div>
-              <div>• 统计信息: 收藏{treasuryUserInfo?.statistics?.likedArticleCount}篇, 创作{treasuryUserInfo?.statistics?.articleCount}篇</div>
-            </div>
-
-            {treasuryLoading ? (
+            {likedArticlesLoading ? (
               <div className="flex justify-center items-center py-20">
                 <div className="text-lg text-gray-600">Loading collection...</div>
               </div>
-            ) : treasuryError ? (
+            ) : likedArticlesError ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-red-600">Loading failed: {treasuryError}</div>
+                <div className="text-lg text-red-600">Loading failed: {likedArticlesError}</div>
               </div>
             ) : likedArticles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -697,29 +709,19 @@ export const MainContentSection = (): JSX.Element => {
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-4">
                 <div className="text-lg text-gray-600">
-                  {treasuryUserInfo?.statistics?.likedArticleCount !== undefined
-                    ? `共收藏了 ${treasuryUserInfo.statistics.likedArticleCount} 篇文章`
-                    : '还没有收藏任何内容哦～'}
+                  {isViewingOtherUser ? '该用户暂无收藏内容' : '还没有收藏任何内容哦～'}
                 </div>
-                {treasuryUserInfo?.statistics?.likedArticleCount === 0 && (
-                  <div className="text-sm text-gray-400">
-                    快去发现一些精彩内容吧！
-                  </div>
-                )}
+                <div className="text-sm text-gray-400">
+                  {isViewingOtherUser ? '暂时没有公开的收藏内容' : '快去发现一些精彩内容吧！'}
+                </div>
+                <div className="text-xs text-gray-400">
+                  💡 统计显示收藏：{treasuryUserInfo?.statistics?.likedArticleCount || 0}篇，但当前无可显示内容
+                </div>
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="share" className="mt-[30px]">
-            {/* 调试信息 */}
-            <div className="text-xs text-gray-500 mb-4 p-2 bg-gray-100 rounded">
-              <div>🔍 调试信息:</div>
-              <div>• 加载状态: {String(createdArticlesLoading)}</div>
-              <div>• 错误信息: {createdArticlesError || '无'}</div>
-              <div>• 创作文章数量: {createdArticles.length}</div>
-              <div>• 用户: {user?.username}</div>
-            </div>
-
             {createdArticlesLoading ? (
               <div className="flex justify-center items-center py-20">
                 <div className="text-lg text-gray-600">加载创作中...</div>
@@ -745,15 +747,14 @@ export const MainContentSection = (): JSX.Element => {
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-4">
                 <div className="text-lg text-gray-600">
-                  {treasuryUserInfo?.statistics?.articleCount !== undefined
-                    ? `共创作了 ${treasuryUserInfo.statistics.articleCount} 篇文章`
-                    : '还没有创作任何内容哦～'}
+                  {isViewingOtherUser ? '该用户暂无创作内容' : '还没有创作任何内容哦～'}
                 </div>
-                {treasuryUserInfo?.statistics?.articleCount === 0 && (
-                  <div className="text-sm text-gray-400">
-                    快去创作一些精彩内容吧！
-                  </div>
-                )}
+                <div className="text-sm text-gray-400">
+                  {isViewingOtherUser ? '暂时没有公开的创作内容' : '快去创作一些精彩内容吧！'}
+                </div>
+                <div className="text-xs text-gray-400">
+                  💡 统计显示创作：{treasuryUserInfo?.statistics?.articleCount || 0}篇，但当前无可显示内容
+                </div>
               </div>
             )}
           </TabsContent>

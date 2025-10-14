@@ -46,7 +46,54 @@ export const DiscoveryContentSection = (): JSX.Element => {
     const userType = user ? 'logged-in user' : 'guest';
   };
 
-  const { articles, loading, error, refresh } = useArticles();
+  const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
+
+  // 确保每次进入页面或页面重新获得焦点时都刷新数据
+  React.useEffect(() => {
+    const handleFocus = () => {
+      console.log('🔄 页面重新获得焦点，刷新发现页面数据');
+      refresh();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 页面变为可见状态，刷新发现页面数据');
+        refresh();
+      }
+    };
+
+    // 监听窗口焦点事件
+    window.addEventListener('focus', handleFocus);
+    // 监听页面可见性变化
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 页面加载时也刷新一次数据（防止缓存数据过期）
+    refresh();
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []); // 只在组件挂载时设置监听器
+
+  // 滚动加载更多逻辑
+  React.useEffect(() => {
+    const handleScroll = () => {
+      // 检查是否滚动到页面底部附近
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // 提前1000px触发
+
+      if (scrolledToBottom && hasMore && !loading) {
+        console.log('📜 滚动到底部，加载更多文章数据');
+        loadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loading, loadMore]);
 
   // Render different guide content based on user login status
   const renderGuideContent = () => {
@@ -118,7 +165,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       }));
       syncArticleStates(articlesForSync);
     }
-  }, [articles, syncArticleStates]);
+  }, [articles]); // Remove syncArticleStates from dependencies
 
   // Transform article data format
   const transformArticleToCardData = (article: Article): ArticleData => {
@@ -294,6 +341,20 @@ export const DiscoveryContentSection = (): JSX.Element => {
           {rightColumnPosts.map((post, index) => renderPostCard(post, index))}
         </div>
       </section>
+
+      {/* 加载指示器 */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-lg text-gray-600">正在加载更多内容...</div>
+        </div>
+      )}
+
+      {/* 没有更多内容提示 */}
+      {!loading && !hasMore && articles.length > 0 && (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-gray-500">已经到底啦～没有更多内容了</div>
+        </div>
+      )}
     </main>
   );
 };

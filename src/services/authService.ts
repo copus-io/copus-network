@@ -1181,7 +1181,7 @@ export class AuthService {
   /**
    * 获取用户收藏的文章列表 - 使用正确的API路径
    */
-  static async getMyLikedArticlesCorrect(pageIndex: number = 1, pageSize: number = 20, targetUserId?: number): Promise<{
+  static async getMyLikedArticlesCorrect(pageIndex: number = 1, pageSize: number = 10, targetUserId?: number): Promise<{
     data: Array<{
       authorInfo: {
         faceUrl: string;
@@ -1227,7 +1227,7 @@ export class AuthService {
   /**
    * 获取用户创作的文章列表 - 使用正确的API路径
    */
-  static async getMyCreatedArticles(pageIndex: number = 1, pageSize: number = 20, targetUserId?: number): Promise<{
+  static async getMyCreatedArticles(pageIndex: number = 1, pageSize: number = 10, targetUserId?: number): Promise<{
     data: Array<{
       authorInfo: {
         faceUrl: string;

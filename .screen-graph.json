@@ -21,7 +21,8 @@
         "/my-treasury/v30",
         "/my-treasury/v32",
         "/my-treasury/v34",
-        "/create"
+        "/create",
+        "/account/delete"
       ]
     },
     {
@@ -82,13 +83,6 @@
       "label": "LinkPreview",
       "routes": [
         "/preview/link/:id?"
-      ]
-    },
-    {
-      "id": "src/routes/DeleteAccount/screens/DeleteAccount.tsx",
-      "label": "DeleteAccount",
-      "routes": [
-        "/account/delete"
       ]
     },
     {
@@ -1341,54 +1335,6 @@
           "column": 10,
           "endColumn": 17,
           "sourceFile": "src/routes/LinkPreview/screens/LinkPreview.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/routes/DeleteAccount/screens/DeleteAccount.tsx:77:4-to-src/screens/Discovery/Discovery.tsx",
-      "source": "src/routes/DeleteAccount/screens/DeleteAccount.tsx",
-      "target": "src/screens/Discovery/Discovery.tsx",
-      "data": {
-        "viaRoute": "/",
-        "trigger": {
-          "element": "navigate('/')",
-          "line": 77,
-          "endLine": 77,
-          "column": 4,
-          "endColumn": 17,
-          "sourceFile": "src/routes/DeleteAccount/screens/DeleteAccount.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/routes/DeleteAccount/screens/DeleteAccount.tsx:86:10-to-src/screens/Discovery/Discovery.tsx",
-      "source": "src/routes/DeleteAccount/screens/DeleteAccount.tsx",
-      "target": "src/screens/Discovery/Discovery.tsx",
-      "data": {
-        "viaRoute": "/",
-        "trigger": {
-          "element": "<Link to=\"/\" className=\"flex w-[45px] h-[45px] items-center justify-center gap-2.5 p-2.5 bg-red rounded-[100px]\">\n            <img\n              className=\"w-7 h-7\"\n              alt=\"Ic fractopus open\"\n              src=\"https://c.animaapp.com/mft4oqz6uyUKY7/img/ic-fractopus-open.svg\"\n            />\n          </Link>",
-          "line": 86,
-          "endLine": 92,
-          "column": 10,
-          "endColumn": 17,
-          "sourceFile": "src/routes/DeleteAccount/screens/DeleteAccount.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/routes/DeleteAccount/screens/DeleteAccount.tsx:202:14-to-src/components/guards/AuthGuard.tsx",
-      "source": "src/routes/DeleteAccount/screens/DeleteAccount.tsx",
-      "target": "src/components/guards/AuthGuard.tsx",
-      "data": {
-        "viaRoute": "/setting",
-        "trigger": {
-          "element": "<Link to=\"/setting\">Cancel</Link>",
-          "line": 202,
-          "endLine": 202,
-          "column": 14,
-          "endColumn": 47,
-          "sourceFile": "src/routes/DeleteAccount/screens/DeleteAccount.tsx"
         }
       }
     },
