@@ -33,6 +33,7 @@ import { SignUp } from "./routes/SignUp/screens/SignUp";
 import { SwitchDemo } from "./components/demo/SwitchDemo";
 import { AuthGuard } from "./components/guards/AuthGuard";
 import { UserProfile } from "./screens/UserProfile/UserProfile";
+import { NotFoundPage } from "./components/pages/NotFoundPage";
 
 const router = createBrowserRouter([
   {
@@ -66,7 +67,7 @@ const router = createBrowserRouter([
   {
     path: "/setting",
     element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
+      <AuthGuard requireAuth={true} fallbackPath="/discovery">
         <Setting />
       </AuthGuard>
     ),
@@ -174,6 +175,11 @@ const router = createBrowserRouter([
   {
     path: "/demo/components/switch",
     element: <SwitchDemo />,
+  },
+  // 404 catch-all route - must be last
+  {
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);
 
