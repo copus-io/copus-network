@@ -57,11 +57,17 @@
       ]
     },
     {
-      "id": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/routes/MyTreasury32/screens/MyTreasury.tsx",
       "label": "MyTreasury",
       "routes": [
-        "/user/:namespace/treasury",
-        "/@:namespace"
+        "/user/:namespace/treasury"
+      ]
+    },
+    {
+      "id": "src/components/ShortLinkHandler.tsx",
+      "label": "ShortLinkHandler",
+      "routes": [
+        "/u/:namespace"
       ]
     },
     {
@@ -94,7 +100,7 @@
       ]
     },
     {
-      "id": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx",
       "label": "Screen",
       "routes": [
         "/screen/default"
@@ -252,15 +258,15 @@
       }
     },
     {
-      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:141:33-to-src/routes/Login/screens/Login.tsx",
+      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:138:33-to-src/routes/Login/screens/Login.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/routes/Login/screens/Login.tsx",
       "data": {
         "viaRoute": "/login",
         "trigger": {
           "element": "navigate('/login')",
-          "line": 141,
-          "endLine": 141,
+          "line": 138,
+          "endLine": 138,
           "column": 33,
           "endColumn": 51,
           "sourceFile": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx"
@@ -268,15 +274,15 @@
       }
     },
     {
-      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:199:25-to-src/routes/Login/screens/Login.tsx",
+      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:196:25-to-src/routes/Login/screens/Login.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/routes/Login/screens/Login.tsx",
       "data": {
         "viaRoute": "/login",
         "trigger": {
           "element": "navigate('/login')",
-          "line": 199,
-          "endLine": 199,
+          "line": 196,
+          "endLine": 196,
           "column": 25,
           "endColumn": 43,
           "sourceFile": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx"
@@ -284,15 +290,15 @@
       }
     },
     {
-      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:214:6-to-src/components/guards/AuthGuard.tsx",
+      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:211:6-to-src/components/guards/AuthGuard.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/components/guards/AuthGuard.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
           "element": "navigate('/my-treasury')",
-          "line": 214,
-          "endLine": 214,
+          "line": 211,
+          "endLine": 211,
           "column": 6,
           "endColumn": 30,
           "sourceFile": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx"
@@ -924,15 +930,143 @@
       }
     },
     {
-      "id": "src/routes/MyTreasury/screens/sections/MainContentSection.tsx:312:6-to-src/components/guards/AuthGuard.tsx",
-      "source": "src/routes/MyTreasury/screens/MyTreasury.tsx",
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:27:4-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/screens/Discovery/Discovery.tsx",
+      "target": "src/components/guards/AuthGuard.tsx",
+      "data": {
+        "viaRoute": "/setting",
+        "trigger": {
+          "element": "navigate('/setting')",
+          "line": 27,
+          "endLine": 27,
+          "column": 4,
+          "endColumn": 24,
+          "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
+        }
+      }
+    },
+    {
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:51:8-to-src/screens/Discovery/Discovery.tsx",
+      "source": "src/screens/Discovery/Discovery.tsx",
+      "target": "src/screens/Discovery/Discovery.tsx",
+      "data": {
+        "viaRoute": "/",
+        "trigger": {
+          "element": "<Link to=\"/\" className=\"flex w-[45px] h-[45px] items-center justify-center rounded-full bg-red\">\n          <img\n            className=\"w-7 h-7\"\n            alt=\"Ic fractopus open\"\n            src=\"https://c.animaapp.com/mft9nppdGctUh1/img/ic-fractopus-open.svg\"\n          />\n        </Link>",
+          "line": 51,
+          "endLine": 57,
+          "column": 8,
+          "endColumn": 15,
+          "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
+        }
+      }
+    },
+    {
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:59:8-to-src/screens/Discovery/Discovery.tsx",
+      "source": "src/screens/Discovery/Discovery.tsx",
+      "target": "src/screens/Discovery/Discovery.tsx",
+      "data": {
+        "viaRoute": "/",
+        "trigger": {
+          "element": "<Link to=\"/\" className=\"[font-family:'Lato',Helvetica] font-bold text-dark-grey text-lg tracking-[0.90px] leading-[27px] whitespace-nowrap\">\n          Copus\n        </Link>",
+          "line": 59,
+          "endLine": 61,
+          "column": 8,
+          "endColumn": 15,
+          "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
+        }
+      }
+    },
+    {
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:82:12-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/screens/Discovery/Discovery.tsx",
+      "target": "src/components/guards/AuthGuard.tsx",
+      "data": {
+        "viaRoute": "/create",
+        "trigger": {
+          "element": "<Link to=\"/create\">\n              <img\n                className=\"w-5 h-5\"\n                alt=\"Vector\"\n                src=\"https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg\"\n              />\n              <span className=\"[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red\">\n                Create\n              </span>\n            </Link>",
+          "line": 82,
+          "endLine": 91,
+          "column": 12,
+          "endColumn": 19,
+          "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
+        }
+      }
+    },
+    {
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:95:12-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/screens/Discovery/Discovery.tsx",
+      "target": "src/components/guards/AuthGuard.tsx",
+      "data": {
+        "viaRoute": "/notification",
+        "trigger": {
+          "element": "<Link to=\"/notification\" className=\"block cursor-pointer relative\">\n              <img\n                className=\"w-[47px] h-[47px] rotate-[12deg] hover:rotate-[17deg] transition-transform duration-200\"\n                alt=\"Notification\"\n                src=\"https://c.animaapp.com/mft4oqz6uyUKY7/img/notification.svg\"\n              />\n              {unreadCount > 0 && (\n                <div className=\"absolute -top-1 -right-1 bg-red text-white text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1\">\n                  {unreadCount > 99 ? '99+' : unreadCount}\n                </div>\n              )}\n            </Link>",
+          "line": 95,
+          "endLine": 106,
+          "column": 12,
+          "endColumn": 19,
+          "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
+        }
+      }
+    },
+    {
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:135:18-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/screens/Discovery/Discovery.tsx",
+      "target": "src/components/guards/AuthGuard.tsx",
+      "data": {
+        "viaRoute": "/my-treasury",
+        "trigger": {
+          "element": "<Link\n                    to=\"/my-treasury\"\n                    className=\"block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100\"\n                    onClick={() => setShowUserMenu(false)}\n                  >\n                    我的珍藏\n                  </Link>",
+          "line": 135,
+          "endLine": 141,
+          "column": 18,
+          "endColumn": 25,
+          "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
+        }
+      }
+    },
+    {
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:142:18-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/screens/Discovery/Discovery.tsx",
+      "target": "src/components/guards/AuthGuard.tsx",
+      "data": {
+        "viaRoute": "/setting",
+        "trigger": {
+          "element": "<Link\n                    to=\"/setting\"\n                    className=\"block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100\"\n                    onClick={() => setShowUserMenu(false)}\n                  >\n                    设置\n                  </Link>",
+          "line": 142,
+          "endLine": 148,
+          "column": 18,
+          "endColumn": 25,
+          "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
+        }
+      }
+    },
+    {
+      "id": "src/components/shared/HeaderSection/HeaderSection.tsx:165:12-to-src/routes/Login/screens/Login.tsx",
+      "source": "src/screens/Discovery/Discovery.tsx",
+      "target": "src/routes/Login/screens/Login.tsx",
+      "data": {
+        "viaRoute": "/login",
+        "trigger": {
+          "element": "<Link to=\"/login\">Log in / Sign up</Link>",
+          "line": 165,
+          "endLine": 165,
+          "column": 12,
+          "endColumn": 53,
+          "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
+        }
+      }
+    },
+    {
+      "id": "src/routes/MyTreasury/screens/sections/MainContentSection.tsx:392:6-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/components/ShortLinkHandler.tsx",
       "target": "src/components/guards/AuthGuard.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
           "element": "navigate('/my-treasury')",
-          "line": 312,
-          "endLine": 312,
+          "line": 392,
+          "endLine": 392,
           "column": 6,
           "endColumn": 30,
           "sourceFile": "src/routes/MyTreasury/screens/sections/MainContentSection.tsx"
@@ -1484,8 +1618,8 @@
       }
     },
     {
-      "id": "src/routes/Screen26/screens/Screen.tsx:30:14-to-src/components/guards/AuthGuard.tsx",
-      "source": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx:30:14-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/routes/Screen27/screens/Screen.tsx",
       "target": "src/components/guards/AuthGuard.tsx",
       "data": {
         "viaRoute": "/setting",
@@ -1495,13 +1629,13 @@
           "endLine": 34,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
         }
       }
     },
     {
-      "id": "src/routes/Screen26/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
-      "source": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
+      "source": "src/routes/Screen27/screens/Screen.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
         "viaRoute": "/",
@@ -1511,7 +1645,7 @@
           "endLine": 46,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
         }
       }
     },

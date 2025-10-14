@@ -306,12 +306,15 @@ export const TreasuryContentSection = (): JSX.Element => {
   };
 
   // 处理用户点击
-  const handleUserClick = (userId: number) => {
+  const handleUserClickInternal = (userId: number, userNamespace?: string) => {
     // 如果是当前用户自己的文章，跳转到我的宝藏页面
     if (user && user.id === userId) {
       navigate('/my-treasury');
+    } else if (userNamespace) {
+      // 如果有namespace，使用短链接格式
+      navigate(`/u/${userNamespace}`);
     } else {
-      // 如果是其他用户的文章，跳转到该用户的宝藏页面
+      // 如果没有namespace，使用userId作为降级方案
       navigate(`/user/${userId}/treasury`);
     }
   };
@@ -331,6 +334,11 @@ export const TreasuryContentSection = (): JSX.Element => {
     // Check if this is the current user's own article
     const isOwnArticle = user && user.id === article.userId;
 
+    // 创建包装函数来传递namespace信息
+    const handleUserClickForArticle = (userId: number) => {
+      handleUserClickInternal(userId, article.namespace || article.userNamespace);
+    };
+
     return (
       <div key={article.id} className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
         <ArticleCard
@@ -343,7 +351,7 @@ export const TreasuryContentSection = (): JSX.Element => {
             showBranchIt: true // 显示Branch It图标
           }}
           onLike={handleLike}
-          onUserClick={handleUserClick}
+          onUserClick={handleUserClickForArticle}
         />
       </div>
     );

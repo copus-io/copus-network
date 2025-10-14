@@ -138,7 +138,8 @@ export const MainContentSection = (): JSX.Element => {
   });
 
   // 判断是否在查看其他用户的宝藏
-  const isViewingOtherUser = !!namespace;
+  // 如果有namespace参数但是namespace等于当前用户的namespace，说明是在查看自己的页面
+  const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
   const targetNamespace = namespace || user?.namespace;
 
   // 移除对404 API的调用，改用统计信息显示
@@ -391,7 +392,7 @@ export const MainContentSection = (): JSX.Element => {
       navigate('/my-treasury');
     } else if (userNamespace) {
       // 跳转到其他用户的宝藏页面
-      navigate(`/user/${userNamespace}/treasury`);
+      navigate(`/u/${userNamespace}`);
     } else if (userId) {
       // 如果没有namespace，使用userId作为降级方案
       navigate(`/user/${userId}/treasury`);
@@ -401,7 +402,7 @@ export const MainContentSection = (): JSX.Element => {
   // 处理头像点击预览
   const handleAvatarClick = () => {
     const avatarUrl = user?.faceUrl ||
-      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`;
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4`;
 
     setPreviewImageUrl(avatarUrl);
     setPreviewImageAlt(`${user?.username || 'User'}'s avatar`);
@@ -490,26 +491,39 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
-  const renderMyShareCard = (card: ArticleData) => (
-    <ArticleCard
-      key={card.id}
-      article={card}
-      layout="treasury"
-      actions={{
-        showTreasure: false, // My Share不显示点赞按钮
-        showVisits: true,
-        showWebsite: true,
-        showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
-        showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
-      }}
-      isHovered={hoveredCard === card.id}
-      onEdit={handleEdit}
-      onDelete={handleDelete}
-      onUserClick={handleUserClick}
-      onMouseEnter={() => setHoveredCard(card.id)}
-      onMouseLeave={() => setHoveredCard(null)}
-    />
-  );
+  const renderMyShareCard = (card: ArticleData) => {
+    // 获取文章的点赞状态
+    const articleLikeState = getArticleLikeState(card.id, card.isLiked || false, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+
+    // 更新文章的点赞状态
+    const articleData = {
+      ...card,
+      isLiked: articleLikeState.isLiked,
+      treasureCount: articleLikeState.likeCount
+    };
+
+    return (
+      <ArticleCard
+        key={card.id}
+        article={articleData}
+        layout="treasury"
+        actions={{
+          showTreasure: isViewingOtherUser, // 查看别人的分享时显示点赞按钮
+          showVisits: true,
+          showWebsite: true,
+          showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
+          showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
+        }}
+        isHovered={hoveredCard === card.id}
+        onLike={isViewingOtherUser ? handleLike : undefined} // 只有查看别人时才提供点赞回调
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onUserClick={handleUserClick}
+        onMouseEnter={() => setHoveredCard(card.id)}
+        onMouseLeave={() => setHoveredCard(null)}
+      />
+    );
+  };
 
   // 处理删除文章
   const handleDeleteArticle = async () => {
@@ -573,7 +587,7 @@ export const MainContentSection = (): JSX.Element => {
             <AvatarImage
               src={
                 (isViewingOtherUser ? treasuryUserInfo?.faceUrl : user?.faceUrl) ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${(isViewingOtherUser ? treasuryUserInfo?.username : user?.username) || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${(isViewingOtherUser ? treasuryUserInfo?.username : user?.username) || 'vivi'}&backgroundColor=b6e3f4`
               }
               className="object-cover"
             />

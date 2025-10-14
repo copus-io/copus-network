@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useArticles } from "../../../../hooks/queries";
+import { useArticles } from "../../../../hooks/useArticles";
 import { Article } from "../../../../types/article";
 import { ArticleListSkeleton } from "../../../../components/ui/skeleton";
 import { useToast } from "../../../../components/ui/toast";
@@ -48,16 +48,15 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
 
+
   // 确保每次进入页面或页面重新获得焦点时都刷新数据
   React.useEffect(() => {
     const handleFocus = () => {
-      console.log('🔄 页面重新获得焦点，刷新发现页面数据');
       refresh();
     };
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('🔄 页面变为可见状态，刷新发现页面数据');
         refresh();
       }
     };
@@ -67,14 +66,11 @@ export const DiscoveryContentSection = (): JSX.Element => {
     // 监听页面可见性变化
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // 页面加载时也刷新一次数据（防止缓存数据过期）
-    refresh();
-
     return () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []); // 只在组件挂载时设置监听器
+  }, [refresh]); // 添加refresh依赖，但移除页面加载时的refresh调用
 
   // 滚动加载更多逻辑
   React.useEffect(() => {
@@ -86,13 +82,14 @@ export const DiscoveryContentSection = (): JSX.Element => {
       const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // 提前1000px触发
 
       if (scrolledToBottom && hasMore && !loading) {
-        console.log('📜 滚动到底部，加载更多文章数据');
         loadMore();
       }
     };
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [hasMore, loading, loadMore]);
 
   // Render different guide content based on user login status
@@ -165,7 +162,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       }));
       syncArticleStates(articlesForSync);
     }
-  }, [articles]); // Remove syncArticleStates from dependencies
+  }, [articles]); // 移除syncArticleStates依赖以避免无限循环
 
   // Transform article data format
   const transformArticleToCardData = (article: Article): ArticleData => {
@@ -214,7 +211,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       navigate('/my-treasury');
     } else if (article?.namespace) {
       // Prioritize using namespace to navigate to user profile page
-      navigate(`/user/${article.namespace}`);
+      navigate(`/u/${article.namespace}`);
     } else {
       // Fallback to using userId
       navigate(`/user/${userId}/treasury`);

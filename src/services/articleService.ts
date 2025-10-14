@@ -44,7 +44,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     userName: backendArticle.authorInfo.username,
     userId: backendArticle.authorInfo.id,
     namespace: backendArticle.authorInfo.namespace, // Add namespace field
-    userAvatar: backendArticle.authorInfo.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendArticle.authorInfo.username}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`, // Dynamically generate default avatar
+    userAvatar: backendArticle.authorInfo.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendArticle.authorInfo.username}&backgroundColor=b6e3f4`, // Dynamically generate default avatar
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
@@ -61,12 +61,19 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
 export const getPageArticles = async (params: PageArticleParams = {}): Promise<PageArticleResponse> => {
   const queryParams = new URLSearchParams();
 
-  if (params.page) queryParams.append('pageIndex', params.page.toString());
-  if (params.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  // 确保总是有page参数，默认为第1页
+  const page = params.page || 1;
+  queryParams.append('pageIndex', page.toString()); // 后端也使用1基页码系统
+
+  // 确保总是有pageSize参数
+  const pageSize = params.pageSize || 10;
+  queryParams.append('pageSize', pageSize.toString());
+
   if (params.category) queryParams.append('keyword', params.category);
   if (params.search) queryParams.append('keyword', params.search);
 
-  const endpoint = `/client/home/pageArticle${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+  const endpoint = `/client/home/pageArticle?${queryParams.toString()}`;
+
 
   // Try with authentication first for personalized data, fallback to no-auth for guests
   let backendResponse: BackendApiResponse;
@@ -83,18 +90,43 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
     backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
   }
 
-  if (backendResponse.status !== 1) {
-    throw new Error(backendResponse.msg || 'API request failed');
+  // 处理不同的响应格式
+  let responseData = backendResponse as any;
+
+  // 检查是否是包装格式 {status: 1, data: {...}}
+  if (responseData.status === 1 && responseData.data) {
+    responseData = responseData.data;
   }
 
-  const { data } = backendResponse.data;
+  // 确保articles数组存在
+  let articlesArray = [];
+
+  if (Array.isArray(responseData.data)) {
+    articlesArray = responseData.data;
+  } else if (Array.isArray(responseData)) {
+    articlesArray = responseData;
+  } else if (responseData.data && Array.isArray(responseData.data.data)) {
+    articlesArray = responseData.data.data;
+  }
+
+  // 安全检查：确保articlesArray是数组且有map方法
+  if (!Array.isArray(articlesArray)) {
+    articlesArray = [];
+  }
+
+  // 分页信息处理
+  const pageIndex = responseData.pageIndex || 0;
+  const pageCount = responseData.pageCount || 0;
+  const totalCount = responseData.totalCount || 0;
+  const currentPageSize = responseData.pageSize || 10;
+  const hasMore = pageIndex < pageCount; // 后端使用1基页码，所以不需要+1
 
   return {
-    articles: data.map(transformBackendArticle),
-    total: backendResponse.data.totalCount,
-    page: backendResponse.data.PageIndex,
-    pageSize: backendResponse.data.PageSize,
-    hasMore: backendResponse.data.PageIndex < backendResponse.data.pageCount,
+    articles: articlesArray.map(transformBackendArticle),
+    total: totalCount,
+    page: pageIndex, // 后端返回的页码就是1基的，直接使用
+    pageSize: currentPageSize,
+    hasMore: hasMore,
   };
 };
 

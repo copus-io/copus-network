@@ -29,35 +29,35 @@ export const useArticles = (
 
     try {
       const finalParams = {
-        page: append ? (params.page || 1) : 1, // 如果是追加模式使用传入的页码，否则从第1页开始
         pageSize: 10, // 优化加载性能，提升用户体验
         ...initialParams,
         ...params,
+        page: append ? (params.page || 1) : 1, // 如果是追加模式使用传入的页码，否则从第1页开始（确保page参数不被覆盖）
       };
 
-      console.log('📄 获取文章数据，参数:', finalParams);
       const response = await getPageArticles(finalParams);
 
-      // Debug article data, especially image URLs
-      response.articles.forEach((article, index) => {
-        console.log(`Article ${index}:`, {
-          id: article.id,
-          title: article.title,
-          userName: article.userName,
-          date: article.date,
-          coverImage: article.coverImage,
-          hasImage: !!article.coverImage && article.coverImage.trim() !== ''
-        });
-      });
 
-      setState(prev => ({
-        ...prev,
-        articles: append ? [...prev.articles, ...response.articles] : response.articles,
-        loading: false,
-        hasMore: response.hasMore,
-        page: response.page,
-        total: response.total,
-      }));
+      setState(prev => {
+        let mergedArticles;
+        if (append) {
+          // 合并时去重，基于article.id
+          const existingIds = new Set(prev.articles.map(article => article.id));
+          const newArticles = response.articles.filter(article => !existingIds.has(article.id));
+          mergedArticles = [...prev.articles, ...newArticles];
+        } else {
+          mergedArticles = response.articles;
+        }
+
+        return {
+          ...prev,
+          articles: mergedArticles,
+          loading: false,
+          hasMore: response.hasMore,
+          page: response.page,
+          total: response.total,
+        };
+      });
     } catch (error) {
       let errorMessage = 'Failed to fetch articles';
 
@@ -75,7 +75,7 @@ export const useArticles = (
         error: errorMessage,
       }));
     }
-  }, []); // Remove dependency on initialParams
+  }, [initialParams]); // 添加initialParams依赖
 
   const loadMore = useCallback(() => {
     if (!state.loading && state.hasMore) {

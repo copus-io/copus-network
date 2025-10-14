@@ -99,16 +99,6 @@ export const NotificationListSection = (): JSX.Element => {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    console.log('时间格式化分析:', {
-      原始时间戳: timestamp,
-      解析后的日期: date,
-      当前时间: new Date(),
-      时间差毫秒: diffMs,
-      时间差分钟: diffMins,
-      时间差小时: diffHours,
-      时间差天数: diffDays
-    });
-
     if (diffMins < 1) return "刚刚";
     if (diffMins < 60) return `${diffMins}分钟前`;
     if (diffHours < 24) return `${diffHours}小时前`;
@@ -132,6 +122,8 @@ export const NotificationListSection = (): JSX.Element => {
     icon: n.type === "system" ? "https://c.animaapp.com/mft4oqz6uyUKY7/img/icon-wrap-1.svg" : undefined,
     profileImage: n.avatar,
     deleteIcon: n.type === "system" ? "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete.svg" : "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg",
+    userId: n.metadata?.senderId, // 使用senderId
+    namespace: n.metadata?.senderNamespace, // 添加namespace用于导航
   }));
 
   // 渲染空状态组件
@@ -187,6 +179,20 @@ export const NotificationListSection = (): JSX.Element => {
   const handleDeleteNotification = async (id: string | number, e: React.MouseEvent) => {
     e.stopPropagation();
     await deleteNotification(id.toString());
+  };
+
+  // 处理用户点击跳转到个人资料页
+  const handleUserClick = (notification: any, e: React.MouseEvent) => {
+    e.stopPropagation(); // 防止触发通知卡片的点击事件
+
+    // 优先使用namespace，其次使用userId
+    if (notification.namespace) {
+      // 使用短链接格式跳转到用户资料页
+      navigate(`/u/${notification.namespace}`);
+    } else if (notification.userId) {
+      // 兜底方案：使用userId
+      navigate(`/user/${notification.userId}/treasury`);
+    }
   };
 
   return (
@@ -259,14 +265,23 @@ export const NotificationListSection = (): JSX.Element => {
                         src={notification.icon}
                       />
                     ) : (
-                      <Avatar className="w-[45px] h-[45px] flex-shrink-0">
-                        <AvatarImage
-                          src={notification.profileImage}
-                          alt="Profile"
-                          className="object-cover"
-                        />
-                        <AvatarFallback>UN</AvatarFallback>
-                      </Avatar>
+                      <div
+                        className={`relative ${(notification.namespace || notification.userId) ? 'cursor-pointer hover:opacity-80 transition-opacity duration-200' : ''}`}
+                        onClick={(notification.namespace || notification.userId) ? (e) => handleUserClick(notification, e) : undefined}
+                        title={(notification.namespace || notification.userId) ? "点击查看用户资料" : undefined}
+                      >
+                        <Avatar className="w-[45px] h-[45px] flex-shrink-0">
+                          <AvatarImage
+                            src={notification.profileImage}
+                            alt="Profile"
+                            className="object-cover"
+                          />
+                          <AvatarFallback>UN</AvatarFallback>
+                        </Avatar>
+                        {(notification.namespace || notification.userId) && (
+                          <div className="absolute inset-0 rounded-full border-2 border-transparent hover:border-blue-300 transition-colors duration-200" />
+                        )}
+                      </div>
                     )}
 
                     <div className="flex items-start gap-5 flex-1">
@@ -275,7 +290,33 @@ export const NotificationListSection = (): JSX.Element => {
                           {notification.category}
                         </div>
                         <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-lg leading-[23px]">
-                          {notification.message}
+                          {notification.type !== "system" && (notification.namespace || notification.userId) ? (
+                            // 为非系统通知解析并高亮用户名
+                            (() => {
+                              const message = notification.message;
+                              // 简单的用户名提取逻辑：通常用户名在消息开头
+                              const userNameMatch = message.match(/^([^<>\s]+(?:\s+[^<>\s]+)*?)\s+(liked|commented|treasured)/);
+                              if (userNameMatch) {
+                                const userName = userNameMatch[1];
+                                const restMessage = message.substring(userName.length);
+                                return (
+                                  <span>
+                                    <span
+                                      className="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200 font-semibold"
+                                      onClick={(e) => handleUserClick(notification, e)}
+                                      title="点击查看用户资料"
+                                    >
+                                      {userName}
+                                    </span>
+                                    {restMessage}
+                                  </span>
+                                );
+                              }
+                              return message;
+                            })()
+                          ) : (
+                            notification.message
+                          )}
                         </div>
                       </div>
 

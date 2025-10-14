@@ -33,7 +33,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           id: userData.id,
           username: userData.username,
           namespace: userData.namespace,
-          faceUrl: userData.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.namespace}&backgroundColor=b6e3f4`,
+          faceUrl: userData.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}&backgroundColor=b6e3f4`,
           bio: userData.bio || "这个用户很神秘，什么都没留下~",
           articlesCount: userData.statistics.articleCount,
           followersCount: 0, // API暂不提供关注者数据

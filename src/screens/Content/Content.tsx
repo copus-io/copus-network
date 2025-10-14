@@ -63,7 +63,7 @@ export const Content = (): JSX.Element => {
     categoryTextColor: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).text,
     userName: article.authorInfo?.username || 'Anonymous',
     userId: article.authorInfo?.id,
-    userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`,
+    userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
     date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
     visitCount: `${article.viewCount || 0} Visits`,
@@ -254,7 +254,7 @@ export const Content = (): JSX.Element => {
                     src={
                       content.userAvatar ||
                       (user && user.id === content.userId ? user.faceUrl : null) ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${content.userName}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
+                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${content.userName}&backgroundColor=b6e3f4`
                     }
                   />
 

@@ -185,7 +185,7 @@ export const Create = (): JSX.Element => {
     category: formData.selectedTopic,
     categoryColor: selectedCategoryData?.color,
     userName: user?.username || 'Guest User',
-    userAvatar: user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`,
+    userAvatar: user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4`,
     userId: user?.id,
     namespace: user?.namespace,
     date: new Date().toISOString(),
