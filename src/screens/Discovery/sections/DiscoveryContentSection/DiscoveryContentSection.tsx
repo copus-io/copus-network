@@ -239,7 +239,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
   }
 
   return (
-    <main className="flex flex-col items-start gap-10 px-5 py-0 relative flex-1">
+    <main className="flex flex-col items-start gap-10 px-5 py-0 relative flex-1 w-full max-w-none">
       {/* Welcome Guide Bar - 根据登录状态显示不同内容 */}
       {showWelcomeGuide && (
         <section className="pl-[30px] pr-4 py-[30px] rounded-lg border-l-[3px] [border-left-style:solid] border-red shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-start gap-[15px] relative w-full">
@@ -280,12 +280,12 @@ export const DiscoveryContentSection = (): JSX.Element => {
       )}
 
       {/* Content Cards Section */}
-      <section className="flex items-start gap-8 pt-0 pb-[30px] min-h-screen w-full">
-        <div className="flex flex-col gap-8 pt-0 pb-5 flex-1">
+      <section className="flex items-start gap-8 pt-0 pb-[30px] min-h-screen w-full max-w-none">
+        <div className="flex flex-col gap-8 pt-0 pb-5 w-1/2">
           {leftColumnPosts.map((post, index) => renderPostCard(post, index))}
         </div>
 
-        <div className="flex flex-col gap-8 pt-0 pb-5 flex-1">
+        <div className="flex flex-col gap-8 pt-0 pb-5 w-1/2">
           {rightColumnPosts.map((post, index) => renderPostCard(post, index))}
         </div>
       </section>
