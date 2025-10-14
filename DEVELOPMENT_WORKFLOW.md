@@ -133,10 +133,24 @@ git show origin/content/text-updates:path/to/file
 | 命令 | 功能 |
 |-----|------|
 | `./start-work.sh` | 开始工作前准备 |
+| `./smart-push.sh` | 智能推送（推荐） |
 | `./git-backup.sh` | 保存和备份代码 |
 | `./check-teammate.sh` | 查看同事更改 |
 | `git status` | 查看当前状态 |
 | `git log --oneline -5` | 查看最近提交 |
+
+## 本地开发优先工作流
+
+### 🎯 推荐流程
+1. **开始开发**: `./start-work.sh`
+2. **本地编码**: 在编辑器中开发，使用 `npm run dev` 实时预览
+3. **完成阶段性工作**: `./smart-push.sh` （智能决定是否推送）
+4. **监控同事**: `./check-teammate.sh`
+
+### 💡 智能推送策略
+- ✅ **完成功能时推送** - 新功能、bug修复
+- ✅ **每日结束时推送** - 保存重要进度
+- ❌ **避免频繁推送** - 调试代码、实验性修改
 
 ## 联系方式
 
