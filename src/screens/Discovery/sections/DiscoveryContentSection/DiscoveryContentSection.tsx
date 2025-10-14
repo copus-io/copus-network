@@ -195,7 +195,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
           article={articleData}
           layout="discovery"
           actions={{
-            showTreasure: !isOwnArticle,
+            showTreasure: true,
             showVisits: true
           }}
           onLike={handleLike}

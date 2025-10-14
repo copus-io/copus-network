@@ -351,7 +351,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     isLiked={article.isLiked || false}
                     likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                     onClick={handleLikeClick}
-                    size="medium"
+                    size="large"
                   />
                 )}
 
@@ -518,7 +518,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       isLiked={article.isLiked || false}
                       likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                       onClick={handleLikeClick}
-                      size="medium"
+                      size="large"
                     />
                   )}
 

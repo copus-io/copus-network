@@ -170,7 +170,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               article={article}
               layout="treasury"
               actions={{
-                showTreasure: !isOwnArticle, // Hide treasure button for own articles
+                showTreasure: true, // Show treasure button for all articles
                 showVisits: true,
                 showWebsite: true
               }}
