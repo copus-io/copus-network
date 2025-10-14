@@ -230,9 +230,25 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
       showToast('已成功登出', 'success');
 
+      // 重定向到主页
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 1000); // 延迟1秒让用户看到成功提示
+
     } catch (error) {
       console.error('❌ 登出失败:', error);
       showToast('登出失败，请重试', 'error');
+
+      // 即使API调用失败，也执行本地登出清理
+      logout();
+      if (onLogout) {
+        onLogout();
+      }
+
+      // 无论如何都重定向到主页，避免留在需要认证的页面
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 2000);
     }
   };
 
