@@ -104,9 +104,43 @@ git push --force-with-lease origin feature/functionality-updates
 ./git-backup.sh
 ```
 
+## 监控同事更改
+
+### 快速查看同事进度
+```bash
+./check-teammate.sh
+```
+
+### 实时监控（每30秒刷新）
+```bash
+watch -n 30 './check-teammate.sh'
+```
+
+### 查看具体文件更改
+```bash
+# 查看同事修改了哪些文件
+git diff --name-only origin/develop..origin/content/text-updates
+
+# 查看具体更改内容
+git diff origin/develop..origin/content/text-updates
+
+# 查看某个文件的具体更改
+git show origin/content/text-updates:path/to/file
+```
+
+## 常用命令速查
+
+| 命令 | 功能 |
+|-----|------|
+| `./start-work.sh` | 开始工作前准备 |
+| `./git-backup.sh` | 保存和备份代码 |
+| `./check-teammate.sh` | 查看同事更改 |
+| `git status` | 查看当前状态 |
+| `git log --oneline -5` | 查看最近提交 |
+
 ## 联系方式
 
 如果遇到Git相关问题，及时沟通避免代码丢失。
 
 ---
-*最后更新: $(date +%Y-%m-%d)*
+*最后更新: 2025-10-14*
