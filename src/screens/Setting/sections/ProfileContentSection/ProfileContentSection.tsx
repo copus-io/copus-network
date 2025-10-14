@@ -196,7 +196,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
 
   const handleDeleteAccount = () => {
-    navigate('/delete-account');
+    navigate('/account/delete');
   };
 
   const handleProfileImageUploaded = (imageUrl: string) => {

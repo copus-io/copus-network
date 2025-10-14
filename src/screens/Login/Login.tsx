@@ -44,7 +44,7 @@ export const Login = (): JSX.Element => {
   // 登录表单状态
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(true); // 既记住登录状态，也记住账号邮箱
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [isRegisterLoading, setIsRegisterLoading] = useState(false);
 
@@ -69,6 +69,20 @@ export const Login = (): JSX.Element => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
+
+  // 页面加载时恢复记住的邮箱
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('copus_remembered_email');
+    const savedRememberMe = localStorage.getItem('copus_remember_me_option');
+
+    if (savedEmail) {
+      setLoginEmail(savedEmail);
+    }
+
+    if (savedRememberMe !== null) {
+      setRememberMe(savedRememberMe === 'true');
+    }
+  }, []);
 
   // 处理社交登录OAuth回调
   useEffect(() => {
@@ -450,6 +464,18 @@ export const Login = (): JSX.Element => {
           await fetchUserInfo(possibleToken);
         } catch (userInfoError) {
         }
+
+        // 如果用户选择Remember me，保存邮箱到本地存储
+        if (rememberMe) {
+          localStorage.setItem('copus_remembered_email', loginEmail);
+          localStorage.setItem('copus_remember_me_option', 'true');
+        } else {
+          // 如果不记住，清除之前保存的邮箱
+          localStorage.removeItem('copus_remembered_email');
+          localStorage.setItem('copus_remember_me_option', 'false');
+        }
+
+        showToast('登录成功！欢迎回来～ 🎉', 'success');
 
         // 跳转到首页
         navigate('/discovery');

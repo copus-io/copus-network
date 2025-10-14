@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
-import { useMyCreatedArticles } from "../../../../hooks/queries";
 import { AuthService } from "../../../../services/authService";
 import { Avatar, AvatarImage } from "../../../../components/ui/avatar";
 import { Button } from "../../../../components/ui/button";
@@ -113,16 +112,16 @@ export const MainContentSection = (): JSX.Element => {
   const [previewImageUrl, setPreviewImageUrl] = useState("");
   const [previewImageAlt, setPreviewImageAlt] = useState("");
 
-  // 获取我创作的文章数据
-  const { articles: myCreatedData, loading: myCreatedLoading, error: myCreatedError, refetch: refetchMyArticles } = useMyCreatedArticles({
-    pageIndex: 0,
-    pageSize: 10
-  });
-
   // 宝藏页面状态管理
   const [likedArticles, setLikedArticles] = useState<any[]>([]);
   const [treasuryLoading, setTreasuryLoading] = useState(true);
   const [treasuryError, setTreasuryError] = useState<string | null>(null);
+
+  // 创作文章状态管理
+  const [createdArticles, setCreatedArticles] = useState<any[]>([]);
+  const [createdArticlesLoading, setCreatedArticlesLoading] = useState(true);
+  const [createdArticlesError, setCreatedArticlesError] = useState<string | null>(null);
+
   const [treasuryStats, setTreasuryStats] = useState({
     likedArticleCount: 0,
     articleCount: 0,
@@ -133,6 +132,18 @@ export const MainContentSection = (): JSX.Element => {
   // 判断是否在查看其他用户的宝藏
   const isViewingOtherUser = !!namespace;
   const targetNamespace = namespace || user?.namespace;
+
+  // 移除对404 API的调用，改用统计信息显示
+
+  // 调试信息
+  console.log('🔍📋 宝藏页面状态调试:', {
+    user: user?.username,
+    namespace: user?.namespace,
+    likedArticles: likedArticles.length,
+    treasuryLoading,
+    treasuryError,
+    isViewingOtherUser
+  });
 
   // 获取用户收藏的文章
   useEffect(() => {
@@ -159,23 +170,38 @@ export const MainContentSection = (): JSX.Element => {
         // 根据是否查看其他用户，使用不同的API
         let treasuryInfoResponse, likedArticlesResponse;
 
+        // 使用正确的API端点获取数据
         if (isViewingOtherUser && targetNamespace) {
           // 查看其他用户的宝藏
           [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
-            AuthService.getOtherUserTreasuryInfoByNamespace(targetNamespace),
-            AuthService.getOtherUserLikedArticlesByNamespace(targetNamespace, 1, 20)
+            AuthService.getUserHomeInfo(targetNamespace),
+            // 暂时还是显示统计信息，因为需要targetUserId
+            Promise.resolve({ data: [], pageCount: 0, pageIndex: 1, pageSize: 20, totalCount: 0 })
+          ]);
+        } else if (user?.namespace) {
+          // 查看自己的宝藏，使用正确的API
+          [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
+            AuthService.getUserHomeInfo(user.namespace),
+            AuthService.getMyLikedArticlesCorrect(1, 20)
           ]);
         } else {
-          // 查看自己的宝藏
+          // 查看自己的宝藏但没有namespace
           [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
             AuthService.getUserTreasuryInfo(),
-            AuthService.getUserLikedArticles(1, 20)
+            AuthService.getMyLikedArticlesCorrect(1, 20)
           ]);
         }
 
 
         // 处理统计信息
         const treasuryInfo = treasuryInfoResponse.data || treasuryInfoResponse;
+        console.log('🏆📚 用户详情API响应数据:', {
+          namespace: targetNamespace,
+          isViewingOtherUser,
+          raw: treasuryInfoResponse,
+          processed: treasuryInfo
+        });
+
         if (treasuryInfo) {
           setTreasuryUserInfo(treasuryInfo);
           if (treasuryInfo.statistics) {
@@ -183,54 +209,40 @@ export const MainContentSection = (): JSX.Element => {
           }
         }
 
-        // 处理文章列表，转换为组件需要的格式
-        const articlesData = likedArticlesResponse.data || likedArticlesResponse;
-
-        // 尝试多种可能的数据结构
-        let articlesArray = [];
-        if (articlesData && Array.isArray(articlesData.data)) {
-          // 标准结构：{ data: [...] }
-          articlesArray = articlesData.data;
-        } else if (Array.isArray(articlesData)) {
-          // 直接是数组：[...]
-          articlesArray = articlesData;
-        } else {
-          articlesArray = [];
-        }
-
-
-        const articles = articlesArray.map((article: any, index: number) => {
-
-          try {
-            return {
-              id: article.uuid,
-              uuid: article.uuid,
-              title: article.title,
-              description: article.content,
-              coverImage: article.coverUrl,
-              category: article.categoryInfo?.name || 'General',
-              userName: article.authorInfo?.username || 'Anonymous',
-              userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
-              userId: article.authorInfo?.id,
-              userNamespace: article.authorInfo?.namespace,
-              date: new Date(article.createAt * 1000).toLocaleDateString(),
-              treasureCount: article.likeCount || 0,
-              visitCount: `${article.viewCount || 0} Visits`,
-              isLiked: article.isLiked || true, // 收藏页面的文章都是已点赞的
-              targetUrl: article.targetUrl,
-              website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
-            };
-          } catch (err) {
-            console.error('❌ 转换文章数据失败:', err, article);
-            return null;
+        // 直接使用API响应数据，不需要在这里转换格式
+        console.log('🏆📚 收藏文章API响应数据 - 详细分析:', {
+          完整响应: likedArticlesResponse,
+          数据数组: likedArticlesResponse?.data,
+          数据长度: likedArticlesResponse?.data?.length,
+          总数统计: likedArticlesResponse?.totalCount,
+          页面信息: {
+            pageIndex: likedArticlesResponse?.pageIndex,
+            pageSize: likedArticlesResponse?.pageSize,
+            pageCount: likedArticlesResponse?.pageCount
+          },
+          用户信息: {
+            username: user?.username,
+            namespace: user?.namespace,
+            id: user?.id
           }
-        }).filter(Boolean); // 过滤掉转换失败的文章
+        });
 
-        setLikedArticles(articles);
+        if (likedArticlesResponse.data && Array.isArray(likedArticlesResponse.data)) {
+          setLikedArticles(likedArticlesResponse.data);
+        } else {
+          setLikedArticles([]);
+        }
 
       } catch (error) {
         console.error('❌ 获取收藏文章失败:', error);
-        setTreasuryError('获取收藏文章失败');
+        console.error('❌ 错误详情:', {
+          user: user?.username,
+          namespace: targetNamespace,
+          isViewingOtherUser,
+          errorMessage: error instanceof Error ? error.message : error,
+          errorStack: error instanceof Error ? error.stack : undefined
+        });
+        setTreasuryError(`获取收藏文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
         // 暂时使用空数组，避免页面崩溃
         setLikedArticles([]);
       } finally {
@@ -241,25 +253,98 @@ export const MainContentSection = (): JSX.Element => {
     fetchLikedArticles();
   }, [user, namespace, isViewingOtherUser, targetNamespace]);
 
+  // 获取创作文章数据
+  useEffect(() => {
+    if (!user && !namespace) {
+      setCreatedArticlesLoading(false);
+      return;
+    }
+
+    const fetchCreatedArticles = async () => {
+      setCreatedArticlesLoading(true);
+      setCreatedArticlesError(null);
+
+      try {
+        let response;
+
+        if (isViewingOtherUser && targetNamespace) {
+          // 查看其他用户时，传递targetUserId
+          const userInfo = await AuthService.getUserHomeInfo(targetNamespace);
+          response = await AuthService.getMyCreatedArticles(1, 20, userInfo.id);
+        } else if (user?.namespace) {
+          // 查看自己的创作
+          response = await AuthService.getMyCreatedArticles(1, 20);
+        } else {
+          response = await AuthService.getMyCreatedArticles(1, 20);
+        }
+
+        console.log('✅ 获取创作文章成功:', {
+          dataLength: response.data?.length || 0,
+          totalCount: response.totalCount,
+          response
+        });
+
+        if (response.data && Array.isArray(response.data)) {
+          setCreatedArticles(response.data);
+        } else {
+          setCreatedArticles([]);
+        }
+
+      } catch (error) {
+        console.error('❌ 获取创作文章失败:', error);
+        setCreatedArticlesError(`获取创作文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        setCreatedArticles([]);
+      } finally {
+        setCreatedArticlesLoading(false);
+      }
+    };
+
+    fetchCreatedArticles();
+  }, [user, namespace, isViewingOtherUser, targetNamespace]);
+
   // 将API数据转换为收藏卡片格式
   const transformLikedApiToCard = (article: any): ArticleData => {
     return {
       id: article.uuid,
       uuid: article.uuid,
       title: article.title,
-      description: article.description,
-      coverImage: article.coverImage || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
-      category: article.category,
-      categoryColor: article.categoryColor,
-      userName: article.userName,
-      userAvatar: article.userAvatar,
-      userId: user?.id,
-      date: article.date,
-      treasureCount: article.treasureCount,
-      visitCount: article.visitCount,
+      description: article.content,
+      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.categoryInfo?.name || '未分类',
+      categoryColor: article.categoryInfo?.color || '#666666',
+      userName: article.authorInfo?.username || 'Anonymous',
+      userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+      userId: article.authorInfo?.id,
+      userNamespace: article.authorInfo?.namespace,
+      date: new Date(article.createAt || article.publishAt).toLocaleDateString(),
+      treasureCount: article.likeCount || 0,
+      visitCount: article.viewCount || 0,
       isLiked: article.isLiked || true,
       targetUrl: article.targetUrl,
-      website: article.website
+      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined
+    };
+  };
+
+  // 将API数据转换为创作卡片格式（与收藏格式相同）
+  const transformCreatedApiToCard = (article: any): ArticleData => {
+    return {
+      id: article.uuid,
+      uuid: article.uuid,
+      title: article.title,
+      description: article.content,
+      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.categoryInfo?.name || '未分类',
+      categoryColor: article.categoryInfo?.color || '#666666',
+      userName: article.authorInfo?.username || 'Anonymous',
+      userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+      userId: article.authorInfo?.id,
+      userNamespace: article.authorInfo?.namespace,
+      date: new Date(article.createAt || article.publishAt).toLocaleDateString(),
+      treasureCount: article.likeCount || 0,
+      visitCount: article.viewCount || 0,
+      isLiked: article.isLiked || false, // 创作文章的点赞状态来自API
+      targetUrl: article.targetUrl,
+      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined
     };
   };
 
@@ -287,15 +372,7 @@ export const MainContentSection = (): JSX.Element => {
         userNamespace = likedArticle.userNamespace;
       }
 
-      // 如果还没找到，在myCreatedData中查找 - 这些是我创建的文章
-      if (!userNamespace && myCreatedData?.data) {
-        const myArticle = myCreatedData.data.find(a =>
-          a.authorInfo?.id === userId || a.userId === userId
-        );
-        if (myArticle) {
-          userNamespace = myArticle.authorInfo?.namespace || myArticle.userNamespace;
-        }
-      }
+      // 注：之前会在myCreatedData中查找，但该API已移除
     }
 
     // 判断是否是当前用户
@@ -388,14 +465,9 @@ export const MainContentSection = (): JSX.Element => {
     navigate(`/create?edit=${articleId}`);
   };
 
-  // 处理删除
+  // 处理删除 - 暂时禁用，因为创建文章API已移除
   const handleDelete = (articleId: string) => {
-    const article = myCreatedData?.data.find(a => a.uuid === articleId);
-    if (article) {
-      const card = transformApiToCard(article);
-      setArticleToDelete(card);
-      setDeleteDialogOpen(true);
-    }
+    console.log('删除功能暂时不可用，文章ID:', articleId);
   };
 
   // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
@@ -576,6 +648,16 @@ export const MainContentSection = (): JSX.Element => {
           </TabsList>
 
           <TabsContent value="collection" className="mt-[30px]">
+            {/* 调试信息 */}
+            <div className="text-xs text-gray-500 mb-4 p-2 bg-gray-100 rounded">
+              <div>🔍 调试信息:</div>
+              <div>• 加载状态: {String(treasuryLoading)}</div>
+              <div>• 错误信息: {treasuryError || '无'}</div>
+              <div>• 收藏文章数量: {likedArticles.length}</div>
+              <div>• 用户: {user?.username}</div>
+              <div>• 统计信息: 收藏{treasuryUserInfo?.statistics?.likedArticleCount}篇, 创作{treasuryUserInfo?.statistics?.articleCount}篇</div>
+            </div>
+
             {treasuryLoading ? (
               <div className="flex justify-center items-center py-20">
                 <div className="text-lg text-gray-600">加载收藏中...</div>
@@ -599,25 +681,43 @@ export const MainContentSection = (): JSX.Element => {
                 })}
               </div>
             ) : (
-              <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">还没有收藏任何内容哦～</div>
+              <div className="flex flex-col justify-center items-center py-20 gap-4">
+                <div className="text-lg text-gray-600">
+                  {treasuryUserInfo?.statistics?.likedArticleCount !== undefined
+                    ? `共收藏了 ${treasuryUserInfo.statistics.likedArticleCount} 篇文章`
+                    : '还没有收藏任何内容哦～'}
+                </div>
+                {treasuryUserInfo?.statistics?.likedArticleCount === 0 && (
+                  <div className="text-sm text-gray-400">
+                    快去发现一些精彩内容吧！
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="share" className="mt-[30px]">
-            {myCreatedLoading ? (
+            {/* 调试信息 */}
+            <div className="text-xs text-gray-500 mb-4 p-2 bg-gray-100 rounded">
+              <div>🔍 调试信息:</div>
+              <div>• 加载状态: {String(createdArticlesLoading)}</div>
+              <div>• 错误信息: {createdArticlesError || '无'}</div>
+              <div>• 创作文章数量: {createdArticles.length}</div>
+              <div>• 用户: {user?.username}</div>
+            </div>
+
+            {createdArticlesLoading ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">加载我的创作中...</div>
+                <div className="text-lg text-gray-600">加载创作中...</div>
               </div>
-            ) : myCreatedError ? (
+            ) : createdArticlesError ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-red-600">加载失败: {myCreatedError}</div>
+                <div className="text-lg text-red-600">加载失败: {createdArticlesError}</div>
               </div>
-            ) : myCreatedData && myCreatedData.data.length > 0 ? (
-              <div className="flex items-start gap-6 w-full">
-                {myCreatedData.data.slice(0, 2).map((article) => {
-                  const card = transformApiToCard(article);
+            ) : createdArticles.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                {createdArticles.map((article) => {
+                  const card = transformCreatedApiToCard(article);
                   return (
                     <div
                       key={card.id}
@@ -629,8 +729,17 @@ export const MainContentSection = (): JSX.Element => {
                 })}
               </div>
             ) : (
-              <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">还没有创作的内容哦～</div>
+              <div className="flex flex-col justify-center items-center py-20 gap-4">
+                <div className="text-lg text-gray-600">
+                  {treasuryUserInfo?.statistics?.articleCount !== undefined
+                    ? `共创作了 ${treasuryUserInfo.statistics.articleCount} 篇文章`
+                    : '还没有创作任何内容哦～'}
+                </div>
+                {treasuryUserInfo?.statistics?.articleCount === 0 && (
+                  <div className="text-sm text-gray-400">
+                    快去创作一些精彩内容吧！
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>

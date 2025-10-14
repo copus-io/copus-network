@@ -21,6 +21,36 @@ export interface DeleteAccountParams {
   reason: string;
 }
 
+export interface UserHomeRequest {
+  /**
+   * 主页子空间名
+   */
+  namespace: string;
+  [property: string]: any;
+}
+
+export interface UserHomeResponse {
+  bio: string;
+  coverUrl: string;
+  email: string;
+  faceUrl: string;
+  id: number;
+  isOwner: boolean;
+  namespace: string;
+  socialLinks: Array<{
+    iconUrl: string;
+    linkUrl: string;
+    title: string;
+  }>;
+  statistics: {
+    articleCount: number;
+    likedArticleCount: number;
+    myArticleLikedCount: number;
+  };
+  username: string;
+  walletAddress: string;
+}
+
 export class AuthService {
   /**
    * 发送验证码
@@ -595,6 +625,16 @@ export class AuthService {
   }
 
   /**
+   * 获取用户详情信息 - 通过namespace
+   */
+  static async getUserHomeInfo(namespace: string): Promise<UserHomeResponse> {
+    return apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
    * 获取其他用户的宝藏信息（公开数据）- 通过namespace
    */
   static async getOtherUserTreasuryInfoByNamespace(namespace: string): Promise<{
@@ -1086,6 +1126,98 @@ export class AuthService {
       console.error('❌ 更新消息通知配置失败:', error);
       return false;
     }
+  }
+
+  /**
+   * 获取用户收藏的文章列表 - 使用正确的API路径
+   */
+  static async getMyLikedArticlesCorrect(pageIndex: number = 1, pageSize: number = 20, targetUserId?: number): Promise<{
+    data: Array<{
+      authorInfo: {
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+      categoryInfo: {
+        articleCount: number;
+        color: string;
+        id: number;
+        name: string;
+      };
+      content: string;
+      coverUrl: string;
+      createAt: number;
+      isLiked: boolean;
+      likeCount: number;
+      publishAt: number;
+      targetUrl: string;
+      title: string;
+      uuid: string;
+      viewCount: number;
+    }>;
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  }> {
+    const params = new URLSearchParams();
+    params.append('pageIndex', pageIndex.toString());
+    params.append('pageSize', pageSize.toString());
+    if (targetUserId !== undefined) {
+      params.append('targetUserId', targetUserId.toString());
+    }
+
+    return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * 获取用户创作的文章列表 - 使用正确的API路径
+   */
+  static async getMyCreatedArticles(pageIndex: number = 1, pageSize: number = 20, targetUserId?: number): Promise<{
+    data: Array<{
+      authorInfo: {
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+      categoryInfo: {
+        articleCount: number;
+        color: string;
+        id: number;
+        name: string;
+      };
+      content: string;
+      coverUrl: string;
+      createAt: number;
+      isLiked: boolean;
+      likeCount: number;
+      publishAt: number;
+      targetUrl: string;
+      title: string;
+      uuid: string;
+      viewCount: number;
+    }>;
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  }> {
+    const params = new URLSearchParams();
+    params.append('pageIndex', pageIndex.toString());
+    params.append('pageSize', pageSize.toString());
+    if (targetUserId !== undefined) {
+      params.append('targetUserId', targetUserId.toString());
+    }
+
+    return apiRequest(`/client/userHome/pageMyCreatedArticle?${params.toString()}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
   }
 }
 

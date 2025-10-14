@@ -142,7 +142,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/account/delete",
-    element: <DeleteAccount />,
+    element: (
+      <AuthGuard requireAuth={true} fallbackPath="/login">
+        <DeleteAccount />
+      </AuthGuard>
+    ),
   },
   {
     path: "/published",
