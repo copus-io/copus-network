@@ -60,7 +60,8 @@
       "id": "src/routes/MyTreasury34/screens/MyTreasury.tsx",
       "label": "MyTreasury",
       "routes": [
-        "/user/:namespace/treasury"
+        "/user/:namespace/treasury",
+        "/@:namespace"
       ]
     },
     {
@@ -251,15 +252,15 @@
       }
     },
     {
-      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:94:33-to-src/routes/Login/screens/Login.tsx",
+      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:141:33-to-src/routes/Login/screens/Login.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/routes/Login/screens/Login.tsx",
       "data": {
         "viaRoute": "/login",
         "trigger": {
           "element": "navigate('/login')",
-          "line": 94,
-          "endLine": 94,
+          "line": 141,
+          "endLine": 141,
           "column": 33,
           "endColumn": 51,
           "sourceFile": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx"
@@ -267,15 +268,15 @@
       }
     },
     {
-      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:152:25-to-src/routes/Login/screens/Login.tsx",
+      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:199:25-to-src/routes/Login/screens/Login.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/routes/Login/screens/Login.tsx",
       "data": {
         "viaRoute": "/login",
         "trigger": {
           "element": "navigate('/login')",
-          "line": 152,
-          "endLine": 152,
+          "line": 199,
+          "endLine": 199,
           "column": 25,
           "endColumn": 43,
           "sourceFile": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx"
@@ -283,15 +284,15 @@
       }
     },
     {
-      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:167:6-to-src/components/guards/AuthGuard.tsx",
+      "id": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx:214:6-to-src/components/guards/AuthGuard.tsx",
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/components/guards/AuthGuard.tsx",
       "data": {
         "viaRoute": "/my-treasury",
         "trigger": {
           "element": "navigate('/my-treasury')",
-          "line": 167,
-          "endLine": 167,
+          "line": 214,
+          "endLine": 214,
           "column": 6,
           "endColumn": 30,
           "sourceFile": "src/screens/Discovery/sections/DiscoveryContentSection/DiscoveryContentSection.tsx"

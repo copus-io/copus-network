@@ -419,7 +419,7 @@ export const MainContentSection = (): JSX.Element => {
   const handleShare = () => {
     const currentNamespace = isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace;
     if (currentNamespace) {
-      const shortLink = `${window.location.origin}/@${currentNamespace}`;
+      const shortLink = `${window.location.origin}/u/${currentNamespace}`;
       navigator.clipboard.writeText(shortLink).then(() => {
         showToast('已复制专属链接到剪贴板！快去分享吧～ 🎉', 'success');
       }).catch(() => {

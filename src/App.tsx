@@ -34,6 +34,7 @@ import { AuthGuard } from "./components/guards/AuthGuard";
 import { UserProfile } from "./screens/UserProfile/UserProfile";
 import { NotFoundPage } from "./components/pages/NotFoundPage";
 import OAuthRedirect from "./components/OAuthRedirect";
+import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
 const router = createBrowserRouter([
   {
@@ -105,8 +106,8 @@ const router = createBrowserRouter([
     element: <MyTreasury />,
   },
   {
-    path: "/@:namespace",
-    element: <MyTreasury />, // Instagram风格短链接直接跳转到宝藏页面 ✨
+    path: "/u/:namespace",
+    element: <ShortLinkHandler />, // 简洁短链接格式 /u/namespace ✨
   },
   {
     path: "/my-treasury/v30",
