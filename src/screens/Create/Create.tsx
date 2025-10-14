@@ -17,6 +17,7 @@ import { AuthService } from "../../services/authService";
 import { publishArticle, getArticleDetail } from "../../services/articleService";
 import { useNavigate } from "react-router-dom";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
+import { ArticleCard, ArticleData } from "../../components/ArticleCard";
 
 
 export const Create = (): JSX.Element => {
@@ -123,7 +124,10 @@ export const Create = (): JSX.Element => {
 
     // Check if it looks like a valid domain pattern (before adding protocol)
     const urlWithoutProtocol = trimmedUrl.replace(/^https?:\/\//i, '');
-    if (!/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}/.test(urlWithoutProtocol) && urlWithoutProtocol !== 'localhost') {
+    // Extract just the hostname part (before any path, query, or fragment)
+    const hostnameOnly = urlWithoutProtocol.split('/')[0].split('?')[0].split('#')[0];
+    // Use a simpler, more robust regex for hostname validation
+    if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(hostnameOnly) && hostnameOnly !== 'localhost') {
       return { isValid: false, message: 'Please enter a valid website address (e.g., example.com)' };
     }
 
@@ -167,6 +171,29 @@ export const Create = (): JSX.Element => {
     }
   };
 
+  const selectedCategoryData = categories.find(cat => cat.name === formData.selectedTopic) || categories[0];
+  const selectedCategoryStyle = getCategoryStyle(formData.selectedTopic, selectedCategoryData?.color);
+
+  // Create preview article data
+  const previewArticleData: ArticleData = {
+    id: 'preview',
+    title: formData.title || 'Enter a title...',
+    description: formData.recommendation || 'Write your recommendation...',
+    coverImage: formData.coverImage
+      ? URL.createObjectURL(formData.coverImage)
+      : coverImageUrl || '',
+    category: formData.selectedTopic,
+    categoryColor: selectedCategoryData?.color,
+    userName: user?.username || 'Guest User',
+    userAvatar: user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`,
+    userId: user?.id,
+    namespace: user?.namespace,
+    date: new Date().toISOString(),
+    treasureCount: 0,
+    visitCount: "0 Visits",
+    website: extractDomain(formData.link)
+  };
+
   const handleInputChange = (field: string, value: string) => {
     if (field === "title") {
       // Limit title to 75 characters
@@ -205,9 +232,6 @@ export const Create = (): JSX.Element => {
       setFormData(prev => ({ ...prev, coverImage: file }));
     }
   };
-
-  const selectedCategoryData = categories.find(cat => cat.name === formData.selectedTopic) || categories[0];
-  const selectedCategoryStyle = getCategoryStyle(formData.selectedTopic, selectedCategoryData?.color);
 
   // 生成唯一ID
   const generateUUID = () => {
@@ -535,7 +559,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className={`relative w-full aspect-[4/3] border border-dashed cursor-pointer transition-all rounded-lg ${
+                className={`relative w-[400px] h-[192px] border border-dashed cursor-pointer transition-all rounded-lg ${
                   formData.coverImage || coverImageUrl
                     ? 'border-green-400 bg-cover bg-[50%_50%]'
                     : 'border-medium-grey hover:border-dark-grey bg-gray-50'
@@ -659,115 +683,40 @@ export const Create = (): JSX.Element => {
             </div>
           </div>
 
-            <div className="inline-flex flex-col items-start gap-5">
-              <div className="flex w-[60px] items-center gap-2.5">
-                <div className="relative flex items-center justify-center w-fit mt-[-1.00px] mr-[-4.00px] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                  Preview
-                </div>
+          <div className="inline-flex flex-col items-start gap-5">
+            <div className="flex w-[60px] items-center gap-2.5">
+              <div className="relative flex items-center justify-center w-fit mt-[-1.00px] mr-[-4.00px] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
+                Preview
+              </div>
+            </div>
+
+            <div className="flex flex-col items-start gap-10 w-full">
+              <div className="w-[500px]">
+                <ArticleCard
+                  article={previewArticleData}
+                  layout="preview"
+                  className="w-full"
+                />
               </div>
 
-              <div className="flex flex-col items-start gap-10 w-full">
-                <div className="flex flex-col w-[374px] items-start gap-[15px] p-5 bg-white rounded-lg shadow-card-white">
-                  <div className="flex flex-col items-start justify-center gap-[15px] w-full rounded-[100px]">
-                    <div
-                      className="flex flex-col aspect-[4/3] items-start justify-between p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
-                      style={{
-                        backgroundImage: formData.coverImage
-                          ? `url(${URL.createObjectURL(formData.coverImage)})`
-                          : coverImageUrl
-                          ? `url(${coverImageUrl})`
-                          : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
-                      }}
-                    >
-                      {!formData.coverImage && !coverImageUrl && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </div>
-                            <p className="text-gray-500 text-xs">Cover Preview</p>
-                          </div>
-                        </div>
-                      )}
-                      <Badge
-                        variant="outline"
-                        style={getCategoryInlineStyle(selectedCategoryData?.color)}
-                      >
-                        {formData.selectedTopic}
-                      </Badge>
-
-                      <div className="flex justify-end">
-                        <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
-                          <span className="[font-family:'Lato',Helvetica] font-bold text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
-                            {extractDomain(formData.link)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-start gap-[15px] w-full">
-                      <div className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[22px] tracking-[0] leading-[30px] break-words">
-                        {formData.title || "Please enter your link title"}
-                      </div>
-
-                      <div className="flex flex-col items-start gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                        <div className="relative w-full [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-words">
-                          "{formData.recommendation
-                            ? formData.recommendation.length > 200
-                              ? formData.recommendation.substring(0, 200) + "..."
-                              : formData.recommendation
-                            : "Please describe why you recommend this link..."}"
-                        </div>
-
-                        <div className="flex items-start justify-between w-full">
-                          <div className="inline-flex items-center gap-2.5">
-                            <Avatar className="w-[18px] h-[18px]">
-                              <AvatarImage
-                                src={
-                                  user?.faceUrl ||
-                                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
-                                }
-                                alt="Profile"
-                                className="object-cover"
-                              />
-                              <AvatarFallback>UN</AvatarFallback>
-                            </Avatar>
-                            <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                              {user?.username || "Guest User"}
-                            </span>
-                          </div>
-
-                          <div className="inline-flex h-[25px] items-center">
-                            <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
-                              Today
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full"
-                    onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
-                    style={{
-                      opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,
-                      cursor: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    <span className="[font-family:'Lato',Helvetica] font-bold text-white text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-                      {isPublishing ? (
-                        <span className="flex items-center space-x-2">
-                          <PaperPlane />
-                          <span>{isEditMode ? 'Updating...' : 'Publishing...'}</span>
-                        </span>
-                      ) : (
-                        isEditMode ? 'Update' : 'Publish'
-                      )}
-                    </span>
-                  </div>
+              <div
+                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full"
+                onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
+                style={{
+                    opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,
+                    cursor: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-white text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+                    {isPublishing ? (
+                      <span className="flex items-center space-x-2">
+                        <PaperPlane />
+                        <span>{isEditMode ? 'Updating...' : 'Publishing...'}</span>
+                      </span>
+                    ) : (
+                      isEditMode ? 'Update' : 'Publish'
+                    )}
+                  </span>
                 </div>
               </div>
             </div>

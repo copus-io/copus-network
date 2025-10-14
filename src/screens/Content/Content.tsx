@@ -196,7 +196,17 @@ export const Content = (): JSX.Element => {
                     </span>
                   </div>
 
-                  <h1 className="relative self-stretch [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] mt-2">
+                  <h1
+                    className="relative self-stretch [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] mt-2 break-all overflow-hidden"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
                     {content.title}
                   </h1>
                 </div>
@@ -214,7 +224,17 @@ export const Content = (): JSX.Element => {
                     &quot;
                   </div>
 
-                  <p className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-xl tracking-[0] leading-[32.0px]">
+                  <p
+                    className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-xl tracking-[0] leading-[32.0px] break-all overflow-hidden"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 6,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
                     {content.description}
                   </p>
 
@@ -274,13 +294,15 @@ export const Content = (): JSX.Element => {
 
           <div className="flex justify-between self-stretch w-full items-center relative flex-[0_0_auto]">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
-              {/* 使用统一的宝石按钮组件 - 大尺寸适合详情页 */}
-              <TreasureButton
-                isLiked={isLiked}
-                likesCount={likesCount}
-                onClick={handleLike}
-                size="large"
-              />
+              {/* 只有当用户不是文章创建者时才显示宝石按钮 */}
+              {user && content && user.id !== content.userId && (
+                <TreasureButton
+                  isLiked={isLiked}
+                  likesCount={likesCount}
+                  onClick={handleLike}
+                  size="large"
+                />
+              )}
 
               <button
                 onClick={handleShare}

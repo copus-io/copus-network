@@ -33,7 +33,7 @@ export interface ArticleData {
 }
 
 // Layout mode
-export type LayoutMode = 'discovery' | 'treasury' | 'published' | 'compact';
+export type LayoutMode = 'discovery' | 'treasury' | 'published' | 'compact' | 'preview';
 
 // Action button configuration
 export interface ActionConfig {
@@ -145,12 +145,102 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   // Render different card content based on layout mode
   const renderCardContent = () => {
     switch (layout) {
+      case 'preview':
+        return (
+          <CardContent className="flex flex-col items-start gap-[15px] p-5">
+            <div className="flex flex-col items-start justify-center gap-[15px] w-full">
+              <div
+                className="flex flex-col h-[240px] items-start justify-between p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
+                style={{
+                  backgroundImage: article.coverImage
+                    ? `url(${article.coverImage})`
+                    : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+                }}
+              >
+                {!article.coverImage && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-500 text-xs">Cover Preview</p>
+                    </div>
+                  </div>
+                )}
+
+                <Badge
+                  variant="outline"
+                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border-2 w-fit ${
+                    article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
+                  }`}
+                  style={article.categoryColor ? categoryInlineStyle : undefined}
+                >
+                  <span
+                    className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
+                      article.categoryColor ? '' : categoryStyle.text
+                    }`}
+                    style={article.categoryColor ? { color: categoryInlineStyle.color } : undefined}
+                  >
+                    {article.category}
+                  </span>
+                </Badge>
+
+                <div className="flex justify-end">
+                  <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
+                    <span className="[font-family:'Lato',Helvetica] font-bold text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
+                      {article.website || 'example.com'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start gap-[15px] w-full">
+                <h3
+                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitBoxOrient: 'vertical',
+                    WebkitLineClamp: 2,
+                    overflow: 'hidden',
+                    wordBreak: 'break-all',
+                    overflowWrap: 'break-word'
+                  }}
+                >
+                  {article.title || 'Enter a title...'}
+                </h3>
+
+                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                  <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] line-clamp-2 break-words overflow-hidden">
+                    "{article.description || 'Write your recommendation...'}"
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="w-[18px] h-[18px]">
+                        <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
+                      </Avatar>
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+                        {article.userName}
+                      </span>
+                    </div>
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
+                      Preview
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        );
+
       case 'treasury':
         return (
           <CardContent className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
               <div
-                className="flex flex-col aspect-[4/3] w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
+                className="flex flex-col h-[240px] w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
                 style={{ backgroundImage: `url(${article.coverImage})` }}
                 onClick={handleImagePreview(article.coverImage, `${article.title} cover image`)}
                 title="Click to view full size"
@@ -196,12 +286,32 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
 
               <div className="flex flex-col gap-[15px] flex-1">
-                <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] line-clamp-1">
+                <h3
+                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitBoxOrient: 'vertical',
+                    WebkitLineClamp: 2,
+                    overflow: 'hidden',
+                    wordBreak: 'break-all',
+                    overflowWrap: 'break-word'
+                  }}
+                >
                   {article.title}
                 </h3>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] line-clamp-1">
+                  <p
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-all overflow-hidden"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
                     "{article.description}"
                   </p>
 
@@ -306,12 +416,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         return (
           <CardContent className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
-              <div className="relative aspect-[4/3] w-full rounded-lg overflow-hidden bg-gray-200">
+              <div className="relative h-[240px] w-full rounded-lg overflow-hidden bg-gray-200">
                 <LazyImage
                   src={article.coverImage || ''}
                   alt={article.title}
                   className="w-full h-full object-cover"
-                  placeholder="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI0MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Mb2FkaW5nLi4uPC90ZXh0Pjwvc3ZnPg=="
+                  placeholder="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTAwIiBoZWlnaHQ9IjI0MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Mb2FkaW5nLi4uPC90ZXh0Pjwvc3ZnPg=="
                 />
 
                 <div className="absolute inset-0 flex flex-col justify-between p-[15px]">
@@ -346,12 +456,32 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
 
               <div className="flex flex-col gap-[15px] flex-1">
-                <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] line-clamp-1">
+                <h3
+                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitBoxOrient: 'vertical',
+                    WebkitLineClamp: 2,
+                    overflow: 'hidden',
+                    wordBreak: 'break-all',
+                    overflowWrap: 'break-word'
+                  }}
+                >
                   {article.title}
                 </h3>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] line-clamp-1">
+                  <p
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-all overflow-hidden"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
                     "{article.description}"
                   </p>
 
@@ -412,17 +542,29 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     }
   };
 
+  const cardClasses = layout === 'preview'
+    ? "bg-white rounded-lg shadow-card-white border-0"
+    : "bg-white rounded-[8px] border shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[500px]";
+
+  const cardContent = (
+    <Card className={cardClasses}>
+      {renderCardContent()}
+    </Card>
+  );
+
   return (
     <div
-      className={`w-full ${className}`}
+      className={`w-[500px] ${className}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <Link to={`/work/${article.id}`}>
-        <Card className="bg-white rounded-[8px] border shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[500px]">
-          {renderCardContent()}
-        </Card>
-      </Link>
+      {layout === 'preview' ? (
+        cardContent
+      ) : (
+        <Link to={`/work/${article.id}`}>
+          {cardContent}
+        </Link>
+      )}
 
       {/* Image preview modal */}
       <ImagePreviewModal
