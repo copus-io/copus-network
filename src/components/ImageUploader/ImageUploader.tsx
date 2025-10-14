@@ -24,17 +24,17 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [isUploading, setIsUploading] = useState(false);
 
   const isAvatar = type === 'avatar';
-  const aspectRatio = isAvatar ? 1 : 16 / 9; // 头像1:1，横幅16:9
+  const aspectRatio = isAvatar ? 1 : 16 / 9; // Avatar 1:1, Banner 16:9
   const cropShape = isAvatar ? 'circle' : 'rect';
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // 验证文件
+    // Validate file
     const validation = validateImageFile(file);
     if (!validation.isValid) {
-      onError?.(validation.error || '文件格式不支持');
+      onError?.(validation.error || 'File format not supported');
       return;
     }
 
@@ -49,7 +49,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       setIsUploading(true);
       setShowCropper(false);
 
-      // 压缩图片
+      // Compress image
       const compressedFile = await compressImage(croppedFile, {
         maxWidth: isAvatar ? 400 : 1200,
         maxHeight: isAvatar ? 400 : 675,
@@ -57,12 +57,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         format: 'jpeg'
       });
 
-      // 上传到服务器
+      // Upload to server
       const result = await AuthService.uploadImage(compressedFile);
 
       onImageUploaded(result.url);
 
-      // 清理资源
+      // Clean up resources
       if (previewUrl) {
         revokeImagePreview(previewUrl);
         setPreviewUrl('');
@@ -70,8 +70,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       setSelectedFile(null);
 
     } catch (error) {
-      console.error('图片上传失败:', error);
-      onError?.('图片上传失败，请重试');
+      console.error('Image upload failed:', error);
+      onError?.('Image upload failed, please try again');
     } finally {
       setIsUploading(false);
     }
@@ -85,7 +85,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
     setSelectedFile(null);
 
-    // 重置文件输入
+    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -108,7 +108,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           </div>
 
           <div className="inline-flex items-center gap-[15px] relative flex-[0_0_auto]">
-            {/* 头像预览 */}
+            {/* Avatar preview */}
             <div className="relative w-[45px] h-[45px] rounded-[100px] overflow-hidden border-2 border-gray-200">
               {currentImage ? (
                 <img
@@ -121,7 +121,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               )}
             </div>
 
-            {/* 上传按钮 */}
+            {/* Upload button */}
             <Button
               type="button"
               variant="outline"
@@ -138,11 +138,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               <span className="[font-family:'Lato',Helvetica] font-semibold text-medium-dark-grey text-base">
-                {isUploading ? '上传中...' : 'Add File'}
+                {isUploading ? 'Uploading...' : 'Add File'}
               </span>
             </Button>
 
-            {/* 删除按钮 */}
+            {/* Delete button */}
             {currentImage && (
               <Button
                 type="button"
@@ -151,7 +151,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 onClick={handleRemoveImage}
                 className="text-red-500 hover:text-red-700"
               >
-                删除
+                Delete
               </Button>
             )}
           </div>
@@ -182,7 +182,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     );
   }
 
-  // Banner 组件
+  // Banner component
   return (
     <>
       <div className="flex flex-col items-start gap-2.5 px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto]">
@@ -191,7 +191,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         </div>
 
         <div className="flex flex-col h-[102px] items-center px-0 py-2.5 relative self-stretch w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent overflow-hidden">
-          {/* 当前横幅图片 */}
+          {/* Current banner image */}
           {currentImage && (
             <div
               className="absolute inset-0 bg-cover bg-center"
@@ -199,7 +199,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             />
           )}
 
-          {/* 操作按钮容器 */}
+          {/* Action buttons container */}
           <div className="flex items-center justify-end gap-2.5 px-[15px] py-0 self-stretch w-full relative flex-[0_0_auto] z-10">
             {currentImage && (
               <button
@@ -214,7 +214,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             )}
           </div>
 
-          {/* 上传按钮 */}
+          {/* Upload button */}
           <div className="flex flex-col items-center justify-center gap-2.5 relative flex-1 self-stretch w-full grow">
             <Button
               type="button"
@@ -227,7 +227,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <span className="[font-family:'Lato',Helvetica] font-semibold text-medium-dark-grey text-base">
-                {isUploading ? '上传中...' : 'Add File'}
+                {isUploading ? 'Uploading...' : 'Add File'}
               </span>
             </Button>
           </div>

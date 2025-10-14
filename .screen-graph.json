@@ -32,6 +32,14 @@
       ]
     },
     {
+      "id": "src/components/OAuthRedirect.tsx",
+      "label": "OAuthRedirect",
+      "routes": [
+        "/callback",
+        "/newglobal"
+      ]
+    },
+    {
       "id": "src/routes/NewExplore/screens/NewExplore.tsx",
       "label": "NewExplore",
       "routes": [
@@ -344,7 +352,7 @@
       "data": {
         "viaRoute": "/discovery",
         "trigger": {
-          "element": "<Link\n              to=\"/discovery\"\n              className=\"block w-full text-gray-500 hover:text-gray-700 py-2 transition-colors\"\n            >\n              返回首页\n            </Link>",
+          "element": "<Link\n              to=\"/discovery\"\n              className=\"block w-full text-gray-500 hover:text-gray-700 py-2 transition-colors\"\n            >\n              Back to Home\n            </Link>",
           "line": 59,
           "endLine": 64,
           "column": 12,

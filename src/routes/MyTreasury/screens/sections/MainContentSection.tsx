@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { useMyCreatedArticles } from "../../../../hooks/queries";
 import { AuthService } from "../../../../services/authService";
@@ -102,7 +102,11 @@ const myShareItems = [
 export const MainContentSection = (): JSX.Element => {
   const navigate = useNavigate();
   const { namespace } = useParams<{ namespace?: string }>();
+  const [searchParams] = useSearchParams();
   const { user, socialLinks: socialLinksData, getArticleLikeState, toggleLike } = useUser();
+
+  // Get tab from URL parameter, default to "collection"
+  const activeTab = searchParams.get('tab') || 'collection';
   const { showToast } = useToast();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -147,7 +151,7 @@ export const MainContentSection = (): JSX.Element => {
 
       // 如果查看其他用户但没有namespace
       if (isViewingOtherUser && !targetNamespace) {
-        setTreasuryError('用户namespace无效');
+        setTreasuryError('User namespace is invalid');
         setTreasuryLoading(false);
         return;
       }
@@ -230,7 +234,7 @@ export const MainContentSection = (): JSX.Element => {
 
       } catch (error) {
         console.error('❌ 获取收藏文章失败:', error);
-        setTreasuryError('获取收藏文章失败');
+        setTreasuryError('Failed to fetch collected articles');
         // 暂时使用空数组，避免页面崩溃
         setLikedArticles([]);
       } finally {
@@ -266,7 +270,7 @@ export const MainContentSection = (): JSX.Element => {
   // 处理点赞
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
     if (!user) {
-      showToast('请先登录', 'error');
+      showToast('Please login first', 'error');
       return;
     }
     await toggleLike(articleId, currentIsLiked, currentLikeCount);
@@ -321,7 +325,7 @@ export const MainContentSection = (): JSX.Element => {
       `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`;
 
     setPreviewImageUrl(avatarUrl);
-    setPreviewImageAlt(`${user?.username || '用户'} 的头像`);
+    setPreviewImageAlt(`${user?.username || 'User'}'s avatar`);
     setIsImagePreviewOpen(true);
   };
 
@@ -434,9 +438,9 @@ export const MainContentSection = (): JSX.Element => {
 
       // 检查删除是否真正成功
       if (deleteResult.data === true) {
-        showToast("文章已成功删除", "success");
+        showToast("Article deleted successfully", "success");
       } else {
-        showToast("删除失败，可能文章不存在或无权限删除", "warning");
+        showToast("Delete failed, article may not exist or no permission to delete", "warning");
         setDeleteDialogOpen(false);
         setArticleToDelete(null);
         setIsDeleting(false);
@@ -458,9 +462,9 @@ export const MainContentSection = (): JSX.Element => {
 
       // 如果是因为后端接口未实现，给出特别提示
       if (error.message?.includes('404') || error.message?.includes('Not Found')) {
-        showToast("删除功能正在开发中，敬请期待", "warning");
+        showToast("Delete feature is under development, coming soon", "warning");
       } else {
-        showToast(error.message || "删除文章时出错，请稍后重试", "error");
+        showToast(error.message || "Error deleting article, please try again later", "error");
       }
     } finally {
       setIsDeleting(false);
@@ -476,7 +480,7 @@ export const MainContentSection = (): JSX.Element => {
           <Avatar
             className="w-[100px] h-[100px] border-2 border-solid border-[#ffffff] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200"
             onClick={handleAvatarClick}
-            title="点击查看头像大图"
+            title="Click to view avatar in full size"
           >
             <AvatarImage
               src={
@@ -504,7 +508,7 @@ export const MainContentSection = (): JSX.Element => {
               </div>
 
               <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                @{isViewingOtherUser ? (treasuryUserInfo?.namespace || 'loading') : (user?.namespace || 'unknown')}
+                @{isViewingOtherUser ? (treasuryUserInfo?.username || 'loading') : (user?.username || 'unknown')}
               </p>
             </div>
 
@@ -550,7 +554,17 @@ export const MainContentSection = (): JSX.Element => {
       </section>
 
       <section className="flex flex-col items-start gap-[30px] w-full mb-[-42.00px]">
-        <Tabs defaultValue="collection" className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          // Update URL with new tab parameter
+          const newSearchParams = new URLSearchParams(searchParams);
+          if (value === 'collection') {
+            newSearchParams.delete('tab'); // Remove tab param for default
+          } else {
+            newSearchParams.set('tab', value);
+          }
+          const newUrl = `${window.location.pathname}?${newSearchParams.toString()}`;
+          navigate(newUrl, { replace: true });
+        }} className="w-full">
           <TabsList className="flex items-center justify-between w-full bg-transparent h-auto p-0 rounded-none relative border-b border-[#ffffff]">
             <TabsTrigger
               value="collection"
@@ -578,11 +592,11 @@ export const MainContentSection = (): JSX.Element => {
           <TabsContent value="collection" className="mt-[30px]">
             {treasuryLoading ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">加载收藏中...</div>
+                <div className="text-lg text-gray-600">Loading collection...</div>
               </div>
             ) : treasuryError ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-red-600">加载失败: {treasuryError}</div>
+                <div className="text-lg text-red-600">Loading failed: {treasuryError}</div>
               </div>
             ) : likedArticles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -600,7 +614,7 @@ export const MainContentSection = (): JSX.Element => {
               </div>
             ) : (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">还没有收藏任何内容哦～</div>
+                <div className="text-lg text-gray-600">No collected content yet~</div>
               </div>
             )}
           </TabsContent>
@@ -608,15 +622,15 @@ export const MainContentSection = (): JSX.Element => {
           <TabsContent value="share" className="mt-[30px]">
             {myCreatedLoading ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">加载我的创作中...</div>
+                <div className="text-lg text-gray-600">Loading my creations...</div>
               </div>
             ) : myCreatedError ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-red-600">加载失败: {myCreatedError}</div>
+                <div className="text-lg text-red-600">Loading failed: {myCreatedError}</div>
               </div>
             ) : myCreatedData && myCreatedData.data.length > 0 ? (
-              <div className="flex items-start gap-6 w-full">
-                {myCreatedData.data.slice(0, 2).map((article) => {
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                {myCreatedData.data.map((article) => {
                   const card = transformApiToCard(article);
                   return (
                     <div
@@ -630,7 +644,7 @@ export const MainContentSection = (): JSX.Element => {
               </div>
             ) : (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">还没有创作的内容哦～</div>
+                <div className="text-lg text-gray-600">No created content yet~</div>
               </div>
             )}
           </TabsContent>
@@ -643,11 +657,11 @@ export const MainContentSection = (): JSX.Element => {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
+            <DialogTitle>Confirm Delete</DialogTitle>
             <DialogDescription>
-              你确定要删除文章 "{articleToDelete?.title}" 吗？
+              Are you sure you want to delete the article "{articleToDelete?.title}"?
               <br />
-              此操作不可撤销。
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -659,14 +673,14 @@ export const MainContentSection = (): JSX.Element => {
               }}
               disabled={isDeleting}
             >
-              取消
+              Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteArticle}
               disabled={isDeleting}
             >
-              {isDeleting ? "删除中..." : "确认删除"}
+              {isDeleting ? "Deleting..." : "Confirm Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

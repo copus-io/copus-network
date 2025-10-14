@@ -1,7 +1,6 @@
 import React from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { UserProvider } from "./contexts/UserContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
@@ -33,6 +32,7 @@ import { SignUp } from "./routes/SignUp/screens/SignUp";
 import { SwitchDemo } from "./components/demo/SwitchDemo";
 import { AuthGuard } from "./components/guards/AuthGuard";
 import { UserProfile } from "./screens/UserProfile/UserProfile";
+import OAuthRedirect from "./components/OAuthRedirect";
 
 const router = createBrowserRouter([
   {
@@ -74,6 +74,14 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/callback",
+    element: <OAuthRedirect />,
+  },
+  {
+    path: "/newglobal",
+    element: <OAuthRedirect />,
   },
   {
     path: "/explore/new",
@@ -189,7 +197,6 @@ export const App = () => {
           </NotificationProvider>
         </CategoryProvider>
       </UserProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 };

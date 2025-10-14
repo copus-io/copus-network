@@ -11,10 +11,10 @@ interface ImagePreviewModalProps {
 export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
   isOpen,
   imageUrl,
-  alt = "预览图片",
+  alt = "Preview image",
   onClose
 }) => {
-  // 按ESC键关闭模态框
+  // Press ESC to close modal
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -24,7 +24,7 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscKey);
-      // 防止页面滚动
+      // Prevent page scrolling
       document.body.style.overflow = 'hidden';
     }
 
@@ -38,24 +38,24 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 背景遮罩 */}
+      {/* Background overlay */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* 模态框内容 */}
+      {/* Modal content */}
       <div className="relative z-10 flex items-center justify-center w-full h-full p-4 md:p-8">
-        {/* 关闭按钮 */}
+        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors group"
-          aria-label="关闭预览"
+          aria-label="Close preview"
         >
           <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
         </button>
 
-        {/* 图片容器 */}
+        {/* Image container */}
         <div className="relative max-w-full max-h-full flex items-center justify-center">
           <img
             src={imageUrl}
@@ -67,10 +67,10 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
         </div>
       </div>
 
-      {/* 点击图片外区域关闭的提示（可选） */}
+      {/* Click outside to close hint (optional) */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
         <div className="bg-black/60 text-white px-3 py-1 rounded-full text-sm">
-          点击空白区域或按ESC键关闭
+          Click empty area or press ESC to close
         </div>
       </div>
     </div>

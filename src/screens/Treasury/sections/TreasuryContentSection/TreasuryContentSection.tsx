@@ -148,7 +148,16 @@ export const TreasuryContentSection = (): JSX.Element => {
         }
 
 
-        const articles = articlesArray.map((article: any, index: number): TreasuryArticle => {
+        const articles = articlesArray
+          .filter((article: any) => {
+            // Filter out user's own articles - users shouldn't see their own articles in collection
+            return article.authorInfo?.id !== user?.id;
+          })
+          .sort((a: any, b: any) => {
+            // Sort by creation time in descending order (newest first)
+            return (b.createAt || 0) - (a.createAt || 0);
+          })
+          .map((article: any, index: number): TreasuryArticle => {
 
           try {
             return {
@@ -176,6 +185,9 @@ export const TreasuryContentSection = (): JSX.Element => {
         }).filter(Boolean) as TreasuryArticle[]; // 过滤掉转换失败的文章
 
         setLikedArticles(articles);
+
+        // Scroll to top when articles are loaded
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
       } catch (error) {
         console.error('❌ 获取收藏文章失败:', error);
@@ -205,12 +217,69 @@ export const TreasuryContentSection = (): JSX.Element => {
     fetchLikedArticles();
   }, [user]);
 
-  // 监听全局点赞状态变化，动态更新收藏列表
+  // Refresh collection when page becomes visible (user navigates back)
   useEffect(() => {
-    if (Object.keys(articleLikeStates).length > 0) {
-      // 这里可以添加逻辑来实时同步新点赞的文章
-    }
-  }, [articleLikeStates]);
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        // Re-fetch collection when page becomes visible
+        const fetchLikedArticles = async () => {
+          try {
+            const likedArticlesResponse = await AuthService.getUserLikedArticles(1, 20);
+            const articlesData = likedArticlesResponse.data || likedArticlesResponse;
+
+            let articlesArray = [];
+            if (articlesData && Array.isArray(articlesData.data)) {
+              articlesArray = articlesData.data;
+            } else if (Array.isArray(articlesData)) {
+              articlesArray = articlesData;
+            }
+
+            const articles = articlesArray
+              .filter((article: any) => {
+                // Filter out user's own articles
+                return article.authorInfo?.id !== user?.id;
+              })
+              .sort((a: any, b: any) => {
+                // Sort by creation time in descending order (newest first)
+                return (b.createAt || 0) - (a.createAt || 0);
+              })
+              .map((article: any): TreasuryArticle => {
+                return {
+                  id: article.uuid,
+                  uuid: article.uuid,
+                  title: article.title,
+                  description: article.content,
+                  coverImage: article.coverUrl,
+                  category: article.categoryInfo?.name || 'General',
+                  categoryColor: article.categoryInfo?.color,
+                  userName: article.authorInfo?.username || 'Anonymous',
+                  userId: article.authorInfo?.id,
+                  userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+                  date: new Date(article.createAt * 1000).toLocaleDateString(),
+                  treasureCount: article.likeCount || 0,
+                  visitCount: `${article.viewCount || 0} Visits`,
+                  isLiked: article.isLiked || true,
+                  targetUrl: article.targetUrl,
+                  website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
+                };
+              });
+
+            setLikedArticles(articles);
+
+            // Scroll to top when collection is refreshed
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (error) {
+            console.error('Error refreshing collection:', error);
+          }
+        };
+
+        fetchLikedArticles();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
 
   // 处理点赞
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -259,13 +328,16 @@ export const TreasuryContentSection = (): JSX.Element => {
       treasureCount: articleLikeState.likeCount
     };
 
+    // Check if this is the current user's own article
+    const isOwnArticle = user && user.id === article.userId;
+
     return (
       <div key={article.id} className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
         <ArticleCard
           article={articleData}
           layout="treasury"
           actions={{
-            showTreasure: true,
+            showTreasure: !isOwnArticle, // Hide treasure button for own articles
             showVisits: true,
             showWebsite: true, // 显示网站信息
             showBranchIt: true // 显示Branch It图标

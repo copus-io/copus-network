@@ -20,10 +20,6 @@ export const Login = (): JSX.Element => {
       icon: "https://c.animaapp.com/mftc49qfOGKRUh/img/frame-1-3.svg",
     },
     {
-      name: "Facebook",
-      icon: "https://c.animaapp.com/mftc49qfOGKRUh/img/frame-1.svg",
-    },
-    {
       name: "X",
       icon: "https://c.animaapp.com/mftc49qfOGKRUh/img/frame-1-2.svg",
     },

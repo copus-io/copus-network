@@ -32,7 +32,7 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
         ...params,
       });
 
-      // 调试文章数据，特别是图片URL
+      // Debug article data, especially image URLs
       response.articles.forEach((article, index) => {
         console.log(`Article ${index}:`, {
           id: article.id,
@@ -56,8 +56,8 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
       let errorMessage = 'Failed to fetch articles';
 
       if (error instanceof Error) {
-        if (error.message.includes('系统内部错误')) {
-          errorMessage = '后端服务暂时不可用，请联系技术团队检查服务状态';
+        if (error.message.includes('System internal error')) {
+          errorMessage = 'Backend service temporarily unavailable, please contact technical team to check service status';
         } else {
           errorMessage = error.message;
         }
@@ -69,7 +69,7 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
         error: errorMessage,
       }));
     }
-  }, []); // 移除对initialParams的依赖
+  }, []); // Remove dependency on initialParams
 
   const loadMore = useCallback(() => {
     if (!state.loading && state.hasMore) {
@@ -83,7 +83,7 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
 
   useEffect(() => {
     fetchArticles();
-  }, []); // 只在组件首次渲染时执行
+  }, []); // Only execute on component first render
 
   return {
     ...state,

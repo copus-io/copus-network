@@ -19,7 +19,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
   const { user, loading } = useUser();
   const location = useLocation();
 
-  // 用户数据加载中
+  // User data loading
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -28,17 +28,17 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     );
   }
 
-  // 需要登录但用户未登录
+  // Requires login but user is not logged in
   if (requireAuth && !user) {
     if (showUnauthorized) {
       return <UnauthorizedPage />;
     }
 
-    // 保存当前页面路径，登录后可以重定向回来
+    // Save current page path, can redirect back after login
     return <Navigate to={fallbackPath} state={{ from: location }} replace />;
   }
 
-  // 已登录用户访问登录页面，重定向到首页
+  // Logged-in user accessing login page, redirect to homepage
   if (!requireAuth && user && (location.pathname === '/login' || location.pathname === '/signup')) {
     return <Navigate to="/discovery" replace />;
   }
