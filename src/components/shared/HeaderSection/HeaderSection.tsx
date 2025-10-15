@@ -110,7 +110,7 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: H
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 onDoubleClick={handleAvatarDoubleClick}
                 className="focus:outline-none"
-                title="单击显示菜单，双击前往设置页面"
+                title="Click to show menu, double-click to go to settings"
               >
                 <Avatar className="w-[47px] h-[47px] hover:ring-2 hover:ring-red hover:scale-110 transition-all duration-200 cursor-pointer">
                   <AvatarImage
@@ -137,20 +137,20 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: H
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setShowUserMenu(false)}
                   >
-                    我的珍藏
+                    My Treasury
                   </Link>
                   <Link
                     to="/setting"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setShowUserMenu(false)}
                   >
-                    设置
+                    Settings
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                   >
-                    退出登录
+                    Logout
                   </button>
                 </div>
               )}

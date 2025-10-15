@@ -391,7 +391,7 @@ export const Login = (): JSX.Element => {
           localStorage.setItem('copus_remember_me_option', 'false');
         }
 
-        showToast('登录成功！欢迎回来～ 🎉', 'success');
+        showToast('Login successful! Welcome back 🎉', 'success');
 
         // 跳转到首页
         navigate('/discovery');
@@ -481,7 +481,7 @@ export const Login = (): JSX.Element => {
         setActiveTab("login");
       } else {
         console.error('注册失败:', data);
-        showToast(`注册失败：${data.msg || data.message || '请重试'}`, 'error');
+        showToast(`Registration failed: ${data.msg || data.message || 'Please try again'}`, 'error');
         // 失败时只清空验证码，保留其他已填写的信息
         setVerificationCode('');
       }
@@ -574,7 +574,7 @@ export const Login = (): JSX.Element => {
         setShowForgotPassword(false);
         setForgotPasswordEmail("");
       } else {
-        showToast(`发送失败：${data.msg || data.message || '请重试'}`, 'error');
+        showToast(`Send failed: ${data.msg || data.message || 'Please try again'}`, 'error');
       }
     } catch (error) {
       console.error('忘记密码验证码发送失败:', error);
