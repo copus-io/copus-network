@@ -99,7 +99,6 @@ export class NotificationService {
    */
   static async markAllAsRead(): Promise<boolean> {
     try {
-
       const response = await apiRequest('/client/user/msg/markAllRead', {
         method: 'POST',
         requiresAuth: true,
@@ -108,8 +107,8 @@ export class NotificationService {
       return response.status === 1;
     } catch (error) {
       console.error('❌ Failed to mark all notifications as read:', error);
-      // Simulate success
-      return true;
+      // Don't simulate success - return false so caller knows it failed
+      return false;
     }
   }
 
@@ -157,8 +156,8 @@ export class NotificationService {
       return response.status === 1;
     } catch (error) {
       console.error('❌ Failed to clear all notifications:', error);
-      // Simulate success
-      return true;
+      // Don't simulate success - return false so caller knows it failed
+      return false;
     }
   }
 
