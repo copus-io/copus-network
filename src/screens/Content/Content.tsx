@@ -94,7 +94,7 @@ export const Content = (): JSX.Element => {
           <h1 className="text-2xl font-semibold text-gray-800 mb-4">
             {error || 'Content not found'}
           </h1>
-          <Link to="/discovery" className="text-blue hover:underline">
+          <Link to="/copus" className="text-blue hover:underline">
             Back to Discovery
           </Link>
         </div>

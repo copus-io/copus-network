@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { AuthService } from "../../../../services/authService";
@@ -20,7 +20,6 @@ import {
 } from "../../../../components/ui/dialog";
 import { useToast } from "../../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
-import { ImagePreviewModal } from "../../../../components/ui/image-preview-modal";
 
 
 const collectionItems = [
@@ -111,10 +110,10 @@ export const MainContentSection = (): JSX.Element => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  // 图片预览相关状态
-  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
-  const [previewImageUrl, setPreviewImageUrl] = useState("");
-  const [previewImageAlt, setPreviewImageAlt] = useState("");
+  // 直接在组件内实现图片预览
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState('');
+  const [previewImageAlt, setPreviewImageAlt] = useState('');
 
   // 统一状态管理
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
@@ -131,6 +130,10 @@ export const MainContentSection = (): JSX.Element => {
   const [createdArticlesLoading, setCreatedArticlesLoading] = useState(false);
   const [createdArticlesError, setCreatedArticlesError] = useState<string | null>(null);
 
+  // 添加缓存机制防止重复请求
+  const [lastFetchedUserId, setLastFetchedUserId] = useState<number | null>(null);
+  const [lastFetchedTab, setLastFetchedTab] = useState<string | null>(null);
+
   const [treasuryStats, setTreasuryStats] = useState({
     likedArticleCount: 0,
     articleCount: 0,
@@ -144,16 +147,6 @@ export const MainContentSection = (): JSX.Element => {
 
   // 移除对404 API的调用，改用统计信息显示
 
-  // 调试信息
-  console.log('🔍📋 宝藏页面状态调试:', {
-    user: user?.username,
-    namespace: user?.namespace,
-    likedArticles: likedArticles.length,
-    userInfoLoading,
-    userInfoError,
-    isViewingOtherUser,
-    activeTab
-  });
 
   // 1. 首先获取用户信息和ID
   useEffect(() => {
@@ -186,11 +179,6 @@ export const MainContentSection = (): JSX.Element => {
           userInfo = await AuthService.getUserTreasuryInfo();
         }
 
-        console.log('🏆📚 用户详情API响应数据:', {
-          namespace: targetNamespace,
-          isViewingOtherUser,
-          userInfo
-        });
 
         const processedInfo = userInfo.data || userInfo;
         setTreasuryUserInfo(processedInfo);
@@ -215,14 +203,22 @@ export const MainContentSection = (): JSX.Element => {
       return; // 等待用户信息加载完成
     }
 
-    const fetchArticleData = async () => {
-      const userId = treasuryUserInfo.id || user?.id;
-      if (!userId) {
-        console.warn('⚠️ 无法获取用户ID，跳过文章数据加载');
-        return;
-      }
+    const userId = treasuryUserInfo.id || user?.id;
+    if (!userId) {
+      console.warn('⚠️ 无法获取用户ID，跳过文章数据加载');
+      return;
+    }
 
+    // 检查是否已经获取过相同用户和标签页的数据，避免重复请求
+    if (lastFetchedUserId === userId && lastFetchedTab === activeTab) {
+      return;
+    }
+
+    const fetchArticleData = async () => {
       try {
+        setLastFetchedUserId(userId);
+        setLastFetchedTab(activeTab);
+
         if (activeTab === 'collection') {
           // 只在收藏标签页时加载收藏文章
           await fetchLikedArticles(userId);
@@ -232,11 +228,14 @@ export const MainContentSection = (): JSX.Element => {
         }
       } catch (error) {
         console.error('❌ 加载文章数据失败:', error);
+        // 请求失败时重置缓存，允许重试
+        setLastFetchedUserId(null);
+        setLastFetchedTab(null);
       }
     };
 
     fetchArticleData();
-  }, [treasuryUserInfo, activeTab, userInfoLoading]);
+  }, [treasuryUserInfo?.id, activeTab]);
 
   // 收藏文章加载函数
   const fetchLikedArticles = async (userId: number) => {
@@ -244,10 +243,7 @@ export const MainContentSection = (): JSX.Element => {
     setLikedArticlesError(null);
 
     try {
-      console.log('🔄 开始加载收藏文章, 用户ID:', userId);
-      const response = await AuthService.getMyLikedArticlesCorrect(1, 10, userId); // 优化加载性能
-
-      console.log('🔍🏆📚 收藏文章API响应数据:', response);
+      const response = await AuthService.getMyLikedArticlesCorrect(1, 10, userId);
 
       const articlesArray = extractArticlesFromResponse(response, '收藏');
       setLikedArticles(articlesArray);
@@ -267,10 +263,7 @@ export const MainContentSection = (): JSX.Element => {
     setCreatedArticlesError(null);
 
     try {
-      console.log('🔄 开始加载创作文章, 用户ID:', userId);
-      const response = await AuthService.getMyCreatedArticles(1, 10, userId); // 优化加载性能
-
-      console.log('🔍✨ 创作文章API响应数据:', response);
+      const response = await AuthService.getMyCreatedArticles(1, 10, userId);
 
       const articlesArray = extractArticlesFromResponse(response, '创作');
       setCreatedArticles(articlesArray);
@@ -400,21 +393,74 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   // 处理头像点击预览
-  const handleAvatarClick = () => {
-    const avatarUrl = user?.faceUrl ||
-      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4`;
+  const handleAvatarClick = useCallback((e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
 
+    // 从点击的元素获取实际显示的头像URL
+    let actualAvatarUrl = null;
+
+    // 尝试从多种可能的点击目标获取头像URL
+    if (e?.target) {
+      if (e.target.tagName === 'IMG') {
+        actualAvatarUrl = e.target.src;
+      } else if (e.target.querySelector && e.target.querySelector('img')) {
+        actualAvatarUrl = e.target.querySelector('img').src;
+      } else if (e.currentTarget && e.currentTarget.querySelector && e.currentTarget.querySelector('img')) {
+        actualAvatarUrl = e.currentTarget.querySelector('img').src;
+      }
+    }
+
+    // 根据是否查看其他用户来获取正确的头像和用户名
+    const currentUser = isViewingOtherUser ? treasuryUserInfo : user;
+
+    // 智能头像URL获取：支持真实头像和系统生成头像
+    let avatarUrl;
+
+    // 优先尝试API中的真实头像字段
+    const realAvatarUrl = (currentUser?.faceUrl && currentUser.faceUrl.trim()) ||
+                         (currentUser?.avatarUrl && currentUser.avatarUrl.trim()) ||
+                         (currentUser?.avatar && currentUser.avatar.trim()) ||
+                         (currentUser?.profileImage && currentUser.profileImage.trim()) ||
+                         (currentUser?.data?.faceUrl && currentUser.data.faceUrl.trim()) ||
+                         (currentUser?.data?.avatarUrl && currentUser.data.avatarUrl.trim()) ||
+                         (currentUser?.data?.avatar && currentUser.data.avatar.trim()) ||
+                         (currentUser?.data?.profileImage && currentUser.data.profileImage.trim());
+
+    if (realAvatarUrl) {
+      avatarUrl = realAvatarUrl;
+    } else if (actualAvatarUrl) {
+      avatarUrl = actualAvatarUrl;
+    } else {
+      avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username || currentUser?.name || currentUser?.data?.username || currentUser?.data?.name || 'vivi'}&backgroundColor=b6e3f4`;
+    }
+
+    // 直接设置预览状态
+    setShowImagePreview(true);
     setPreviewImageUrl(avatarUrl);
-    setPreviewImageAlt(`${user?.username || 'User'}'s avatar`);
-    setIsImagePreviewOpen(true);
-  };
+    setPreviewImageAlt(`${currentUser?.username || 'User'}'s avatar`);
+  }, [isViewingOtherUser, treasuryUserInfo, user]);
 
-  // 关闭图片预览
-  const handleCloseImagePreview = () => {
-    setIsImagePreviewOpen(false);
-    setPreviewImageUrl("");
-    setPreviewImageAlt("");
-  };
+  // ESC键关闭预览
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showImagePreview) {
+        setShowImagePreview(false);
+        setPreviewImageUrl('');
+        setPreviewImageAlt('');
+      }
+    };
+
+    if (showImagePreview) {
+      document.addEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showImagePreview]);
 
   // 分享个人主页 - 复制Instagram风格短链接 ✨
   const handleShare = () => {
@@ -576,12 +622,20 @@ export const MainContentSection = (): JSX.Element => {
   return (
     <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
       <section className="flex flex-col items-start w-full">
-        <div className="relative self-stretch w-full h-[200px] rounded-lg [background:url(https://c.animaapp.com/mftam89xRJwsqQ/img/banner.png)_50%_50%_/_cover]" />
+        <div className="relative self-stretch w-full h-[200px] rounded-lg overflow-hidden bg-gradient-to-r from-blue-100 to-purple-100">
+          <img
+            src={(isViewingOtherUser ? treasuryUserInfo?.coverUrl : user?.coverUrl) || 'https://c.animaapp.com/mftam89xRJwsqQ/img/banner.png'}
+            alt="Cover"
+            className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
+          />
+        </div>
 
         <div className="gap-6 pl-5 pr-10 py-0 mt-[-46px] flex items-start w-full">
           <Avatar
-            className="w-[100px] h-[100px] border-2 border-solid border-[#ffffff] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200"
+            className="w-[100px] h-[100px] border-2 border-solid border-[#ffffff] cursor-pointer hover:scale-105 transition-transform duration-300"
             onClick={handleAvatarClick}
+            onMouseDown={handleAvatarClick}
+            onTouchStart={handleAvatarClick}
             title="Click to view avatar in full size"
           >
             <AvatarImage
@@ -590,6 +644,7 @@ export const MainContentSection = (): JSX.Element => {
                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${(isViewingOtherUser ? treasuryUserInfo?.username : user?.username) || 'vivi'}&backgroundColor=b6e3f4`
               }
               className="object-cover"
+              style={{ pointerEvents: 'none' }}
             />
           </Avatar>
 
@@ -810,13 +865,87 @@ export const MainContentSection = (): JSX.Element => {
         </DialogContent>
       </Dialog>
 
-      {/* 图片预览模态框 */}
-      <ImagePreviewModal
-        isOpen={isImagePreviewOpen}
-        imageUrl={previewImageUrl}
-        alt={previewImageAlt}
-        onClose={handleCloseImagePreview}
-      />
+      {/* 简单直接的图片预览模态框 */}
+      {showImagePreview && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => {
+            setShowImagePreview(false);
+            setPreviewImageUrl('');
+            setPreviewImageAlt('');
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowImagePreview(false);
+              setPreviewImageUrl('');
+              setPreviewImageAlt('');
+            }}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(0, 0, 0, 0.5)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              fontSize: '20px',
+              cursor: 'pointer',
+              zIndex: 1000000
+            }}
+          >
+            ×
+          </button>
+
+          {/* Image */}
+          <img
+            src={previewImageUrl}
+            alt={previewImageAlt}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '400px',
+              maxHeight: '400px',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              border: '4px solid white'
+            }}
+          />
+
+          {/* Hint text */}
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: 'white',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            fontSize: '14px'
+          }}>
+            点击空白区域或按ESC关闭
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

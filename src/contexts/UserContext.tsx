@@ -28,6 +28,7 @@ interface UserContextValue {
   user: User | null;
   token: string | null;
   isLoggedIn: boolean;
+  loading: boolean;
   login: (userData: User, token?: string) => void;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
@@ -56,6 +57,7 @@ const UserContext = createContext<UserContextValue | undefined>(undefined);
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // 社交链接状态管理
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -80,6 +82,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('copus_token');
       }
     }
+
+    // 初始化完成，设置loading为false
+    setLoading(false);
   }, []);
 
   const login = (userData: User, userToken?: string) => {
@@ -314,6 +319,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         user,
         token,
         isLoggedIn: !!user,
+        loading,
         login,
         logout,
         updateUser,

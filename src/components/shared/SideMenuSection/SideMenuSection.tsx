@@ -36,7 +36,7 @@ const menuItems = [
   {
     icon: DiscoverIcon,
     label: "Discovery",
-    href: "/discovery",
+    href: "/copus",
     key: "discovery",
   },
   {

@@ -499,7 +499,7 @@ export const TreasuryContentSection = (): JSX.Element => {
           <h3 className="text-xl font-semibold text-gray-600 mb-2">宝藏空空如也</h3>
           <p className="text-gray-500 mb-4">点赞喜欢的文章，它们就会出现在这里</p>
           <Link
-            to="/discovery"
+            to="/copus"
             className="px-4 py-2 bg-yellow text-white rounded-lg hover:bg-yellow/90 transition-colors"
           >
             去发现好内容

@@ -9,9 +9,10 @@ import { useNotification } from "../../../contexts/NotificationContext";
 interface HeaderSectionProps {
   isLoggedIn?: boolean;
   hideCreateButton?: boolean;
+  showDiscoverNow?: boolean;
 }
 
-export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: HeaderSectionProps): JSX.Element => {
+export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, showDiscoverNow = false }: HeaderSectionProps): JSX.Element => {
   const { user, logout } = useUser();
   const { unreadCount } = useNotification();
   const navigate = useNavigate();
@@ -157,13 +158,22 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: H
             </div>
           </>
         ) : (
-          <Button
-            variant="outline"
-            className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
-            asChild
-          >
-            <Link to="/login">Log in / Sign up</Link>
-          </Button>
+          <div className="flex items-center gap-[15px]">
+            {showDiscoverNow && (
+              <Link to="/copus" className="inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]">
+                <div className="relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
+                  Discover now
+                </div>
+              </Link>
+            )}
+            <Button
+              variant="outline"
+              className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
+              asChild
+            >
+              <Link to="/login">Log in / Sign up</Link>
+            </Button>
+          </div>
         )}
       </div>
     </header>

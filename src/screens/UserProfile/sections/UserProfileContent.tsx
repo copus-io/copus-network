@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
+import { useImagePreview } from "../../../contexts/ImagePreviewContext";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
 import { AuthService } from "../../../services/authService";
 import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
+import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 
 interface UserProfileContentProps {
   namespace: string;
@@ -12,12 +14,14 @@ interface UserProfileContentProps {
 
 export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespace }) => {
   const navigate = useNavigate();
-  const { user, toggleLike } = useUser();
+  const { user, toggleLike, updateUser } = useUser();
+  const { openPreview } = useImagePreview();
   const { showToast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
   const [articles, setArticles] = useState<ArticleData[]>([]);
+  const [showCoverUploader, setShowCoverUploader] = useState(false);
 
   // 获取用户信息和文章列表
   useEffect(() => {
@@ -87,6 +91,66 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     navigate(`/user/${namespace}`);
   };
 
+  // 检查是否是当前用户自己的资料页
+  const isOwnProfile = user && userInfo && user.namespace === userInfo.namespace;
+
+  // 调试信息
+  console.log('UserProfile Debug:', {
+    user: user ? { id: user.id, namespace: user.namespace } : null,
+    userInfo: userInfo ? { id: userInfo.id, namespace: userInfo.namespace } : null,
+    isOwnProfile,
+    requestedNamespace: namespace
+  });
+
+  // 处理封面图点击事件
+  const handleCoverClick = () => {
+    if (isOwnProfile) {
+      setShowCoverUploader(true);
+    }
+  };
+
+  // 处理封面图上传成功
+  const handleCoverUploaded = async (imageUrl: string) => {
+    try {
+      // 调用API更新用户封面图
+      await AuthService.updateUserInfo({
+        coverUrl: imageUrl
+      });
+
+      // 更新本地状态
+      setUserInfo({
+        ...userInfo,
+        coverUrl: imageUrl
+      });
+
+      // 更新UserContext中的用户信息
+      if (user && updateUser) {
+        updateUser({
+          ...user,
+          coverUrl: imageUrl
+        });
+      }
+
+      setShowCoverUploader(false);
+      showToast('封面图片更新成功！', 'success');
+    } catch (error) {
+      console.error('封面图片更新失败:', error);
+      showToast('封面图片更新失败，请重试', 'error');
+    }
+  };
+
+  // 处理封面图上传错误
+  const handleCoverUploadError = (error: string) => {
+    showToast(error, 'error');
+  };
+
+  // 处理头像点击预览
+  const handleAvatarClick = () => {
+    if (userInfo?.faceUrl) {
+      openPreview(userInfo.faceUrl, `${userInfo.username}'s avatar`);
+    }
+  };
+
   if (loading) {
     return <ArticleListSkeleton />;
   }
@@ -98,7 +162,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">用户不存在</h2>
           <p className="text-gray-500 mb-4">未找到 @{namespace} 的个人主页</p>
           <button
-            onClick={() => navigate('/discovery')}
+            onClick={() => navigate('/copus')}
             className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red/90 transition-colors"
           >
             返回首页
@@ -111,13 +175,39 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   return (
     <main className="flex flex-col gap-10 px-5 py-0 relative">
       {/* 用户信息头部 */}
-      <section className="bg-white rounded-2xl shadow-sm p-8">
-        <div className="flex items-start gap-8">
+      <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        {/* 封面图片 */}
+        <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
           <img
-            src={userInfo.faceUrl}
-            alt={userInfo.username}
-            className="w-32 h-32 rounded-full border-4 border-gray-100"
+            src={userInfo.coverUrl || 'https://c.animaapp.com/w7obk4mX/img/banner.png'}
+            alt="Cover"
+            className={`w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 ${
+              isOwnProfile ? 'cursor-pointer' : ''
+            }`}
+            onClick={handleCoverClick}
           />
+          {/* 编辑提示覆盖层 - 仅在自己的资料页时显示 */}
+          {isOwnProfile && (
+            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 用户信息 */}
+        <div className="p-8 mt-[-64px] relative">
+          <div className="flex items-start gap-8">
+            <img
+              src={userInfo.faceUrl}
+              alt={userInfo.username}
+              className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
+              onClick={handleAvatarClick}
+            />
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
             <p className="text-gray-600 mb-4">@{userInfo.namespace}</p>
@@ -145,6 +235,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               关注
             </button>
           )}
+          </div>
         </div>
       </section>
 
@@ -188,6 +279,27 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               ? `${userInfo.username} 已创作 ${userInfo.statistics.articleCount} 篇文章，暂未在此展示`
               : `${userInfo.username} 还没有发布任何文章`}
           </p>
+        </div>
+      )}
+
+      {/* 封面图片上传组件 */}
+      {showCoverUploader && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold mb-4 text-center">更换封面图片</h3>
+            <ImageUploader
+              type="banner"
+              currentImage={userInfo.coverUrl}
+              onImageUploaded={handleCoverUploaded}
+              onError={handleCoverUploadError}
+            />
+            <button
+              onClick={() => setShowCoverUploader(false)}
+              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              取消
+            </button>
+          </div>
         </div>
       )}
     </main>

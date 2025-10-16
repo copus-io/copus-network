@@ -57,7 +57,7 @@ export const UnauthorizedPage: React.FC = () => {
             </Button>
 
             <Link
-              to="/discovery"
+              to="/copus"
               className="block w-full text-gray-500 hover:text-gray-700 py-2 transition-colors"
             >
               Back to Home

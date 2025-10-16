@@ -14,6 +14,7 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
   alt = "Preview image",
   onClose
 }) => {
+
   // Press ESC to close modal
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
@@ -34,18 +35,21 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ zIndex: 9999 }}>
       {/* Background overlay */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
         onClick={onClose}
       />
 
       {/* Modal content */}
-      <div className="relative z-10 flex items-center justify-center w-full h-full p-4 md:p-8">
+      <div className="relative z-10 flex items-center justify-center w-full h-full p-4 md:p-8" style={{ zIndex: 10000 }}>
         {/* Close button */}
         <button
           onClick={onClose}

@@ -13,7 +13,7 @@ const menuItems = [
   {
     icon: EyeIcon,
     label: "Discovery",
-    href: "/discovery",
+    href: "/copus",
     isActive: true,
   },
   {

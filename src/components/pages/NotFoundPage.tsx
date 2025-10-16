@@ -47,7 +47,7 @@ export const NotFoundPage: React.FC = () => {
           {/* 操作按钮 */}
           <div className="space-y-3">
             <Button
-              onClick={() => navigate('/discovery')}
+              onClick={() => navigate('/copus')}
               className="w-full bg-red hover:bg-red/90 text-white py-3 rounded-lg transition-colors"
             >
               返回首页

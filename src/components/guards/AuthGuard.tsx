@@ -40,7 +40,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 
   // Logged-in user accessing login page, redirect to homepage
   if (!requireAuth && user && (location.pathname === '/login' || location.pathname === '/signup')) {
-    return <Navigate to="/discovery" replace />;
+    return <Navigate to="/copus" replace />;
   }
 
   return <>{children}</>;

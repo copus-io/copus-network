@@ -1,5 +1,5 @@
 import { XIcon } from "lucide-react";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { Button } from "../../../../components/ui/button";
@@ -67,13 +67,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [formUsername, setFormUsername] = useState<string>('');
   const [formBio, setFormBio] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [showCoverUploader, setShowCoverUploader] = useState(false);
+  const [showAvatarUploader, setShowAvatarUploader] = useState(false);
 
   // 消息通知设置状态
   const [notificationSettings, setNotificationSettings] = useState<Array<{ isOpen: boolean; msgType: number }>>([]);
   const [notificationLoading, setNotificationLoading] = useState(true);
 
-  // 用于触发头像上传的引用
-  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
 
   // 获取消息通知设置
   useEffect(() => {
@@ -199,14 +200,74 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     navigate('/account/delete');
   };
 
-  const handleProfileImageUploaded = (imageUrl: string) => {
-    setProfileImage(imageUrl);
-    showToast('头像上传成功', 'success');
+  const handleProfileImageUploaded = async (imageUrl: string) => {
+    try {
+      console.log('🔥 头像上传成功，开始更新用户资料:', imageUrl);
+
+      // 更新本地状态
+      setProfileImage(imageUrl);
+
+      // 调用正确的API更新用户头像
+      const success = await AuthService.updateUserInfo({
+        faceUrl: imageUrl
+      });
+
+      console.log('🔥 头像资料更新结果:', success);
+
+      if (success) {
+        // 更新UserContext中的用户信息
+        if (updateUser) {
+          updateUser({
+            ...user,
+            faceUrl: imageUrl
+          });
+        }
+
+        // 关闭上传模态框
+        setShowAvatarUploader(false);
+        showToast('头像更新成功！', 'success');
+      } else {
+        throw new Error('用户头像更新失败');
+      }
+    } catch (error) {
+      console.error('🔥 头像更新失败:', error);
+      showToast('头像更新失败，请重试', 'error');
+    }
   };
 
-  const handleBannerImageUploaded = (imageUrl: string) => {
-    setBannerImage(imageUrl);
-    showToast('横幅图片上传成功', 'success');
+  const handleBannerImageUploaded = async (imageUrl: string) => {
+    try {
+      console.log('🔥 封面图片上传成功，开始更新用户资料:', imageUrl);
+
+      // 更新本地状态
+      setBannerImage(imageUrl);
+
+      // 调用正确的API更新用户封面图
+      const success = await AuthService.updateUserInfo({
+        coverUrl: imageUrl
+      });
+
+      console.log('🔥 用户资料更新结果:', success);
+
+      if (success) {
+        // 更新UserContext中的用户信息
+        if (updateUser) {
+          updateUser({
+            ...user,
+            coverUrl: imageUrl
+          });
+        }
+
+        // 关闭上传模态框
+        setShowCoverUploader(false);
+        showToast('封面图片更新成功！', 'success');
+      } else {
+        throw new Error('用户资料更新失败');
+      }
+    } catch (error) {
+      console.error('🔥 封面图更新失败:', error);
+      showToast('封面图更新失败，请重试', 'error');
+    }
   };
 
   const handleImageUploadError = (error: string) => {
@@ -377,46 +438,40 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     setShowPersonalInfoPopup(false);
   };
 
-  // 处理头像点击，触发头像上传
+  // 处理头像点击，显示上传弹窗
   const handleAvatarClick = () => {
-    avatarFileInputRef.current?.click();
+    setShowAvatarUploader(true);
   };
 
-  // 处理头像文件选择
-  const handleAvatarFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setIsSaving(true);
-
-      // 上传文件到服务器
-      const result = await AuthService.uploadImage(file);
-
-      // 更新头像
-      setProfileImage(result.url);
-      showToast('头像更新成功', 'success');
-
-      // 重置文件输入
-      event.target.value = '';
-
-    } catch (error) {
-      console.error('头像上传失败:', error);
-      showToast('头像上传失败，请重试', 'error');
-    } finally {
-      setIsSaving(false);
-    }
+  // 处理封面图点击，显示上传弹窗
+  const handleCoverClick = () => {
+    setShowCoverUploader(true);
   };
+
 
 
   return (
     <main className="flex flex-col items-start gap-[30px] pl-[60px] pr-10 pt-0 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
       <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
         <div
-          className="relative self-stretch w-full h-40 rounded-lg bg-[url(https://c.animaapp.com/w7obk4mX/img/banner.png)] bg-cover bg-[50%_50%]"
-          role="img"
-          aria-label="Profile banner"
-        />
+          className="relative self-stretch w-full h-40 rounded-lg overflow-hidden bg-gradient-to-r from-blue-100 to-purple-100 group cursor-pointer"
+          onClick={handleCoverClick}
+        >
+          <img
+            src={user?.coverUrl || 'https://c.animaapp.com/w7obk4mX/img/banner.png'}
+            alt="Profile banner"
+            className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
+          />
+          {/* 编辑提示覆盖层 */}
+          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+            <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
 
         <div className="gap-10 pl-5 pr-10 py-0 mt-[-46px] flex items-start relative self-stretch w-full flex-[0_0_auto]">
           <button
@@ -782,15 +837,48 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         }}
       />
 
-      {/* 隐藏的头像文件输入框 */}
-      <input
-        ref={avatarFileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleAvatarFileSelect}
-        className="sr-only"
-        style={{ display: 'none' }}
-      />
+      {/* 封面图片上传模态框 */}
+      {showCoverUploader && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold mb-4 text-center">更换封面图片</h3>
+            <ImageUploader
+              type="banner"
+              currentImage={user?.coverUrl}
+              onImageUploaded={handleBannerImageUploaded}
+              onError={handleImageUploadError}
+            />
+            <button
+              onClick={() => setShowCoverUploader(false)}
+              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 头像上传模态框 */}
+      {showAvatarUploader && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold mb-4 text-center">更换头像</h3>
+            <ImageUploader
+              type="avatar"
+              currentImage={user?.faceUrl}
+              onImageUploaded={handleProfileImageUploaded}
+              onError={handleImageUploadError}
+            />
+            <button
+              onClick={() => setShowAvatarUploader(false)}
+              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
 
     </main>
   );

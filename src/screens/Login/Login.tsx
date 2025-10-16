@@ -10,6 +10,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Separator } from "../../components/ui/separator";
+import { HeaderSection } from "../../components/shared/HeaderSection/HeaderSection";
 import {
   Tabs,
   TabsContent,
@@ -394,7 +395,7 @@ export const Login = (): JSX.Element => {
         showToast('Login successful! Welcome back 🎉', 'success');
 
         // 跳转到首页
-        navigate('/discovery');
+        navigate('/copus');
       } else {
         const errorData = await response.json();
         console.error('登录失败:', errorData);
@@ -586,22 +587,8 @@ export const Login = (): JSX.Element => {
 
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-      <div className="flex w-full min-h-screen relative flex-col items-center">
-        <header className="flex items-start justify-between px-4 sm:px-[30px] py-5 relative w-full flex-[0_0_auto] bg-transparent">
-          <Link to="/discovery" className="flex w-[45px] h-[45px] items-center justify-center gap-2.5 p-2.5 relative bg-red rounded-[100px]">
-            <img
-              className="relative w-7 h-7 mt-[-1.50px] mb-[-1.50px] ml-[-1.50px] mr-[-1.50px]"
-              alt="Ic fractopus open"
-              src="https://c.animaapp.com/mftc49qfOGKRUh/img/ic-fractopus-open-1.svg"
-            />
-          </Link>
-
-          <Link to="/discovery" className="inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]">
-            <div className="relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-              Discover now
-            </div>
-          </Link>
-        </header>
+      <HeaderSection isLoggedIn={false} hideCreateButton={true} showDiscoverNow={true} />
+      <div className="flex w-full min-h-screen relative flex-col items-center pt-[120px]">{/* 添加顶部间距以适应fixed header */}
 
         <main className="flex items-center justify-center gap-2.5 relative flex-1 grow py-4 sm:py-10 px-4 sm:px-0">
           <Card className="w-full max-w-[480px] bg-white rounded-lg border-0 shadow-none">

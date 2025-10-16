@@ -7,6 +7,7 @@ interface ImageCropperProps {
   onCrop: (croppedFile: File) => void;
   onCancel: () => void;
   cropShape?: 'rect' | 'circle';
+  type?: 'avatar' | 'banner'; // 添加类型以优化不同用途的输出
 }
 
 interface CropArea {
@@ -23,7 +24,8 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   aspectRatio = 1,
   onCrop,
   onCancel,
-  cropShape = 'rect'
+  cropShape = 'rect',
+  type = 'avatar'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -33,6 +35,8 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   const [imgDimensions, setImgDimensions] = useState({ width: 0, height: 0 });
   const [resizeHandle, setResizeHandle] = useState<ResizeHandle | null>(null);
   const [originalCropArea, setOriginalCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   React.useEffect(() => {
     const url = URL.createObjectURL(image);
@@ -95,8 +99,18 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     // 清空画布
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // 保存当前状态
+    ctx.save();
+
+    // 应用缩放和偏移
+    ctx.translate(offset.x, offset.y);
+    ctx.scale(scale, scale);
+
     // 绘制图片
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    // 恢复状态
+    ctx.restore();
 
     // 绘制遮罩
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -160,7 +174,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
       });
     }
-  }, [cropShape]);
+  }, [cropShape, scale, offset]);
 
   // 检测点击了哪个调整手柄
   const getResizeHandle = (x: number, y: number): ResizeHandle | null => {
@@ -211,11 +225,22 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
       setIsDragging(true);
       setDragStart({ x, y });
       setOriginalCropArea({ ...cropArea });
+    } else {
+      // 如果没有点击到调整手柄，则开始图片拖拽
+      setIsDragging(true);
+      setDragStart({ x, y });
+      setResizeHandle(null);
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !resizeHandle) return;
+    if (!isDragging) return;
+
+    // 如果没有调整手柄，则处理图片拖拽
+    if (!resizeHandle) {
+      handleImageDrag(e);
+      return;
+    }
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -282,20 +307,41 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     // 如果有宽高比限制，调整尺寸保持比例
     if (aspectRatio && resizeHandle !== 'move') {
       if (['nw', 'ne', 'se', 'sw'].includes(resizeHandle)) {
-        // 角落手柄：按宽高比调整
-        const newWidth = newCropArea.height * aspectRatio;
-        const newHeight = newCropArea.width / aspectRatio;
+        // 角落手柄：按宽高比调整，优先保持用户拖拽的主要方向
+        const widthChange = Math.abs(dx);
+        const heightChange = Math.abs(dy);
 
-        if (['nw', 'sw'].includes(resizeHandle)) {
-          // 左侧手柄：调整x位置
-          const widthDiff = newWidth - newCropArea.width;
-          newCropArea.x = Math.max(0, newCropArea.x - widthDiff);
-          newCropArea.width = newWidth;
-        } else {
-          // 右侧手柄：保持x位置
-          newCropArea.width = Math.min(newWidth, imgDimensions.width - newCropArea.x);
+        if (widthChange > heightChange) {
+          // 主要拖拽宽度，按宽度计算高度
           newCropArea.height = newCropArea.width / aspectRatio;
+        } else {
+          // 主要拖拽高度，按高度计算宽度
+          newCropArea.width = newCropArea.height * aspectRatio;
         }
+
+        // 对于左侧手柄，需要调整x位置
+        if (['nw', 'sw'].includes(resizeHandle)) {
+          const widthDiff = newCropArea.width - originalCropArea.width;
+          newCropArea.x = originalCropArea.x - widthDiff;
+        }
+
+        // 对于上方手柄，需要调整y位置
+        if (['nw', 'ne'].includes(resizeHandle)) {
+          const heightDiff = newCropArea.height - originalCropArea.height;
+          newCropArea.y = originalCropArea.y - heightDiff;
+        }
+      } else if (['n', 's'].includes(resizeHandle)) {
+        // 上下手柄：按高度调整宽度，居中显示
+        const newWidth = newCropArea.height * aspectRatio;
+        const widthDiff = newWidth - newCropArea.width;
+        newCropArea.x = Math.max(0, newCropArea.x - widthDiff / 2);
+        newCropArea.width = newWidth;
+      } else if (['e', 'w'].includes(resizeHandle)) {
+        // 左右手柄：按宽度调整高度，居中显示
+        const newHeight = newCropArea.width / aspectRatio;
+        const heightDiff = newHeight - newCropArea.height;
+        newCropArea.y = Math.max(0, newCropArea.y - heightDiff / 2);
+        newCropArea.height = newHeight;
       }
     }
 
@@ -321,9 +367,82 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     setResizeHandle(null);
   };
 
+  // 处理滚轮缩放
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // 缩放步长
+    const zoomStep = 0.1;
+    const newScale = e.deltaY > 0
+      ? Math.max(0.5, scale - zoomStep)  // 缩小，最小0.5x
+      : Math.min(3, scale + zoomStep);   // 放大，最大3x
+
+    if (newScale !== scale) {
+      // 计算缩放中心点的偏移调整
+      const scaleChange = newScale / scale;
+
+      setScale(newScale);
+      setOffset(prev => ({
+        x: mouseX - (mouseX - prev.x) * scaleChange,
+        y: mouseY - (mouseY - prev.y) * scaleChange
+      }));
+
+      // 重新绘制
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const img = new Image();
+      img.onload = () => drawCanvas(ctx, img, cropArea);
+      img.src = imageUrl;
+    }
+  };
+
+  // 处理图片拖拽（当不在调整手柄上时）
+  const handleImageDrag = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging || resizeHandle) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const dx = x - dragStart.x;
+    const dy = y - dragStart.y;
+
+    setOffset(prev => ({
+      x: prev.x + dx,
+      y: prev.y + dy
+    }));
+
+    setDragStart({ x, y });
+
+    // 重新绘制
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => drawCanvas(ctx, img, cropArea);
+    img.src = imageUrl;
+  };
+
   // 根据鼠标位置设置光标样式
   const handleMouseHover = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isDragging) return;
+    if (isDragging) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.style.cursor = resizeHandle ? 'grabbing' : 'grabbing';
+      }
+      return;
+    }
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -346,7 +465,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
       'move': 'move'
     };
 
-    canvas.style.cursor = handle ? cursors[handle] : 'default';
+    canvas.style.cursor = handle ? cursors[handle] : 'grab';
   };
 
   const handleCrop = async () => {
@@ -361,26 +480,68 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const img = new Image();
     img.onload = () => {
       // 计算原图尺寸和显示尺寸的比例
-      const scaleX = img.width / imgDimensions.width;
-      const scaleY = img.height / imgDimensions.height;
+      const baseScaleX = img.width / imgDimensions.width;
+      const baseScaleY = img.height / imgDimensions.height;
 
-      // 计算实际裁切区域
+      // 考虑用户缩放和偏移，计算实际裁切区域
+      // 需要将裁切区域坐标转换回原始图片坐标系
       const actualCrop = {
-        x: cropArea.x * scaleX,
-        y: cropArea.y * scaleY,
-        width: cropArea.width * scaleX,
-        height: cropArea.height * scaleY
+        x: (cropArea.x - offset.x) / scale * baseScaleX,
+        y: (cropArea.y - offset.y) / scale * baseScaleY,
+        width: cropArea.width / scale * baseScaleX,
+        height: cropArea.height / scale * baseScaleY
       };
 
-      // 设置输出尺寸
-      const outputSize = 400; // 固定输出尺寸
-      outputCanvas.width = outputSize;
-      outputCanvas.height = outputSize;
+      // 确保裁切区域在图片范围内
+      actualCrop.x = Math.max(0, Math.min(actualCrop.x, img.width - actualCrop.width));
+      actualCrop.y = Math.max(0, Math.min(actualCrop.y, img.height - actualCrop.height));
+      actualCrop.width = Math.min(actualCrop.width, img.width - actualCrop.x);
+      actualCrop.height = Math.min(actualCrop.height, img.height - actualCrop.y);
+
+      // 设置输出尺寸，保持原始宽高比
+      const maxOutputSize = 1200; // 提高最大输出尺寸以获得更好的清晰度
+      let outputWidth = actualCrop.width;
+      let outputHeight = actualCrop.height;
+
+      // 如果尺寸过小，需要放大以确保清晰度
+      const minOutputSize = type === 'banner' ? 600 : 400; // 封面图需要更高的最小尺寸
+      if (Math.max(outputWidth, outputHeight) < minOutputSize) {
+        const scale = minOutputSize / Math.max(outputWidth, outputHeight);
+        outputWidth *= scale;
+        outputHeight *= scale;
+      }
+
+      // 如果尺寸过大，按比例缩放
+      if (outputWidth > maxOutputSize || outputHeight > maxOutputSize) {
+        const scale = Math.min(maxOutputSize / outputWidth, maxOutputSize / outputHeight);
+        outputWidth *= scale;
+        outputHeight *= scale;
+      }
+
+      outputCanvas.width = outputWidth;
+      outputCanvas.height = outputHeight;
+
+      // 调试信息
+      console.log('🎯 ImageCropper输出信息:', {
+        type,
+        aspectRatio,
+        '原始裁切区域': {
+          width: actualCrop.width,
+          height: actualCrop.height,
+          ratio: (actualCrop.width / actualCrop.height).toFixed(2)
+        },
+        '输出尺寸': {
+          width: outputWidth,
+          height: outputHeight,
+          ratio: (outputWidth / outputHeight).toFixed(2)
+        },
+        '比例匹配': Math.abs(aspectRatio - (outputWidth / outputHeight)) < 0.01 ? '✅' : '❌'
+      });
 
       if (cropShape === 'circle') {
         // 圆形裁切
         outputCtx.beginPath();
-        outputCtx.arc(outputSize / 2, outputSize / 2, outputSize / 2, 0, 2 * Math.PI);
+        outputCtx.arc(outputWidth / 2, outputHeight / 2, Math.min(outputWidth, outputHeight) / 2, 0, 2 * Math.PI);
         outputCtx.clip();
       }
 
@@ -388,7 +549,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
       outputCtx.drawImage(
         img,
         actualCrop.x, actualCrop.y, actualCrop.width, actualCrop.height,
-        0, 0, outputSize, outputSize
+        0, 0, outputWidth, outputHeight
       );
 
       // 转换为File对象
@@ -400,7 +561,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
           });
           onCrop(croppedFile);
         }
-      }, image.type, 0.9);
+      }, image.type, 0.95); // 提高压缩质量
     };
 
     img.src = imageUrl;
@@ -422,12 +583,16 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
             }}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onWheel={handleWheel}
           />
         </div>
 
         <div className="text-sm text-gray-600 mb-4 text-center">
           <div>🎯 拖拽移动裁切区域</div>
+          <div>🖼️ 拖拽空白区域移动图片</div>
           <div>📏 拖拽边角可调整大小</div>
+          <div>🔍 滚轮滚动缩放图片</div>
+          <div className="text-xs text-gray-500 mt-1">缩放范围: {scale.toFixed(1)}x (0.5x - 3.0x)</div>
           {aspectRatio !== 1 && <div>🔒 保持 {aspectRatio > 1 ? `${aspectRatio}:1` : `1:${(1/aspectRatio).toFixed(1)}`} 宽高比</div>}
         </div>
 

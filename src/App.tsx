@@ -5,7 +5,9 @@ import { queryClient } from "./lib/queryClient";
 import { UserProvider } from "./contexts/UserContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { ImagePreviewProvider } from "./contexts/ImagePreviewContext";
 import { ToastProvider } from "./components/ui/toast";
+import { GlobalImagePreview } from "./components/ui/GlobalImagePreview";
 import { Discovery } from "./screens/Discovery/Discovery";
 import { MainFrame } from "./screens/MainFrame/MainFrame";
 import { Notification } from "./screens/Notification/Notification";
@@ -46,7 +48,7 @@ const router = createBrowserRouter([
     element: <Discovery />,
   },
   {
-    path: "/discovery",
+    path: "/copus",
     element: <Discovery />,
   },
   {
@@ -68,7 +70,7 @@ const router = createBrowserRouter([
   {
     path: "/setting",
     element: (
-      <AuthGuard requireAuth={true} fallbackPath="/discovery">
+      <AuthGuard requireAuth={true} fallbackPath="/copus">
         <Setting />
       </AuthGuard>
     ),
@@ -206,9 +208,12 @@ export const App = () => {
       <UserProvider>
         <CategoryProvider>
           <NotificationProvider>
-            <ToastProvider>
-              <RouterProvider router={router} />
-            </ToastProvider>
+            <ImagePreviewProvider>
+              <ToastProvider>
+                <RouterProvider router={router} />
+                <GlobalImagePreview />
+              </ToastProvider>
+            </ImagePreviewProvider>
           </NotificationProvider>
         </CategoryProvider>
       </UserProvider>

@@ -431,35 +431,67 @@ export class AuthService {
    * Upload image to S3
    */
   static async uploadImage(file: File): Promise<{ url: string }> {
+    console.log('🔥 AuthService.uploadImage 开始上传:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      lastModified: file.lastModified
+    });
+
     const formData = new FormData();
     formData.append('file', file);
 
+    console.log('🔥 FormData 已创建，开始调用 API...');
 
-    const response = await apiRequest('/client/common/uploadImage2S3', {
-      method: 'POST',
-      requiresAuth: true,
-      body: formData,
-    });
+    try {
+      const response = await apiRequest('/client/common/uploadImage2S3', {
+        method: 'POST',
+        requiresAuth: true,
+        body: formData,
+      });
 
+      console.log('🔥 API 响应原始数据:', {
+        response,
+        responseType: typeof response,
+        responseKeys: Object.keys(response || {}),
+        status: response?.status,
+        data: response?.data,
+        url: response?.url,
+        msg: response?.msg,
+        message: response?.message
+      });
 
-    // Check different possible response formats
-    if (response.status === 1 && response.data) {
-      // Possible response format: { status: 1, data: { url: "..." } }
-      if (response.data.url) {
-        return { url: response.data.url };
+      // Check different possible response formats
+      if (response.status === 1 && response.data) {
+        // Possible response format: { status: 1, data: { url: "..." } }
+        if (response.data.url) {
+          console.log('🔥 找到 URL 在 response.data.url:', response.data.url);
+          return { url: response.data.url };
+        }
+        // Possible response format: { status: 1, data: "url" }
+        if (typeof response.data === 'string' && (response.data.startsWith('http') || response.data.startsWith('https'))) {
+          console.log('🔥 找到 URL 在 response.data (字符串):', response.data);
+          return { url: response.data };
+        }
       }
-      // Possible response format: { status: 1, data: "url" }
-      if (typeof response.data === 'string' && (response.data.startsWith('http') || response.data.startsWith('https'))) {
-        return { url: response.data };
+
+      // Check if URL is returned directly
+      if (response.url) {
+        console.log('🔥 找到 URL 在 response.url:', response.url);
+        return { url: response.url };
       }
-    }
 
-    // Check if URL is returned directly
-    if (response.url) {
-      return { url: response.url };
+      console.error('🔥 未找到有效的 URL，抛出错误');
+      throw new Error(response.msg || response.message || 'Image upload failed');
+    } catch (error) {
+      console.error('🔥 API 请求失败:', {
+        error,
+        errorMessage: error.message,
+        errorResponse: error.response,
+        errorStatus: error.status
+      });
+      throw error;
     }
-
-    throw new Error(response.msg || response.message || 'Image upload failed');
   }
 
   /**
@@ -1269,6 +1301,7 @@ export class AuthService {
       requiresAuth: true,
     });
   }
+
 }
 
 // Verification code type constants

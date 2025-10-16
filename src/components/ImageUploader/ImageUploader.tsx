@@ -24,7 +24,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [isUploading, setIsUploading] = useState(false);
 
   const isAvatar = type === 'avatar';
-  const aspectRatio = isAvatar ? 1 : 16 / 9; // Avatar 1:1, Banner 16:9
+  const aspectRatio = isAvatar ? 1 : 3 / 1; // Avatar 1:1, Banner 3:1 (更适合封面图)
   const cropShape = isAvatar ? 'circle' : 'rect';
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,10 +46,19 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleCrop = async (croppedFile: File) => {
     try {
+      console.log('🔥 开始处理裁剪后的图片:', {
+        fileName: croppedFile.name,
+        fileSize: croppedFile.size,
+        fileType: croppedFile.type,
+        isAvatar,
+        aspectRatio
+      });
+
       setIsUploading(true);
       setShowCropper(false);
 
       // Compress image
+      console.log('🔥 开始压缩图片...');
       const compressedFile = await compressImage(croppedFile, {
         maxWidth: isAvatar ? 400 : 1200,
         maxHeight: isAvatar ? 400 : 675,
@@ -57,8 +66,16 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         format: 'jpeg'
       });
 
+      console.log('🔥 图片压缩完成:', {
+        originalSize: croppedFile.size,
+        compressedSize: compressedFile.size,
+        compression: `${((1 - compressedFile.size / croppedFile.size) * 100).toFixed(1)}%`
+      });
+
       // Upload to server
+      console.log('🔥 开始上传到服务器...');
       const result = await AuthService.uploadImage(compressedFile);
+      console.log('🔥 上传成功，服务器返回:', result);
 
       onImageUploaded(result.url);
 
@@ -70,8 +87,20 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       setSelectedFile(null);
 
     } catch (error) {
-      console.error('Image upload failed:', error);
-      onError?.('Image upload failed, please try again');
+      console.error('🔥 图片上传失败 - 详细错误信息:', {
+        error,
+        errorMessage: error.message,
+        errorStack: error.stack,
+        errorType: typeof error,
+        errorString: String(error)
+      });
+
+      let errorMessage = '封面图上传失败，请重试';
+      if (error.message) {
+        errorMessage = `上传失败: ${error.message}`;
+      }
+
+      onError?.(errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -174,6 +203,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             image={selectedFile}
             aspectRatio={aspectRatio}
             cropShape={cropShape}
+            type={type}
             onCrop={handleCrop}
             onCancel={handleCancelCrop}
           />
@@ -247,6 +277,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           image={selectedFile}
           aspectRatio={aspectRatio}
           cropShape={cropShape}
+          type={type}
           onCrop={handleCrop}
           onCancel={handleCancelCrop}
         />
