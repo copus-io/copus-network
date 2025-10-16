@@ -4,6 +4,7 @@ import { useUser } from "../../../../contexts/UserContext";
 import { AuthService } from "../../../../services/authService";
 import { Avatar, AvatarImage } from "../../../../components/ui/avatar";
 import { Button } from "../../../../components/ui/button";
+import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import {
   Tabs,
   TabsContent,
@@ -313,7 +314,7 @@ export const MainContentSection = (): JSX.Element => {
       category: article.categoryInfo?.name || '未分类',
       categoryColor: article.categoryInfo?.color || '#666666',
       userName: article.authorInfo?.username || 'Anonymous',
-      userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+      userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
       userId: article.authorInfo?.id,
       userNamespace: article.authorInfo?.namespace,
       date: new Date(article.createAt || article.publishAt).toLocaleDateString(),
@@ -336,7 +337,7 @@ export const MainContentSection = (): JSX.Element => {
       category: article.categoryInfo?.name || '未分类',
       categoryColor: article.categoryInfo?.color || '#666666',
       userName: article.authorInfo?.username || 'Anonymous',
-      userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+      userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
       userId: article.authorInfo?.id,
       userNamespace: article.authorInfo?.namespace,
       date: new Date(article.createAt || article.publishAt).toLocaleDateString(),
@@ -432,7 +433,7 @@ export const MainContentSection = (): JSX.Element => {
     } else if (actualAvatarUrl) {
       avatarUrl = actualAvatarUrl;
     } else {
-      avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.username || currentUser?.name || currentUser?.data?.username || currentUser?.data?.name || 'vivi'}&backgroundColor=b6e3f4`;
+      avatarUrl = profileDefaultAvatar;
     }
 
     // 直接设置预览状态
@@ -513,7 +514,7 @@ export const MainContentSection = (): JSX.Element => {
       category: article.categoryInfo?.name || 'General',
       categoryColor: article.categoryInfo?.color || 'gray',
       userName: article.authorInfo?.username || user?.username || 'Anonymous',
-      userAvatar: article.authorInfo?.faceUrl || user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}&backgroundColor=b6e3f4`,
+      userAvatar: article.authorInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
       userId: article.authorInfo?.id || user?.id,
       userNamespace: article.authorInfo?.namespace || user?.namespace,
       date: new Date(article.createAt * 1000).toLocaleDateString(),
@@ -554,14 +555,14 @@ export const MainContentSection = (): JSX.Element => {
         article={articleData}
         layout="treasury"
         actions={{
-          showTreasure: isViewingOtherUser, // 查看别人的分享时显示点赞按钮
+          showTreasure: true, // Always show treasure button for unified style
           showVisits: true,
           showWebsite: true,
           showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
           showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
         }}
         isHovered={hoveredCard === card.id}
-        onLike={isViewingOtherUser ? handleLike : undefined} // 只有查看别人时才提供点赞回调
+        onLike={handleLike} // Always provide like callback
         onEdit={handleEdit}
         onDelete={handleDelete}
         onUserClick={handleUserClick}
@@ -641,7 +642,7 @@ export const MainContentSection = (): JSX.Element => {
             <AvatarImage
               src={
                 (isViewingOtherUser ? treasuryUserInfo?.faceUrl : user?.faceUrl) ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${(isViewingOtherUser ? treasuryUserInfo?.username : user?.username) || 'vivi'}&backgroundColor=b6e3f4`
+                profileDefaultAvatar
               }
               className="object-cover"
               style={{ pointerEvents: 'none' }}
@@ -778,13 +779,13 @@ export const MainContentSection = (): JSX.Element => {
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-4">
                 <div className="text-lg text-gray-600">
-                  {isViewingOtherUser ? '该用户暂无收藏内容' : '还没有收藏任何内容哦～'}
+                  {isViewingOtherUser ? 'This user has no treasured content yet' : 'No treasured content yet'}
                 </div>
                 <div className="text-sm text-gray-400">
-                  {isViewingOtherUser ? '暂时没有公开的收藏内容' : '快去发现一些精彩内容吧！'}
+                  {isViewingOtherUser ? 'No public treasured content available' : 'Discover and treasure some amazing content!'}
                 </div>
                 <div className="text-xs text-gray-400">
-                  💡 统计显示收藏：{treasuryUserInfo?.statistics?.likedArticleCount || 0}篇，但当前无可显示内容
+                  💡 Statistics show {treasuryUserInfo?.statistics?.likedArticleCount || 0} treasured items, but none are currently displayed
                 </div>
               </div>
             )}
@@ -793,11 +794,11 @@ export const MainContentSection = (): JSX.Element => {
           <TabsContent value="share" className="mt-[30px]">
             {createdArticlesLoading ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">加载创作中...</div>
+                <div className="text-lg text-gray-600">Loading shared content...</div>
               </div>
             ) : createdArticlesError ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-red-600">加载失败: {createdArticlesError}</div>
+                <div className="text-lg text-red-600">Loading failed: {createdArticlesError}</div>
               </div>
             ) : createdArticles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
@@ -816,13 +817,13 @@ export const MainContentSection = (): JSX.Element => {
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-4">
                 <div className="text-lg text-gray-600">
-                  {isViewingOtherUser ? '该用户暂无创作内容' : '还没有创作任何内容哦～'}
+                  {isViewingOtherUser ? 'This user has no shared content yet' : 'No shared content yet'}
                 </div>
                 <div className="text-sm text-gray-400">
-                  {isViewingOtherUser ? '暂时没有公开的创作内容' : '快去创作一些精彩内容吧！'}
+                  {isViewingOtherUser ? 'No public shared content available' : 'Start sharing some amazing content!'}
                 </div>
                 <div className="text-xs text-gray-400">
-                  💡 统计显示创作：{treasuryUserInfo?.statistics?.articleCount || 0}篇，但当前无可显示内容
+                  💡 Statistics show {treasuryUserInfo?.statistics?.articleCount || 0} shared items, but none are currently displayed
                 </div>
               </div>
             )}

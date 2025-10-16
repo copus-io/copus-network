@@ -69,8 +69,8 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       `}
       onClick={!disabled ? onClick : undefined}
       disabled={disabled}
-      aria-label={`${isLiked ? '取消点赞' : '点赞'}，当前${likesCount}个赞`}
-      title={isLiked ? '取消点赞' : '点赞这篇文章'}
+      aria-label={`${isLiked ? 'Remove from treasury' : 'Add to treasury'}, ${likesCount} treasures`}
+      title={isLiked ? 'Remove from your treasury' : 'Add to your treasury'}
     >
       <div className="relative">
         {/* 宝石图标 - 直接处理颜色变化 */}

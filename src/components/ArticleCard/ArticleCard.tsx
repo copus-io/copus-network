@@ -242,8 +242,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               <div
                 className="flex flex-col h-[240px] w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
                 style={{ backgroundImage: `url(${article.coverImage})` }}
-                onClick={handleImagePreview(article.coverImage, `${article.title} cover image`)}
-                title="Click to view full size"
+                title="Click to view work details"
               >
                 {/* Category badge */}
                 <Badge
