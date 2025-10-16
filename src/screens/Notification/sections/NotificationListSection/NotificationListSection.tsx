@@ -88,9 +88,9 @@ export const NotificationListSection = (): JSX.Element => {
     return () => clearTimeout(timer);
   }, []); // 移除fetchNotifications依赖，只在组件首次加载时执行
 
-  // 格式化时间的稳定函数，避免频繁重新计算
+  // Format timestamp with stable calculation to avoid frequent re-renders
   const formatTimestamp = (timestamp: number | string): string => {
-    if (!timestamp) return "刚刚";
+    if (!timestamp) return "just now";
 
     const date = new Date(timestamp);
     const now = Date.now();
@@ -99,13 +99,13 @@ export const NotificationListSection = (): JSX.Element => {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 1) return "刚刚";
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    if (diffHours < 24) return `${diffHours}小时前`;
-    if (diffDays < 7) return `${diffDays}天前`;
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
 
-    // 超过7天显示具体日期
-    return date.toLocaleDateString('zh-CN', {
+    // Show specific date for over 7 days
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
     });
@@ -268,7 +268,7 @@ export const NotificationListSection = (): JSX.Element => {
                       <div
                         className={`relative ${(notification.namespace || notification.userId) ? 'cursor-pointer hover:opacity-80 transition-opacity duration-200' : ''}`}
                         onClick={(notification.namespace || notification.userId) ? (e) => handleUserClick(notification, e) : undefined}
-                        title={(notification.namespace || notification.userId) ? "点击查看用户资料" : undefined}
+                        title={(notification.namespace || notification.userId) ? "Click to view user profile" : undefined}
                       >
                         <Avatar className="w-[45px] h-[45px] flex-shrink-0">
                           <AvatarImage
@@ -304,7 +304,7 @@ export const NotificationListSection = (): JSX.Element => {
                                     <span
                                       className="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200 font-semibold"
                                       onClick={(e) => handleUserClick(notification, e)}
-                                      title="点击查看用户资料"
+                                      title="Click to view user profile"
                                     >
                                       {userName}
                                     </span>
