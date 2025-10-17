@@ -75,7 +75,7 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-[50px] right-0 w-[183px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] bg-white rounded-[15px] z-10">
+        <div className="absolute bottom-[50px] right-[-70px] w-[183px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] bg-white rounded-[15px] z-10">
           <div className="flex flex-col w-full items-start relative">
             <button
               onClick={handleCopyLink}
