@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Share2, ExternalLink } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -13,6 +12,8 @@ import { useArticleDetail } from "../../hooks/queries";
 import { getCategoryStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { TreasureButton } from "../../components/ui/TreasureButton";
+import { ShareDropdown } from "../../components/ui/ShareDropdown";
+import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 
 
 // 图片URL验证和fallback函数
@@ -63,7 +64,7 @@ export const Content = (): JSX.Element => {
     categoryTextColor: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).text,
     userName: article.authorInfo?.username || 'Anonymous',
     userId: article.authorInfo?.id,
-    userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+    userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
     date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
     visitCount: `${article.viewCount || 0} Visits`,
@@ -144,16 +145,6 @@ export const Content = (): JSX.Element => {
     }
   };
 
-
-  const handleShare = () => {
-    navigator.share?.({
-      title: content.title,
-      text: content.description,
-      url: window.location.href,
-    }).catch(() => {
-      navigator.clipboard.writeText(window.location.href);
-    });
-  };
 
   const handleUserClick = () => {
     if (!content?.userId) return;
@@ -254,7 +245,7 @@ export const Content = (): JSX.Element => {
                     src={
                       content.userAvatar ||
                       (user && user.id === content.userId ? user.faceUrl : null) ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${content.userName}&backgroundColor=b6e3f4`
+                      profileDefaultAvatar
                     }
                   />
 
@@ -302,16 +293,11 @@ export const Content = (): JSX.Element => {
                 size="large"
               />
 
-              <button
-                onClick={handleShare}
-                className="all-[unset] box-border aspect-[1] relative self-stretch"
-              >
-                <img
-                  className="w-full h-full"
-                  alt="Share"
-                  src="https://c.animaapp.com/5EW1c9Rn/img/share.svg"
-                />
-              </button>
+              {/* 分享下拉菜单 */}
+              <ShareDropdown
+                title={content.title}
+                url={window.location.href}
+              />
             </div>
 
             <a
