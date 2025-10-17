@@ -3,6 +3,7 @@ import { Button } from '../ui/button';
 import { ImageCropper } from '../ImageCropper/ImageCropper';
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from '../../utils/imageUtils';
 import { AuthService } from '../../services/authService';
+import profileDefaultAvatar from '../../assets/images/profile-default.svg';
 
 interface ImageUploaderProps {
   type: 'avatar' | 'banner';
@@ -139,15 +140,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           <div className="inline-flex items-center gap-[15px] relative flex-[0_0_auto]">
             {/* Avatar preview */}
             <div className="relative w-[45px] h-[45px] rounded-[100px] overflow-hidden border-2 border-gray-200">
-              {currentImage ? (
-                <img
-                  src={currentImage}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-[url(/img/add-profile-image.svg)] bg-cover bg-[50%_50%]" />
-              )}
+              <img
+                src={currentImage || profileDefaultAvatar}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
             </div>
 
             {/* Upload button */}

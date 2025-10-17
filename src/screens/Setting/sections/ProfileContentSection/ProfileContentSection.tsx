@@ -12,6 +12,7 @@ import { ImageUploader } from "../../../../components/ImageUploader/ImageUploade
 import { PopUp } from "../../../../components/PopUp/PopUp";
 import { ChangePasswordModal } from "../../../../components/ChangePasswordModal/ChangePasswordModal";
 import { CustomSwitch } from "../../../../components/ui/custom-switch";
+import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
 
 // 消息类型映射
@@ -47,9 +48,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
   // 初始化图片状态和表单数据
   React.useEffect(() => {
-    if (user?.faceUrl) {
-      setProfileImage(user.faceUrl);
-    }
+    // Set profile image - use faceUrl if available, otherwise use default
+    setProfileImage(user?.faceUrl || profileDefaultAvatar);
+
     if (user?.coverUrl) {
       setBannerImage(user.coverUrl);
     }
@@ -62,7 +63,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   }, [user]);
 
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [profileImage, setProfileImage] = useState<string>('');
+  const [profileImage, setProfileImage] = useState<string>(profileDefaultAvatar);
   const [bannerImage, setBannerImage] = useState<string>('');
   const [formUsername, setFormUsername] = useState<string>('');
   const [formBio, setFormBio] = useState<string>('');
@@ -88,19 +89,23 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         setNotificationLoading(true);
         const settings = await AuthService.getMessageNotificationSettings();
 
-        // 确保所有3种通知类型都存在，如果API没有返回某种类型，则使用默认值
+        // Ensure all 3 notification types exist, use default value if API doesn't return a type
         const allMessageTypes = [0, 1, 2];
         const completeSettings = allMessageTypes.map(msgType => {
           const existingSetting = settings.find(s => s.msgType === msgType);
-          return existingSetting || { msgType, isOpen: false }; // 默认关闭
+          return existingSetting || { msgType, isOpen: true }; // Default: ON
         });
 
         setNotificationSettings(completeSettings);
       } catch (error) {
-        console.error('❌ 获取通知设置失败:', error);
-        showToast('获取通知设置失败，请重试', 'error');
-        // 设置默认值，避免一直加载
-        setNotificationSettings([]);
+        console.error('❌ Failed to get notification settings:', error);
+        showToast('Failed to get notification settings, please try again', 'error');
+        // Set default values to avoid infinite loading - all notifications ON by default
+        setNotificationSettings([
+          { msgType: 0, isOpen: true },
+          { msgType: 1, isOpen: true },
+          { msgType: 2, isOpen: true }
+        ]);
       } finally {
         setNotificationLoading(false);
       }
@@ -127,7 +132,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
       if (success) {
         const typeInfo = MESSAGE_TYPE_MAP[msgType as keyof typeof MESSAGE_TYPE_MAP];
-        showToast(`${typeInfo?.label || '通知设置'} 已${!currentIsOpen ? '开启' : '关闭'}`, 'success');
+        showToast(`${typeInfo?.label || 'Notification setting'} ${!currentIsOpen ? 'enabled' : 'disabled'}`, 'success');
       } else {
         // 如果API失败，回滚状态
         setNotificationSettings(prev =>
@@ -137,10 +142,10 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               : setting
           )
         );
-        showToast('更新通知设置失败', 'error');
+        showToast('Failed to update notification settings', 'error');
       }
     } catch (error) {
-      console.error('❌ 更新通知设置失败:', error);
+      console.error('❌ Failed to update notification settings:', error);
       // 如果出错，回滚状态
       setNotificationSettings(prev =>
         prev.map(setting =>
@@ -149,7 +154,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             : setting
         )
       );
-      showToast('更新通知设置失败', 'error');
+      showToast('Failed to update notification settings', 'error');
     }
   };
   // 初始化时使用空字符串，等待用户数据加载
@@ -202,17 +207,17 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
   const handleProfileImageUploaded = async (imageUrl: string) => {
     try {
-      console.log('🔥 头像上传成功，开始更新用户资料:', imageUrl);
+      console.log('🔥 Avatar uploaded successfully, updating user profile:', imageUrl);
 
-      // 更新本地状态
+      // Update local state
       setProfileImage(imageUrl);
 
-      // 调用正确的API更新用户头像
+      // Call API to update user avatar
       const success = await AuthService.updateUserInfo({
         faceUrl: imageUrl
       });
 
-      console.log('🔥 头像资料更新结果:', success);
+      console.log('🔥 Profile update result:', success);
 
       if (success) {
         // 更新UserContext中的用户信息
@@ -223,31 +228,31 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           });
         }
 
-        // 关闭上传模态框
+        // Close upload modal
         setShowAvatarUploader(false);
-        showToast('头像更新成功！', 'success');
+        showToast('Avatar updated successfully!', 'success');
       } else {
-        throw new Error('用户头像更新失败');
+        throw new Error('Failed to update user avatar');
       }
     } catch (error) {
-      console.error('🔥 头像更新失败:', error);
-      showToast('头像更新失败，请重试', 'error');
+      console.error('🔥 Failed to update avatar:', error);
+      showToast('Failed to update avatar, please try again', 'error');
     }
   };
 
   const handleBannerImageUploaded = async (imageUrl: string) => {
     try {
-      console.log('🔥 封面图片上传成功，开始更新用户资料:', imageUrl);
+      console.log('🔥 Cover image uploaded successfully, updating user profile:', imageUrl);
 
-      // 更新本地状态
+      // Update local state
       setBannerImage(imageUrl);
 
-      // 调用正确的API更新用户封面图
+      // Call API to update user cover image
       const success = await AuthService.updateUserInfo({
         coverUrl: imageUrl
       });
 
-      console.log('🔥 用户资料更新结果:', success);
+      console.log('🔥 User profile update result:', success);
 
       if (success) {
         // 更新UserContext中的用户信息
@@ -258,15 +263,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           });
         }
 
-        // 关闭上传模态框
+        // Close upload modal
         setShowCoverUploader(false);
-        showToast('封面图片更新成功！', 'success');
+        showToast('Cover image updated successfully!', 'success');
       } else {
-        throw new Error('用户资料更新失败');
+        throw new Error('Failed to update user profile');
       }
     } catch (error) {
-      console.error('🔥 封面图更新失败:', error);
-      showToast('封面图更新失败，请重试', 'error');
+      console.error('🔥 Failed to update cover image:', error);
+      showToast('Failed to update cover image, please try again', 'error');
     }
   };
 
@@ -276,37 +281,33 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
   const handleLogout = async () => {
     try {
-      showToast('正在登出...', 'info');
+      showToast('Logging out...', 'info');
 
-      // 调用API登出
-      await AuthService.logout();
+      // Call user context logout function (it calls API and clears local state)
+      await logout();
 
-      // 调用用户上下文的登出函数
-      logout();
-
-      // 调用可选的回调函数
+      // Call optional callback function
       if (onLogout) {
         onLogout();
       }
 
-      showToast('已成功登出', 'success');
+      showToast('Successfully logged out', 'success');
 
-      // 重定向到主页
+      // Redirect to homepage
       setTimeout(() => {
         navigate('/', { replace: true });
-      }, 1000); // 延迟1秒让用户看到成功提示
+      }, 1000); // Delay 1 second to let user see success message
 
     } catch (error) {
-      console.error('❌ 登出失败:', error);
-      showToast('登出失败，请重试', 'error');
+      console.error('❌ Logout failed:', error);
+      showToast('Logout failed, please try again', 'error');
 
-      // 即使API调用失败，也执行本地登出清理
-      logout();
+      // Call optional callback function
       if (onLogout) {
         onLogout();
       }
 
-      // 无论如何都重定向到主页，避免留在需要认证的页面
+      // Redirect to homepage anyway to avoid staying on authenticated page
       setTimeout(() => {
         navigate('/', { replace: true });
       }, 2000);
@@ -418,17 +419,17 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       const success = await AuthService.updateUserInfo(updateData);
 
       if (success) {
-        // 更新UserContext中的用户信息
+        // Update user info in UserContext
         updateUser(updateData);
-        showToast('个人信息更新成功', 'success');
+        showToast('Personal information updated successfully', 'success');
         setShowPersonalInfoPopup(false);
       } else {
-        showToast('更新失败，请重试', 'error');
+        showToast('Update failed, please try again', 'error');
       }
 
     } catch (error) {
-      console.error('更新个人信息失败:', error);
-      showToast('更新失败，请重试', 'error');
+      console.error('Failed to update personal information:', error);
+      showToast('Update failed, please try again', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -478,12 +479,12 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             onClick={handleAvatarClick}
             className="w-[100px] h-[100px] rounded-[60px] border-2 border-solid border-white bg-cover bg-[50%_50%] relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group"
             style={{
-              backgroundImage: `url(${user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4`})`
+              backgroundImage: `url(${user?.faceUrl || profileDefaultAvatar})`
             }}
-            title="点击更换头像"
-            aria-label="点击更换头像"
+            title="Click to change avatar"
+            aria-label="Click to change avatar"
           >
-            {/* 悬浮时显示上传提示图标 */}
+            {/* Show upload icon on hover */}
             <div className="absolute inset-0 bg-black/50 rounded-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
               <svg
                 className="w-8 h-8 text-white"
@@ -507,15 +508,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               <header className="h-[60px] inline-flex flex-col items-start justify-center relative">
                 <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] mt-[-3.50px]">
                   <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
-                    {formData.name || (!user ? "加载中..." : "Guest User")}
+                    {formData.name || (!user ? "Loading..." : "Guest User")}
                   </h1>
 
-                  {/* 编辑按钮放在用户名旁边，更靠近主要内容 */}
+                  {/* Edit button next to username */}
                   <button
                     className="relative w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer ml-2"
-                    aria-label="编辑个人信息"
+                    aria-label="Edit personal information"
                     onClick={() => setShowPersonalInfoPopup(true)}
-                    title="编辑用户名、简介等个人信息"
+                    title="Edit username, bio and other personal information"
                   >
                     <img
                       className="w-3 h-3"
@@ -526,7 +527,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 </div>
 
                 <div className="relative w-fit mb-[-2.50px] [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {formData.username || (!user ? "加载中..." : "@unknown")}
+                  {formData.username || (!user ? "Loading..." : "@unknown")}
                 </div>
               </header>
             </div>
@@ -534,7 +535,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             <div className="flex-col gap-2.5 flex items-start relative self-stretch w-full flex-[0_0_auto]">
               <div className="flex items-center gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
                 <p className="relative w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-off-black text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                  {formData.bio || (!user ? "加载中..." : "Hello, welcome to my creative space.")}
+                  {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
                 </p>
               </div>
 
@@ -563,11 +564,11 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                     </button>
                   ))}
 
-                  {/* 编辑社交链接按钮 */}
+                  {/* Edit social links button */}
                   <button
                     className="inline-flex items-center gap-2 px-3 py-2 relative flex-[0_0_auto] rounded-lg border border-dashed border-medium-grey hover:border-dark-grey hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
                     onClick={() => setShowSocialLinksPopup(true)}
-                    title="管理社交链接"
+                    title="Manage social links"
                   >
                     <svg
                       className="w-5 h-5 text-medium-dark-grey"
@@ -583,7 +584,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                       />
                     </svg>
                     <span className="text-sm text-medium-dark-grey">
-                      {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).length > 0 ? '编辑链接' : '添加链接'}
+                      {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).length > 0 ? 'Edit Links' : 'Add Links'}
                     </span>
                   </button>
                 </div>
@@ -627,7 +628,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               className="inline-flex items-center justify-center gap-2.5 px-4 py-2 h-auto rounded-lg border border-solid border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
             >
               <span className="[font-family:'Lato',Helvetica] font-normal text-base leading-5">
-                修改密码
+                Change Password
               </span>
             </Button>
           </div>
@@ -644,11 +645,11 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         <div className="flex flex-col items-start gap-5 pt-0 pb-[25px] px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey">
           {!user ? (
             <div className="flex justify-center items-center py-4">
-              <div className="text-sm text-gray-500">请先登录以查看通知设置</div>
+              <div className="text-sm text-gray-500">Please log in to view notification settings</div>
             </div>
           ) : notificationLoading ? (
             <div className="flex justify-center items-center py-4">
-              <div className="text-sm text-gray-500">加载通知设置中...</div>
+              <div className="text-sm text-gray-500">Loading notification settings...</div>
             </div>
           ) : notificationSettings.length > 0 ? (
             notificationSettings.map((setting) => {
@@ -667,7 +668,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             })
           ) : (
             <div className="flex justify-center items-center py-4">
-              <div className="text-sm text-gray-500">暂无通知设置</div>
+              <div className="text-sm text-gray-500">No notification settings available</div>
             </div>
           )}
         </div>
@@ -833,15 +834,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         isOpen={showChangePasswordModal}
         onClose={() => setShowChangePasswordModal(false)}
         onSuccess={() => {
-          showToast("密码修改成功！", "success");
+          showToast("Password changed successfully!", "success");
         }}
       />
 
-      {/* 封面图片上传模态框 */}
+      {/* Cover image upload modal */}
       {showCoverUploader && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold mb-4 text-center">更换封面图片</h3>
+            <h3 className="text-xl font-semibold mb-4 text-center">Change Cover Image</h3>
             <ImageUploader
               type="banner"
               currentImage={user?.coverUrl}
@@ -852,17 +853,17 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               onClick={() => setShowCoverUploader(false)}
               className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              取消
+              Cancel
             </button>
           </div>
         </div>
       )}
 
-      {/* 头像上传模态框 */}
+      {/* Avatar upload modal */}
       {showAvatarUploader && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold mb-4 text-center">更换头像</h3>
+            <h3 className="text-xl font-semibold mb-4 text-center">Change Avatar</h3>
             <ImageUploader
               type="avatar"
               currentImage={user?.faceUrl}
@@ -873,7 +874,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               onClick={() => setShowAvatarUploader(false)}
               className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              取消
+              Cancel
             </button>
           </div>
         </div>
