@@ -479,7 +479,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             onClick={handleAvatarClick}
             className="w-[100px] h-[100px] rounded-[60px] border-2 border-solid border-white bg-cover bg-[50%_50%] relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group"
             style={{
-              backgroundImage: `url(${user?.faceUrl || profileDefaultAvatar})`
+              backgroundImage: `url(${(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar})`
             }}
             title="Click to change avatar"
             aria-label="Click to change avatar"
