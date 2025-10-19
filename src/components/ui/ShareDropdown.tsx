@@ -13,6 +13,7 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
   className = ''
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const shareUrl = url || window.location.href;
   const { showToast } = useToast();
@@ -63,7 +64,14 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={handleShareClick}
-        className="all-[unset] box-border aspect-[1] relative cursor-pointer"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0"
+        style={{
+          background: isHovered
+            ? 'linear-gradient(0deg, rgba(33, 145, 251, 0.2) 0%, rgba(33, 145, 251, 0.2) 100%), linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 1) 100%)'
+            : 'transparent'
+        }}
         aria-label="Share"
         aria-expanded={isOpen}
       >

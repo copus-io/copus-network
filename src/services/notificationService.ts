@@ -1,5 +1,6 @@
 import { apiRequest } from './api';
 import { Notification, NotificationApiResponse } from '../types/notification';
+import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 export class NotificationService {
   /**
@@ -281,8 +282,7 @@ export class NotificationService {
       type,
       title,
       message: processedMessage,
-      avatar: apiMessage.senderInfo?.faceUrl ||
-              `https://api.dicebear.com/7.x/avataaars/svg?seed=${apiMessage.senderInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+      avatar: apiMessage.senderInfo?.faceUrl || profileDefaultAvatar,
       timestamp: apiMessage.createdAt * 1000, // Convert second-level timestamp to millisecond-level
       isRead: apiMessage.isRead,
       actionUrl: undefined, // Real API doesn't provide actionUrl for now
@@ -305,7 +305,7 @@ export class NotificationService {
         type: 'like',
         title: 'New Like',
         message: 'Alice liked your article "React Best Practices"',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice&backgroundColor=b6e3f4',
+        avatar: profileDefaultAvatar,
         timestamp: now - 1000 * 60 * 30, // 30 minutes ago
         isRead: false,
         actionUrl: '/article/123',
@@ -319,7 +319,7 @@ export class NotificationService {
         type: 'comment',
         title: 'New Comment',
         message: 'Bob commented on your article "TypeScript Advanced Guide"',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob&backgroundColor=fbbf24',
+        avatar: profileDefaultAvatar,
         timestamp: now - 1000 * 60 * 60 * 2, // 2 hours ago
         isRead: false,
         actionUrl: '/article/456',
@@ -346,7 +346,7 @@ export class NotificationService {
         type: 'like',
         title: 'New Like',
         message: 'David and 2 other users liked your article "Vue3 Component Design"',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David&backgroundColor=f59e0b',
+        avatar: profileDefaultAvatar,
         timestamp: now - 1000 * 60 * 60 * 24 * 3, // 3 days ago
         isRead: true,
         actionUrl: '/article/999',

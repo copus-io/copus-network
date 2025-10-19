@@ -99,9 +99,6 @@ const postsData = [
 // 转换为 ArticleData 格式
 const articleDataList = postsData.map(transformPostToArticleData);
 
-const leftColumnPosts = articleDataList.filter((_, index) => index % 2 === 0);
-const rightColumnPosts = articleDataList.filter((_, index) => index % 2 === 1);
-
 export const PostsSection = (): JSX.Element => {
   // 静态的事件处理函数（无实际功能）
   const handleDemoLike = () => {
@@ -111,7 +108,7 @@ export const PostsSection = (): JSX.Element => {
   };
 
   const renderPostCard = (article: ArticleData) => (
-    <div key={article.id} className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
+    <div key={article.id}>
       <ArticleCard
         article={article}
         layout="discovery"
@@ -128,14 +125,15 @@ export const PostsSection = (): JSX.Element => {
   );
 
   return (
-    <section className="flex items-start gap-[60px] px-10 pt-5 pb-[30px] min-h-screen">
-      <div className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
-        {leftColumnPosts.map(renderPostCard)}
-      </div>
-
-      <div className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
-        {rightColumnPosts.map(renderPostCard)}
-      </div>
+    <section
+      className="w-full px-10 pt-5 pb-[30px] min-h-screen"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+        gap: '2rem'
+      }}
+    >
+      {articleDataList.map(renderPostCard)}
     </section>
   );
 };

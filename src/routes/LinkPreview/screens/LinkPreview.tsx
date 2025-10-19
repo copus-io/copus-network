@@ -156,14 +156,13 @@ export const LinkPreview = (): JSX.Element => {
               <div className="flex flex-col items-start gap-5 w-full">
                 <div className="flex justify-start w-full">
                   <Badge
-                    variant="outline"
-                    className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border-2 w-fit ${
-                      articleData.categoryColor ? '' : `${getCategoryStyle(articleData.category).border} ${getCategoryStyle(articleData.category).bg}`
+                    className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] w-fit ${
+                      articleData.categoryColor ? '' : getCategoryStyle(articleData.category).bg
                     }`}
-                    style={articleData.categoryColor ? getCategoryInlineStyle(articleData.categoryColor) : undefined}
+                    style={articleData.categoryColor ? { background: getCategoryInlineStyle(articleData.categoryColor).background } : undefined}
                   >
                     <span
-                      className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
+                      className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] capitalize ${
                         articleData.categoryColor ? '' : getCategoryStyle(articleData.category).text
                       }`}
                       style={articleData.categoryColor ? { color: getCategoryInlineStyle(articleData.categoryColor).color } : undefined}

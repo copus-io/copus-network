@@ -150,11 +150,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <CardContent className="flex flex-col items-start gap-[15px] p-5">
             <div className="flex flex-col items-start justify-center gap-[15px] w-full">
               <div
-                className="flex flex-col h-[240px] items-start justify-between p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
+                className="flex flex-col items-start p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
                 style={{
                   backgroundImage: article.coverImage
                     ? `url(${article.coverImage})`
-                    : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+                    : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                  aspectRatio: '16 / 9'
                 }}
               >
                 {!article.coverImage && (
@@ -165,14 +166,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-gray-500 text-xs">Cover Preview</p>
+                      <p className="text-gray-500 text-base">Cover Preview</p>
                     </div>
                   </div>
                 )}
 
                 <Badge
                   variant="outline"
-                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border-2 w-fit ${
+                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit ${
                     article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
                   }`}
                   style={article.categoryColor ? categoryInlineStyle : undefined}
@@ -187,9 +188,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                <div className="flex justify-end">
+                <div className="absolute bottom-2.5 right-2.5">
                   <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
-                    <span className="[font-family:'Lato',Helvetica] font-bold text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
                       {article.website || 'example.com'}
                     </span>
                   </div>
@@ -198,7 +199,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col items-start gap-[15px] w-full">
                 <h3
-                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
+                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px]"
                   style={{
                     display: '-webkit-box',
                     WebkitBoxOrient: 'vertical',
@@ -240,14 +241,17 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <CardContent className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
               <div
-                className="flex flex-col h-[240px] w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
-                style={{ backgroundImage: `url(${article.coverImage})` }}
+                className="flex flex-col w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
+                style={{
+                  backgroundImage: `url(${article.coverImage})`,
+                  aspectRatio: '16 / 9'
+                }}
                 title="Click to view work details"
               >
                 {/* Category badge */}
                 <Badge
                   variant="outline"
-                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border-2 w-fit ${
+                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit ${
                     article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
                   }`}
                   style={article.categoryColor ? categoryInlineStyle : undefined}
@@ -262,23 +266,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                {/* Website link or favorite mark */}
+                {/* Website link */}
                 <div className="flex justify-end">
-                  {actions.showWebsite && article.website ? (
+                  {actions.showWebsite && article.website && (
                     <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
                         {article.website}
                       </span>
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-[#E19F1D] rounded-[10px]">
-                      <img
-                        className="w-3 h-3.5"
-                        alt="Treasure icon"
-                        src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
-                        style={{ filter: 'brightness(0) invert(1)' }}
-                      />
-                      <span className="text-white text-xs font-medium">Favorite</span>
                     </div>
                   )}
                 </div>
@@ -286,7 +280,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 <h3
-                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
+                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px]"
                   style={{
                     display: '-webkit-box',
                     WebkitBoxOrient: 'vertical',
@@ -301,7 +295,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-all overflow-hidden"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-all overflow-hidden min-h-[54px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -342,70 +336,66 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             </div>
 
             {/* Action buttons area */}
-            <div className="flex items-center justify-between mt-auto">
-              <div className="flex items-center gap-[15px]">
-                {/* Treasure button */}
-                {actions.showTreasure && (
-                  <TreasureButton
-                    isLiked={article.isLiked || false}
-                    likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
-                    onClick={handleLikeClick}
-                    size="large"
-                  />
-                )}
+            <div className="flex items-center justify-between mt-auto -mx-[30px] px-[30px]">
+              {/* Treasure button */}
+              {actions.showTreasure && (
+                <TreasureButton
+                  isLiked={article.isLiked || false}
+                  likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
+                  onClick={handleLikeClick}
+                  size="large"
+                />
+              )}
 
-                {/* Visit count - always show if showVisits is true */}
-                {actions.showVisits && (
-                  <div className="flex items-center gap-2">
-                    <img
-                      className="w-5 h-3.5"
-                      alt="Ic view"
-                      src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
-                    />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
-                      {article.visitCount}
-                    </span>
-                  </div>
-                )}
-              </div>
+              {/* Visit count */}
+              {actions.showVisits && (
+                <div className="flex items-center gap-2">
+                  <img
+                    className="w-5 h-3.5"
+                    alt="Ic view"
+                    src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
+                  />
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
+                    {article.visitCount}
+                  </span>
+                </div>
+              )}
 
               {/* Edit and delete buttons area */}
-              <div className="flex items-center gap-2 min-h-[24px]">
-                {isHovered && (actions.showEdit || actions.showDelete) && (
-                  <>
-                    {actions.showEdit && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 h-auto hover:bg-blue-50 transition-colors"
-                        onClick={handleEdit}
-                      >
-                        <Edit2 className="w-4 h-4 text-blue-600" />
-                      </Button>
-                    )}
+              {isHovered && (actions.showEdit || actions.showDelete) && (
+                <div className="flex items-center gap-2 min-h-[24px]">
+                  {actions.showEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 h-auto hover:bg-blue-50 transition-colors"
+                      onClick={handleEdit}
+                    >
+                      <Edit2 className="w-4 h-4 text-blue-600" />
+                    </Button>
+                  )}
 
-                    {actions.showDelete && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 h-auto hover:bg-red-50 transition-colors"
-                        onClick={handleDelete}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    )}
-                  </>
-                )}
+                  {actions.showDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 h-auto hover:bg-red-50 transition-colors"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                    </Button>
+                  )}
+                </div>
+              )}
 
-                {/* Branch It icon */}
-                {actions.showBranchIt && !isHovered && (
-                  <img
-                    className="flex-shrink-0"
-                    alt="Branch it"
-                    src="https://c.animaapp.com/mftam89xRJwsqQ/img/branch-it.svg"
-                  />
-                )}
-              </div>
+              {/* Branch It icon */}
+              {actions.showBranchIt && !isHovered && (
+                <img
+                  className="flex-shrink-0"
+                  alt="Branch it"
+                  src="https://c.animaapp.com/mftam89xRJwsqQ/img/branch-it.svg"
+                />
+              )}
             </div>
           </CardContent>
         );
@@ -415,48 +405,48 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         return (
           <CardContent className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
-              <div className="relative h-[240px] w-full rounded-lg overflow-hidden bg-gray-200">
-                <LazyImage
-                  src={article.coverImage || ''}
-                  alt={article.title}
-                  className="w-full h-full object-cover"
-                  placeholder="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTAwIiBoZWlnaHQ9IjI0MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Mb2FkaW5nLi4uPC90ZXh0Pjwvc3ZnPg=="
-                />
-
-                <div className="absolute inset-0 flex flex-col justify-between p-[15px]">
-                  <Badge
-                    variant="outline"
-                    className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border-2 w-fit ${
-                      article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
+              <div
+                className="flex flex-col w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat"
+                style={{
+                  backgroundImage: article.coverImage
+                    ? `url(${article.coverImage})`
+                    : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                  aspectRatio: '16 / 9'
+                }}
+              >
+                {/* Category badge */}
+                <Badge
+                  variant="outline"
+                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit ${
+                    article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
+                  }`}
+                  style={article.categoryColor ? categoryInlineStyle : undefined}
+                >
+                  <span
+                    className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
+                      article.categoryColor ? '' : categoryStyle.text
                     }`}
-                    style={article.categoryColor ? categoryInlineStyle : undefined}
+                    style={article.categoryColor ? { color: categoryInlineStyle.color } : undefined}
                   >
-                    <span
-                      className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
-                        article.categoryColor ? '' : categoryStyle.text
-                      }`}
-                      style={article.categoryColor ? { color: categoryInlineStyle.color } : undefined}
-                    >
-                      {article.category}
-                    </span>
-                  </Badge>
+                    {article.category}
+                  </span>
+                </Badge>
 
-                  {/* Website link */}
-                  <div className="flex justify-end">
-                    {article.website && (
-                      <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
-                        <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
-                          {article.website}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                {/* Website link */}
+                <div className="flex justify-end">
+                  {article.website && (
+                    <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
+                        {article.website}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="flex flex-col gap-[15px] flex-1">
                 <h3
-                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
+                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px]"
                   style={{
                     display: '-webkit-box',
                     WebkitBoxOrient: 'vertical',
@@ -471,7 +461,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-all overflow-hidden"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-all overflow-hidden min-h-[54px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -510,30 +500,28 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Add like button area */}
             {(actions.showTreasure || actions.showVisits) && (
-              <div className="flex items-center justify-between px-[5px]">
-                <div className="flex items-center gap-[15px]">
-                  {actions.showTreasure && (
-                    <TreasureButton
-                      isLiked={article.isLiked || false}
-                      likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
-                      onClick={handleLikeClick}
-                      size="large"
-                    />
-                  )}
+              <div className="flex items-center justify-between -mx-[30px] px-[30px]">
+                {actions.showTreasure && (
+                  <TreasureButton
+                    isLiked={article.isLiked || false}
+                    likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
+                    onClick={handleLikeClick}
+                    size="large"
+                  />
+                )}
 
-                  {actions.showVisits && (
-                    <div className="inline-flex items-center gap-2">
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Ic view"
-                        src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
-                      />
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
-                        {article.visitCount}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                {actions.showVisits && (
+                  <div className="inline-flex items-center gap-2">
+                    <img
+                      className="w-5 h-3.5"
+                      alt="Ic view"
+                      src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
+                      {article.visitCount}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -553,7 +541,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   return (
     <div
-      className={`w-[500px] ${className}`}
+      className={`${layout === 'preview' ? 'w-[500px]' : 'w-full'} ${className}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

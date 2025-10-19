@@ -57,11 +57,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       className={`
         inline-flex items-center transition-all duration-200 rounded-lg
         ${size === 'large'
-          ? `w-[86px] h-[38px] rounded-[50px] border border-solid justify-center gap-[10px] px-[15px] py-2 ${
-              isLiked
-                ? 'bg-[#E19F1D] border-[#E19F1D]'
-                : 'bg-[#e19e1d1a] border-[#E19F1D]'
-            }`
+          ? `h-[38px] rounded-[50px] gap-[10px] pr-[15px] py-2`
           : `hover:bg-gray-100 group/like z-10 relative ${currentSize.container}`
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
@@ -72,14 +68,14 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       aria-label={`${isLiked ? 'Remove from treasury' : 'Add to treasury'}, ${likesCount} treasures`}
       title={isLiked ? 'Remove from your treasury' : 'Add to your treasury'}
     >
-      <div className="relative">
+      <div className="relative group">
         {/* 宝石图标 - 直接处理颜色变化 */}
         <img
           className={`
             transition-all duration-200 relative z-10
             ${currentSize.icon}
             ${size === 'large'
-              ? (isLiked ? 'filter brightness-0 invert' : '')
+              ? (isLiked ? 'transform scale-110' : 'group-hover:scale-110')
               : `group-hover/like:scale-110 ${
                   isLiked
                     ? 'filter brightness-0 saturate-200 hue-rotate-45deg transform scale-110 drop-shadow-md'
@@ -90,11 +86,27 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
           alt="Treasure icon"
           src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
           style={
-            size !== 'large' && isLiked ? {
+            size === 'large' && isLiked ? {
+              filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
+            } : size !== 'large' && isLiked ? {
               filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
             } : undefined
           }
         />
+        {/* 黄色悬停效果叠加层 */}
+        {size === 'large' && !isLiked && (
+          <img
+            className={`
+              absolute top-0 left-0 transition-opacity duration-200 opacity-0 group-hover:opacity-100 z-20
+              ${currentSize.icon}
+            `}
+            alt="Treasure icon hover"
+            src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
+            style={{
+              filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
+            }}
+          />
+        )}
       </div>
 
       {/* 点赞数量文字 */}
@@ -102,10 +114,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
         className={`
           [font-family:'Lato',Helvetica] font-normal text-center tracking-[0] leading-[20.8px]
           ${currentSize.text}
-          ${size === 'large'
-            ? (isLiked ? 'text-white' : 'text-[#454545]')
-            : 'text-dark-grey'
-          }
+          text-dark-grey
           transition-colors duration-200
         `}
       >

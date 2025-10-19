@@ -123,7 +123,7 @@ export const MainContentSection = (): JSX.Element => {
   }, [projectCards, syncArticleStates]);
 
   return (
-    <main className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+    <main className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
       <section className="flex flex-col items-start w-full">
         <div className="relative self-stretch w-full h-[200px] rounded-lg [background:url(https://c.animaapp.com/mfvyjo4ej1WzJf/img/banner.png)_50%_50%_/_cover]" />
 
@@ -215,47 +215,53 @@ export const MainContentSection = (): JSX.Element => {
           </TabsList>
 
           <TabsContent value="my-treasury" className="mt-[30px]">
-            <div className="flex items-start gap-6 w-full">
+            <div
+              className="w-full"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+                gap: '2rem'
+              }}
+            >
               {projectCards.map((card) => (
-                <div
+                <ArticleCard
                   key={card.id}
-                  className="flex flex-col items-start justify-center gap-6 pt-0 pb-5 px-0 flex-1 grow rounded-[0px_0px_25px_25px]"
-                >
-                  <ArticleCard
-                    article={card}
-                    layout="treasury"
-                    actions={{
-                      showTreasure: true,
-                      showVisits: true,
-                      showWebsite: true,
-                      showBranchIt: false
-                    }}
-                    onLike={handleLikeToggle}
-                  />
-                </div>
+                  article={card}
+                  layout="treasury"
+                  actions={{
+                    showTreasure: true,
+                    showVisits: true,
+                    showWebsite: true,
+                    showBranchIt: false
+                  }}
+                  onLike={handleLikeToggle}
+                />
               ))}
             </div>
           </TabsContent>
 
           <TabsContent value="my-share" className="mt-[30px]">
-            <div className="flex items-start gap-6 w-full">
+            <div
+              className="w-full"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+                gap: '2rem'
+              }}
+            >
               {projectCards.map((card) => (
-                <div
+                <ArticleCard
                   key={card.id}
-                  className="flex flex-col items-start justify-center gap-6 pt-0 pb-5 px-0 flex-1 grow rounded-[0px_0px_25px_25px]"
-                >
-                  <ArticleCard
-                    article={card}
-                    layout="treasury"
-                    actions={{
-                      showTreasure: true,
-                      showVisits: true,
-                      showWebsite: true,
-                      showBranchIt: false
-                    }}
-                    onLike={handleLikeToggle}
-                  />
-                </div>
+                  article={card}
+                  layout="treasury"
+                  actions={{
+                    showTreasure: true,
+                    showVisits: true,
+                    showWebsite: true,
+                    showBranchIt: false
+                  }}
+                  onLike={handleLikeToggle}
+                />
               ))}
             </div>
           </TabsContent>

@@ -5,14 +5,16 @@ import { Button } from "../../ui/button";
 import { Separator } from "../../ui/separator";
 import { useUser } from "../../../contexts/UserContext";
 import { useNotification } from "../../../contexts/NotificationContext";
+import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 
 interface HeaderSectionProps {
   isLoggedIn?: boolean;
   hideCreateButton?: boolean;
   showDiscoverNow?: boolean;
+  hideLoginButton?: boolean;
 }
 
-export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, showDiscoverNow = false }: HeaderSectionProps): JSX.Element => {
+export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, showDiscoverNow = false, hideLoginButton = false }: HeaderSectionProps): JSX.Element => {
   const { user, logout } = useUser();
   const { unreadCount } = useNotification();
   const navigate = useNavigate();
@@ -118,7 +120,7 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
                     src={
                       user?.faceUrl ||
                       user?.avatar ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4`
+                      profileDefaultAvatar
                     }
                     alt="Avatar"
                   />
@@ -166,13 +168,15 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
                 </div>
               </Link>
             )}
-            <Button
-              variant="outline"
-              className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
-              asChild
-            >
-              <Link to="/login">Log in / Sign up</Link>
-            </Button>
+            {!hideLoginButton && (
+              <Button
+                variant="outline"
+                className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
+                asChild
+              >
+                <Link to="/login">Log in / Sign up</Link>
+              </Button>
+            )}
           </div>
         )}
       </div>

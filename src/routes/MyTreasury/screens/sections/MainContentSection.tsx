@@ -490,12 +490,10 @@ export const MainContentSection = (): JSX.Element => {
       <ArticleCard
         key={card.id}
         article={articleData}
-        layout="treasury"
+        layout="discovery"
         actions={{
           showTreasure: true,
-          showVisits: true,
-          showWebsite: true,
-          showBranchIt: true
+          showVisits: true
         }}
         onLike={handleLike}
         onUserClick={handleUserClick}
@@ -553,11 +551,10 @@ export const MainContentSection = (): JSX.Element => {
       <ArticleCard
         key={card.id}
         article={articleData}
-        layout="treasury"
+        layout="discovery"
         actions={{
           showTreasure: true, // Always show treasure button for unified style
           showVisits: true,
-          showWebsite: true,
           showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
           showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
         }}
@@ -621,7 +618,7 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   return (
-    <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+    <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
       <section className="flex flex-col items-start w-full">
         <div className="relative self-stretch w-full h-[200px] rounded-lg overflow-hidden bg-gradient-to-r from-blue-100 to-purple-100">
           <img
@@ -763,17 +760,17 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {likedArticlesError}</div>
               </div>
             ) : likedArticles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+              <div
+                className="w-full"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+                  gap: '2rem'
+                }}
+              >
                 {likedArticles.map((article) => {
                   const card = transformLikedApiToCard(article);
-                  return (
-                    <div
-                      key={card.id}
-                      className="flex flex-col gap-6 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]"
-                    >
-                      {renderCard(card)}
-                    </div>
-                  );
+                  return renderCard(card);
                 })}
               </div>
             ) : (
@@ -801,17 +798,17 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {createdArticlesError}</div>
               </div>
             ) : createdArticles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+              <div
+                className="w-full"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+                  gap: '2rem'
+                }}
+              >
                 {createdArticles.map((article) => {
                   const card = transformCreatedApiToCard(article);
-                  return (
-                    <div
-                      key={card.id}
-                      className="flex flex-col gap-6 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]"
-                    >
-                      {renderMyShareCard(card)}
-                    </div>
-                  );
+                  return renderMyShareCard(card);
                 })}
               </div>
             ) : (

@@ -1,5 +1,6 @@
 import { apiRequest } from './api';
 import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams } from '../types/article';
+import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
@@ -44,7 +45,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     userName: backendArticle.authorInfo.username,
     userId: backendArticle.authorInfo.id,
     namespace: backendArticle.authorInfo.namespace, // Add namespace field
-    userAvatar: backendArticle.authorInfo.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendArticle.authorInfo.username}&backgroundColor=b6e3f4`, // Dynamically generate default avatar
+    userAvatar: backendArticle.authorInfo.faceUrl || profileDefaultAvatar, // Use default profile avatar
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
@@ -181,25 +182,53 @@ export const publishArticle = async (articleData: {
   coverUrl: string;
   targetUrl: string;
   categoryId: number;
-}): Promise<{ uuid: string }> => {
+}): Promise<string> => {
 
   const endpoint = '/client/author/article/edit';
 
   try {
-    const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
+    const response = await apiRequest<{status: number, msg: string, data: string}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),
       requiresAuth: true,
     });
 
+    console.log('🔍 Raw API response from publishArticle:', response);
+    console.log('🔍 Response status:', response.status);
+    console.log('🔍 Response data (UUID):', response.data);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'Failed to publish article');
     }
 
+    console.log('🔍 Returning UUID string:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ Failed to publish article:', error);
     throw new Error(`Failed to publish article: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Track article visit/view - ensures visit count is incremented
+export const trackArticleVisit = async (uuid: string): Promise<void> => {
+  console.log('📊 Tracking article visit for UUID:', uuid);
+
+  const endpoint = `/client/reader/article/visit?uuid=${uuid}`;
+
+  try {
+    const response = await apiRequest<{status: number, msg: string}>(endpoint, {
+      requiresAuth: true,
+      method: 'POST'
+    });
+
+    if (response.status !== 1) {
+      console.warn('⚠️ Visit tracking API returned non-success status:', response.msg);
+      // Don't throw error - visit tracking failure shouldn't break the page
+    } else {
+      console.log('✅ Article visit tracked successfully');
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to track article visit (non-critical):', error);
+    // Don't throw error - visit tracking failure shouldn't break the page
   }
 };

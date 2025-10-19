@@ -7,6 +7,7 @@ import { AuthService } from "../../../services/authService";
 import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
+import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 
 interface UserProfileContentProps {
   namespace: string;
@@ -37,7 +38,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           id: userData.id,
           username: userData.username,
           namespace: userData.namespace,
-          faceUrl: userData.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.username}&backgroundColor=b6e3f4`,
+          faceUrl: userData.faceUrl || profileDefaultAvatar,
           bio: userData.bio || "这个用户很神秘，什么都没留下~",
           articlesCount: userData.statistics.articleCount,
           followersCount: 0, // API暂不提供关注者数据
@@ -250,7 +251,14 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       </section>
 
       {/* 文章列表 */}
-      <section className="grid grid-cols-2 gap-8">
+      <section
+        className="w-full"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+          gap: '2rem'
+        }}
+      >
         {articles.map((article) => {
           // Check if this is the current user's own article
           const isOwnArticle = user && user.id === article.userId;

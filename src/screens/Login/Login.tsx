@@ -586,12 +586,12 @@ export const Login = (): JSX.Element => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-      <HeaderSection isLoggedIn={false} hideCreateButton={true} showDiscoverNow={true} />
+    <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] overflow-x-hidden">
+      <HeaderSection isLoggedIn={false} hideCreateButton={true} showDiscoverNow={true} hideLoginButton={true} />
       <div className="flex w-full min-h-screen relative flex-col items-center pt-[120px]">{/* 添加顶部间距以适应fixed header */}
 
         <main className="flex items-center justify-center gap-2.5 relative flex-1 grow py-4 sm:py-10 px-4 sm:px-0">
-          <Card className="w-full max-w-[480px] bg-white rounded-lg border-0 shadow-none">
+          <Card className="w-full max-w-[480px] bg-white rounded-lg border-0 shadow-none relative z-10">
             <CardContent className="flex flex-col items-center justify-center gap-8 sm:gap-[50px] px-6 sm:px-[50px] py-8 sm:py-[60px]">
               <div className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto]">
                 <h1 className="relative self-stretch mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
@@ -920,12 +920,6 @@ export const Login = (): JSX.Element => {
             </CardContent>
           </Card>
 
-          <img
-            className="absolute top-[250px] sm:top-[350px] left-[-200px] sm:left-[-350px] lg:left-[-480px] w-[200px] sm:w-[300px] lg:w-[399px] h-[247px] sm:h-[370px] lg:h-[493px]"
-            alt="Ic fractopus open"
-            src="https://c.animaapp.com/mftc49qfOGKRUh/img/ic-fractopus-open.svg"
-          />
-
           {/* 忘记密码弹窗 */}
           {showForgotPassword && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -973,6 +967,15 @@ export const Login = (): JSX.Element => {
             </div>
           )}
         </main>
+
+        {/* Octopus background - positioned at bottom left of full page */}
+        <img
+          className="fixed bottom-0 left-[-60px] sm:left-[-70px] md:left-[-80px] lg:left-[-90px] xl:left-[-100px] 2xl:left-[-110px]
+                     w-[280px] sm:w-[320px] md:w-[360px] lg:w-[400px] xl:w-[450px] 2xl:w-[500px]
+                     h-auto z-0"
+          alt="Ic fractopus open"
+          src="https://c.animaapp.com/mftc49qfOGKRUh/img/ic-fractopus-open.svg"
+        />
       </div>
     </div>
   );

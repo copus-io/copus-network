@@ -73,7 +73,7 @@ export const MainContentSection = (): JSX.Element => {
   ];
 
   return (
-    <main className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+    <main className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
       <section className="flex flex-col items-start w-full">
         <div className="relative self-stretch w-full h-[200px] rounded-lg [background:url(https://c.animaapp.com/mfw39tedEil7Am/img/banner.png)_50%_50%_/_cover]" />
 

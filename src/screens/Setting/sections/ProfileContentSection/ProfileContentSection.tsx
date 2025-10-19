@@ -477,13 +477,21 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         <div className="gap-10 pl-5 pr-10 py-0 mt-[-46px] flex items-start relative self-stretch w-full flex-[0_0_auto]">
           <button
             onClick={handleAvatarClick}
-            className="w-[100px] h-[100px] rounded-[60px] border-2 border-solid border-white bg-cover bg-[50%_50%] relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group"
-            style={{
-              backgroundImage: `url(${(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar})`
-            }}
+            className="w-[100px] h-[100px] rounded-[60px] border-2 border-solid border-white relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100"
             title="Click to change avatar"
             aria-label="Click to change avatar"
           >
+            {/* Avatar image */}
+            <img
+              src={(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar}
+              alt="Profile avatar"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.log('🔥 Avatar image failed to load, using default');
+                e.currentTarget.src = profileDefaultAvatar;
+              }}
+            />
+
             {/* Show upload icon on hover */}
             <div className="absolute inset-0 bg-black/50 rounded-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
               <svg
@@ -513,13 +521,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
                   {/* Edit button next to username */}
                   <button
-                    className="relative w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer ml-2"
+                    className="relative w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
                     aria-label="Edit personal information"
                     onClick={() => setShowPersonalInfoPopup(true)}
                     title="Edit username, bio and other personal information"
                   >
                     <img
-                      className="w-3 h-3"
+                      className="w-4 h-4"
                       alt="Edit"
                       src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
                     />

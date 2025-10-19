@@ -28,6 +28,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   type = 'avatar'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const loadedImageRef = useRef<HTMLImageElement | null>(null);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -68,24 +69,44 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
 
       setImgDimensions({ width: displayWidth, height: displayHeight });
 
-      // Set initial crop area (centered)
-      const cropSize = Math.min(displayWidth, displayHeight) * 0.8;
-      const cropWidth = aspectRatio >= 1 ? cropSize : cropSize * aspectRatio;
-      const cropHeight = aspectRatio >= 1 ? cropSize / aspectRatio : cropSize;
+      // Store the loaded image for reuse
+      loadedImageRef.current = img;
 
-      setCropArea({
-        x: (displayWidth - cropWidth) / 2,
-        y: (displayHeight - cropHeight) / 2,
+      // Set initial crop area
+      let cropWidth, cropHeight, cropX, cropY;
+
+      if (cropShape === 'rect' && type === 'banner') {
+        // For banner/rect mode: start with full width
+        cropWidth = displayWidth;
+        cropHeight = displayWidth / aspectRatio;
+
+        // If calculated height exceeds image height, adjust to fit
+        if (cropHeight > displayHeight) {
+          cropHeight = displayHeight;
+          cropWidth = displayHeight * aspectRatio;
+        }
+
+        // Center the crop area
+        cropX = (displayWidth - cropWidth) / 2;
+        cropY = (displayHeight - cropHeight) / 2;
+      } else {
+        // For avatar/circle mode: use 80% of smaller dimension (existing logic)
+        const cropSize = Math.min(displayWidth, displayHeight) * 0.8;
+        cropWidth = aspectRatio >= 1 ? cropSize : cropSize * aspectRatio;
+        cropHeight = aspectRatio >= 1 ? cropSize / aspectRatio : cropSize;
+        cropX = (displayWidth - cropWidth) / 2;
+        cropY = (displayHeight - cropHeight) / 2;
+      }
+
+      const initialCrop = {
+        x: cropX,
+        y: cropY,
         width: cropWidth,
         height: cropHeight
-      });
+      };
 
-      drawCanvas(ctx, img, {
-        x: (displayWidth - cropWidth) / 2,
-        y: (displayHeight - cropHeight) / 2,
-        width: cropWidth,
-        height: cropHeight
-      });
+      setCropArea(initialCrop);
+      drawCanvas(ctx, img, initialCrop);
     };
 
     img.src = url;
@@ -376,13 +397,11 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
 
     setCropArea(newCropArea);
 
-    // Redraw canvas
+    // Redraw canvas using cached image
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !loadedImageRef.current) return;
 
-    const img = new Image();
-    img.onload = () => drawCanvas(ctx, img, newCropArea);
-    img.src = imageUrl;
+    drawCanvas(ctx, loadedImageRef.current, newCropArea);
   };
 
   const handleMouseUp = () => {
@@ -417,13 +436,11 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         y: mouseY - (mouseY - prev.y) * scaleChange
       }));
 
-      // Redraw canvas
+      // Redraw canvas using cached image
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx || !loadedImageRef.current) return;
 
-      const img = new Image();
-      img.onload = () => drawCanvas(ctx, img, cropArea);
-      img.src = imageUrl;
+      drawCanvas(ctx, loadedImageRef.current, cropArea);
     }
   };
 
@@ -448,13 +465,11 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
 
     setDragStart({ x, y });
 
-    // Redraw canvas
+    // Redraw canvas using cached image
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx || !loadedImageRef.current) return;
 
-    const img = new Image();
-    img.onload = () => drawCanvas(ctx, img, cropArea);
-    img.src = imageUrl;
+    drawCanvas(ctx, loadedImageRef.current, cropArea);
   };
 
   // Set cursor style based on mouse position
@@ -616,7 +631,14 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
           <div>📏 Drag corners to resize</div>
           <div>🔍 Scroll wheel to zoom</div>
           <div className="text-xs text-gray-500 mt-1">Zoom range: {scale.toFixed(1)}x (0.5x - 3.0x)</div>
-          {aspectRatio !== 1 && <div>🔒 Maintain {aspectRatio > 1 ? `${aspectRatio}:1` : `1:${(1/aspectRatio).toFixed(1)}`} aspect ratio</div>}
+          {aspectRatio !== 1 && <div>🔒 Maintain {(() => {
+            // Display common aspect ratios nicely
+            if (Math.abs(aspectRatio - 16/9) < 0.01) return '16:9';
+            if (Math.abs(aspectRatio - 4/3) < 0.01) return '4:3';
+            if (Math.abs(aspectRatio - 3/2) < 0.01) return '3:2';
+            if (Math.abs(aspectRatio - 21/9) < 0.01) return '21:9';
+            return aspectRatio > 1 ? `${aspectRatio.toFixed(2)}:1` : `1:${(1/aspectRatio).toFixed(2)}`;
+          })()} aspect ratio</div>}
         </div>
 
         <div className="flex justify-end gap-3">

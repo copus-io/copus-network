@@ -25,7 +25,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [isUploading, setIsUploading] = useState(false);
 
   const isAvatar = type === 'avatar';
-  const aspectRatio = isAvatar ? 1 : 3 / 1; // Avatar 1:1, Banner 3:1 (更适合封面图)
+  const aspectRatio = isAvatar ? 1 : 16 / 9; // Avatar 1:1, Banner 16:9 (standard widescreen)
   const cropShape = isAvatar ? 'circle' : 'rect';
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,10 +59,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       setShowCropper(false);
 
       // Compress image
-      console.log('🔥 开始压缩图片...');
+      console.log('🔥 Starting image compression...');
       const compressedFile = await compressImage(croppedFile, {
-        maxWidth: isAvatar ? 400 : 1200,
-        maxHeight: isAvatar ? 400 : 675,
+        maxWidth: isAvatar ? 400 : 1920,
+        maxHeight: isAvatar ? 400 : 1080,
         quality: 0.8,
         format: 'jpeg'
       });

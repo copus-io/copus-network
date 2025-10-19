@@ -7,6 +7,7 @@ import { useToast } from "../../../../components/ui/toast";
 import { useUser } from "../../../../contexts/UserContext";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 import { getCategoryStyle, getCategoryInlineStyle, formatDate, formatCount } from "../../../../utils/categoryStyles";
+import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
 export const DiscoveryContentSection = (): JSX.Element => {
   const { showToast } = useToast();
@@ -175,7 +176,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       category: article.category,
       categoryColor: article.categoryColor,
       userName: article.userName,
-      userAvatar: article.userAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.userName}&backgroundColor=b6e3f4`,
+      userAvatar: article.userAvatar || profileDefaultAvatar,
       userId: article.userId,
       namespace: article.namespace, // Add namespace field
       date: article.date,
@@ -218,10 +219,6 @@ export const DiscoveryContentSection = (): JSX.Element => {
     }
   };
 
-  // Split articles into two columns for display
-  const leftColumnPosts = localArticles.filter((_, index) => index % 2 === 0);
-  const rightColumnPosts = localArticles.filter((_, index) => index % 2 === 1);
-
   const renderPostCard = (post: Article, index: number) => {
     const articleData = transformArticleToCardData(post);
     const articleLikeState = getArticleLikeState(post.id, post.isLiked, post.treasureCount);
@@ -234,7 +231,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     const isOwnArticle = user && user.id === post.userId;
 
     return (
-      <div key={post.id} className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
+      <div key={post.id}>
         <ArticleCard
           article={articleData}
           layout="discovery"
@@ -287,7 +284,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
   }
 
   return (
-    <main className="flex flex-col items-start gap-10 px-5 py-0 relative flex-1">
+    <main className="flex flex-col items-start gap-10 py-0 relative flex-1">
       {/* Welcome Guide Bar - Display different content based on login status */}
       {showWelcomeGuide && (
         <section className="pl-4 sm:pl-[30px] pr-4 py-4 sm:py-[30px] rounded-lg border-l-[3px] [border-left-style:solid] border-red shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-start gap-[15px] relative w-full min-h-fit overflow-hidden">
@@ -328,28 +325,29 @@ export const DiscoveryContentSection = (): JSX.Element => {
         </section>
       )}
 
-      {/* Content Cards Section */}
-      <section className="flex items-start gap-8 pt-0 pb-[30px] min-h-screen w-full">
-        <div className="w-1/2 flex flex-col gap-10 pt-0 pb-5">
-          {leftColumnPosts.map((post, index) => renderPostCard(post, index))}
-        </div>
-
-        <div className="w-1/2 flex flex-col gap-10 pt-0 pb-5">
-          {rightColumnPosts.map((post, index) => renderPostCard(post, index))}
-        </div>
+      {/* Content Cards Section - Responsive Grid Layout */}
+      <section
+        className="w-full pt-0 pb-[30px] min-h-screen"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+          gap: '2rem'
+        }}
+      >
+        {localArticles.map((post, index) => renderPostCard(post, index))}
       </section>
 
       {/* 加载指示器 */}
       {loading && (
         <div className="flex justify-center items-center py-8">
-          <div className="text-lg text-gray-600">正在加载更多内容...</div>
+          <div className="text-lg text-gray-600">Loading more content...</div>
         </div>
       )}
 
       {/* 没有更多内容提示 */}
       {!loading && !hasMore && articles.length > 0 && (
         <div className="flex justify-center items-center py-8">
-          <div className="text-gray-500">已经到底啦～没有更多内容了</div>
+          <div className="text-gray-500">You've reached the bottom! No more content to load.</div>
         </div>
       )}
     </main>

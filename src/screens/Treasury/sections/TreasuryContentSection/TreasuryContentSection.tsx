@@ -6,6 +6,7 @@ import { useUser } from "../../../../contexts/UserContext";
 import { useToast } from "../../../../components/ui/toast";
 import { formatDate } from "../../../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
+import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
 // Demo数据，用于token无效时的展示
 const getDemoTreasuryData = () => ({
@@ -23,7 +24,7 @@ const getDemoTreasuryData = () => ({
       coverImage: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=240&fit=crop",
       category: "Technology",
       userName: "TechExplorer",
-      userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=TechExplorer&backgroundColor=b6e3f4",
+      userAvatar: profileDefaultAvatar,
       date: "2024-12-15",
       treasureCount: 89,
       visitCount: "1.2k Visits",
@@ -39,7 +40,7 @@ const getDemoTreasuryData = () => ({
       coverImage: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=240&fit=crop",
       category: "Design",
       userName: "DesignGuru",
-      userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=DesignGuru&backgroundColor=f4b6e3",
+      userAvatar: profileDefaultAvatar,
       date: "2024-12-14",
       treasureCount: 67,
       visitCount: "890 Visits",
@@ -55,7 +56,7 @@ const getDemoTreasuryData = () => ({
       coverImage: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=240&fit=crop",
       category: "Environment",
       userName: "EcoInnovator",
-      userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=EcoInnovator&backgroundColor=b6f4e3",
+      userAvatar: profileDefaultAvatar,
       date: "2024-12-13",
       treasureCount: 124,
       visitCount: "2.1k Visits",
@@ -170,7 +171,7 @@ export const TreasuryContentSection = (): JSX.Element => {
               categoryColor: article.categoryInfo?.color,
               userName: article.authorInfo?.username || 'Anonymous',
               userId: article.authorInfo?.id,
-              userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+              userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
               date: new Date(article.createAt * 1000).toLocaleDateString(),
               treasureCount: article.likeCount || 0,
               visitCount: `${article.viewCount || 0} Visits`,
@@ -254,7 +255,7 @@ export const TreasuryContentSection = (): JSX.Element => {
                   categoryColor: article.categoryInfo?.color,
                   userName: article.authorInfo?.username || 'Anonymous',
                   userId: article.authorInfo?.id,
-                  userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+                  userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
                   date: new Date(article.createAt * 1000).toLocaleDateString(),
                   treasureCount: article.likeCount || 0,
                   visitCount: `${article.viewCount || 0} Visits`,
@@ -340,33 +341,32 @@ export const TreasuryContentSection = (): JSX.Element => {
     };
 
     return (
-      <div key={article.id} className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
-        <ArticleCard
-          article={articleData}
-          layout="treasury"
-          actions={{
-            showTreasure: true, // Show treasure button for all articles
-            showVisits: true,
-            showWebsite: true, // 显示网站信息
-            showBranchIt: true // 显示Branch It图标
-          }}
-          onLike={handleLike}
-          onUserClick={handleUserClickForArticle}
-        />
-      </div>
+      <ArticleCard
+        key={article.id}
+        article={articleData}
+        layout="treasury"
+        actions={{
+          showTreasure: true, // Show treasure button for all articles
+          showVisits: true,
+          showWebsite: true, // 显示网站信息
+          showBranchIt: true // 显示Branch It图标
+        }}
+        onLike={handleLike}
+        onUserClick={handleUserClickForArticle}
+      />
     );
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+      <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
         <header className="flex items-start justify-between w-full">
           <h1 className="font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
             我的宝藏
           </h1>
         </header>
         <div className="flex items-center justify-center w-full h-64">
-          <div className="text-gray-500">加载中...</div>
+          <div className="text-gray-500">Loading...</div>
         </div>
       </div>
     );
@@ -376,7 +376,7 @@ export const TreasuryContentSection = (): JSX.Element => {
     const isAuthError = error.includes('认证') || error.includes('登录');
 
     return (
-      <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+      <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
         <header className="flex items-start justify-between w-full">
           <h1 className="font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
             我的宝藏
@@ -409,7 +409,7 @@ export const TreasuryContentSection = (): JSX.Element => {
   }
 
   return (
-    <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+    <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
       <header className="flex items-start justify-between w-full">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
@@ -506,7 +506,14 @@ export const TreasuryContentSection = (): JSX.Element => {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full px-5">
+        <div
+          className="w-full px-5"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+            gap: '2rem'
+          }}
+        >
           {likedArticles.map((article) => renderArticleCard(article))}
         </div>
       )}

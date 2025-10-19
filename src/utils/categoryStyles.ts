@@ -117,7 +117,7 @@ export const getCategoryInlineStyle = (apiColor?: string) => {
     background: `linear-gradient(0deg, ${hexToRgba(color, 0.2)}, ${hexToRgba(color, 0.2)}), #FFFFFF`,
 
     // 边框样式
-    border: `2px solid ${color}`,
+    border: `1px solid ${color}`,
     borderRadius: '50px',
 
     // 文字颜色
@@ -146,12 +146,40 @@ export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+  // Calculate different time units
+  const diffSeconds = Math.floor(diffTime / 1000);
+  const diffMinutes = Math.floor(diffTime / (1000 * 60));
+  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  // Just now (less than 10 seconds)
+  if (diffSeconds < 10) return 'just now';
+
+  // Seconds ago
+  if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
+
+  // Minutes ago
+  if (diffMinutes < 60) {
+    return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+  }
+
+  // Hours ago
+  if (diffHours < 24) {
+    return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+  }
+
+  // Days ago
   if (diffDays === 1) return '1 day ago';
   if (diffDays < 30) return `${diffDays} days ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
 
+  // Months ago
+  if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    return months === 1 ? '1 month ago' : `${months} months ago`;
+  }
+
+  // More than a year - show full date
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

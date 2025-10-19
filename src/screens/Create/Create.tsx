@@ -18,6 +18,9 @@ import { publishArticle, getArticleDetail } from "../../services/articleService"
 import { useNavigate } from "react-router-dom";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../components/ArticleCard";
+import { ImageCropper } from "../../components/ImageCropper/ImageCropper";
+import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from "../../utils/imageUtils";
+import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 
 
 export const Create = (): JSX.Element => {
@@ -48,6 +51,12 @@ export const Create = (): JSX.Element => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [linkValidation, setLinkValidation] = useState({ isValid: true, message: '' });
+  const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
+
+  // Image cropping states
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
+  const [showImageCropper, setShowImageCropper] = useState(false);
 
   // Extract domain from URL for display
   const extractDomain = (url: string): string => {
@@ -185,7 +194,7 @@ export const Create = (): JSX.Element => {
     category: formData.selectedTopic,
     categoryColor: selectedCategoryData?.color,
     userName: user?.username || 'Guest User',
-    userAvatar: user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4`,
+    userAvatar: user?.faceUrl || profileDefaultAvatar,
     userId: user?.id,
     namespace: user?.namespace,
     date: new Date().toISOString(),
@@ -228,9 +237,54 @@ export const Create = (): JSX.Element => {
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, coverImage: file }));
+    if (!file) return;
+
+    // Validate file
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+      showToast(validation.error || 'File format not supported', 'error');
+      return;
     }
+
+    setSelectedImageFile(file);
+    const preview = createImagePreview(file);
+    setImagePreviewUrl(preview);
+    setShowImageCropper(true);
+  };
+
+  const handleImageCrop = async (croppedFile: File) => {
+    try {
+      setShowImageCropper(false);
+
+      // Compress image
+      const compressedFile = await compressImage(croppedFile, {
+        maxWidth: 1920,
+        maxHeight: 1080,
+        quality: 0.8,
+        format: 'jpeg'
+      });
+
+      setFormData(prev => ({ ...prev, coverImage: compressedFile }));
+
+      // Clean up preview
+      if (imagePreviewUrl) {
+        revokeImagePreview(imagePreviewUrl);
+        setImagePreviewUrl('');
+      }
+      setSelectedImageFile(null);
+    } catch (error) {
+      console.error('Image processing failed:', error);
+      showToast('Image processing failed, please try again', 'error');
+    }
+  };
+
+  const handleCancelImageCrop = () => {
+    setShowImageCropper(false);
+    if (imagePreviewUrl) {
+      revokeImagePreview(imagePreviewUrl);
+      setImagePreviewUrl('');
+    }
+    setSelectedImageFile(null);
   };
 
   // 生成唯一ID
@@ -398,30 +452,42 @@ export const Create = (): JSX.Element => {
 
       const response = await publishArticle(articleParams);
       console.log('✅ Publish response:', response);
+      console.log('✅ Response type:', typeof response);
 
       showToast(isEditMode ? 'Article updated successfully!' : 'Article published successfully!', 'success');
 
-      // 编辑模式：返回我的宝藏页面
-      // 创建模式：重置表单并跳转
-      if (isEditMode) {
+      // The API returns the UUID as a string directly in response.data
+      // So publishArticle returns the UUID string, not an object
+      let articleUuid: string | null = null;
+
+      if (typeof response === 'string') {
+        // Response is the UUID string directly
+        articleUuid = response;
+      } else if (response?.uuid) {
+        // Response is an object with uuid property
+        articleUuid = response.uuid;
+      } else if (editId) {
+        // Fallback to editId in edit mode
+        articleUuid = editId;
+      }
+
+      console.log('✅ Article UUID for redirect:', articleUuid);
+
+      // Always redirect to the work page if we have a UUID
+      if (articleUuid) {
+        console.log(`✅ Redirecting to /work/${articleUuid}`);
+        setTimeout(() => {
+          console.log(`🚀 Now navigating to /work/${articleUuid}`);
+          navigate(`/work/${articleUuid}`);
+        }, 1500);
+      } else {
+        // This should rarely happen
+        console.error('❌ No UUID found in response');
+        console.error('Response was:', response);
+        showToast('Article published but could not navigate to it. Please check My Treasury.', 'warning');
         setTimeout(() => {
           navigate('/my-treasury');
         }, 1500);
-      } else {
-        // 重置表单
-        setFormData({
-          link: "",
-          title: "",
-          recommendation: "",
-          selectedTopic: categories[0]?.name || "生活",
-          selectedTopicId: categories[0]?.id || 1,
-          coverImage: null,
-        });
-        setCharacterCount(0);
-        setTitleCharacterCount(0);
-
-        // 跳转到用户的My Treasury页面的My Share标签
-        navigate('/my-treasury?tab=share');
       }
 
     } catch (error) {
@@ -524,7 +590,7 @@ export const Create = (): JSX.Element => {
                     Title
                   </span>
                 </label>
-                <span className="[font-family:'Maven_Pro',Helvetica] font-normal text-medium-grey text-sm">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm">
                   {titleCharacterCount}/75
                 </span>
               </div>
@@ -559,7 +625,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className={`relative w-[400px] h-[192px] border border-dashed cursor-pointer transition-all rounded-lg ${
+                className={`relative w-[400px] h-[225px] border border-dashed cursor-pointer transition-all rounded-lg ${
                   formData.coverImage || coverImageUrl
                     ? 'border-green-400 bg-cover bg-[50%_50%]'
                     : 'border-medium-grey hover:border-dark-grey bg-gray-50'
@@ -628,7 +694,7 @@ export const Create = (): JSX.Element => {
                   aria-label="Recommendation"
                   maxLength={1000}
                 />
-                <div className="relative self-stretch [font-family:'Maven_Pro',Helvetica] font-normal text-medium-grey text-base text-right tracking-[0] leading-[25px]">
+                <div className="relative self-stretch [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px]">
                   {characterCount}/1000
                 </div>
               </div>
@@ -644,20 +710,32 @@ export const Create = (): JSX.Element => {
                   const categoryStyle = getCategoryStyle(category.name, category.color);
                   const categoryInlineStyle = getCategoryInlineStyle(category.color);
                   const isSelected = formData.selectedTopic === category.name;
+                  const isHovered = hoveredCategory === category.id;
+                  const showBackground = isSelected || isHovered;
+
+                  // Create styles without background for default, with background for hover/selected
+                  const borderOnlyStyle = category.color ? {
+                    border: `1px solid ${categoryInlineStyle.color}`,
+                    borderRadius: '50px',
+                  } : undefined;
+
+                  const withBackgroundStyle = category.color ? {
+                    border: `1px solid ${categoryInlineStyle.color}`,
+                    borderRadius: '50px',
+                    background: categoryInlineStyle.background,
+                  } : undefined;
 
                   return (
                     <Badge
                       key={category.id}
                       variant="outline"
-                      className={`cursor-pointer transition-all inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border-2 w-fit ${
-                        category.color ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
-                      } ${
-                        isSelected
-                          ? 'ring-2 ring-offset-1' + (category.color ? ' ring-opacity-50' : ' ring-gray-400')
-                          : 'hover:border-dark-grey hover:shadow-sm'
+                      className={`cursor-pointer transition-all inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit focus:outline-none focus:ring-0 ${
+                        category.color ? '' : `${categoryStyle.border} ${showBackground ? categoryStyle.bg : ''}`
                       }`}
-                      style={category.color ? categoryInlineStyle : undefined}
+                      style={showBackground ? withBackgroundStyle : borderOnlyStyle}
                       onClick={() => handleTopicSelect(category.name, category.id)}
+                      onMouseEnter={() => setHoveredCategory(category.id)}
+                      onMouseLeave={() => setHoveredCategory(null)}
                       role="button"
                       tabIndex={0}
                       aria-pressed={isSelected}
@@ -723,6 +801,18 @@ export const Create = (): JSX.Element => {
           </div>
         </div>
       </div>
+
+      {/* Image Cropper Modal */}
+      {showImageCropper && selectedImageFile && (
+        <ImageCropper
+          image={selectedImageFile}
+          aspectRatio={16 / 9}
+          cropShape="rect"
+          type="banner"
+          onCrop={handleImageCrop}
+          onCancel={handleCancelImageCrop}
+        />
+      )}
     </div>
   );
 };
