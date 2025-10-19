@@ -203,13 +203,13 @@ export const Login = (): JSX.Element => {
         console.log('✅ Got Google OAuth URL:', oauthUrl);
 
         // For localhost development: replace redirect_uri with localhost
-        // This requires http://localhost:5177/login to be added to Google Cloud Console OAuth settings
+        // This requires http://localhost:5177/callback to be added to Google Cloud Console OAuth settings
         let finalOauthUrl = oauthUrl;
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
         if (isLocalhost) {
           // Replace the redirect_uri parameter with localhost
-          const localhostRedirect = `http://localhost:5177/login`;
+          const localhostRedirect = `http://localhost:5177/callback`;
 
           // URL decode to work with the actual URL structure
           const decodedUrl = decodeURIComponent(oauthUrl);
