@@ -25,16 +25,25 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((message: string, type: Toast['type'], options: { duration?: number; action?: ToastAction } = {}) => {
-    const { duration = 2000, action } = options;
+    const { action } = options;
+
+    // Calculate duration based on message length if not explicitly provided
+    // Formula: 2000ms base + 60ms per character
+    // Min: 2000ms, Max: 8000ms
+    const calculatedDuration = options.duration || Math.min(
+      Math.max(2000, 2000 + message.length * 60),
+      8000
+    );
+
     const id = Math.random().toString(36).substr(2, 9);
-    const toast: Toast = { id, message, type, duration, action };
+    const toast: Toast = { id, message, type, duration: calculatedDuration, action };
 
     setToasts(prev => [...prev, toast]);
 
-    if (duration > 0) {
+    if (calculatedDuration > 0) {
       setTimeout(() => {
         removeToast(id);
-      }, duration);
+      }, calculatedDuration);
     }
   }, []);
 
