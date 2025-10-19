@@ -281,16 +281,22 @@ export const Content = (): JSX.Element => {
                 </div>
 
                 {/* Arweave onchain storage link - Always show as clickable */}
-                <a
-                  href={article?.arChainId ? `https://arseed.web3infra.dev/${article.arChainId}` : '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <div
                   className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity"
                   title={article?.arChainId ? "View on Arweave" : "Arweave storage not available"}
                   onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🔍 Arweave icon clicked');
+                    console.log('📦 Article object:', article);
+                    console.log('🔗 arChainId value:', article?.arChainId);
+
                     if (!article?.arChainId) {
-                      e.preventDefault();
-                      console.log('⚠️ No arChainId available for this article');
+                      console.warn('⚠️ No arChainId available for this article - cannot redirect to Arweave');
+                      console.log('💡 Full article data:', JSON.stringify(article, null, 2));
+                    } else {
+                      const arweaveUrl = `https://arseed.web3infra.dev/${article.arChainId}`;
+                      console.log('✅ Opening Arweave URL in new tab:', arweaveUrl);
+                      window.open(arweaveUrl, '_blank', 'noopener,noreferrer');
                     }
                   }}
                 >
@@ -299,7 +305,7 @@ export const Content = (): JSX.Element => {
                     alt="Arweave ar logo"
                     src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
                   />
-                </a>
+                </div>
               </div>
             </div>
           </article>
