@@ -52,6 +52,14 @@ export const Content = (): JSX.Element => {
   // 使用新的文章详情API hook
   const { article, loading, error } = useArticleDetail(id || '');
 
+  // Debug: Log article data to check arChainId
+  useEffect(() => {
+    if (article) {
+      console.log('📄 Article data:', article);
+      console.log('🔗 arChainId:', article.arChainId);
+    }
+  }, [article]);
+
   // 转换API数据为页面需要的格式
   const content = article ? {
     id: article.uuid,
@@ -272,29 +280,26 @@ export const Content = (): JSX.Element => {
                   </span>
                 </div>
 
-                {/* Arweave onchain storage link */}
-                {article?.arChainId ? (
-                  <a
-                    href={`https://arseed.web3infra.dev/${article.arChainId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity"
-                    title="View on Arweave"
-                  >
-                    <img
-                      className="w-full h-full"
-                      alt="Arweave ar logo"
-                      src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
-                    />
-                  </a>
-                ) : (
+                {/* Arweave onchain storage link - Always show as clickable */}
+                <a
+                  href={article?.arChainId ? `https://arseed.web3infra.dev/${article.arChainId}` : '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity"
+                  title={article?.arChainId ? "View on Arweave" : "Arweave storage not available"}
+                  onClick={(e) => {
+                    if (!article?.arChainId) {
+                      e.preventDefault();
+                      console.log('⚠️ No arChainId available for this article');
+                    }
+                  }}
+                >
                   <img
-                    className="relative w-6 h-6 opacity-50"
+                    className="w-full h-full"
                     alt="Arweave ar logo"
                     src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
-                    title="Not stored on Arweave"
                   />
-                )}
+                </a>
               </div>
             </div>
           </article>
