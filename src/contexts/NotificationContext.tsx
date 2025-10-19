@@ -269,14 +269,46 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     // 移除自动获取通知列表 - 改为用户点击时按需加载
   }, []);
 
-  // 定期轮询未读消息数量（每30秒）- 只检查数量不获取列表
+  // 定期轮询未读消息数量（每60秒）- 只检查数量不获取列表
+  // 优化：当标签页不可见时暂停轮询
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-      // 移除自动获取通知列表 - 改为用户点击时按需加载
-    }, 30000);
+    let interval: NodeJS.Timeout;
 
-    return () => clearInterval(interval);
+    const startPolling = () => {
+      interval = setInterval(() => {
+        // Only poll if document is visible
+        if (!document.hidden) {
+          fetchUnreadCount();
+        }
+      }, 60000); // Changed from 30 seconds to 60 seconds
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab hidden - clear interval to save resources
+        if (interval) {
+          clearInterval(interval);
+        }
+      } else {
+        // Tab visible - fetch immediately and restart polling
+        fetchUnreadCount();
+        if (interval) {
+          clearInterval(interval);
+        }
+        startPolling();
+      }
+    };
+
+    // Start initial polling
+    startPolling();
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const contextValue: NotificationContextType = {
