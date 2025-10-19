@@ -202,16 +202,40 @@ export const Login = (): JSX.Element => {
 
         console.log('✅ Got Google OAuth URL:', oauthUrl);
 
+        // For localhost development: replace redirect_uri with localhost
+        // This requires http://localhost:5177/login to be added to Google Cloud Console OAuth settings
+        let finalOauthUrl = oauthUrl;
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        if (isLocalhost) {
+          // Replace the redirect_uri parameter with localhost
+          const localhostRedirect = `http://localhost:5177/login`;
+
+          // URL decode to work with the actual URL structure
+          const decodedUrl = decodeURIComponent(oauthUrl);
+          console.log('🔍 Decoded OAuth URL:', decodedUrl);
+
+          // Replace redirect_uri value
+          const redirectUriRegex = /redirect_uri=([^&]+)/;
+          const match = oauthUrl.match(redirectUriRegex);
+
+          if (match) {
+            const currentRedirectUri = match[1];
+            const newRedirectUri = encodeURIComponent(localhostRedirect);
+            finalOauthUrl = oauthUrl.replace(currentRedirectUri, newRedirectUri);
+            console.log('🔧 Replaced redirect_uri:', {
+              from: decodeURIComponent(currentRedirectUri),
+              to: localhostRedirect
+            });
+          }
+        }
+
         // Add provider parameter for callback identification
-        const urlWithProvider = oauthUrl.includes('?')
-          ? `${oauthUrl}&provider=google`
-          : `${oauthUrl}?provider=google`;
+        const urlWithProvider = finalOauthUrl.includes('?')
+          ? `${finalOauthUrl}&provider=google`
+          : `${finalOauthUrl}?provider=google`;
 
-        console.log('🚀 Redirecting to:', urlWithProvider);
-
-        // The OAuth URL points to test.copus.io/callback
-        // When running on localhost, Google will redirect to test.copus.io/callback
-        // which has the OAuthRedirect component that will redirect back to localhost
+        console.log('🚀 Final redirect URL:', urlWithProvider);
         window.location.href = urlWithProvider;
       } catch (error) {
         console.error('❌ Google OAuth handling failed:', error);
