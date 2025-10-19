@@ -137,7 +137,9 @@ export const getArticleDetail = async (uuid: string): Promise<ArticleDetailRespo
   const endpoint = `/client/reader/article/info?uuid=${uuid}`;
 
   try {
-    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, { requiresAuth: true });
+    // requiresAuth: false - article details should be publicly viewable without login
+    // Only interactions (like, comment, etc.) require authentication
+    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, { requiresAuth: false });
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
@@ -216,8 +218,9 @@ export const trackArticleVisit = async (uuid: string): Promise<void> => {
   const endpoint = `/client/reader/article/visit?uuid=${uuid}`;
 
   try {
+    // requiresAuth: false - anyone should be able to increment view count, not just logged-in users
     const response = await apiRequest<{status: number, msg: string}>(endpoint, {
-      requiresAuth: true,
+      requiresAuth: false,
       method: 'POST'
     });
 
