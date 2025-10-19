@@ -125,18 +125,36 @@ export const Login = (): JSX.Element => {
                 navigate('/');
               }, 1000);
             }
-          } else {
-            // Default handling for X login (compatible with previous implementation)
+          } else if (provider === 'x') {
+            // X (Twitter) login handling
+            console.log('🔍 Processing X OAuth callback...');
             response = await AuthService.xLogin(code, state);
+            console.log('✅ X login response:', response);
+
             showToast('X login successful! Welcome back 🎉', 'success');
 
             // Get user info
-            await fetchUserInfo(response.data?.token);
+            const token = response.data?.token || response.token;
+            await fetchUserInfo(token);
 
             // Navigate to home
             setTimeout(() => {
               navigate('/');
             }, 1000);
+          } else {
+            // Default fallback (for backward compatibility)
+            console.log('⚠️ Unknown provider or no provider specified, attempting X login...');
+            response = await AuthService.xLogin(code, state);
+
+            if (response.data?.token || response.token) {
+              showToast('Login successful! Welcome back 🎉', 'success');
+              await fetchUserInfo(response.data?.token || response.token);
+              setTimeout(() => {
+                navigate('/');
+              }, 1000);
+            } else {
+              throw new Error('No authentication token received');
+            }
           }
         } catch (error) {
           console.error(`❌ ${provider || 'X'} login failed:`, error);
@@ -155,12 +173,25 @@ export const Login = (): JSX.Element => {
 
     if (provider === 'X') {
       try {
+        console.log('🔍 Starting X OAuth process...');
+
         // Try to get X OAuth URL - this should work for both login and binding
         const oauthUrl = await AuthService.getXOAuthUrl();
-        window.location.href = oauthUrl;
+
+        console.log('✅ Got X OAuth URL:', oauthUrl);
+
+        // Add provider parameter for callback identification (same as Google)
+        const urlWithProvider = oauthUrl.includes('?')
+          ? `${oauthUrl}&provider=x`
+          : `${oauthUrl}?provider=x`;
+
+        console.log('🚀 Redirecting to:', urlWithProvider);
+        window.location.href = urlWithProvider;
       } catch (error) {
         console.error('❌ X OAuth handling failed:', error);
-        showToast('X login failed, please try again', 'error');
+        console.error('❌ Error details:', error.message);
+        console.error('❌ Full error:', error);
+        showToast(`X login failed: ${error.message || 'Please try again'}`, 'error');
       }
     } else if (provider === 'Google') {
       try {
