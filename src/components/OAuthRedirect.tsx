@@ -8,17 +8,36 @@ const OAuthRedirect: React.FC = () => {
     const state = urlParams.get('state');
     const provider = urlParams.get('provider') || 'google'; // Default to google if not specified
 
-    console.log('🔍 OAuthRedirect received params:', { code: code?.substring(0, 10) + '...', state, provider });
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-    // If we have OAuth parameters, redirect to local login with those parameters
+    console.log('🔍 OAuthRedirect received params:', {
+      code: code?.substring(0, 10) + '...',
+      state,
+      provider,
+      hostname: window.location.hostname,
+      isLocalhost
+    });
+
+    // If we have OAuth parameters, redirect appropriately
     if (code && state) {
-      const localUrl = `http://localhost:5177/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=${provider}`;
-      console.log('🚀 Redirecting to local server:', localUrl);
-      window.location.href = localUrl;
+      let redirectUrl: string;
+
+      if (isLocalhost) {
+        // Already on localhost, just redirect to /login (relative path)
+        redirectUrl = `/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=${provider}`;
+        console.log('🚀 Already on localhost, redirecting to:', redirectUrl);
+      } else {
+        // On test.copus.io, redirect to localhost (absolute URL)
+        redirectUrl = `http://localhost:5177/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=${provider}`;
+        console.log('🚀 Redirecting to local server:', redirectUrl);
+      }
+
+      window.location.href = redirectUrl;
     } else {
-      // No OAuth parameters, just redirect to local login
-      console.log('🚀 No OAuth parameters, redirecting to local login');
-      window.location.href = 'http://localhost:5177/login';
+      // No OAuth parameters, redirect to login
+      const redirectUrl = isLocalhost ? '/login' : 'http://localhost:5177/login';
+      console.log('🚀 No OAuth parameters, redirecting to login:', redirectUrl);
+      window.location.href = redirectUrl;
     }
   }, []);
 
