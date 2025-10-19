@@ -100,14 +100,23 @@ export const Login = (): JSX.Element => {
             const token = localStorage.getItem('copus_token');
             const hasToken = !!token;
 
+            console.log('🔍 Google login - hasToken:', hasToken);
             response = await AuthService.googleLogin(code, state, hasToken);
+            console.log('✅ Google login response:', response);
+
+            // The token should already be saved by AuthService.googleLogin
+            // Check localStorage for the token
+            const savedToken = localStorage.getItem('copus_token');
+            console.log('💾 Token saved in localStorage:', savedToken ? 'YES' : 'NO');
 
             if (response.isBinding) {
               // 账号绑定模式
               showToast('Google 账号绑定成功！🎉', 'success');
 
               // Google绑定后可能会返回新的token，重新获取用户信息
-              await fetchUserInfo(response.token || token);
+              const tokenToUse = response.token || savedToken || token;
+              console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
+              await fetchUserInfo(tokenToUse);
 
               // 跳转到设置页面
               setTimeout(() => {
@@ -117,8 +126,17 @@ export const Login = (): JSX.Element => {
               // Third-party login mode
               showToast('Google login successful! Welcome back 🎉', 'success');
 
-              // Get user info
-              await fetchUserInfo(response.token);
+              // Get user info - use token from response or localStorage
+              const tokenToUse = response.token || savedToken;
+              console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
+
+              if (!tokenToUse) {
+                console.error('❌ No token available after Google login!');
+                throw new Error('No authentication token received');
+              }
+
+              await fetchUserInfo(tokenToUse);
+              console.log('✅ User info fetched successfully');
 
               // Navigate to home
               setTimeout(() => {

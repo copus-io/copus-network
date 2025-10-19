@@ -319,13 +319,24 @@ export class AuthService {
           requiresAuth: true
         });
 
+        console.log('🔍 Google login API response (binding mode):', response);
 
-        // Response format: { "namespace": "string", "token": "string" }
-        if (response.token) {
-          localStorage.setItem('copus_token', response.token);
+        // Response format can be:
+        // 1. { "namespace": "string", "token": "string" }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "..." } }
+        const token = response.data?.token || response.token;
+        const namespace = response.data?.namespace || response.namespace;
+
+        if (token) {
+          localStorage.setItem('copus_token', token);
+          console.log('✅ Token saved to localStorage (binding)');
         }
 
-        return { ...response, isBinding: true };
+        return {
+          token,
+          namespace,
+          isBinding: true
+        };
       } else {
         // Try request without token (for third-party login)
         const response = await apiRequest(endpoint, {
@@ -333,13 +344,29 @@ export class AuthService {
           requiresAuth: false
         });
 
+        console.log('🔍 Google login API response (login mode):', response);
 
-        // Response format: { "namespace": "string", "token": "string" }
-        if (response.token) {
-          localStorage.setItem('copus_token', response.token);
+        // Response format can be:
+        // 1. { "namespace": "string", "token": "string" }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "..." } }
+        const token = response.data?.token || response.token;
+        const namespace = response.data?.namespace || response.namespace;
+
+        console.log('🔑 Extracted token:', token ? token.substring(0, 20) + '...' : 'NONE');
+        console.log('👤 Extracted namespace:', namespace);
+
+        if (token) {
+          localStorage.setItem('copus_token', token);
+          console.log('✅ Token saved to localStorage');
+        } else {
+          console.error('❌ No token found in response!', response);
         }
 
-        return { ...response, isBinding: false };
+        return {
+          token,
+          namespace,
+          isBinding: false
+        };
       }
     } catch (error) {
       console.error('❌ Google Login/Binding failed:', error);
