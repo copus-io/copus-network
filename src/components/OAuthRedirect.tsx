@@ -6,11 +6,13 @@ const OAuthRedirect: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
+    const provider = urlParams.get('provider') || 'google'; // Default to google if not specified
 
+    console.log('🔍 OAuthRedirect received params:', { code: code?.substring(0, 10) + '...', state, provider });
 
     // If we have OAuth parameters, redirect to local login with those parameters
     if (code && state) {
-      const localUrl = `http://localhost:5177/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=google`;
+      const localUrl = `http://localhost:5177/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=${provider}`;
       console.log('🚀 Redirecting to local server:', localUrl);
       window.location.href = localUrl;
     } else {

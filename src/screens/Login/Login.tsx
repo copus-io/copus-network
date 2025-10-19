@@ -202,24 +202,16 @@ export const Login = (): JSX.Element => {
 
         console.log('✅ Got Google OAuth URL:', oauthUrl);
 
-        // For development: Replace copus.io with localhost in the OAuth URL
-        // This ensures Google redirects back to localhost instead of copus.io
-        let modifiedOauthUrl = oauthUrl;
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          // Replace any copus.io references with localhost:5177 in the redirect_uri parameter
-          modifiedOauthUrl = oauthUrl
-            .replace(/redirect_uri=https?%3A%2F%2F[^&]+copus\.io/gi, `redirect_uri=${encodeURIComponent(`http://localhost:5177/login`)}`)
-            .replace(/redirect_uri=https:\/\/[^&]+copus\.io/gi, `redirect_uri=http://localhost:5177/login`);
-
-          console.log('🔧 Modified OAuth URL for localhost:', modifiedOauthUrl);
-        }
-
         // Add provider parameter for callback identification
-        const urlWithProvider = modifiedOauthUrl.includes('?')
-          ? `${modifiedOauthUrl}&provider=google`
-          : `${modifiedOauthUrl}?provider=google`;
+        const urlWithProvider = oauthUrl.includes('?')
+          ? `${oauthUrl}&provider=google`
+          : `${oauthUrl}?provider=google`;
 
         console.log('🚀 Redirecting to:', urlWithProvider);
+
+        // The OAuth URL points to test.copus.io/callback
+        // When running on localhost, Google will redirect to test.copus.io/callback
+        // which has the OAuthRedirect component that will redirect back to localhost
         window.location.href = urlWithProvider;
       } catch (error) {
         console.error('❌ Google OAuth handling failed:', error);
