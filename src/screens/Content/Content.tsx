@@ -272,11 +272,29 @@ export const Content = (): JSX.Element => {
                   </span>
                 </div>
 
-                <img
-                  className="relative w-6 h-6"
-                  alt="Arweave ar logo"
-                  src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
-                />
+                {/* Arweave onchain storage link */}
+                {article?.arChainId ? (
+                  <a
+                    href={`https://arseed.web3infra.dev/${article.arChainId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity"
+                    title="View on Arweave"
+                  >
+                    <img
+                      className="w-full h-full"
+                      alt="Arweave ar logo"
+                      src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
+                    />
+                  </a>
+                ) : (
+                  <img
+                    className="relative w-6 h-6 opacity-50"
+                    alt="Arweave ar logo"
+                    src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
+                    title="Not stored on Arweave"
+                  />
+                )}
               </div>
             </div>
           </article>

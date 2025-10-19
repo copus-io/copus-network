@@ -101,6 +101,7 @@ export interface ArticleDetailResponse {
   title: string;
   uuid: string;
   viewCount: number;
+  arChainId?: string; // Arweave chain ID for onchain storage
 }
 
 // 我创作的作品API参数
