@@ -118,10 +118,8 @@ export const Login = (): JSX.Element => {
               console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
               await fetchUserInfo(tokenToUse);
 
-              // 跳转到设置页面
-              setTimeout(() => {
-                navigate('/setting');
-              }, 1000);
+              // Navigate to settings immediately
+              navigate('/setting', { replace: true });
             } else {
               // Third-party login mode
               showToast('Google login successful! Welcome back 🎉', 'success');
@@ -138,10 +136,8 @@ export const Login = (): JSX.Element => {
               await fetchUserInfo(tokenToUse);
               console.log('✅ User info fetched successfully');
 
-              // Navigate to home
-              setTimeout(() => {
-                navigate('/');
-              }, 1000);
+              // Navigate to home immediately (replace history to avoid back button going to login)
+              navigate('/', { replace: true });
             }
           } else if (provider === 'x') {
             // X (Twitter) login handling
@@ -155,10 +151,8 @@ export const Login = (): JSX.Element => {
             const token = response.data?.token || response.token;
             await fetchUserInfo(token);
 
-            // Navigate to home
-            setTimeout(() => {
-              navigate('/');
-            }, 1000);
+            // Navigate to home immediately
+            navigate('/', { replace: true });
           } else {
             // Default fallback (for backward compatibility)
             console.log('⚠️ Unknown provider or no provider specified, attempting X login...');
@@ -167,9 +161,7 @@ export const Login = (): JSX.Element => {
             if (response.data?.token || response.token) {
               showToast('Login successful! Welcome back 🎉', 'success');
               await fetchUserInfo(response.data?.token || response.token);
-              setTimeout(() => {
-                navigate('/');
-              }, 1000);
+              navigate('/', { replace: true });
             } else {
               throw new Error('No authentication token received');
             }
