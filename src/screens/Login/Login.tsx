@@ -41,7 +41,7 @@ export const Login = (): JSX.Element => {
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true); // 既记住登录状态，也记住账号邮箱
+  const [rememberMe, setRememberMe] = useState(true); // Remember both login state and account email
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [isRegisterLoading, setIsRegisterLoading] = useState(false);
 
@@ -72,7 +72,7 @@ export const Login = (): JSX.Element => {
     window.scrollTo(0, 0);
   }, []);
 
-  // 页面加载时恢复记住的邮箱
+  // Restore remembered email when page loads
   useEffect(() => {
     const savedEmail = localStorage.getItem('copus_remembered_email');
     const savedRememberMe = localStorage.getItem('copus_remember_me_option');
@@ -86,7 +86,7 @@ export const Login = (): JSX.Element => {
     }
   }, []);
 
-  // 处理社交登录OAuth回调
+  // Handle social login OAuth callback
   useEffect(() => {
     const handleOAuthCallback = async () => {
       const code = searchParams.get('code');
@@ -109,7 +109,7 @@ export const Login = (): JSX.Element => {
         try {
           let response;
 
-          // 根据提供商类型调用不同的登录方法
+          // Call different login methods based on provider type
           if (provider === 'google') {
             const token = localStorage.getItem('copus_token');
             const hasToken = !!token;
@@ -124,10 +124,10 @@ export const Login = (): JSX.Element => {
             console.log('💾 Token saved in localStorage:', savedToken ? 'YES' : 'NO');
 
             if (response.isBinding) {
-              // 账号绑定模式
-              showToast('Google 账号绑定成功！🎉', 'success');
+              // Account binding mode
+              showToast('Google account successfully bound! 🎉', 'success');
 
-              // Google绑定后可能会返回新的token，重新获取用户信息
+              // Google binding may return new token, re-fetch user info
               const tokenToUse = response.token || savedToken || token;
               console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
               await fetchUserInfo(tokenToUse);
@@ -298,7 +298,7 @@ export const Login = (): JSX.Element => {
     handleOAuthCallback();
   }, [searchParams, fetchUserInfo, navigate, showToast]);
 
-  // 处理社交登录
+  // Handle social login
   const handleSocialLogin = async (provider: string) => {
 
     if (provider === 'X') {
@@ -450,7 +450,7 @@ export const Login = (): JSX.Element => {
     }
   };
 
-  // 检查邮箱是否已存在
+  // Check if email already exists
   const checkEmailExist = async (emailToCheck: string) => {
     if (!emailToCheck || !emailToCheck.includes('@')) {
       setEmailStatus('idle');
@@ -469,8 +469,8 @@ export const Login = (): JSX.Element => {
 
       if (response.ok) {
         const data = await response.json();
-        // API返回格式: {"status":1,"msg":"success","data":false}
-        // data为true表示邮箱已存在，false表示可用
+        // API response format: {"status":1,"msg":"success","data":false}
+        // data=true means email already exists, false means available
         if (data.status === 1 && data.data === false) {
           setEmailStatus('available');
         } else if (data.status === 1 && data.data === true) {
@@ -479,25 +479,25 @@ export const Login = (): JSX.Element => {
           setEmailStatus('idle');
         }
       } else {
-        console.error('邮箱检查请求失败:', response.status);
+        console.error('Email check request failed:', response.status);
         setEmailStatus('idle');
       }
     } catch (error) {
-      console.error('检查邮箱失败:', error);
+      console.error('Check email failed:', error);
       setEmailStatus('idle');
     }
   };
 
-  // 邮箱输入处理函数（防抖）
+  // Email input handler (debounced)
   const handleEmailChange = (value: string) => {
     setEmail(value);
 
-    // 清除之前的定时器
+    // Clear previous timer
     if (emailCheckTimeout) {
       clearTimeout(emailCheckTimeout);
     }
 
-    // 设置新的定时器，200ms后检查邮箱
+    // Set new timer, check email after 200ms
     if (value && value.includes('@')) {
       const timeout = setTimeout(() => {
         checkEmailExist(value);
@@ -508,7 +508,7 @@ export const Login = (): JSX.Element => {
     }
   };
 
-  // 登录函数
+  // Login function
   const handleLogin = async () => {
     if (!loginEmail || !loginPassword) {
       showToast('Please enter email and password', 'error');
@@ -518,12 +518,12 @@ export const Login = (): JSX.Element => {
     setIsLoginLoading(true);
 
     try {
-      // MD5加密密码
+      // MD5 encrypt password
       const encryptedPassword = CryptoJS.MD5(loginPassword).toString();
 
-      console.log('登录信息:', {
+      console.log('Login info:', {
         username: loginEmail,
-        password: '***MD5加密***'
+        password: '***MD5 encrypted***'
       });
 
       const response = await fetch('https://api-test.copus.network/client/common/login', {
@@ -532,12 +532,12 @@ export const Login = (): JSX.Element => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: loginEmail, // API期望username字段，我们传入邮箱作为用户名
-          password: encryptedPassword // 发送MD5加密后的密码
+          username: loginEmail, // API expects username field, we pass email as username
+          password: encryptedPassword // Send MD5 encrypted password
         }),
       });
 
-      console.log('响应信息:', {
+      console.log('Response info:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok
@@ -545,7 +545,7 @@ export const Login = (): JSX.Element => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('登录成功数据:', {
+        console.log('Login success data:', {
           token: data.token,
           access_token: data.access_token,
           accessToken: data.accessToken,
@@ -554,14 +554,14 @@ export const Login = (): JSX.Element => {
           'data.access_token': data.data?.access_token
         });
 
-        // 尝试从不同可能的字段获取token
+        // Try to get token from different possible fields
         const possibleToken = data.data?.token || data.token || data.access_token || data.accessToken || data.authToken || data.data?.access_token;
 
-        // 保存token到全局状态
+        // Save token to global state
         if (data.user) {
           login(data.user, possibleToken);
         } else {
-          // 如果API没有返回用户信息，创建一个基本的用户对象并保存token
+          // If API doesn't return user info, create a basic user object and save token
           login({
             id: data.id || 0,
             username: data.username || loginEmail.split('@')[0],
@@ -574,42 +574,42 @@ export const Login = (): JSX.Element => {
           }, possibleToken);
         }
 
-        // 获取完整的用户信息，传递刚刚获得的token
+        // Get complete user info, pass the token just obtained
         try {
           await fetchUserInfo(possibleToken);
         } catch (userInfoError) {
         }
 
-        // 如果用户选择Remember me，保存邮箱到本地存储
+        // If user chooses Remember me, save email to local storage
         if (rememberMe) {
           localStorage.setItem('copus_remembered_email', loginEmail);
           localStorage.setItem('copus_remember_me_option', 'true');
         } else {
-          // 如果不记住，清除之前保存的邮箱
+          // If not remember, clear previously saved email
           localStorage.removeItem('copus_remembered_email');
           localStorage.setItem('copus_remember_me_option', 'false');
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
 
-        // 跳转到首页
+        // Navigate to home page
         navigate('/copus');
       } else {
         const errorData = await response.json();
-        console.error('登录失败:', errorData);
+        console.error('Login failed:', errorData);
         showToast('Login failed, please check email and password', 'error');
       }
     } catch (error) {
-      console.error('登录请求失败:', error);
+      console.error('Login request failed:', error);
       showToast('Login failed, please try again', 'error');
     } finally {
       setIsLoginLoading(false);
     }
   };
 
-  // 注册函数
+  // Registration function
   const handleRegister = async () => {
-    // 基本验证
+    // Basic validation
     if (!username || !email || !password || !confirmPassword || !verificationCode) {
       showToast('Please fill in complete registration information', 'error');
       return;
@@ -633,13 +633,13 @@ export const Login = (): JSX.Element => {
     setIsRegisterLoading(true);
 
     try {
-      // MD5加密密码
+      // MD5 encrypt password
       const encryptedPassword = CryptoJS.MD5(password).toString();
 
-      console.log('注册信息:', {
+      console.log('Registration info:', {
         username: username,
         email: email,
-        password: '***MD5加密***',
+        password: '***MD5 encrypted***',
         code: verificationCode
       });
 
@@ -651,7 +651,7 @@ export const Login = (): JSX.Element => {
         body: JSON.stringify({
           username: username,
           email: email,
-          password: encryptedPassword, // 发送MD5加密后的密码
+          password: encryptedPassword, // Send MD5 encrypted password
           code: verificationCode
         }),
       });
@@ -664,11 +664,11 @@ export const Login = (): JSX.Element => {
 
       const data = await response.json();
 
-      // 判断注册是否真正成功
-      // response.ok表示HTTP状态码2xx，data.status=1表示业务逻辑成功
+      // Determine if registration was truly successful
+      // response.ok means HTTP status code 2xx, data.status=1 means business logic success
       if (response.ok && data.status === 1) {
         showToast('Registration successful! Please log in', 'success');
-        // 成功时清空所有注册表单
+        // Clear all registration form fields on success
         setUsername('');
         setEmail('');
         setPassword('');
@@ -676,25 +676,25 @@ export const Login = (): JSX.Element => {
         setVerificationCode('');
         setAgreeToTerms(false);
         setEmailStatus('idle');
-        // 注册成功后切换到登录tab
+        // Switch to login tab after successful registration
         setActiveTab("login");
       } else {
-        console.error('注册失败:', data);
+        console.error('Registration failed:', data);
         showToast(`Registration failed: ${data.msg || data.message || 'Please try again'}`, 'error');
-        // 失败时只清空验证码，保留其他已填写的信息
+        // On failure, only clear verification code, keep other filled information
         setVerificationCode('');
       }
     } catch (error) {
-      console.error('注册请求失败:', error);
+      console.error('Registration request failed:', error);
       showToast('Registration failed, please try again', 'error');
     } finally {
       setIsRegisterLoading(false);
     }
   };
 
-  // 发送验证码函数
+  // Send verification code function
   const sendVerificationCode = async () => {
-    // 静默检查各种条件，不显示弹窗
+    // Silently check various conditions, don't show toast
     if (!email || !email.includes('@') || emailStatus === 'taken' || emailStatus === 'checking' || countdown > 0) {
       return;
     }
@@ -710,7 +710,7 @@ export const Login = (): JSX.Element => {
       });
 
       if (response.ok) {
-        // 成功发送，开始倒计时
+        // Successfully sent, start countdown
         setCountdown(60);
         const timer = setInterval(() => {
           setCountdown(prev => {
@@ -722,26 +722,26 @@ export const Login = (): JSX.Element => {
           });
         }, 1000);
 
-        // 不再显示弹窗，用户能从按钮状态看出已发送
+        // No longer show toast, user can see from button state that it's sent
       } else {
-        // 静默处理错误，不显示弹窗
+        // Silently handle error, don't show toast
       }
     } catch (error) {
-      console.error('发送验证码失败:', error);
-      // 静默处理网络错误
+      console.error('Send verification code failed:', error);
+      // Silently handle network error
     } finally {
       setIsCodeSending(false);
     }
   };
 
-  // 处理Enter键登录
+  // Handle Enter key login
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
       handleLogin();
     }
   };
 
-  // 忘记密码功能 - 发送验证码
+  // Forgot password function - send verification code
   const handleForgotPassword = async () => {
     if (!forgotPasswordEmail || !forgotPasswordEmail.includes('@')) {
       showToast('Please enter a valid email address', 'error');
@@ -752,7 +752,7 @@ export const Login = (): JSX.Element => {
 
     try {
 
-      // 发送忘记密码验证码 (codeType=1)
+      // Send forgot password verification code (codeType=1)
       const response = await fetch(`https://api-test.copus.network/client/common/getVerificationCode?codeType=1&email=${encodeURIComponent(forgotPasswordEmail)}`, {
         method: 'GET',
         headers: {
@@ -776,7 +776,7 @@ export const Login = (): JSX.Element => {
         showToast(`Send failed: ${data.msg || data.message || 'Please try again'}`, 'error');
       }
     } catch (error) {
-      console.error('忘记密码验证码发送失败:', error);
+      console.error('Forgot password verification code send failed:', error);
       showToast('Send failed, please try again', 'error');
     } finally {
       setIsForgotPasswordLoading(false);
@@ -914,7 +914,7 @@ export const Login = (): JSX.Element => {
                                 : 'border-[#a8a8a8]'
                           }`}
                         />
-                        {/* 邮箱状态图标 */}
+                        {/* Email status icon */}
                         <div className="absolute right-[12px] top-1/2 transform -translate-y-1/2">
                           {emailStatus === 'checking' && (
                             <BookFlip />
@@ -930,7 +930,7 @@ export const Login = (): JSX.Element => {
                             </svg>
                           )}
                         </div>
-                        {/* 邮箱状态提示 - 更温和的提示 */}
+                        {/* Email status hint - gentler hint */}
                         {emailStatus === 'taken' && (
                           <div className="mt-1 text-xs text-red-400">
                             This email is already registered
@@ -1118,7 +1118,7 @@ export const Login = (): JSX.Element => {
             </CardContent>
           </Card>
 
-          {/* 忘记密码弹窗 */}
+          {/* Forgot password modal */}
           {showForgotPassword && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 sm:p-8 max-w-md w-full mx-4">

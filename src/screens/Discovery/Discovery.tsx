@@ -14,9 +14,9 @@ export const Discovery = (): JSX.Element => {
     window.scrollTo(0, 0);
   }, []);
 
-  // 监听路由变化，用于调试路由导航事件
+  // Listen to route changes for debugging route navigation events
   React.useEffect(() => {
-    console.log('🏠 进入发现页面，当前路由:', location.pathname);
+    console.log('Entered discovery page, current route:', location.pathname);
   }, [location.pathname]);
 
   return (

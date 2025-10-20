@@ -31,7 +31,7 @@ export const Create = (): JSX.Element => {
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
 
-  // 检查是否是编辑模式
+  // Check if in edit mode
   const editId = searchParams.get('edit');
   const isEditMode = !!editId;
   const [editingArticle, setEditingArticle] = useState<any>(null);
@@ -42,8 +42,8 @@ export const Create = (): JSX.Element => {
     link: "",
     title: "",
     recommendation: "",
-    selectedTopic: "生活", // 默认选中中文分类
-    selectedTopicId: 1, // 对应的ID
+    selectedTopic: "生活", // Default to Chinese category
+    selectedTopicId: 1, // Corresponding ID
     coverImage: null as File | null,
   });
 
@@ -300,7 +300,7 @@ export const Create = (): JSX.Element => {
     setSelectedImageFile(null);
   };
 
-  // 生成唯一ID
+  // Generate unique ID
   const generateUUID = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       const r = Math.random() * 16 | 0;
@@ -309,10 +309,10 @@ export const Create = (): JSX.Element => {
     });
   };
 
-  // 当分类数据加载完成后，设置默认选中的分类
+  // Set default selected category when category data is loaded
   useEffect(() => {
     if (sortedCategories && sortedCategories.length > 0) {
-      // 如果当前选中的分类不在列表中，选择第一个（最近使用的）
+      // If current selected category is not in list, select the first one (most recently used)
       const currentCategoryExists = sortedCategories.some(cat => cat.name === formData.selectedTopic);
       if (!currentCategoryExists) {
         setFormData(prev => ({
@@ -324,7 +324,7 @@ export const Create = (): JSX.Element => {
     }
   }, [sortedCategories]);
 
-  // 编辑模式：加载文章数据
+  // Edit mode: Load article data
   useEffect(() => {
     const loadArticleForEdit = async () => {
       if (!isEditMode || !editId) return;
@@ -333,26 +333,26 @@ export const Create = (): JSX.Element => {
       try {
         const articleData = await getArticleDetail(editId);
 
-        // 设置文章数据
+        // Set article data
         setEditingArticle(articleData);
 
-        // 填充表单数据
+        // Fill form data
         setFormData({
           link: articleData.targetUrl || "",
           title: articleData.title || "",
           recommendation: articleData.content || "",
           selectedTopic: articleData.categoryInfo?.name || "生活",
           selectedTopicId: articleData.categoryInfo?.id || 1,
-          coverImage: null, // 编辑时不直接加载图片文件
+          coverImage: null, // Don't load image file directly in edit mode
         });
 
-        // 设置封面图片URL用于显示
+        // Set cover image URL for display
         setCoverImageUrl(articleData.coverUrl || "");
         setCharacterCount(articleData.content?.length || 0);
         setTitleCharacterCount(articleData.title?.length || 0);
 
       } catch (error) {
-        console.error('❌ 加载文章数据失败:', error);
+        console.error('Failed to load article data:', error);
         showToast('Failed to load article data, please try again', 'error');
         navigate('/my-treasury');
       } finally {
@@ -363,9 +363,9 @@ export const Create = (): JSX.Element => {
     loadArticleForEdit();
   }, [isEditMode, editId, navigate, showToast]);
 
-  // 发布文章
+  // Publish article
   const handlePublish = async () => {
-    // 基本验证 - 包括封面图
+    // Basic validation - including cover image
     if (!formData.link || !formData.title || !formData.recommendation) {
       showToast('Please fill in all required fields (link, title, recommendation)', 'error');
       return;
@@ -379,7 +379,7 @@ export const Create = (): JSX.Element => {
       return;
     }
 
-    // 编辑模式时，如果没有上传新图片但有原始封面URL则允许
+    // In edit mode, allow if no new image uploaded but original cover URL exists
     if (!isEditMode && !formData.coverImage) {
       showToast('Please upload a cover image', 'error');
       return;
@@ -393,9 +393,9 @@ export const Create = (): JSX.Element => {
     setIsPublishing(true);
 
     try {
-      let finalCoverUrl = coverImageUrl; // 默认使用现有的封面URL（编辑模式）
+      let finalCoverUrl = coverImageUrl; // Default to existing cover URL (edit mode)
 
-      // 如果有新上传的图片，则上传到S3
+      // If new image uploaded, upload to S3
       if (formData.coverImage) {
         try {
           showToast('Uploading image...', 'info');
@@ -405,18 +405,18 @@ export const Create = (): JSX.Element => {
 
           showToast('Image uploaded successfully!', 'success');
         } catch (uploadError) {
-          console.error('❌ 图片上传失败:', uploadError);
+          console.error('Image upload failed:', uploadError);
           showToast(`Image upload failed: ${uploadError.message || 'Please try again'}`, 'error');
           setIsPublishing(false);
           return;
         }
       }
 
-      // 准备API参数 - 智能处理URL
+      // Prepare API parameters - smart URL handling
       const processedUrl = formData.link.trim();
       let finalUrl = processedUrl;
 
-      // 如果URL没有协议前缀，添加https:// (但保留IPFS和Arweave协议)
+      // If URL has no protocol prefix, add https:// (but preserve IPFS and Arweave protocols)
       if (!/^(https?|ipfs|ar):\/\//i.test(processedUrl)) {
         finalUrl = `https://${processedUrl}`;
       }
@@ -446,7 +446,7 @@ export const Create = (): JSX.Element => {
       }
 
       const articleParams = {
-        ...(isEditMode && editId ? { uuid: editId } : {}), // 编辑模式时添加uuid
+        ...(isEditMode && editId ? { uuid: editId } : {}), // Add uuid in edit mode
         categoryId: formData.selectedTopicId,
         content: formData.recommendation.substring(0, 1000), // Ensure max 1000 chars
         coverUrl: finalCoverUrl.substring(0, 500), // Ensure max 500 chars

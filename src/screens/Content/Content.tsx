@@ -16,19 +16,19 @@ import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 
 
-// 图片URL验证和fallback函数
+// Image URL validation and fallback function
 const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
   if (!imageUrl || imageUrl.trim() === '') {
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
   }
 
-  // 检查是否是blob URL（来自文件上传）- 这些URL在新会话中不会工作
+  // Check if it's a blob URL (from file upload) - these URLs don't work in new sessions
   if (imageUrl.startsWith('blob:')) {
-    // 返回占位符，因为blob URL在刷新页面后无效
+    // Return placeholder as blob URLs are invalid after page refresh
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5VcGxvYWRlZCBJbWFnZTwvdGV4dD48L3N2Zz4=';
   }
 
-  // 检查是否是有效的HTTP/HTTPS URL
+  // Check if it's a valid HTTP/HTTPS URL
   try {
     const url = new URL(imageUrl);
     if (url.protocol === 'http:' || url.protocol === 'https:') {
@@ -49,7 +49,7 @@ export const Content = (): JSX.Element => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
-  // 使用新的文章详情API hook
+  // Use new article detail API hook
   const { article, loading, error } = useArticleDetail(id || '');
 
   // Scroll to top when page loads
@@ -65,7 +65,7 @@ export const Content = (): JSX.Element => {
     }
   }, [article]);
 
-  // 转换API数据为页面需要的格式
+  // Convert API data to format needed by page
   const content = article ? {
     id: article.uuid,
     title: article.title,
@@ -86,11 +86,11 @@ export const Content = (): JSX.Element => {
     website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
   } : null;
 
-  // 当获取到文章数据时，设置点赞状态
+  // Set like state when article data is fetched
   useEffect(() => {
     if (content && article) {
 
-      // 获取全局状态或使用API数据
+      // Get global state or use API data
       const globalState = getArticleLikeState(article.uuid, content.isLiked, content.likes);
       setIsLiked(globalState.isLiked);
       setLikesCount(globalState.likeCount);
@@ -133,19 +133,19 @@ export const Content = (): JSX.Element => {
       const newIsLiked = !isLiked;
       const newLikesCount = newIsLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
 
-      // 立即更新本地状态
+      // Update local state immediately
       setIsLiked(newIsLiked);
       setLikesCount(newLikesCount);
 
-      // 同时更新全局状态
+      // Update global state simultaneously
       updateArticleLikeState(article.uuid, newIsLiked, newLikesCount);
 
-      // 调用API
+      // Call API
       await AuthService.likeArticle(article.uuid);
-      showToast(newIsLiked ? '已点赞 💖' : '已取消点赞', 'success');
+      showToast(newIsLiked ? 'Treasured 💖' : 'Untreasured', 'success');
 
     } catch (error) {
-      // API失败时回滚状态
+      // Rollback state on API failure
       const originalIsLiked = !isLiked;
       const originalLikesCount = originalIsLiked ? likesCount - 1 : likesCount + 1;
 
@@ -153,8 +153,8 @@ export const Content = (): JSX.Element => {
       setLikesCount(originalLikesCount);
       updateArticleLikeState(article.uuid, originalIsLiked, originalLikesCount);
 
-      console.error('点赞操作失败:', error);
-      showToast('操作失败，请重试', 'error');
+      console.error('Like operation failed:', error);
+      showToast('Operation failed, please try again', 'error');
     }
   };
 
@@ -172,11 +172,11 @@ export const Content = (): JSX.Element => {
       return;
     }
 
-    // 如果是当前用户自己的文章，跳转到我的宝藏页面
+    // If it's the current user's own article, navigate to my treasury page
     if (user.id === content.userId) {
       navigate('/my-treasury');
     } else {
-      // 如果是其他用户的文章，暂时也跳转到我的宝藏页面
+      // If it's another user's article, also navigate to my treasury page for now
       navigate('/my-treasury');
     }
   };
@@ -248,7 +248,7 @@ export const Content = (): JSX.Element => {
                 <cite
                   className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
                   onClick={handleUserClick}
-                  title={`查看 ${content.userName} 的个人主页`}
+                  title={`View ${content.userName}'s profile`}
                 >
                   <img
                     className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
@@ -317,7 +317,7 @@ export const Content = (): JSX.Element => {
 
           <div className="flex justify-between self-stretch w-full items-center relative flex-[0_0_auto]">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
-              {/* 使用统一的宝石按钮组件 - 大尺寸适合详情页 */}
+              {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
                 isLiked={isLiked}
                 likesCount={likesCount}
@@ -325,7 +325,7 @@ export const Content = (): JSX.Element => {
                 size="large"
               />
 
-              {/* 分享下拉菜单 */}
+              {/* Share dropdown menu */}
               <ShareDropdown
                 title={content.title}
                 url={window.location.href}

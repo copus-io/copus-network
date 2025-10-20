@@ -109,7 +109,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/u/:namespace",
-    element: <ShortLinkHandler />, // 简洁短链接格式 /u/namespace ✨
+    element: <ShortLinkHandler />, // Concise short link format /u/namespace
   },
   {
     path: "/my-treasury/v30",

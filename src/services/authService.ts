@@ -23,7 +23,7 @@ export interface DeleteAccountParams {
 
 export interface UserHomeRequest {
   /**
-   * 主页子空间名
+   * Homepage subspace name
    */
   namespace: string;
   [property: string]: any;
@@ -608,7 +608,7 @@ export class AuthService {
    * Upload image to S3
    */
   static async uploadImage(file: File): Promise<{ url: string }> {
-    console.log('🔥 AuthService.uploadImage 开始上传:', {
+    console.log('🔥 AuthService.uploadImage starting upload:', {
       fileName: file.name,
       fileSize: file.size,
       fileType: file.type,
@@ -618,7 +618,7 @@ export class AuthService {
     const formData = new FormData();
     formData.append('file', file);
 
-    console.log('🔥 FormData 已创建，开始调用 API...');
+    console.log('🔥 FormData created, calling API...');
 
     try {
       const response = await apiRequest('/client/common/uploadImage2S3', {
@@ -627,7 +627,7 @@ export class AuthService {
         body: formData,
       });
 
-      console.log('🔥 API 响应原始数据:', {
+      console.log('🔥 API response raw data:', {
         response,
         responseType: typeof response,
         responseKeys: Object.keys(response || {}),
@@ -642,26 +642,26 @@ export class AuthService {
       if (response.status === 1 && response.data) {
         // Possible response format: { status: 1, data: { url: "..." } }
         if (response.data.url) {
-          console.log('🔥 找到 URL 在 response.data.url:', response.data.url);
+          console.log('🔥 Found URL in response.data.url:', response.data.url);
           return { url: response.data.url };
         }
         // Possible response format: { status: 1, data: "url" }
         if (typeof response.data === 'string' && (response.data.startsWith('http') || response.data.startsWith('https'))) {
-          console.log('🔥 找到 URL 在 response.data (字符串):', response.data);
+          console.log('🔥 Found URL in response.data (string):', response.data);
           return { url: response.data };
         }
       }
 
       // Check if URL is returned directly
       if (response.url) {
-        console.log('🔥 找到 URL 在 response.url:', response.url);
+        console.log('🔥 Found URL in response.url:', response.url);
         return { url: response.url };
       }
 
-      console.error('🔥 未找到有效的 URL，抛出错误');
+      console.error('🔥 No valid URL found, throwing error');
       throw new Error(response.msg || response.message || 'Image upload failed');
     } catch (error) {
-      console.error('🔥 API 请求失败:', {
+      console.error('🔥 API request failed:', {
         error,
         errorMessage: error.message,
         errorResponse: error.response,
@@ -882,7 +882,7 @@ export class AuthService {
   }
 
   /**
-   * 获取用户详情信息 - 通过namespace
+   * Get user detail info - by namespace
    * Get user home info by namespace
    */
   static async getUserHomeInfo(namespace: string): Promise<UserHomeResponse> {
@@ -893,7 +893,7 @@ export class AuthService {
   }
 
   /**
-   * 获取其他用户的宝藏信息（公开数据）- 通过namespace
+   * Get other user's treasury information (public data) - by namespace
    * Get other user's treasury information (public data) - by namespace
    */
   static async getOtherUserTreasuryInfoByNamespace(namespace: string): Promise<{
@@ -1388,7 +1388,7 @@ export class AuthService {
   }
 
   /**
-   * 获取用户收藏的文章列表 - 使用正确的API路径
+   * Get user's liked articles list - using correct API path
    */
   static async getMyLikedArticlesCorrect(pageIndex: number = 1, pageSize: number = 10, targetUserId?: number): Promise<{
     data: Array<{
@@ -1434,7 +1434,7 @@ export class AuthService {
   }
 
   /**
-   * 获取用户创作的文章列表 - 使用正确的API路径
+   * Get user's created articles list - using correct API path
    */
   static async getMyCreatedArticles(pageIndex: number = 1, pageSize: number = 10, targetUserId?: number): Promise<{
     data: Array<{

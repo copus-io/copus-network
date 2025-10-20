@@ -62,11 +62,11 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
 export const getPageArticles = async (params: PageArticleParams = {}): Promise<PageArticleResponse> => {
   const queryParams = new URLSearchParams();
 
-  // 确保总是有page参数，默认为第1页
+  // Always ensure page parameter exists, default to page 1
   const page = params.page || 1;
-  queryParams.append('pageIndex', page.toString()); // 后端也使用1基页码系统
+  queryParams.append('pageIndex', page.toString()); // Backend also uses 1-based page numbering system
 
-  // 确保总是有pageSize参数
+  // Always ensure pageSize parameter exists
   const pageSize = params.pageSize || 10;
   queryParams.append('pageSize', pageSize.toString());
 
@@ -91,15 +91,15 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
     backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
   }
 
-  // 处理不同的响应格式
+  // Handle different response formats
   let responseData = backendResponse as any;
 
-  // 检查是否是包装格式 {status: 1, data: {...}}
+  // Check if it's wrapped format {status: 1, data: {...}}
   if (responseData.status === 1 && responseData.data) {
     responseData = responseData.data;
   }
 
-  // 确保articles数组存在
+  // Ensure articles array exists
   let articlesArray = [];
 
   if (Array.isArray(responseData.data)) {
@@ -110,22 +110,22 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
     articlesArray = responseData.data.data;
   }
 
-  // 安全检查：确保articlesArray是数组且有map方法
+  // Safety check: ensure articlesArray is array and has map method
   if (!Array.isArray(articlesArray)) {
     articlesArray = [];
   }
 
-  // 分页信息处理
+  // Pagination info handling
   const pageIndex = responseData.pageIndex || 0;
   const pageCount = responseData.pageCount || 0;
   const totalCount = responseData.totalCount || 0;
   const currentPageSize = responseData.pageSize || 10;
-  const hasMore = pageIndex < pageCount; // 后端使用1基页码，所以不需要+1
+  const hasMore = pageIndex < pageCount; // Backend uses 1-based paging, so no need to +1
 
   return {
     articles: articlesArray.map(transformBackendArticle),
     total: totalCount,
-    page: pageIndex, // 后端返回的页码就是1基的，直接使用
+    page: pageIndex, // Backend returned page number is already 1-based, use directly
     pageSize: currentPageSize,
     hasMore: hasMore,
   };

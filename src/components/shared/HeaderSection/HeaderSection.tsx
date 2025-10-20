@@ -36,7 +36,7 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
   };
 
 
-  // 点击外部关闭菜单
+  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {

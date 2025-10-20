@@ -110,7 +110,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const fetchNotifications = async (
     page: number = 1,
     pageSize: number = 20,
-    msgType: number = 0 // 默认获取所有类型的消息
+    msgType: number = 0 // Default to fetch all types of messages
   ): Promise<void> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -186,7 +186,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const markAsRead = async (notificationId: string): Promise<void> => {
     try {
-      // 记录用户操作时间，避免轮询冲突
+      // Record user action time to avoid polling conflicts
       localStorage.setItem('lastNotificationAction', Date.now().toString());
 
       const success = await notificationService.markAsRead(notificationId);
@@ -195,7 +195,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         dispatch({ type: 'MARK_AS_READ', payload: notificationId });
         // Don't refetch immediately - trust local state and let polling update when server syncs
       } else {
-        console.error('❌ API标记失败');
+        console.error('API mark as read failed');
       }
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
@@ -207,7 +207,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // Store current count before marking as read - used to detect stale server responses
       localStorage.setItem('lastUnreadCount', state.unreadCount.toString());
       localStorage.setItem('lastMarkedAllReadTime', Date.now().toString());
-      // 记录用户操作时间，避免轮询冲突
+      // Record user action time to avoid polling conflicts
       localStorage.setItem('lastNotificationAction', Date.now().toString());
 
       const success = await notificationService.markAllAsRead();
@@ -218,7 +218,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         // The 30-second polling will pick up the correct count once server syncs
         // This prevents the badge from reappearing with stale cached data
       } else {
-        console.error('❌ API标记全部已读失败');
+        console.error('API mark all as read failed');
         // Remove markers if API failed
         localStorage.removeItem('lastMarkedAllReadTime');
         localStorage.removeItem('lastUnreadCount');
@@ -233,7 +233,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const deleteNotification = async (notificationId: string): Promise<void> => {
     try {
-      // 记录用户操作时间，避免轮询冲突
+      // Record user action time to avoid polling conflicts
       localStorage.setItem('lastNotificationAction', Date.now().toString());
 
       const success = await notificationService.deleteNotification(notificationId);
@@ -242,7 +242,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         dispatch({ type: 'DELETE_NOTIFICATION', payload: notificationId });
         // Don't refetch immediately - trust local state and let polling update when server syncs
       } else {
-        console.error('❌ 删除消息失败');
+        console.error('Failed to delete message');
       }
     } catch (error) {
       console.error('Failed to delete notification:', error);
@@ -256,21 +256,21 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       if (success) {
         dispatch({ type: 'CLEAR_ALL' });
       } else {
-        console.error('❌ API清除所有通知失败');
+        console.error('API clear all notifications failed');
       }
     } catch (error) {
       console.error('Failed to clear all notifications:', error);
     }
   };
 
-  // 初始化时优先获取未读消息数量（更高效）
+  // Fetch unread message count on initialization (more efficient)
   useEffect(() => {
     fetchUnreadCount();
-    // 移除自动获取通知列表 - 改为用户点击时按需加载
+    // Removed automatic notification list fetching - changed to on-demand loading when user clicks
   }, []);
 
-  // 定期轮询未读消息数量（每60秒）- 只检查数量不获取列表
-  // 优化：当标签页不可见时暂停轮询
+  // Periodically poll unread message count (every 60 seconds) - only check count, don't fetch list
+  // Optimization: Pause polling when tab is not visible
   useEffect(() => {
     let interval: NodeJS.Timeout;
 

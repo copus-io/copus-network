@@ -4,7 +4,7 @@ export interface ValidationRule {
   minLength?: number;
   maxLength?: number;
   pattern?: RegExp;
-  match?: string; // 用于确认密码等场景
+  match?: string; // For confirm password scenarios
   custom?: (value: string) => boolean;
 }
 
@@ -17,7 +17,7 @@ export class FormValidator {
   private static validateField(value: string, rules: ValidationRule, allValues?: Record<string, string>): string | null {
     // Required validation
     if (rules.required && (!value || value.trim() === '')) {
-      return '此字段为必填项';
+      return 'This field is required';
     }
 
     // Skip other validations if field is empty and not required
@@ -29,33 +29,33 @@ export class FormValidator {
     if (rules.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
-        return '请输入有效的邮箱地址';
+        return 'Please enter a valid email address';
       }
     }
 
     // Min length validation
     if (rules.minLength && value.length < rules.minLength) {
-      return `至少需要 ${rules.minLength} 个字符`;
+      return `At least ${rules.minLength} characters required`;
     }
 
     // Max length validation
     if (rules.maxLength && value.length > rules.maxLength) {
-      return `不能超过 ${rules.maxLength} 个字符`;
+      return `Cannot exceed ${rules.maxLength} characters`;
     }
 
     // Pattern validation
     if (rules.pattern && !rules.pattern.test(value)) {
-      return '格式不正确';
+      return 'Invalid format';
     }
 
     // Match validation (for confirm password)
     if (rules.match && allValues && value !== allValues[rules.match]) {
-      return '两次输入不一致';
+      return 'Inputs do not match';
     }
 
     // Custom validation
     if (rules.custom && !rules.custom(value)) {
-      return '验证失败';
+      return 'Validation failed';
     }
 
     return null;
@@ -90,7 +90,7 @@ export class FormValidator {
   }
 }
 
-// 常用验证规则预设
+// Common validation rules presets
 export const VALIDATION_RULES = {
   EMAIL: {
     required: true,
@@ -104,7 +104,7 @@ export const VALIDATION_RULES = {
   PASSWORD: {
     required: true,
     minLength: 6,
-    pattern: /^(?=.*[A-Za-z])(?=.*\d).{6,}$/, // 至少包含字母和数字
+    pattern: /^(?=.*[A-Za-z])(?=.*\d).{6,}$/, // At least contains letters and numbers
   },
   CONFIRM_PASSWORD: (passwordField: string = 'password') => ({
     required: true,
@@ -112,11 +112,11 @@ export const VALIDATION_RULES = {
   }),
   VERIFICATION_CODE: {
     required: true,
-    pattern: /^\d{4,6}$/, // 4-6位数字
+    pattern: /^\d{4,6}$/, // 4-6 digit numbers
   },
 } as const;
 
-// 密码强度检查器
+// Password strength checker
 export class PasswordStrengthChecker {
   static checkStrength(password: string): {
     score: number; // 0-4
@@ -128,25 +128,25 @@ export class PasswordStrengthChecker {
     if (password.length >= 8) {
       score += 1;
     } else {
-      feedback.push('至少8个字符');
+      feedback.push('At least 8 characters');
     }
 
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) {
       score += 1;
     } else {
-      feedback.push('包含大小写字母');
+      feedback.push('Include uppercase and lowercase letters');
     }
 
     if (/\d/.test(password)) {
       score += 1;
     } else {
-      feedback.push('包含数字');
+      feedback.push('Include numbers');
     }
 
     if (/[^A-Za-z0-9]/.test(password)) {
       score += 1;
     } else {
-      feedback.push('包含特殊字符');
+      feedback.push('Include special characters');
     }
 
     return { score, feedback };
@@ -156,15 +156,15 @@ export class PasswordStrengthChecker {
     switch (score) {
       case 0:
       case 1:
-        return '弱';
+        return 'Weak';
       case 2:
-        return '一般';
+        return 'Fair';
       case 3:
-        return '强';
+        return 'Strong';
       case 4:
-        return '很强';
+        return 'Very Strong';
       default:
-        return '弱';
+        return 'Weak';
     }
   }
 

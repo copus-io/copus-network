@@ -1,53 +1,53 @@
-// 应用配置文件
+// Application configuration file
 export const APP_CONFIG = {
-  // API配置 - 使用环境变量
+  // API configuration - using environment variables
   API: {
     BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network',
     TIMEOUT: 10000,
-    // 开发模式下的行为配置
+    // Development mode behavior configuration
     DEV_MODE: {
-      // 当API失败时自动降级到Demo模式
+      // Automatically fallback to Demo mode when API fails
       AUTO_FALLBACK_TO_DEMO: true,
-      // 跳过token验证（仅开发环境）
+      // Skip token validation (development environment only)
       SKIP_TOKEN_VALIDATION: false,
-      // 使用模拟数据而不调用真实API
+      // Use mock data instead of calling real API
       USE_MOCK_DATA: false,
     }
   },
 
-  // 用户体验配置
+  // User experience configuration
   UX: {
-    // 显示友好的错误信息而不是技术错误
+    // Show friendly error messages instead of technical errors
     FRIENDLY_ERROR_MESSAGES: true,
-    // 自动重试失败的请求次数
+    // Number of automatic retries for failed requests
     AUTO_RETRY_COUNT: 1,
-    // 长时间无操作后提示重新登录的时间（分钟）
+    // Time in minutes before prompting re-login after inactivity
     AUTO_LOGOUT_WARNING_MINUTES: 30,
   },
 
-  // Demo模式配置
+  // Demo mode configuration
   DEMO: {
-    // 是否启用Demo模式
+    // Whether to enable Demo mode
     ENABLED: true,
-    // Demo数据刷新间隔（毫秒）
-    REFRESH_INTERVAL: 0, // 0表示不自动刷新
-    // Demo模式下显示的提示信息
-    NOTICE_MESSAGE: '😊 正在展示演示数据，登录后可查看真实宝藏',
+    // Demo data refresh interval (milliseconds)
+    REFRESH_INTERVAL: 0, // 0 means no auto-refresh
+    // Notice message displayed in Demo mode
+    NOTICE_MESSAGE: 'Showing demo data, login to view real treasures',
   }
 };
 
-// 根据环境变量调整配置
+// Adjust configuration based on environment variables
 if (import.meta.env.DEV) {
-  // 开发环境配置
+  // Development environment configuration
   APP_CONFIG.API.DEV_MODE.AUTO_FALLBACK_TO_DEMO = true;
 }
 
 if (import.meta.env.PROD) {
-  // 生产环境配置
+  // Production environment configuration
   APP_CONFIG.API.DEV_MODE.AUTO_FALLBACK_TO_DEMO = false;
 }
 
-// 导出便捷的检查函数
+// Export convenience check functions
 export const isDevMode = () => import.meta.env.DEV;
 export const isProdMode = () => import.meta.env.PROD;
 export const shouldUseDemoFallback = () =>

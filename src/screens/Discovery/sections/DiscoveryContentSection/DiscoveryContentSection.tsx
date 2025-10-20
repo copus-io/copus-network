@@ -50,7 +50,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
 
 
-  // 确保每次进入页面或页面重新获得焦点时都刷新数据
+  // Ensure data refresh each time page is entered or regains focus
   React.useEffect(() => {
     const handleFocus = () => {
       refresh();
@@ -62,25 +62,25 @@ export const DiscoveryContentSection = (): JSX.Element => {
       }
     };
 
-    // 监听窗口焦点事件
+    // Listen to window focus event
     window.addEventListener('focus', handleFocus);
-    // 监听页面可见性变化
+    // Listen to page visibility change
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [refresh]); // 添加refresh依赖，但移除页面加载时的refresh调用
+  }, [refresh]); // Add refresh dependency, but remove refresh call on page load
 
-  // 滚动加载更多逻辑
+  // Scroll to load more logic
   React.useEffect(() => {
     const handleScroll = () => {
-      // 检查是否滚动到页面底部附近
+      // Check if scrolled near the bottom of the page
       const scrollTop = window.scrollY;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
-      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // 提前1000px触发
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
 
       if (scrolledToBottom && hasMore && !loading) {
         loadMore();
@@ -163,7 +163,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       }));
       syncArticleStates(articlesForSync);
     }
-  }, [articles]); // 移除syncArticleStates依赖以避免无限循环
+  }, [articles]); // Remove syncArticleStates dependency to avoid infinite loop
 
   // Transform article data format
   const transformArticleToCardData = (article: Article): ArticleData => {
@@ -330,14 +330,14 @@ export const DiscoveryContentSection = (): JSX.Element => {
         {localArticles.map((post, index) => renderPostCard(post, index))}
       </section>
 
-      {/* 加载指示器 */}
+      {/* Loading indicator */}
       {loading && (
         <div className="flex justify-center items-center py-8">
           <div className="text-lg text-gray-600">Loading more content...</div>
         </div>
       )}
 
-      {/* 没有更多内容提示 */}
+      {/* No more content hint */}
       {!loading && !hasMore && articles.length > 0 && (
         <div className="flex justify-center items-center py-8">
           <div className="text-gray-500">You've reached the bottom! No more content to load.</div>

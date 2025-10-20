@@ -1,6 +1,6 @@
 /**
- * 图片处理工具类
- * 包含压缩、裁切、预览等功能
+ * Image processing utility class
+ * Includes compression, cropping, preview and other functions
  */
 
 export interface ImageCompressOptions {
@@ -18,7 +18,7 @@ export interface CropArea {
 }
 
 /**
- * 压缩图片
+ * Compress image
  */
 export const compressImage = (
   file: File,
@@ -37,7 +37,7 @@ export const compressImage = (
     const img = new Image();
 
     img.onload = () => {
-      // 计算新的尺寸
+      // Calculate new dimensions
       let { width, height } = img;
 
       if (width > height) {
@@ -55,7 +55,7 @@ export const compressImage = (
       canvas.width = width;
       canvas.height = height;
 
-      // 绘制压缩后的图片
+      // Draw compressed image
       ctx?.drawImage(img, 0, 0, width, height);
 
       canvas.toBlob(
@@ -81,7 +81,7 @@ export const compressImage = (
 };
 
 /**
- * 裁切图片
+ * Crop image
  */
 export const cropImage = (
   file: File,
@@ -96,14 +96,14 @@ export const cropImage = (
     img.onload = () => {
       const { x, y, width, height } = cropArea;
 
-      // 设置输出尺寸
+      // Set output dimensions
       const outputWidth = outputSize?.width || width;
       const outputHeight = outputSize?.height || height;
 
       canvas.width = outputWidth;
       canvas.height = outputHeight;
 
-      // 裁切并绘制图片
+      // Crop and draw image
       ctx?.drawImage(
         img,
         x, y, width, height,
@@ -133,45 +133,45 @@ export const cropImage = (
 };
 
 /**
- * 生成图片预览URL
+ * Generate image preview URL
  */
 export const createImagePreview = (file: File): string => {
   return URL.createObjectURL(file);
 };
 
 /**
- * 清理预览URL
+ * Clean up preview URL
  */
 export const revokeImagePreview = (url: string): void => {
   URL.revokeObjectURL(url);
 };
 
 /**
- * 验证图片文件
+ * Validate image file
  */
 export const validateImageFile = (file: File): { isValid: boolean; error?: string } => {
-  // 检查文件类型
+  // Check file type
   if (!file.type.startsWith('image/')) {
-    return { isValid: false, error: '请选择图片文件' };
+    return { isValid: false, error: 'Please select an image file' };
   }
 
-  // 检查文件大小 (5MB)
+  // Check file size (5MB)
   const maxSize = 5 * 1024 * 1024;
   if (file.size > maxSize) {
-    return { isValid: false, error: '图片大小不能超过5MB' };
+    return { isValid: false, error: 'Image size cannot exceed 5MB' };
   }
 
-  // 支持的格式
+  // Supported formats
   const supportedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   if (!supportedTypes.includes(file.type)) {
-    return { isValid: false, error: '支持的图片格式：JPEG, PNG, GIF, WebP' };
+    return { isValid: false, error: 'Supported image formats: JPEG, PNG, GIF, WebP' };
   }
 
   return { isValid: true };
 };
 
 /**
- * 获取图片尺寸
+ * Get image dimensions
  */
 export const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
   return new Promise((resolve, reject) => {

@@ -1,62 +1,62 @@
 /**
- * 文章分类相关类型定义
- * API端点: GET /client/author/article/categoryList
+ * Article category related type definitions
+ * API endpoint: GET /client/author/article/categoryList
  */
 
 /**
- * 分类项目接口
+ * Category item interface
  */
 export interface ArticleCategoryItem {
-  /** 分类ID */
+  /** Category ID */
   id: number;
-  /** 分类名称 */
+  /** Category name */
   name: string;
-  /** 分类颜色 (十六进制颜色代码) */
+  /** Category color (hexadecimal color code) */
   color: string;
-  /** 该分类下的文章数量 */
+  /** Number of articles in this category */
   articleCount: number;
-  /** 扩展属性，允许添加其他可能的字段 */
+  /** Extended properties, allow adding other possible fields */
   [property: string]: any;
 }
 
 /**
- * 文章分类列表API响应接口
+ * Article category list API response interface
  */
 export interface ArticleCategoryListResponse {
-  /** 分类数据数组 */
+  /** Category data array */
   data: ArticleCategoryItem[];
-  /** API状态码 */
+  /** API status code */
   status?: number;
-  /** API响应消息 */
+  /** API response message */
   msg?: string;
-  /** 扩展属性，允许添加其他响应字段 */
+  /** Extended properties, allow adding other response fields */
   [property: string]: any;
 }
 
 /**
- * 分类上下文值类型（用于React Context）
+ * Category context value type (for React Context)
  */
 export interface CategoryContextValue {
-  /** 分类列表 */
+  /** Category list */
   categories: ArticleCategoryItem[];
-  /** 加载状态 */
+  /** Loading state */
   categoriesLoading: boolean;
-  /** 获取分类列表方法 */
+  /** Fetch categories method */
   fetchCategories: () => Promise<void>;
-  /** 根据ID查找分类 */
+  /** Find category by ID */
   getCategoryById: (id: number) => ArticleCategoryItem | undefined;
-  /** 根据名称查找分类 */
+  /** Find category by name */
   getCategoryByName: (name: string) => ArticleCategoryItem | undefined;
 }
 
 /**
- * 兼容性别名 - 保持向后兼容
- * @deprecated 请使用 ArticleCategoryItem
+ * Compatibility alias - maintain backward compatibility
+ * @deprecated Please use ArticleCategoryItem
  */
 export type Category = ArticleCategoryItem;
 
 /**
- * API响应别名 - 更简洁的命名
- * @deprecated 请使用 ArticleCategoryListResponse
+ * API response alias - more concise naming
+ * @deprecated Please use ArticleCategoryListResponse
  */
 export type Response = ArticleCategoryListResponse;

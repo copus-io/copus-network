@@ -1,4 +1,4 @@
-// 全局类型定义
+// Global type definitions
 
 // Metamask Ethereum Provider
 interface EthereumProvider {
@@ -9,7 +9,7 @@ interface EthereumProvider {
   chainId?: string;
 }
 
-// 扩展 Window 接口
+// Extend Window interface
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
