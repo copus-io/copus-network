@@ -19,9 +19,6 @@ import { Content } from "./screens/Content/Content";
 import { NotLogIn } from "./routes/NotLogIn/screens/NotLogIn";
 import { NewExplore } from "./routes/NewExplore/screens/NewExplore";
 import { MyTreasury } from "./routes/MyTreasury/screens/MyTreasury";
-import { MyTreasury30 } from "./routes/MyTreasury30/screens/MyTreasury";
-import { MyTreasury32 } from "./routes/MyTreasury32/screens/MyTreasury";
-import { MyTreasury34 } from "./routes/MyTreasury34/screens/MyTreasury";
 import { LinkPreview } from "./routes/LinkPreview/screens/LinkPreview";
 import { DeleteAccount } from "./routes/DeleteAccount/screens/DeleteAccount";
 import { Published } from "./routes/Published/screens/Published";
@@ -109,31 +106,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/u/:namespace",
-    element: <ShortLinkHandler />, // 简洁短链接格式 /u/namespace ✨
-  },
-  {
-    path: "/my-treasury/v30",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <MyTreasury30 />
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/my-treasury/v32",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <MyTreasury32 />
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/my-treasury/v34",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <MyTreasury34 />
-      </AuthGuard>
-    ),
+    element: <ShortLinkHandler />, // Short link format: /u/namespace
   },
   {
     path: "/create",
