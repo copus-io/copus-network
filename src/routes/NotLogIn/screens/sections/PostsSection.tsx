@@ -129,7 +129,7 @@ export const PostsSection = (): JSX.Element => {
       className="w-full px-10 pt-5 pb-[30px] min-h-screen"
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))',
         gap: '2rem'
       }}
     >

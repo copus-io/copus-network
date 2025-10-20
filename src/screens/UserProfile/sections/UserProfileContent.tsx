@@ -255,7 +255,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         className="w-full"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))',
           gap: '2rem'
         }}
       >
