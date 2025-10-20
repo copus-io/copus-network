@@ -106,7 +106,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/u/:namespace",
-    element: <ShortLinkHandler />, // Concise short link format /u/namespace
+    element: <ShortLinkHandler />, // Short link format: /u/namespace
   },
   {
     path: "/create",
