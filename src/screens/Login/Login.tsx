@@ -91,8 +91,17 @@ export const Login = (): JSX.Element => {
     const handleOAuthCallback = async () => {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
-      const provider = searchParams.get('provider'); // 识别登录提供商
 
+      // Check localStorage first for provider (more reliable than URL param)
+      // OAuth providers like Twitter don't preserve custom query parameters
+      let provider = localStorage.getItem('oauth_provider') || searchParams.get('provider');
+
+      // Clear the localStorage value after reading it
+      if (provider) {
+        localStorage.removeItem('oauth_provider');
+      }
+
+      console.log('🔍 OAuth callback - provider:', provider, 'code:', code ? 'exists' : 'none', 'state:', state ? 'exists' : 'none');
 
       if (code && state) {
         setIsLoginLoading(true);
@@ -126,7 +135,7 @@ export const Login = (): JSX.Element => {
               // Navigate to settings immediately
               navigate('/setting', { replace: true });
             } else {
-              // Third-party login mode
+              // Third-party login mode - sync Google profile to Copus
               showToast('Google login successful! Welcome back 🎉', 'success');
 
               // Get user info - use token from response or localStorage
@@ -141,31 +150,137 @@ export const Login = (): JSX.Element => {
               await fetchUserInfo(tokenToUse);
               console.log('✅ User info fetched successfully');
 
+              // Sync Google profile data to Copus profile (profile data is already in response)
+              if (response.googleProfile) {
+                try {
+                  console.log('🔄 Syncing Google profile data to Copus...');
+                  console.log('📸 Google profile data from login response:', response.googleProfile);
+
+                  // Update Copus profile with Google data
+                  const updateData: any = {};
+                  if (response.googleProfile.username) {
+                    updateData.userName = response.googleProfile.username;
+                  }
+                  if (response.googleProfile.faceUrl) {
+                    // Use faceUrl as profile image
+                    updateData.faceUrl = response.googleProfile.faceUrl;
+                  }
+
+                  if (Object.keys(updateData).length > 0) {
+                    console.log('📝 Updating Copus profile with:', updateData);
+                    await AuthService.updateUserInfo(updateData);
+                    console.log('✅ Profile synced successfully');
+
+                    // Re-fetch user info to get updated profile
+                    await fetchUserInfo(tokenToUse);
+                    console.log('✅ User info refreshed after sync');
+                  } else {
+                    console.log('⚠️ No Google profile data to sync');
+                  }
+                } catch (profileError) {
+                  console.error('⚠️ Failed to sync Google profile (non-fatal):', profileError);
+                  // Don't block login if profile sync fails
+                }
+              } else {
+                console.log('⚠️ No Google profile data in login response');
+              }
+
               // Navigate to home immediately (replace history to avoid back button going to login)
               navigate('/', { replace: true });
             }
           } else if (provider === 'x') {
             // X (Twitter) login handling
-            console.log('🔍 Processing X OAuth callback...');
-            response = await AuthService.xLogin(code, state);
+            const token = localStorage.getItem('copus_token');
+            const hasToken = !!token;
+
+            console.log('🔍 X login - hasToken:', hasToken);
+            response = await AuthService.xLogin(code, state, hasToken);
             console.log('✅ X login response:', response);
 
-            showToast('X login successful! Welcome back 🎉', 'success');
+            // The token should already be saved by AuthService.xLogin
+            // Check localStorage for the token
+            const savedToken = localStorage.getItem('copus_token');
+            console.log('💾 Token saved in localStorage:', savedToken ? 'YES' : 'NO');
 
-            // Get user info
-            const token = response.data?.token || response.token;
-            await fetchUserInfo(token);
+            if (response.isBinding) {
+              // Account binding mode
+              showToast('X account successfully bound! 🎉', 'success');
 
-            // Navigate to home immediately
-            navigate('/', { replace: true });
+              // X binding may return new token, re-fetch user info
+              const tokenToUse = response.token || savedToken || token;
+              console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
+              await fetchUserInfo(tokenToUse);
+
+              // Navigate to settings immediately
+              navigate('/setting', { replace: true });
+            } else {
+              // Third-party login mode - sync X profile to Copus
+              showToast('X login successful! Welcome back 🎉', 'success');
+
+              // Get user info - use token from response or localStorage
+              const tokenToUse = response.token || savedToken;
+              console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
+
+              if (!tokenToUse) {
+                console.error('❌ No token available after X login!');
+                throw new Error('No authentication token received');
+              }
+
+              await fetchUserInfo(tokenToUse);
+              console.log('✅ User info fetched successfully');
+
+              // Sync X profile data to Copus profile (profile data is already in response)
+              if (response.xProfile) {
+                try {
+                  console.log('🔄 Syncing X profile data to Copus...');
+                  console.log('📸 X profile data from login response:', response.xProfile);
+
+                  // Update Copus profile with X data
+                  const updateData: any = {};
+                  if (response.xProfile.username) {
+                    updateData.userName = response.xProfile.username;
+                  }
+                  if (response.xProfile.faceUrl) {
+                    // Use faceUrl as profile image
+                    updateData.faceUrl = response.xProfile.faceUrl;
+                  }
+                  if (response.xProfile.bio) {
+                    updateData.bio = response.xProfile.bio;
+                  }
+
+                  if (Object.keys(updateData).length > 0) {
+                    console.log('📝 Updating Copus profile with:', updateData);
+                    await AuthService.updateUserInfo(updateData);
+                    console.log('✅ Profile synced successfully');
+
+                    // Re-fetch user info to get updated profile
+                    await fetchUserInfo(tokenToUse);
+                    console.log('✅ User info refreshed after sync');
+                  } else {
+                    console.log('⚠️ No X profile data to sync');
+                  }
+                } catch (profileError) {
+                  console.error('⚠️ Failed to sync X profile (non-fatal):', profileError);
+                  // Don't block login if profile sync fails
+                }
+              } else {
+                console.log('⚠️ No X profile data in login response');
+              }
+
+              // Navigate to home immediately (replace history to avoid back button going to login)
+              navigate('/', { replace: true });
+            }
           } else {
             // Default fallback (for backward compatibility)
             console.log('⚠️ Unknown provider or no provider specified, attempting X login...');
-            response = await AuthService.xLogin(code, state);
+            const token = localStorage.getItem('copus_token');
+            const hasToken = !!token;
+            response = await AuthService.xLogin(code, state, hasToken);
 
-            if (response.data?.token || response.token) {
+            if (response.token || response.data?.token) {
               showToast('Login successful! Welcome back 🎉', 'success');
-              await fetchUserInfo(response.data?.token || response.token);
+              const tokenToUse = response.token || response.data?.token;
+              await fetchUserInfo(tokenToUse);
               navigate('/', { replace: true });
             } else {
               throw new Error('No authentication token received');
@@ -190,12 +305,17 @@ export const Login = (): JSX.Element => {
       try {
         console.log('🔍 Starting X OAuth process...');
 
+        // Save provider to localStorage (OAuth callback will read this)
+        // This is more reliable than URL params because Twitter doesn't preserve them
+        localStorage.setItem('oauth_provider', 'x');
+
         // Try to get X OAuth URL - this should work for both login and binding
         const oauthUrl = await AuthService.getXOAuthUrl();
 
         console.log('✅ Got X OAuth URL:', oauthUrl);
+        console.log('💾 Saved provider to localStorage: x');
 
-        // Add provider parameter for callback identification (same as Google)
+        // Add provider parameter for callback identification (backup method)
         const urlWithProvider = oauthUrl.includes('?')
           ? `${oauthUrl}&provider=x`
           : `${oauthUrl}?provider=x`;
@@ -212,10 +332,14 @@ export const Login = (): JSX.Element => {
       try {
         console.log('🔍 Starting Google OAuth process...');
 
+        // Save provider to localStorage (OAuth callback will read this)
+        localStorage.setItem('oauth_provider', 'google');
+
         // Try to get Google OAuth URL - this should work for both login and binding
         const oauthUrl = await AuthService.getGoogleOAuthUrl();
 
         console.log('✅ Got Google OAuth URL:', oauthUrl);
+        console.log('💾 Saved provider to localStorage: google');
 
         // For localhost development: replace redirect_uri with localhost
         // This requires http://localhost:5177/callback to be added to Google Cloud Console OAuth settings

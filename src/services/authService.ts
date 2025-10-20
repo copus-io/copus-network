@@ -127,8 +127,19 @@ export class AuthService {
           requiresAuth: true
         });
 
+        console.log('🔍 X OAuth URL API response (with auth):', response);
+
         if (typeof response === 'string') {
           return response;
+        }
+        // Check if response has URL in various possible formats
+        if (response && typeof response === 'object') {
+          if ('url' in response && typeof response.url === 'string') {
+            return response.url;
+          }
+          if ('data' in response && typeof response.data === 'string') {
+            return response.data;
+          }
         }
       }
 
@@ -138,11 +149,23 @@ export class AuthService {
         requiresAuth: false
       });
 
+      console.log('🔍 X OAuth URL API response (without auth):', response);
+
       if (typeof response === 'string') {
         return response;
       }
+      // Check if response has URL in various possible formats
+      if (response && typeof response === 'object') {
+        if ('url' in response && typeof response.url === 'string') {
+          return response.url;
+        }
+        if ('data' in response && typeof response.data === 'string') {
+          return response.data;
+        }
+      }
 
-      throw new Error('Did not receive a valid OAuth URL');
+      console.error('❌ Unexpected API response format:', response);
+      throw new Error('Did not receive a valid X OAuth URL');
     } catch (error) {
       console.error('❌ Failed to get X OAuth URL:', error);
       throw new Error(`Failed to get X OAuth URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -150,28 +173,114 @@ export class AuthService {
   }
 
   /**
-   * X (Twitter) login callback handler
+   * X (Twitter) login callback handler (supports both login and binding modes)
    */
-  static async xLogin(code: string, state: string): Promise<any> {
+  static async xLogin(code: string, state: string, hasToken: boolean = false): Promise<any> {
 
     const endpoint = `/client/common/x/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
 
     try {
+      // Try request with token (for account binding)
+      if (hasToken) {
+        const response = await apiRequest(endpoint, {
+          method: 'GET',
+          requiresAuth: true
+        });
+
+        console.log('🔍 X login API response (binding mode):', response);
+        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
+
+        // Response format can be:
+        // 1. { "namespace": "string", "token": "string" }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "..." } }
+        const token = response.data?.token || response.token;
+        const namespace = response.data?.namespace || response.namespace;
+
+        if (token) {
+          localStorage.setItem('copus_token', token);
+          console.log('✅ Token saved to localStorage (binding)');
+        }
+
+        return {
+          token,
+          namespace,
+          isBinding: true
+        };
+      } else {
+        // Try request without token (for third-party login)
+        const response = await apiRequest(endpoint, {
+          method: 'GET',
+          requiresAuth: false
+        });
+
+        console.log('🔍 X login API response (login mode):', response);
+        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
+
+        // Response format can be:
+        // 1. { "namespace": "string", "token": "string", "username": "...", "faceUrl": "..." }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "...", "username": "...", "faceUrl": "..." } }
+        const token = response.data?.token || response.token;
+        const namespace = response.data?.namespace || response.namespace;
+
+        // Extract X profile data from login response
+        const xProfile = {
+          username: response.data?.username || response.username || response.data?.name || response.name,
+          faceUrl: response.data?.faceUrl || response.faceUrl || response.data?.avatar || response.avatar || response.data?.profile_image_url || response.profile_image_url,
+          bio: response.data?.bio || response.bio || response.data?.description || response.description
+        };
+
+        console.log('🔑 Extracted token:', token ? token.substring(0, 20) + '...' : 'NONE');
+        console.log('👤 Extracted namespace:', namespace);
+        console.log('📸 Extracted X profile:', xProfile);
+
+        if (token) {
+          localStorage.setItem('copus_token', token);
+          console.log('✅ Token saved to localStorage');
+        } else {
+          console.error('❌ No token found in response!', response);
+        }
+
+        return {
+          token,
+          namespace,
+          isBinding: false,
+          xProfile // Return X profile data
+        };
+      }
+    } catch (error) {
+      console.error('❌ X Login/Binding failed:', error);
+      throw new Error(`X ${hasToken ? 'account binding' : 'login'} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get X (Twitter) profile data for syncing
+   */
+  static async getXProfile(): Promise<{
+    username?: string;
+    avatar?: string;
+    name?: string;
+    bio?: string;
+  }> {
+    const endpoint = `/client/common/x/profile`;
+
+    try {
       const response = await apiRequest(endpoint, {
         method: 'GET',
-        requiresAuth: false
+        requiresAuth: true
       });
 
+      console.log('🔍 X profile API response:', response);
 
-      // Save token
-      if (response.data?.token) {
-        localStorage.setItem('copus_token', response.data.token);
+      // Handle different response formats
+      if (response.data) {
+        return response.data;
       }
 
       return response;
     } catch (error) {
-      console.error('❌ X Login failed:', error);
-      throw new Error(`X login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Failed to get X profile:', error);
+      throw new Error(`Failed to get X profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -345,15 +454,24 @@ export class AuthService {
         });
 
         console.log('🔍 Google login API response (login mode):', response);
+        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
 
         // Response format can be:
-        // 1. { "namespace": "string", "token": "string" }
-        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "..." } }
+        // 1. { "namespace": "string", "token": "string", "username": "...", "faceUrl": "..." }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "...", "username": "...", "faceUrl": "..." } }
         const token = response.data?.token || response.token;
         const namespace = response.data?.namespace || response.namespace;
 
+        // Extract Google profile data from login response
+        const googleProfile = {
+          username: response.data?.username || response.username || response.data?.name || response.name,
+          faceUrl: response.data?.faceUrl || response.faceUrl || response.data?.avatar || response.avatar || response.data?.picture || response.picture,
+          email: response.data?.email || response.email
+        };
+
         console.log('🔑 Extracted token:', token ? token.substring(0, 20) + '...' : 'NONE');
         console.log('👤 Extracted namespace:', namespace);
+        console.log('📸 Extracted Google profile:', googleProfile);
 
         if (token) {
           localStorage.setItem('copus_token', token);
@@ -365,12 +483,44 @@ export class AuthService {
         return {
           token,
           namespace,
-          isBinding: false
+          isBinding: false,
+          googleProfile // Return Google profile data
         };
       }
     } catch (error) {
       console.error('❌ Google Login/Binding failed:', error);
       throw new Error(`Google ${hasToken ? 'account binding' : 'login'}failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get Google profile data for syncing
+   */
+  static async getGoogleProfile(): Promise<{
+    username?: string;
+    avatar?: string;
+    name?: string;
+    email?: string;
+  }> {
+    const endpoint = `/client/common/google/profile`;
+
+    try {
+      const response = await apiRequest(endpoint, {
+        method: 'GET',
+        requiresAuth: true
+      });
+
+      console.log('🔍 Google profile API response:', response);
+
+      // Handle different response formats
+      if (response.data) {
+        return response.data;
+      }
+
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to get Google profile:', error);
+      throw new Error(`Failed to get Google profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
