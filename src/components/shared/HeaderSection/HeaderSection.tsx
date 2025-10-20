@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarImage } from "../../ui/avatar";
 import { Button } from "../../ui/button";
 import { Separator } from "../../ui/separator";
 import { useUser } from "../../../contexts/UserContext";
 import { useNotification } from "../../../contexts/NotificationContext";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
+import { MobileMenu } from "../MobileMenu";
+import { Menu } from "lucide-react";
 
 interface HeaderSectionProps {
   isLoggedIn?: boolean;
@@ -18,7 +20,9 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
   const { user, logout } = useUser();
   const { unreadCount } = useNotification();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
@@ -48,32 +52,51 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showUserMenu]);
+
   return (
-    <header className="flex items-center justify-between p-[30px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
-      <div className="flex items-center gap-[15px]">
-        <Link to="/" className="flex w-[45px] h-[45px] items-center justify-center rounded-full bg-red">
-          <img
-            className="w-7 h-7"
-            alt="Ic fractopus open"
-            src="https://c.animaapp.com/mft9nppdGctUh1/img/ic-fractopus-open.svg"
+    <>
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isLoggedIn={isLoggedIn}
+        activeMenuItem={location.pathname === '/create' ? 'curate' : location.pathname.substring(1)}
+      />
+
+      <header className="flex items-center justify-between px-2.5 py-[5px] lg:p-[30px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
+        <div className="flex items-center gap-2.5 lg:gap-[15px]">
+          <Link to="/" className="flex w-[30px] h-[30px] lg:w-[45px] lg:h-[45px] items-center justify-center rounded-full bg-red">
+            <img
+              className="w-[18px] h-[18px] lg:w-7 lg:h-7"
+              alt="Ic fractopus open"
+              src="https://c.animaapp.com/mft9nppdGctUh1/img/ic-fractopus-open.svg"
+            />
+          </Link>
+
+          <Link to="/" className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-lg tracking-[0.90px] leading-[27px] whitespace-nowrap">
+            Copus
+          </Link>
+
+          <Separator
+            orientation="vertical"
+            className="h-6 bg-[#a8a8a8] mx-2.5 lg:mx-[15px]"
           />
-        </Link>
 
-        <Link to="/" className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-lg tracking-[0.90px] leading-[27px] whitespace-nowrap">
-          Copus
-        </Link>
-
-        <Separator
-          orientation="vertical"
-          className="h-6 bg-[#a8a8a8] mx-[15px]"
-        />
-
-        <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-lg leading-[27px] whitespace-nowrap">
-          Human Internet
+          <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-lg leading-[27px] whitespace-nowrap">
+            Human Internet
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-5">
+        {/* Mobile: Hamburger Menu */}
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="lg:hidden flex items-center justify-center h-[43px] cursor-pointer"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6 text-dark-grey" />
+        </button>
+
+        {/* Desktop: Full Navigation */}
+        <div className="hidden lg:flex items-center gap-5">
         {isLoggedIn ? (
           <>
         {!hideCreateButton && (
@@ -89,7 +112,7 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
                 src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
               />
               <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red">
-                Create
+                Curate
               </span>
             </Link>
           </Button>
@@ -180,6 +203,7 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
           </div>
         )}
       </div>
-    </header>
+      </header>
+    </>
   );
 };

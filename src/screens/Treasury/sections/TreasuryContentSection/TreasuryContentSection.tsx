@@ -506,14 +506,7 @@ export const TreasuryContentSection = (): JSX.Element => {
           </Link>
         </div>
       ) : (
-        <div
-          className="w-full px-5"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
-            gap: '2rem'
-          }}
-        >
+        <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8 px-0 lg:px-5">
           {likedArticles.map((article) => renderArticleCard(article))}
         </div>
       )}

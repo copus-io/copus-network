@@ -170,7 +170,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     if (user) {
       setFormData({
         name: user.username || "Guest User",
-        username: user.username ? `@${user.username}` : "@unknown",
+        username: user.namespace ? `@${user.namespace}` : "@unknown",
         bio: user.bio || "Hello, welcome to my creative space.",
         email: user.email || "user@example.com",
       });
@@ -452,7 +452,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
 
   return (
-    <main className="flex flex-col items-start gap-[30px] pl-[60px] pr-10 pt-0 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
+    <main className="flex flex-col items-start gap-[30px] px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
       <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
         <div
           className="relative self-stretch w-full h-40 rounded-lg overflow-hidden bg-gradient-to-r from-blue-100 to-purple-100 group cursor-pointer"
@@ -474,10 +474,10 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           </div>
         </div>
 
-        <div className="gap-10 pl-5 pr-10 py-0 mt-[-46px] flex items-start relative self-stretch w-full flex-[0_0_auto]">
+        <div className="gap-4 lg:gap-10 px-4 lg:pl-5 lg:pr-10 py-0 mt-[-46px] flex flex-col lg:flex-row items-start relative self-stretch w-full flex-[0_0_auto]">
           <button
             onClick={handleAvatarClick}
-            className="w-[100px] h-[100px] rounded-[60px] border-2 border-solid border-white relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100"
+            className="w-[80px] h-[80px] lg:w-[100px] lg:h-[100px] rounded-[60px] border-2 border-solid border-white relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100"
             title="Click to change avatar"
             aria-label="Click to change avatar"
           >
@@ -511,7 +511,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </div>
           </button>
 
-          <div className="flex flex-col items-start gap-5 pt-[60px] pb-0 px-0 relative flex-1 grow">
+          <div className="flex flex-col items-start gap-5 pt-0 lg:pt-[60px] pb-0 px-0 relative flex-1 grow w-full">
             <div className="flex items-start justify-between w-full">
               <header className="h-[60px] inline-flex flex-col items-start justify-center relative">
                 <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] mt-[-3.50px]">

@@ -52,6 +52,11 @@ export const Content = (): JSX.Element => {
   // 使用新的文章详情API hook
   const { article, loading, error } = useArticleDetail(id || '');
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Debug: Log article data to check arChainId
   useEffect(() => {
     if (article) {
@@ -184,7 +189,7 @@ export const Content = (): JSX.Element => {
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection isLoggedIn={!!user} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[120px] pb-[100px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
+        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[100px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
           <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
@@ -215,7 +220,7 @@ export const Content = (): JSX.Element => {
                 />
               </div>
 
-              <blockquote className="flex flex-col items-start gap-5 p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+              <blockquote className="flex flex-col items-start gap-5 p-5 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                 <div className="flex items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
                   <div className="w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
                     &quot;
@@ -331,7 +336,7 @@ export const Content = (): JSX.Element => {
               href={content.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-[15px] px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red no-underline"
+              className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red no-underline"
             >
               <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                 Visit

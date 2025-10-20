@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { UploadIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -20,6 +20,7 @@ import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categorySt
 import { ArticleCard, ArticleData } from "../../components/ArticleCard";
 import { ImageCropper } from "../../components/ImageCropper/ImageCropper";
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from "../../utils/imageUtils";
+import { addRecentCategory, sortCategoriesByRecent } from "../../utils/recentCategories";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 
 
@@ -57,6 +58,16 @@ export const Create = (): JSX.Element => {
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
   const [showImageCropper, setShowImageCropper] = useState(false);
+
+  // Sort categories to show recently used ones first
+  const sortedCategories = useMemo(() => {
+    return sortCategoriesByRecent(categories);
+  }, [categories]);
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Extract domain from URL for display
   const extractDomain = (url: string): string => {
@@ -233,6 +244,8 @@ export const Create = (): JSX.Element => {
 
   const handleTopicSelect = (topicName: string, topicId: number) => {
     setFormData(prev => ({ ...prev, selectedTopic: topicName, selectedTopicId: topicId }));
+    // Track this category as recently used
+    addRecentCategory(topicId, topicName);
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,18 +311,18 @@ export const Create = (): JSX.Element => {
 
   // 当分类数据加载完成后，设置默认选中的分类
   useEffect(() => {
-    if (categories && categories.length > 0) {
-      // 如果当前选中的分类不在列表中，选择第一个
-      const currentCategoryExists = categories.some(cat => cat.name === formData.selectedTopic);
+    if (sortedCategories && sortedCategories.length > 0) {
+      // 如果当前选中的分类不在列表中，选择第一个（最近使用的）
+      const currentCategoryExists = sortedCategories.some(cat => cat.name === formData.selectedTopic);
       if (!currentCategoryExists) {
         setFormData(prev => ({
           ...prev,
-          selectedTopic: categories[0].name,
-          selectedTopicId: categories[0].id
+          selectedTopic: sortedCategories[0].name,
+          selectedTopicId: sortedCategories[0].id
         }));
       }
     }
-  }, [categories]);
+  }, [sortedCategories]);
 
   // 编辑模式：加载文章数据
   useEffect(() => {
@@ -516,8 +529,8 @@ export const Create = (): JSX.Element => {
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
       <HeaderSection isLoggedIn={isLoggedIn} hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
-      <div className="ml-[360px] mr-[70px] min-h-screen overflow-y-auto pt-[120px]">
-        <div className="flex flex-col items-start gap-[30px] px-40 py-0 pb-[100px] w-full">
+      <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen overflow-y-auto pt-[70px] lg:pt-[120px]">
+        <div className="flex flex-col items-start gap-[30px] px-5 lg:px-40 py-0 pb-[100px] w-full">
           <div className="flex items-center gap-2.5 w-full">
             <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
               {isEditMode ? 'Edit treasure' : 'Share treasure'}
@@ -529,8 +542,8 @@ export const Create = (): JSX.Element => {
             )}
           </div>
 
-          <div className="flex items-start gap-[60px] w-full">
-            <div className="flex flex-col items-start gap-[30px] pl-0 pr-[60px] py-0 flex-1 border-r [border-right-style:solid] border-light-grey">
+          <div className="flex flex-col lg:flex-row items-start gap-[30px] lg:gap-[60px] w-full">
+            <div className="flex flex-col items-start gap-[30px] pl-0 lg:pr-[60px] py-0 flex-1 lg:border-r lg:[border-right-style:solid] lg:border-light-grey w-full">
             <div className="flex flex-col items-start gap-2.5 w-full">
               <div className="flex flex-col w-[60px] h-[23px] items-start justify-center gap-2.5">
                 <label className="relative flex items-center justify-center w-fit mt-[-2.00px] font-p-l font-[number:var(--p-l-font-weight)] text-transparent text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
@@ -706,7 +719,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div className="gap-2.5 inline-flex items-start flex-wrap">
-                {categories.map((category) => {
+                {sortedCategories.map((category) => {
                   const categoryStyle = getCategoryStyle(category.name, category.color);
                   const categoryInlineStyle = getCategoryInlineStyle(category.color);
                   const isSelected = formData.selectedTopic === category.name;

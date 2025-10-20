@@ -628,9 +628,9 @@ export const MainContentSection = (): JSX.Element => {
           />
         </div>
 
-        <div className="gap-6 pl-5 pr-10 py-0 mt-[-46px] flex items-start w-full">
+        <div className="gap-4 lg:gap-6 px-4 lg:pl-5 lg:pr-10 py-0 mt-[-46px] flex flex-col lg:flex-row items-start lg:items-start w-full">
           <Avatar
-            className="w-[100px] h-[100px] border-2 border-solid border-[#ffffff] cursor-pointer hover:scale-105 transition-transform duration-300"
+            className="w-[80px] h-[80px] lg:w-[100px] lg:h-[100px] border-2 border-solid border-[#ffffff] cursor-pointer hover:scale-105 transition-transform duration-300"
             onClick={handleAvatarClick}
             onMouseDown={handleAvatarClick}
             onTouchStart={handleAvatarClick}
@@ -646,7 +646,7 @@ export const MainContentSection = (): JSX.Element => {
             />
           </Avatar>
 
-          <div className="flex flex-col items-start gap-5 pt-[60px] pb-0 px-0 flex-1 grow">
+          <div className="flex flex-col items-start gap-5 pt-0 lg:pt-[60px] pb-0 px-0 flex-1 grow w-full">
             <div className="inline-flex flex-col items-start justify-center">
               <div className="inline-flex items-center gap-[15px]">
                 <h1 className="mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42px] whitespace-nowrap">
@@ -760,14 +760,7 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {likedArticlesError}</div>
               </div>
             ) : likedArticles.length > 0 ? (
-              <div
-                className="w-full"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
-                  gap: '2rem'
-                }}
-              >
+              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
                 {likedArticles.map((article) => {
                   const card = transformLikedApiToCard(article);
                   return renderCard(card);
@@ -780,9 +773,6 @@ export const MainContentSection = (): JSX.Element => {
                 </div>
                 <div className="text-sm text-gray-400">
                   {isViewingOtherUser ? 'No public treasured content available' : 'Discover and treasure some amazing content!'}
-                </div>
-                <div className="text-xs text-gray-400">
-                  💡 Statistics show {treasuryUserInfo?.statistics?.likedArticleCount || 0} treasured items, but none are currently displayed
                 </div>
               </div>
             )}
@@ -798,14 +788,7 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {createdArticlesError}</div>
               </div>
             ) : createdArticles.length > 0 ? (
-              <div
-                className="w-full"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
-                  gap: '2rem'
-                }}
-              >
+              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
                 {createdArticles.map((article) => {
                   const card = transformCreatedApiToCard(article);
                   return renderMyShareCard(card);
@@ -818,9 +801,6 @@ export const MainContentSection = (): JSX.Element => {
                 </div>
                 <div className="text-sm text-gray-400">
                   {isViewingOtherUser ? 'No public shared content available' : 'Start sharing some amazing content!'}
-                </div>
-                <div className="text-xs text-gray-400">
-                  💡 Statistics show {treasuryUserInfo?.statistics?.articleCount || 0} shared items, but none are currently displayed
                 </div>
               </div>
             )}

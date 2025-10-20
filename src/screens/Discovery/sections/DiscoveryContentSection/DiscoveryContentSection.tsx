@@ -326,14 +326,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       )}
 
       {/* Content Cards Section - Responsive Grid Layout */}
-      <section
-        className="w-full pt-0 pb-[30px] min-h-screen"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(408px, 1fr))',
-          gap: '2rem'
-        }}
-      >
+      <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:px-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
         {localArticles.map((post, index) => renderPostCard(post, index))}
       </section>
 

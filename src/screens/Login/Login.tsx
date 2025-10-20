@@ -67,6 +67,11 @@ export const Login = (): JSX.Element => {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // 页面加载时恢复记住的邮箱
   useEffect(() => {
     const savedEmail = localStorage.getItem('copus_remembered_email');
@@ -657,7 +662,7 @@ export const Login = (): JSX.Element => {
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] overflow-x-hidden">
       <HeaderSection isLoggedIn={false} hideCreateButton={true} showDiscoverNow={true} hideLoginButton={true} />
-      <div className="flex w-full min-h-screen relative flex-col items-center pt-[120px]">{/* 添加顶部间距以适应fixed header */}
+      <div className="flex w-full min-h-screen relative flex-col items-center pt-[70px] lg:pt-[120px]">{/* 添加顶部间距以适应fixed header */}
 
         <main className="flex items-center justify-center gap-2.5 relative flex-1 grow py-4 sm:py-10 px-4 sm:px-0">
           <Card className="w-full max-w-[480px] bg-white rounded-lg border-0 shadow-none relative z-10">
