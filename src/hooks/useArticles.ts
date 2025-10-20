@@ -29,10 +29,10 @@ export const useArticles = (
 
     try {
       const finalParams = {
-        pageSize: 10, // 优化加载性能，提升用户体验
+        pageSize: 10, // Optimize loading performance for better UX
         ...initialParams,
         ...params,
-        page: append ? (params.page || 1) : 1, // 如果是追加模式使用传入的页码，否则从第1页开始（确保page参数不被覆盖）
+        page: append ? (params.page || 1) : 1, // Use provided page number in append mode, otherwise start from page 1
       };
 
       const response = await getPageArticles(finalParams);
@@ -41,7 +41,7 @@ export const useArticles = (
       setState(prev => {
         let mergedArticles;
         if (append) {
-          // 合并时去重，基于article.id
+          // Deduplicate when merging, based on article.id
           const existingIds = new Set(prev.articles.map(article => article.id));
           const newArticles = response.articles.filter(article => !existingIds.has(article.id));
           mergedArticles = [...prev.articles, ...newArticles];
@@ -75,7 +75,7 @@ export const useArticles = (
         error: errorMessage,
       }));
     }
-  }, [initialParams]); // 添加initialParams依赖
+  }, [initialParams]); // Add initialParams dependency
 
   const loadMore = useCallback(() => {
     if (!state.loading && state.hasMore) {

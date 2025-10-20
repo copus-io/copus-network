@@ -87,8 +87,26 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
       backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
     }
   } catch (error) {
-    // If auth fails, try without authentication
-    backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
+    console.warn('⚠️ Authenticated request failed, retrying without authentication:', error);
+
+    // Clear invalid tokens if authentication failed
+    if (error instanceof Error && (
+      error.message.includes('认证') || // Chinese: authentication
+      error.message.includes('令牌') || // Chinese: token
+      error.message.includes('Authentication failed') ||
+      error.message.includes('authentication token')
+    )) {
+      console.log('🔄 Clearing invalid authentication token');
+      localStorage.removeItem('copus_token');
+    }
+
+    // Always retry without authentication to allow guest browsing
+    try {
+      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
+    } catch (retryError) {
+      console.error('❌ Failed to fetch articles even without authentication:', retryError);
+      throw new Error('Failed to load articles. Please refresh the page and try again.');
+    }
   }
 
   // Handle different response formats
