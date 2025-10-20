@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { AuthService } from '../services/authService';
 import { useArticleState } from '../hooks/useArticleState';
 
@@ -14,7 +14,7 @@ interface User {
   avatar?: string; // Keep for backwards compatibility
 }
 
-// 社交链接类型定义
+// Social link type definition
 interface SocialLink {
   id: number;
   userId: number;
@@ -28,14 +28,15 @@ interface UserContextValue {
   user: User | null;
   token: string | null;
   isLoggedIn: boolean;
+  loading: boolean;
   login: (userData: User, token?: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   updateUserNamespace: (namespace: string) => Promise<boolean>;
   getAuthHeaders: () => Record<string, string>;
   fetchUserInfo: (authToken?: string) => Promise<void>;
 
-  // 社交链接管理
+  // Social links management
   socialLinks: SocialLink[];
   socialLinksLoading: boolean;
   fetchSocialLinks: () => Promise<void>;
@@ -43,7 +44,7 @@ interface UserContextValue {
   updateSocialLink: (id: number, linkData: Partial<SocialLink>) => Promise<boolean>;
   deleteSocialLink: (id: number) => Promise<boolean>;
 
-  // 文章状态管理
+  // Article state management
   articleLikeStates: Record<string, { isLiked: boolean; likeCount: number }>;
   updateArticleLikeState: (articleId: string, isLiked: boolean, likeCount: number) => void;
   getArticleLikeState: (articleId: string, defaultIsLiked: boolean, defaultLikeCount: number) => { isLiked: boolean; likeCount: number };
@@ -56,15 +57,16 @@ const UserContext = createContext<UserContextValue | undefined>(undefined);
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // 社交链接状态管理
+  // Social links state management
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [socialLinksLoading, setSocialLinksLoading] = useState(false);
 
-  // 使用文章状态管理hook
+  // Use article state management hook
   const { articleLikeStates, updateArticleLikeState, getArticleLikeState, toggleLike, syncArticleStates } = useArticleState();
 
-  // 从localStorage恢复用户状态
+  // Restore user state from localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem('copus_user');
     const savedToken = localStorage.getItem('copus_token');
@@ -75,11 +77,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(userData);
         setToken(savedToken);
       } catch (error) {
-        console.error('解析用户数据失败:', error);
+        console.error('Failed to parse user data:', error);
         localStorage.removeItem('copus_user');
         localStorage.removeItem('copus_token');
       }
     }
+
+    // Initialization complete, set loading to false
+    setLoading(false);
   }, []);
 
   const login = (userData: User, userToken?: string) => {
@@ -91,14 +96,23 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('copus_user');
-    localStorage.removeItem('copus_token');
-  };
+  const logout = useCallback(async () => {
+    try {
+      // Call logout API to notify backend
+      await AuthService.logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+      // Continue with local logout even if API call fails
+    } finally {
+      // Clear local state and storage
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('copus_user');
+      localStorage.removeItem('copus_token');
+    }
+  }, []); // Empty dependencies since it uses setState and localStorage directly
 
-  // 获取带认证头的请求headers
+  // Get request headers with authentication
   const getAuthHeaders = () => {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -119,7 +133,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // 更新用户namespace
+  // Update user namespace
   const updateUserNamespace = async (namespace: string): Promise<boolean> => {
     if (!user) {
       return false;
@@ -130,39 +144,39 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const success = await AuthService.updateUserNamespace(namespace);
 
       if (success) {
-        // 更新本地用户状态
+        // Update local user state
         const updatedUser = { ...user, namespace };
         setUser(updatedUser);
         localStorage.setItem('copus_user', JSON.stringify(updatedUser));
 
         return true;
       } else {
-        console.error('❌ namespace更新失败');
+        console.error('❌ Namespace update failed');
         return false;
       }
     } catch (error) {
-      console.error('❌ 更新namespace时发生错误:', error);
+      console.error('❌ Error occurred while updating namespace:', error);
       return false;
     }
   };
 
-  // Token自动刷新功能
+  // Token auto-refresh functionality
   const tryRefreshToken = async (): Promise<boolean> => {
     try {
-      // 这里可以调用刷新token的API
+      // Can call token refresh API here
       // const refreshResponse = await AuthService.refreshToken();
-      // 暂时返回false，表示需要重新登录
+      // Return false for now, indicating need to re-login
       return false;
     } catch (error) {
-      console.error('刷新token失败:', error);
+      console.error('Token refresh failed:', error);
       return false;
     }
   };
 
-  // 获取用户详细信息
-  const fetchUserInfo = async (authToken?: string, retryOnFailure: boolean = true) => {
+  // Get user detailed information
+  const fetchUserInfo = useCallback(async (authToken?: string, retryOnFailure: boolean = true) => {
     try {
-      // 如果传入了token，优先使用；否则从localStorage获取
+      // If token is provided, use it; otherwise get from localStorage
       const tokenToUse = authToken || localStorage.getItem('copus_token');
 
       const userInfo = await AuthService.getUserInfo(tokenToUse || undefined);
@@ -170,24 +184,24 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(userInfo);
       localStorage.setItem('copus_user', JSON.stringify(userInfo));
     } catch (error) {
-      console.error('获取用户信息失败:', error);
+      console.error('Failed to get user info:', error);
 
-      // 如果允许重试且是认证错误，尝试刷新token
-      if (retryOnFailure && error instanceof Error && error.message.includes('认证')) {
+      // If retry allowed and authentication error, try to refresh token
+      if (retryOnFailure && error instanceof Error && error.message.includes('authentication')) {
         const refreshSuccess = await tryRefreshToken();
         if (refreshSuccess) {
-          // 刷新成功，重新获取用户信息（不再重试）
+          // Refresh successful, re-fetch user info (no retry)
           return fetchUserInfo(authToken, false);
         }
       }
 
-      // 如果获取用户信息失败，可能token已过期，执行登出
+      // If getting user info failed, token may have expired, logout
       logout();
     }
-  };
+  }, [logout]); // Depends on logout
 
-  // 社交链接管理函数
-  const fetchSocialLinks = async (): Promise<void> => {
+  // Social links management functions
+  const fetchSocialLinks = useCallback(async (): Promise<void> => {
     if (!user) {
       return;
     }
@@ -196,7 +210,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setSocialLinksLoading(true);
       const response = await AuthService.getUserSocialLinks();
 
-      // 处理API响应数据
+      // Handle API response data
       let linksArray: SocialLink[] = [];
       if (Array.isArray(response)) {
         linksArray = response;
@@ -207,12 +221,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setSocialLinks(linksArray);
 
     } catch (error) {
-      console.error('❌ 获取社交链接失败:', error);
+      console.error('❌ Failed to get social links:', error);
       setSocialLinks([]);
     } finally {
       setSocialLinksLoading(false);
     }
-  };
+  }, [user]); // Depends on user
 
   const addSocialLink = async (linkData: Omit<SocialLink, 'id' | 'userId'>): Promise<boolean> => {
     if (!user) return false;
@@ -225,7 +239,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const response = await AuthService.editSocialLink(requestData);
 
-      // 优化：直接使用响应数据更新本地状态
+      // Optimization: directly use response data to update local state
       if (response && response.linkUrl && response.title) {
         const newLink: SocialLink = {
           id: response.id || Date.now(),
@@ -239,12 +253,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSocialLinks(prev => [...prev, newLink]);
         return true;
       } else {
-        // 如果响应数据不完整，重新获取
+        // If response data is incomplete, re-fetch
         await fetchSocialLinks();
         return true;
       }
     } catch (error) {
-      console.error('❌ 添加社交链接失败:', error);
+      console.error('❌ Failed to add social link:', error);
       return false;
     }
   };
@@ -254,10 +268,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
 
-      // 找到要更新的链接
+      // Find the link to update
       const existingLink = socialLinks.find(link => link.id === id);
       if (!existingLink) {
-        console.error('❌ 未找到要更新的社交链接');
+        console.error('❌ Social link to update not found');
         return false;
       }
 
@@ -268,7 +282,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const response = await AuthService.editSocialLink(requestData);
 
-      // 更新本地状态
+      // Update local state
       setSocialLinks(prev =>
         prev.map(link =>
           link.id === id ? { ...link, ...linkData } : link
@@ -277,7 +291,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       return true;
     } catch (error) {
-      console.error('❌ 更新社交链接失败:', error);
+      console.error('❌ Failed to update social link:', error);
       return false;
     }
   };
@@ -289,24 +303,24 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       await AuthService.deleteSocialLink(id);
 
-      // 更新本地状态
+      // Update local state
       setSocialLinks(prev => prev.filter(link => link.id !== id));
 
       return true;
     } catch (error) {
-      console.error('❌ 删除社交链接失败:', error);
+      console.error('❌ Failed to delete social link:', error);
       return false;
     }
   };
 
-  // 当用户登录时自动获取社交链接
+  // Automatically fetch social links when user logs in
   useEffect(() => {
     if (user) {
       fetchSocialLinks();
     } else {
       setSocialLinks([]);
     }
-  }, [user]);
+  }, [user, fetchSocialLinks]);
 
   return (
     <UserContext.Provider
@@ -314,6 +328,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         user,
         token,
         isLoggedIn: !!user,
+        loading,
         login,
         logout,
         updateUser,
@@ -321,7 +336,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getAuthHeaders,
         fetchUserInfo,
 
-        // 社交链接管理
+        // Social links management
         socialLinks,
         socialLinksLoading,
         fetchSocialLinks,
@@ -329,7 +344,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateSocialLink,
         deleteSocialLink,
 
-        // 文章状态管理
+        // Article state management
         articleLikeStates,
         updateArticleLikeState,
         getArticleLikeState,

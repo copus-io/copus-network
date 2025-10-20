@@ -1,21 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarImage } from "../../ui/avatar";
 import { Button } from "../../ui/button";
 import { Separator } from "../../ui/separator";
 import { useUser } from "../../../contexts/UserContext";
 import { useNotification } from "../../../contexts/NotificationContext";
+import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
+import { MobileMenu } from "../MobileMenu";
+import { Menu } from "lucide-react";
 
 interface HeaderSectionProps {
   isLoggedIn?: boolean;
   hideCreateButton?: boolean;
+  showDiscoverNow?: boolean;
+  hideLoginButton?: boolean;
 }
 
-export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: HeaderSectionProps): JSX.Element => {
+export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, showDiscoverNow = false, hideLoginButton = false }: HeaderSectionProps): JSX.Element => {
   const { user, logout } = useUser();
   const { unreadCount } = useNotification();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
@@ -29,7 +36,7 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: H
   };
 
 
-  // 点击外部关闭菜单
+  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -45,32 +52,51 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: H
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showUserMenu]);
+
   return (
-    <header className="flex items-center justify-between p-[30px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
-      <div className="flex items-center gap-[15px]">
-        <Link to="/" className="flex w-[45px] h-[45px] items-center justify-center rounded-full bg-red">
-          <img
-            className="w-7 h-7"
-            alt="Ic fractopus open"
-            src="https://c.animaapp.com/mft9nppdGctUh1/img/ic-fractopus-open.svg"
+    <>
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        isLoggedIn={isLoggedIn}
+        activeMenuItem={location.pathname === '/create' ? 'curate' : location.pathname.substring(1)}
+      />
+
+      <header className="flex items-center justify-between px-2.5 py-[5px] lg:p-[30px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
+        <div className="flex items-center gap-2.5 lg:gap-[15px]">
+          <Link to="/" className="flex w-[30px] h-[30px] lg:w-[45px] lg:h-[45px] items-center justify-center rounded-full bg-red">
+            <img
+              className="w-[18px] h-[18px] lg:w-7 lg:h-7"
+              alt="Ic fractopus open"
+              src="https://c.animaapp.com/mft9nppdGctUh1/img/ic-fractopus-open.svg"
+            />
+          </Link>
+
+          <Link to="/" className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-lg tracking-[0.90px] leading-[27px] whitespace-nowrap">
+            Copus
+          </Link>
+
+          <Separator
+            orientation="vertical"
+            className="h-6 bg-[#a8a8a8] mx-2.5 lg:mx-[15px]"
           />
-        </Link>
 
-        <Link to="/" className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-lg tracking-[0.90px] leading-[27px] whitespace-nowrap">
-          Copus
-        </Link>
-
-        <Separator
-          orientation="vertical"
-          className="h-6 bg-[#a8a8a8] mx-[15px]"
-        />
-
-        <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-lg leading-[27px] whitespace-nowrap">
-          Human Internet
+          <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-lg leading-[27px] whitespace-nowrap">
+            Human Internet
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center gap-5">
+        {/* Mobile: Hamburger Menu */}
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="lg:hidden flex items-center justify-center h-[43px] cursor-pointer"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6 text-dark-grey" />
+        </button>
+
+        {/* Desktop: Full Navigation */}
+        <div className="hidden lg:flex items-center gap-5">
         {isLoggedIn ? (
           <>
         {!hideCreateButton && (
@@ -86,7 +112,7 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: H
                 src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
               />
               <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red">
-                Create
+                Curate
               </span>
             </Link>
           </Button>
@@ -110,14 +136,14 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: H
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 onDoubleClick={handleAvatarDoubleClick}
                 className="focus:outline-none"
-                title="单击显示菜单，双击前往设置页面"
+                title="Click to show menu, double-click to go to settings"
               >
                 <Avatar className="w-[47px] h-[47px] hover:ring-2 hover:ring-red hover:scale-110 transition-all duration-200 cursor-pointer">
                   <AvatarImage
                     src={
                       user?.faceUrl ||
                       user?.avatar ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
+                      profileDefaultAvatar
                     }
                     alt="Avatar"
                   />
@@ -137,35 +163,47 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false }: H
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setShowUserMenu(false)}
                   >
-                    我的珍藏
+                    My Treasury
                   </Link>
                   <Link
                     to="/setting"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setShowUserMenu(false)}
                   >
-                    设置
+                    Settings
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                   >
-                    退出登录
+                    Logout
                   </button>
                 </div>
               )}
             </div>
           </>
         ) : (
-          <Button
-            variant="outline"
-            className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
-            asChild
-          >
-            <Link to="/login">Log in / Sign up</Link>
-          </Button>
+          <div className="flex items-center gap-[15px]">
+            {showDiscoverNow && (
+              <Link to="/copus" className="inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]">
+                <div className="relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
+                  Discover now
+                </div>
+              </Link>
+            )}
+            {!hideLoginButton && (
+              <Button
+                variant="outline"
+                className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
+                asChild
+              >
+                <Link to="/login">Log in / Sign up</Link>
+              </Button>
+            )}
+          </div>
         )}
       </div>
-    </header>
+      </header>
+    </>
   );
 };

@@ -6,6 +6,7 @@ import { useUser } from "../../../../contexts/UserContext";
 import { useToast } from "../../../../components/ui/toast";
 import { formatDate } from "../../../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
+import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
 // Demo数据，用于token无效时的展示
 const getDemoTreasuryData = () => ({
@@ -23,7 +24,7 @@ const getDemoTreasuryData = () => ({
       coverImage: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=240&fit=crop",
       category: "Technology",
       userName: "TechExplorer",
-      userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=TechExplorer&backgroundColor=b6e3f4",
+      userAvatar: profileDefaultAvatar,
       date: "2024-12-15",
       treasureCount: 89,
       visitCount: "1.2k Visits",
@@ -39,7 +40,7 @@ const getDemoTreasuryData = () => ({
       coverImage: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=240&fit=crop",
       category: "Design",
       userName: "DesignGuru",
-      userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=DesignGuru&backgroundColor=f4b6e3",
+      userAvatar: profileDefaultAvatar,
       date: "2024-12-14",
       treasureCount: 67,
       visitCount: "890 Visits",
@@ -55,7 +56,7 @@ const getDemoTreasuryData = () => ({
       coverImage: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=240&fit=crop",
       category: "Environment",
       userName: "EcoInnovator",
-      userAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=EcoInnovator&backgroundColor=b6f4e3",
+      userAvatar: profileDefaultAvatar,
       date: "2024-12-13",
       treasureCount: 124,
       visitCount: "2.1k Visits",
@@ -148,7 +149,16 @@ export const TreasuryContentSection = (): JSX.Element => {
         }
 
 
-        const articles = articlesArray.map((article: any, index: number): TreasuryArticle => {
+        const articles = articlesArray
+          .filter((article: any) => {
+            // Filter out user's own articles - users shouldn't see their own articles in collection
+            return article.authorInfo?.id !== user?.id;
+          })
+          .sort((a: any, b: any) => {
+            // Sort by creation time in descending order (newest first)
+            return (b.createAt || 0) - (a.createAt || 0);
+          })
+          .map((article: any, index: number): TreasuryArticle => {
 
           try {
             return {
@@ -161,7 +171,7 @@ export const TreasuryContentSection = (): JSX.Element => {
               categoryColor: article.categoryInfo?.color,
               userName: article.authorInfo?.username || 'Anonymous',
               userId: article.authorInfo?.id,
-              userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
+              userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
               date: new Date(article.createAt * 1000).toLocaleDateString(),
               treasureCount: article.likeCount || 0,
               visitCount: `${article.viewCount || 0} Visits`,
@@ -176,6 +186,9 @@ export const TreasuryContentSection = (): JSX.Element => {
         }).filter(Boolean) as TreasuryArticle[]; // 过滤掉转换失败的文章
 
         setLikedArticles(articles);
+
+        // Scroll to top when articles are loaded
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
       } catch (error) {
         console.error('❌ 获取收藏文章失败:', error);
@@ -205,12 +218,69 @@ export const TreasuryContentSection = (): JSX.Element => {
     fetchLikedArticles();
   }, [user]);
 
-  // 监听全局点赞状态变化，动态更新收藏列表
+  // Refresh collection when page becomes visible (user navigates back)
   useEffect(() => {
-    if (Object.keys(articleLikeStates).length > 0) {
-      // 这里可以添加逻辑来实时同步新点赞的文章
-    }
-  }, [articleLikeStates]);
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        // Re-fetch collection when page becomes visible
+        const fetchLikedArticles = async () => {
+          try {
+            const likedArticlesResponse = await AuthService.getUserLikedArticles(1, 20);
+            const articlesData = likedArticlesResponse.data || likedArticlesResponse;
+
+            let articlesArray = [];
+            if (articlesData && Array.isArray(articlesData.data)) {
+              articlesArray = articlesData.data;
+            } else if (Array.isArray(articlesData)) {
+              articlesArray = articlesData;
+            }
+
+            const articles = articlesArray
+              .filter((article: any) => {
+                // Filter out user's own articles
+                return article.authorInfo?.id !== user?.id;
+              })
+              .sort((a: any, b: any) => {
+                // Sort by creation time in descending order (newest first)
+                return (b.createAt || 0) - (a.createAt || 0);
+              })
+              .map((article: any): TreasuryArticle => {
+                return {
+                  id: article.uuid,
+                  uuid: article.uuid,
+                  title: article.title,
+                  description: article.content,
+                  coverImage: article.coverUrl,
+                  category: article.categoryInfo?.name || 'General',
+                  categoryColor: article.categoryInfo?.color,
+                  userName: article.authorInfo?.username || 'Anonymous',
+                  userId: article.authorInfo?.id,
+                  userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
+                  date: new Date(article.createAt * 1000).toLocaleDateString(),
+                  treasureCount: article.likeCount || 0,
+                  visitCount: `${article.viewCount || 0} Visits`,
+                  isLiked: article.isLiked || true,
+                  targetUrl: article.targetUrl,
+                  website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
+                };
+              });
+
+            setLikedArticles(articles);
+
+            // Scroll to top when collection is refreshed
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (error) {
+            console.error('Error refreshing collection:', error);
+          }
+        };
+
+        fetchLikedArticles();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
 
   // 处理点赞
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -237,12 +307,15 @@ export const TreasuryContentSection = (): JSX.Element => {
   };
 
   // 处理用户点击
-  const handleUserClick = (userId: number) => {
+  const handleUserClickInternal = (userId: number, userNamespace?: string) => {
     // 如果是当前用户自己的文章，跳转到我的宝藏页面
     if (user && user.id === userId) {
       navigate('/my-treasury');
+    } else if (userNamespace) {
+      // 如果有namespace，使用短链接格式
+      navigate(`/u/${userNamespace}`);
     } else {
-      // 如果是其他用户的文章，跳转到该用户的宝藏页面
+      // 如果没有namespace，使用userId作为降级方案
       navigate(`/user/${userId}/treasury`);
     }
   };
@@ -259,34 +332,41 @@ export const TreasuryContentSection = (): JSX.Element => {
       treasureCount: articleLikeState.likeCount
     };
 
+    // Check if this is the current user's own article
+    const isOwnArticle = user && user.id === article.userId;
+
+    // 创建包装函数来传递namespace信息
+    const handleUserClickForArticle = (userId: number) => {
+      handleUserClickInternal(userId, article.namespace || article.userNamespace);
+    };
+
     return (
-      <div key={article.id} className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
-        <ArticleCard
-          article={articleData}
-          layout="treasury"
-          actions={{
-            showTreasure: true,
-            showVisits: true,
-            showWebsite: true, // 显示网站信息
-            showBranchIt: true // 显示Branch It图标
-          }}
-          onLike={handleLike}
-          onUserClick={handleUserClick}
-        />
-      </div>
+      <ArticleCard
+        key={article.id}
+        article={articleData}
+        layout="treasury"
+        actions={{
+          showTreasure: true, // Show treasure button for all articles
+          showVisits: true,
+          showWebsite: true, // 显示网站信息
+          showBranchIt: true // 显示Branch It图标
+        }}
+        onLike={handleLike}
+        onUserClick={handleUserClickForArticle}
+      />
     );
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+      <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
         <header className="flex items-start justify-between w-full">
           <h1 className="font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
             我的宝藏
           </h1>
         </header>
         <div className="flex items-center justify-center w-full h-64">
-          <div className="text-gray-500">加载中...</div>
+          <div className="text-gray-500">Loading...</div>
         </div>
       </div>
     );
@@ -296,7 +376,7 @@ export const TreasuryContentSection = (): JSX.Element => {
     const isAuthError = error.includes('认证') || error.includes('登录');
 
     return (
-      <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+      <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
         <header className="flex items-start justify-between w-full">
           <h1 className="font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
             我的宝藏
@@ -329,7 +409,7 @@ export const TreasuryContentSection = (): JSX.Element => {
   }
 
   return (
-    <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+    <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
       <header className="flex items-start justify-between w-full">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
@@ -419,14 +499,14 @@ export const TreasuryContentSection = (): JSX.Element => {
           <h3 className="text-xl font-semibold text-gray-600 mb-2">宝藏空空如也</h3>
           <p className="text-gray-500 mb-4">点赞喜欢的文章，它们就会出现在这里</p>
           <Link
-            to="/discovery"
+            to="/copus"
             className="px-4 py-2 bg-yellow text-white rounded-lg hover:bg-yellow/90 transition-colors"
           >
             去发现好内容
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 w-full px-5">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8 px-0 lg:px-5">
           {likedArticles.map((article) => renderArticleCard(article))}
         </div>
       )}

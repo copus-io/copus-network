@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Share2, ExternalLink } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -13,21 +12,23 @@ import { useArticleDetail } from "../../hooks/queries";
 import { getCategoryStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { TreasureButton } from "../../components/ui/TreasureButton";
+import { ShareDropdown } from "../../components/ui/ShareDropdown";
+import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 
 
-// 图片URL验证和fallback函数
+// Image URL validation and fallback function
 const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
   if (!imageUrl || imageUrl.trim() === '') {
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
   }
 
-  // 检查是否是blob URL（来自文件上传）- 这些URL在新会话中不会工作
+  // Check if it's a blob URL (from file upload) - these URLs don't work in new sessions
   if (imageUrl.startsWith('blob:')) {
-    // 返回占位符，因为blob URL在刷新页面后无效
+    // Return placeholder as blob URLs are invalid after page refresh
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5VcGxvYWRlZCBJbWFnZTwvdGV4dD48L3N2Zz4=';
   }
 
-  // 检查是否是有效的HTTP/HTTPS URL
+  // Check if it's a valid HTTP/HTTPS URL
   try {
     const url = new URL(imageUrl);
     if (url.protocol === 'http:' || url.protocol === 'https:') {
@@ -48,10 +49,23 @@ export const Content = (): JSX.Element => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
-  // 使用新的文章详情API hook
+  // Use new article detail API hook
   const { article, loading, error } = useArticleDetail(id || '');
 
-  // 转换API数据为页面需要的格式
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Debug: Log article data to check arChainId
+  useEffect(() => {
+    if (article) {
+      console.log('📄 Article data:', article);
+      console.log('🔗 arChainId:', article.arChainId);
+    }
+  }, [article]);
+
+  // Convert API data to format needed by page
   const content = article ? {
     id: article.uuid,
     title: article.title,
@@ -63,7 +77,7 @@ export const Content = (): JSX.Element => {
     categoryTextColor: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).text,
     userName: article.authorInfo?.username || 'Anonymous',
     userId: article.authorInfo?.id,
-    userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`,
+    userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
     date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
     visitCount: `${article.viewCount || 0} Visits`,
@@ -72,11 +86,11 @@ export const Content = (): JSX.Element => {
     website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
   } : null;
 
-  // 当获取到文章数据时，设置点赞状态
+  // Set like state when article data is fetched
   useEffect(() => {
     if (content && article) {
 
-      // 获取全局状态或使用API数据
+      // Get global state or use API data
       const globalState = getArticleLikeState(article.uuid, content.isLiked, content.likes);
       setIsLiked(globalState.isLiked);
       setLikesCount(globalState.likeCount);
@@ -94,7 +108,7 @@ export const Content = (): JSX.Element => {
           <h1 className="text-2xl font-semibold text-gray-800 mb-4">
             {error || 'Content not found'}
           </h1>
-          <Link to="/discovery" className="text-blue hover:underline">
+          <Link to="/copus" className="text-blue hover:underline">
             Back to Discovery
           </Link>
         </div>
@@ -119,19 +133,19 @@ export const Content = (): JSX.Element => {
       const newIsLiked = !isLiked;
       const newLikesCount = newIsLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
 
-      // 立即更新本地状态
+      // Update local state immediately
       setIsLiked(newIsLiked);
       setLikesCount(newLikesCount);
 
-      // 同时更新全局状态
+      // Update global state simultaneously
       updateArticleLikeState(article.uuid, newIsLiked, newLikesCount);
 
-      // 调用API
+      // Call API
       await AuthService.likeArticle(article.uuid);
-      showToast(newIsLiked ? '已点赞 💖' : '已取消点赞', 'success');
+      showToast(newIsLiked ? 'Treasured 💖' : 'Untreasured', 'success');
 
     } catch (error) {
-      // API失败时回滚状态
+      // Rollback state on API failure
       const originalIsLiked = !isLiked;
       const originalLikesCount = originalIsLiked ? likesCount - 1 : likesCount + 1;
 
@@ -139,21 +153,11 @@ export const Content = (): JSX.Element => {
       setLikesCount(originalLikesCount);
       updateArticleLikeState(article.uuid, originalIsLiked, originalLikesCount);
 
-      console.error('点赞操作失败:', error);
-      showToast('操作失败，请重试', 'error');
+      console.error('Like operation failed:', error);
+      showToast('Operation failed, please try again', 'error');
     }
   };
 
-
-  const handleShare = () => {
-    navigator.share?.({
-      title: content.title,
-      text: content.description,
-      url: window.location.href,
-    }).catch(() => {
-      navigator.clipboard.writeText(window.location.href);
-    });
-  };
 
   const handleUserClick = () => {
     if (!content?.userId) return;
@@ -168,11 +172,11 @@ export const Content = (): JSX.Element => {
       return;
     }
 
-    // 如果是当前用户自己的文章，跳转到我的宝藏页面
+    // If it's the current user's own article, navigate to my treasury page
     if (user.id === content.userId) {
       navigate('/my-treasury');
     } else {
-      // 如果是其他用户的文章，暂时也跳转到我的宝藏页面
+      // If it's another user's article, also navigate to my treasury page for now
       navigate('/my-treasury');
     }
   };
@@ -185,18 +189,26 @@ export const Content = (): JSX.Element => {
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection isLoggedIn={!!user} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[120px] pb-[100px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
+        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[100px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
           <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
-                  <div className="inline-flex justify-center rounded-[50px] items-center relative flex-[0_0_auto] bg-yellow/10 px-4 py-2 border border-yellow/30">
-                    <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-medium text-yellow text-sm text-center tracking-[0.5px] leading-4 whitespace-nowrap uppercase">
-                      {content.category}
-                    </span>
-                  </div>
+                  <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-medium text-yellow text-sm text-center tracking-[0.5px] leading-4 whitespace-nowrap capitalize">
+                    {content.category}
+                  </span>
 
-                  <h1 className="relative self-stretch [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] mt-2">
+                  <h1
+                    className="relative self-stretch [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] mt-2 break-all overflow-hidden"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
                     {content.title}
                   </h1>
                 </div>
@@ -208,13 +220,23 @@ export const Content = (): JSX.Element => {
                 />
               </div>
 
-              <blockquote className="flex flex-col items-start gap-5 p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+              <blockquote className="flex flex-col items-start gap-5 p-5 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                 <div className="flex items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
                   <div className="w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
                     &quot;
                   </div>
 
-                  <p className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-xl tracking-[0] leading-[32.0px]">
+                  <p
+                    className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-xl tracking-[0] leading-[32.0px] break-all overflow-hidden"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 6,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
                     {content.description}
                   </p>
 
@@ -226,7 +248,7 @@ export const Content = (): JSX.Element => {
                 <cite
                   className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
                   onClick={handleUserClick}
-                  title={`查看 ${content.userName} 的个人主页`}
+                  title={`View ${content.userName}'s profile`}
                 >
                   <img
                     className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
@@ -234,7 +256,7 @@ export const Content = (): JSX.Element => {
                     src={
                       content.userAvatar ||
                       (user && user.id === content.userId ? user.faceUrl : null) ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${content.userName}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
+                      profileDefaultAvatar
                     }
                   />
 
@@ -263,18 +285,39 @@ export const Content = (): JSX.Element => {
                   </span>
                 </div>
 
-                <img
-                  className="relative w-6 h-6"
-                  alt="Arweave ar logo"
-                  src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
-                />
+                {/* Arweave onchain storage link - Always show as clickable */}
+                <div
+                  className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity"
+                  title={article?.arChainId ? "View on Arweave" : "Arweave storage not available"}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    console.log('🔍 Arweave icon clicked');
+                    console.log('📦 Article object:', article);
+                    console.log('🔗 arChainId value:', article?.arChainId);
+
+                    if (!article?.arChainId) {
+                      console.warn('⚠️ No arChainId available for this article - cannot redirect to Arweave');
+                      console.log('💡 Full article data:', JSON.stringify(article, null, 2));
+                    } else {
+                      const arweaveUrl = `https://arseed.web3infra.dev/${article.arChainId}`;
+                      console.log('✅ Opening Arweave URL in new tab:', arweaveUrl);
+                      window.open(arweaveUrl, '_blank', 'noopener,noreferrer');
+                    }
+                  }}
+                >
+                  <img
+                    className="w-full h-full"
+                    alt="Arweave ar logo"
+                    src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
+                  />
+                </div>
               </div>
             </div>
           </article>
 
           <div className="flex justify-between self-stretch w-full items-center relative flex-[0_0_auto]">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
-              {/* 使用统一的宝石按钮组件 - 大尺寸适合详情页 */}
+              {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
                 isLiked={isLiked}
                 likesCount={likesCount}
@@ -282,23 +325,18 @@ export const Content = (): JSX.Element => {
                 size="large"
               />
 
-              <button
-                onClick={handleShare}
-                className="all-[unset] box-border aspect-[1] relative self-stretch"
-              >
-                <img
-                  className="w-full h-full"
-                  alt="Share"
-                  src="https://c.animaapp.com/5EW1c9Rn/img/share.svg"
-                />
-              </button>
+              {/* Share dropdown menu */}
+              <ShareDropdown
+                title={content.title}
+                url={window.location.href}
+              />
             </div>
 
             <a
               href={content.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-[15px] px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red no-underline"
+              className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red no-underline"
             >
               <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                 Visit

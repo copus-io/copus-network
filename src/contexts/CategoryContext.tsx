@@ -4,18 +4,18 @@ import { ArticleCategoryItem, CategoryContextValue } from '../types/category';
 
 const CategoryContext = createContext<CategoryContextValue | undefined>(undefined);
 
-// 默认分类数据（作为备用） - 与服务器返回格式一致
+// Default category data (as fallback) - consistent with server response format
 const defaultCategories: ArticleCategoryItem[] = [
   {
     id: 1,
     name: "科技",
-    color: "red", // 使用颜色名称，与服务器返回格式一致
+    color: "red", // Use color names, consistent with server response format
     articleCount: 0,
   },
   {
     id: 2,
     name: "艺术",
-    color: "green", // 使用颜色名称，与服务器返回格式一致
+    color: "green", // Use color names, consistent with server response format
     articleCount: 0,
   },
 ];
@@ -24,22 +24,22 @@ export const CategoryProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [categories, setCategories] = useState<ArticleCategoryItem[]>(defaultCategories);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
 
-  // 获取分类列表
+  // Fetch category list
   const fetchCategories = async (): Promise<void> => {
     setCategoriesLoading(true);
     try {
       const response = await AuthService.getCategoryList();
 
-      // 处理双重嵌套的数据结构
+      // Handle double-nested data structure
       let categoryList: ArticleCategoryItem[] = [];
       if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        // 双重嵌套：{data: {data: [...]}}
+        // Double nested: {data: {data: [...]}}
         categoryList = response.data.data;
       } else if (response.data && Array.isArray(response.data)) {
-        // 单层嵌套：{data: [...]}
+        // Single layer nested: {data: [...]}
         categoryList = response.data;
       } else if (Array.isArray(response)) {
-        // 直接数组：[...]
+        // Direct array: [...]
         categoryList = response;
       }
 
@@ -52,24 +52,24 @@ export const CategoryProvider: React.FC<{ children: ReactNode }> = ({ children }
         setCategories(defaultCategories);
       }
     } catch (error) {
-      console.error('❌ 获取分类列表失败:', error);
+      console.error('Failed to fetch category list:', error);
       setCategories(defaultCategories);
     } finally {
       setCategoriesLoading(false);
     }
   };
 
-  // 根据ID查找分类
+  // Find category by ID
   const getCategoryById = (id: number): ArticleCategoryItem | undefined => {
     return categories.find(category => category.id === id);
   };
 
-  // 根据名称查找分类
+  // Find category by name
   const getCategoryByName = (name: string): ArticleCategoryItem | undefined => {
     return categories.find(category => category.name === name);
   };
 
-  // 初始化时加载分类
+  // Load categories on initialization
   useEffect(() => {
     fetchCategories();
   }, []);

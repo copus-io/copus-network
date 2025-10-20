@@ -12,7 +12,7 @@ export const UnauthorizedPage: React.FC = () => {
 
       <div className="flex items-center justify-center min-h-screen pt-[120px]">
         <div className="max-w-md mx-auto text-center p-8 bg-white rounded-2xl shadow-lg">
-          {/* 图标 */}
+          {/* Icon */}
           <div className="w-20 h-20 mx-auto mb-6 bg-red/10 rounded-full flex items-center justify-center">
             <svg
               className="w-10 h-10 text-red"
@@ -29,23 +29,23 @@ export const UnauthorizedPage: React.FC = () => {
             </svg>
           </div>
 
-          {/* 标题 */}
+          {/* Title */}
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            需要登录才能访问
+            Login Required
           </h1>
 
-          {/* 描述 */}
+          {/* Description */}
           <p className="text-gray-600 mb-6">
-            这个页面需要登录后才能查看。请先登录您的账户，开启您的 Copus 探索之旅。
+            This page requires you to be logged in to access. Please sign in to your account to begin your Copus discovery journey.
           </p>
 
-          {/* 操作按钮 */}
+          {/* Action buttons */}
           <div className="space-y-3">
             <Button
               onClick={() => navigate('/login')}
               className="w-full bg-red hover:bg-red/90 text-white py-3 rounded-lg transition-colors"
             >
-              立即登录
+              Sign In Now
             </Button>
 
             <Button
@@ -53,14 +53,14 @@ export const UnauthorizedPage: React.FC = () => {
               onClick={() => navigate('/signup')}
               className="w-full border-red text-red hover:bg-red/5 py-3 rounded-lg transition-colors"
             >
-              注册新账户
+              Create New Account
             </Button>
 
             <Link
-              to="/discovery"
+              to="/copus"
               className="block w-full text-gray-500 hover:text-gray-700 py-2 transition-colors"
             >
-              返回首页
+              Back to Home
             </Link>
           </div>
         </div>

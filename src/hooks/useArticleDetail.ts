@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getArticleDetail } from '../services/articleService';
+import { getArticleDetail, trackArticleVisit } from '../services/articleService';
 import { ArticleDetailResponse } from '../types/article';
 
 interface UseArticleDetailState {
@@ -31,6 +31,11 @@ export const useArticleDetail = (uuid: string) => {
       try {
         const article = await getArticleDetail(uuid);
 
+        // Track visit after successfully fetching article details
+        // This ensures authors' own visits are also counted
+        trackArticleVisit(uuid).catch(error => {
+          console.warn('⚠️ Visit tracking failed (non-critical):', error);
+        });
 
         setState({
           article,

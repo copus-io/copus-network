@@ -158,11 +158,11 @@ export const useAuthForm = () => {
   // 注册
   const register = useCallback(async () => {
     if (!validateForm('register')) {
-      return { success: false, message: '请检查表单信息' };
+      return { success: false, message: 'Please check form information' };
     }
 
     if (!state.agreeToTerms) {
-      return { success: false, message: '请同意服务条款' };
+      return { success: false, message: 'Please agree to the terms of service' };
     }
 
     try {
@@ -175,14 +175,14 @@ export const useAuthForm = () => {
 
       return { success: true, data: result };
     } catch (error) {
-      return { success: false, message: '注册失败，请重试' };
+      return { success: false, message: 'Registration failed, please try again' };
     }
   }, [state, validateForm]);
 
   // 登录
   const login = useCallback(async () => {
     if (!validateForm('login')) {
-      return { success: false, message: '请检查表单信息' };
+      return { success: false, message: 'Please check form information' };
     }
 
     try {
@@ -194,7 +194,7 @@ export const useAuthForm = () => {
 
       return { success: true, data: result };
     } catch (error) {
-      return { success: false, message: '登录失败，请检查账号密码' };
+      return { success: false, message: 'Login failed, please check email and password' };
     }
   }, [state, validateForm]);
 

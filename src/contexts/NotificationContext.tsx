@@ -110,40 +110,92 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const fetchNotifications = async (
     page: number = 1,
     pageSize: number = 20,
-    msgType: number = 0 // 默认获取所有类型的消息
+    msgType: number = 0 // Default to fetch all types of messages
   ): Promise<void> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       const notifications = await notificationService.getNotifications(page, pageSize, msgType);
       dispatch({ type: 'SET_NOTIFICATIONS', payload: notifications });
     } catch (error) {
-      console.error('❌ 小薇获取通知失败:', error);
+      console.error('❌ Failed to fetch notifications:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  const fetchUnreadCount = async (): Promise<void> => {
+  const fetchUnreadCount = async (skipRecentActionCheck: boolean = false): Promise<void> => {
     try {
+      // Skip polling if a recent action occurred (within last 15 seconds to allow server cache to update)
+      if (!skipRecentActionCheck) {
+        const lastActionTime = localStorage.getItem('lastNotificationAction');
+        if (lastActionTime) {
+          const timeSinceAction = Date.now() - parseInt(lastActionTime);
+          if (timeSinceAction < 15000) {
+            // Skip this poll since user just performed an action
+            return;
+          }
+        }
+      }
+
+      // Check if there is a valid authentication token
+      const token = localStorage.getItem('copus_token');
+      if (!token || token.trim() === '') {
+        // When no token exists, set unread count to 0 without error
+        dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
+        return;
+      }
+
       const unreadCount = await AuthService.getUnreadMessageCount();
+
+      // Check if we recently marked all as read
+      const markedAllReadTime = localStorage.getItem('lastMarkedAllReadTime');
+      const lastKnownCount = localStorage.getItem('lastUnreadCount');
+
+      if (markedAllReadTime) {
+        const timeSinceMarkAllRead = Date.now() - parseInt(markedAllReadTime);
+
+        // Within 2 minutes of marking all as read
+        if (timeSinceMarkAllRead < 120000) {
+          // If server returns the same stale count we had before marking as read, ignore it
+          if (lastKnownCount && unreadCount === parseInt(lastKnownCount) && unreadCount > 0) {
+            console.log('⏭️ Ignoring stale server count after mark all as read:', unreadCount);
+            return; // Keep local count at 0
+          }
+
+          // If server returns 0, great! Clear the marker
+          if (unreadCount === 0) {
+            localStorage.removeItem('lastMarkedAllReadTime');
+            localStorage.removeItem('lastUnreadCount');
+          }
+        } else {
+          // More than 2 minutes passed, clear the marker
+          localStorage.removeItem('lastMarkedAllReadTime');
+          localStorage.removeItem('lastUnreadCount');
+        }
+      }
+
       dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount });
     } catch (error) {
-      console.error('❌ 小薇获取未读消息数量失败:', error);
+      // If authentication error, handle silently and set unread count to 0
+      if (error instanceof Error && error.message.includes('Valid authentication token not found')) {
+        dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
+      } else {
+        console.error('❌ Failed to fetch unread message count:', error);
+      }
     }
   };
 
   const markAsRead = async (notificationId: string): Promise<void> => {
     try {
-      // 记录用户操作时间，避免轮询冲突
+      // Record user action time to avoid polling conflicts
       localStorage.setItem('lastNotificationAction', Date.now().toString());
 
       const success = await notificationService.markAsRead(notificationId);
 
       if (success) {
         dispatch({ type: 'MARK_AS_READ', payload: notificationId });
-        // 重新获取未读数量
-        await fetchUnreadCount();
+        // Don't refetch immediately - trust local state and let polling update when server syncs
       } else {
-        console.error('❌ API标记失败');
+        console.error('API mark as read failed');
       }
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
@@ -152,25 +204,45 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const markAllAsRead = async (): Promise<void> => {
     try {
-      await notificationService.markAllAsRead();
-      dispatch({ type: 'MARK_ALL_AS_READ' });
-      // 重新获取未读数量
-      await fetchUnreadCount();
+      // Store current count before marking as read - used to detect stale server responses
+      localStorage.setItem('lastUnreadCount', state.unreadCount.toString());
+      localStorage.setItem('lastMarkedAllReadTime', Date.now().toString());
+      // Record user action time to avoid polling conflicts
+      localStorage.setItem('lastNotificationAction', Date.now().toString());
+
+      const success = await notificationService.markAllAsRead();
+
+      if (success) {
+        dispatch({ type: 'MARK_ALL_AS_READ' });
+        // Don't refetch immediately - the server's cache takes time to update
+        // The 30-second polling will pick up the correct count once server syncs
+        // This prevents the badge from reappearing with stale cached data
+      } else {
+        console.error('API mark all as read failed');
+        // Remove markers if API failed
+        localStorage.removeItem('lastMarkedAllReadTime');
+        localStorage.removeItem('lastUnreadCount');
+      }
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
+      // Remove markers if error occurred
+      localStorage.removeItem('lastMarkedAllReadTime');
+      localStorage.removeItem('lastUnreadCount');
     }
   };
 
   const deleteNotification = async (notificationId: string): Promise<void> => {
     try {
+      // Record user action time to avoid polling conflicts
+      localStorage.setItem('lastNotificationAction', Date.now().toString());
+
       const success = await notificationService.deleteNotification(notificationId);
 
       if (success) {
         dispatch({ type: 'DELETE_NOTIFICATION', payload: notificationId });
-        // 重新获取未读数量
-        await fetchUnreadCount();
+        // Don't refetch immediately - trust local state and let polling update when server syncs
       } else {
-        console.error('❌ 删除消息失败');
+        console.error('Failed to delete message');
       }
     } catch (error) {
       console.error('Failed to delete notification:', error);
@@ -179,27 +251,64 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const clearAllNotifications = async (): Promise<void> => {
     try {
-      await notificationService.clearAll();
-      dispatch({ type: 'CLEAR_ALL' });
+      const success = await notificationService.clearAll();
+
+      if (success) {
+        dispatch({ type: 'CLEAR_ALL' });
+      } else {
+        console.error('API clear all notifications failed');
+      }
     } catch (error) {
       console.error('Failed to clear all notifications:', error);
     }
   };
 
-  // 初始化时优先获取未读消息数量（更高效）
+  // Fetch unread message count on initialization (more efficient)
   useEffect(() => {
     fetchUnreadCount();
-    // 移除自动获取通知列表 - 改为用户点击时按需加载
+    // Removed automatic notification list fetching - changed to on-demand loading when user clicks
   }, []);
 
-  // 定期轮询未读消息数量（每30秒）- 只检查数量不获取列表
+  // Periodically poll unread message count (every 60 seconds) - only check count, don't fetch list
+  // Optimization: Pause polling when tab is not visible
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-      // 移除自动获取通知列表 - 改为用户点击时按需加载
-    }, 30000);
+    let interval: NodeJS.Timeout;
 
-    return () => clearInterval(interval);
+    const startPolling = () => {
+      interval = setInterval(() => {
+        // Only poll if document is visible
+        if (!document.hidden) {
+          fetchUnreadCount();
+        }
+      }, 60000); // Changed from 30 seconds to 60 seconds
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab hidden - clear interval to save resources
+        if (interval) {
+          clearInterval(interval);
+        }
+      } else {
+        // Tab visible - fetch immediately and restart polling
+        fetchUnreadCount();
+        if (interval) {
+          clearInterval(interval);
+        }
+        startPolling();
+      }
+    };
+
+    // Start initial polling
+    startPolling();
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const contextValue: NotificationContextType = {

@@ -11,7 +11,10 @@ interface UseArticlesState {
   total: number;
 }
 
-export const useArticles = (initialParams: PageArticleParams = {}) => {
+export const useArticles = (
+  initialParams: PageArticleParams = {},
+  options: { autoRefresh?: boolean } = { autoRefresh: true }
+) => {
   const [state, setState] = useState<UseArticlesState>({
     articles: [],
     loading: false,
@@ -25,39 +28,42 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const response = await getPageArticles({
-        page: 1,
-        pageSize: 20,
+      const finalParams = {
+        pageSize: 10, // Optimize loading performance for better UX
         ...initialParams,
         ...params,
-      });
+        page: append ? (params.page || 1) : 1, // Use provided page number in append mode, otherwise start from page 1
+      };
 
-      // 调试文章数据，特别是图片URL
-      response.articles.forEach((article, index) => {
-        console.log(`Article ${index}:`, {
-          id: article.id,
-          title: article.title,
-          userName: article.userName,
-          date: article.date,
-          coverImage: article.coverImage,
-          hasImage: !!article.coverImage && article.coverImage.trim() !== ''
-        });
-      });
+      const response = await getPageArticles(finalParams);
 
-      setState(prev => ({
-        ...prev,
-        articles: append ? [...prev.articles, ...response.articles] : response.articles,
-        loading: false,
-        hasMore: response.hasMore,
-        page: response.page,
-        total: response.total,
-      }));
+
+      setState(prev => {
+        let mergedArticles;
+        if (append) {
+          // Deduplicate when merging, based on article.id
+          const existingIds = new Set(prev.articles.map(article => article.id));
+          const newArticles = response.articles.filter(article => !existingIds.has(article.id));
+          mergedArticles = [...prev.articles, ...newArticles];
+        } else {
+          mergedArticles = response.articles;
+        }
+
+        return {
+          ...prev,
+          articles: mergedArticles,
+          loading: false,
+          hasMore: response.hasMore,
+          page: response.page,
+          total: response.total,
+        };
+      });
     } catch (error) {
       let errorMessage = 'Failed to fetch articles';
 
       if (error instanceof Error) {
-        if (error.message.includes('系统内部错误')) {
-          errorMessage = '后端服务暂时不可用，请联系技术团队检查服务状态';
+        if (error.message.includes('System internal error')) {
+          errorMessage = 'Backend service temporarily unavailable, please contact technical team to check service status';
         } else {
           errorMessage = error.message;
         }
@@ -69,7 +75,7 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
         error: errorMessage,
       }));
     }
-  }, []); // 移除对initialParams的依赖
+  }, [initialParams]); // Add initialParams dependency
 
   const loadMore = useCallback(() => {
     if (!state.loading && state.hasMore) {
@@ -82,8 +88,10 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
   }, [fetchArticles]);
 
   useEffect(() => {
-    fetchArticles();
-  }, []); // 只在组件首次渲染时执行
+    if (options.autoRefresh) {
+      fetchArticles();
+    }
+  }, []); // Only execute on component first render
 
   return {
     ...state,

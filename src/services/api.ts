@@ -1,7 +1,8 @@
-// API配置
-const API_BASE_URL = 'https://api-test.copus.network';
+// API Configuration - read from environment when available
+// Default to the test API for backwards compatibility
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network';
 
-// 通用的API请求函数
+// Generic API request function
 export const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit & { requiresAuth?: boolean } = {}
@@ -12,26 +13,26 @@ export const apiRequest = async <T>(
 
   const defaultHeaders: Record<string, string> = {};
 
-  // 只有不是FormData时才设置JSON Content-Type
+  // Set JSON Content-Type only when body is not FormData
   if (!(fetchOptions.body instanceof FormData)) {
     defaultHeaders['Content-Type'] = 'application/json';
   }
 
-  // 如果需要认证或者有token，添加到headers
+  // Add to headers if authentication is required or token exists
   const token = localStorage.getItem('copus_token');
 
   if (requiresAuth) {
     if (!token || token.trim() === '') {
-      throw new Error('未找到有效的认证令牌，请重新登录');
+      throw new Error('Valid authentication token not found, please log in again');
     }
 
-    // 检查token格式（JWT通常有3部分，用.分隔）
+    // Check token format (JWT typically has 3 parts separated by dots)
     const tokenParts = token.split('.');
     if (tokenParts.length !== 3) {
-      // 清除无效token
+      // Clear invalid token
       localStorage.removeItem('copus_token');
       localStorage.removeItem('copus_user');
-      throw new Error('认证令牌格式无效，请重新登录');
+      throw new Error('Invalid authentication token format, please log in again');
     }
 
     defaultHeaders.Authorization = `Bearer ${token}`;
@@ -51,21 +52,21 @@ export const apiRequest = async <T>(
     if (!response.ok) {
       const errorText = await response.text();
 
-      // 特殊处理认证相关错误
+      // Special handling for authentication-related errors
       if (response.status === 401 || response.status === 403) {
         localStorage.removeItem('copus_token');
         localStorage.removeItem('copus_user');
 
-        // 尝试解析错误信息
+        // Attempt to parse error information
         let errorMessage = 'Authentication failed';
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.msg || errorJson.message || errorMessage;
         } catch (e) {
-          // 忽略JSON解析错误
+          // Ignore JSON parsing errors
         }
 
-        throw new Error(`认证失败: ${errorMessage}，请重新登录`);
+        throw new Error(`Authentication failed: ${errorMessage}, please log in again`);
       }
 
       throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
@@ -78,7 +79,7 @@ export const apiRequest = async <T>(
   } catch (error) {
     console.error(`❌ API request failed for ${endpoint}:`, error);
 
-    // 检查是否是CORS错误
+    // Check if it's a CORS error
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error(`CORS or network error when accessing ${url}. Check if the API allows cross-origin requests.`);
     }

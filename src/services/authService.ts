@@ -3,7 +3,7 @@ import { ArticleCategoryListResponse } from '../types/category';
 
 export interface VerificationCodeParams {
   email: string;
-  codeType: number; // 1: 注册, 2: 登录, 3: 重置密码等
+  codeType: number; // 1: Register, 2: Login, 3: Reset password, etc.
 }
 
 export interface CheckEmailParams {
@@ -21,9 +21,39 @@ export interface DeleteAccountParams {
   reason: string;
 }
 
+export interface UserHomeRequest {
+  /**
+   * Homepage subspace name
+   */
+  namespace: string;
+  [property: string]: any;
+}
+
+export interface UserHomeResponse {
+  bio: string;
+  coverUrl: string;
+  email: string;
+  faceUrl: string;
+  id: number;
+  isOwner: boolean;
+  namespace: string;
+  socialLinks: Array<{
+    iconUrl: string;
+    linkUrl: string;
+    title: string;
+  }>;
+  statistics: {
+    articleCount: number;
+    likedArticleCount: number;
+    myArticleLikedCount: number;
+  };
+  username: string;
+  walletAddress: string;
+}
+
 export class AuthService {
   /**
-   * 发送验证码
+   * Send verification code
    */
   static async sendVerificationCode(params: VerificationCodeParams): Promise<any> {
     const { email, codeType } = params;
@@ -37,7 +67,7 @@ export class AuthService {
   }
 
   /**
-   * 检查邮箱是否已存在
+   * Check if email already exists
    */
   static async checkEmailExist(params: CheckEmailParams): Promise<{ exists: boolean }> {
     const { email } = params;
@@ -51,7 +81,7 @@ export class AuthService {
   }
 
   /**
-   * 用户注册
+   * User registration
    */
   static async register(params: {
     username: string;
@@ -66,7 +96,7 @@ export class AuthService {
   }
 
   /**
-   * 用户登录
+   * User login
    */
   static async login(params: {
     email: string;
@@ -80,11 +110,159 @@ export class AuthService {
   }
 
   /**
-   * 获取X OAuth授权URL（需要用户先登录）
+   * Get X OAuth authorization URL (supports both login and binding modes)
    */
   static async getXOAuthUrl(): Promise<string> {
 
     const endpoint = `/client/common/x/oauth`;
+
+    try {
+      // Check if user has token for account binding mode
+      const token = localStorage.getItem('copus_token');
+
+      if (token) {
+        // Try with authentication (for account binding)
+        const response = await apiRequest(endpoint, {
+          method: 'GET',
+          requiresAuth: true
+        });
+
+        console.log('🔍 X OAuth URL API response (with auth):', response);
+
+        if (typeof response === 'string') {
+          return response;
+        }
+        // Check if response has URL in various possible formats
+        if (response && typeof response === 'object') {
+          if ('url' in response && typeof response.url === 'string') {
+            return response.url;
+          }
+          if ('data' in response && typeof response.data === 'string') {
+            return response.data;
+          }
+        }
+      }
+
+      // Try request without token (for third-party login)
+      const response = await apiRequest(endpoint, {
+        method: 'GET',
+        requiresAuth: false
+      });
+
+      console.log('🔍 X OAuth URL API response (without auth):', response);
+
+      if (typeof response === 'string') {
+        return response;
+      }
+      // Check if response has URL in various possible formats
+      if (response && typeof response === 'object') {
+        if ('url' in response && typeof response.url === 'string') {
+          return response.url;
+        }
+        if ('data' in response && typeof response.data === 'string') {
+          return response.data;
+        }
+      }
+
+      console.error('❌ Unexpected API response format:', response);
+      throw new Error('Did not receive a valid X OAuth URL');
+    } catch (error) {
+      console.error('❌ Failed to get X OAuth URL:', error);
+      throw new Error(`Failed to get X OAuth URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * X (Twitter) login callback handler (supports both login and binding modes)
+   */
+  static async xLogin(code: string, state: string, hasToken: boolean = false): Promise<any> {
+
+    const endpoint = `/client/common/x/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+
+    try {
+      // Try request with token (for account binding)
+      if (hasToken) {
+        const response = await apiRequest(endpoint, {
+          method: 'GET',
+          requiresAuth: true
+        });
+
+        console.log('🔍 X login API response (binding mode):', response);
+        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
+
+        // Response format can be:
+        // 1. { "namespace": "string", "token": "string" }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "..." } }
+        const token = response.data?.token || response.token;
+        const namespace = response.data?.namespace || response.namespace;
+
+        if (token) {
+          localStorage.setItem('copus_token', token);
+          console.log('✅ Token saved to localStorage (binding)');
+        }
+
+        return {
+          token,
+          namespace,
+          isBinding: true
+        };
+      } else {
+        // Try request without token (for third-party login)
+        const response = await apiRequest(endpoint, {
+          method: 'GET',
+          requiresAuth: false
+        });
+
+        console.log('🔍 X login API response (login mode):', response);
+        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
+
+        // Response format can be:
+        // 1. { "namespace": "string", "token": "string", "username": "...", "faceUrl": "..." }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "...", "username": "...", "faceUrl": "..." } }
+        const token = response.data?.token || response.token;
+        const namespace = response.data?.namespace || response.namespace;
+
+        // Extract X profile data from login response
+        const xProfile = {
+          username: response.data?.username || response.username || response.data?.name || response.name,
+          faceUrl: response.data?.faceUrl || response.faceUrl || response.data?.avatar || response.avatar || response.data?.profile_image_url || response.profile_image_url,
+          bio: response.data?.bio || response.bio || response.data?.description || response.description
+        };
+
+        console.log('🔑 Extracted token:', token ? token.substring(0, 20) + '...' : 'NONE');
+        console.log('👤 Extracted namespace:', namespace);
+        console.log('📸 Extracted X profile:', xProfile);
+
+        if (token) {
+          localStorage.setItem('copus_token', token);
+          console.log('✅ Token saved to localStorage');
+        } else {
+          console.error('❌ No token found in response!', response);
+        }
+
+        return {
+          token,
+          namespace,
+          isBinding: false,
+          xProfile // Return X profile data
+        };
+      }
+    } catch (error) {
+      console.error('❌ X Login/Binding failed:', error);
+      throw new Error(`X ${hasToken ? 'account binding' : 'login'} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get X (Twitter) profile data for syncing
+   */
+  static async getXProfile(): Promise<{
+    username?: string;
+    avatar?: string;
+    name?: string;
+    bio?: string;
+  }> {
+    const endpoint = `/client/common/x/profile`;
 
     try {
       const response = await apiRequest(endpoint, {
@@ -92,47 +270,22 @@ export class AuthService {
         requiresAuth: true
       });
 
+      console.log('🔍 X profile API response:', response);
 
-      // 响应是字符串格式的授权URL
-      if (typeof response === 'string') {
-        return response;
-      }
-
-      throw new Error('未收到有效的OAuth URL');
-    } catch (error) {
-      console.error('❌ 获取X OAuth URL失败:', error);
-      throw new Error(`获取X OAuth URL失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * X (Twitter) 登录回调处理
-   */
-  static async xLogin(code: string, state: string): Promise<any> {
-
-    const endpoint = `/client/common/x/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
-
-    try {
-      const response = await apiRequest(endpoint, {
-        method: 'GET',
-        requiresAuth: false
-      });
-
-
-      // 保存token
-      if (response.data?.token) {
-        localStorage.setItem('copus_token', response.data.token);
+      // Handle different response formats
+      if (response.data) {
+        return response.data;
       }
 
       return response;
     } catch (error) {
-      console.error('❌ X Login failed:', error);
-      throw new Error(`X 登录失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Failed to get X profile:', error);
+      throw new Error(`Failed to get X profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * 获取Facebook OAuth授权URL（需要用户先登录）
+   * Get Facebook OAuth authorization URL (requires user login first)
    */
   static async getFacebookOAuthUrl(): Promise<string> {
 
@@ -145,27 +298,27 @@ export class AuthService {
       });
 
 
-      // 响应是字符串格式的授权URL
+      // Response is a string format authorization URL
       if (typeof response === 'string') {
         return response;
       }
 
-      throw new Error('未收到有效的Facebook OAuth URL');
+      throw new Error('Did not receive a valid Facebook OAuth URL');
     } catch (error) {
-      console.error('❌ 获取Facebook OAuth URL失败:', error);
-      throw new Error(`获取Facebook OAuth URL失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Failed to get Facebook OAuth URL:', error);
+      throw new Error(`Failed to get Facebook OAuth URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Facebook 登录回调处理（支持登录和绑定两种模式）
+   * Facebook login callback handler (supports both login and binding modes)
    */
   static async facebookLogin(code: string, state: string, hasToken: boolean = false): Promise<any> {
 
     const endpoint = `/client/common/facebook/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
 
     try {
-      // 尝试带token的请求（用于账号绑定）
+      // Try request with token (for account binding)
       if (hasToken) {
         const response = await apiRequest(endpoint, {
           method: 'GET',
@@ -173,21 +326,21 @@ export class AuthService {
         });
 
 
-        // 响应格式: { "namespace": "string", "token": "string" }
+        // Response format: { "namespace": "string", "token": "string" }
         if (response.token) {
           localStorage.setItem('copus_token', response.token);
         }
 
         return { ...response, isBinding: true };
       } else {
-        // 尝试不带token的请求（用于第三方登录）
+        // Try request without token (for third-party login)
         const response = await apiRequest(endpoint, {
           method: 'GET',
           requiresAuth: false
         });
 
 
-        // 响应格式: { "namespace": "string", "token": "string" }
+        // Response format: { "namespace": "string", "token": "string" }
         if (response.token) {
           localStorage.setItem('copus_token', response.token);
         }
@@ -196,16 +349,160 @@ export class AuthService {
       }
     } catch (error) {
       console.error('❌ Facebook Login/Binding failed:', error);
-      throw new Error(`Facebook ${hasToken ? '账号绑定' : '登录'}失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Facebook ${hasToken ? 'account binding' : 'login'}failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * 获取Google OAuth授权URL（需要用户先登录）
+   * Get Google OAuth authorization URL (supports both login and binding modes)
    */
   static async getGoogleOAuthUrl(): Promise<string> {
 
     const endpoint = `/client/common/google/oauth`;
+
+    try {
+      // Check if user has token for account binding mode
+      const token = localStorage.getItem('copus_token');
+
+      if (token) {
+        // Try with authentication (for account binding)
+        const response = await apiRequest(endpoint, {
+          method: 'GET',
+          requiresAuth: true
+        });
+
+
+        if (typeof response === 'string') {
+          return response;
+        }
+        // Check if response has URL in various possible formats
+        if (response && typeof response === 'object') {
+          if ('url' in response && typeof response.url === 'string') {
+            return response.url;
+          }
+          if ('data' in response && typeof response.data === 'string') {
+            return response.data;
+          }
+        }
+      }
+
+      // Try request without token (for third-party login)
+      const response = await apiRequest(endpoint, {
+        method: 'GET',
+        requiresAuth: false
+      });
+
+
+      if (typeof response === 'string') {
+        return response;
+      }
+      // Check if response has URL in various possible formats
+      if (response && typeof response === 'object') {
+        if ('url' in response && typeof response.url === 'string') {
+          return response.url;
+        }
+        if ('data' in response && typeof response.data === 'string') {
+          return response.data;
+        }
+      }
+
+      throw new Error('Did not receive a valid Google OAuth URL');
+    } catch (error) {
+      console.error('❌ Failed to get Google OAuth URL:', error);
+      throw new Error(`Failed to get Google OAuth URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Google login callback handler (supports both login and binding modes)
+   */
+  static async googleLogin(code: string, state: string, hasToken: boolean = false): Promise<any> {
+
+    const endpoint = `/client/common/google/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+
+    try {
+      // Try request with token (for account binding)
+      if (hasToken) {
+        const response = await apiRequest(endpoint, {
+          method: 'GET',
+          requiresAuth: true
+        });
+
+        console.log('🔍 Google login API response (binding mode):', response);
+
+        // Response format can be:
+        // 1. { "namespace": "string", "token": "string" }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "..." } }
+        const token = response.data?.token || response.token;
+        const namespace = response.data?.namespace || response.namespace;
+
+        if (token) {
+          localStorage.setItem('copus_token', token);
+          console.log('✅ Token saved to localStorage (binding)');
+        }
+
+        return {
+          token,
+          namespace,
+          isBinding: true
+        };
+      } else {
+        // Try request without token (for third-party login)
+        const response = await apiRequest(endpoint, {
+          method: 'GET',
+          requiresAuth: false
+        });
+
+        console.log('🔍 Google login API response (login mode):', response);
+        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
+
+        // Response format can be:
+        // 1. { "namespace": "string", "token": "string", "username": "...", "faceUrl": "..." }
+        // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "...", "username": "...", "faceUrl": "..." } }
+        const token = response.data?.token || response.token;
+        const namespace = response.data?.namespace || response.namespace;
+
+        // Extract Google profile data from login response
+        const googleProfile = {
+          username: response.data?.username || response.username || response.data?.name || response.name,
+          faceUrl: response.data?.faceUrl || response.faceUrl || response.data?.avatar || response.avatar || response.data?.picture || response.picture,
+          email: response.data?.email || response.email
+        };
+
+        console.log('🔑 Extracted token:', token ? token.substring(0, 20) + '...' : 'NONE');
+        console.log('👤 Extracted namespace:', namespace);
+        console.log('📸 Extracted Google profile:', googleProfile);
+
+        if (token) {
+          localStorage.setItem('copus_token', token);
+          console.log('✅ Token saved to localStorage');
+        } else {
+          console.error('❌ No token found in response!', response);
+        }
+
+        return {
+          token,
+          namespace,
+          isBinding: false,
+          googleProfile // Return Google profile data
+        };
+      }
+    } catch (error) {
+      console.error('❌ Google Login/Binding failed:', error);
+      throw new Error(`Google ${hasToken ? 'account binding' : 'login'}failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get Google profile data for syncing
+   */
+  static async getGoogleProfile(): Promise<{
+    username?: string;
+    avatar?: string;
+    name?: string;
+    email?: string;
+  }> {
+    const endpoint = `/client/common/google/profile`;
 
     try {
       const response = await apiRequest(endpoint, {
@@ -213,64 +510,22 @@ export class AuthService {
         requiresAuth: true
       });
 
+      console.log('🔍 Google profile API response:', response);
 
-      // 响应是字符串格式的授权URL
-      if (typeof response === 'string') {
-        return response;
+      // Handle different response formats
+      if (response.data) {
+        return response.data;
       }
 
-      throw new Error('未收到有效的Google OAuth URL');
+      return response;
     } catch (error) {
-      console.error('❌ 获取Google OAuth URL失败:', error);
-      throw new Error(`获取Google OAuth URL失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Failed to get Google profile:', error);
+      throw new Error(`Failed to get Google profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Google 登录回调处理（支持登录和绑定两种模式）
-   */
-  static async googleLogin(code: string, state: string, hasToken: boolean = false): Promise<any> {
-
-    const endpoint = `/client/common/google/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
-
-    try {
-      // 尝试带token的请求（用于账号绑定）
-      if (hasToken) {
-        const response = await apiRequest(endpoint, {
-          method: 'GET',
-          requiresAuth: true
-        });
-
-
-        // 响应格式: { "namespace": "string", "token": "string" }
-        if (response.token) {
-          localStorage.setItem('copus_token', response.token);
-        }
-
-        return { ...response, isBinding: true };
-      } else {
-        // 尝试不带token的请求（用于第三方登录）
-        const response = await apiRequest(endpoint, {
-          method: 'GET',
-          requiresAuth: false
-        });
-
-
-        // 响应格式: { "namespace": "string", "token": "string" }
-        if (response.token) {
-          localStorage.setItem('copus_token', response.token);
-        }
-
-        return { ...response, isBinding: false };
-      }
-    } catch (error) {
-      console.error('❌ Google Login/Binding failed:', error);
-      throw new Error(`Google ${hasToken ? '账号绑定' : '登录'}失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  /**
-   * 获取Metamask签名数据
+   * Get Metamask signature data
    */
   static async getMetamaskSignatureData(address: string): Promise<any> {
 
@@ -284,13 +539,13 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('❌ 获取Metamask签名数据失败:', error);
-      throw new Error(`获取签名数据失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('❌ Get Metamask signature data failed:', error);
+      throw new Error(`Failed to get signature data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Metamask 登录（支持登录和绑定两种模式）
+   * Metamask login (supports both login and binding modes)
    */
   static async metamaskLogin(address: string, signature: string, hasToken: boolean = false): Promise<any> {
 
@@ -307,7 +562,7 @@ export class AuthService {
       });
 
 
-      // 响应格式: { "namespace": "string", "token": "string" }
+      // Response format: { "namespace": "string", "token": "string" }
       if (response.token) {
         localStorage.setItem('copus_token', response.token);
       }
@@ -315,12 +570,12 @@ export class AuthService {
       return { ...response, isBinding: hasToken };
     } catch (error) {
       console.error('❌ Metamask Login/Binding failed:', error);
-      throw new Error(`Metamask ${hasToken ? '账号绑定' : '登录'}失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Metamask ${hasToken ? 'account binding' : 'login'}failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * 获取用户信息
+   * Get user information
    */
   static async getUserInfo(token?: string): Promise<{
     bio: string;
@@ -337,7 +592,7 @@ export class AuthService {
       requiresAuth: true,
     };
 
-    // 如果传入了token，添加到headers中
+    // If token is provided, add it to headers
     if (token) {
       options.headers = {
         'Authorization': `Bearer ${token}`
@@ -345,47 +600,79 @@ export class AuthService {
     }
 
     const response = await apiRequest('/client/user/userInfo', options);
-    // 用户信息在 response.data 中
+    // User information is in response.data
     return response.data;
   }
 
   /**
-   * 上传图片到S3
+   * Upload image to S3
    */
   static async uploadImage(file: File): Promise<{ url: string }> {
+    console.log('🔥 AuthService.uploadImage starting upload:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      lastModified: file.lastModified
+    });
+
     const formData = new FormData();
     formData.append('file', file);
 
+    console.log('🔥 FormData created, calling API...');
 
-    const response = await apiRequest('/client/common/uploadImage2S3', {
-      method: 'POST',
-      requiresAuth: true,
-      body: formData,
-    });
+    try {
+      const response = await apiRequest('/client/common/uploadImage2S3', {
+        method: 'POST',
+        requiresAuth: true,
+        body: formData,
+      });
 
+      console.log('🔥 API response raw data:', {
+        response,
+        responseType: typeof response,
+        responseKeys: Object.keys(response || {}),
+        status: response?.status,
+        data: response?.data,
+        url: response?.url,
+        msg: response?.msg,
+        message: response?.message
+      });
 
-    // 检查不同可能的响应格式
-    if (response.status === 1 && response.data) {
-      // 可能的响应格式：{ status: 1, data: { url: "..." } }
-      if (response.data.url) {
-        return { url: response.data.url };
+      // Check different possible response formats
+      if (response.status === 1 && response.data) {
+        // Possible response format: { status: 1, data: { url: "..." } }
+        if (response.data.url) {
+          console.log('🔥 Found URL in response.data.url:', response.data.url);
+          return { url: response.data.url };
+        }
+        // Possible response format: { status: 1, data: "url" }
+        if (typeof response.data === 'string' && (response.data.startsWith('http') || response.data.startsWith('https'))) {
+          console.log('🔥 Found URL in response.data (string):', response.data);
+          return { url: response.data };
+        }
       }
-      // 可能的响应格式：{ status: 1, data: "url" }
-      if (typeof response.data === 'string' && (response.data.startsWith('http') || response.data.startsWith('https'))) {
-        return { url: response.data };
+
+      // Check if URL is returned directly
+      if (response.url) {
+        console.log('🔥 Found URL in response.url:', response.url);
+        return { url: response.url };
       }
-    }
 
-    // 检查是否直接返回URL
-    if (response.url) {
-      return { url: response.url };
+      console.error('🔥 No valid URL found, throwing error');
+      throw new Error(response.msg || response.message || 'Image upload failed');
+    } catch (error) {
+      console.error('🔥 API request failed:', {
+        error,
+        errorMessage: error.message,
+        errorResponse: error.response,
+        errorStatus: error.status
+      });
+      throw error;
     }
-
-    throw new Error(response.msg || response.message || 'Image upload failed');
   }
 
   /**
-   * 创建文章
+   * Create article
    */
   static async createArticle(params: {
     categoryId: number;
@@ -403,7 +690,7 @@ export class AuthService {
   }
 
   /**
-   * 删除文章
+   * Delete article
    */
   static async deleteArticle(uuid: string): Promise<any> {
     return apiRequest(`/client/author/article/delete`, {
@@ -414,7 +701,7 @@ export class AuthService {
   }
 
   /**
-   * 获取作品分类列表
+   * Get article category list
    */
   static async getCategoryList(): Promise<ArticleCategoryListResponse> {
     return apiRequest('/client/author/article/categoryList', {
@@ -424,7 +711,7 @@ export class AuthService {
   }
 
   /**
-   * 获取文章详情
+   * Get article details
    */
   static async getArticleInfo(uuid: string): Promise<any> {
     const response = await apiRequest(`/client/reader/article/info?uuid=${uuid}`, {
@@ -432,11 +719,11 @@ export class AuthService {
       requiresAuth: true,
     });
 
-    // 添加文章接口的详细调试日志
-    console.log('文章数据详细信息:', {
-      原始数据: response,
-      文章数据: response.data || response,
-      作者字段: {
+    // Add detailed debug logs for article API
+    console.log('Article data details:', {
+      rawData: response,
+      articleData: response.data || response,
+      authorFields: {
         'response.author': response.author,
         'response.data.author': response.data?.author,
         'response.user': response.user,
@@ -450,7 +737,7 @@ export class AuthService {
   }
 
   /**
-   * 点赞/取消点赞文章
+   * Like/Unlike article
    */
   static async likeArticle(uuid: string): Promise<any> {
     return apiRequest('/client/reader/article/like', {
@@ -461,7 +748,7 @@ export class AuthService {
   }
 
   /**
-   * 更新单个社交媒体链接
+   * Update single social media link
    */
   static async updateSocialLink(platform: string, url: string): Promise<any> {
 
@@ -477,7 +764,7 @@ export class AuthService {
   }
 
   /**
-   * 批量更新社交媒体链接
+   * Batch update social media links
    */
   static async updateAllSocialLinks(socialLinks: Record<string, string>): Promise<any> {
 
@@ -489,7 +776,7 @@ export class AuthService {
   }
 
   /**
-   * 获取用户宝藏信息（包含收藏统计）
+   * Get user treasury information (including favorites statistics)
    */
   static async getUserTreasuryInfo(): Promise<{
     bio: string;
@@ -519,7 +806,7 @@ export class AuthService {
   }
 
   /**
-   * 获取用户收藏的文章列表（分页）
+   * Get user's liked articles list (paginated)
    */
   static async getUserLikedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<{
     data: Array<{
@@ -559,7 +846,7 @@ export class AuthService {
   }
 
   /**
-   * 获取用户社交链接列表
+   * Get user social links list
    */
   static async getUserSocialLinks(): Promise<Array<{
     iconUrl: string;
@@ -576,26 +863,38 @@ export class AuthService {
     });
 
 
-    // 处理不同的API响应格式
+    // Handle different API response formats
     if (Array.isArray(response)) {
-      // 直接返回数组
+      // Return array directly
       return response;
     } else if (response.data && Array.isArray(response.data)) {
-      // 数据包装在data字段中
+      // Data wrapped in data field
       return response.data;
     } else if (response.status === 1 && response.data) {
-      // 标准响应格式：{status: 1, data: [...], msg: "..."}
+      // Standard response format: {status: 1, data: [...], msg: "..."}
       if (Array.isArray(response.data)) {
         return response.data;
       }
     }
 
-    // 如果都不符合，返回空数组
+    // If none match, return empty array
     return [];
   }
 
   /**
-   * 获取其他用户的宝藏信息（公开数据）- 通过namespace
+   * Get user detail info - by namespace
+   * Get user home info by namespace
+   */
+  static async getUserHomeInfo(namespace: string): Promise<UserHomeResponse> {
+    return apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Get other user's treasury information (public data) - by namespace
+   * Get other user's treasury information (public data) - by namespace
    */
   static async getOtherUserTreasuryInfoByNamespace(namespace: string): Promise<{
     bio: string;
@@ -624,7 +923,7 @@ export class AuthService {
   }
 
   /**
-   * 获取其他用户的宝藏信息（公开数据）- 通过userId（保留兼容性）
+   * Get other user's treasury information (public data) - by userId (maintain compatibility)
    */
   static async getOtherUserTreasuryInfo(userId: number): Promise<{
     bio: string;
@@ -653,7 +952,7 @@ export class AuthService {
   }
 
   /**
-   * 获取其他用户收藏的文章列表（公开数据）- 通过namespace
+   * Get other user's liked articles list (public data) - by namespace
    */
   static async getOtherUserLikedArticlesByNamespace(namespace: string, pageIndex: number = 1, pageSize: number = 20): Promise<{
     data: Array<{
@@ -692,7 +991,7 @@ export class AuthService {
   }
 
   /**
-   * 获取其他用户收藏的文章列表（公开数据）- 通过userId（保留兼容性）
+   * Get other user's liked articles list (public data) - by userId (maintain compatibility)
    */
   static async getOtherUserLikedArticles(userId: number, pageIndex: number = 1, pageSize: number = 20): Promise<{
     data: Array<{
@@ -731,7 +1030,7 @@ export class AuthService {
   }
 
   /**
-   * 编辑/创建用户社交链接
+   * Edit/Create user social link
    */
   static async editSocialLink(params: {
     iconUrl: string;
@@ -754,27 +1053,27 @@ export class AuthService {
     });
 
 
-    // 处理不同的API响应格式
+    // Handle different API response formats
     if (response.iconUrl && response.id) {
-      // 直接返回对象（理想情况）
+      // Return object directly (ideal case)
       return response;
     } else if (response.data && response.data.iconUrl && response.data.id) {
-      // 数据包装在data字段中（理想情况）
+      // Data wrapped in data field (ideal case)
       return response.data;
     } else if (response.status === 1 && response.data) {
-      // 标准响应格式：{status: 1, data: {...}, msg: "..."}
+      // Standard response format: {status: 1, data: {...}, msg: "..."}
       return response.data;
     } else if (response.iconUrl || response.linkUrl || response.title) {
-      // 直接响应格式，但可能缺少ID（实际情况）
+      // Direct response format, but may be missing ID (actual case)
       return response;
     }
 
-    // 如果都不符合，抛出错误
+    // If none match, throw error
     throw new Error(response.msg || response.message || 'Failed to edit social link');
   }
 
   /**
-   * 删除用户社交链接
+   * Delete user social link
    */
   static async deleteSocialLink(id: number): Promise<boolean> {
 
@@ -785,24 +1084,24 @@ export class AuthService {
     });
 
 
-    // 处理不同的API响应格式
+    // Handle different API response formats
     if (response === true || response === false) {
-      // 直接返回布尔值
+      // Return boolean directly
       return response;
     } else if (response.data === true || response.data === false) {
-      // 数据包装在data字段中
+      // Data wrapped in data field
       return response.data;
     } else if (response.status === 1 && response.data !== undefined) {
-      // 标准响应格式：{status: 1, data: true, msg: "..."}
+      // Standard response format: {status: 1, data: true, msg: "..."}
       return response.data === true;
     }
 
-    // 如果都不符合，根据status判断
+    // If none match, determine by status
     return response.status === 1 || response.success === true;
   }
 
   /**
-   * 更新用户namespace
+   * Update user namespace
    */
   static async updateUserNamespace(namespace: string): Promise<boolean> {
 
@@ -819,16 +1118,16 @@ export class AuthService {
       });
 
 
-      // API返回布尔值true
+      // API returns boolean true
       return response === true || response;
     } catch (error) {
-      console.error('❌ 更新namespace失败:', error);
+      console.error('❌ Failed to update namespace:', error);
       throw error;
     }
   }
 
   /**
-   * 修改密码
+   * Change password
    */
   static async changePassword(params: ChangePasswordParams): Promise<boolean> {
 
@@ -841,21 +1140,21 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ 修改密码失败:', error);
+      console.error('❌ Failed to change password:', error);
       throw error;
     }
   }
 
   /**
-   * 更新用户信息 - 增强版本为国君提供更多字段 ✨
+   * Update user information - Enhanced version providing more fields for the emperor ✨
    */
   static async updateUserInfo(params: {
-    // 基础字段
+    // Basic fields
     userName?: string;
     bio?: string;
     faceUrl?: string;
     coverUrl?: string;
-    // 扩展字段 - 给国君更多数据！🎁
+    // Extended fields - More data for the emperor! 🎁
     email?: string;
     namespace?: string;
     walletAddress?: string;
@@ -879,13 +1178,13 @@ export class AuthService {
     company?: string;
     university?: string;
     phoneNumber?: string;
-    [key: string]: any; // 允许更多未知字段
+    [key: string]: any; // Allow more unknown fields
   }): Promise<boolean> {
-    console.log('更新用户信息参数分析:', {
-      传递字段总数: Object.keys(params).length,
-      字段名称列表: Object.keys(params),
-      '国君会很开心的': '因为数据很丰富！🎉',
-      完整数据内容: params
+    console.log('User info update parameters analysis:', {
+      totalFieldsCount: Object.keys(params).length,
+      fieldNamesList: Object.keys(params),
+      'emperorWillBeHappy': 'because data is rich! 🎉',
+      completeDataContent: params
     });
 
     try {
@@ -900,13 +1199,13 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ 更新用户信息失败 (国君可能需要这个信息):', error);
+      console.error('❌ Failed to update user info (emperor might need this info):', error);
       throw error;
     }
   }
 
   /**
-   * 用户登出
+   * User logout
    */
   static async logout(): Promise<any> {
 
@@ -917,7 +1216,7 @@ export class AuthService {
   }
 
   /**
-   * 删除用户账号
+   * Delete user account
    */
   static async deleteAccount(params: DeleteAccountParams): Promise<boolean> {
 
@@ -930,13 +1229,13 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ 删除账号失败:', error);
+      console.error('❌ Failed to delete account:', error);
       throw error;
     }
   }
 
   /**
-   * 发送验证码（新增：用于修改密码流程）
+   * Send verification code (New: for password change flow)
    */
   static async sendPasswordResetCode(email: string): Promise<boolean> {
 
@@ -951,13 +1250,13 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ 发送验证码失败:', error);
+      console.error('❌ Failed to send verification code:', error);
       throw error;
     }
   }
 
   /**
-   * 验证验证码（新增：用于修改密码流程）
+   * Verify verification code (New: for password change flow)
    */
   static async verifyCode(email: string, code: string): Promise<boolean> {
 
@@ -968,19 +1267,19 @@ export class AuthService {
         body: JSON.stringify({
           email,
           code,
-          codeType: 3, // 修改密码类型
+          codeType: 3, // Password change type
         }),
       });
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ 验证码验证失败:', error);
+      console.error('❌ Verification code validation failed:', error);
       throw error;
     }
   }
 
   /**
-   * 更新密码（新增：验证通过后直接更新密码）
+   * Update password (New: directly update password after verification passes)
    */
   static async updatePassword(newPassword: string): Promise<boolean> {
 
@@ -995,13 +1294,13 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ 更新密码失败:', error);
+      console.error('❌ Failed to update password:', error);
       throw error;
     }
   }
 
   /**
-   * 获取未读消息数量
+   * Get unread message count
    */
   static async getUnreadMessageCount(): Promise<number> {
 
@@ -1012,31 +1311,31 @@ export class AuthService {
       });
 
 
-      // 处理不同的API响应格式
+      // Handle different API response formats
       if (typeof response === 'number') {
-        // 直接返回数字
+        // Return number directly
         return response;
       } else if (response.data !== undefined && typeof response.data === 'number') {
-        // 数据包装在data字段中
+        // Data wrapped in data field
         return response.data;
       } else if (response.status === 1 && response.data !== undefined) {
-        // 标准响应格式：{status: 1, data: number, msg: "..."}
+        // Standard response format: {status: 1, data: number, msg: "..."}
         return typeof response.data === 'number' ? response.data : 0;
       } else if (response.count !== undefined && typeof response.count === 'number') {
-        // 可能的字段名：count
+        // Possible field name: count
         return response.count;
       }
 
-      // 如果都不符合，返回0
+      // If none match, return 0
       return 0;
     } catch (error) {
-      console.error('❌ 获取未读消息数量失败:', error);
-      return 0; // 出错时返回0，不影响页面正常显示
+      console.error('❌ Failed to get unread message count:', error);
+      return 0; // Return 0 on error, don't affect normal page display
     }
   }
 
   /**
-   * 获取消息通知配置列表
+   * Get message notification settings list
    */
   static async getMessageNotificationSettings(): Promise<Array<{ isOpen: boolean; msgType: number }>> {
     try {
@@ -1046,25 +1345,25 @@ export class AuthService {
       });
 
 
-      // 如果响应直接是数组
+      // If response is directly an array
       if (Array.isArray(response)) {
         return response;
       }
 
-      // 如果响应有data字段且是数组
+      // If response has data field and is array
       if (response && Array.isArray(response.data)) {
         return response.data;
       }
 
       return [];
     } catch (error) {
-      console.error('❌ 获取消息通知配置失败:', error);
+      console.error('❌ Failed to get message notification settings:', error);
       return [];
     }
   }
 
   /**
-   * 更新消息通知配置
+   * Update message notification setting
    */
   static async updateMessageNotificationSetting(msgType: number, isOpen: boolean): Promise<boolean> {
     try {
@@ -1078,18 +1377,111 @@ export class AuthService {
       });
 
 
-      // 根据你提供的信息，API直接返回 true 表示成功
+      // Based on the provided information, API returns true directly to indicate success
       return response === true ||
              (response && response.data === true) ||
              (response && response.success === true);
     } catch (error) {
-      console.error('❌ 更新消息通知配置失败:', error);
+      console.error('❌ Failed to update message notification setting:', error);
       return false;
     }
   }
+
+  /**
+   * Get user's liked articles list - using correct API path
+   */
+  static async getMyLikedArticlesCorrect(pageIndex: number = 1, pageSize: number = 10, targetUserId?: number): Promise<{
+    data: Array<{
+      authorInfo: {
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+      categoryInfo: {
+        articleCount: number;
+        color: string;
+        id: number;
+        name: string;
+      };
+      content: string;
+      coverUrl: string;
+      createAt: number;
+      isLiked: boolean;
+      likeCount: number;
+      publishAt: number;
+      targetUrl: string;
+      title: string;
+      uuid: string;
+      viewCount: number;
+    }>;
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  }> {
+    const params = new URLSearchParams();
+    params.append('pageIndex', pageIndex.toString());
+    params.append('pageSize', pageSize.toString());
+    if (targetUserId !== undefined) {
+      params.append('targetUserId', targetUserId.toString());
+    }
+
+    return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Get user's created articles list - using correct API path
+   */
+  static async getMyCreatedArticles(pageIndex: number = 1, pageSize: number = 10, targetUserId?: number): Promise<{
+    data: Array<{
+      authorInfo: {
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+      categoryInfo: {
+        articleCount: number;
+        color: string;
+        id: number;
+        name: string;
+      };
+      content: string;
+      coverUrl: string;
+      createAt: number;
+      isLiked: boolean;
+      likeCount: number;
+      publishAt: number;
+      targetUrl: string;
+      title: string;
+      uuid: string;
+      viewCount: number;
+    }>;
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  }> {
+    const params = new URLSearchParams();
+    params.append('pageIndex', pageIndex.toString());
+    params.append('pageSize', pageSize.toString());
+    if (targetUserId !== undefined) {
+      params.append('targetUserId', targetUserId.toString());
+    }
+
+    return apiRequest(`/client/userHome/pageMyCreatedArticle?${params.toString()}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
 }
 
-// 验证码类型常量
+// Verification code type constants
 export const CODE_TYPES = {
   REGISTER: 1,
   LOGIN: 2,

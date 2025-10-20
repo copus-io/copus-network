@@ -1,9 +1,10 @@
 import { apiRequest } from './api';
 import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams } from '../types/article';
+import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
-// 将后端数据转换为前端需要的格式
+// Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
-  // 从URL中提取域名作为website
+  // Extract domain from URL as website
   const getWebsiteFromUrl = (url: string): string => {
     try {
       const urlObj = new URL(url);
@@ -13,18 +14,18 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     }
   };
 
-  // 时间戳转日期字符串
+  // Convert timestamp to date string
   const formatTimestamp = (timestamp: number): string => {
     return new Date(timestamp * 1000).toISOString();
   };
 
-  // 验证和处理图片URL
+  // Validate and process image URL
   const processImageUrl = (coverUrl: string | null | undefined): string => {
     if (!coverUrl || coverUrl.trim() === '') {
       return '';
     }
 
-    // 检查是否是有效的URL
+    // Check if it's a valid URL
     try {
       new URL(coverUrl);
       return coverUrl;
@@ -39,16 +40,16 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     title: backendArticle.title,
     description: backendArticle.content,
     category: backendArticle.categoryInfo.name,
-    categoryColor: backendArticle.categoryInfo.color, // 保存后端返回的分类颜色
+    categoryColor: backendArticle.categoryInfo.color, // Save category color returned from backend
     coverImage: processImageUrl(backendArticle.coverUrl),
     userName: backendArticle.authorInfo.username,
     userId: backendArticle.authorInfo.id,
-    namespace: backendArticle.authorInfo.namespace, // 添加namespace字段
-    userAvatar: backendArticle.authorInfo.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendArticle.authorInfo.username}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`, // 动态生成默认头像
+    namespace: backendArticle.authorInfo.namespace, // Add namespace field
+    userAvatar: backendArticle.authorInfo.faceUrl || profileDefaultAvatar, // Use default profile avatar
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
-    isLiked: backendArticle.isLiked, // 保留服务器返回的点赞状态
+    isLiked: backendArticle.isLiked, // Preserve like status returned from server
     website: getWebsiteFromUrl(backendArticle.targetUrl),
     url: backendArticle.targetUrl,
   };
@@ -57,41 +58,106 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
   return transformedArticle;
 };
 
-// 获取分页文章列表
+// Get paginated article list
 export const getPageArticles = async (params: PageArticleParams = {}): Promise<PageArticleResponse> => {
   const queryParams = new URLSearchParams();
 
-  if (params.page) queryParams.append('pageIndex', params.page.toString());
-  if (params.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+  // Always ensure page parameter exists, default to page 1
+  const page = params.page || 1;
+  queryParams.append('pageIndex', page.toString()); // Backend also uses 1-based page numbering system
+
+  // Always ensure pageSize parameter exists
+  const pageSize = params.pageSize || 10;
+  queryParams.append('pageSize', pageSize.toString());
+
   if (params.category) queryParams.append('keyword', params.category);
   if (params.search) queryParams.append('keyword', params.search);
 
-  const endpoint = `/client/home/pageArticle${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+  const endpoint = `/client/home/pageArticle?${queryParams.toString()}`;
 
-  const backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: true });
 
-  if (backendResponse.status !== 1) {
-    throw new Error(backendResponse.msg || 'API request failed');
+  // Try with authentication first for personalized data, fallback to no-auth for guests
+  let backendResponse: BackendApiResponse;
+  try {
+    // Check if user is logged in by looking for token
+    const token = localStorage.getItem('copus_token');
+    if (token) {
+      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: true });
+    } else {
+      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
+    }
+  } catch (error) {
+    console.warn('⚠️ Authenticated request failed, retrying without authentication:', error);
+
+    // Clear invalid tokens if authentication failed
+    if (error instanceof Error && (
+      error.message.includes('认证') || // Chinese: authentication
+      error.message.includes('令牌') || // Chinese: token
+      error.message.includes('Authentication failed') ||
+      error.message.includes('authentication token')
+    )) {
+      console.log('🔄 Clearing invalid authentication token');
+      localStorage.removeItem('copus_token');
+    }
+
+    // Always retry without authentication to allow guest browsing
+    try {
+      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
+    } catch (retryError) {
+      console.error('❌ Failed to fetch articles even without authentication:', retryError);
+      throw new Error('Failed to load articles. Please refresh the page and try again.');
+    }
   }
 
-  const { data } = backendResponse.data;
+  // Handle different response formats
+  let responseData = backendResponse as any;
+
+  // Check if it's wrapped format {status: 1, data: {...}}
+  if (responseData.status === 1 && responseData.data) {
+    responseData = responseData.data;
+  }
+
+  // Ensure articles array exists
+  let articlesArray = [];
+
+  if (Array.isArray(responseData.data)) {
+    articlesArray = responseData.data;
+  } else if (Array.isArray(responseData)) {
+    articlesArray = responseData;
+  } else if (responseData.data && Array.isArray(responseData.data.data)) {
+    articlesArray = responseData.data.data;
+  }
+
+  // Safety check: ensure articlesArray is array and has map method
+  if (!Array.isArray(articlesArray)) {
+    articlesArray = [];
+  }
+
+  // Pagination info handling
+  const pageIndex = responseData.pageIndex || 0;
+  const pageCount = responseData.pageCount || 0;
+  const totalCount = responseData.totalCount || 0;
+  const currentPageSize = responseData.pageSize || 10;
+  const hasMore = pageIndex < pageCount; // Backend uses 1-based paging, so no need to +1
 
   return {
-    articles: data.map(transformBackendArticle),
-    total: backendResponse.data.totalCount,
-    page: backendResponse.data.PageIndex,
-    pageSize: backendResponse.data.PageSize,
-    hasMore: backendResponse.data.PageIndex < backendResponse.data.pageCount,
+    articles: articlesArray.map(transformBackendArticle),
+    total: totalCount,
+    page: pageIndex, // Backend returned page number is already 1-based, use directly
+    pageSize: currentPageSize,
+    hasMore: hasMore,
   };
 };
 
-// 获取文章详情
+// Get article details
 export const getArticleDetail = async (uuid: string): Promise<ArticleDetailResponse> => {
 
   const endpoint = `/client/reader/article/info?uuid=${uuid}`;
 
   try {
-    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, { requiresAuth: true });
+    // requiresAuth: false - article details should be publicly viewable without login
+    // Only interactions (like, comment, etc.) require authentication
+    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, { requiresAuth: false });
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
@@ -104,7 +170,7 @@ export const getArticleDetail = async (uuid: string): Promise<ArticleDetailRespo
   }
 };
 
-// 获取我创作的作品
+// Get my created articles
 export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}): Promise<MyCreatedArticleResponse> => {
 
   const queryParams = new URLSearchParams();
@@ -128,33 +194,62 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
   }
 };
 
-// 发布文章（支持创建和编辑）
+// Publish article (supports creation and editing)
 export const publishArticle = async (articleData: {
-  uuid?: string; // 编辑模式时传递
+  uuid?: string; // Pass when in edit mode
   title: string;
   content: string;
   coverUrl: string;
   targetUrl: string;
   categoryId: number;
-}): Promise<{ uuid: string }> => {
+}): Promise<string> => {
 
   const endpoint = '/client/author/article/edit';
 
   try {
-    const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
+    const response = await apiRequest<{status: number, msg: string, data: string}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),
       requiresAuth: true,
     });
 
+    console.log('🔍 Raw API response from publishArticle:', response);
+    console.log('🔍 Response status:', response.status);
+    console.log('🔍 Response data (UUID):', response.data);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'Failed to publish article');
     }
 
+    console.log('🔍 Returning UUID string:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ Failed to publish article:', error);
     throw new Error(`Failed to publish article: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Track article visit/view - ensures visit count is incremented
+export const trackArticleVisit = async (uuid: string): Promise<void> => {
+  console.log('📊 Tracking article visit for UUID:', uuid);
+
+  const endpoint = `/client/reader/article/visit?uuid=${uuid}`;
+
+  try {
+    // requiresAuth: false - anyone should be able to increment view count, not just logged-in users
+    const response = await apiRequest<{status: number, msg: string}>(endpoint, {
+      requiresAuth: false,
+      method: 'POST'
+    });
+
+    if (response.status !== 1) {
+      console.warn('⚠️ Visit tracking API returned non-success status:', response.msg);
+      // Don't throw error - visit tracking failure shouldn't break the page
+    } else {
+      console.log('✅ Article visit tracked successfully');
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to track article visit (non-critical):', error);
+    // Don't throw error - visit tracking failure shouldn't break the page
   }
 };

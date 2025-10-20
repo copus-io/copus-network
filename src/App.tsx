@@ -1,12 +1,13 @@
 import React from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { UserProvider } from "./contexts/UserContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { ImagePreviewProvider } from "./contexts/ImagePreviewContext";
 import { ToastProvider } from "./components/ui/toast";
+import { GlobalImagePreview } from "./components/ui/GlobalImagePreview";
 import { Discovery } from "./screens/Discovery/Discovery";
 import { MainFrame } from "./screens/MainFrame/MainFrame";
 import { Notification } from "./screens/Notification/Notification";
@@ -18,9 +19,6 @@ import { Content } from "./screens/Content/Content";
 import { NotLogIn } from "./routes/NotLogIn/screens/NotLogIn";
 import { NewExplore } from "./routes/NewExplore/screens/NewExplore";
 import { MyTreasury } from "./routes/MyTreasury/screens/MyTreasury";
-import { MyTreasury30 } from "./routes/MyTreasury30/screens/MyTreasury";
-import { MyTreasury32 } from "./routes/MyTreasury32/screens/MyTreasury";
-import { MyTreasury34 } from "./routes/MyTreasury34/screens/MyTreasury";
 import { LinkPreview } from "./routes/LinkPreview/screens/LinkPreview";
 import { DeleteAccount } from "./routes/DeleteAccount/screens/DeleteAccount";
 import { Published } from "./routes/Published/screens/Published";
@@ -33,6 +31,9 @@ import { SignUp } from "./routes/SignUp/screens/SignUp";
 import { SwitchDemo } from "./components/demo/SwitchDemo";
 import { AuthGuard } from "./components/guards/AuthGuard";
 import { UserProfile } from "./screens/UserProfile/UserProfile";
+import { NotFoundPage } from "./components/pages/NotFoundPage";
+import OAuthRedirect from "./components/OAuthRedirect";
+import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
 const router = createBrowserRouter([
   {
@@ -44,7 +45,7 @@ const router = createBrowserRouter([
     element: <Discovery />,
   },
   {
-    path: "/discovery",
+    path: "/copus",
     element: <Discovery />,
   },
   {
@@ -66,7 +67,7 @@ const router = createBrowserRouter([
   {
     path: "/setting",
     element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
+      <AuthGuard requireAuth={true} fallbackPath="/copus">
         <Setting />
       </AuthGuard>
     ),
@@ -74,6 +75,14 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/callback",
+    element: <OAuthRedirect />,
+  },
+  {
+    path: "/newglobal",
+    element: <OAuthRedirect />,
   },
   {
     path: "/explore/new",
@@ -96,28 +105,8 @@ const router = createBrowserRouter([
     element: <MyTreasury />,
   },
   {
-    path: "/my-treasury/v30",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <MyTreasury30 />
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/my-treasury/v32",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <MyTreasury32 />
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/my-treasury/v34",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <MyTreasury34 />
-      </AuthGuard>
-    ),
+    path: "/u/:namespace",
+    element: <ShortLinkHandler />, // Concise short link format /u/namespace
   },
   {
     path: "/create",
@@ -141,7 +130,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/account/delete",
-    element: <DeleteAccount />,
+    element: (
+      <AuthGuard requireAuth={true} fallbackPath="/login">
+        <DeleteAccount />
+      </AuthGuard>
+    ),
   },
   {
     path: "/published",
@@ -175,6 +168,11 @@ const router = createBrowserRouter([
     path: "/demo/components/switch",
     element: <SwitchDemo />,
   },
+  // 404 catch-all route - must be last
+  {
+    path: "*",
+    element: <NotFoundPage />,
+  },
 ]);
 
 export const App = () => {
@@ -183,13 +181,15 @@ export const App = () => {
       <UserProvider>
         <CategoryProvider>
           <NotificationProvider>
-            <ToastProvider>
-              <RouterProvider router={router} />
-            </ToastProvider>
+            <ImagePreviewProvider>
+              <ToastProvider>
+                <RouterProvider router={router} />
+                <GlobalImagePreview />
+              </ToastProvider>
+            </ImagePreviewProvider>
           </NotificationProvider>
         </CategoryProvider>
       </UserProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 };

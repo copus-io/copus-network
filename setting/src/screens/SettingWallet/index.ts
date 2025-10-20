@@ -1,1 +1,0 @@
-export { SettingWallet } from "./SettingWallet";
