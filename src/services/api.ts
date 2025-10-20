@@ -1,5 +1,6 @@
-// API Configuration
-const API_BASE_URL = 'https://api-test.copus.network';
+// API Configuration - read from environment when available
+// Default to the test API for backwards compatibility
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network';
 
 // Generic API request function
 export const apiRequest = async <T>(

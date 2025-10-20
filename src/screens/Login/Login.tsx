@@ -17,6 +17,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../components/ui/tabs";
+import { APP_CONFIG } from "../../config/app";
 
 const socialProviders = [
   {
@@ -436,7 +437,7 @@ export const Login = (): JSX.Element => {
     setEmailStatus('checking');
 
     try {
-      const response = await fetch(`https://api-test.copus.network/client/common/checkEmailExist?email=${encodeURIComponent(emailToCheck)}`, {
+      const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/checkEmailExist?email=${encodeURIComponent(emailToCheck)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -502,7 +503,7 @@ export const Login = (): JSX.Element => {
         password: '***MD5 encrypted***'
       });
 
-      const response = await fetch('https://api-test.copus.network/client/common/login', {
+      const response = await fetch('${APP_CONFIG.API.BASE_URL}/client/common/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -619,7 +620,7 @@ export const Login = (): JSX.Element => {
         code: verificationCode
       });
 
-      const response = await fetch('https://api-test.copus.network/client/common/register', {
+      const response = await fetch('${APP_CONFIG.API.BASE_URL}/client/common/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -678,7 +679,7 @@ export const Login = (): JSX.Element => {
     setIsCodeSending(true);
 
     try {
-      const response = await fetch(`https://api-test.copus.network/client/common/getVerificationCode?codeType=0&email=${encodeURIComponent(email)}`, {
+      const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/getVerificationCode?codeType=0&email=${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -729,7 +730,7 @@ export const Login = (): JSX.Element => {
     try {
 
       // Send forgot password verification code (codeType=1)
-      const response = await fetch(`https://api-test.copus.network/client/common/getVerificationCode?codeType=1&email=${encodeURIComponent(forgotPasswordEmail)}`, {
+      const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/getVerificationCode?codeType=1&email=${encodeURIComponent(forgotPasswordEmail)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
