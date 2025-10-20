@@ -1,7 +1,6 @@
 import React from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
 import { UserProvider } from "./contexts/UserContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
@@ -162,7 +161,6 @@ export const App = () => {
           </NotificationProvider>
         </CategoryProvider>
       </UserProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 };
