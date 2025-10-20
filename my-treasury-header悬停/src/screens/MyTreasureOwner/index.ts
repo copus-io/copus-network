@@ -1,1 +1,0 @@
-export { MyTreasureOwner } from "./MyTreasureOwner";

@@ -1,6 +1,6 @@
 import { apiRequest } from './api';
 
-// 分类接口类型定义
+// Category interface type definitions
 export interface Category {
   id: number;
   name: string;
@@ -16,7 +16,7 @@ export interface CategoryListResponse {
   };
 }
 
-// 获取分类列表
+// Get category list
 export const getCategoryList = async (): Promise<Category[]> => {
 
   const response = await apiRequest<CategoryListResponse>(

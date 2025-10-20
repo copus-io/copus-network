@@ -18,7 +18,7 @@ export const UserProfile = (): JSX.Element => {
 
   if (!namespace) {
     return (
-      <PageWrapper activeMenuItem="treasury">
+      <PageWrapper>
         <div className="flex items-center justify-center min-h-screen">
           <p className="text-gray-500">用户不存在</p>
         </div>
@@ -27,7 +27,7 @@ export const UserProfile = (): JSX.Element => {
   }
 
   return (
-    <PageWrapper activeMenuItem="treasury">
+    <PageWrapper>
       <UserProfileContent namespace={namespace} />
     </PageWrapper>
   );

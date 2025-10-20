@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { AuthService } from '../services/authService';
 import { useArticleState } from '../hooks/useArticleState';
 
@@ -28,8 +28,9 @@ interface UserContextValue {
   user: User | null;
   token: string | null;
   isLoggedIn: boolean;
+  loading: boolean;
   login: (userData: User, token?: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   updateUserNamespace: (namespace: string) => Promise<boolean>;
   getAuthHeaders: () => Record<string, string>;
@@ -56,6 +57,7 @@ const UserContext = createContext<UserContextValue | undefined>(undefined);
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // 社交链接状态管理
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -80,6 +82,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.removeItem('copus_token');
       }
     }
+
+    // 初始化完成，设置loading为false
+    setLoading(false);
   }, []);
 
   const login = (userData: User, userToken?: string) => {
@@ -91,12 +96,21 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('copus_user');
-    localStorage.removeItem('copus_token');
-  };
+  const logout = useCallback(async () => {
+    try {
+      // Call logout API to notify backend
+      await AuthService.logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+      // Continue with local logout even if API call fails
+    } finally {
+      // Clear local state and storage
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('copus_user');
+      localStorage.removeItem('copus_token');
+    }
+  }, []); // Empty dependencies since it uses setState and localStorage directly
 
   // 获取带认证头的请求headers
   const getAuthHeaders = () => {
@@ -160,7 +174,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // 获取用户详细信息
-  const fetchUserInfo = async (authToken?: string, retryOnFailure: boolean = true) => {
+  const fetchUserInfo = useCallback(async (authToken?: string, retryOnFailure: boolean = true) => {
     try {
       // 如果传入了token，优先使用；否则从localStorage获取
       const tokenToUse = authToken || localStorage.getItem('copus_token');
@@ -184,10 +198,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // 如果获取用户信息失败，可能token已过期，执行登出
       logout();
     }
-  };
+  }, [logout]); // Depends on logout
 
   // 社交链接管理函数
-  const fetchSocialLinks = async (): Promise<void> => {
+  const fetchSocialLinks = useCallback(async (): Promise<void> => {
     if (!user) {
       return;
     }
@@ -212,7 +226,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setSocialLinksLoading(false);
     }
-  };
+  }, [user]); // Depends on user
 
   const addSocialLink = async (linkData: Omit<SocialLink, 'id' | 'userId'>): Promise<boolean> => {
     if (!user) return false;
@@ -306,7 +320,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
       setSocialLinks([]);
     }
-  }, [user]);
+  }, [user, fetchSocialLinks]);
 
   return (
     <UserContext.Provider
@@ -314,6 +328,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         user,
         token,
         isLoggedIn: !!user,
+        loading,
         login,
         logout,
         updateUser,

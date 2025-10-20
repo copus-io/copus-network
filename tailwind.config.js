@@ -92,18 +92,18 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        // 骨架屏闪烁动画
+        // Skeleton screen shimmer animation
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
-        // 书本翻页动画
+        // Book page flip animation
         flip: {
           '0%': { transform: 'rotateY(0deg)' },
           '50%': { transform: 'rotateY(-90deg)' },
           '100%': { transform: 'rotateY(0deg)' },
         },
-        // 纸飞机飞行动画
+        // Paper plane flying animation
         'fly-plane': {
           '0%': { transform: 'translateX(-100%) translateY(0px) rotate(0deg)' },
           '50%': { transform: 'translateX(50%) translateY(-10px) rotate(5deg)' },
@@ -114,7 +114,7 @@ module.exports = {
           '50%': { transform: 'scaleX(1)', opacity: '1' },
           '100%': { transform: 'scaleX(0)', opacity: '0' },
         },
-        // 爱心跳动动画
+        // Heart beating animation
         heartbeat: {
           '0%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.2)' },
@@ -128,9 +128,9 @@ module.exports = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        // 骨架屏动画
+        // Skeleton screen animation
         shimmer: "shimmer 2s infinite linear",
-        // Copus专属动画
+        // Copus specific animations
         flip: "flip 1.5s infinite ease-in-out",
         'fly-plane': "fly-plane 2s infinite ease-in-out",
         'fly-trail': "fly-trail 2s infinite ease-in-out",

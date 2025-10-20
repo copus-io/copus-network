@@ -6,6 +6,7 @@ import { Input } from "../../../components/ui/input";
 import { Card, CardContent } from "../../../components/ui/card";
 import { AuthService, CODE_TYPES } from "../../../services/authService";
 import { useUser } from "../../../contexts/UserContext";
+import { HeaderSection } from "../../../components/shared/HeaderSection/HeaderSection";
 
 export const DeleteAccount = (): JSX.Element => {
   const navigate = useNavigate();
@@ -81,16 +82,8 @@ export const DeleteAccount = (): JSX.Element => {
 
   return (
     <div className="min-h-screen flex bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-      <div className="flex w-full min-h-screen flex-col items-center">
-        <header className="flex items-start px-[30px] py-5 w-full bg-transparent">
-          <Link to="/" className="flex w-[45px] h-[45px] items-center justify-center gap-2.5 p-2.5 bg-red rounded-[100px]">
-            <img
-              className="w-7 h-7"
-              alt="Ic fractopus open"
-              src="https://c.animaapp.com/mft4oqz6uyUKY7/img/ic-fractopus-open.svg"
-            />
-          </Link>
-        </header>
+      <HeaderSection isLoggedIn={true} hideCreateButton={true} />
+      <div className="flex w-full min-h-screen flex-col items-center pt-[120px]">{/* 增加顶部间距适配HeaderSection */}
 
         <main className="flex flex-col w-[540px] items-center pt-5 pb-10 px-0">
           <div className="flex flex-col items-center gap-10 w-full">

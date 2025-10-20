@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
-import { useMyCreatedArticles } from "../../../../hooks/queries";
 import { AuthService } from "../../../../services/authService";
 import { Avatar, AvatarImage } from "../../../../components/ui/avatar";
 import { Button } from "../../../../components/ui/button";
+import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import {
   Tabs,
   TabsContent,
@@ -21,7 +21,6 @@ import {
 } from "../../../../components/ui/dialog";
 import { useToast } from "../../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
-import { ImagePreviewModal } from "../../../../components/ui/image-preview-modal";
 
 
 const collectionItems = [
@@ -102,144 +101,207 @@ const myShareItems = [
 export const MainContentSection = (): JSX.Element => {
   const navigate = useNavigate();
   const { namespace } = useParams<{ namespace?: string }>();
+  const [searchParams] = useSearchParams();
   const { user, socialLinks: socialLinksData, getArticleLikeState, toggleLike } = useUser();
+
+  // Get tab from URL parameter, default to "collection"
+  const activeTab = searchParams.get('tab') || 'collection';
   const { showToast } = useToast();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  // 图片预览相关状态
-  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
-  const [previewImageUrl, setPreviewImageUrl] = useState("");
-  const [previewImageAlt, setPreviewImageAlt] = useState("");
+  // 直接在组件内实现图片预览
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState('');
+  const [previewImageAlt, setPreviewImageAlt] = useState('');
 
-  // 获取我创作的文章数据
-  const { articles: myCreatedData, loading: myCreatedLoading, error: myCreatedError, refetch: refetchMyArticles } = useMyCreatedArticles({
-    pageIndex: 0,
-    pageSize: 10
-  });
+  // 统一状态管理
+  const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
+  const [userInfoLoading, setUserInfoLoading] = useState(true);
+  const [userInfoError, setUserInfoError] = useState<string | null>(null);
 
-  // 宝藏页面状态管理
+  // 收藏文章状态
   const [likedArticles, setLikedArticles] = useState<any[]>([]);
-  const [treasuryLoading, setTreasuryLoading] = useState(true);
-  const [treasuryError, setTreasuryError] = useState<string | null>(null);
+  const [likedArticlesLoading, setLikedArticlesLoading] = useState(false);
+  const [likedArticlesError, setLikedArticlesError] = useState<string | null>(null);
+
+  // 创作文章状态
+  const [createdArticles, setCreatedArticles] = useState<any[]>([]);
+  const [createdArticlesLoading, setCreatedArticlesLoading] = useState(false);
+  const [createdArticlesError, setCreatedArticlesError] = useState<string | null>(null);
+
+  // 添加缓存机制防止重复请求
+  const [lastFetchedUserId, setLastFetchedUserId] = useState<number | null>(null);
+  const [lastFetchedTab, setLastFetchedTab] = useState<string | null>(null);
+
   const [treasuryStats, setTreasuryStats] = useState({
     likedArticleCount: 0,
     articleCount: 0,
     myArticleLikedCount: 0
   });
-  const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
 
   // 判断是否在查看其他用户的宝藏
-  const isViewingOtherUser = !!namespace;
+  // 如果有namespace参数但是namespace等于当前用户的namespace，说明是在查看自己的页面
+  const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
   const targetNamespace = namespace || user?.namespace;
 
-  // 获取用户收藏的文章
-  useEffect(() => {
-    const fetchLikedArticles = async () => {
+  // 移除对404 API的调用，改用统计信息显示
 
-      // 如果查看自己的宝藏但未登录
+
+  // 1. 首先获取用户信息和ID
+  useEffect(() => {
+    const fetchUserInfo = async () => {
       if (!isViewingOtherUser && !user) {
-        setLikedArticles([]);
-        setTreasuryLoading(false);
+        setTreasuryUserInfo(null);
+        setUserInfoLoading(false);
         return;
       }
 
-      // 如果查看其他用户但没有namespace
       if (isViewingOtherUser && !targetNamespace) {
-        setTreasuryError('用户namespace无效');
-        setTreasuryLoading(false);
+        setUserInfoError('User namespace is invalid');
+        setUserInfoLoading(false);
         return;
       }
 
       try {
-        setTreasuryLoading(true);
-        setTreasuryError(null);
+        setUserInfoLoading(true);
+        setUserInfoError(null);
 
-        // 根据是否查看其他用户，使用不同的API
-        let treasuryInfoResponse, likedArticlesResponse;
-
+        let userInfo;
         if (isViewingOtherUser && targetNamespace) {
-          // 查看其他用户的宝藏
-          [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
-            AuthService.getOtherUserTreasuryInfoByNamespace(targetNamespace),
-            AuthService.getOtherUserLikedArticlesByNamespace(targetNamespace, 1, 20)
-          ]);
+          // 查看其他用户的信息
+          userInfo = await AuthService.getUserHomeInfo(targetNamespace);
+        } else if (user?.namespace) {
+          // 查看自己的信息，通过namespace获取完整信息
+          userInfo = await AuthService.getUserHomeInfo(user.namespace);
         } else {
-          // 查看自己的宝藏
-          [treasuryInfoResponse, likedArticlesResponse] = await Promise.all([
-            AuthService.getUserTreasuryInfo(),
-            AuthService.getUserLikedArticles(1, 20)
-          ]);
+          // 降级方案
+          userInfo = await AuthService.getUserTreasuryInfo();
         }
 
 
-        // 处理统计信息
-        const treasuryInfo = treasuryInfoResponse.data || treasuryInfoResponse;
-        if (treasuryInfo) {
-          setTreasuryUserInfo(treasuryInfo);
-          if (treasuryInfo.statistics) {
-            setTreasuryStats(treasuryInfo.statistics);
-          }
+        const processedInfo = userInfo.data || userInfo;
+        setTreasuryUserInfo(processedInfo);
+        if (processedInfo.statistics) {
+          setTreasuryStats(processedInfo.statistics);
         }
-
-        // 处理文章列表，转换为组件需要的格式
-        const articlesData = likedArticlesResponse.data || likedArticlesResponse;
-
-        // 尝试多种可能的数据结构
-        let articlesArray = [];
-        if (articlesData && Array.isArray(articlesData.data)) {
-          // 标准结构：{ data: [...] }
-          articlesArray = articlesData.data;
-        } else if (Array.isArray(articlesData)) {
-          // 直接是数组：[...]
-          articlesArray = articlesData;
-        } else {
-          articlesArray = [];
-        }
-
-
-        const articles = articlesArray.map((article: any, index: number) => {
-
-          try {
-            return {
-              id: article.uuid,
-              uuid: article.uuid,
-              title: article.title,
-              description: article.content,
-              coverImage: article.coverUrl,
-              category: article.categoryInfo?.name || 'General',
-              userName: article.authorInfo?.username || 'Anonymous',
-              userAvatar: article.authorInfo?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${article.authorInfo?.username || 'user'}&backgroundColor=b6e3f4`,
-              userId: article.authorInfo?.id,
-              userNamespace: article.authorInfo?.namespace,
-              date: new Date(article.createAt * 1000).toLocaleDateString(),
-              treasureCount: article.likeCount || 0,
-              visitCount: `${article.viewCount || 0} Visits`,
-              isLiked: article.isLiked || true, // 收藏页面的文章都是已点赞的
-              targetUrl: article.targetUrl,
-              website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
-            };
-          } catch (err) {
-            console.error('❌ 转换文章数据失败:', err, article);
-            return null;
-          }
-        }).filter(Boolean); // 过滤掉转换失败的文章
-
-        setLikedArticles(articles);
 
       } catch (error) {
-        console.error('❌ 获取收藏文章失败:', error);
-        setTreasuryError('获取收藏文章失败');
-        // 暂时使用空数组，避免页面崩溃
-        setLikedArticles([]);
+        console.error('❌ 获取用户信息失败:', error);
+        setUserInfoError(`获取用户信息失败: ${error instanceof Error ? error.message : '未知错误'}`);
       } finally {
-        setTreasuryLoading(false);
+        setUserInfoLoading(false);
       }
     };
 
-    fetchLikedArticles();
+    fetchUserInfo();
   }, [user, namespace, isViewingOtherUser, targetNamespace]);
+
+  // 2. 根据当前标签页和用户信息获取相应的文章数据
+  useEffect(() => {
+    if (userInfoLoading || !treasuryUserInfo) {
+      return; // 等待用户信息加载完成
+    }
+
+    const userId = treasuryUserInfo.id || user?.id;
+    if (!userId) {
+      console.warn('⚠️ 无法获取用户ID，跳过文章数据加载');
+      return;
+    }
+
+    // 检查是否已经获取过相同用户和标签页的数据，避免重复请求
+    if (lastFetchedUserId === userId && lastFetchedTab === activeTab) {
+      return;
+    }
+
+    const fetchArticleData = async () => {
+      try {
+        setLastFetchedUserId(userId);
+        setLastFetchedTab(activeTab);
+
+        if (activeTab === 'collection') {
+          // 只在收藏标签页时加载收藏文章
+          await fetchLikedArticles(userId);
+        } else if (activeTab === 'share') {
+          // 只在创作标签页时加载创作文章
+          await fetchCreatedArticles(userId);
+        }
+      } catch (error) {
+        console.error('❌ 加载文章数据失败:', error);
+        // 请求失败时重置缓存，允许重试
+        setLastFetchedUserId(null);
+        setLastFetchedTab(null);
+      }
+    };
+
+    fetchArticleData();
+  }, [treasuryUserInfo?.id, activeTab]);
+
+  // 收藏文章加载函数
+  const fetchLikedArticles = async (userId: number) => {
+    setLikedArticlesLoading(true);
+    setLikedArticlesError(null);
+
+    try {
+      const response = await AuthService.getMyLikedArticlesCorrect(1, 10, userId);
+
+      const articlesArray = extractArticlesFromResponse(response, '收藏');
+      setLikedArticles(articlesArray);
+
+    } catch (error) {
+      console.error('❌ 获取收藏文章失败:', error);
+      setLikedArticlesError(`获取收藏文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setLikedArticles([]);
+    } finally {
+      setLikedArticlesLoading(false);
+    }
+  };
+
+  // 创作文章加载函数
+  const fetchCreatedArticles = async (userId: number) => {
+    setCreatedArticlesLoading(true);
+    setCreatedArticlesError(null);
+
+    try {
+      const response = await AuthService.getMyCreatedArticles(1, 10, userId);
+
+      const articlesArray = extractArticlesFromResponse(response, '创作');
+      setCreatedArticles(articlesArray);
+
+    } catch (error) {
+      console.error('❌ 获取创作文章失败:', error);
+      setCreatedArticlesError(`获取创作文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setCreatedArticles([]);
+    } finally {
+      setCreatedArticlesLoading(false);
+    }
+  };
+
+  // 统一的文章数据提取函数
+  const extractArticlesFromResponse = (response: any, type: string) => {
+    if (response?.data?.data && Array.isArray(response.data.data)) {
+      console.log(`✅ ${type}文章使用嵌套结构 response.data.data:`, response.data.data.length, '条记录');
+      return response.data.data;
+    } else if (response?.data && Array.isArray(response.data)) {
+      console.log(`✅ ${type}文章使用标准结构 response.data:`, response.data.length, '条记录');
+      return response.data;
+    } else if (Array.isArray(response)) {
+      console.log(`✅ ${type}文章使用直接数组结构:`, response.length, '条记录');
+      return response;
+    } else if (response?.data === '' || response?.data === null) {
+      console.log(`📭 ${type}文章API返回空数据`);
+      return [];
+    } else {
+      console.warn(`⚠️ ${type}文章未识别的API响应结构:`, {
+        type: typeof response,
+        hasData: !!response?.data,
+        dataType: typeof response?.data,
+        keys: response ? Object.keys(response) : []
+      });
+      return [];
+    }
+  };
 
   // 将API数据转换为收藏卡片格式
   const transformLikedApiToCard = (article: any): ArticleData => {
@@ -247,26 +309,50 @@ export const MainContentSection = (): JSX.Element => {
       id: article.uuid,
       uuid: article.uuid,
       title: article.title,
-      description: article.description,
-      coverImage: article.coverImage || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
-      category: article.category,
-      categoryColor: article.categoryColor,
-      userName: article.userName,
-      userAvatar: article.userAvatar,
-      userId: user?.id,
-      date: article.date,
-      treasureCount: article.treasureCount,
-      visitCount: article.visitCount,
+      description: article.content,
+      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.categoryInfo?.name || '未分类',
+      categoryColor: article.categoryInfo?.color || '#666666',
+      userName: article.authorInfo?.username || 'Anonymous',
+      userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
+      userId: article.authorInfo?.id,
+      userNamespace: article.authorInfo?.namespace,
+      date: new Date(article.createAt || article.publishAt).toLocaleDateString(),
+      treasureCount: article.likeCount || 0,
+      visitCount: article.viewCount || 0,
       isLiked: article.isLiked || true,
       targetUrl: article.targetUrl,
-      website: article.website
+      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined
+    };
+  };
+
+  // 将API数据转换为创作卡片格式（与收藏格式相同）
+  const transformCreatedApiToCard = (article: any): ArticleData => {
+    return {
+      id: article.uuid,
+      uuid: article.uuid,
+      title: article.title,
+      description: article.content,
+      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.categoryInfo?.name || '未分类',
+      categoryColor: article.categoryInfo?.color || '#666666',
+      userName: article.authorInfo?.username || 'Anonymous',
+      userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
+      userId: article.authorInfo?.id,
+      userNamespace: article.authorInfo?.namespace,
+      date: new Date(article.createAt || article.publishAt).toLocaleDateString(),
+      treasureCount: article.likeCount || 0,
+      visitCount: article.viewCount || 0,
+      isLiked: article.isLiked || false, // 创作文章的点赞状态来自API
+      targetUrl: article.targetUrl,
+      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined
     };
   };
 
   // 处理点赞
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
     if (!user) {
-      showToast('请先登录', 'error');
+      showToast('Please login first', 'error');
       return;
     }
     await toggleLike(articleId, currentIsLiked, currentLikeCount);
@@ -287,15 +373,7 @@ export const MainContentSection = (): JSX.Element => {
         userNamespace = likedArticle.userNamespace;
       }
 
-      // 如果还没找到，在myCreatedData中查找 - 这些是我创建的文章
-      if (!userNamespace && myCreatedData?.data) {
-        const myArticle = myCreatedData.data.find(a =>
-          a.authorInfo?.id === userId || a.userId === userId
-        );
-        if (myArticle) {
-          userNamespace = myArticle.authorInfo?.namespace || myArticle.userNamespace;
-        }
-      }
+      // 注：之前会在myCreatedData中查找，但该API已移除
     }
 
     // 判断是否是当前用户
@@ -308,7 +386,7 @@ export const MainContentSection = (): JSX.Element => {
       navigate('/my-treasury');
     } else if (userNamespace) {
       // 跳转到其他用户的宝藏页面
-      navigate(`/user/${userNamespace}/treasury`);
+      navigate(`/u/${userNamespace}`);
     } else if (userId) {
       // 如果没有namespace，使用userId作为降级方案
       navigate(`/user/${userId}/treasury`);
@@ -316,20 +394,86 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   // 处理头像点击预览
-  const handleAvatarClick = () => {
-    const avatarUrl = user?.faceUrl ||
-      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`;
+  const handleAvatarClick = useCallback((e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
 
+    // 从点击的元素获取实际显示的头像URL
+    let actualAvatarUrl = null;
+
+    // 尝试从多种可能的点击目标获取头像URL
+    if (e?.target) {
+      if (e.target.tagName === 'IMG') {
+        actualAvatarUrl = e.target.src;
+      } else if (e.target.querySelector && e.target.querySelector('img')) {
+        actualAvatarUrl = e.target.querySelector('img').src;
+      } else if (e.currentTarget && e.currentTarget.querySelector && e.currentTarget.querySelector('img')) {
+        actualAvatarUrl = e.currentTarget.querySelector('img').src;
+      }
+    }
+
+    // 根据是否查看其他用户来获取正确的头像和用户名
+    const currentUser = isViewingOtherUser ? treasuryUserInfo : user;
+
+    // 智能头像URL获取：支持真实头像和系统生成头像
+    let avatarUrl;
+
+    // 优先尝试API中的真实头像字段
+    const realAvatarUrl = (currentUser?.faceUrl && currentUser.faceUrl.trim()) ||
+                         (currentUser?.avatarUrl && currentUser.avatarUrl.trim()) ||
+                         (currentUser?.avatar && currentUser.avatar.trim()) ||
+                         (currentUser?.profileImage && currentUser.profileImage.trim()) ||
+                         (currentUser?.data?.faceUrl && currentUser.data.faceUrl.trim()) ||
+                         (currentUser?.data?.avatarUrl && currentUser.data.avatarUrl.trim()) ||
+                         (currentUser?.data?.avatar && currentUser.data.avatar.trim()) ||
+                         (currentUser?.data?.profileImage && currentUser.data.profileImage.trim());
+
+    if (realAvatarUrl) {
+      avatarUrl = realAvatarUrl;
+    } else if (actualAvatarUrl) {
+      avatarUrl = actualAvatarUrl;
+    } else {
+      avatarUrl = profileDefaultAvatar;
+    }
+
+    // 直接设置预览状态
+    setShowImagePreview(true);
     setPreviewImageUrl(avatarUrl);
-    setPreviewImageAlt(`${user?.username || '用户'} 的头像`);
-    setIsImagePreviewOpen(true);
-  };
+    setPreviewImageAlt(`${currentUser?.username || 'User'}'s avatar`);
+  }, [isViewingOtherUser, treasuryUserInfo, user]);
 
-  // 关闭图片预览
-  const handleCloseImagePreview = () => {
-    setIsImagePreviewOpen(false);
-    setPreviewImageUrl("");
-    setPreviewImageAlt("");
+  // ESC键关闭预览
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showImagePreview) {
+        setShowImagePreview(false);
+        setPreviewImageUrl('');
+        setPreviewImageAlt('');
+      }
+    };
+
+    if (showImagePreview) {
+      document.addEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showImagePreview]);
+
+  // 分享个人主页 - 复制Instagram风格短链接 ✨
+  const handleShare = () => {
+    const currentNamespace = isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace;
+    if (currentNamespace) {
+      const shortLink = `${window.location.origin}/u/${currentNamespace}`;
+      navigator.clipboard.writeText(shortLink).then(() => {
+        showToast('已复制专属链接到剪贴板！快去分享吧～ 🎉', 'success');
+      }).catch(() => {
+        showToast('复制链接失败，请手动复制: ' + shortLink, 'error');
+      });
+    }
   };
 
   const renderCard = (card: ArticleData) => {
@@ -346,12 +490,10 @@ export const MainContentSection = (): JSX.Element => {
       <ArticleCard
         key={card.id}
         article={articleData}
-        layout="treasury"
+        layout="discovery"
         actions={{
           showTreasure: true,
-          showVisits: true,
-          showWebsite: true,
-          showBranchIt: true
+          showVisits: true
         }}
         onLike={handleLike}
         onUserClick={handleUserClick}
@@ -370,7 +512,7 @@ export const MainContentSection = (): JSX.Element => {
       category: article.categoryInfo?.name || 'General',
       categoryColor: article.categoryInfo?.color || 'gray',
       userName: article.authorInfo?.username || user?.username || 'Anonymous',
-      userAvatar: article.authorInfo?.faceUrl || user?.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}&backgroundColor=b6e3f4`,
+      userAvatar: article.authorInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
       userId: article.authorInfo?.id || user?.id,
       userNamespace: article.authorInfo?.namespace || user?.namespace,
       date: new Date(article.createAt * 1000).toLocaleDateString(),
@@ -388,37 +530,44 @@ export const MainContentSection = (): JSX.Element => {
     navigate(`/create?edit=${articleId}`);
   };
 
-  // 处理删除
+  // 处理删除 - 暂时禁用，因为创建文章API已移除
   const handleDelete = (articleId: string) => {
-    const article = myCreatedData?.data.find(a => a.uuid === articleId);
-    if (article) {
-      const card = transformApiToCard(article);
-      setArticleToDelete(card);
-      setDeleteDialogOpen(true);
-    }
+    console.log('删除功能暂时不可用，文章ID:', articleId);
   };
 
   // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
-  const renderMyShareCard = (card: ArticleData) => (
-    <ArticleCard
-      key={card.id}
-      article={card}
-      layout="treasury"
-      actions={{
-        showTreasure: false, // My Share不显示点赞按钮
-        showVisits: true,
-        showWebsite: true,
-        showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
-        showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
-      }}
-      isHovered={hoveredCard === card.id}
-      onEdit={handleEdit}
-      onDelete={handleDelete}
-      onUserClick={handleUserClick}
-      onMouseEnter={() => setHoveredCard(card.id)}
-      onMouseLeave={() => setHoveredCard(null)}
-    />
-  );
+  const renderMyShareCard = (card: ArticleData) => {
+    // 获取文章的点赞状态
+    const articleLikeState = getArticleLikeState(card.id, card.isLiked || false, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+
+    // 更新文章的点赞状态
+    const articleData = {
+      ...card,
+      isLiked: articleLikeState.isLiked,
+      treasureCount: articleLikeState.likeCount
+    };
+
+    return (
+      <ArticleCard
+        key={card.id}
+        article={articleData}
+        layout="discovery"
+        actions={{
+          showTreasure: true, // Always show treasure button for unified style
+          showVisits: true,
+          showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
+          showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
+        }}
+        isHovered={hoveredCard === card.id}
+        onLike={handleLike} // Always provide like callback
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onUserClick={handleUserClick}
+        onMouseEnter={() => setHoveredCard(card.id)}
+        onMouseLeave={() => setHoveredCard(null)}
+      />
+    );
+  };
 
   // 处理删除文章
   const handleDeleteArticle = async () => {
@@ -434,9 +583,9 @@ export const MainContentSection = (): JSX.Element => {
 
       // 检查删除是否真正成功
       if (deleteResult.data === true) {
-        showToast("文章已成功删除", "success");
+        showToast("Article deleted successfully", "success");
       } else {
-        showToast("删除失败，可能文章不存在或无权限删除", "warning");
+        showToast("Delete failed, article may not exist or no permission to delete", "warning");
         setDeleteDialogOpen(false);
         setArticleToDelete(null);
         setIsDeleting(false);
@@ -444,8 +593,9 @@ export const MainContentSection = (): JSX.Element => {
       }
 
       // 刷新文章列表
-      if (refetchMyArticles) {
-        refetchMyArticles();
+      const userId = treasuryUserInfo?.id || user?.id;
+      if (userId) {
+        await fetchCreatedArticles(userId);
       }
 
       // 如果是收藏的文章，也从收藏列表中移除
@@ -458,9 +608,9 @@ export const MainContentSection = (): JSX.Element => {
 
       // 如果是因为后端接口未实现，给出特别提示
       if (error.message?.includes('404') || error.message?.includes('Not Found')) {
-        showToast("删除功能正在开发中，敬请期待", "warning");
+        showToast("Delete feature is under development, coming soon", "warning");
       } else {
-        showToast(error.message || "删除文章时出错，请稍后重试", "error");
+        showToast(error.message || "Error deleting article, please try again later", "error");
       }
     } finally {
       setIsDeleting(false);
@@ -468,33 +618,48 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   return (
-    <div className="flex flex-col items-start gap-[30px] py-5 min-h-screen">
+    <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
       <section className="flex flex-col items-start w-full">
-        <div className="relative self-stretch w-full h-[200px] rounded-lg [background:url(https://c.animaapp.com/mftam89xRJwsqQ/img/banner.png)_50%_50%_/_cover]" />
+        <div className="relative self-stretch w-full h-[200px] rounded-lg overflow-hidden bg-gradient-to-r from-blue-100 to-purple-100">
+          <img
+            src={(isViewingOtherUser ? treasuryUserInfo?.coverUrl : user?.coverUrl) || 'https://c.animaapp.com/mftam89xRJwsqQ/img/banner.png'}
+            alt="Cover"
+            className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
+          />
+        </div>
 
-        <div className="gap-6 pl-5 pr-10 py-0 mt-[-46px] flex items-start w-full">
+        <div className="gap-4 lg:gap-6 px-4 lg:pl-5 lg:pr-10 py-0 mt-[-46px] flex flex-col lg:flex-row items-start lg:items-start w-full">
           <Avatar
-            className="w-[100px] h-[100px] border-2 border-solid border-[#ffffff] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200"
+            className="w-[80px] h-[80px] lg:w-[100px] lg:h-[100px] border-2 border-solid border-[#ffffff] cursor-pointer hover:scale-105 transition-transform duration-300"
             onClick={handleAvatarClick}
-            title="点击查看头像大图"
+            onMouseDown={handleAvatarClick}
+            onTouchStart={handleAvatarClick}
+            title="Click to view avatar in full size"
           >
             <AvatarImage
               src={
                 (isViewingOtherUser ? treasuryUserInfo?.faceUrl : user?.faceUrl) ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${(isViewingOtherUser ? treasuryUserInfo?.username : user?.username) || 'vivi'}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`
+                profileDefaultAvatar
               }
               className="object-cover"
+              style={{ pointerEvents: 'none' }}
             />
           </Avatar>
 
-          <div className="flex flex-col items-start gap-5 pt-[60px] pb-0 px-0 flex-1 grow">
+          <div className="flex flex-col items-start gap-5 pt-0 lg:pt-[60px] pb-0 px-0 flex-1 grow w-full">
             <div className="inline-flex flex-col items-start justify-center">
               <div className="inline-flex items-center gap-[15px]">
                 <h1 className="mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42px] whitespace-nowrap">
                   {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Guest User")}
                 </h1>
 
-                <Button variant="ghost" size="sm" className="p-0 h-auto">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-0 h-auto hover:scale-110 transition-transform duration-200"
+                  onClick={handleShare}
+                  title={`分享 @${isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace} 的专属链接`}
+                >
                   <img
                     className="w-[38px] h-[38px]"
                     alt="Share"
@@ -550,7 +715,17 @@ export const MainContentSection = (): JSX.Element => {
       </section>
 
       <section className="flex flex-col items-start gap-[30px] w-full mb-[-42.00px]">
-        <Tabs defaultValue="collection" className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          // Update URL with new tab parameter
+          const newSearchParams = new URLSearchParams(searchParams);
+          if (value === 'collection') {
+            newSearchParams.delete('tab'); // Remove tab param for default
+          } else {
+            newSearchParams.set('tab', value);
+          }
+          const newUrl = `${window.location.pathname}?${newSearchParams.toString()}`;
+          navigate(newUrl, { replace: true });
+        }} className="w-full">
           <TabsList className="flex items-center justify-between w-full bg-transparent h-auto p-0 rounded-none relative border-b border-[#ffffff]">
             <TabsTrigger
               value="collection"
@@ -576,61 +751,57 @@ export const MainContentSection = (): JSX.Element => {
           </TabsList>
 
           <TabsContent value="collection" className="mt-[30px]">
-            {treasuryLoading ? (
+            {likedArticlesLoading ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">加载收藏中...</div>
+                <div className="text-lg text-gray-600">Loading collection...</div>
               </div>
-            ) : treasuryError ? (
+            ) : likedArticlesError ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-red-600">加载失败: {treasuryError}</div>
+                <div className="text-lg text-red-600">Loading failed: {likedArticlesError}</div>
               </div>
             ) : likedArticles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
                 {likedArticles.map((article) => {
                   const card = transformLikedApiToCard(article);
-                  return (
-                    <div
-                      key={card.id}
-                      className="flex flex-col gap-6 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]"
-                    >
-                      {renderCard(card)}
-                    </div>
-                  );
+                  return renderCard(card);
                 })}
               </div>
             ) : (
-              <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">还没有收藏任何内容哦～</div>
+              <div className="flex flex-col justify-center items-center py-20 gap-4">
+                <div className="text-lg text-gray-600">
+                  {isViewingOtherUser ? 'This user has no treasured content yet' : 'No treasured content yet'}
+                </div>
+                <div className="text-sm text-gray-400">
+                  {isViewingOtherUser ? 'No public treasured content available' : 'Discover and treasure some amazing content!'}
+                </div>
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="share" className="mt-[30px]">
-            {myCreatedLoading ? (
+            {createdArticlesLoading ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">加载我的创作中...</div>
+                <div className="text-lg text-gray-600">Loading shared content...</div>
               </div>
-            ) : myCreatedError ? (
+            ) : createdArticlesError ? (
               <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-red-600">加载失败: {myCreatedError}</div>
+                <div className="text-lg text-red-600">Loading failed: {createdArticlesError}</div>
               </div>
-            ) : myCreatedData && myCreatedData.data.length > 0 ? (
-              <div className="flex items-start gap-6 w-full">
-                {myCreatedData.data.slice(0, 2).map((article) => {
-                  const card = transformApiToCard(article);
-                  return (
-                    <div
-                      key={card.id}
-                      className="flex flex-col gap-6 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]"
-                    >
-                      {renderMyShareCard(card)}
-                    </div>
-                  );
+            ) : createdArticles.length > 0 ? (
+              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
+                {createdArticles.map((article) => {
+                  const card = transformCreatedApiToCard(article);
+                  return renderMyShareCard(card);
                 })}
               </div>
             ) : (
-              <div className="flex justify-center items-center py-20">
-                <div className="text-lg text-gray-600">还没有创作的内容哦～</div>
+              <div className="flex flex-col justify-center items-center py-20 gap-4">
+                <div className="text-lg text-gray-600">
+                  {isViewingOtherUser ? 'This user has no shared content yet' : 'No shared content yet'}
+                </div>
+                <div className="text-sm text-gray-400">
+                  {isViewingOtherUser ? 'No public shared content available' : 'Start sharing some amazing content!'}
+                </div>
               </div>
             )}
           </TabsContent>
@@ -643,11 +814,11 @@ export const MainContentSection = (): JSX.Element => {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
+            <DialogTitle>Confirm Delete</DialogTitle>
             <DialogDescription>
-              你确定要删除文章 "{articleToDelete?.title}" 吗？
+              Are you sure you want to delete the article "{articleToDelete?.title}"?
               <br />
-              此操作不可撤销。
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -659,26 +830,100 @@ export const MainContentSection = (): JSX.Element => {
               }}
               disabled={isDeleting}
             >
-              取消
+              Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleDeleteArticle}
               disabled={isDeleting}
             >
-              {isDeleting ? "删除中..." : "确认删除"}
+              {isDeleting ? "Deleting..." : "Confirm Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 图片预览模态框 */}
-      <ImagePreviewModal
-        isOpen={isImagePreviewOpen}
-        imageUrl={previewImageUrl}
-        alt={previewImageAlt}
-        onClose={handleCloseImagePreview}
-      />
+      {/* 简单直接的图片预览模态框 */}
+      {showImagePreview && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => {
+            setShowImagePreview(false);
+            setPreviewImageUrl('');
+            setPreviewImageAlt('');
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowImagePreview(false);
+              setPreviewImageUrl('');
+              setPreviewImageAlt('');
+            }}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(0, 0, 0, 0.5)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              fontSize: '20px',
+              cursor: 'pointer',
+              zIndex: 1000000
+            }}
+          >
+            ×
+          </button>
+
+          {/* Image */}
+          <img
+            src={previewImageUrl}
+            alt={previewImageAlt}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '400px',
+              maxHeight: '400px',
+              width: 'auto',
+              height: 'auto',
+              objectFit: 'contain',
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+              border: '4px solid white'
+            }}
+          />
+
+          {/* Hint text */}
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            color: 'white',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            fontSize: '14px'
+          }}>
+            点击空白区域或按ESC关闭
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

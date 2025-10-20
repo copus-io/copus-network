@@ -1,1 +1,0 @@
-export { ShareTreasureHeaderSection } from "./ShareTreasureHeaderSection";

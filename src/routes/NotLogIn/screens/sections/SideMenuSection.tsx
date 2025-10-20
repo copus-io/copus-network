@@ -10,7 +10,7 @@ export const SideMenuSection = (): JSX.Element => {
       icon: "https://c.animaapp.com/mft5gmofxQLTNf/img/eyes.svg",
       isActive: true,
       iconType: "bg",
-      href: "/discovery",
+      href: "/copus",
     },
     {
       id: "treasury",
