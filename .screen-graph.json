@@ -97,7 +97,7 @@
       ]
     },
     {
-      "id": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx",
       "label": "Screen",
       "routes": [
         "/screen/default"
@@ -243,9 +243,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -267,22 +267,6 @@
           "column": 16,
           "endColumn": 57,
           "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
         }
       }
     },
@@ -515,9 +499,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -539,22 +523,6 @@
           "column": 16,
           "endColumn": 57,
           "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
         }
       }
     },
@@ -675,9 +643,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -699,22 +667,6 @@
           "column": 16,
           "endColumn": 57,
           "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
         }
       }
     },
@@ -851,9 +803,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -879,31 +831,15 @@
       }
     },
     {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/screens/UserProfile/sections/UserProfileContent.tsx:76:25-to-src/routes/Login/screens/Login.tsx",
+      "id": "src/screens/UserProfile/sections/UserProfileContent.tsx:117:25-to-src/routes/Login/screens/Login.tsx",
       "source": "src/screens/UserProfile/UserProfile.tsx",
       "target": "src/routes/Login/screens/Login.tsx",
       "data": {
         "viaRoute": "/login",
         "trigger": {
           "element": "navigate('/login')",
-          "line": 76,
-          "endLine": 76,
+          "line": 117,
+          "endLine": 117,
           "column": 25,
           "endColumn": 43,
           "sourceFile": "src/screens/UserProfile/sections/UserProfileContent.tsx"
@@ -911,17 +847,17 @@
       }
     },
     {
-      "id": "src/screens/UserProfile/sections/UserProfileContent.tsx:166:27-to-src/screens/Discovery/Discovery.tsx",
+      "id": "src/screens/UserProfile/sections/UserProfileContent.tsx:207:27-to-src/screens/Discovery/Discovery.tsx",
       "source": "src/screens/UserProfile/UserProfile.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "navigate('/copus')",
-          "line": 166,
-          "endLine": 166,
+          "element": "navigate('/')",
+          "line": 207,
+          "endLine": 207,
           "column": 27,
-          "endColumn": 45,
+          "endColumn": 40,
           "sourceFile": "src/screens/UserProfile/sections/UserProfileContent.tsx"
         }
       }
@@ -1043,9 +979,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -1067,22 +1003,6 @@
           "column": 16,
           "endColumn": 57,
           "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
         }
       }
     },
@@ -1219,9 +1139,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -1243,22 +1163,6 @@
           "column": 16,
           "endColumn": 57,
           "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
         }
       }
     },
@@ -1475,9 +1379,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -1499,22 +1403,6 @@
           "column": 16,
           "endColumn": 57,
           "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
         }
       }
     },
@@ -1635,9 +1523,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -1659,22 +1547,6 @@
           "column": 16,
           "endColumn": 57,
           "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
         }
       }
     },
@@ -1875,9 +1747,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -1903,24 +1775,8 @@
       }
     },
     {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/routes/Screen26/screens/Screen.tsx:30:14-to-src/components/guards/AuthGuard.tsx",
-      "source": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx:30:14-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/routes/Screen27/screens/Screen.tsx",
       "target": "src/components/guards/AuthGuard.tsx",
       "data": {
         "viaRoute": "/setting",
@@ -1930,13 +1786,13 @@
           "endLine": 34,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
         }
       }
     },
     {
-      "id": "src/routes/Screen26/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
-      "source": "src/routes/Screen26/screens/Screen.tsx",
+      "id": "src/routes/Screen27/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
+      "source": "src/routes/Screen27/screens/Screen.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
         "viaRoute": "/",
@@ -1946,7 +1802,7 @@
           "endLine": 46,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
         }
       }
     },
@@ -2163,9 +2019,9 @@
       "source": "src/screens/Discovery/Discovery.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
-        "viaRoute": "/copus",
+        "viaRoute": "/",
         "trigger": {
-          "element": "<Link to=\"/copus\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
+          "element": "<Link to=\"/\" className=\"inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]\">\n                <div className=\"relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]\">\n                  Discover now\n                </div>\n              </Link>",
           "line": 188,
           "endLine": 192,
           "column": 14,
@@ -2187,22 +2043,6 @@
           "column": 16,
           "endColumn": 57,
           "sourceFile": "src/components/shared/HeaderSection/HeaderSection.tsx"
-        }
-      }
-    },
-    {
-      "id": "src/components/shared/MobileMenu/MobileMenu.tsx:80:6-to-src/routes/Login/screens/Login.tsx",
-      "source": "src/screens/Discovery/Discovery.tsx",
-      "target": "src/routes/Login/screens/Login.tsx",
-      "data": {
-        "viaRoute": "/login",
-        "trigger": {
-          "element": "navigate('/login')",
-          "line": 80,
-          "endLine": 80,
-          "column": 6,
-          "endColumn": 24,
-          "sourceFile": "src/components/shared/MobileMenu/MobileMenu.tsx"
         }
       }
     }
