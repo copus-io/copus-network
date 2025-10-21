@@ -503,7 +503,7 @@ export const Login = (): JSX.Element => {
         password: '***MD5 encrypted***'
       });
 
-      const response = await fetch('${APP_CONFIG.API.BASE_URL}/client/common/login', {
+      const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -620,7 +620,7 @@ export const Login = (): JSX.Element => {
         code: verificationCode
       });
 
-      const response = await fetch('${APP_CONFIG.API.BASE_URL}/client/common/register', {
+      const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
