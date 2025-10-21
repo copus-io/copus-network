@@ -1,5 +1,8 @@
 // Application configuration file
 export const APP_CONFIG = {
+  // App URL - current frontend environment URL
+  APP_URL: import.meta.env.VITE_APP_URL || 'http://localhost:5177',
+
   // API configuration - using environment variables
   API: {
     BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network',
