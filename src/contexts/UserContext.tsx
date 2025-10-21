@@ -186,17 +186,27 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error('Failed to get user info:', error);
 
-      // If retry allowed and authentication error, try to refresh token
-      if (retryOnFailure && error instanceof Error && error.message.includes('authentication')) {
-        const refreshSuccess = await tryRefreshToken();
-        if (refreshSuccess) {
-          // Refresh successful, re-fetch user info (no retry)
-          return fetchUserInfo(authToken, false);
+      // Only logout for authentication errors, not for network errors or other issues
+      if (error instanceof Error && (
+        error.message.includes('authentication') ||
+        error.message.includes('token') ||
+        error.message.includes('401') ||
+        error.message.includes('403') ||
+        error.message.includes('unauthorized')
+      )) {
+        // If retry allowed, try to refresh token
+        if (retryOnFailure) {
+          const refreshSuccess = await tryRefreshToken();
+          if (refreshSuccess) {
+            // Refresh successful, re-fetch user info (no retry)
+            return fetchUserInfo(authToken, false);
+          }
         }
-      }
 
-      // If getting user info failed, token may have expired, logout
-      logout();
+        // Only logout for authentication errors (expired/invalid token)
+        logout();
+      }
+      // For other errors (network, server errors), just log them and keep user logged in
     }
   }, [logout]); // Depends on logout
 
