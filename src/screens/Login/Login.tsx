@@ -377,15 +377,15 @@ export const Login = (): JSX.Element => {
 
         const address = accounts[0];
 
-        // 2. Get signature data
+        // 2. Get signature data from backend
         const signatureData = await AuthService.getMetamaskSignatureData(address);
 
-        // 3. User signature (adjust according to actual API response data format)
-        const messageToSign = `Welcome to Copus! Please sign this message to authenticate your wallet: ${signatureData}`;
-
+        // 3. Sign the exact message returned by backend (snowflake ID)
+        // IMPORTANT: Must use signatureData directly without any wrapper text
+        // Backend will verify signature against this exact value
         const signature = await window.ethereum.request({
           method: 'personal_sign',
-          params: [messageToSign, address],
+          params: [signatureData, address],
         });
 
 
