@@ -54,19 +54,34 @@ export const apiRequest = async <T>(
 
       // Special handling for authentication-related errors
       if (response.status === 401 || response.status === 403) {
-        localStorage.removeItem('copus_token');
-        localStorage.removeItem('copus_user');
+        // Only clear tokens and throw auth error if this endpoint required authentication
+        // Public endpoints (requiresAuth: false) should not fail due to auth errors
+        if (requiresAuth) {
+          localStorage.removeItem('copus_token');
+          localStorage.removeItem('copus_user');
 
-        // Attempt to parse error information
-        let errorMessage = 'Authentication failed';
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.msg || errorJson.message || errorMessage;
-        } catch (e) {
-          // Ignore JSON parsing errors
+          // Attempt to parse error information
+          let errorMessage = 'Authentication failed';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.msg || errorJson.message || errorMessage;
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+
+          throw new Error(`Authentication failed: ${errorMessage}, please log in again`);
+        } else {
+          // For public endpoints, log warning but don't throw auth error
+          console.warn(`⚠️ Public endpoint ${endpoint} returned ${response.status}, but continuing anyway`);
+          // Try to parse the response anyway in case there's useful data
+          try {
+            const data = JSON.parse(errorText);
+            return data;
+          } catch (e) {
+            // If can't parse, throw generic error
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+          }
         }
-
-        throw new Error(`Authentication failed: ${errorMessage}, please log in again`);
       }
 
       throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
