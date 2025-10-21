@@ -1486,4 +1486,5 @@ export const CODE_TYPES = {
   REGISTER: 1,
   LOGIN: 2,
   RESET_PASSWORD: 3,
+  DELETE_ACCOUNT: 99,
 } as const;

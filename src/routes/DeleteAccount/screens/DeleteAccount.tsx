@@ -27,7 +27,7 @@ export const DeleteAccount = (): JSX.Element => {
 
   const handleSendCode = async () => {
     if (!user?.email) {
-      alert('无法获取用户邮箱地址');
+      alert('Unable to get user email address');
       return;
     }
 
@@ -35,12 +35,12 @@ export const DeleteAccount = (): JSX.Element => {
     try {
       await AuthService.sendVerificationCode({
         email: user.email,
-        codeType: CODE_TYPES.RESET_PASSWORD // 使用重置密码的验证码类型，或者可以定义新的删除账号类型
+        codeType: CODE_TYPES.DELETE_ACCOUNT // Use delete account verification code type (99)
       });
-      alert('验证码已发送到您的邮箱');
+      alert('Verification code sent to your email');
     } catch (error) {
-      console.error('发送验证码失败:', error);
-      alert('发送验证码失败，请稍后重试');
+      console.error('Failed to send verification code:', error);
+      alert('Failed to send verification code, please try again later');
     } finally {
       setIsSendingCode(false);
     }
@@ -54,7 +54,7 @@ export const DeleteAccount = (): JSX.Element => {
     setIsLoading(true);
     try {
       const success = await AuthService.deleteAccount({
-        accountType: 0, // 普通账号类型
+        accountType: 0, // Normal account type
         code: verificationCode.trim(),
         reason: deleteReason.trim()
       });
@@ -62,18 +62,18 @@ export const DeleteAccount = (): JSX.Element => {
       if (success) {
         setShowSuccessPopup(true);
       } else {
-        alert('删除账号失败，请检查验证码是否正确');
+        alert('Failed to delete account, please check if the verification code is correct');
       }
     } catch (error) {
-      console.error('删除账号失败:', error);
-      alert('删除账号失败，请稍后重试');
+      console.error('Failed to delete account:', error);
+      alert('Failed to delete account, please try again later');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleFinalConfirm = async () => {
-    // 最终确认删除后，登出用户并跳转到首页
+    // After final confirmation, log out user and redirect to homepage
     await logout();
     navigate('/');
   };
