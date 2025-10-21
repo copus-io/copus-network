@@ -1,5 +1,6 @@
 import { apiRequest } from './api';
 import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams } from '../types/article';
+import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
@@ -44,7 +45,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     userName: backendArticle.authorInfo.username,
     userId: backendArticle.authorInfo.id,
     namespace: backendArticle.authorInfo.namespace, // Add namespace field
-    userAvatar: backendArticle.authorInfo.faceUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${backendArticle.authorInfo.username}&backgroundColor=b6e3f4&hair=longHair&hairColor=724133&eyes=happy&mouth=smile&accessories=prescription01&accessoriesColor=262e33`, // Dynamically generate default avatar
+    userAvatar: (backendArticle.authorInfo.faceUrl && backendArticle.authorInfo.faceUrl.trim() !== '') ? backendArticle.authorInfo.faceUrl : profileDefaultAvatar, // Two states only: user's image or default image
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
