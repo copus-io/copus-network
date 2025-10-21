@@ -241,11 +241,7 @@ export const Content = (): JSX.Element => {
                   <img
                     className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
                     alt="Profile image"
-                    src={
-                      content.userAvatar ||
-                      (user && user.id === content.userId ? user.faceUrl : null) ||
-                      profileDefaultAvatar
-                    }
+                    src={content.userAvatar}
                   />
 
                   <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
