@@ -218,14 +218,11 @@ export const Content = (): JSX.Element => {
                   </div>
 
                   <p
-                    className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-xl tracking-[0] leading-[32.0px] break-all overflow-hidden"
+                    className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-xl tracking-[0] leading-[32.0px]"
                     style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 6,
-                      overflow: 'hidden',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      whiteSpace: 'pre-wrap'
                     }}
                   >
                     {content.description}
