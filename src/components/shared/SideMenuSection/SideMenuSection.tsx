@@ -1,7 +1,8 @@
 import { GithubIcon } from "lucide-react";
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../ui/button";
+import { useUser } from "../../../contexts/UserContext";
 
 interface SideMenuSectionProps {
   activeItem?: string;
@@ -62,37 +63,69 @@ const menuItems = [
 const footerLinks = ["About", "Support", "Contact us", "Terms & Privacy"];
 
 export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Element => {
+  const { user } = useUser();
+  const navigate = useNavigate();
+
+  const handleMenuItemClick = (item: typeof menuItems[0]) => {
+    // Check if Setting link and user is not logged in
+    if (item.key === 'setting' && !user) {
+      navigate('/login');
+    } else {
+      navigate(item.href);
+    }
+  };
+
   return (
     <aside className="hidden lg:flex flex-col h-screen w-[300px] fixed left-0 top-0 pt-[120px] px-[30px] pb-[30px]">
       <nav className="inline-flex items-center gap-5 px-5 py-[30px] bg-[#ffffff] flex-col relative flex-[0_0_auto] rounded-lg w-[240px]">
         {menuItems.map((item, index) => {
           const isActive = activeItem === item.key;
           const IconComponent = item.icon;
+          const requiresAuth = item.key === 'setting' || item.key === 'treasury' || item.key === 'notification';
+
           return (
             <Button
               key={item.label}
-              asChild
+              asChild={!requiresAuth}
               variant="ghost"
+              onClick={requiresAuth ? () => handleMenuItemClick(item) : undefined}
               className={`flex items-center gap-5 px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] h-auto justify-start transition-colors hover:bg-gray-50 ${
                 isActive
                   ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
                   : ""
               }`}
             >
-              <Link to={item.href}>
-                <div className="relative w-[30px] h-[30px] flex items-center justify-center">
-                  <IconComponent
-                    className="text-dark-grey"
-                  />
-                </div>
-                <span
-                  className={`relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap ${
-                    isActive ? "font-bold" : "font-normal"
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </Link>
+              {requiresAuth ? (
+                <>
+                  <div className="relative w-[30px] h-[30px] flex items-center justify-center">
+                    <IconComponent
+                      className="text-dark-grey"
+                    />
+                  </div>
+                  <span
+                    className={`relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap ${
+                      isActive ? "font-bold" : "font-normal"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </>
+              ) : (
+                <Link to={item.href}>
+                  <div className="relative w-[30px] h-[30px] flex items-center justify-center">
+                    <IconComponent
+                      className="text-dark-grey"
+                    />
+                  </div>
+                  <span
+                    className={`relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap ${
+                      isActive ? "font-bold" : "font-normal"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              )}
             </Button>
           );
         })}
