@@ -27,11 +27,16 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   // Fetch user info and articles list
   useEffect(() => {
     const fetchUserData = async () => {
+      console.log('[UserProfile] Starting to fetch user data for namespace:', namespace);
       setLoading(true);
+      setUserInfo(null); // Clear previous user info
+      setArticles([]); // Clear previous articles
+
       try {
-        // Call API to get user information
+        // Call API to get user information - this endpoint does NOT require authentication
+        console.log('[UserProfile] Calling getOtherUserTreasuryInfoByNamespace...');
         const userData = await AuthService.getOtherUserTreasuryInfoByNamespace(namespace);
-        console.log('Fetched user data:', userData);
+        console.log('[UserProfile] Successfully fetched user data:', userData);
 
         // Set user info using real API data
         setUserInfo({
@@ -51,9 +56,11 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           walletAddress: userData.walletAddress
         });
 
+        console.log('[UserProfile] User info set successfully, now fetching liked articles...');
+
         // Fetch user's liked articles using targetUserId
         const articlesData = await AuthService.getMyLikedArticlesCorrect(1, 20, userData.id);
-        console.log('Fetched liked articles:', articlesData);
+        console.log('[UserProfile] Successfully fetched liked articles:', articlesData);
 
         // Transform API data to ArticleData format
         const transformedArticles: ArticleData[] = articlesData.data.map(article => ({
@@ -80,20 +87,28 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         }));
 
         setArticles(transformedArticles);
+        console.log('[UserProfile] All data loaded successfully');
       } catch (error) {
-        console.error("Failed to fetch user data:", error);
+        console.error("[UserProfile] Failed to fetch user data:", error);
+        console.error("[UserProfile] Error details:", {
+          message: error instanceof Error ? error.message : String(error),
+          namespace: namespace
+        });
         showToast("Unable to load user information", "error");
       } finally {
+        console.log('[UserProfile] Setting loading to false');
         setLoading(false);
       }
     };
 
     if (namespace) {
       fetchUserData();
+    } else {
+      console.warn('[UserProfile] No namespace provided');
     }
   }, [namespace, showToast]);
 
-  // 处理点赞
+  // Handle like/treasure action
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
     if (!user) {
       showToast('Please log in to treasure this content', 'error', {
@@ -108,20 +123,20 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     await toggleLike(articleId, currentIsLiked, currentLikeCount);
   };
 
-  // 处理用户点击（查看其他用户）
+  // Handle user click (view other users)
   const handleUserClick = (userId: number) => {
-    // 这里已经在用户的个人主页了，点击同一个用户不做跳转
+    // Already on this user's profile page, don't navigate if clicking same user
     if (userInfo && userId === userInfo.id) {
       return;
     }
-    // 跳转到其他用户的主页
+    // Navigate to other user's profile page
     navigate(`/user/${namespace}`);
   };
 
-  // 检查是否是当前用户自己的资料页
+  // Check if viewing own profile
   const isOwnProfile = user && userInfo && user.namespace === userInfo.namespace;
 
-  // 调试信息
+  // Debug information
   console.log('UserProfile Debug:', {
     user: user ? { id: user.id, namespace: user.namespace } : null,
     userInfo: userInfo ? { id: userInfo.id, namespace: userInfo.namespace } : null,
@@ -129,28 +144,28 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     requestedNamespace: namespace
   });
 
-  // 处理封面图点击事件
+  // Handle cover image click
   const handleCoverClick = () => {
     if (isOwnProfile) {
       setShowCoverUploader(true);
     }
   };
 
-  // 处理封面图上传成功
+  // Handle cover image upload success
   const handleCoverUploaded = async (imageUrl: string) => {
     try {
-      // 调用API更新用户封面图
+      // Call API to update user cover image
       await AuthService.updateUserInfo({
         coverUrl: imageUrl
       });
 
-      // 更新本地状态
+      // Update local state
       setUserInfo({
         ...userInfo,
         coverUrl: imageUrl
       });
 
-      // 更新UserContext中的用户信息
+      // Update user info in UserContext
       if (user && updateUser) {
         updateUser({
           ...user,
@@ -166,12 +181,12 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     }
   };
 
-  // 处理封面图上传错误
+  // Handle cover image upload error
   const handleCoverUploadError = (error: string) => {
     showToast(error, 'error');
   };
 
-  // 处理头像点击预览
+  // Handle avatar click to preview
   const handleAvatarClick = () => {
     if (userInfo?.faceUrl) {
       openPreview(userInfo.faceUrl, `${userInfo.username}'s avatar`);
@@ -201,9 +216,9 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
 
   return (
     <main className="flex flex-col gap-10 px-5 py-0 relative">
-      {/* 用户信息头部 */}
+      {/* User info header */}
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        {/* 封面图片 */}
+        {/* Cover image */}
         <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
           <img
             src={userInfo.coverUrl || 'https://c.animaapp.com/w7obk4mX/img/banner.png'}
@@ -213,7 +228,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             }`}
             onClick={handleCoverClick}
           />
-          {/* 编辑提示覆盖层 - 仅在自己的资料页时显示 */}
+          {/* Edit overlay - only shown on own profile */}
           {isOwnProfile && (
             <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
               <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
@@ -226,7 +241,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           )}
         </div>
 
-        {/* 用户信息 */}
+        {/* User information */}
         <div className="p-8 mt-[-64px] relative">
           <div className="flex items-start gap-8">
             <img
@@ -276,7 +291,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         </button>
       </section>
 
-      {/* 文章列表 */}
+      {/* Articles list */}
       <section
         className="w-full"
         style={{
@@ -310,13 +325,13 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         <div className="text-center py-20">
           <p className="text-gray-500">
             {userInfo.statistics?.articleCount > 0
-              ? `${userInfo.username} 已创作 ${userInfo.statistics.articleCount} 篇文章，暂未在此展示`
-              : `${userInfo.username} 还没有发布任何文章`}
+              ? `${userInfo.username} has created ${userInfo.statistics.articleCount} articles, not shown here yet`
+              : `${userInfo.username} hasn't published any articles yet`}
           </p>
         </div>
       )}
 
-      {/* 封面图片上传组件 */}
+      {/* Cover image upload component */}
       {showCoverUploader && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
