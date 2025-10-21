@@ -77,6 +77,7 @@ export const Content = (): JSX.Element => {
     categoryTextColor: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).text,
     userName: article.authorInfo?.username || 'Anonymous',
     userId: article.authorInfo?.id,
+    userNamespace: article.authorInfo?.namespace,
     userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
     date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
@@ -160,24 +161,14 @@ export const Content = (): JSX.Element => {
 
 
   const handleUserClick = () => {
-    if (!content?.userId) return;
+    if (!content?.userNamespace) return;
 
-    if (!user) {
-      showToast('Please log in to view user profiles', 'error', {
-        action: {
-          label: 'Login',
-          onClick: () => navigate('/login')
-        }
-      });
-      return;
-    }
-
-    // If it's the current user's own article, navigate to my treasury page
-    if (user.id === content.userId) {
+    // If logged in and it's the current user's own article, navigate to my treasury page
+    if (user && user.id === content.userId) {
       navigate('/my-treasury');
     } else {
-      // If it's another user's article, also navigate to my treasury page for now
-      navigate('/my-treasury');
+      // Navigate to the user's profile page (works for both logged-in and non-logged-in users)
+      navigate(`/user/${content.userNamespace}`);
     }
   };
 
