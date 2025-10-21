@@ -47,7 +47,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleCrop = async (croppedFile: File) => {
     try {
-      console.log('🔥 开始处理裁剪后的图片:', {
+      console.log('🔥 Processing cropped image:', {
         fileName: croppedFile.name,
         fileSize: croppedFile.size,
         fileType: croppedFile.type,
@@ -67,16 +67,16 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         format: 'jpeg'
       });
 
-      console.log('🔥 图片压缩完成:', {
+      console.log('🔥 Image compression complete:', {
         originalSize: croppedFile.size,
         compressedSize: compressedFile.size,
         compression: `${((1 - compressedFile.size / croppedFile.size) * 100).toFixed(1)}%`
       });
 
       // Upload to server
-      console.log('🔥 开始上传到服务器...');
+      console.log('🔥 Starting upload to server...');
       const result = await AuthService.uploadImage(compressedFile);
-      console.log('🔥 上传成功，服务器返回:', result);
+      console.log('🔥 Upload successful, server response:', result);
 
       onImageUploaded(result.url);
 
@@ -88,7 +88,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       setSelectedFile(null);
 
     } catch (error) {
-      console.error('🔥 图片上传失败 - 详细错误信息:', {
+      console.error('🔥 Image upload failed - detailed error information:', {
         error,
         errorMessage: error.message,
         errorStack: error.stack,
@@ -96,9 +96,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         errorString: String(error)
       });
 
-      let errorMessage = '封面图上传失败，请重试';
+      let errorMessage = 'Image upload failed, please try again';
       if (error.message) {
-        errorMessage = `上传失败: ${error.message}`;
+        errorMessage = `Upload failed: ${error.message}`;
       }
 
       onError?.(errorMessage);

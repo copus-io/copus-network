@@ -658,16 +658,38 @@ export class AuthService {
         return { url: response.url };
       }
 
-      console.error('🔥 No valid URL found, throwing error');
-      throw new Error(response.msg || response.message || 'Image upload failed');
+      console.error('🔥 No valid URL found in response, throwing error');
+      const errorMsg = response.msg || response.message || 'Server did not return a valid image URL';
+      throw new Error(errorMsg);
     } catch (error) {
       console.error('🔥 API request failed:', {
         error,
-        errorMessage: error.message,
-        errorResponse: error.response,
-        errorStatus: error.status
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name
       });
-      throw error;
+
+      // Extract error message from different error formats
+      let errorMessage = 'Image upload failed';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Handle API response error object
+        const errorObj = error as any;
+        if (errorObj.msg) {
+          errorMessage = errorObj.msg;
+        } else if (errorObj.message) {
+          errorMessage = errorObj.message;
+        } else if (errorObj.data?.msg) {
+          errorMessage = errorObj.data.msg;
+        } else if (errorObj.data?.message) {
+          errorMessage = errorObj.data.message;
+        }
+      }
+
+      console.error('🔥 Extracted error message:', errorMessage);
+      throw new Error(errorMessage);
     }
   }
 
