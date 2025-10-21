@@ -675,7 +675,7 @@ export const MainContentSection = (): JSX.Element => {
 
             <div className="flex-col gap-[15px] flex items-start w-full">
               <div className="flex items-center gap-2.5 w-full">
-                <p className="mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] break-words [font-style:var(--p-l-font-style)] w-full">
+                <p className="mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
                   {isViewingOtherUser
                     ? (treasuryUserInfo?.bio || "Welcome to this user's creative space.")
                     : (user?.bio || "Hello, welcome to my creative space. Design, travel, and everyday life.")}

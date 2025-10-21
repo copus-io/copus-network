@@ -287,7 +287,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     <main className="flex flex-col items-start gap-10 py-0 relative flex-1">
       {/* Welcome Guide Bar - Display different content based on login status */}
       {showWelcomeGuide && (
-        <section className="mx-2.5 px-2.5 py-4 sm:py-[30px] rounded-lg border-l-[3px] [border-left-style:solid] border-red shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-start gap-[15px] relative w-full min-h-fit overflow-hidden">
+        <section className="pl-4 sm:pl-[30px] pr-4 py-4 sm:py-[30px] rounded-lg border-l-[3px] [border-left-style:solid] border-red shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-start gap-[15px] relative w-full min-h-fit overflow-hidden">
           {/* Close button - Keep in top right corner */}
           <button
             onClick={handleCloseWelcomeGuide}
