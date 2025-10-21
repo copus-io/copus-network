@@ -615,6 +615,22 @@ export class AuthService {
       lastModified: file.lastModified
     });
 
+    // Check authentication token before attempting upload
+    const token = localStorage.getItem('copus_token');
+    const user = localStorage.getItem('copus_user');
+    console.log('🔥 Authentication check:', {
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : 'NO_TOKEN',
+      hasUser: !!user,
+      userPreview: user ? JSON.parse(user).username : 'NO_USER'
+    });
+
+    if (!token || token.trim() === '') {
+      console.error('🔥 No authentication token found in localStorage');
+      throw new Error('Please log in to upload images. Your session may have expired.');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
