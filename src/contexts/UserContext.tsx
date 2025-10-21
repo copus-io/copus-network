@@ -198,10 +198,27 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // If token is provided, use it; otherwise get from localStorage
       const tokenToUse = authToken || localStorage.getItem('copus_token');
 
+      if (!tokenToUse) {
+        console.error('❌ No token available for fetchUserInfo');
+        throw new Error('No authentication token available');
+      }
+
+      console.log('📥 fetchUserInfo called with token:', tokenToUse.substring(0, 20) + '...');
+
       const userInfo = await AuthService.getUserInfo(tokenToUse || undefined);
 
+      console.log('✅ Got user info:', userInfo.username);
+
+      // Save user to state and localStorage
       setUser(userInfo);
       localStorage.setItem('copus_user', JSON.stringify(userInfo));
+
+      // IMPORTANT: If a token was provided (like during login), save it to state too!
+      if (authToken) {
+        console.log('💾 Saving token to state and localStorage');
+        setToken(authToken);
+        localStorage.setItem('copus_token', authToken);
+      }
     } catch (error) {
       console.warn('Failed to get user info (user stays logged in):', error);
 
