@@ -184,35 +184,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(userInfo);
       localStorage.setItem('copus_user', JSON.stringify(userInfo));
     } catch (error) {
-      console.error('Failed to get user info:', error);
+      console.warn('Failed to get user info (user stays logged in):', error);
 
-      // Only logout for authentication errors, not for network errors or other issues
-      if (error instanceof Error && (
-        error.message.includes('authentication') ||
-        error.message.includes('token') ||
-        error.message.includes('401') ||
-        error.message.includes('403') ||
-        error.message.includes('unauthorized')
-      )) {
-        // If retry allowed, try to refresh token
-        if (retryOnFailure) {
-          const refreshSuccess = await tryRefreshToken();
-          if (refreshSuccess) {
-            // Refresh successful, re-fetch user info (no retry)
-            return fetchUserInfo(authToken, false);
-          }
-        }
-
-        // Clear tokens from localStorage (api.ts no longer does this automatically)
-        localStorage.removeItem('copus_token');
-        localStorage.removeItem('copus_user');
-
-        // Only logout for authentication errors (expired/invalid token)
-        logout();
-      }
-      // For other errors (network, server errors), just log them and keep user logged in
+      // Don't automatically logout - just throw the error
+      // The calling code can decide what to do
+      // Users should only be logged out if they manually logout or token is confirmed expired
+      throw error;
     }
-  }, [logout]); // Depends on logout
+  }, []); // No dependencies - doesn't call logout anymore
 
   // Social links management functions
   const fetchSocialLinks = useCallback(async (): Promise<void> => {
