@@ -35,6 +35,30 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
   };
 
 
+  // Check if faceUrl is a real user-uploaded image or a generated avatar
+  const isGeneratedAvatar = (url: string | null | undefined): boolean => {
+    if (!url) return true;
+    const lowerUrl = url.toLowerCase();
+    // List of known avatar generation services to filter out
+    return lowerUrl.includes('dicebear') ||
+           lowerUrl.includes('ui-avatars') ||
+           lowerUrl.includes('avatar') && lowerUrl.includes('api') ||
+           lowerUrl.includes('gravatar') ||
+           lowerUrl.includes('robohash') ||
+           lowerUrl.includes('adorable.io') ||
+           lowerUrl.includes('avatar.iran.liara.run') ||
+           url.trim() === '';
+  };
+
+  // Determine the user avatar: only use faceUrl if it's a real uploaded image, otherwise use default
+  const getUserAvatar = (): string => {
+    const faceUrl = backendArticle.authorInfo.faceUrl;
+    if (isGeneratedAvatar(faceUrl)) {
+      return profileDefaultAvatar;
+    }
+    return faceUrl!;
+  };
+
   const transformedArticle = {
     id: backendArticle.uuid,
     title: backendArticle.title,
@@ -45,7 +69,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     userName: backendArticle.authorInfo.username,
     userId: backendArticle.authorInfo.id,
     namespace: backendArticle.authorInfo.namespace, // Add namespace field
-    userAvatar: (backendArticle.authorInfo.faceUrl && backendArticle.authorInfo.faceUrl.trim() !== '') ? backendArticle.authorInfo.faceUrl : profileDefaultAvatar, // Two states only: user's image or default image
+    userAvatar: getUserAvatar(), // Two states only: user's real uploaded image or default image - no generated avatars
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
