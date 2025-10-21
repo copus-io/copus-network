@@ -886,10 +886,12 @@ export class AuthService {
    * Get user home info by namespace
    */
   static async getUserHomeInfo(namespace: string): Promise<UserHomeResponse> {
-    return apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
+    const response = await apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
       method: 'GET',
       requiresAuth: true,
     });
+    // User information is in response.data
+    return response.data;
   }
 
   /**
@@ -916,10 +918,12 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    return apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
+    const response = await apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
       method: 'GET',
       requiresAuth: false,
     });
+    // User information is in response.data
+    return response.data;
   }
 
   /**
@@ -945,10 +949,12 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    return apiRequest(`/client/user/${userId}/info`, {
+    const response = await apiRequest(`/client/user/${userId}/info`, {
       method: 'GET',
       requiresAuth: false,
     });
+    // User information is in response.data
+    return response.data;
   }
 
   /**
