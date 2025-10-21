@@ -1146,52 +1146,31 @@ export class AuthService {
   }
 
   /**
-   * Update user information - Enhanced version providing more fields for the emperor ✨
+   * Update user information
+   * API only accepts: bio, coverUrl, faceUrl, userName
    */
   static async updateUserInfo(params: {
-    // Basic fields
     userName?: string;
     bio?: string;
     faceUrl?: string;
     coverUrl?: string;
-    // Extended fields - More data for the emperor! 🎁
-    email?: string;
-    namespace?: string;
-    walletAddress?: string;
-    location?: string;
-    website?: string;
-    twitter?: string;
-    github?: string;
-    linkedin?: string;
-    instagram?: string;
-    youtube?: string;
-    discord?: string;
-    telegram?: string;
-    birthDate?: string;
-    profession?: string;
-    skills?: string[];
-    interests?: string[];
-    language?: string;
-    timezone?: string;
-    country?: string;
-    city?: string;
-    company?: string;
-    university?: string;
-    phoneNumber?: string;
-    [key: string]: any; // Allow more unknown fields
+    [key: string]: any; // Allow other fields for backward compatibility, but they won't be sent to API
   }): Promise<boolean> {
-    console.log('User info update parameters analysis:', {
-      totalFieldsCount: Object.keys(params).length,
-      fieldNamesList: Object.keys(params),
-      'emperorWillBeHappy': 'because data is rich! 🎉',
-      completeDataContent: params
-    });
+    // Filter to only send the 4 fields that the API accepts
+    const allowedFields = {
+      ...(params.bio !== undefined && { bio: params.bio }),
+      ...(params.coverUrl !== undefined && { coverUrl: params.coverUrl }),
+      ...(params.faceUrl !== undefined && { faceUrl: params.faceUrl }),
+      ...(params.userName !== undefined && { userName: params.userName }),
+    };
+
+    console.log('Updating user info with allowed fields:', allowedFields);
 
     try {
       const response = await apiRequest('/client/user/updateUser', {
         method: 'POST',
         requiresAuth: true,
-        body: JSON.stringify(params),
+        body: JSON.stringify(allowedFields),
         headers: {
           'Content-Type': 'application/json',
         }
@@ -1199,7 +1178,7 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ Failed to update user info (emperor might need this info):', error);
+      console.error('❌ Failed to update user info:', error);
       throw error;
     }
   }
