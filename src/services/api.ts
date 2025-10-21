@@ -54,12 +54,9 @@ export const apiRequest = async <T>(
 
       // Special handling for authentication-related errors
       if (response.status === 401 || response.status === 403) {
-        // Only clear tokens and throw auth error if this endpoint required authentication
-        // Public endpoints (requiresAuth: false) should not fail due to auth errors
+        // Don't automatically clear tokens here - let the calling code decide
+        // This prevents temporary errors from logging users out
         if (requiresAuth) {
-          localStorage.removeItem('copus_token');
-          localStorage.removeItem('copus_user');
-
           // Attempt to parse error information
           let errorMessage = 'Authentication failed';
           try {

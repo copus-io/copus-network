@@ -203,6 +203,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
 
+        // Clear tokens from localStorage (api.ts no longer does this automatically)
+        localStorage.removeItem('copus_token');
+        localStorage.removeItem('copus_user');
+
         // Only logout for authentication errors (expired/invalid token)
         logout();
       }

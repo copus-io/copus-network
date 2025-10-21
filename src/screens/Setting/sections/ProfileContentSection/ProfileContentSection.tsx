@@ -222,8 +222,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       console.log('Profile update result:', success);
 
       if (success) {
-        // Fetch latest user data from server to ensure UI is in sync
-        await fetchUserInfo();
+        // Try to fetch latest user data from server to ensure UI is in sync
+        try {
+          await fetchUserInfo();
+        } catch (fetchError) {
+          console.warn('Failed to refresh user info after avatar update, but update was successful:', fetchError);
+          // Don't throw - the update was successful even if we can't refresh
+        }
 
         // Close upload modal
         setShowAvatarUploader(false);
@@ -252,8 +257,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       console.log('User profile update result:', success);
 
       if (success) {
-        // Fetch latest user data from server to ensure UI is in sync
-        await fetchUserInfo();
+        // Try to fetch latest user data from server to ensure UI is in sync
+        try {
+          await fetchUserInfo();
+        } catch (fetchError) {
+          console.warn('Failed to refresh user info after cover update, but update was successful:', fetchError);
+          // Don't throw - the update was successful even if we can't refresh
+        }
 
         // Close upload modal
         setShowCoverUploader(false);
@@ -373,8 +383,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       const success = await AuthService.updateUserInfo(updateData);
 
       if (success) {
-        // Fetch latest user data from server to ensure UI is in sync
-        await fetchUserInfo();
+        // Try to fetch latest user data from server to ensure UI is in sync
+        // If this fails with a non-auth error, still show success since the update worked
+        try {
+          await fetchUserInfo();
+        } catch (fetchError) {
+          console.warn('Failed to refresh user info after update, but update was successful:', fetchError);
+          // Don't throw - the update was successful even if we can't refresh
+        }
+
         showToast('Personal information updated successfully', 'success');
         setShowPersonalInfoPopup(false);
       } else {
