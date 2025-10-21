@@ -1423,6 +1423,10 @@ export class AuthService {
   /**
    * Get user's created articles list - using correct API path
    */
+  /**
+   * Get user's created articles list
+   * Public endpoint - does not require authentication
+   */
   static async getMyCreatedArticles(pageIndex: number = 1, pageSize: number = 10, targetUserId?: number): Promise<{
     data: Array<{
       authorInfo: {
@@ -1462,7 +1466,7 @@ export class AuthService {
 
     return apiRequest(`/client/userHome/pageMyCreatedArticle?${params.toString()}`, {
       method: 'GET',
-      requiresAuth: true,
+      requiresAuth: false,
     });
   }
 
