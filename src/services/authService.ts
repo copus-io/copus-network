@@ -884,11 +884,12 @@ export class AuthService {
   /**
    * Get user detail info - by namespace
    * Get user home info by namespace
+   * Public endpoint - does not require authentication
    */
   static async getUserHomeInfo(namespace: string): Promise<UserHomeResponse> {
     const response = await apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
       method: 'GET',
-      requiresAuth: true,
+      requiresAuth: false,
     });
     // User information is in response.data
     return response.data;
