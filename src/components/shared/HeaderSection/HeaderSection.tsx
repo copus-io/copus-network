@@ -60,6 +60,8 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
         onClose={() => setIsMobileMenuOpen(false)}
         isLoggedIn={isLoggedIn}
         activeMenuItem={location.pathname === '/create' ? 'curate' : location.pathname.substring(1)}
+        userAvatar={user?.faceUrl || profileDefaultAvatar}
+        userName={user?.username}
       />
 
       <header className="flex items-center justify-between px-2.5 py-[5px] lg:p-[30px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">

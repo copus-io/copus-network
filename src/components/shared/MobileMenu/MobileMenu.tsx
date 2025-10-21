@@ -7,6 +7,8 @@ interface MobileMenuProps {
   onClose: () => void;
   isLoggedIn: boolean;
   activeMenuItem?: string;
+  userAvatar?: string;
+  userName?: string;
 }
 
 interface MenuItem {
@@ -45,7 +47,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   isOpen,
   onClose,
   isLoggedIn,
-  activeMenuItem
+  activeMenuItem,
+  userAvatar,
+  userName
 }) => {
   const navigate = useNavigate();
 
@@ -113,36 +117,66 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 
       {/* Side Menu */}
       <aside
-        className="w-[310px] h-full pt-2.5 pb-5 px-0 fixed top-0 left-0 bg-white border-r border-solid border-light-grey flex flex-col items-start z-50 lg:hidden"
+        className="w-[310px] h-full pt-2.5 pb-5 px-0 fixed top-0 right-0 bg-white border-l border-solid border-light-grey flex flex-col items-start z-50 lg:hidden"
         role="navigation"
         aria-label="Mobile menu"
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="relative self-stretch w-full flex-[0_0_auto] p-2.5 flex items-center justify-end cursor-pointer hover:bg-gray-50"
+          className="relative self-stretch w-full flex-[0_0_auto] p-2.5 flex items-center justify-end cursor-pointer"
           aria-label="Close menu"
         >
           <X className="w-6 h-6 text-dark-grey" />
         </button>
+
+        {/* Profile Section or Login Button */}
+        {isLoggedIn ? (
+          <button
+            onClick={() => {
+              navigate('/my-treasury');
+              onClose();
+            }}
+            className="flex items-center gap-3 px-5 py-4 border-b border-solid border-light-grey w-full hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <img
+              src={userAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}
+              alt={userName || 'User'}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+            <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-lg">
+              {userName || 'User'}
+            </span>
+          </button>
+        ) : (
+          <div className="px-5 py-4 border-b border-solid border-light-grey w-full">
+            <button
+              onClick={() => {
+                navigate('/login');
+                onClose();
+              }}
+              className="w-full px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50 transition-colors"
+            >
+              Log in / Sign up
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col items-start justify-between relative flex-1 self-stretch w-full grow">
           {/* Main Navigation */}
           <nav className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] border-b border-solid border-light-grey">
             {menuItems.map((item, index) => {
               const isActive = activeMenuItem === item.id;
-              const isDisabled = item.requiresAuth && !isLoggedIn;
 
               return (
                 <button
                   key={item.id}
                   onClick={() => handleMenuItemClick(item)}
-                  disabled={isDisabled}
-                  className={`flex items-center gap-5 px-5 py-[25px] relative self-stretch w-full flex-[0_0_auto] cursor-pointer hover:bg-gray-50 transition-colors ${
+                  className={`flex items-center gap-5 px-5 py-[25px] relative self-stretch w-full flex-[0_0_auto] cursor-pointer transition-colors ${
                     index < menuItems.length - 1
                       ? "border-b border-solid border-light-grey"
                       : ""
-                  } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  }`}
                   aria-label={item.label}
                   aria-current={isActive ? "page" : undefined}
                 >
@@ -151,8 +185,10 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   </div>
 
                   <span
-                    className={`relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap ${
-                      isActive ? "font-bold text-red" : "font-semibold text-off-black"
+                    className={`relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap transition-colors ${
+                      isActive
+                        ? "font-bold text-red"
+                        : "font-normal text-off-black hover:text-black"
                     }`}
                   >
                     {item.label}
@@ -198,9 +234,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
               </div>
             </div>
 
-            <footer className="flex flex-col items-start justify-center gap-2.5 pt-5 pb-0 px-0 relative self-stretch w-full flex-[0_0_auto] bg-transparent">
+            <footer className="flex flex-col items-start gap-2.5 pt-5 pb-0 px-0 relative self-stretch w-full flex-[0_0_auto] bg-transparent">
               <nav
-                className="flex items-center justify-center text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]"
+                className="flex items-start text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]"
                 aria-label="Footer navigation"
               >
                 <div className="flex flex-col items-start [font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px]">
@@ -211,7 +247,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                 </div>
               </nav>
 
-              <p className="flex items-center justify-center text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+              <p className="flex items-start text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
                 <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px]">
                   © 2025 S31 Labs
                 </span>

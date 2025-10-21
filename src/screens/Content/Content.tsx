@@ -194,7 +194,7 @@ export const Content = (): JSX.Element => {
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
-                  <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-medium text-yellow text-sm text-center tracking-[0.5px] leading-4 whitespace-nowrap capitalize">
+                  <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-medium text-yellow text-lg text-center tracking-[0.5px] leading-[27px] whitespace-nowrap capitalize">
                     {content.category}
                   </span>
 
@@ -267,7 +267,7 @@ export const Content = (): JSX.Element => {
               </blockquote>
             </div>
 
-            <div className="flex h-[25px] items-center justify-between relative self-stretch w-full">
+            <div className="flex h-[25px] items-center justify-between relative self-stretch w-full mt-[30px]">
               <time className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] whitespace-nowrap">
                 {content.date}
               </time>
