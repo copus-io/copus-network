@@ -8,7 +8,17 @@ export const Setting = (): JSX.Element => {
 
   // Fetch latest user data when entering Settings page
   useEffect(() => {
-    fetchUserInfo();
+    const loadUserData = async () => {
+      try {
+        await fetchUserInfo();
+      } catch (error) {
+        // Ignore errors - user is already logged in if they're on this page
+        // fetchUserInfo will only logout if there's a real auth error
+        console.warn('Failed to refresh user data on Settings mount:', error);
+      }
+    };
+
+    loadUserData();
   }, [fetchUserInfo]);
 
   return (
