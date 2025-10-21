@@ -167,8 +167,8 @@ export const Content = (): JSX.Element => {
     if (user && user.id === content.userId) {
       navigate('/my-treasury');
     } else {
-      // Navigate to the user's profile page (works for both logged-in and non-logged-in users)
-      navigate(`/user/${content.userNamespace}`);
+      // Navigate to the user's profile page using short link format
+      navigate(`/u/${content.userNamespace}`);
     }
   };
 
