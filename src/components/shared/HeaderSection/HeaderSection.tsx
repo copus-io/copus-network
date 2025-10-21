@@ -185,7 +185,7 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
         ) : (
           <div className="flex items-center gap-[15px]">
             {showDiscoverNow && (
-              <Link to="/copus" className="inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]">
+              <Link to="/" className="inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]">
                 <div className="relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
                   Discover now
                 </div>
