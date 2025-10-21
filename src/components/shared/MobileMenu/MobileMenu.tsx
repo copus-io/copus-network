@@ -13,7 +13,6 @@ interface MenuItem {
   id: string;
   label: string;
   path: string;
-  requiresAuth?: boolean;
 }
 
 // Icon components from SideMenuSection
@@ -59,28 +58,21 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
       id: "treasury",
       label: "My treasury",
       path: "/my-treasury",
-      requiresAuth: true
     },
     {
       id: "notification",
       label: "Notification",
       path: "/notification",
-      requiresAuth: true
     },
     {
       id: "setting",
       label: "Setting",
       path: "/setting",
-      requiresAuth: true
     },
   ];
 
   const handleMenuItemClick = (item: MenuItem) => {
-    if (item.requiresAuth && !isLoggedIn) {
-      navigate('/login');
-    } else {
-      navigate(item.path);
-    }
+    navigate(item.path);
     onClose();
   };
 
@@ -131,18 +123,16 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
           <nav className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] border-b border-solid border-light-grey">
             {menuItems.map((item, index) => {
               const isActive = activeMenuItem === item.id;
-              const isDisabled = item.requiresAuth && !isLoggedIn;
 
               return (
                 <button
                   key={item.id}
                   onClick={() => handleMenuItemClick(item)}
-                  disabled={isDisabled}
                   className={`flex items-center gap-5 px-5 py-[25px] relative self-stretch w-full flex-[0_0_auto] cursor-pointer hover:bg-gray-50 transition-colors ${
                     index < menuItems.length - 1
                       ? "border-b border-solid border-light-grey"
                       : ""
-                  } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  }`}
                   aria-label={item.label}
                   aria-current={isActive ? "page" : undefined}
                 >
