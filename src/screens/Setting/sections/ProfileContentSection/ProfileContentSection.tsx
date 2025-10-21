@@ -15,11 +15,11 @@ import { CustomSwitch } from "../../../../components/ui/custom-switch";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
 
-// 消息类型映射
+// Message type mapping - matches API msgType values
 const MESSAGE_TYPE_MAP = {
-  0: { label: "Show new treasure collection", id: "treasure-collection" },
-  1: { label: "Show system notification", id: "system-notification" },
-  2: { label: "Show email notification", id: "email-notification" },
+  0: { label: "Show all notifications", id: "all-notifications" },
+  1: { label: "Show like notifications", id: "like-notifications" },
+  999: { label: "Show system notifications", id: "system-notifications" },
 } as const;
 
 interface ProfileContentSectionProps {
@@ -89,23 +89,25 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         setNotificationLoading(true);
         const settings = await AuthService.getMessageNotificationSettings();
 
-        // Ensure all 3 notification types exist, use default value if API doesn't return a type
-        const allMessageTypes = [0, 1, 2];
-        const completeSettings = allMessageTypes.map(msgType => {
-          const existingSetting = settings.find(s => s.msgType === msgType);
-          return existingSetting || { msgType, isOpen: true }; // Default: ON
-        });
-
-        setNotificationSettings(completeSettings);
+        // Use the API response directly - it returns the msgTypes that are available
+        // If API returns empty, use default msgTypes from MESSAGE_TYPE_MAP
+        if (settings && settings.length > 0) {
+          setNotificationSettings(settings);
+        } else {
+          // Default fallback: all notification types ON
+          const defaultMessageTypes = Object.keys(MESSAGE_TYPE_MAP).map(Number);
+          setNotificationSettings(
+            defaultMessageTypes.map(msgType => ({ msgType, isOpen: true }))
+          );
+        }
       } catch (error) {
         console.error('❌ Failed to get notification settings:', error);
         showToast('Failed to get notification settings, please try again', 'error');
         // Set default values to avoid infinite loading - all notifications ON by default
-        setNotificationSettings([
-          { msgType: 0, isOpen: true },
-          { msgType: 1, isOpen: true },
-          { msgType: 2, isOpen: true }
-        ]);
+        const defaultMessageTypes = Object.keys(MESSAGE_TYPE_MAP).map(Number);
+        setNotificationSettings(
+          defaultMessageTypes.map(msgType => ({ msgType, isOpen: true }))
+        );
       } finally {
         setNotificationLoading(false);
       }
