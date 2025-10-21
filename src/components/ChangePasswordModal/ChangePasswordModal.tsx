@@ -5,7 +5,7 @@ import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../ui/toast";
-import { AuthService } from "../../services/authService";
+import { AuthService, CODE_TYPES } from "../../services/authService";
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -17,16 +17,16 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
   const { user } = useUser();
   const { showToast } = useToast();
 
-  // 步骤状态：'verify' | 'newPassword'
+  // Step state: 'verify' | 'newPassword'
   const [step, setStep] = useState<'verify' | 'newPassword'>('verify');
 
-  // 验证码步骤状态
+  // Verification code step state
   const [verificationCode, setVerificationCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
 
-  // 新密码步骤状态
+  // New password step state
   const [showPassword1, setShowPassword1] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -37,22 +37,25 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
 
   const handleSendCode = async () => {
     if (!user?.email) {
-      showToast("用户邮箱信息不可用", "error");
+      showToast("User email unavailable", "error");
       return;
     }
 
     setIsSendingCode(true);
     try {
-      const success = await AuthService.sendVerificationCode(user.email);
+      const success = await AuthService.sendVerificationCode({
+        email: user.email,
+        codeType: CODE_TYPES.RESET_PASSWORD
+      });
       if (success) {
-        showToast("验证码已发送到您的邮箱", "success");
+        showToast("Verification code sent to your email", "success");
         setIsCodeSent(true);
       } else {
-        showToast("发送验证码失败，请重试", "error");
+        showToast("Failed to send verification code, please try again", "error");
       }
     } catch (error) {
-      console.error("发送验证码失败:", error);
-      showToast("发送验证码失败，请重试", "error");
+      console.error("Failed to send verification code:", error);
+      showToast("Failed to send verification code, please try again", "error");
     } finally {
       setIsSendingCode(false);
     }
@@ -60,7 +63,7 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
 
   const handleVerifyCode = async () => {
     if (!verificationCode.trim()) {
-      showToast("请输入验证码", "error");
+      showToast("Please enter verification code", "error");
       return;
     }
 
@@ -68,14 +71,14 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
     try {
       const isValid = await AuthService.verifyCode(user?.email || "", verificationCode);
       if (isValid) {
-        showToast("验证成功！", "success");
+        showToast("Verification successful!", "success");
         setStep('newPassword');
       } else {
-        showToast("验证码错误，请重新输入", "error");
+        showToast("Invalid verification code, please re-enter", "error");
       }
     } catch (error) {
-      console.error("验证码验证失败:", error);
-      showToast("验证失败，请重试", "error");
+      console.error("Verification code validation failed:", error);
+      showToast("Verification failed, please try again", "error");
     } finally {
       setIsVerifying(false);
     }
@@ -83,17 +86,17 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
 
   const handleSavePassword = async () => {
     if (!newPassword || !confirmPassword) {
-      showToast("请填写所有密码字段", "error");
+      showToast("Please fill in all password fields", "error");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showToast("两次输入的密码不一致", "error");
+      showToast("Passwords do not match", "error");
       return;
     }
 
     if (newPassword.length < 6) {
-      showToast("密码长度至少为6位", "error");
+      showToast("Password must be at least 6 characters", "error");
       return;
     }
 
@@ -102,22 +105,22 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
       const result = await AuthService.updatePassword(newPassword);
 
       if (result) {
-        showToast("密码修改成功！", "success");
+        showToast("Password changed successfully!", "success");
         onSuccess?.();
         onClose();
       } else {
-        showToast("密码修改失败，请重试", "error");
+        showToast("Failed to change password, please try again", "error");
       }
     } catch (error) {
-      console.error("修改密码失败:", error);
-      showToast("密码修改失败，请稍后重试", "error");
+      console.error("Failed to change password:", error);
+      showToast("Failed to change password, please try again later", "error");
     } finally {
       setIsChanging(false);
     }
   };
 
   const handleClose = () => {
-    // 重置所有状态
+    // Reset all state
     setStep('verify');
     setVerificationCode("");
     setIsCodeSent(false);
