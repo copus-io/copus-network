@@ -53,7 +53,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
     {
       id: "discovery",
       label: "Discovery",
-      path: "/copus",
+      path: "/",
     },
     {
       id: "treasury",
