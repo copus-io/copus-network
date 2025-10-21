@@ -97,7 +97,7 @@
       ]
     },
     {
-      "id": "src/routes/Screen27/screens/Screen.tsx",
+      "id": "src/routes/Screen26/screens/Screen.tsx",
       "label": "Screen",
       "routes": [
         "/screen/default"
@@ -1919,8 +1919,8 @@
       }
     },
     {
-      "id": "src/routes/Screen27/screens/Screen.tsx:30:14-to-src/components/guards/AuthGuard.tsx",
-      "source": "src/routes/Screen27/screens/Screen.tsx",
+      "id": "src/routes/Screen26/screens/Screen.tsx:30:14-to-src/components/guards/AuthGuard.tsx",
+      "source": "src/routes/Screen26/screens/Screen.tsx",
       "target": "src/components/guards/AuthGuard.tsx",
       "data": {
         "viaRoute": "/setting",
@@ -1930,13 +1930,13 @@
           "endLine": 34,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
         }
       }
     },
     {
-      "id": "src/routes/Screen27/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
-      "source": "src/routes/Screen27/screens/Screen.tsx",
+      "id": "src/routes/Screen26/screens/Screen.tsx:42:14-to-src/screens/Discovery/Discovery.tsx",
+      "source": "src/routes/Screen26/screens/Screen.tsx",
       "target": "src/screens/Discovery/Discovery.tsx",
       "data": {
         "viaRoute": "/",
@@ -1946,7 +1946,7 @@
           "endLine": 46,
           "column": 14,
           "endColumn": 21,
-          "sourceFile": "src/routes/Screen27/screens/Screen.tsx"
+          "sourceFile": "src/routes/Screen26/screens/Screen.tsx"
         }
       }
     },
