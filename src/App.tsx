@@ -67,7 +67,7 @@ const router = createBrowserRouter([
   {
     path: "/setting",
     element: (
-      <AuthGuard requireAuth={true} fallbackPath="/copus">
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
         <Setting />
       </AuthGuard>
     ),
