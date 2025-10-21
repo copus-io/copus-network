@@ -87,6 +87,25 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false);
   }, []);
 
+  // Sync token and user to localStorage whenever they change in state
+  useEffect(() => {
+    if (user && token) {
+      // Ensure both are saved to localStorage
+      const storedToken = localStorage.getItem('copus_token');
+      const storedUser = localStorage.getItem('copus_user');
+
+      if (storedToken !== token) {
+        console.log('🔄 Syncing token to localStorage');
+        localStorage.setItem('copus_token', token);
+      }
+
+      if (storedUser !== JSON.stringify(user)) {
+        console.log('🔄 Syncing user to localStorage');
+        localStorage.setItem('copus_user', JSON.stringify(user));
+      }
+    }
+  }, [user, token]);
+
   const login = (userData: User, userToken?: string) => {
     setUser(userData);
     localStorage.setItem('copus_user', JSON.stringify(userData));
