@@ -28,7 +28,7 @@ interface ProfileContentSectionProps {
 
 export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps): JSX.Element => {
   const navigate = useNavigate();
-  const { user, logout, updateUser } = useUser();
+  const { user, logout, updateUser, fetchUserInfo } = useUser();
   const { showToast } = useToast();
   const [isLoggedOut, setIsLoggedOut] = useState(false);
   const [showEditPopup, setShowEditPopup] = useState(false);
@@ -209,7 +209,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
   const handleProfileImageUploaded = async (imageUrl: string) => {
     try {
-      console.log('🔥 Avatar uploaded successfully, updating user profile:', imageUrl);
+      console.log('Avatar uploaded successfully, updating user profile:', imageUrl);
 
       // Update local state
       setProfileImage(imageUrl);
@@ -219,16 +219,11 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         faceUrl: imageUrl
       });
 
-      console.log('🔥 Profile update result:', success);
+      console.log('Profile update result:', success);
 
       if (success) {
-        // 更新UserContext中的用户信息
-        if (updateUser) {
-          updateUser({
-            ...user,
-            faceUrl: imageUrl
-          });
-        }
+        // Fetch latest user data from server to ensure UI is in sync
+        await fetchUserInfo();
 
         // Close upload modal
         setShowAvatarUploader(false);
@@ -237,14 +232,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         throw new Error('Failed to update user avatar');
       }
     } catch (error) {
-      console.error('🔥 Failed to update avatar:', error);
+      console.error('Failed to update avatar:', error);
       showToast('Failed to update avatar, please try again', 'error');
     }
   };
 
   const handleBannerImageUploaded = async (imageUrl: string) => {
     try {
-      console.log('🔥 Cover image uploaded successfully, updating user profile:', imageUrl);
+      console.log('Cover image uploaded successfully, updating user profile:', imageUrl);
 
       // Update local state
       setBannerImage(imageUrl);
@@ -254,16 +249,11 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         coverUrl: imageUrl
       });
 
-      console.log('🔥 User profile update result:', success);
+      console.log('User profile update result:', success);
 
       if (success) {
-        // 更新UserContext中的用户信息
-        if (updateUser) {
-          updateUser({
-            ...user,
-            coverUrl: imageUrl
-          });
-        }
+        // Fetch latest user data from server to ensure UI is in sync
+        await fetchUserInfo();
 
         // Close upload modal
         setShowCoverUploader(false);
@@ -272,7 +262,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         throw new Error('Failed to update user profile');
       }
     } catch (error) {
-      console.error('🔥 Failed to update cover image:', error);
+      console.error('Failed to update cover image:', error);
       showToast('Failed to update cover image, please try again', 'error');
     }
   };
@@ -343,27 +333,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const handleSavePersonalInfo = async () => {
     setIsSaving(true);
     try {
-
-      // 准备更新数据 - 小薇为国君准备丰富的数据包 🎁
+      // Prepare update data - only send fields that the API accepts
       const updateData: {
         userName?: string;
         bio?: string;
         faceUrl?: string;
         coverUrl?: string;
-        // 额外字段让国君开心 ✨
-        email?: string;
-        namespace?: string;
-        walletAddress?: string;
-        userAgent?: string;
-        platform?: string;
-        timezone?: string;
-        language?: string;
-        lastUpdateTimestamp?: number;
-        updateSource?: string;
-        [key: string]: any;
       } = {};
 
-      // 基础字段
+      // Check for changes and add to updateData
       if (formUsername.trim() && formUsername !== user?.username) {
         updateData.userName = formUsername.trim();
       }
@@ -380,49 +358,23 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         updateData.coverUrl = bannerImage;
       }
 
-      // 额外数据给国君 - 让数据更丰富！🎯
-      if (user?.email) {
-        updateData.email = user.email;
+      // Check if there are any changes
+      const hasChanges = Object.keys(updateData).length > 0;
+
+      if (!hasChanges) {
+        showToast('No changes to save', 'info');
+        setShowPersonalInfoPopup(false);
+        return;
       }
 
-      if (user?.namespace) {
-        updateData.namespace = user.namespace;
-      }
+      console.log('Updating user profile with:', updateData);
 
-      if (user?.walletAddress) {
-        updateData.walletAddress = user.walletAddress;
-      }
-
-      // 系统信息
-      updateData.userAgent = navigator.userAgent;
-      updateData.platform = navigator.platform;
-      updateData.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      updateData.language = navigator.language;
-      updateData.lastUpdateTimestamp = Date.now();
-      updateData.updateSource = 'profile_settings_page';
-
-      console.log('Profile update data analysis:', {
-        基础字段数: Object.keys({userName: updateData.userName, bio: updateData.bio, faceUrl: updateData.faceUrl, coverUrl: updateData.coverUrl}).filter(k => updateData[k] !== undefined).length,
-        额外字段数: Object.keys(updateData).length - 4,
-        总字段数: Object.keys(updateData).length,
-        '国君会喜欢的字段': Object.keys(updateData),
-        完整数据: updateData
-      });
-
-      // 检查是否有基础字段的更改（忽略系统自动添加的字段）
-      const basicFields = ['userName', 'bio', 'faceUrl', 'coverUrl'];
-      const hasBasicChanges = basicFields.some(field => updateData[field] !== undefined);
-
-      if (!hasBasicChanges) {
-        // 即使没有基础更改，也发送数据给国君，他喜欢数据！
-      }
-
-      // 调用API更新用户信息
+      // Call API to update user information
       const success = await AuthService.updateUserInfo(updateData);
 
       if (success) {
-        // Update user info in UserContext
-        updateUser(updateData);
+        // Fetch latest user data from server to ensure UI is in sync
+        await fetchUserInfo();
         showToast('Personal information updated successfully', 'success');
         setShowPersonalInfoPopup(false);
       } else {
