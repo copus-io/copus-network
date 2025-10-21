@@ -78,7 +78,7 @@ export const Content = (): JSX.Element => {
     userName: article.authorInfo?.username || 'Anonymous',
     userId: article.authorInfo?.id,
     userNamespace: article.authorInfo?.namespace,
-    userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
+    userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
     date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
     visitCount: `${article.viewCount || 0} Visits`,
@@ -86,6 +86,18 @@ export const Content = (): JSX.Element => {
     isLiked: article.isLiked || false,
     website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
   } : null;
+
+  // Debug: Log author info
+  if (article) {
+    console.log('[Content] Author info:', {
+      username: article.authorInfo?.username,
+      faceUrl: article.authorInfo?.faceUrl,
+      faceUrlLength: article.authorInfo?.faceUrl?.length,
+      faceUrlIsEmpty: article.authorInfo?.faceUrl === '',
+      namespace: article.authorInfo?.namespace,
+      finalAvatar: content?.userAvatar
+    });
+  }
 
   // Set like state when article data is fetched
   useEffect(() => {
