@@ -10,7 +10,7 @@ export const UserProfile = (): JSX.Element => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 如果访问的是当前用户自己的namespace，重定向到 /my-treasury
+    // If viewing own namespace, redirect to /my-treasury
     if (user && namespace === user.namespace) {
       navigate('/my-treasury', { replace: true });
     }
@@ -20,7 +20,7 @@ export const UserProfile = (): JSX.Element => {
     return (
       <PageWrapper>
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-gray-500">用户不存在</p>
+          <p className="text-gray-500">User not found</p>
         </div>
       </PageWrapper>
     );

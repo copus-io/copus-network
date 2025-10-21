@@ -24,26 +24,26 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [articles, setArticles] = useState<ArticleData[]>([]);
   const [showCoverUploader, setShowCoverUploader] = useState(false);
 
-  // 获取用户信息和文章列表
+  // Fetch user info and articles list
   useEffect(() => {
     const fetchUserData = async () => {
       setLoading(true);
       try {
-        // 调用真实API获取用户信息
+        // Call API to get user information
         const userData = await AuthService.getOtherUserTreasuryInfoByNamespace(namespace);
-        console.log('获取到的用户数据:', userData);
+        console.log('Fetched user data:', userData);
 
-        // 设置用户信息，使用API返回的真实数据
+        // Set user info using real API data
         setUserInfo({
           id: userData.id,
           username: userData.username,
           namespace: userData.namespace,
           faceUrl: userData.faceUrl || profileDefaultAvatar,
-          bio: userData.bio || "这个用户很神秘，什么都没留下~",
+          bio: userData.bio || "This user is mysterious and left nothing~",
           articlesCount: userData.statistics.articleCount,
-          followersCount: 0, // API暂不提供关注者数据
-          followingCount: 0, // API暂不提供关注数据
-          // 额外保存API返回的其他数据
+          followersCount: 0, // API doesn't provide follower data yet
+          followingCount: 0, // API doesn't provide following data yet
+          // Save other data from API response
           socialLinks: userData.socialLinks,
           statistics: userData.statistics,
           email: userData.email,
@@ -51,12 +51,38 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           walletAddress: userData.walletAddress
         });
 
-        // TODO: 获取用户创建的文章列表 (目前API可能还不支持通过namespace获取用户文章)
-        // 暂时显示空列表，但保留用户统计信息展示
-        setArticles([]);
+        // Fetch user's liked articles using targetUserId
+        const articlesData = await AuthService.getMyLikedArticlesCorrect(1, 20, userData.id);
+        console.log('Fetched liked articles:', articlesData);
+
+        // Transform API data to ArticleData format
+        const transformedArticles: ArticleData[] = articlesData.data.map(article => ({
+          id: article.uuid,
+          title: article.title,
+          content: article.content,
+          cover: article.coverUrl,
+          author: {
+            id: article.authorInfo.id,
+            name: article.authorInfo.username,
+            namespace: article.authorInfo.namespace,
+            avatar: article.authorInfo.faceUrl
+          },
+          category: article.categoryInfo.name,
+          categoryColor: article.categoryInfo.color,
+          categoryId: article.categoryInfo.id,
+          userId: article.authorInfo.id,
+          isLiked: article.isLiked,
+          likeCount: article.likeCount,
+          createTime: article.createAt,
+          publishTime: article.publishAt,
+          link: article.targetUrl,
+          viewCount: article.viewCount
+        }));
+
+        setArticles(transformedArticles);
       } catch (error) {
-        console.error("获取用户数据失败:", error);
-        showToast("无法加载用户信息", "error");
+        console.error("Failed to fetch user data:", error);
+        showToast("Unable to load user information", "error");
       } finally {
         setLoading(false);
       }
@@ -133,10 +159,10 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       }
 
       setShowCoverUploader(false);
-      showToast('封面图片更新成功！', 'success');
+      showToast('Cover image updated successfully!', 'success');
     } catch (error) {
-      console.error('封面图片更新失败:', error);
-      showToast('封面图片更新失败，请重试', 'error');
+      console.error('Failed to update cover image:', error);
+      showToast('Failed to update cover image, please try again', 'error');
     }
   };
 
@@ -160,13 +186,13 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">用户不存在</h2>
-          <p className="text-gray-500 mb-4">未找到 @{namespace} 的个人主页</p>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-2">User Not Found</h2>
+          <p className="text-gray-500 mb-4">Could not find profile for @{namespace}</p>
           <button
-            onClick={() => navigate('/copus')}
+            onClick={() => navigate('/')}
             className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red/90 transition-colors"
           >
-            返回首页
+            Back to Home
           </button>
         </div>
       </div>
@@ -217,36 +243,36 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             <div className="flex gap-8">
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.articleCount || 0}</div>
-                <div className="text-sm text-gray-600">创作文章</div>
+                <div className="text-sm text-gray-600">Articles</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.likedArticleCount || 0}</div>
-                <div className="text-sm text-gray-600">收藏文章</div>
+                <div className="text-sm text-gray-600">Treasured</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.myArticleLikedCount || 0}</div>
-                <div className="text-sm text-gray-600">获得收藏</div>
+                <div className="text-sm text-gray-600">Received</div>
               </div>
             </div>
           </div>
 
-          {/* 关注按钮（仅在查看其他用户时显示） */}
+          {/* Follow button (only shown when viewing other users) */}
           {user && user.namespace !== namespace && (
             <button className="px-6 py-2 bg-red text-white rounded-full hover:bg-red/90 transition-colors">
-              关注
+              Follow
             </button>
           )}
           </div>
         </div>
       </section>
 
-      {/* 分类标签 */}
+      {/* Category tabs */}
       <section className="flex gap-4">
-        <button className="px-4 py-2 bg-red text-white rounded-full">
-          全部文章
-        </button>
         <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
-          收藏的文章
+          All Articles
+        </button>
+        <button className="px-4 py-2 bg-red text-white rounded-full">
+          Treasured
         </button>
       </section>
 
@@ -294,7 +320,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       {showCoverUploader && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold mb-4 text-center">更换封面图片</h3>
+            <h3 className="text-xl font-semibold mb-4 text-center">Change Cover Image</h3>
             <ImageUploader
               type="banner"
               currentImage={userInfo.coverUrl}
@@ -305,7 +331,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               onClick={() => setShowCoverUploader(false)}
               className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              取消
+              Cancel
             </button>
           </div>
         </div>

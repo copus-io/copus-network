@@ -1368,6 +1368,7 @@ export class AuthService {
 
   /**
    * Get user's liked articles list - using correct API path
+   * Public endpoint - does not require authentication when viewing other users
    */
   static async getMyLikedArticlesCorrect(pageIndex: number = 1, pageSize: number = 10, targetUserId?: number): Promise<{
     data: Array<{
@@ -1408,7 +1409,7 @@ export class AuthService {
 
     return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
       method: 'GET',
-      requiresAuth: true,
+      requiresAuth: false,
     });
   }
 
