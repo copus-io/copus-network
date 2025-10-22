@@ -9,7 +9,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
 import { useArticleDetail } from "../../hooks/queries";
-import { getCategoryStyle } from "../../utils/categoryStyles";
+import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
@@ -73,8 +73,9 @@ export const Content = (): JSX.Element => {
     coverImage: article.coverUrl,
     url: article.targetUrl,
     category: article.categoryInfo?.name || 'General',
-    categoryColor: `${getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).border} ${getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).bg}`,
-    categoryTextColor: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color).text,
+    categoryApiColor: article.categoryInfo?.color,
+    categoryStyle: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color),
+    categoryInlineStyle: getCategoryInlineStyle(article.categoryInfo?.color),
     userName: article.authorInfo?.username || 'Anonymous',
     userId: article.authorInfo?.id,
     userNamespace: article.authorInfo?.namespace,
@@ -197,7 +198,12 @@ export const Content = (): JSX.Element => {
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
-                  <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-medium text-yellow text-sm text-center tracking-[0.5px] leading-4 whitespace-nowrap capitalize">
+                  <span
+                    className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit [font-family:'Lato',Helvetica] font-semibold text-sm text-center tracking-[0] leading-[14px] whitespace-nowrap capitalize ${
+                      content.categoryApiColor ? '' : `${content.categoryStyle.border} ${content.categoryStyle.bg} ${content.categoryStyle.text}`
+                    }`}
+                    style={content.categoryApiColor ? content.categoryInlineStyle : undefined}
+                  >
                     {content.category}
                   </span>
 
