@@ -214,14 +214,27 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       // Update local state
       setProfileImage(imageUrl);
 
-      // Call API to update user profile - send ALL 4 fields to prevent data loss
-      // Use current form/state values to preserve all information
-      const success = await AuthService.updateUserInfo({
+      // Prepare data to send - ALL 4 fields
+      const updateData = {
         userName: formUsername || user?.username || '',
         bio: formBio || user?.bio || '',
         faceUrl: imageUrl,
         coverUrl: bannerImage || user?.coverUrl || ''
+      };
+
+      console.log('🔥 Sending ALL 4 fields to API:', {
+        userName: updateData.userName,
+        bio: updateData.bio,
+        faceUrl: updateData.faceUrl ? `${updateData.faceUrl.substring(0, 50)}...` : 'empty',
+        coverUrl: updateData.coverUrl ? `${updateData.coverUrl.substring(0, 50)}...` : 'empty',
+        formUsernameValue: formUsername,
+        userContextUsername: user?.username,
+        formBioValue: formBio,
+        userContextBio: user?.bio
       });
+
+      // Call API to update user profile - send ALL 4 fields to prevent data loss
+      const success = await AuthService.updateUserInfo(updateData);
 
       console.log('Profile update result with all fields:', success);
 
@@ -253,14 +266,27 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       // Update local state
       setBannerImage(imageUrl);
 
-      // Call API to update user profile - send ALL 4 fields to prevent data loss
-      // Use current form/state values to preserve all information
-      const success = await AuthService.updateUserInfo({
+      // Prepare data to send - ALL 4 fields
+      const updateData = {
         userName: formUsername || user?.username || '',
         bio: formBio || user?.bio || '',
         faceUrl: profileImage === profileDefaultAvatar ? '' : (profileImage || user?.faceUrl || ''),
         coverUrl: imageUrl
+      };
+
+      console.log('🔥 Sending ALL 4 fields to API:', {
+        userName: updateData.userName,
+        bio: updateData.bio,
+        faceUrl: updateData.faceUrl ? `${updateData.faceUrl.substring(0, 50)}...` : 'empty',
+        coverUrl: updateData.coverUrl ? `${updateData.coverUrl.substring(0, 50)}...` : 'empty',
+        formUsernameValue: formUsername,
+        userContextUsername: user?.username,
+        formBioValue: formBio,
+        userContextBio: user?.bio
       });
+
+      // Call API to update user profile - send ALL 4 fields to prevent data loss
+      const success = await AuthService.updateUserInfo(updateData);
 
       console.log('User profile update result with all fields:', success);
 
