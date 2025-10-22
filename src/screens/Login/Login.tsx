@@ -671,41 +671,78 @@ export const Login = (): JSX.Element => {
 
   // Send verification code function
   const sendVerificationCode = async () => {
-    // Silently check various conditions, don't show toast
-    if (!email || !email.includes('@') || emailStatus === 'taken' || emailStatus === 'checking' || countdown > 0) {
+    console.log('📧 Send verification code clicked', {
+      email,
+      emailStatus,
+      countdown,
+      hasEmail: !!email,
+      hasAt: email.includes('@')
+    });
+
+    // Check various conditions and provide feedback
+    if (!email || !email.includes('@')) {
+      showToast('Please enter a valid email address', 'error');
       return;
     }
 
+    if (emailStatus === 'taken') {
+      showToast('This email is already registered', 'error');
+      return;
+    }
+
+    if (emailStatus === 'checking') {
+      showToast('Please wait for email validation to complete', 'info');
+      return;
+    }
+
+    if (countdown > 0) {
+      return;
+    }
+
+    console.log('✅ All checks passed, sending verification code...');
     setIsCodeSending(true);
 
     try {
-      const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/getVerificationCode?codeType=0&email=${encodeURIComponent(email)}`, {
+      const apiUrl = `${APP_CONFIG.API.BASE_URL}/client/common/getVerificationCode?codeType=0&email=${encodeURIComponent(email)}`;
+      console.log('📤 Calling API:', apiUrl);
+
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
-      if (response.ok) {
-        // Successfully sent, start countdown
-        setCountdown(60);
-        const timer = setInterval(() => {
-          setCountdown(prev => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+      console.log('📥 API response status:', response.status, response.ok);
 
-        // No longer show toast, user can see from button state that it's sent
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📥 API response data:', data);
+
+        if (data.status === 1) {
+          showToast('Verification code sent! Please check your email', 'success');
+          // Successfully sent, start countdown
+          setCountdown(60);
+          const timer = setInterval(() => {
+            setCountdown(prev => {
+              if (prev <= 1) {
+                clearInterval(timer);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        } else {
+          showToast(`Failed to send: ${data.msg || 'Please try again'}`, 'error');
+        }
       } else {
-        // Silently handle error, don't show toast
+        const errorData = await response.json().catch(() => ({ msg: 'Unknown error' }));
+        console.error('❌ API error:', errorData);
+        showToast(`Failed to send verification code: ${errorData.msg || 'Please try again'}`, 'error');
       }
     } catch (error) {
-      console.error('Send verification code failed:', error);
-      // Silently handle network error
+      console.error('❌ Send verification code failed:', error);
+      showToast('Network error. Please check your connection and try again', 'error');
     } finally {
       setIsCodeSending(false);
     }
