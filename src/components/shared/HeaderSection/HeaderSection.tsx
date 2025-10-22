@@ -154,27 +154,27 @@ export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, sho
                 <div className="absolute right-0 top-[55px] w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   {user && (
                     <div className="px-6 py-3 border-b border-gray-100">
-                      <p className="text-base font-medium text-gray-900">{user.username}</p>
-                      <p className="text-base text-gray-500">{user.email}</p>
+                      <p className="text-base font-medium text-gray-900 truncate">{user.username}</p>
+                      <p className="text-base text-gray-500 truncate" title={user.email}>{user.email}</p>
                     </div>
                   )}
                   <Link
                     to="/my-treasury"
-                    className="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100"
+                    className="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 whitespace-nowrap"
                     onClick={() => setShowUserMenu(false)}
                   >
                     My Treasury
                   </Link>
                   <Link
                     to="/setting"
-                    className="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100"
+                    className="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 whitespace-nowrap"
                     onClick={() => setShowUserMenu(false)}
                   >
                     Settings
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-6 py-3 text-base text-red-600 hover:bg-gray-100"
+                    className="block w-full text-left px-6 py-3 text-base text-red-600 hover:bg-gray-100 whitespace-nowrap"
                   >
                     Logout
                   </button>
