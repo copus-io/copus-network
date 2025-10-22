@@ -1209,8 +1209,6 @@ export class AuthService {
       ...(params.userName !== undefined && { userName: params.userName }),
     };
 
-    console.log('Updating user info with allowed fields:', allowedFields);
-
     try {
       const response = await apiRequest('/client/user/updateUser', {
         method: 'POST',

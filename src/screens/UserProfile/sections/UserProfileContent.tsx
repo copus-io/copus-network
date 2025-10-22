@@ -156,7 +156,10 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     try {
       // Call API to update user cover image
       await AuthService.updateUserInfo({
-        coverUrl: imageUrl
+        coverUrl: imageUrl,
+        bio: userInfo.bio,
+        faceUrl: userInfo.faceUrl,
+        userName: userInfo.username
       });
 
       // Update local state
