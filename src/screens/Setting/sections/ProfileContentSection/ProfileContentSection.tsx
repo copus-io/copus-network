@@ -281,6 +281,18 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     showToast(error, 'error');
   };
 
+  // Local-only image handlers for Personal Info Popup (don't call API until Save button)
+  const handleProfileImageLocalUpdate = (imageUrl: string) => {
+    console.log('Profile image updated locally (will save on click Save):', imageUrl);
+    // If empty string (deleted), show default avatar
+    setProfileImage(imageUrl || profileDefaultAvatar);
+  };
+
+  const handleBannerImageLocalUpdate = (imageUrl: string) => {
+    console.log('Banner image updated locally (will save on click Save):', imageUrl);
+    setBannerImage(imageUrl);
+  };
+
   const handleLogout = async () => {
     try {
       showToast('Logging out...', 'info');
@@ -343,41 +355,16 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const handleSavePersonalInfo = async () => {
     setIsSaving(true);
     try {
-      // Prepare update data - only send fields that the API accepts
-      const updateData: {
-        userName?: string;
-        bio?: string;
-        faceUrl?: string;
-        coverUrl?: string;
-      } = {};
+      // Prepare update data - ALWAYS send ALL 4 fields (both changed and unchanged)
+      // API expects all fields to be sent, not just the changed ones
+      const updateData = {
+        userName: formUsername.trim() || user?.username || '',
+        bio: formBio.trim() || user?.bio || '',
+        faceUrl: profileImage === profileDefaultAvatar ? '' : profileImage,
+        coverUrl: bannerImage || ''
+      };
 
-      // Check for changes and add to updateData
-      if (formUsername.trim() && formUsername !== user?.username) {
-        updateData.userName = formUsername.trim();
-      }
-
-      if (formBio.trim() !== user?.bio) {
-        updateData.bio = formBio.trim();
-      }
-
-      if (profileImage && profileImage !== user?.faceUrl) {
-        updateData.faceUrl = profileImage;
-      }
-
-      if (bannerImage && bannerImage !== user?.coverUrl) {
-        updateData.coverUrl = bannerImage;
-      }
-
-      // Check if there are any changes
-      const hasChanges = Object.keys(updateData).length > 0;
-
-      if (!hasChanges) {
-        showToast('No changes to save', 'info');
-        setShowPersonalInfoPopup(false);
-        return;
-      }
-
-      console.log('Updating user profile with:', updateData);
+      console.log('Updating user profile with ALL fields:', updateData);
 
       // Call API to update user information
       const success = await AuthService.updateUserInfo(updateData);
@@ -770,14 +757,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               <ImageUploader
                 type="avatar"
                 currentImage={profileImage}
-                onImageUploaded={handleProfileImageUploaded}
+                onImageUploaded={handleProfileImageLocalUpdate}
                 onError={handleImageUploadError}
               />
 
               <ImageUploader
                 type="banner"
                 currentImage={bannerImage}
-                onImageUploaded={handleBannerImageUploaded}
+                onImageUploaded={handleBannerImageLocalUpdate}
                 onError={handleImageUploadError}
               />
 
