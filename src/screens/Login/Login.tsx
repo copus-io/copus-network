@@ -520,8 +520,11 @@ export const Login = (): JSX.Element => {
         ok: response.ok
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+      console.log('Login response data:', data);
+
+      // Check JSON response status field (not HTTP status)
+      if (data.status === 1) {
         console.log('Login success data:', {
           token: data.token,
           access_token: data.access_token,
@@ -572,9 +575,24 @@ export const Login = (): JSX.Element => {
         // Navigate to home page
         navigate('/copus');
       } else {
-        const errorData = await response.json();
-        console.error('Login failed:', errorData);
-        showToast('Login failed, please check email and password', 'error');
+        // Login failed - status !== 1
+        console.error('Login failed:', data);
+
+        // Translate Chinese error messages to English
+        let errorMessage = 'Login failed';
+        if (data.msg) {
+          if (data.msg.includes('错误的密码') || data.msg.includes('wrong password') || data.status === 2057) {
+            errorMessage = 'Incorrect password';
+          } else if (data.msg.includes('用户不存在') || data.msg.includes('user not found')) {
+            errorMessage = 'Email not registered';
+          } else if (data.msg.includes('账号被禁用') || data.msg.includes('account disabled')) {
+            errorMessage = 'Account has been disabled';
+          } else {
+            errorMessage = data.msg; // Use original message if we can't translate
+          }
+        }
+
+        showToast(errorMessage, 'error');
       }
     } catch (error) {
       console.error('Login request failed:', error);
