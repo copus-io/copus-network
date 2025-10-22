@@ -215,14 +215,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       setProfileImage(imageUrl);
 
       // Call API to update user profile - send ALL 4 fields to prevent data loss
+      // Use current form/state values to preserve all information
       const success = await AuthService.updateUserInfo({
-        userName: user?.username || '',
-        bio: user?.bio || '',
+        userName: formUsername || user?.username || '',
+        bio: formBio || user?.bio || '',
         faceUrl: imageUrl,
-        coverUrl: user?.coverUrl || ''
+        coverUrl: bannerImage || user?.coverUrl || ''
       });
 
-      console.log('Profile update result:', success);
+      console.log('Profile update result with all fields:', success);
 
       if (success) {
         // Try to fetch latest user data from server to ensure UI is in sync
@@ -253,14 +254,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       setBannerImage(imageUrl);
 
       // Call API to update user profile - send ALL 4 fields to prevent data loss
+      // Use current form/state values to preserve all information
       const success = await AuthService.updateUserInfo({
-        userName: user?.username || '',
-        bio: user?.bio || '',
-        faceUrl: user?.faceUrl || '',
+        userName: formUsername || user?.username || '',
+        bio: formBio || user?.bio || '',
+        faceUrl: profileImage === profileDefaultAvatar ? '' : (profileImage || user?.faceUrl || ''),
         coverUrl: imageUrl
       });
 
-      console.log('User profile update result:', success);
+      console.log('User profile update result with all fields:', success);
 
       if (success) {
         // Try to fetch latest user data from server to ensure UI is in sync
