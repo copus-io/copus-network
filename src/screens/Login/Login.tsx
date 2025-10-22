@@ -573,7 +573,7 @@ export const Login = (): JSX.Element => {
         showToast('Login successful! Welcome back 🎉', 'success');
 
         // Navigate to home page
-        navigate('/copus');
+        navigate('/');
       } else {
         // Login failed - status !== 1
         console.error('Login failed:', data);
