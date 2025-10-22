@@ -214,9 +214,12 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       // Update local state
       setProfileImage(imageUrl);
 
-      // Call API to update user avatar
+      // Call API to update user profile - send ALL 4 fields to prevent data loss
       const success = await AuthService.updateUserInfo({
-        faceUrl: imageUrl
+        userName: user?.username || '',
+        bio: user?.bio || '',
+        faceUrl: imageUrl,
+        coverUrl: user?.coverUrl || ''
       });
 
       console.log('Profile update result:', success);
@@ -249,8 +252,11 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       // Update local state
       setBannerImage(imageUrl);
 
-      // Call API to update user cover image
+      // Call API to update user profile - send ALL 4 fields to prevent data loss
       const success = await AuthService.updateUserInfo({
+        userName: user?.username || '',
+        bio: user?.bio || '',
+        faceUrl: user?.faceUrl || '',
         coverUrl: imageUrl
       });
 
