@@ -193,7 +193,7 @@ export const Content = (): JSX.Element => {
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection isLoggedIn={!!user} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[100px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
+        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[120px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
           <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
@@ -269,7 +269,7 @@ export const Content = (): JSX.Element => {
               </blockquote>
             </div>
 
-            <div className="flex h-[25px] items-center justify-between relative self-stretch w-full">
+            <div className="flex h-[25px] items-center justify-between relative self-stretch w-full mt-[50px]">
               <time className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] whitespace-nowrap">
                 {content.date}
               </time>
@@ -316,8 +316,11 @@ export const Content = (): JSX.Element => {
               </div>
             </div>
           </article>
+        </main>
 
-          <div className="flex justify-between self-stretch w-full items-center relative flex-[0_0_auto]">
+        {/* Sticky bottom button bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-5 px-4 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center w-full max-w-[1040px] mx-auto">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
               {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
@@ -351,7 +354,7 @@ export const Content = (): JSX.Element => {
               />
             </a>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );
