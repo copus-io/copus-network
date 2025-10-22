@@ -199,10 +199,10 @@ export const Content = (): JSX.Element => {
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
                   <span
-                    className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit [font-family:'Lato',Helvetica] font-semibold text-sm text-center tracking-[0] leading-[14px] whitespace-nowrap capitalize ${
-                      content.categoryApiColor ? '' : `${content.categoryStyle.border} ${content.categoryStyle.bg} ${content.categoryStyle.text}`
+                    className={`relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-medium text-sm text-center tracking-[0.5px] leading-4 whitespace-nowrap capitalize ${
+                      content.categoryApiColor ? '' : content.categoryStyle.text
                     }`}
-                    style={content.categoryApiColor ? content.categoryInlineStyle : undefined}
+                    style={content.categoryApiColor ? { color: content.categoryInlineStyle.color } : undefined}
                   >
                     {content.category}
                   </span>
