@@ -150,14 +150,14 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
               {/* Email field with send code button */}
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-dark-grey">Email Address</label>
-                <div className="flex gap-3">
+                <div className="relative">
                   <Input
-                    className="flex-1 h-12 px-4 bg-gray-100 rounded-lg border border-gray-300 text-gray-600 cursor-not-allowed"
+                    className="w-full h-12 px-4 pr-[130px] bg-gray-100 rounded-lg border border-gray-300 text-gray-600 cursor-not-allowed"
                     value={user?.email || "user@example.com"}
                     disabled
                   />
                   <Button
-                    className="px-6 h-12 bg-red hover:bg-red/90 text-white rounded-[50px] font-semibold transition-colors"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 h-8 bg-red hover:bg-red/90 text-white rounded-[50px] font-semibold transition-colors text-sm"
                     onClick={handleSendCode}
                     disabled={isSendingCode}
                   >
