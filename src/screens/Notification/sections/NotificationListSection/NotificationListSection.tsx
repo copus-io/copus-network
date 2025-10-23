@@ -124,6 +124,7 @@ export const NotificationListSection = (): JSX.Element => {
     deleteIcon: n.type === "system" ? "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete.svg" : "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg",
     userId: n.metadata?.senderId, // 使用senderId
     namespace: n.metadata?.senderNamespace, // 添加namespace用于导航
+    articleId: n.metadata?.articleUuid || n.metadata?.articleId, // 优先使用UUID，因为work路由使用UUID
   }));
 
   // 渲染空状态组件
@@ -290,27 +291,76 @@ export const NotificationListSection = (): JSX.Element => {
                           {notification.category}
                         </div>
                         <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-lg leading-[23px]">
-                          {notification.type !== "system" && (notification.namespace || notification.userId) ? (
-                            // 为非系统通知解析并高亮用户名
+                          {notification.type !== "system" ? (
+                            // 为非系统通知解析用户名和文章标题
                             (() => {
                               const message = notification.message;
-                              // 简单的用户名提取逻辑：通常用户名在消息开头
+                              // 提取用户名：通常在消息开头
                               const userNameMatch = message.match(/^([^<>\s]+(?:\s+[^<>\s]+)*?)\s+(liked|commented|treasured)/);
-                              if (userNameMatch) {
-                                const userName = userNameMatch[1];
-                                const restMessage = message.substring(userName.length);
-                                return (
-                                  <span>
+                              // 提取文章标题：通常在引号中
+                              const postTitleMatch = message.match(/"([^"]+)"/);
+
+                              if (userNameMatch || postTitleMatch) {
+                                let parts = [];
+                                let remainingMessage = message;
+
+                                // 处理用户名部分
+                                if (userNameMatch && (notification.namespace || notification.userId)) {
+                                  const userName = userNameMatch[1];
+                                  const beforeUser = remainingMessage.substring(0, userNameMatch.index);
+                                  parts.push(beforeUser);
+                                  parts.push(
                                     <span
+                                      key="username"
                                       className="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200 font-semibold"
                                       onClick={(e) => handleUserClick(notification, e)}
                                       title="Click to view user profile"
                                     >
                                       {userName}
                                     </span>
-                                    {restMessage}
-                                  </span>
-                                );
+                                  );
+                                  remainingMessage = remainingMessage.substring(userNameMatch.index + userName.length);
+                                }
+
+                                // 处理文章标题部分
+                                if (postTitleMatch) {
+                                  const fullMatch = postTitleMatch[0]; // 包含引号的完整匹配
+                                  const postTitle = postTitleMatch[1]; // 不含引号的标题
+                                  const matchIndex = remainingMessage.indexOf(fullMatch);
+
+                                  if (matchIndex !== -1) {
+                                    // 添加标题前的文本
+                                    parts.push(remainingMessage.substring(0, matchIndex));
+                                    parts.push('"');
+
+                                    // 添加可点击的标题
+                                    if (notification.articleId) {
+                                      parts.push(
+                                        <span
+                                          key="posttitle"
+                                          className="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200 font-bold"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/work/${notification.articleId}`);
+                                          }}
+                                          title="Click to view content"
+                                        >
+                                          {postTitle}
+                                        </span>
+                                      );
+                                    } else {
+                                      parts.push(<span key="posttitle" className="font-bold">{postTitle}</span>);
+                                    }
+
+                                    parts.push('"');
+                                    remainingMessage = remainingMessage.substring(matchIndex + fullMatch.length);
+                                  }
+                                }
+
+                                // 添加剩余的消息
+                                parts.push(remainingMessage);
+
+                                return <span>{parts}</span>;
                               }
                               return message;
                             })()

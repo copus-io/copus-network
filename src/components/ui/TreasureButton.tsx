@@ -117,6 +117,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
           text-dark-grey
           transition-colors duration-200
         `}
+        style={{ fontSize: '1.125rem' }}
       >
         {formatCount(likesCount)}
       </span>

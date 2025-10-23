@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Edit2, Trash2 } from "lucide-react";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -354,8 +353,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     className="w-5 h-3.5"
                     alt="Ic view"
                     src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
+                    style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
                   />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
                     {article.visitCount}
                   </span>
                 </div>
@@ -368,10 +368,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="p-2 h-auto hover:bg-blue-50 transition-colors"
+                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
                       onClick={handleEdit}
                     >
-                      <Edit2 className="w-4 h-4 text-blue-600" />
+                      <img
+                        className="w-5 h-3.5"
+                        alt="Edit"
+                        src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                      />
                     </Button>
                   )}
 
@@ -379,10 +384,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="p-2 h-auto hover:bg-red-50 transition-colors"
+                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
                       onClick={handleDelete}
                     >
-                      <Trash2 className="w-4 h-4 text-red-600" />
+                      <img
+                        className="w-5 h-3.5"
+                        alt="Delete"
+                        src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                      />
                     </Button>
                   )}
                 </div>
@@ -498,9 +508,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
             </div>
 
-            {/* Add like button area */}
-            {(actions.showTreasure || actions.showVisits) && (
-              <div className="flex items-center justify-between -mx-[30px] px-[30px]">
+            {/* Action buttons area */}
+            <div className="flex items-center justify-between -mx-[30px] px-[30px]">
+              {/* Left side: Treasure button and View count */}
+              <div className="flex items-center gap-5">
                 {actions.showTreasure && (
                   <TreasureButton
                     isLiked={article.isLiked || false}
@@ -516,14 +527,52 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       className="w-5 h-3.5"
                       alt="Ic view"
                       src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
+                      style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
                     />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base text-center tracking-[0] leading-[20.8px]">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
                       {article.visitCount}
                     </span>
                   </div>
                 )}
               </div>
-            )}
+
+              {/* Right side: Edit and Delete buttons (visible on hover) */}
+              {isHovered && (actions.showEdit || actions.showDelete) && (
+                <div className="flex items-center gap-2">
+                  {actions.showEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                      onClick={handleEdit}
+                    >
+                      <img
+                        className="w-5 h-3.5"
+                        alt="Edit"
+                        src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                      />
+                    </Button>
+                  )}
+
+                  {actions.showDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                      onClick={handleDelete}
+                    >
+                      <img
+                        className="w-5 h-3.5"
+                        alt="Delete"
+                        src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                      />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         );
     }

@@ -183,11 +183,6 @@ export class NotificationService {
    * Transform real API message data format
    */
   private static transformApiMessage(apiMessage: any): Notification {
-    console.log('Transforming API message:', {
-      content: apiMessage.content,
-      contentType: typeof apiMessage.content,
-      contentLength: apiMessage.content?.length
-    });
 
     // Determine message type based on messageType (0=all, 1=like, 999=system)
     let type: 'like' | 'comment' | 'system' = 'system';
@@ -215,6 +210,8 @@ export class NotificationService {
     // Process message content, generate user-friendly format
     let processedMessage = apiMessage.content || 'No content';
     let workTitle = 'Work';
+    let extractedArticleId: string | undefined;
+    let extractedArticleUuid: string | undefined;
 
     // Check if it's a JSON string
     if (typeof processedMessage === 'string') {
@@ -222,6 +219,14 @@ export class NotificationService {
       if (processedMessage.startsWith('{') && processedMessage.endsWith('}')) {
         try {
           const jsonData = JSON.parse(processedMessage);
+
+          // Extract article ID and UUID
+          if (jsonData.id) {
+            extractedArticleId = jsonData.id.toString();
+          }
+          if (jsonData.uuid) {
+            extractedArticleUuid = jsonData.uuid;
+          }
 
           // Extract work title
           if (jsonData.title) {
@@ -290,6 +295,8 @@ export class NotificationService {
         senderId: apiMessage.senderInfo?.id,
         senderUsername: apiMessage.senderInfo?.username,
         senderNamespace: apiMessage.senderInfo?.namespace,
+        articleId: extractedArticleId || apiMessage.articleId || apiMessage.targetId || apiMessage.relatedId,
+        articleUuid: extractedArticleUuid || apiMessage.articleUuid || apiMessage.uuid,
       },
     };
   }

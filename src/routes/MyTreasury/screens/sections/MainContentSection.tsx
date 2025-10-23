@@ -530,9 +530,14 @@ export const MainContentSection = (): JSX.Element => {
     navigate(`/create?edit=${articleId}`);
   };
 
-  // 处理删除 - 暂时禁用，因为创建文章API已移除
+  // 处理删除
   const handleDelete = (articleId: string) => {
-    console.log('删除功能暂时不可用，文章ID:', articleId);
+    // Find the article to delete
+    const article = createdArticles.find(a => a.uuid === articleId);
+    if (article) {
+      setArticleToDelete(article);
+      setDeleteDialogOpen(true);
+    }
   };
 
   // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
@@ -816,9 +821,7 @@ export const MainContentSection = (): JSX.Element => {
           <DialogHeader>
             <DialogTitle>Confirm Delete</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the article "{articleToDelete?.title}"?
-              <br />
-              This action cannot be undone.
+              Are you sure to delete this curated link?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -837,7 +840,7 @@ export const MainContentSection = (): JSX.Element => {
               onClick={handleDeleteArticle}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Confirm Delete"}
+              {isDeleting ? "Deleting..." : "Yes"}
             </Button>
           </DialogFooter>
         </DialogContent>
