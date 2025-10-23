@@ -1173,6 +1173,7 @@ export class AuthService {
 
   /**
    * Change password
+   * Public endpoint - authenticates using verification code, not auth token
    */
   static async changePassword(params: ChangePasswordParams): Promise<boolean> {
 
@@ -1180,7 +1181,7 @@ export class AuthService {
       const response = await apiRequest('/client/user/changePsw', {
         method: 'POST',
         body: JSON.stringify(params),
-        requiresAuth: true,
+        requiresAuth: false, // Authenticates using verification code in request body
       });
 
       return response.status === 1;
