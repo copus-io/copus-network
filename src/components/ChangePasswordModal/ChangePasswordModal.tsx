@@ -81,8 +81,9 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
 
     setIsSaving(true);
     try {
-      // Call change password API with verification code and new password
+      // Call change password API with email, verification code, and new password
       const result = await AuthService.changePassword({
+        email: user?.email || '',
         code: verificationCode,
         newPsw: newPassword
       });
