@@ -1182,7 +1182,7 @@ export class AuthService {
       const response = await apiRequest('/client/user/changePsw', {
         method: 'POST',
         body: JSON.stringify(params),
-        requiresAuth: false, // Authenticates using verification code in request body
+        requiresAuth: true, // Authenticates using verification code in request body
       });
 
       return response.status === 1;
