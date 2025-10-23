@@ -135,10 +135,9 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
   const isFormValid = verificationCode.trim() && newPassword && confirmPassword && newPassword === confirmPassword && newPassword.length >= 6;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <Card
         className="w-[600px] bg-white rounded-[20px] shadow-xl"
-        onClick={(e) => e.stopPropagation()}
       >
         <CardContent className="p-8">
           {/* Header */}
