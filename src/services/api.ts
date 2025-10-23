@@ -68,12 +68,16 @@ export const apiRequest = async <T>(
 
           throw new Error(`Authentication failed: ${errorMessage}, please log in again`);
         } else {
-          // For public endpoints, log warning but don't throw auth error
-          console.warn(`⚠️ Public endpoint ${endpoint} returned ${response.status}, but continuing anyway`);
+          // For public endpoints, log warning and error details
+          console.warn(`⚠️ Public endpoint ${endpoint} returned ${response.status}`);
+          console.warn('Response text:', errorText);
           // Try to parse the response anyway in case there's useful data
           try {
             const data = JSON.parse(errorText);
-            return data;
+            console.warn('Parsed error response:', data);
+            // Throw error with the actual API error message
+            const errorMsg = data.msg || data.message || errorText;
+            throw new Error(`API error: ${errorMsg}`);
           } catch (e) {
             // If can't parse, throw generic error
             throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);

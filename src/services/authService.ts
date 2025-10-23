@@ -1174,7 +1174,7 @@ export class AuthService {
 
   /**
    * Change password
-   * Public endpoint - authenticates using verification code, not auth token
+   * Requires both valid auth token and email verification code for security
    */
   static async changePassword(params: ChangePasswordParams): Promise<boolean> {
 
@@ -1182,7 +1182,7 @@ export class AuthService {
       const response = await apiRequest('/client/user/changePsw', {
         method: 'POST',
         body: JSON.stringify(params),
-        requiresAuth: true, // Authenticates using verification code in request body
+        requiresAuth: true, // Requires valid auth token + verification code for security
       });
 
       return response.status === 1;

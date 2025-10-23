@@ -1,6 +1,7 @@
 import { EyeIcon, EyeOffIcon, XIcon } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import CryptoJS from 'crypto-js';
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
@@ -81,12 +82,23 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
 
     setIsSaving(true);
     try {
-      // Call change password API with email, verification code, and new password
-      const result = await AuthService.changePassword({
+      // MD5 encrypt password before sending
+      const encryptedPassword = CryptoJS.MD5(newPassword).toString();
+
+      // Call change password API with email, verification code, and encrypted password
+      const params = {
         email: user?.email || '',
         code: verificationCode,
-        newPsw: newPassword
+        newPsw: encryptedPassword
+      };
+
+      console.log('Change password request params:', {
+        email: params.email,
+        code: params.code,
+        newPsw: '***MD5 encrypted***'
       });
+
+      const result = await AuthService.changePassword(params);
 
       if (result) {
         showToast("Password changed successfully! Please log in with your new password.", "success");
@@ -97,9 +109,11 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
       } else {
         showToast("Failed to change password, please try again", "error");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to change password:", error);
-      showToast("Failed to change password, please try again later", "error");
+      console.error("Error message:", error?.message);
+      console.error("Error response:", error?.response);
+      showToast(`Failed to change password: ${error?.message || 'Please try again later'}`, "error");
     } finally {
       setIsSaving(false);
     }
