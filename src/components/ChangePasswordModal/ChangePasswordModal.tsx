@@ -17,21 +17,16 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
   const { user } = useUser();
   const { showToast } = useToast();
 
-  // Step state: 'verify' | 'newPassword'
-  const [step, setStep] = useState<'verify' | 'newPassword'>('verify');
-
-  // Verification code step state
+  // All form state in one view
   const [verificationCode, setVerificationCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [isCodeVerified, setIsCodeVerified] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
-
-  // New password step state
   const [showPassword1, setShowPassword1] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isChanging, setIsChanging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen) return null;
 
@@ -61,30 +56,13 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
     }
   };
 
-  const handleVerifyCode = async () => {
+  const handleSavePassword = async () => {
+    // Validate all fields
     if (!verificationCode.trim()) {
       showToast("Please enter verification code", "error");
       return;
     }
 
-    setIsVerifying(true);
-    try {
-      const isValid = await AuthService.verifyCode(user?.email || "", verificationCode);
-      if (isValid) {
-        showToast("Verification successful!", "success");
-        setStep('newPassword');
-      } else {
-        showToast("Invalid verification code, please re-enter", "error");
-      }
-    } catch (error) {
-      console.error("Verification code validation failed:", error);
-      showToast("Verification failed, please try again", "error");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  const handleSavePassword = async () => {
     if (!newPassword || !confirmPassword) {
       showToast("Please fill in all password fields", "error");
       return;
@@ -100,8 +78,20 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
       return;
     }
 
-    setIsChanging(true);
+    setIsSaving(true);
     try {
+      // Step 1: Verify code if not already verified
+      if (!isCodeVerified) {
+        const isValid = await AuthService.verifyCode(user?.email || "", verificationCode);
+        if (!isValid) {
+          showToast("Invalid verification code, please check and try again", "error");
+          setIsSaving(false);
+          return;
+        }
+        setIsCodeVerified(true);
+      }
+
+      // Step 2: Update password
       const result = await AuthService.updatePassword(newPassword);
 
       if (result) {
@@ -115,26 +105,25 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
       console.error("Failed to change password:", error);
       showToast("Failed to change password, please try again later", "error");
     } finally {
-      setIsChanging(false);
+      setIsSaving(false);
     }
   };
 
   const handleClose = () => {
     // Reset all state
-    setStep('verify');
     setVerificationCode("");
     setIsCodeSent(false);
-    setIsVerifying(false);
+    setIsCodeVerified(false);
     setIsSendingCode(false);
     setShowPassword1(false);
     setShowPassword2(false);
     setNewPassword("");
     setConfirmPassword("");
-    setIsChanging(false);
+    setIsSaving(false);
     onClose();
   };
 
-  const isFormValid = newPassword && confirmPassword && newPassword === confirmPassword && newPassword.length >= 6;
+  const isFormValid = verificationCode.trim() && newPassword && confirmPassword && newPassword === confirmPassword && newPassword.length >= 6;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleClose}>
@@ -145,33 +134,18 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
         <CardContent className="p-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-3">
-              <h2 className="[font-family:'Lato',Helvetica] font-bold text-off-black text-2xl tracking-[0] leading-[28px]">
-                Change Password
-              </h2>
-              {step === 'newPassword' && (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red rounded-full"></div>
-                  <span className="text-sm text-medium-dark-grey">Step 2 of 2</span>
-                </div>
-              )}
-              {step === 'verify' && (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red rounded-full"></div>
-                  <span className="text-sm text-medium-dark-grey">Step 1 of 2</span>
-                </div>
-              )}
-            </div>
+            <h2 className="[font-family:'Lato',Helvetica] font-bold text-off-black text-2xl tracking-[0] leading-[28px]">
+              Change Password
+            </h2>
             <button onClick={handleClose} className="hover:bg-gray-100 p-1 rounded-full transition-colors">
               <XIcon className="w-6 h-6 text-gray-400 hover:text-gray-600" />
             </button>
           </div>
 
-          {step === 'verify' && (
-            <div className="space-y-6">
-              <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base leading-6">
-                For security, we need to verify your identity before changing your password.
-              </p>
+          <div className="space-y-6">
+            <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base leading-6">
+              For security, we need to verify your email before changing your password.
+            </p>
 
               {/* Email field with send code button */}
               <div className="space-y-4">
@@ -192,148 +166,117 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
                 </div>
               </div>
 
-              {/* Verification code input */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-dark-grey">Verification Code</label>
+            {/* Verification code input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-dark-grey">Verification Code</label>
+              <Input
+                className="w-full h-12 px-4 bg-gray-50 rounded-lg border border-gray-200 focus:border-red focus:ring-1 focus:ring-red focus-visible:ring-1 focus-visible:ring-red"
+                placeholder="Enter 6-digit code from your email"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                maxLength={6}
+              />
+              {isCodeSent && (
+                <p className="text-sm text-green-600">✓ Verification code sent to your email</p>
+              )}
+            </div>
+
+            {/* New password input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-dark-grey">New Password</label>
+              <div className="relative">
                 <Input
-                  className="w-full h-12 px-4 bg-gray-50 rounded-lg border border-gray-200 focus:border-red focus:ring-1 focus:ring-red focus-visible:ring-1 focus-visible:ring-red"
-                  placeholder="Enter 6-digit code from your email"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  maxLength={6}
+                  type={showPassword1 ? "text" : "password"}
+                  placeholder="Enter your new password"
+                  className="w-full h-12 px-4 pr-12 bg-gray-50 rounded-lg border border-gray-200 focus:border-red focus:ring-1 focus:ring-red focus-visible:ring-1 focus-visible:ring-red"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                 />
-                {isCodeSent && (
-                  <p className="text-sm text-green-600">✓ Verification code sent to your email</p>
-                )}
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex justify-end gap-3 pt-4">
                 <Button
+                  type="button"
                   variant="ghost"
-                  className="px-6 py-2 h-auto rounded-lg hover:bg-gray-50 transition-colors"
-                  onClick={handleClose}
+                  size="sm"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-auto p-1 hover:bg-gray-100 rounded"
+                  onClick={() => setShowPassword1(!showPassword1)}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={!verificationCode.trim() || isVerifying}
-                  className={`px-6 py-2 h-auto rounded-lg font-semibold transition-colors ${
-                    verificationCode.trim() && !isVerifying
-                      ? "bg-red hover:bg-red/90 text-white"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
-                  onClick={handleVerifyCode}
-                >
-                  {isVerifying ? "Verifying..." : "Verify & Continue"}
+                  {showPassword1 ? (
+                    <EyeOffIcon className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5 text-gray-400" />
+                  )}
                 </Button>
               </div>
             </div>
-          )}
 
-          {step === 'newPassword' && (
-            <div className="space-y-6">
-              <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base leading-6">
-                Create a new password for your account.
-              </p>
-
-              {/* New password input */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-dark-grey">New Password</label>
-                <div className="relative">
-                  <Input
-                    type={showPassword1 ? "text" : "password"}
-                    placeholder="Enter your new password"
-                    className="w-full h-12 px-4 pr-12 bg-gray-50 rounded-lg border border-gray-200 focus:border-red focus:ring-1 focus:ring-red focus-visible:ring-1 focus-visible:ring-red"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-auto p-1 hover:bg-gray-100 rounded"
-                    onClick={() => setShowPassword1(!showPassword1)}
-                  >
-                    {showPassword1 ? (
-                      <EyeOffIcon className="w-5 h-5 text-gray-400" />
-                    ) : (
-                      <EyeIcon className="w-5 h-5 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Confirm password input */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-dark-grey">Confirm New Password</label>
-                <div className="relative">
-                  <Input
-                    type={showPassword2 ? "text" : "password"}
-                    placeholder="Enter your new password again"
-                    className="w-full h-12 px-4 pr-12 bg-gray-50 rounded-lg border border-gray-200 focus:border-red focus:ring-1 focus:ring-red focus-visible:ring-1 focus-visible:ring-red"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-auto p-1 hover:bg-gray-100 rounded"
-                    onClick={() => setShowPassword2(!showPassword2)}
-                  >
-                    {showPassword2 ? (
-                      <EyeOffIcon className="w-5 h-5 text-gray-400" />
-                    ) : (
-                      <EyeIcon className="w-5 h-5 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-                {confirmPassword && (
-                  <div className={`text-sm flex items-center gap-1 ${newPassword === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
-                    {newPassword === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
-                  </div>
-                )}
-              </div>
-
-              {/* Password requirements */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-medium-dark-grey mb-2 font-medium">Password requirements:</p>
-                <ul className="text-sm text-medium-dark-grey space-y-1">
-                  <li className={`flex items-center gap-2 ${newPassword.length >= 6 ? 'text-green-600' : ''}`}>
-                    <span className="w-1 h-1 bg-current rounded-full"></span>
-                    Minimum 6 characters
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1 h-1 bg-current rounded-full"></span>
-                    Mix of letters, numbers, and symbols recommended
-                  </li>
-                </ul>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex justify-end gap-3 pt-4">
+            {/* Confirm password input */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-dark-grey">Confirm New Password</label>
+              <div className="relative">
+                <Input
+                  type={showPassword2 ? "text" : "password"}
+                  placeholder="Enter your new password again"
+                  className="w-full h-12 px-4 pr-12 bg-gray-50 rounded-lg border border-gray-200 focus:border-red focus:ring-1 focus:ring-red focus-visible:ring-1 focus-visible:ring-red"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
                 <Button
+                  type="button"
                   variant="ghost"
-                  className="px-6 py-2 h-auto rounded-lg hover:bg-gray-50 transition-colors"
-                  onClick={() => setStep('verify')}
+                  size="sm"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-auto p-1 hover:bg-gray-100 rounded"
+                  onClick={() => setShowPassword2(!showPassword2)}
                 >
-                  Back
-                </Button>
-                <Button
-                  disabled={!isFormValid || isChanging}
-                  className={`px-6 py-2 h-auto rounded-lg font-semibold transition-colors ${
-                    isFormValid && !isChanging
-                      ? "bg-red hover:bg-red/90 text-white"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
-                  onClick={handleSavePassword}
-                >
-                  {isChanging ? "Saving..." : "Save New Password"}
+                  {showPassword2 ? (
+                    <EyeOffIcon className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5 text-gray-400" />
+                  )}
                 </Button>
               </div>
+              {confirmPassword && (
+                <div className={`text-sm flex items-center gap-1 ${newPassword === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
+                  {newPassword === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Password requirements */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-medium-dark-grey mb-2 font-medium">Password requirements:</p>
+              <ul className="text-sm text-medium-dark-grey space-y-1">
+                <li className={`flex items-center gap-2 ${newPassword.length >= 6 ? 'text-green-600' : ''}`}>
+                  <span className="w-1 h-1 bg-current rounded-full"></span>
+                  Minimum 6 characters
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1 h-1 bg-current rounded-full"></span>
+                  Mix of letters, numbers, and symbols recommended
+                </li>
+              </ul>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="ghost"
+                className="px-6 py-2 h-auto rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={handleClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!isFormValid || isSaving}
+                className={`px-6 py-2 h-auto rounded-lg font-semibold transition-colors ${
+                  isFormValid && !isSaving
+                    ? "bg-red hover:bg-red/90 text-white"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+                onClick={handleSavePassword}
+              >
+                {isSaving ? "Saving..." : "Save New Password"}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
