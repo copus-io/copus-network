@@ -178,9 +178,9 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
                 <label className="block text-sm font-medium text-dark-grey">Email Address</label>
                 <div className="flex gap-3">
                   <Input
-                    className="flex-1 h-12 px-4 bg-gray-50 rounded-lg border border-gray-200 focus:border-red focus:ring-1 focus:ring-red focus-visible:ring-1 focus-visible:ring-red"
+                    className="flex-1 h-12 px-4 bg-gray-100 rounded-lg border border-gray-300 text-gray-600 cursor-not-allowed"
                     value={user?.email || "user@example.com"}
-                    readOnly
+                    disabled
                   />
                   <Button
                     className="px-6 h-12 bg-red hover:bg-red/90 text-white rounded-lg font-semibold transition-colors"
