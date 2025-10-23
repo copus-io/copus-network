@@ -20,7 +20,6 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
   // All form state in one view
   const [verificationCode, setVerificationCode] = useState("");
   const [isCodeSent, setIsCodeSent] = useState(false);
-  const [isCodeVerified, setIsCodeVerified] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [showPassword1, setShowPassword1] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
@@ -80,19 +79,11 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
 
     setIsSaving(true);
     try {
-      // Step 1: Verify code if not already verified
-      if (!isCodeVerified) {
-        const isValid = await AuthService.verifyCode(user?.email || "", verificationCode);
-        if (!isValid) {
-          showToast("Invalid verification code, please check and try again", "error");
-          setIsSaving(false);
-          return;
-        }
-        setIsCodeVerified(true);
-      }
-
-      // Step 2: Update password
-      const result = await AuthService.updatePassword(newPassword);
+      // Call change password API with verification code and new password
+      const result = await AuthService.changePassword({
+        code: verificationCode,
+        newPsw: newPassword
+      });
 
       if (result) {
         showToast("Password changed successfully!", "success");
@@ -113,7 +104,6 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
     // Reset all state
     setVerificationCode("");
     setIsCodeSent(false);
-    setIsCodeVerified(false);
     setIsSendingCode(false);
     setShowPassword1(false);
     setShowPassword2(false);

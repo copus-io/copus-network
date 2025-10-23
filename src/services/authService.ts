@@ -11,7 +11,7 @@ export interface CheckEmailParams {
 }
 
 export interface ChangePasswordParams {
-  oldPsw: string;
+  code: string;
   newPsw: string;
 }
 
