@@ -341,13 +341,21 @@ export const MainContentSection = (): JSX.Element => {
     };
   };
 
-  // 处理点赞
+  // Handle like/unlike
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
     if (!user) {
       showToast('Please login first', 'error');
       return;
     }
+
+    // Call the API to toggle like
     await toggleLike(articleId, currentIsLiked, currentLikeCount);
+
+    // If we're on the collection tab and the article was liked (now being unliked)
+    // remove it from the likedArticles list
+    if (activeTab === 'collection' && currentIsLiked) {
+      setLikedArticles(prev => prev.filter(article => article.uuid !== articleId && article.id !== articleId));
+    }
   };
 
   // 处理用户点击 - 现在需要传递namespace
