@@ -1,5 +1,6 @@
 import { EyeIcon, EyeOffIcon, XIcon } from "lucide-react";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
@@ -16,6 +17,7 @@ interface ChangePasswordModalProps {
 export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswordModalProps): JSX.Element | null => {
   const { user } = useUser();
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   // All form state in one view
   const [verificationCode, setVerificationCode] = useState("");
@@ -86,9 +88,11 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
       });
 
       if (result) {
-        showToast("Password changed successfully!", "success");
+        showToast("Password changed successfully! Please log in with your new password.", "success");
         onSuccess?.();
         onClose();
+        // Redirect to login page after successful password change
+        navigate('/login', { replace: true });
       } else {
         showToast("Failed to change password, please try again", "error");
       }
