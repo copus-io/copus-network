@@ -309,7 +309,7 @@ export const MainContentSection = (): JSX.Element => {
       userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
       userId: article.authorInfo?.id,
       userNamespace: article.authorInfo?.namespace,
-      date: new Date((article.createAt || article.publishAt) * 1000).toLocaleDateString(),
+      date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
       treasureCount: article.likeCount || 0,
       visitCount: article.viewCount || 0,
       isLiked: article.isLiked || true,
@@ -332,7 +332,7 @@ export const MainContentSection = (): JSX.Element => {
       userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
       userId: article.authorInfo?.id,
       userNamespace: article.authorInfo?.namespace,
-      date: new Date((article.createAt || article.publishAt) * 1000).toLocaleDateString(),
+      date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
       treasureCount: article.likeCount || 0,
       visitCount: article.viewCount || 0,
       isLiked: article.isLiked || false, // 创作文章的点赞状态来自API
