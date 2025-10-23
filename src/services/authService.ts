@@ -1279,13 +1279,14 @@ export class AuthService {
 
   /**
    * Verify verification code (New: for password change flow)
+   * Public endpoint - does not require authentication
    */
   static async verifyCode(email: string, code: string): Promise<boolean> {
 
     try {
       const response = await apiRequest('/client/common/verifyCode', {
         method: 'POST',
-        requiresAuth: true,
+        requiresAuth: false,
         body: JSON.stringify({
           email,
           code,
