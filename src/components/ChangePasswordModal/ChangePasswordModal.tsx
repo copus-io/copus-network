@@ -161,7 +161,7 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
                     onClick={handleSendCode}
                     disabled={isSendingCode}
                   >
-                    {isSendingCode ? "Sending..." : "Send Code"}
+                    {isSendingCode ? "Sending..." : "Send code"}
                   </Button>
                 </div>
               </div>
@@ -273,7 +273,7 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
                 }`}
                 onClick={handleSavePassword}
               >
-                {isSaving ? "Saving..." : "Save New Password"}
+                {isSaving ? "Saving..." : "Save new password"}
               </Button>
             </div>
           </div>
