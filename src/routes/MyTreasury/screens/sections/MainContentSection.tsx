@@ -463,15 +463,15 @@ export const MainContentSection = (): JSX.Element => {
     };
   }, [showImagePreview]);
 
-  // 分享个人主页 - 复制Instagram风格短链接 ✨
+  // Share personal homepage - copy Instagram-style short link ✨
   const handleShare = () => {
     const currentNamespace = isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace;
     if (currentNamespace) {
       const shortLink = `${window.location.origin}/u/${currentNamespace}`;
       navigator.clipboard.writeText(shortLink).then(() => {
-        showToast('已复制专属链接到剪贴板！快去分享吧～ 🎉', 'success');
+        showToast('Link copied to clipboard! Share it now! 🎉', 'success');
       }).catch(() => {
-        showToast('复制链接失败，请手动复制: ' + shortLink, 'error');
+        showToast('Failed to copy link, please copy manually: ' + shortLink, 'error');
       });
     }
   };
@@ -675,7 +675,7 @@ export const MainContentSection = (): JSX.Element => {
                   size="sm"
                   className="p-0 h-auto hover:scale-110 transition-transform duration-200"
                   onClick={handleShare}
-                  title={`分享 @${isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace} 的专属链接`}
+                  title={`Share @${isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace}'s profile link`}
                 >
                   <img
                     className="w-[38px] h-[38px]"
