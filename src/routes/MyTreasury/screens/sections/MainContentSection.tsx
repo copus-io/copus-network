@@ -11,14 +11,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../../components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../../../../components/ui/dialog";
 import { useToast } from "../../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 
@@ -582,15 +574,27 @@ export const MainContentSection = (): JSX.Element => {
 
     setIsDeleting(true);
     try {
-      // 调用删除API
-      const deleteResult = await AuthService.deleteArticle(articleToDelete.id);
+      // Call delete API with UUID (not numeric ID)
+      const deleteResult = await AuthService.deleteArticle(articleToDelete.uuid);
 
+      console.log('Delete article response:', JSON.stringify(deleteResult, null, 2));
+      console.log('Response keys:', Object.keys(deleteResult));
+      console.log('Response.data:', deleteResult.data);
+      console.log('Response.status:', deleteResult.status);
 
-      // 检查删除是否真正成功
-      if (deleteResult.data === true) {
-        showToast("Article deleted successfully", "success");
+      // 检查删除是否真正成功 - handle various response formats
+      const isSuccess =
+        deleteResult === true ||
+        deleteResult.data === true ||
+        deleteResult.status === 1 ||
+        deleteResult.status === 200 ||
+        (deleteResult.data && deleteResult.data.status === 1);
+
+      if (isSuccess) {
+        showToast("Curated link deleted successfully", "success");
       } else {
-        showToast("Delete failed, article may not exist or no permission to delete", "warning");
+        console.error('Delete failed, full response:', JSON.stringify(deleteResult, null, 2));
+        showToast("Delete failed, curated link may not exist or no permission to delete", "warning");
         setDeleteDialogOpen(false);
         setArticleToDelete(null);
         setIsDeleting(false);
@@ -603,19 +607,19 @@ export const MainContentSection = (): JSX.Element => {
         await fetchCreatedArticles(userId);
       }
 
-      // 如果是收藏的文章，也从收藏列表中移除
-      setLikedArticles(prev => prev.filter(article => article.uuid !== articleToDelete.id));
+      // If it's a liked article, also remove from liked list
+      setLikedArticles(prev => prev.filter(article => article.uuid !== articleToDelete.uuid));
 
       setDeleteDialogOpen(false);
       setArticleToDelete(null);
     } catch (error: any) {
-      console.error('删除文章失败:', error);
+      console.error('Delete curated link failed:', error);
 
-      // 如果是因为后端接口未实现，给出特别提示
+      // If it's because the backend API is not implemented, provide a special prompt
       if (error.message?.includes('404') || error.message?.includes('Not Found')) {
         showToast("Delete feature is under development, coming soon", "warning");
       } else {
-        showToast(error.message || "Error deleting article, please try again later", "error");
+        showToast(error.message || "Error deleting curated link, please try again later", "error");
       }
     } finally {
       setIsDeleting(false);
@@ -816,35 +820,60 @@ export const MainContentSection = (): JSX.Element => {
       <div className="h-[50px]" />
 
       {/* 删除确认对话框 */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete</DialogTitle>
-            <DialogDescription>
-              Are you sure to delete this curated link?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="inline-flex flex-col items-center justify-center gap-10 pt-[100px] pb-[50px] px-10 bg-white rounded-[15px] relative shadow-lg">
+            <button
+              className="absolute right-6 top-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
               onClick={() => {
                 setDeleteDialogOpen(false);
                 setArticleToDelete(null);
               }}
               disabled={isDeleting}
             >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteArticle}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Deleting..." : "Yes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span className="sr-only">Close</span>
+            </button>
+
+            <div className="inline-flex flex-col items-center justify-center gap-[30px] px-[30px] py-0 relative flex-[0_0_auto]">
+              <div className="inline-flex flex-col items-center justify-center gap-[25px] relative flex-[0_0_auto]">
+                <h1 className="relative w-[400px] mt-[-1.00px] font-h3-s font-[number:var(--h3-s-font-weight)] text-off-black text-[length:var(--h3-s-font-size)] text-center tracking-[var(--h3-s-letter-spacing)] leading-[var(--h3-s-line-height)] [font-style:var(--h3-s-font-style)]">
+                  Are you sure to delete this curated link?
+                </h1>
+              </div>
+
+              <div className="inline-flex items-center justify-center gap-[15px] relative flex-[0_0_auto]">
+                <Button
+                  variant="ghost"
+                  className="inline-flex h-[45px] items-center justify-center gap-[30px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[15px] h-auto hover:bg-transparent"
+                  onClick={() => {
+                    setDeleteDialogOpen(false);
+                    setArticleToDelete(null);
+                  }}
+                  disabled={isDeleting}
+                >
+                  <span className="relative w-fit mt-[-3.50px] font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)]">
+                    Cancel
+                  </span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="inline-flex h-[45px] items-center justify-center gap-[15px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red hover:text-white h-auto transition-colors"
+                  onClick={handleDeleteArticle}
+                  disabled={isDeleting}
+                >
+                  <span className="relative w-fit mt-[-2.50px] mb-[-0.50px] [font-family:'Lato',Helvetica] font-semibold text-xl tracking-[0] leading-7 whitespace-nowrap">
+                    {isDeleting ? "Deleting..." : "Yes"}
+                  </span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 简单直接的图片预览模态框 */}
       {showImagePreview && (
