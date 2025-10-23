@@ -200,9 +200,9 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
                   onClick={() => setShowPassword1(!showPassword1)}
                 >
                   {showPassword1 ? (
-                    <EyeOffIcon className="w-5 h-5 text-gray-400" />
-                  ) : (
                     <EyeIcon className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <EyeOffIcon className="w-5 h-5 text-gray-400" />
                   )}
                 </Button>
               </div>
@@ -227,9 +227,9 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
                   onClick={() => setShowPassword2(!showPassword2)}
                 >
                   {showPassword2 ? (
-                    <EyeOffIcon className="w-5 h-5 text-gray-400" />
-                  ) : (
                     <EyeIcon className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <EyeOffIcon className="w-5 h-5 text-gray-400" />
                   )}
                 </Button>
               </div>
