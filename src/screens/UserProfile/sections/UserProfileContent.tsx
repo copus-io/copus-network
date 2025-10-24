@@ -39,9 +39,11 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         console.log('[UserProfile] Calling getOtherUserTreasuryInfoByNamespace...');
         const userData = await AuthService.getOtherUserTreasuryInfoByNamespace(namespace);
         console.log('[UserProfile] Successfully fetched user data:', userData);
+        console.log('[UserProfile] isEnabled value:', userData.isEnabled);
+        console.log('[UserProfile] isEnabled type:', typeof userData.isEnabled);
 
-        // Check if account is disabled/deleted
-        if (userData.isEnabled === false) {
+        // Check if account is disabled/deleted (check both false and 0)
+        if (userData.isEnabled === false || userData.isEnabled === 0) {
           console.log('[UserProfile] Account is disabled/deleted');
           setAccountExists(false);
 
