@@ -11,21 +11,21 @@ import { getCategoryStyle, getCategoryInlineStyle } from "../../../utils/categor
 
 export const LinkPreview = (): JSX.Element => {
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(999);
+  const [likeCount, setLikeCount] = useState(0);
   const [isLiking, setIsLiking] = useState(false);
   const { id } = useParams();
   const { user, isLoggedIn } = useUser();
   const { showToast } = useToast();
 
-  // 模拟文章数据（实际应该从API获取）
+  // 文章数据（实际应该从API获取）
   const [articleData, setArticleData] = useState({
     category: "科技",
-    categoryColor: "red", // 从服务器返回的颜色名称
+    categoryColor: "", // 从服务器返回的颜色名称
     title: "We overestimate AI's impact in the short-term and underestimate it long-term",
     url: "https://example.com"
   });
 
-  // 模拟获取文章数据
+  // 获取文章数据
   useEffect(() => {
     if (id) {
       // 这里可以根据id获取真实的文章数据

@@ -21,53 +21,6 @@ const notificationTabs = [
   { value: "treasury", label: "Treasury" },
 ];
 
-// Sophia's 原始通知数据设计
-const sophiaNotifications = [
-  {
-    id: 1,
-    type: "system",
-    category: "System",
-    message: "欢迎加入Copus社区！完成个人资料可获得更多关注和互动。",
-    timestamp: "1m",
-    isRead: false,
-    icon: "https://c.animaapp.com/mft4oqz6uyUKY7/img/icon-wrap-1.svg",
-    deleteIcon: "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete.svg",
-  },
-  {
-    id: 2,
-    type: "like",
-    category: "Like",
-    message: 'User Name liked your post "Lorem ipsum dolor sit amet"',
-    timestamp: "1h ago",
-    isRead: false,
-    profileImage:
-      "https://c.animaapp.com/mft4oqz6uyUKY7/img/-profile-image-1.png",
-    deleteIcon: "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg",
-  },
-  {
-    id: 3,
-    type: "like",
-    category: "Like",
-    message:
-      'User Name and 3 other users liked your post "Lorem ipsum dolor sit amet"',
-    timestamp: "3hs ago",
-    isRead: true,
-    profileImage:
-      "https://c.animaapp.com/mft4oqz6uyUKY7/img/-profile-image-1.png",
-    deleteIcon: "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg",
-  },
-  {
-    id: 4,
-    type: "system",
-    category: "System",
-    message: "Copus平台已更新至2.0版本，新增智能推荐和内容分类功能。",
-    timestamp: "1 day ago",
-    isRead: true,
-    icon: "https://c.animaapp.com/mft4oqz6uyUKY7/img/icon-wrap-1.svg",
-    deleteIcon: "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete.svg",
-  },
-];
-
 export const NotificationListSection = (): JSX.Element => {
   const navigate = useNavigate();
   const {

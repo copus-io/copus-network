@@ -8,83 +8,6 @@ import { formatDate } from "../../../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
-// Demo数据，用于token无效时的展示
-const getDemoTreasuryData = () => ({
-  treasuryStats: {
-    likedArticleCount: 8,
-    articleCount: 12,
-    myArticleLikedCount: 145
-  },
-  articles: [
-    {
-      id: "demo-1",
-      uuid: "demo-1",
-      title: "探索未来Web3的创新应用",
-      description: "深度解析区块链技术在社交媒体和内容创作领域的革新潜力，以及去中心化平台如何重塑创作者经济。",
-      coverImage: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=240&fit=crop",
-      category: "Technology",
-      userName: "TechExplorer",
-      userAvatar: profileDefaultAvatar,
-      date: "2024-12-15",
-      treasureCount: 89,
-      visitCount: "1.2k Visits",
-      isLiked: true,
-      targetUrl: "https://example.com/web3-innovation",
-      website: "example.com"
-    },
-    {
-      id: "demo-2",
-      uuid: "demo-2",
-      title: "设计思维在产品开发中的应用",
-      description: "从用户需求出发，通过设计思维方法论，打造真正解决问题的产品。分享实战经验和案例分析。",
-      coverImage: "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=240&fit=crop",
-      category: "Design",
-      userName: "DesignGuru",
-      userAvatar: profileDefaultAvatar,
-      date: "2024-12-14",
-      treasureCount: 67,
-      visitCount: "890 Visits",
-      isLiked: true,
-      targetUrl: "https://example.com/design-thinking",
-      website: "example.com"
-    },
-    {
-      id: "demo-3",
-      uuid: "demo-3",
-      title: "可持续发展：环保科技的新突破",
-      description: "回顾2024年最具影响力的环保技术创新，从清洁能源到循环经济，看科技如何助力绿色未来。",
-      coverImage: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=240&fit=crop",
-      category: "Environment",
-      userName: "EcoInnovator",
-      userAvatar: profileDefaultAvatar,
-      date: "2024-12-13",
-      treasureCount: 124,
-      visitCount: "2.1k Visits",
-      isLiked: true,
-      targetUrl: "https://example.com/green-tech",
-      website: "example.com"
-    }
-  ],
-  socialLinks: [
-    {
-      id: 1,
-      title: "Twitter",
-      linkUrl: "https://twitter.com/copus_demo",
-      iconUrl: "https://upload.wikimedia.org/wikipedia/commons/6/6f/Logo_of_Twitter.svg",
-      sortOrder: 1,
-      userId: 1
-    },
-    {
-      id: 2,
-      title: "Instagram",
-      linkUrl: "https://instagram.com/copus_demo",
-      iconUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png",
-      sortOrder: 2,
-      userId: 1
-    }
-  ]
-});
-
 interface TreasuryArticle extends ArticleData {
   // 继承ArticleData，保持类型一致性
 }
@@ -96,7 +19,6 @@ export const TreasuryContentSection = (): JSX.Element => {
   const [likedArticles, setLikedArticles] = useState<TreasuryArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const [treasuryStats, setTreasuryStats] = useState({
     likedArticleCount: 0,
     articleCount: 0,
@@ -193,23 +115,9 @@ export const TreasuryContentSection = (): JSX.Element => {
       } catch (error) {
         console.error('❌ 获取收藏文章失败:', error);
         const errorMessage = error instanceof Error ? error.message : '获取收藏文章失败';
-
-        // 检查是否是认证相关错误
-        if (errorMessage.includes('认证失败') || errorMessage.includes('重新登录') || errorMessage.includes('token')) {
-          setIsDemoMode(true);
-          setError(null); // 清除错误状态
-
-          // 加载Demo数据
-          const demoData = getDemoTreasuryData();
-          setTreasuryStats(demoData.treasuryStats);
-          setLikedArticles(demoData.articles as TreasuryArticle[]);
-
-          showToast('😊 正在展示演示数据，登录后可查看真实宝藏', 'info');
-        } else {
-          setError(errorMessage);
-          showToast('获取宝藏数据失败，请稍后重试', 'error');
-          setLikedArticles([]);
-        }
+        setError(errorMessage);
+        showToast('获取宝藏数据失败，请稍后重试', 'error');
+        setLikedArticles([]);
       } finally {
         setLoading(false);
       }
@@ -424,12 +332,6 @@ export const TreasuryContentSection = (): JSX.Element => {
             <h1 className="font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
               我的宝藏
             </h1>
-            {isDemoMode && (
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">
-                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                <span className="text-sm text-blue-700 font-medium">演示模式</span>
-              </div>
-            )}
           </div>
 
           {/* 社交链接显示区域（只读） */}
@@ -461,40 +363,20 @@ export const TreasuryContentSection = (): JSX.Element => {
           )}
 
           <p className="text-gray-600 text-base">
-            {isDemoMode
-              ? '🎭 演示数据：展示平台功能特色'
-              : treasuryStats.likedArticleCount > 0
-                ? `共收藏了 ${treasuryStats.likedArticleCount} 篇文章`
-                : '还没有收藏任何文章'
+            {treasuryStats.likedArticleCount > 0
+              ? `共收藏了 ${treasuryStats.likedArticleCount} 篇文章`
+              : '还没有收藏任何文章'
             }
           </p>
         </div>
 
-        {isDemoMode ? (
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="h-10 gap-3 px-5 py-[15px] rounded-[100px] border-blue-400 text-blue-600 hover:bg-blue-50 transition-colors"
-              onClick={() => showToast('演示模式下的功能预览', 'info')}
-            >
-              功能预览
-            </Button>
-            <Button
-              className="h-10 gap-3 px-5 py-[15px] rounded-[100px] bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-              onClick={() => { window.location.href = '/login'; }}
-            >
-              登录查看真实宝藏
-            </Button>
-          </div>
-        ) : (
-          <Button
-            variant="outline"
-            className="h-10 gap-3 px-5 py-[15px] rounded-[100px] border-[#686868] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] [font-style:var(--p-font-style)] hover:bg-gray-50 transition-colors"
-            onClick={() => showToast('收藏管理功能开发中', 'info')}
-          >
-            管理收藏
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          className="h-10 gap-3 px-5 py-[15px] rounded-[100px] border-[#686868] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] [font-style:var(--p-font-style)] hover:bg-gray-50 transition-colors"
+          onClick={() => showToast('收藏管理功能开发中', 'info')}
+        >
+          管理收藏
+        </Button>
       </header>
 
       {likedArticles.length === 0 ? (

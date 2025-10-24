@@ -10,7 +10,7 @@ export const APP_CONFIG = {
     // Development mode behavior configuration
     DEV_MODE: {
       // Automatically fallback to Demo mode when API fails
-      AUTO_FALLBACK_TO_DEMO: true,
+      AUTO_FALLBACK_TO_DEMO: false,
       // Skip token validation (development environment only)
       SKIP_TOKEN_VALIDATION: false,
       // Use mock data instead of calling real API
@@ -31,7 +31,7 @@ export const APP_CONFIG = {
   // Demo mode configuration
   DEMO: {
     // Whether to enable Demo mode
-    ENABLED: true,
+    ENABLED: false,
     // Demo data refresh interval (milliseconds)
     REFRESH_INTERVAL: 0, // 0 means no auto-refresh
     // Notice message displayed in Demo mode
@@ -42,7 +42,7 @@ export const APP_CONFIG = {
 // Adjust configuration based on environment variables
 if (import.meta.env.DEV) {
   // Development environment configuration
-  APP_CONFIG.API.DEV_MODE.AUTO_FALLBACK_TO_DEMO = true;
+  APP_CONFIG.API.DEV_MODE.AUTO_FALLBACK_TO_DEMO = false;
 }
 
 if (import.meta.env.PROD) {

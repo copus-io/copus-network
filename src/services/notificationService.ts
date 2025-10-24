@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import { Notification, NotificationApiResponse } from '../types/notification';
+import { Notification } from '../types/notification';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 export class NotificationService {
@@ -60,7 +60,8 @@ export class NotificationService {
       return [];
     } catch (error) {
       console.error('❌ Failed to get message list:', error);
-      return this.getMockNotifications();
+      // Return empty array instead of mock data when API call fails
+      return [];
     }
   }
 
@@ -299,70 +300,6 @@ export class NotificationService {
         articleUuid: extractedArticleUuid || apiMessage.articleUuid || apiMessage.uuid,
       },
     };
-  }
-
-  /**
-   * Get mock notification data (for development and testing)
-   */
-  private static getMockNotifications(): Notification[] {
-    const now = Date.now();
-    return [
-      {
-        id: '1',
-        type: 'like',
-        title: 'New Like',
-        message: 'Alice liked your article "React Best Practices"',
-        avatar: profileDefaultAvatar,
-        timestamp: now - 1000 * 60 * 30, // 30 minutes ago
-        isRead: false,
-        actionUrl: '/article/123',
-        metadata: {
-          articleId: '123',
-          userId: 'alice',
-        },
-      },
-      {
-        id: '2',
-        type: 'comment',
-        title: 'New Comment',
-        message: 'Bob commented on your article "TypeScript Advanced Guide"',
-        avatar: profileDefaultAvatar,
-        timestamp: now - 1000 * 60 * 60 * 2, // 2 hours ago
-        isRead: false,
-        actionUrl: '/article/456',
-        metadata: {
-          articleId: '456',
-          userId: 'bob',
-          commentId: 'comment_789',
-        },
-      },
-      {
-        id: '3',
-        type: 'system',
-        title: 'System Notification',
-        message: 'Your article "JavaScript Async Programming" has passed review and been published',
-        timestamp: now - 1000 * 60 * 60 * 24, // 1 day ago
-        isRead: true,
-        actionUrl: '/article/789',
-        metadata: {
-          articleId: '789',
-        },
-      },
-      {
-        id: '4',
-        type: 'like',
-        title: 'New Like',
-        message: 'David and 2 other users liked your article "Vue3 Component Design"',
-        avatar: profileDefaultAvatar,
-        timestamp: now - 1000 * 60 * 60 * 24 * 3, // 3 days ago
-        isRead: true,
-        actionUrl: '/article/999',
-        metadata: {
-          articleId: '999',
-          userId: 'david',
-        },
-      },
-    ];
   }
 }
 
