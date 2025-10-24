@@ -1292,27 +1292,6 @@ export class AuthService {
   }
 
   /**
-   * Send verification code (New: for password change flow)
-   */
-  static async sendPasswordResetCode(email: string): Promise<boolean> {
-
-    try {
-      const response = await apiRequest(
-        `/client/common/getVerificationCode?codeType=3&email=${encodeURIComponent(email)}`,
-        {
-          method: 'GET',
-          requiresAuth: true,
-        }
-      );
-
-      return response.status === 1;
-    } catch (error) {
-      console.error('❌ Failed to send verification code:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Verify verification code (New: for password change flow)
    * Public endpoint - does not require authentication
    */
@@ -1546,8 +1525,9 @@ export class AuthService {
 
 // Verification code type constants
 export const CODE_TYPES = {
-  REGISTER: 1,
-  LOGIN: 2,
+  REGISTER: 0,
+  FindBackEmailPsw: 1,
+  UpdateEmail: 2,
   RESET_PASSWORD: 3,
   DELETE_ACCOUNT: 99,
 } as const;

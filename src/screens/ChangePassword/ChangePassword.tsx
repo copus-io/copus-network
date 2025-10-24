@@ -6,7 +6,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
-import { AuthService } from "../../services/authService";
+import { AuthService, CODE_TYPES } from "../../services/authService";
 
 export const ChangePassword = (): JSX.Element => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ export const ChangePassword = (): JSX.Element => {
     setIsSendingCode(true);
     try {
       // 调用发送验证码API
-      const success = await AuthService.sendVerificationCode(user.email);
+      const success = await AuthService.sendVerificationCode({email:user.email,codeType:CODE_TYPES.FindBackEmailPsw });
       if (success) {
         showToast("验证码已发送到您的邮箱", "success");
         setIsCodeSent(true);

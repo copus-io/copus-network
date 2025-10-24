@@ -54,7 +54,7 @@ export const ResetPasswordModal = ({ isOpen, onClose, onSuccess }: ResetPassword
       // Email exists, proceed to send verification code
       const success = await AuthService.sendVerificationCode({
         email: email,
-        codeType: CODE_TYPES.RESET_PASSWORD
+        codeType: CODE_TYPES.FindBackEmailPsw
       });
       if (success) {
         showToast("Verification code sent to your email", "success");
