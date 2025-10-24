@@ -7,15 +7,23 @@ import { Input } from "../../components/ui/input";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { AuthService, CODE_TYPES } from "../../services/authService";
+import { useVerificationCode } from "../../hooks/useVerificationCode";
 
 export const ChangePassword = (): JSX.Element => {
   const navigate = useNavigate();
   const { user } = useUser();
   const { showToast } = useToast();
   const [verificationCode, setVerificationCode] = useState("");
-  const [isCodeSent, setIsCodeSent] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [isSendingCode, setIsSendingCode] = useState(false);
+  
+  const { sendCode, isSending, countdown } = useVerificationCode({
+    onSendSuccess: () => {
+      showToast("验证码已发送到您的邮箱", "success");
+    },
+    onSendError: (error) => {
+      showToast(error, "error");
+    }
+  });
 
   const handleSendCode = async () => {
     if (!user?.email) {
@@ -23,22 +31,7 @@ export const ChangePassword = (): JSX.Element => {
       return;
     }
 
-    setIsSendingCode(true);
-    try {
-      // 调用发送验证码API
-      const success = await AuthService.sendVerificationCode({email:user.email,codeType:CODE_TYPES.FindBackEmailPsw });
-      if (success) {
-        showToast("验证码已发送到您的邮箱", "success");
-        setIsCodeSent(true);
-      } else {
-        showToast("发送验证码失败，请重试", "error");
-      }
-    } catch (error) {
-      console.error("发送验证码失败:", error);
-      showToast("发送验证码失败，请重试", "error");
-    } finally {
-      setIsSendingCode(false);
-    }
+    sendCode(user.email, CODE_TYPES.FindBackEmailPsw);
   };
 
   const handleVerifyCode = async () => {
@@ -100,10 +93,10 @@ export const ChangePassword = (): JSX.Element => {
                 <Button
                   className="inline-flex items-center justify-center gap-[30px] px-[15px] py-[5px] h-auto bg-red rounded-[100px] hover:bg-red/90 transition-colors"
                   onClick={handleSendCode}
-                  disabled={isSendingCode}
+                  disabled={isSending || countdown > 0}
                 >
                   <span className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    {isSendingCode ? "Sending..." : "Send code"}
+                    {isSending ? "Sending..." : countdown > 0 ? `${countdown}s` : "Send code"}
                   </span>
                 </Button>
               </div>

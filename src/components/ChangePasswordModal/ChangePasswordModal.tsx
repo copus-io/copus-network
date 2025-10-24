@@ -8,6 +8,7 @@ import { Input } from "../ui/input";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../ui/toast";
 import { AuthService, CODE_TYPES } from "../../services/authService";
+import { useVerificationCode } from "../../hooks/useVerificationCode";
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -22,13 +23,20 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
 
   // All form state in one view
   const [verificationCode, setVerificationCode] = useState("");
-  const [isCodeSent, setIsCodeSent] = useState(false);
-  const [isSendingCode, setIsSendingCode] = useState(false);
   const [showPassword1, setShowPassword1] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const { sendCode, isSending, countdown } = useVerificationCode({
+    onSendSuccess: () => {
+      showToast("Verification code sent to your email", "success");
+    },
+    onSendError: (error) => {
+      showToast(error, "error");
+    }
+  });
 
   if (!isOpen) return null;
 
@@ -38,24 +46,7 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
       return;
     }
 
-    setIsSendingCode(true);
-    try {
-      const success = await AuthService.sendVerificationCode({
-        email: user.email,
-        codeType: CODE_TYPES.RESET_PASSWORD
-      });
-      if (success) {
-        showToast("Verification code sent to your email", "success");
-        setIsCodeSent(true);
-      } else {
-        showToast("Failed to send verification code, please try again", "error");
-      }
-    } catch (error) {
-      console.error("Failed to send verification code:", error);
-      showToast("Failed to send verification code, please try again", "error");
-    } finally {
-      setIsSendingCode(false);
-    }
+    sendCode(user.email, CODE_TYPES.RESET_PASSWORD);
   };
 
   const handleSavePassword = async () => {
@@ -122,8 +113,6 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
   const handleClose = () => {
     // Reset all state
     setVerificationCode("");
-    setIsCodeSent(false);
-    setIsSendingCode(false);
     setShowPassword1(false);
     setShowPassword2(false);
     setNewPassword("");
@@ -167,9 +156,9 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
                   <Button
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 h-8 bg-red hover:bg-red/90 text-white rounded-[50px] font-semibold transition-colors text-sm"
                     onClick={handleSendCode}
-                    disabled={isSendingCode}
+                    disabled={isSending || countdown > 0}
                   >
-                    {isSendingCode ? "Sending..." : "Send code"}
+                    {isSending ? "Sending..." : countdown > 0 ? `${countdown}s` : "Send code"}
                   </Button>
                 </div>
               </div>
@@ -184,9 +173,6 @@ export const ChangePasswordModal = ({ isOpen, onClose, onSuccess }: ChangePasswo
                 onChange={(e) => setVerificationCode(e.target.value)}
                 maxLength={6}
               />
-              {isCodeSent && (
-                <p className="text-sm text-green-600">✓ Verification code sent to your email</p>
-              )}
             </div>
 
             {/* New password input */}

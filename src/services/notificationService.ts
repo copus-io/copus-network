@@ -25,7 +25,7 @@ export class NotificationService {
       });
 
 
-      const response = await apiRequest(
+      const response: any = await apiRequest(
         `/client/user/msg/pageMsg?${params.toString()}`,
         {
           method: 'GET',
@@ -70,7 +70,7 @@ export class NotificationService {
   static async markAsRead(notificationId: string): Promise<boolean> {
     try {
 
-      const response = await apiRequest('/client/user/msg/markOneRead', {
+      const response: any = await apiRequest('/client/user/msg/markOneRead', {
         method: 'POST',
         requiresAuth: true,
         body: JSON.stringify({ id: parseInt(notificationId) }),
@@ -100,7 +100,7 @@ export class NotificationService {
    */
   static async markAllAsRead(): Promise<boolean> {
     try {
-      const response = await apiRequest('/client/user/msg/markAllRead', {
+      const response: any = await apiRequest('/client/user/msg/markAllRead', {
         method: 'POST',
         requiresAuth: true,
       });
@@ -119,7 +119,7 @@ export class NotificationService {
   static async deleteNotification(notificationId: string): Promise<boolean> {
     try {
 
-      const response = await apiRequest('/client/user/msg/deleteOne', {
+      const response: any = await apiRequest('/client/user/msg/deleteOne', {
         method: 'POST',
         requiresAuth: true,
         body: JSON.stringify({ id: parseInt(notificationId) }),
@@ -149,7 +149,7 @@ export class NotificationService {
   static async clearAll(): Promise<boolean> {
     try {
 
-      const response = await apiRequest('/client/user/notification/clearAll', {
+      const response: any = await apiRequest('/client/user/notification/clearAll', {
         method: 'POST',
         requiresAuth: true,
       });
@@ -292,7 +292,7 @@ export class NotificationService {
       isRead: apiMessage.isRead,
       actionUrl: undefined, // Real API doesn't provide actionUrl for now
       metadata: {
-        senderId: apiMessage.senderInfo?.id,
+        senderId: apiMessage.senderInfo?.id?.toString(),
         senderUsername: apiMessage.senderInfo?.username,
         senderNamespace: apiMessage.senderInfo?.namespace,
         articleId: extractedArticleId || apiMessage.articleId || apiMessage.targetId || apiMessage.relatedId,

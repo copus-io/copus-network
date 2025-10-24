@@ -75,7 +75,21 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [notificationSettings, setNotificationSettings] = useState<Array<{ isOpen: boolean; msgType: number }>>([]);
   const [notificationLoading, setNotificationLoading] = useState(true);
 
+  // 阻止背景滚动
+  useEffect(() => {
+    if (showPersonalInfoPopup || showSocialLinksPopup || showChangePasswordModal || showCoverUploader || showAvatarUploader) {
+      // 禁止背景滚动
+      document.body.style.overflow = 'hidden';
+    } else {
+      // 恢复背景滚动
+      document.body.style.overflow = 'unset';
+    }
 
+    // 清理函数
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showPersonalInfoPopup, showSocialLinksPopup, showChangePasswordModal, showCoverUploader, showAvatarUploader]);
 
   // 获取消息通知设置
   useEffect(() => {

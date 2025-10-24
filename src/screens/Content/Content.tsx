@@ -115,16 +115,56 @@ export const Content = (): JSX.Element => {
     return <ContentPageSkeleton />;
   }
 
+  // 检查是否是文章被删除的情况
+  const isArticleDeleted = error && (
+    error.includes('not found') || 
+    error.includes('不存在') || 
+    error.includes('deleted') || 
+    error.includes('删除') ||
+    error.includes('404')
+  );
+
   if (error || (!loading && !content)) {
     return (
-      <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-4">
-            {error || 'Content not found'}
-          </h1>
-          <Link to="/copus" className="text-blue hover:underline">
-            Back to Discovery
-          </Link>
+      <div className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+        <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
+          <HeaderSection isLoggedIn={!!user} />
+
+          <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center pt-[70px] lg:pt-[120px]">
+            <div className="text-center p-8 max-w-md">
+              <div className="mb-6">
+                <svg className="w-24 h-24 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                {isArticleDeleted ? 'Article has been deleted' : (error ? 'Oops! Something went wrong' : 'Content not found')}
+              </h1>
+              <p className="text-gray-600 mb-6">
+                {isArticleDeleted 
+                  ? 'This article has been removed by the author. Please explore other interesting content.' 
+                  : (error 
+                    ? 'We encountered an issue while loading this content. Please try again later.' 
+                    : 'The article you are looking for might have been removed or does not exist.')}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link 
+                  to="/" 
+                  className="px-6 py-3 bg-red text-white rounded-full hover:bg-red/90 transition-colors font-medium"
+                >
+                  Explore More Content
+                </Link>
+                {!isArticleDeleted && (
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors font-medium"
+                  >
+                    Reload Page
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

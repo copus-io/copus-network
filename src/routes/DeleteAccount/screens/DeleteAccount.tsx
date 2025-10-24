@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Checkbox } from "../../../components/ui/checkbox";
@@ -7,16 +7,35 @@ import { Card, CardContent } from "../../../components/ui/card";
 import { AuthService, CODE_TYPES } from "../../../services/authService";
 import { useUser } from "../../../contexts/UserContext";
 import { HeaderSection } from "../../../components/shared/HeaderSection/HeaderSection";
+import { useVerificationCode } from "../../../hooks/useVerificationCode";
+import { useToast } from "../../../components/ui/toast";
 
 export const DeleteAccount = (): JSX.Element => {
   const navigate = useNavigate();
   const { user, logout } = useUser();
+  const { showToast } = useToast();
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [deleteReason, setDeleteReason] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSendingCode, setIsSendingCode] = useState(false);
+  
+  const {
+    isSending: isSendingCode,
+    countdown,
+    sendCode,
+    cleanup: cleanupVerificationCode
+  } = useVerificationCode({
+    onSendSuccess: () => showToast('验证码已发送到您的邮箱', 'success'),
+    onSendError: (error) => showToast(error, 'error')
+  });
+
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      cleanupVerificationCode();
+    };
+  }, [cleanupVerificationCode]);
 
   const reminderItems = [
     "After account deletion, all your data including personal information, published content, and saved records will be permanently deleted and cannot be recovered.",
@@ -27,27 +46,16 @@ export const DeleteAccount = (): JSX.Element => {
 
   const handleSendCode = async () => {
     if (!user?.email) {
-      alert('Unable to get user email address');
+      showToast('无法获取用户邮箱地址', 'error');
       return;
     }
 
-    setIsSendingCode(true);
-    try {
-      await AuthService.sendVerificationCode({
-        email: user.email,
-        codeType: CODE_TYPES.DELETE_ACCOUNT // Use delete account verification code type (99)
-      });
-      alert('Verification code sent to your email');
-    } catch (error) {
-      console.error('Failed to send verification code:', error);
-      alert('Failed to send verification code, please try again later');
-    } finally {
-      setIsSendingCode(false);
-    }
+    await sendCode(user.email, CODE_TYPES.DELETE_ACCOUNT);
   };
 
   const handleConfirmDelete = async () => {
     if (!isConfirmed || !verificationCode.trim()) {
+      showToast('请确认并输入验证码', 'error');
       return;
     }
 
@@ -62,11 +70,11 @@ export const DeleteAccount = (): JSX.Element => {
       if (success) {
         setShowSuccessPopup(true);
       } else {
-        alert('Failed to delete account, please check if the verification code is correct');
+        showToast('账户删除失败，请检查验证码是否正确', 'error');
       }
     } catch (error) {
       console.error('Failed to delete account:', error);
-      alert('Failed to delete account, please try again later');
+      showToast('账户删除失败，请稍后重试', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -145,10 +153,10 @@ export const DeleteAccount = (): JSX.Element => {
 
                   <Button
                     onClick={handleSendCode}
-                    disabled={isSendingCode || !user?.email}
+                    disabled={isSendingCode || !user?.email || countdown > 0}
                     className="h-auto bg-red px-[15px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSendingCode ? 'Sending...' : 'Send code'}
+                    {isSendingCode ? 'Sending...' : countdown > 0 ? `${countdown}s` : 'Send code'}
                   </Button>
                 </div>
               </div>
@@ -174,7 +182,7 @@ export const DeleteAccount = (): JSX.Element => {
             <div className="relative w-[18px] h-[18px]">
               <Checkbox
                 checked={isConfirmed}
-                onCheckedChange={setIsConfirmed}
+                onCheckedChange={(checked) => setIsConfirmed(checked as boolean)}
                 className="w-[18px] h-[18px] rounded-[9px] border border-solid border-[#231f20] data-[state=checked]:bg-button-green data-[state=checked]:border-[#231f20]"
               />
             </div>

@@ -7,11 +7,12 @@ import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { AuthService } from "../../../services/authService";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../../utils/categoryStyles";
+import { ArticleCategoryItem } from "../../../types/category";
 
 // 移除硬编码的分类数据，改为从API获取
 
 export const Create = (): JSX.Element => {
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<ArticleCategoryItem[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
@@ -26,37 +27,18 @@ export const Create = (): JSX.Element => {
         const categoriesData = response.data?.data || response.data;
 
         if (categoriesData && Array.isArray(categoriesData)) {
-          // 为每个分类添加样式信息
-          const categoriesWithStyles = categoriesData.map((category: any) => {
-            const style = getCategoryStyle(category.name, category.color);
-            return {
-              ...category,
-              styleColor: style.border + ' ' + style.bg,
-              textColor: style.text,
-              selected: false
-            };
-          });
-
-          setCategories(categoriesWithStyles);
+          setCategories(categoriesData);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ 获取分类列表失败:', error);
         console.error('❌ 错误详情:', error.message);
         // 使用fallback数据（中文分类）
-        const fallbackCategories = [
+        const fallbackCategories: ArticleCategoryItem[] = [
           { id: 1, name: "科技", color: "red", articleCount: 0 },
           { id: 2, name: "艺术", color: "green", articleCount: 0 },
           { id: 3, name: "体育", color: "blue", articleCount: 0 },
           { id: 4, name: "生活", color: "pink", articleCount: 0 }
-        ].map(category => {
-          const style = getCategoryStyle(category.name, category.color);
-          return {
-            ...category,
-            styleColor: style.border + ' ' + style.bg,
-            textColor: style.text,
-            selected: false
-          };
-        });
+        ];
         setCategories(fallbackCategories);
       } finally {
         setIsLoadingCategories(false);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useImagePreview } from "../../../contexts/ImagePreviewContext";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
@@ -200,18 +200,31 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     return <ArticleListSkeleton />;
   }
 
+  // 如果没有用户信息，显示错误页面
   if (!userInfo) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-2">User Not Found</h2>
-          <p className="text-gray-500 mb-4">Could not find profile for @{namespace}</p>
-          <button
-            onClick={() => navigate('/')}
-            className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red/90 transition-colors"
-          >
-            Back to Home
-          </button>
+      <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center">
+        <div className="text-center p-8 max-w-md">
+          <div className="mb-6">
+            <svg className="w-24 h-24 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.467-.881-6.08-2.33M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            User not found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            The user you are looking for might not exist or has been removed.
+            Please explore other interesting content.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link 
+              to="/" 
+              className="px-6 py-3 bg-red text-white rounded-full hover:bg-red/90 transition-colors font-medium"
+            >
+              Explore More Content
+            </Link>
+          </div>
         </div>
       </div>
     );

@@ -11,6 +11,10 @@ export interface Notification {
     articleId?: string;
     userId?: string;
     commentId?: string;
+    senderId?: string;
+    senderUsername?: string;
+    senderNamespace?: string;
+    articleUuid?: string;
   };
 }
 

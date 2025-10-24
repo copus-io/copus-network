@@ -19,6 +19,7 @@ import {
   TabsTrigger,
 } from "../../components/ui/tabs";
 import { APP_CONFIG } from "../../config/app";
+import { useVerificationCode } from '../../hooks/useVerificationCode';
 
 const socialProviders = [
   {
@@ -60,10 +61,8 @@ export const Login = (): JSX.Element => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isCodeSending, setIsCodeSending] = useState(false);
-  const [countdown, setCountdown] = useState(0);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  const [emailCheckTimeout, setEmailCheckTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [emailCheckTimeout, setEmailCheckTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // Reset password modal state
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -323,7 +322,7 @@ export const Login = (): JSX.Element => {
 
         console.log('🚀 Redirecting to:', urlWithProvider);
         window.location.href = urlWithProvider;
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ X OAuth handling failed:', error);
         console.error('❌ Error details:', error.message);
         console.error('❌ Full error:', error);
@@ -353,7 +352,7 @@ export const Login = (): JSX.Element => {
 
         console.log('🚀 Final redirect URL:', urlWithProvider);
         window.location.href = urlWithProvider;
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Google OAuth handling failed:', error);
         console.error('❌ Error details:', error.message);
         console.error('❌ Full error:', error);
@@ -687,6 +686,16 @@ export const Login = (): JSX.Element => {
     }
   };
 
+  // 使用统一的验证码hook
+  const { sendCode, isSending, countdown } = useVerificationCode({
+    onSendSuccess: () => {
+      showToast('Verification code sent! Please check your email', 'success');
+    },
+    onSendError: (error) => {
+      showToast(error, 'error');
+    }
+  });
+
   // Send verification code function
   const sendVerificationCode = async () => {
     console.log('📧 Send verification code clicked', {
@@ -713,57 +722,7 @@ export const Login = (): JSX.Element => {
       return;
     }
 
-    if (countdown > 0) {
-      return;
-    }
-
-    console.log('✅ All checks passed, sending verification code...');
-    setIsCodeSending(true);
-
-    try {
-      const apiUrl = `${APP_CONFIG.API.BASE_URL}/client/common/getVerificationCode?codeType=0&email=${encodeURIComponent(email)}`;
-      console.log('📤 Calling API:', apiUrl);
-
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('📥 API response status:', response.status, response.ok);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📥 API response data:', data);
-
-        if (data.status === 1) {
-          showToast('Verification code sent! Please check your email', 'success');
-          // Successfully sent, start countdown
-          setCountdown(60);
-          const timer = setInterval(() => {
-            setCountdown(prev => {
-              if (prev <= 1) {
-                clearInterval(timer);
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-        } else {
-          showToast(`Failed to send: ${data.msg || 'Please try again'}`, 'error');
-        }
-      } else {
-        const errorData = await response.json().catch(() => ({ msg: 'Unknown error' }));
-        console.error('❌ API error:', errorData);
-        showToast(`Failed to send verification code: ${errorData.msg || 'Please try again'}`, 'error');
-      }
-    } catch (error) {
-      console.error('❌ Send verification code failed:', error);
-      showToast('Network error. Please check your connection and try again', 'error');
-    } finally {
-      setIsCodeSending(false);
-    }
+    sendCode(email, 0); // 0 is the code type for registration
   };
 
   // Handle Enter key login
@@ -860,7 +819,7 @@ export const Login = (): JSX.Element => {
                           <Checkbox
                             id="remember"
                             checked={rememberMe}
-                            onCheckedChange={setRememberMe}
+                            onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                             className="w-[18px] h-[18px] rounded-[9px] border border-solid border-[#231f20] data-[state=checked]:bg-button-green data-[state=checked]:border-[#231f20]"
                           />
 
@@ -966,15 +925,15 @@ export const Login = (): JSX.Element => {
                         />
                         <Button
                           className={`px-[15px] h-auto min-h-[50px] text-white rounded-[15px] border-0 whitespace-nowrap flex items-center justify-center transition-all ${
-                            countdown > 0 || isCodeSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')
+                            countdown > 0 || isSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')
                               ? 'bg-gray-400 cursor-not-allowed'
                               : 'bg-red hover:bg-red/90'
                           }`}
                           onClick={sendVerificationCode}
-                          disabled={countdown > 0 || isCodeSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')}
+                          disabled={countdown > 0 || isSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')}
                         >
                           <span className="font-['Lato',_Helvetica] font-normal text-white text-sm">
-                            {isCodeSending
+                            {isSending
                               ? 'Sending...'
                               : countdown > 0
                                 ? `${countdown}s`
@@ -1065,7 +1024,7 @@ export const Login = (): JSX.Element => {
                           <Checkbox
                             id="terms"
                             checked={agreeToTerms}
-                            onCheckedChange={setAgreeToTerms}
+                            onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
                             className="w-[18px] h-[18px] rounded-[3px] border border-solid border-[#a8a8a8] data-[state=checked]:bg-button-green data-[state=checked]:border-button-green mt-1"
                           />
 

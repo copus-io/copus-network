@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@animaapp/vite-plugin-screen-graph": "^0.1.5",
+    "@types/crypto-js": "^4.2.2",
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.0",
     "@vitejs/plugin-react": "4.3.4",
