@@ -951,6 +951,7 @@ export class AuthService {
     faceUrl: string;
     id: number;
     namespace: string;
+    isEnabled: boolean;
     socialLinks: Array<{
       iconUrl: string;
       linkUrl: string;

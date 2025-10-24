@@ -40,23 +40,47 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         const userData = await AuthService.getOtherUserTreasuryInfoByNamespace(namespace);
         console.log('[UserProfile] Successfully fetched user data:', userData);
 
-        // Set user info using real API data
-        setUserInfo({
-          id: userData.id,
-          username: userData.username,
-          namespace: userData.namespace,
-          faceUrl: userData.faceUrl || profileDefaultAvatar,
-          bio: userData.bio || "This user is mysterious and left nothing~",
-          articlesCount: userData.statistics.articleCount,
-          followersCount: 0, // API doesn't provide follower data yet
-          followingCount: 0, // API doesn't provide following data yet
-          // Save other data from API response
-          socialLinks: userData.socialLinks,
-          statistics: userData.statistics,
-          email: userData.email,
-          coverUrl: userData.coverUrl,
-          walletAddress: userData.walletAddress
-        });
+        // Check if account is disabled/deleted
+        if (userData.isEnabled === false) {
+          console.log('[UserProfile] Account is disabled/deleted');
+          setAccountExists(false);
+
+          // Set user info with default images but keep other data
+          setUserInfo({
+            id: userData.id,
+            username: userData.username,
+            namespace: userData.namespace,
+            faceUrl: profileDefaultAvatar, // Use default avatar
+            bio: "This account doesn't exist",
+            articlesCount: userData.statistics.articleCount,
+            followersCount: 0,
+            followingCount: 0,
+            socialLinks: userData.socialLinks,
+            statistics: userData.statistics,
+            email: userData.email,
+            coverUrl: 'https://c.animaapp.com/w7obk4mX/img/banner.png', // Use default banner
+            walletAddress: userData.walletAddress
+          });
+        } else {
+          // Account exists and is enabled - use actual data
+          setAccountExists(true);
+          setUserInfo({
+            id: userData.id,
+            username: userData.username,
+            namespace: userData.namespace,
+            faceUrl: userData.faceUrl || profileDefaultAvatar,
+            bio: userData.bio || "This user is mysterious and left nothing~",
+            articlesCount: userData.statistics.articleCount,
+            followersCount: 0, // API doesn't provide follower data yet
+            followingCount: 0, // API doesn't provide following data yet
+            // Save other data from API response
+            socialLinks: userData.socialLinks,
+            statistics: userData.statistics,
+            email: userData.email,
+            coverUrl: userData.coverUrl,
+            walletAddress: userData.walletAddress
+          });
+        }
 
         console.log('[UserProfile] User info set successfully, now fetching liked articles...');
 
