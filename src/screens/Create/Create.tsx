@@ -543,13 +543,10 @@ export const Create = (): JSX.Element => {
             <div className="ml-[10px]">
               <Button
                 variant="outline"
-                className="flex items-center gap-[15px] px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+                className="flex items-center px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
                 asChild
               >
                 <a href="#" target="_blank" rel="noopener noreferrer">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                  </svg>
                   <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red whitespace-nowrap">
                     Install browser extension
                   </span>
