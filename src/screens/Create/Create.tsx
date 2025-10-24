@@ -530,7 +530,7 @@ export const Create = (): JSX.Element => {
       <HeaderSection isLoggedIn={isLoggedIn} hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
       <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen overflow-y-auto pt-[70px] lg:pt-[120px]">
-        <div className="flex flex-col items-start gap-[30px] px-5 lg:px-40 py-0 pb-[100px] w-full">
+        <div className="flex flex-col items-start gap-[30px] px-5 md:px-8 lg:px-12 xl:px-20 2xl:px-40 py-0 pb-[100px] w-full">
           <div className="flex items-center gap-2.5 w-full">
             <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
               {isEditMode ? 'Edit treasure' : 'Share treasure'}
@@ -555,8 +555,8 @@ export const Create = (): JSX.Element => {
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row items-start gap-[30px] lg:gap-[60px] w-full">
-            <div className="flex flex-col items-start gap-[30px] pl-0 lg:pr-[60px] py-0 flex-1 lg:border-r lg:[border-right-style:solid] lg:border-light-grey w-full">
+          <div className="flex flex-col lg:flex-row items-start gap-[30px] lg:gap-[30px] xl:gap-[60px] w-full">
+            <div className="flex flex-col items-start gap-[30px] pl-0 lg:pr-[30px] xl:pr-[60px] py-0 flex-1 lg:border-r lg:[border-right-style:solid] lg:border-light-grey w-full">
             <div className="flex flex-col items-start gap-2.5 w-full">
               <div className="flex flex-col w-[60px] h-[23px] items-start justify-center gap-2.5">
                 <label className="relative flex items-center justify-center w-fit mt-[-2.00px] font-p-l font-[number:var(--p-l-font-weight)] text-transparent text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
@@ -651,7 +651,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className={`relative w-[400px] h-[225px] border border-dashed cursor-pointer transition-all rounded-lg ${
+                className={`relative w-full max-w-[400px] h-[225px] border border-dashed cursor-pointer transition-all rounded-lg ${
                   formData.coverImage || coverImageUrl
                     ? 'border-green-400 bg-cover bg-[50%_50%]'
                     : 'border-medium-grey hover:border-dark-grey bg-gray-50'
@@ -795,7 +795,7 @@ export const Create = (): JSX.Element => {
             </div>
 
             <div className="flex flex-col items-start gap-10 w-full">
-              <div className="w-[500px]">
+              <div className="w-full max-w-[500px] lg:max-w-[350px] xl:max-w-[450px] 2xl:max-w-[500px]">
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
