@@ -174,6 +174,15 @@ export const MainContentSection = (): JSX.Element => {
 
 
         const processedInfo = userInfo.data || userInfo;
+
+        // Check if account is disabled/deleted and use default images
+        if (processedInfo.isEnabled === false || processedInfo.isEnabled === 0) {
+          console.log('[MyTreasury] Account is disabled/deleted, using default images');
+          processedInfo.faceUrl = profileDefaultAvatar;
+          processedInfo.coverUrl = 'https://c.animaapp.com/w7obk4mX/img/banner.png';
+          processedInfo.bio = "This account doesn't exist";
+        }
+
         setTreasuryUserInfo(processedInfo);
         if (processedInfo.statistics) {
           setTreasuryStats(processedInfo.statistics);

@@ -42,6 +42,7 @@ export interface UserHomeResponse {
   email: string;
   faceUrl: string;
   id: number;
+  isEnabled: boolean;
   isOwner: boolean;
   namespace: string;
   socialLinks: Array<{
