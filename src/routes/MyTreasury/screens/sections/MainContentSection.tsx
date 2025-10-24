@@ -658,7 +658,7 @@ export const MainContentSection = (): JSX.Element => {
           {/* Show "This account doesn't exist" text overlay when account is disabled */}
           {!accountEnabled && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
-              <p className="text-white text-2xl font-bold [font-family:'Lato',Helvetica] tracking-wide">
+              <p className="text-white text-2xl font-normal [font-family:'Lato',Helvetica] tracking-wide">
                 This account doesn't exist
               </p>
             </div>
@@ -692,7 +692,7 @@ export const MainContentSection = (): JSX.Element => {
 
                 {/* Show "This account doesn't exist" text beside username when account is disabled */}
                 {!accountEnabled && (
-                  <span className="text-red text-lg font-semibold [font-family:'Lato',Helvetica]">
+                  <span className="text-gray-600 text-lg font-normal [font-family:'Lato',Helvetica]">
                     This account doesn't exist
                   </span>
                 )}
