@@ -133,6 +133,9 @@ export const MainContentSection = (): JSX.Element => {
     myArticleLikedCount: 0
   });
 
+  // Track if account is enabled
+  const [accountEnabled, setAccountEnabled] = useState(true);
+
   // 判断是否在查看其他用户的宝藏
   // 如果有namespace参数但是namespace等于当前用户的namespace，说明是在查看自己的页面
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -178,9 +181,12 @@ export const MainContentSection = (): JSX.Element => {
         // Check if account is disabled/deleted and use default images
         if (processedInfo.isEnabled === false || processedInfo.isEnabled === 0) {
           console.log('[MyTreasury] Account is disabled/deleted, using default images');
+          setAccountEnabled(false);
           processedInfo.faceUrl = profileDefaultAvatar;
           processedInfo.coverUrl = 'https://c.animaapp.com/w7obk4mX/img/banner.png';
           processedInfo.bio = "This account doesn't exist";
+        } else {
+          setAccountEnabled(true);
         }
 
         setTreasuryUserInfo(processedInfo);
@@ -676,19 +682,22 @@ export const MainContentSection = (): JSX.Element => {
                   {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Guest User")}
                 </h1>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-0 h-auto hover:scale-110 transition-transform duration-200"
-                  onClick={handleShare}
-                  title={`Share @${isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace}'s profile link`}
-                >
-                  <img
-                    className="w-[38px] h-[38px]"
-                    alt="Share"
-                    src="https://c.animaapp.com/mfuxsdcbXwMuVe/img/share.svg"
-                  />
-                </Button>
+                {/* Only show share button if account is enabled */}
+                {accountEnabled && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="p-0 h-auto hover:scale-110 transition-transform duration-200"
+                    onClick={handleShare}
+                    title={`Share @${isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace}'s profile link`}
+                  >
+                    <img
+                      className="w-[38px] h-[38px]"
+                      alt="Share"
+                      src="https://c.animaapp.com/mfuxsdcbXwMuVe/img/share.svg"
+                    />
+                  </Button>
+                )}
               </div>
 
               <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
