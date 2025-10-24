@@ -58,7 +58,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
         inline-flex items-center transition-all duration-200 rounded-lg
         ${size === 'large'
           ? `h-[38px] rounded-[50px] gap-[10px] pr-[15px] py-2`
-          : `hover:bg-gray-100 group/like z-10 relative ${currentSize.container}`
+          : `hover:bg-gray-100 ${currentSize.container}`
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         ${className}
@@ -68,27 +68,21 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       aria-label={`${isLiked ? 'Remove from treasury' : 'Add to treasury'}, ${likesCount} treasures`}
       title={isLiked ? 'Remove from your treasury' : 'Add to your treasury'}
     >
-      <div className="relative group">
+      <div className="relative">
         {/* 宝石图标 - 直接处理颜色变化 */}
         <img
           className={`
             transition-all duration-200 relative z-10
             ${currentSize.icon}
-            ${size === 'large'
-              ? (isLiked ? 'transform scale-110' : 'group-hover:scale-110')
-              : `group-hover/like:scale-110 ${
-                  isLiked
-                    ? 'filter brightness-0 saturate-200 hue-rotate-45deg transform scale-110 drop-shadow-md'
-                    : 'opacity-60 hover:opacity-100'
-                }`
+            ${isLiked
+              ? 'filter brightness-0 saturate-200 hue-rotate-45deg transform scale-110 drop-shadow-md'
+              : 'opacity-60 hover:opacity-100 hover:scale-110'
             }
           `}
           alt="Treasure icon"
           src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
           style={
-            size === 'large' && isLiked ? {
-              filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
-            } : size !== 'large' && isLiked ? {
+            isLiked ? {
               filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
             } : undefined
           }
@@ -97,7 +91,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
         {size === 'large' && !isLiked && (
           <img
             className={`
-              absolute top-0 left-0 transition-opacity duration-200 opacity-0 group-hover:opacity-100 z-20
+              absolute top-0 left-0 transition-opacity duration-200 opacity-0 hover:opacity-100 z-20
               ${currentSize.icon}
             `}
             alt="Treasure icon hover"
