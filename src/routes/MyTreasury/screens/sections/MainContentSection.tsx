@@ -655,6 +655,14 @@ export const MainContentSection = (): JSX.Element => {
             alt="Cover"
             className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
           />
+          {/* Show "This account doesn't exist" text overlay when account is disabled */}
+          {!accountEnabled && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
+              <p className="text-white text-2xl font-bold [font-family:'Lato',Helvetica] tracking-wide">
+                This account doesn't exist
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="gap-4 lg:gap-6 px-4 lg:pl-5 lg:pr-10 py-0 mt-[-46px] flex flex-col lg:flex-row items-start lg:items-start w-full">
@@ -681,6 +689,13 @@ export const MainContentSection = (): JSX.Element => {
                 <h1 className="mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42px] whitespace-nowrap">
                   {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Guest User")}
                 </h1>
+
+                {/* Show "This account doesn't exist" text beside username when account is disabled */}
+                {!accountEnabled && (
+                  <span className="text-red text-lg font-semibold [font-family:'Lato',Helvetica]">
+                    This account doesn't exist
+                  </span>
+                )}
 
                 {/* Only show share button if account is enabled */}
                 {accountEnabled && (
