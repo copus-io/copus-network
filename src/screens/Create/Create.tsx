@@ -531,15 +531,31 @@ export const Create = (): JSX.Element => {
       <SideMenuSection activeItem="create" />
       <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen overflow-y-auto pt-[70px] lg:pt-[120px]">
         <div className="flex flex-col items-start gap-[30px] px-5 lg:px-40 py-0 pb-[100px] w-full">
-          <div className="flex items-center gap-2.5 w-full">
-            <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
-              {isEditMode ? 'Edit treasure' : 'Share treasure'}
-            </h1>
-            {isEditMode && (
-              <span className="text-sm text-gray-500 ml-2">
-                (Edit Mode)
-              </span>
-            )}
+          <div className="flex items-center gap-2.5 w-full justify-between">
+            <div className="flex items-center gap-2.5">
+              <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
+                {isEditMode ? 'Edit treasure' : 'Share treasure'}
+              </h1>
+              {isEditMode && (
+                <span className="text-sm text-gray-500 ml-2">
+                  (Edit Mode)
+                </span>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              className="flex items-center gap-[15px] px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+              asChild
+            >
+              <a href="#" target="_blank" rel="noopener noreferrer">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red whitespace-nowrap">
+                  Install browser extension
+                </span>
+              </a>
+            </Button>
           </div>
 
           <div className="flex flex-col lg:flex-row items-start gap-[30px] lg:gap-[60px] w-full">
