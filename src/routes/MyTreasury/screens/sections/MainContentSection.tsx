@@ -690,10 +690,10 @@ export const MainContentSection = (): JSX.Element => {
                   {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Guest User")}
                 </h1>
 
-                {/* Show "This account doesn't exist" text beside username when account is disabled */}
+                {/* Show "Account deleted" text beside username when account is disabled */}
                 {!accountEnabled && (
                   <span className="text-gray-600 text-lg font-normal [font-family:'Lato',Helvetica]">
-                    This account doesn't exist
+                    Account deleted
                   </span>
                 )}
 
