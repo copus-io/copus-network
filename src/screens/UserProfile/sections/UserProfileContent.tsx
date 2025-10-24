@@ -23,6 +23,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [userInfo, setUserInfo] = useState<any>(null);
   const [articles, setArticles] = useState<ArticleData[]>([]);
   const [showCoverUploader, setShowCoverUploader] = useState(false);
+  const [accountExists, setAccountExists] = useState(true);
 
   // Fetch user info and articles list
   useEffect(() => {
@@ -31,6 +32,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       setLoading(true);
       setUserInfo(null); // Clear previous user info
       setArticles([]); // Clear previous articles
+      setAccountExists(true); // Reset account exists flag
 
       try {
         // Call API to get user information - this endpoint does NOT require authentication
@@ -94,7 +96,30 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           message: error instanceof Error ? error.message : String(error),
           namespace: namespace
         });
-        showToast("Unable to load user information", "error");
+
+        // Set account as non-existent and show default profile
+        setAccountExists(false);
+        setUserInfo({
+          id: 0,
+          username: 'Deleted Account',
+          namespace: namespace,
+          faceUrl: profileDefaultAvatar,
+          bio: "This account doesn't exist",
+          articlesCount: 0,
+          followersCount: 0,
+          followingCount: 0,
+          socialLinks: [],
+          statistics: {
+            articleCount: 0,
+            likedArticleCount: 0,
+            myArticleLikedCount: 0
+          },
+          email: '',
+          coverUrl: 'https://c.animaapp.com/w7obk4mX/img/banner.png',
+          walletAddress: ''
+        });
+
+        showToast("This account doesn't exist", "error");
       } finally {
         console.log('[UserProfile] Setting loading to false');
         setLoading(false);
@@ -200,31 +225,23 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     return <ArticleListSkeleton />;
   }
 
-  // 如果没有用户信息，显示错误页面
+  // If no userInfo after loading, this shouldn't happen as we set default in error handler
   if (!userInfo) {
     return (
       <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center">
         <div className="text-center p-8 max-w-md">
-          <div className="mb-6">
-            <svg className="w-24 h-24 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.467-.881-6.08-2.33M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-            </svg>
-          </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
             User not found
           </h1>
           <p className="text-gray-600 mb-6">
             The user you are looking for might not exist or has been removed.
-            Please explore other interesting content.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link 
-              to="/" 
-              className="px-6 py-3 bg-red text-white rounded-full hover:bg-red/90 transition-colors font-medium"
-            >
-              Explore More Content
-            </Link>
-          </div>
+          <Link
+            to="/"
+            className="px-6 py-3 bg-red text-white rounded-full hover:bg-red/90 transition-colors font-medium inline-block"
+          >
+            Explore More Content
+          </Link>
         </div>
       </div>
     );
@@ -287,10 +304,17 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             </div>
           </div>
 
-          {/* Follow button (only shown when viewing other users) */}
+          {/* Follow button or account status (only shown when viewing other users) */}
           {user && user.namespace !== namespace && (
-            <button className="px-6 py-2 bg-red text-white rounded-full hover:bg-red/90 transition-colors">
-              Follow
+            <button
+              className={`px-6 py-2 rounded-full transition-colors ${
+                accountExists
+                  ? 'bg-red text-white hover:bg-red/90'
+                  : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+              }`}
+              disabled={!accountExists}
+            >
+              {accountExists ? 'Follow' : "This account doesn't exist"}
             </button>
           )}
           </div>
