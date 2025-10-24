@@ -609,13 +609,10 @@ export const MainContentSection = (): JSX.Element => {
         return;
       }
 
-      // 刷新文章列表
-      const userId = treasuryUserInfo?.id || user?.id;
-      if (userId) {
-        await fetchCreatedArticles(userId);
-      }
-
-      // If it's a liked article, also remove from liked list
+      // 更新UI状态以立即反映删除操作，而不是重新获取整个列表
+      setCreatedArticles(prev => prev.filter(article => article.uuid !== articleToDelete.uuid));
+      
+      // 如果在收藏列表中也有这篇文章，同时更新收藏列表
       setLikedArticles(prev => prev.filter(article => article.uuid !== articleToDelete.uuid));
 
       setDeleteDialogOpen(false);
