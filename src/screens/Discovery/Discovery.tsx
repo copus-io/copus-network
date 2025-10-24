@@ -12,7 +12,7 @@ export const Discovery = (): JSX.Element => {
   // Scroll to top when page loads
   React.useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+  }, [location.pathname]);
 
   // Listen to route changes for debugging route navigation events
   React.useEffect(() => {

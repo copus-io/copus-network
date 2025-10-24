@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -13,6 +13,7 @@ import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categorySt
 import { AuthService } from "../../services/authService";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
+import { ArticleDetailResponse } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 
 
@@ -44,6 +45,7 @@ const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
 export const Content = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, getArticleLikeState, updateArticleLikeState } = useUser();
   const { showToast } = useToast();
   const [isLiked, setIsLiked] = useState(false);
@@ -55,7 +57,7 @@ export const Content = (): JSX.Element => {
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+  }, [location.pathname]);
 
   // Debug: Log article data to check arChainId
   useEffect(() => {
@@ -103,7 +105,6 @@ export const Content = (): JSX.Element => {
   // Set like state when article data is fetched
   useEffect(() => {
     if (content && article) {
-
       // Get global state or use API data
       const globalState = getArticleLikeState(article.uuid, content.isLiked, content.likes);
       setIsLiked(globalState.isLiked);

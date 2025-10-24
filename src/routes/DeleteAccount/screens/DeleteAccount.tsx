@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Checkbox } from "../../../components/ui/checkbox";
 import { Input } from "../../../components/ui/input";
@@ -12,6 +12,7 @@ import { useToast } from "../../../components/ui/toast";
 
 export const DeleteAccount = (): JSX.Element => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useUser();
   const { showToast } = useToast();
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -20,6 +21,11 @@ export const DeleteAccount = (): JSX.Element => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const {
     isSending: isSendingCode,
     countdown,
@@ -198,67 +204,74 @@ export const DeleteAccount = (): JSX.Element => {
             <Button
               variant="ghost"
               className="h-auto h-[45px] px-5 py-[15px] rounded-[15px] font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] [font-style:var(--h-4-font-style)] hover:bg-transparent"
-              asChild
+              onClick={() => setShowSuccessPopup(false)}
             >
-              <Link to="/setting">Cancel</Link>
+              <span className="relative w-fit mt-[-3.50px] font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)]">
+                Cancel
+              </span>
             </Button>
 
             <Button
+              className={`h-auto h-[45px] px-5 py-[15px] rounded-[15px] font-h-4 font-[number:var(--h-4-font-weight)] text-white text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)] ${
+                isFormValid && !isLoading
+                  ? "bg-red hover:bg-red/90"
+                  : "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent"
+              }`}
               disabled={!isFormValid || isLoading}
               onClick={handleConfirmDelete}
-              className={`h-auto px-5 py-[15px] rounded-[100px] [font-family:'Lato',Helvetica] font-bold text-xl tracking-[0] leading-7 whitespace-nowrap transition-all ${
-                (isFormValid && !isLoading)
-                  ? 'bg-red text-white hover:bg-red/90'
-                  : 'bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-medium-grey'
-              }`}
             >
-              {isLoading ? 'Deleting...' : 'Confirm'}
+              <span className="relative w-fit mt-[-3.50px] mb-[-0.50px] font-h-4 font-[number:var(--h-4-font-weight)] text-white text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)]">
+                {isLoading ? "Deleting..." : "Delete"}
+              </span>
             </Button>
           </div>
         </main>
 
+        {/* Success Popup */}
         {showSuccessPopup && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="inline-flex flex-col items-center justify-center gap-10 pt-[100px] pb-[50px] px-10 bg-white rounded-[15px] relative shadow-lg">
-              <button 
-                className="absolute right-6 top-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
-                onClick={() => setShowSuccessPopup(false)}
-              >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span className="sr-only">Close</span>
-              </button>
-
-              <div className="inline-flex flex-col items-center justify-center gap-[30px] px-[30px] py-0 relative flex-[0_0_auto]">
-                <div className="inline-flex flex-col items-center justify-center gap-[25px] relative flex-[0_0_auto]">
-                  <h1 className="relative w-[400px] mt-[-1.00px] font-h3-s font-[number:var(--h3-s-font-weight)] text-off-black text-[length:var(--h3-s-font-size)] text-center tracking-[var(--h3-s-letter-spacing)] leading-[var(--h3-s-line-height)] [font-style:var(--h3-s-font-style)]">
-                    Are you sure you want to delete your account?
-                  </h1>
-                </div>
-
-                <div className="inline-flex items-center justify-center gap-[15px] relative flex-[0_0_auto]">
-                  <Button
-                    variant="ghost"
-                    className="inline-flex h-[45px] items-center justify-center gap-[30px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[15px] h-auto hover:bg-transparent"
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="relative w-[500px]">
+              <Card className="relative">
+                <CardContent className="flex flex-col items-center gap-[30px] p-[30px]">
+                  <button
                     onClick={() => setShowSuccessPopup(false)}
+                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
                   >
-                    <span className="relative w-fit mt-[-3.50px] font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)]">
-                      Cancel
-                    </span>
-                  </Button>
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span className="sr-only">Close</span>
+                  </button>
 
-                  <Button
-                    variant="outline"
-                    className="inline-flex h-[45px] items-center justify-center gap-[15px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red hover:text-white h-auto transition-colors"
-                    onClick={handleFinalConfirm}
-                  >
-                    <span className="relative w-fit mt-[-2.50px] mb-[-0.50px] [font-family:'Lato',Helvetica] font-semibold text-xl tracking-[0] leading-7 whitespace-nowrap">
-                      Yes
-                    </span>
-                  </Button>
-                </div>
-              </div>
+                  <div className="inline-flex flex-col items-center justify-center gap-[25px] relative flex-[0_0_auto]">
+                    <h1 className="relative w-[400px] mt-[-1.00px] font-h3-s font-[number:var(--h3-s-font-weight)] text-off-black text-[length:var(--h3-s-font-size)] text-center tracking-[var(--h3-s-letter-spacing)] leading-[var(--h3-s-line-height)] [font-style:var(--h3-s-font-style)]">
+                      Your account has been successfully deleted
+                    </h1>
+                  </div>
+
+                  <div className="inline-flex items-center justify-center gap-[15px] relative flex-[0_0_auto]">
+                    <Button
+                      variant="ghost"
+                      className="inline-flex h-[45px] items-center justify-center gap-[30px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[15px] h-auto hover:bg-transparent"
+                      onClick={() => setShowSuccessPopup(false)}
+                    >
+                      <span className="relative w-fit mt-[-3.50px] font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)]">
+                        Cancel
+                      </span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="inline-flex h-[45px] items-center justify-center gap-[15px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red hover:text-white h-auto transition-colors"
+                      onClick={handleFinalConfirm}
+                    >
+                      <span className="relative w-fit mt-[-2.50px] mb-[-0.50px] [font-family:'Lato',Helvetica] font-semibold text-xl tracking-[0] leading-7 whitespace-nowrap">
+                        Yes
+                      </span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         )}

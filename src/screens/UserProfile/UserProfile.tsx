@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { UserProfileContent } from "./sections/UserProfileContent";
@@ -8,6 +8,12 @@ export const UserProfile = (): JSX.Element => {
   const { namespace } = useParams<{ namespace: string }>();
   const { user } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Scroll to top when page loads
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   useEffect(() => {
     // If viewing own namespace, redirect to /my-treasury

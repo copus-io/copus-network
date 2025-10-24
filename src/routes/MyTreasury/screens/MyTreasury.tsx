@@ -10,6 +10,11 @@ export const MyTreasury = (): JSX.Element => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Scroll to top when page loads
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   // 智能重定向：如果是从/my-treasury访问且用户有namespace，重定向到短链接
   React.useEffect(() => {
     // 只有访问/my-treasury路径且用户已登录有namespace时才重定向
