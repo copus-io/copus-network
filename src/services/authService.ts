@@ -16,6 +16,12 @@ export interface ChangePasswordParams {
   newPsw: string;
 }
 
+export interface ResetPasswordParams {
+  email: string;
+  code: string;
+  password: string;
+}
+
 export interface DeleteAccountParams {
   accountType: number;
   code: string;
@@ -1188,6 +1194,33 @@ export class AuthService {
       return response.status === 1;
     } catch (error) {
       console.error('❌ Failed to change password:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reset password (forgot password flow)
+   * Public endpoint - does not require authentication
+   * Uses verification code sent to email for authentication
+   */
+  static async resetPassword(params: ResetPasswordParams): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await apiRequest('/client/common/findBackPsw', {
+        method: 'POST',
+        body: JSON.stringify(params),
+        requiresAuth: false, // Public endpoint - authenticates using verification code
+      });
+
+      console.log('Reset password API response:', response);
+
+      if (response.status === 1) {
+        return { success: true };
+      } else {
+        // Return API error message
+        return { success: false, message: response.msg || 'Reset password failed' };
+      }
+    } catch (error) {
+      console.error('❌ Failed to reset password:', error);
       throw error;
     }
   }

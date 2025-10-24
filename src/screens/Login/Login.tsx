@@ -11,6 +11,7 @@ import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Separator } from "../../components/ui/separator";
 import { HeaderSection } from "../../components/shared/HeaderSection/HeaderSection";
+import { ResetPasswordModal } from "../../components/ResetPasswordModal";
 import {
   Tabs,
   TabsContent,
@@ -64,10 +65,8 @@ export const Login = (): JSX.Element => {
   const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [emailCheckTimeout, setEmailCheckTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Forgot password state
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
-  const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
+  // Reset password modal state
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -774,47 +773,6 @@ export const Login = (): JSX.Element => {
     }
   };
 
-  // Forgot password function - send verification code
-  const handleForgotPassword = async () => {
-    if (!forgotPasswordEmail || !forgotPasswordEmail.includes('@')) {
-      showToast('Please enter a valid email address', 'error');
-      return;
-    }
-
-    setIsForgotPasswordLoading(true);
-
-    try {
-
-      // Send forgot password verification code (codeType=1)
-      const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/getVerificationCode?codeType=1&email=${encodeURIComponent(forgotPasswordEmail)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('forgot password response info:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.status === 1) {
-        showToast('Password reset verification code sent, please check your email', 'success');
-        setShowForgotPassword(false);
-        setForgotPasswordEmail("");
-      } else {
-        showToast(`Send failed: ${data.msg || data.message || 'Please try again'}`, 'error');
-      }
-    } catch (error) {
-      console.error('Forgot password verification code send failed:', error);
-      showToast('Send failed, please try again', 'error');
-    } finally {
-      setIsForgotPasswordLoading(false);
-    }
-  };
 
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] overflow-x-hidden">
@@ -917,7 +875,7 @@ export const Login = (): JSX.Element => {
                         <Button
                           variant="ghost"
                           className="h-auto p-0 hover:bg-transparent"
-                          onClick={() => setShowForgotPassword(true)}
+                          onClick={() => setShowResetPassword(true)}
                         >
                           <div className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
                             Forgot password?
@@ -1179,52 +1137,15 @@ export const Login = (): JSX.Element => {
             </CardContent>
           </Card>
 
-          {/* Forgot password modal */}
-          {showForgotPassword && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 sm:p-8 max-w-md w-full mx-4">
-                <h2 className="text-2xl font-bold mb-4 text-center">Reset Password</h2>
-                <p className="text-gray-600 mb-6 text-center">
-                  Please enter your email address, we will send you a password reset link
-                </p>
-
-                <div className="space-y-4">
-                  <Input
-                    type="email"
-                    placeholder="Enter email address"
-                    value={forgotPasswordEmail}
-                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                    className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg"
-                  />
-
-                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
-                    <Button
-                      onClick={() => setShowForgotPassword(false)}
-                      variant="outline"
-                      className="flex-1 py-3 w-full sm:w-auto"
-                      disabled={isForgotPasswordLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleForgotPassword}
-                      className="flex-1 py-3 bg-red hover:bg-red/90 text-white w-full sm:w-auto"
-                      disabled={isForgotPasswordLoading || !forgotPasswordEmail.includes('@')}
-                    >
-{isForgotPasswordLoading ? (
-                        <span className="flex items-center space-x-2">
-                          <BookFlip />
-                          <span>Sending...</span>
-                        </span>
-                      ) : (
-                        'Send Reset Email'
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Reset password modal */}
+          <ResetPasswordModal
+            isOpen={showResetPassword}
+            onClose={() => setShowResetPassword(false)}
+            onSuccess={() => {
+              showToast('Password reset successfully! Please log in with your new password.', 'success');
+              setShowResetPassword(false);
+            }}
+          />
         </main>
 
         {/* Octopus background - positioned at bottom left of full page */}

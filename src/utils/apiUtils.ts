@@ -35,5 +35,5 @@ export const API_ENDPOINTS = {
   REGISTER: '/client/common/register',
   CHECK_EMAIL: '/client/common/checkEmailExist',
   VERIFICATION_CODE: '/client/common/getVerificationCode',
-  FORGOT_PASSWORD: '/client/common/findbackPsw',
+  FORGOT_PASSWORD: '/client/common/findBackPsw',
 } as const;
