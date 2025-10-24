@@ -131,7 +131,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
           </a>
         </div>
 
-        <footer className="flex flex-col items-start gap-2.5 pt-5 relative self-stretch w-full flex-[0_0_auto] bg-transparent">
+        <footer className="flex flex-col items-start gap-2.5 pt-2 relative self-stretch w-full flex-[0_0_auto] bg-transparent">
           <div className="flex flex-col items-start gap-3">
             <div className="flex flex-col items-start">
               {footerLinks.map((link, index) => (
