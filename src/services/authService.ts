@@ -1369,6 +1369,18 @@ export class AuthService {
       return 0;
     } catch (error) {
       console.error('❌ Failed to get unread message count:', error);
+      
+      // Special handling for authentication errors (401/403)
+      // When these occur, we need to trigger a logout
+      if (error instanceof Error) {
+        const errorMessage = error.message.toLowerCase();
+        if (errorMessage.includes('401') || errorMessage.includes('403') || 
+            errorMessage.includes('authentication failed') || errorMessage.includes('authorization failed')) {
+          // We'll handle this in the API layer
+          throw error;
+        }
+      }
+      
       return 0; // Return 0 on error, don't affect normal page display
     }
   }

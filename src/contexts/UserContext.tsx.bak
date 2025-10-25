@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { queryClient } from '../lib/queryClient';
 import { AuthService } from '../services/authService';
 import { useArticleState } from '../hooks/useArticleState';
 
@@ -129,20 +128,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setToken(null);
       localStorage.removeItem('copus_user');
       localStorage.removeItem('copus_token');
-      
-      // Clear all React Query cache to remove sensitive data
-      queryClient.clear();
-      
-      // Clear all localStorage items that start with 'copus_' or are related to user actions
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('copus_') || 
-                   key.startsWith('lastMarkedAllReadTime') || 
-                   key.startsWith('lastUnreadCount') ||
-                   key.startsWith('lastNotificationAction'))) {
-          localStorage.removeItem(key);
-        }
-      }
     }
   }, []); // Empty dependencies since it uses setState and localStorage directly
 
@@ -237,17 +222,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.warn('Failed to get user info (user stays logged in):', error);
 
-      // Special handling for authentication errors (401/403)
-      // Let the global event handler take care of logout
-      if (error instanceof Error && (error.message.includes('Authentication failed') || 
-          error.message.includes('401') || 
-          error.message.includes('403'))) {
-        // Re-throw authentication errors so global handler can catch them
-        throw error;
-      }
-      
       // Don't automatically logout - just throw the error
-      // The calling code can decide what to do
       // Users should only be logged out if they manually logout or token is confirmed expired
       throw error;
     }
@@ -374,6 +349,23 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setSocialLinks([]);
     }
   }, [user, fetchSocialLinks]);
+
+  // Handle unauthorized access globally
+  useEffect(() => {
+    const handleUnauthorizedAccess = async () => {
+      await logout();
+      // Redirect to login page
+      window.location.href = '/login';
+    };
+
+    // Add event listener for unauthorized access
+    window.addEventListener('unauthorized-access', handleUnauthorizedAccess);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('unauthorized-access', handleUnauthorizedAccess);
+    };
+  }, [logout]);
 
   return (
     <UserContext.Provider

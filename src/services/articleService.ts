@@ -118,7 +118,9 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
       error.message.includes('认证') || // Chinese: authentication
       error.message.includes('令牌') || // Chinese: token
       error.message.includes('Authentication failed') ||
-      error.message.includes('authentication token')
+      error.message.includes('authentication token') ||
+      error.message.includes('401') ||
+      error.message.includes('403')
     )) {
       console.log('🔄 Clearing invalid authentication token');
       localStorage.removeItem('copus_token');

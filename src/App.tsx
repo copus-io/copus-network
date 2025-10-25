@@ -1,12 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
-import { UserProvider } from "./contexts/UserContext";
+import { UserProvider, useUser } from "./contexts/UserContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ImagePreviewProvider } from "./contexts/ImagePreviewContext";
-import { ToastProvider } from "./components/ui/toast";
+import { ToastProvider, useToast } from "./components/ui/toast";
 import { GlobalImagePreview } from "./components/ui/GlobalImagePreview";
 import { Discovery } from "./screens/Discovery/Discovery";
 import { MainFrame } from "./screens/MainFrame/MainFrame";
@@ -175,6 +175,48 @@ const router = createBrowserRouter([
   },
 ]);
 
+// Create a component that handles global events
+const GlobalEventHandler: React.FC = () => {
+  const { logout } = useUser();
+  const { showToast } = useToast();
+  
+  // 使用一个标志来防止重复的 toast 提示
+  const isProcessing = React.useRef(false);
+
+  useEffect(() => {
+    const handleUnauthorizedAccess = async (event: CustomEvent) => {
+      // 防止重复处理
+      if (isProcessing.current) {
+        return;
+      }
+      
+      isProcessing.current = true;
+      
+      try {
+        await logout();
+        showToast('Session expired, please log in again', 'error');
+        // Only redirect to login page if user is on a protected page
+        // For public pages like home, just update the user state without redirecting
+      } finally {
+        // 确保在下一个事件循环中重置标志
+        setTimeout(() => {
+          isProcessing.current = false;
+        }, 0);
+      }
+    };
+
+    // Add event listener for unauthorized access
+    window.addEventListener('unauthorized-access', handleUnauthorizedAccess as EventListener);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('unauthorized-access', handleUnauthorizedAccess as EventListener);
+    };
+  }, [logout, showToast]);
+
+  return null;
+};
+
 export const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -183,6 +225,7 @@ export const App = () => {
           <NotificationProvider>
             <ImagePreviewProvider>
               <ToastProvider>
+                <GlobalEventHandler />
                 <RouterProvider router={router} />
                 <GlobalImagePreview />
               </ToastProvider>

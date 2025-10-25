@@ -60,6 +60,18 @@ export class NotificationService {
       return [];
     } catch (error) {
       console.error('❌ Failed to get message list:', error);
+      
+      // Special handling for authentication errors (401/403)
+      // When these occur, re-throw the error so global handler can catch it
+      if (error instanceof Error) {
+        const errorMessage = error.message.toLowerCase();
+        if (errorMessage.includes('401') || errorMessage.includes('403') || 
+            errorMessage.includes('authentication failed') || errorMessage.includes('authorization failed')) {
+          // Let the global event handler take care of logout
+          throw error;
+        }
+      }
+      
       // Return empty array instead of mock data when API call fails
       return [];
     }

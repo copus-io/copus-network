@@ -117,32 +117,31 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       const notifications = await notificationService.getNotifications(page, pageSize, msgType);
       dispatch({ type: 'SET_NOTIFICATIONS', payload: notifications });
     } catch (error) {
-      console.error('❌ Failed to fetch notifications:', error);
+      // Special handling for authentication errors (401/403)
+      // Let the global event handler take care of logout
+      if (error instanceof Error && (error.message.includes('Authentication failed') || 
+          error.message.includes('401') || 
+          error.message.includes('403'))) {
+        // Re-throw authentication errors so global handler can catch them
+        throw error;
+      } else {
+        console.error('❌ Failed to fetch notifications:', error);
+      }
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  const fetchUnreadCount = async (skipRecentActionCheck: boolean = false): Promise<void> => {
-    try {
-      // Skip polling if a recent action occurred (within last 15 seconds to allow server cache to update)
-      if (!skipRecentActionCheck) {
-        const lastActionTime = localStorage.getItem('lastNotificationAction');
-        if (lastActionTime) {
-          const timeSinceAction = Date.now() - parseInt(lastActionTime);
-          if (timeSinceAction < 15000) {
-            // Skip this poll since user just performed an action
-            return;
-          }
-        }
-      }
+  const fetchUnreadCount = async (): Promise<void> => {
+    // Skip if no token (no point in calling authenticated endpoint)
+    const token = localStorage.getItem('copus_token');
+    if (!token || token.trim() === '') {
+      // When no token exists, set unread count to 0 without error
+      dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
+      return;
+    }
 
-      // Check if there is a valid authentication token
-      const token = localStorage.getItem('copus_token');
-      if (!token || token.trim() === '') {
-        // When no token exists, set unread count to 0 without error
-        dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
-        return;
-      }
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
 
       const unreadCount = await AuthService.getUnreadMessageCount();
 
@@ -176,11 +175,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount });
     } catch (error) {
       // If authentication error, handle silently and set unread count to 0
-      if (error instanceof Error && error.message.includes('Valid authentication token not found')) {
-        dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
+      if (error instanceof Error && (error.message.includes('Valid authentication token not found') || 
+          error.message.includes('Authentication failed') || 
+          error.message.includes('401') || 
+          error.message.includes('403'))) {
+        // Don't dispatch anything here - let the global event handler take care of logout
+        // Just silently handle the error to prevent infinite loops and duplicate toasts
+        console.log('Authentication error in fetchUnreadCount, handled by global handler');
       } else {
         console.error('❌ Failed to fetch unread message count:', error);
       }
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 

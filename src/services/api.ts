@@ -66,6 +66,16 @@ export const apiRequest = async <T>(
             // Ignore JSON parsing errors
           }
 
+          // Dispatch a custom event for 401/403 errors
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('unauthorized-access', {
+              detail: {
+                status: response.status,
+                message: errorMessage
+              }
+            }));
+          }
+
           throw new Error(`Authentication failed: ${errorMessage}, please log in again`);
         } else {
           // For public endpoints, log warning and error details
