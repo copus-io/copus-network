@@ -48,14 +48,6 @@ export const UnauthorizedPage: React.FC = () => {
               Sign In Now
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={() => navigate('/signup')}
-              className="w-full border-red text-red hover:bg-red/5 py-3 rounded-lg transition-colors"
-            >
-              Create New Account
-            </Button>
-
             <Link
               to="/copus"
               className="block w-full text-gray-500 hover:text-gray-700 py-2 transition-colors"
