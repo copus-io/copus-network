@@ -183,7 +183,7 @@ export const PostsSection = (): JSX.Element => {
 
             <div className="flex items-center justify-between self-stretch w-full">
               <div
-                className={`inline-flex items-center ${index === 0 ? "gap-[15px]" : "gap-5"}`}
+                className={`inline-flex items-center ${index === 0 ? "gap-[15px]" : "gap-4"}`}
               >
                 <div className="inline-flex items-center gap-2">
                   <img
@@ -287,7 +287,7 @@ export const PostsSection = (): JSX.Element => {
 
             <div className="flex items-center justify-between self-stretch w-full">
               <div
-                className={`inline-flex items-center ${index === 0 ? "gap-[15px]" : "gap-5"}`}
+                className={`inline-flex items-center ${index === 0 ? "gap-[15px]" : "gap-4"}`}
               >
                 <div className="inline-flex items-center gap-2">
                   <img
