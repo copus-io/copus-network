@@ -21,7 +21,7 @@ export const getCategoryList = async (): Promise<Category[]> => {
 
   const response = await apiRequest<CategoryListResponse>(
     '/client/author/article/categoryList',
-    { requiresAuth: true }
+    { requiresAuth: false } // Categories should be publicly accessible
   );
 
   if (response.status !== 1) {

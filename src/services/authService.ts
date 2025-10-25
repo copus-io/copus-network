@@ -752,7 +752,7 @@ export class AuthService {
   static async getCategoryList(): Promise<ArticleCategoryListResponse> {
     return apiRequest('/client/author/article/categoryList', {
       method: 'GET',
-      requiresAuth: true,
+      requiresAuth: false, // Categories should be publicly accessible
     });
   }
 
