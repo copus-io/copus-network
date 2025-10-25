@@ -45,7 +45,7 @@ export const UnauthorizedPage: React.FC = () => {
               onClick={() => navigate('/login')}
               className="w-full bg-red hover:bg-red/90 text-white py-3 rounded-lg transition-colors"
             >
-              Sign In Now
+              Sign In / Sign Up
             </Button>
 
             <Link
