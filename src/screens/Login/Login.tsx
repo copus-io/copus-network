@@ -367,55 +367,129 @@ export const Login = (): JSX.Element => {
         }
 
         setIsLoginLoading(true);
+        console.log('🔍 Metamask login started');
 
         // 1. Connect Metamask to get accounts
+        console.log('🔍 Requesting Metamask accounts...');
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        console.log('✅ Received Metamask accounts:', accounts);
+        
         if (!accounts || accounts.length === 0) {
           throw new Error('Failed to get Metamask accounts');
         }
 
         const address = accounts[0];
+        console.log('👤 Selected account:', address);
 
         // 2. Get signature data from backend
-        const signatureData = await AuthService.getMetamaskSignatureData(address);
+        console.log('🔍 Requesting signature data from backend...');
+        const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
+        console.log('✅ Received signature data response:', signatureDataResponse);
+        
+        // Ensure signatureData is a string
+        let signatureData = signatureDataResponse;
+        if (typeof signatureDataResponse !== 'string') {
+          // If it's an object, try to extract the data field or convert to string
+          if (signatureDataResponse && typeof signatureDataResponse === 'object') {
+            if (signatureDataResponse.data) {
+              signatureData = signatureDataResponse.data;
+            } else if (signatureDataResponse.message) {
+              signatureData = signatureDataResponse.message;
+            } else if (signatureDataResponse.msg) {
+              signatureData = signatureDataResponse.msg;
+            } else {
+              // Try to convert the whole object to string
+              signatureData = JSON.stringify(signatureDataResponse);
+            }
+          } else {
+            signatureData = String(signatureDataResponse);
+          }
+        }
+        
+        // Ensure the signatureData is a non-empty string
+        if (!signatureData || typeof signatureData !== 'string' || signatureData.trim() === '') {
+          throw new Error('Invalid signature data received from server');
+        }
+        
+        console.log('✅ Signature data (string):', signatureData);
 
         // 3. Sign the exact message returned by backend (snowflake ID)
         // IMPORTANT: Must use signatureData directly without any wrapper text
         // Backend will verify signature against this exact value
-        const signature = await window.ethereum.request({
-          method: 'personal_sign',
-          params: [signatureData, address],
-        });
+        console.log('🔍 Requesting user to sign message with Metamask...');
+        console.log('🔍 Signature data:', signatureData);
+        console.log('🔍 Address:', address);
+        
+        // Check if window.ethereum has the request method
+        console.log('🔍 window.ethereum object:', window.ethereum);
+        console.log('🔍 window.ethereum.request method exists:', typeof window.ethereum.request === 'function');
+        
+        let signature;
+        try {
+          signature = await window.ethereum.request({
+            method: 'personal_sign',
+            params: [signatureData, address],
+          });
+          console.log('✅ Message signed successfully:', signature);
+        } catch (signError) {
+          console.error('❌ Error during signing process:', signError);
+          console.error('❌ Error name:', signError?.name);
+          console.error('❌ Error message:', signError?.message);
+          throw signError;
+        }
 
 
         // 4. Submit login
         const token = localStorage.getItem('copus_token');
         const hasToken = !!token;
 
-        const response = await AuthService.metamaskLogin(address, signature, hasToken);
+        console.log('🔍 Sending login request to backend...');
+        const response:any = await AuthService.metamaskLogin(address, signature, hasToken);
+        console.log('🔍 response login request to backend...',response);
+        var data = response.data;
+        if (response.status==1) {
+           console.log('Login success data:', {
+          token: data.token,
+          access_token: data.access_token,
+          accessToken: data.accessToken,
+          authToken: data.authToken,
+          'data.token': data.data?.token,
+          'data.access_token': data.data?.access_token
+        });
 
-        if (response.isBinding) {
-          // Account binding mode
-          showToast('Metamask account binding successful! 🎉', 'success');
+        // Try to get token from different possible fields
+        const possibleToken = data.data?.token || data.token || data.access_token || data.accessToken || data.authToken || data.data?.access_token;
 
-          // Re-fetch user info after binding
-          await fetchUserInfo(response.token || token);
-
-          // Navigate to settings page
-          setTimeout(() => {
-            navigate('/setting');
-          }, 1000);
+        // Save token to global state
+        if (data.user) {
+          login(data.user, possibleToken);
         } else {
-          // Third-party login mode
-          showToast('Metamask login successful! Welcome back 🎉', 'success');
+          // If API doesn't return user info, create a basic user object and save token
+          login({
+            id: data.id || 0,
+            username: data.username || loginEmail.split('@')[0],
+            email: "",
+            bio: '',
+            coverUrl: '',
+            faceUrl: '',
+            namespace: '',
+            walletAddress: address
+          }, possibleToken);
+        }
 
-          // Get user info
-          await fetchUserInfo(response.token);
+        // Get complete user info, pass the token just obtained
+        try {
+          await fetchUserInfo(possibleToken);
+        } catch (userInfoError) {
+        }
 
-          // Navigate to home
-          setTimeout(() => {
-            navigate('/');
-          }, 1000);
+        showToast('Login successful! Welcome back 🎉', 'success');
+        // Navigate to home page
+        navigate('/');
+
+        } else {
+          console.error('❌ Metamask login failed:');
+          showToast(`Metamask login failed: ${response.msg || 'Please try again'}`, 'error');
         }
       } catch (error) {
         console.error('❌ Metamask login failed:', error);
