@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { GemSpinner, BookFlip } from "../../components/ui/copus-loading";
@@ -36,16 +36,360 @@ const socialProviders = [
   },
 ];
 
+// Helper function to extract token from various response formats
+const extractTokenFromResponse = (data: any) => {
+  return data.data?.token || data.token || data.access_token || data.accessToken || data.authToken || data.data?.access_token;
+};
+
+// Helper function to create a basic user object
+const createBasicUser = (email: string, username: string = '', walletAddress: string = '') => ({
+  id: 0,
+  username: username || email.split('@')[0],
+  email,
+  bio: '',
+  coverUrl: '',
+  faceUrl: '',
+  namespace: '',
+  walletAddress
+});
+
+// Separate component for login form
+const LoginForm: React.FC<{
+  email: string;
+  setEmail: (email: string) => void;
+  password: string;
+  setPassword: (password: string) => void;
+  showPassword: boolean;
+  setShowPassword: (show: boolean) => void;
+  rememberMe: boolean;
+  setRememberMe: (remember: boolean) => void;
+  isLoading: boolean;
+  onLogin: () => void;
+  onKeyPress: (e: React.KeyboardEvent) => void;
+  onForgotPassword: () => void;
+}> = ({
+  email,
+  setEmail,
+  password,
+  setPassword,
+  showPassword,
+  setShowPassword,
+  rememberMe,
+  setRememberMe,
+  isLoading,
+  onLogin,
+  onKeyPress,
+  onForgotPassword
+}) => {
+  return (
+    <div className="flex-col items-start gap-[15px] self-stretch w-full flex-[0_0_auto] flex relative">
+      <Input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        onKeyDown={onKeyPress}
+        className="flex items-center gap-[213px] p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
+      />
+
+      <div className="relative self-stretch w-full">
+        <Input
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={onKeyPress}
+          className="flex items-center gap-64 p-[15px] pr-12 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          className="absolute right-[10px] top-1/2 transform -translate-y-1/2 h-auto p-2 hover:bg-transparent"
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+            {showPassword ? (
+              <>
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </>
+            ) : (
+              <>
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </>
+            )}
+          </svg>
+        </Button>
+      </div>
+
+      <div className="flex items-center justify-between pt-[5px] pb-2.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
+        <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto]">
+          <Checkbox
+            id="remember"
+            checked={rememberMe}
+            onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+            className="w-[18px] h-[18px] rounded-[9px] border border-solid border-[#231f20] data-[state=checked]:bg-button-green data-[state=checked]:border-[#231f20]"
+          />
+
+          <label
+            htmlFor="remember"
+            className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] cursor-pointer"
+          >
+            Remember me
+          </label>
+        </div>
+
+        <Button
+          variant="ghost"
+          className="h-auto p-0 hover:bg-transparent"
+          onClick={onForgotPassword}
+        >
+          <div className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+            Forgot password?
+          </div>
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Separate component for registration form
+const RegistrationForm: React.FC<{
+  username: string;
+  setUsername: (username: string) => void;
+  email: string;
+  setEmail: (email: string) => void;
+  password: string;
+  setPassword: (password: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (password: string) => void;
+  verificationCode: string;
+  setVerificationCode: (code: string) => void;
+  showPassword: boolean;
+  setShowPassword: (show: boolean) => void;
+  showConfirmPassword: boolean;
+  setShowConfirmPassword: (show: boolean) => void;
+  agreeToTerms: boolean;
+  setAgreeToTerms: (agree: boolean) => void;
+  emailStatus: 'idle' | 'checking' | 'available' | 'taken';
+  onEmailChange: (value: string) => void;
+  onSendCode: () => void;
+  isSending: boolean;
+  countdown: number;
+}> = ({
+  username,
+  setUsername,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  verificationCode,
+  setVerificationCode,
+  showPassword,
+  setShowPassword,
+  showConfirmPassword,
+  setShowConfirmPassword,
+  agreeToTerms,
+  setAgreeToTerms,
+  emailStatus,
+  onEmailChange,
+  onSendCode,
+  isSending,
+  countdown
+}) => {
+  return (
+    <div className="flex-col items-start gap-4 sm:gap-[15px] self-stretch w-full flex-[0_0_auto] flex relative">
+      {/* User name */}
+      <Input
+        placeholder="User name"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        className="flex items-center p-3 sm:p-[15px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+      />
+
+      {/* Email */}
+      <div className="relative self-stretch w-full">
+        <Input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => onEmailChange(e.target.value)}
+          className={`flex items-center p-3 sm:p-[15px] pr-[40px] relative self-stretch w-full bg-white rounded-[15px] border border-solid text-medium-dark-grey h-auto ${
+            emailStatus === 'taken'
+              ? 'border-red-500'
+              : emailStatus === 'available'
+                ? 'border-green-500'
+                : 'border-[#a8a8a8]'
+          }`}
+        />
+        {/* Email status icon */}
+        <div className="absolute right-[12px] top-1/2 transform -translate-y-1/2">
+          {emailStatus === 'checking' && (
+            <BookFlip />
+          )}
+          {emailStatus === 'available' && (
+            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+          {emailStatus === 'taken' && (
+            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
+        </div>
+        {/* Email status hint - gentler hint */}
+        {emailStatus === 'taken' && (
+          <div className="mt-1 text-xs text-red-400">
+            This email is already registered
+          </div>
+        )}
+        {emailStatus === 'available' && (
+          <div className="mt-1 text-xs text-green-400 opacity-75">
+            ✓ Email available
+          </div>
+        )}
+      </div>
+
+      {/* Verification code section */}
+      <div className="flex items-center gap-[15px] relative self-stretch w-full">
+        <Input
+          placeholder="Enter verification code"
+          value={verificationCode}
+          onChange={(e) => setVerificationCode(e.target.value)}
+          className="flex items-center p-[15px] relative flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+        />
+        <Button
+          className={`px-[15px] h-auto min-h-[50px] text-white rounded-[15px] border-0 whitespace-nowrap flex items-center justify-center transition-all ${
+            countdown > 0 || isSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-red hover:bg-red/90'
+          }`}
+          onClick={onSendCode}
+          disabled={countdown > 0 || isSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')}
+        >
+          <span className="font-['Lato',_Helvetica] font-normal text-white text-sm">
+            {isSending
+              ? 'Sending...'
+              : countdown > 0
+                ? `${countdown}s`
+                : emailStatus === 'checking'
+                  ? 'Checking'
+                  : emailStatus === 'taken'
+                    ? 'Email taken'
+                    : !email.includes('@')
+                      ? 'Enter email'
+                      : 'Send code'
+            }
+          </span>
+        </Button>
+      </div>
+
+      {/* Password label */}
+      <div className="relative self-stretch w-full">
+        <span className="font-['Lato',_Helvetica] font-normal text-off-black text-sm">
+          *Password
+        </span>
+      </div>
+
+      {/* Password */}
+      <div className="relative self-stretch w-full">
+        <Input
+          type={showPassword ? "text" : "password"}
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="flex items-center p-3 sm:p-[15px] pr-[45px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          className="absolute right-[10px] top-1/2 transform -translate-y-1/2 h-auto p-2 hover:bg-transparent"
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+            {showPassword ? (
+              <>
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </>
+            ) : (
+              <>
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </>
+            )}
+          </svg>
+        </Button>
+      </div>
+
+      {/* Confirm Password */}
+      <div className="relative self-stretch w-full">
+        <Input
+          type={showConfirmPassword ? "text" : "password"}
+          placeholder="Confirm password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="flex items-center p-3 sm:p-[15px] pr-[45px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          className="absolute right-[10px] top-1/2 transform -translate-y-1/2 h-auto p-2 hover:bg-transparent"
+          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+            {showConfirmPassword ? (
+              <>
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </>
+            ) : (
+              <>
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </>
+            )}
+          </svg>
+        </Button>
+      </div>
+
+      {/* Terms agreement */}
+      <div className="flex items-center justify-start pt-[5px] pb-2.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
+        <div className="inline-flex items-start gap-2.5 relative flex-[0_0_auto]">
+          <Checkbox
+            id="terms"
+            checked={agreeToTerms}
+            onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+            className="w-[18px] h-[18px] rounded-[3px] border border-solid border-[#a8a8a8] data-[state=checked]:bg-button-green data-[state=checked]:border-button-green mt-1"
+          />
+
+          <label
+            htmlFor="terms"
+            className="relative font-['Lato',_Helvetica] font-normal text-medium-dark-grey text-sm leading-[20px] cursor-pointer"
+          >
+            I have read and understood <span className="underline text-medium-dark-grey">the terms</span>.
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const Login = (): JSX.Element => {
   const { login, fetchUserInfo } = useUser();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
+  
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true); // Remember both login state and account email
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [isRegisterLoading, setIsRegisterLoading] = useState(false);
 
@@ -101,8 +445,6 @@ export const Login = (): JSX.Element => {
         localStorage.removeItem('oauth_provider');
       }
 
-      console.log('🔍 OAuth callback - provider:', provider, 'code:', code ? 'exists' : 'none', 'state:', state ? 'exists' : 'none');
-
       if (code && state) {
         setIsLoginLoading(true);
 
@@ -111,137 +453,78 @@ export const Login = (): JSX.Element => {
 
           // Call different login methods based on provider type
           if (provider === 'google') {
-            const token = localStorage.getItem('copus_token');
-            const hasToken = !!token;
-
-            console.log('🔍 Google login - hasToken:', hasToken);
-            response = await AuthService.googleLogin(code, state, hasToken);
-            console.log('✅ Google login response:', response);
-
-            // The token should already be saved by AuthService.googleLogin
-            // Check localStorage for the token
+            response = await AuthService.googleLogin(code, state, !!localStorage.getItem('copus_token'));
+            
             const savedToken = localStorage.getItem('copus_token');
-            console.log('💾 Token saved in localStorage:', savedToken ? 'YES' : 'NO');
+            const tokenToUse = response.token || savedToken;
 
             if (response.isBinding) {
               // Account binding mode
               showToast('Google account successfully bound! 🎉', 'success');
-
-              // Google binding may return new token, re-fetch user info
-              const tokenToUse = response.token || savedToken || token;
-              console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
               await fetchUserInfo(tokenToUse);
-
-              // Navigate to settings immediately
               navigate('/setting', { replace: true });
             } else {
-              // Third-party login mode - sync Google profile to Copus
+              // Third-party login mode
               showToast('Google login successful! Welcome back 🎉', 'success');
-
-              // Get user info - use token from response or localStorage
-              const tokenToUse = response.token || savedToken;
-              console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
-
+              
               if (!tokenToUse) {
-                console.error('❌ No token available after Google login!');
                 throw new Error('No authentication token received');
               }
 
               await fetchUserInfo(tokenToUse);
-              console.log('✅ User info fetched successfully');
-
-              // Sync Google profile data to Copus profile (profile data is already in response)
+              
+              // Sync Google profile data to Copus profile
               if (response.googleProfile) {
                 try {
-                  console.log('🔄 Syncing Google profile data to Copus...');
-                  console.log('📸 Google profile data from login response:', response.googleProfile);
-
-                  // Update Copus profile with Google data
                   const updateData: any = {};
                   if (response.googleProfile.username) {
                     updateData.userName = response.googleProfile.username;
                   }
                   if (response.googleProfile.faceUrl) {
-                    // Use faceUrl as profile image
                     updateData.faceUrl = response.googleProfile.faceUrl;
                   }
 
                   if (Object.keys(updateData).length > 0) {
-                    console.log('📝 Updating Copus profile with:', updateData);
                     await AuthService.updateUserInfo(updateData);
-                    console.log('✅ Profile synced successfully');
-
-                    // Re-fetch user info to get updated profile
                     await fetchUserInfo(tokenToUse);
-                    console.log('✅ User info refreshed after sync');
-                  } else {
-                    console.log('⚠️ No Google profile data to sync');
                   }
                 } catch (profileError) {
-                  console.error('⚠️ Failed to sync Google profile (non-fatal):', profileError);
                   // Don't block login if profile sync fails
                 }
-              } else {
-                console.log('⚠️ No Google profile data in login response');
               }
-
-              // Navigate to home immediately (replace history to avoid back button going to login)
+              
               navigate('/', { replace: true });
             }
           } else if (provider === 'x') {
             // X (Twitter) login handling
-            const token = localStorage.getItem('copus_token');
-            const hasToken = !!token;
-
-            console.log('🔍 X login - hasToken:', hasToken);
-            response = await AuthService.xLogin(code, state, hasToken);
-            console.log('✅ X login response:', response);
-
-            // The token should already be saved by AuthService.xLogin
-            // Check localStorage for the token
+            response = await AuthService.xLogin(code, state, !!localStorage.getItem('copus_token'));
+            
             const savedToken = localStorage.getItem('copus_token');
-            console.log('💾 Token saved in localStorage:', savedToken ? 'YES' : 'NO');
+            const tokenToUse = response.token || savedToken;
 
             if (response.isBinding) {
               // Account binding mode
               showToast('X account successfully bound! 🎉', 'success');
-
-              // X binding may return new token, re-fetch user info
-              const tokenToUse = response.token || savedToken || token;
-              console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
               await fetchUserInfo(tokenToUse);
-
-              // Navigate to settings immediately
               navigate('/setting', { replace: true });
             } else {
-              // Third-party login mode - sync X profile to Copus
+              // Third-party login mode
               showToast('X login successful! Welcome back 🎉', 'success');
-
-              // Get user info - use token from response or localStorage
-              const tokenToUse = response.token || savedToken;
-              console.log('🔐 Using token for fetchUserInfo:', tokenToUse?.substring(0, 20) + '...');
-
+              
               if (!tokenToUse) {
-                console.error('❌ No token available after X login!');
                 throw new Error('No authentication token received');
               }
 
               await fetchUserInfo(tokenToUse);
-              console.log('✅ User info fetched successfully');
-
-              // Sync X profile data to Copus profile (profile data is already in response)
+              
+              // Sync X profile data to Copus profile
               if (response.xProfile) {
                 try {
-                  console.log('🔄 Syncing X profile data to Copus...');
-                  console.log('📸 X profile data from login response:', response.xProfile);
-
-                  // Update Copus profile with X data
                   const updateData: any = {};
                   if (response.xProfile.username) {
                     updateData.userName = response.xProfile.username;
                   }
                   if (response.xProfile.faceUrl) {
-                    // Use faceUrl as profile image
                     updateData.faceUrl = response.xProfile.faceUrl;
                   }
                   if (response.xProfile.bio) {
@@ -249,33 +532,19 @@ export const Login = (): JSX.Element => {
                   }
 
                   if (Object.keys(updateData).length > 0) {
-                    console.log('📝 Updating Copus profile with:', updateData);
                     await AuthService.updateUserInfo(updateData);
-                    console.log('✅ Profile synced successfully');
-
-                    // Re-fetch user info to get updated profile
                     await fetchUserInfo(tokenToUse);
-                    console.log('✅ User info refreshed after sync');
-                  } else {
-                    console.log('⚠️ No X profile data to sync');
                   }
                 } catch (profileError) {
-                  console.error('⚠️ Failed to sync X profile (non-fatal):', profileError);
                   // Don't block login if profile sync fails
                 }
-              } else {
-                console.log('⚠️ No X profile data in login response');
               }
-
-              // Navigate to home immediately (replace history to avoid back button going to login)
+              
               navigate('/', { replace: true });
             }
           } else {
             // Default fallback (for backward compatibility)
-            console.log('⚠️ Unknown provider or no provider specified, attempting X login...');
-            const token = localStorage.getItem('copus_token');
-            const hasToken = !!token;
-            response = await AuthService.xLogin(code, state, hasToken);
+            response = await AuthService.xLogin(code, state, !!localStorage.getItem('copus_token'));
 
             if (response.token || response.data?.token) {
               showToast('Login successful! Welcome back 🎉', 'success');
@@ -287,7 +556,6 @@ export const Login = (): JSX.Element => {
             }
           }
         } catch (error) {
-          console.error(`❌ ${provider || 'X'} login failed:`, error);
           showToast(`${provider || 'X'} login failed, please try again`, 'error');
         } finally {
           setIsLoginLoading(false);
@@ -298,205 +566,128 @@ export const Login = (): JSX.Element => {
     handleOAuthCallback();
   }, [searchParams, fetchUserInfo, navigate, showToast]);
 
-  // Handle social login
-  const handleSocialLogin = async (provider: string) => {
+  // Handle X (Twitter) login
+  const handleXLogin = async () => {
+    try {
+      localStorage.setItem('oauth_provider', 'x');
+      const oauthUrl = await AuthService.getXOAuthUrl();
+      const urlWithProvider = oauthUrl.includes('?')
+        ? `${oauthUrl}&provider=x`
+        : `${oauthUrl}?provider=x`;
+      window.location.href = urlWithProvider;
+    } catch (error: any) {
+      showToast(`X login failed: ${error.message || 'Please try again'}`, 'error');
+    }
+  };
 
-    if (provider === 'X') {
-      try {
-        console.log('🔍 Starting X OAuth process...');
+  // Handle Google login
+  const handleGoogleLogin = async () => {
+    try {
+      localStorage.setItem('oauth_provider', 'google');
+      const oauthUrl = await AuthService.getGoogleOAuthUrl();
+      const urlWithProvider = oauthUrl.includes('?')
+        ? `${oauthUrl}&provider=google`
+        : `${oauthUrl}?provider=google`;
+      window.location.href = urlWithProvider;
+    } catch (error: any) {
+      showToast(`Google login failed: ${error.message || 'Please try again'}`, 'error');
+    }
+  };
 
-        // Save provider to localStorage (OAuth callback will read this)
-        // This is more reliable than URL params because Twitter doesn't preserve them
-        localStorage.setItem('oauth_provider', 'x');
-
-        // Try to get X OAuth URL - this should work for both login and binding
-        const oauthUrl = await AuthService.getXOAuthUrl();
-
-        console.log('✅ Got X OAuth URL:', oauthUrl);
-        console.log('💾 Saved provider to localStorage: x');
-
-        // Add provider parameter for callback identification (backup method)
-        const urlWithProvider = oauthUrl.includes('?')
-          ? `${oauthUrl}&provider=x`
-          : `${oauthUrl}?provider=x`;
-
-        console.log('🚀 Redirecting to:', urlWithProvider);
-        window.location.href = urlWithProvider;
-      } catch (error: any) {
-        console.error('❌ X OAuth handling failed:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Full error:', error);
-        showToast(`X login failed: ${error.message || 'Please try again'}`, 'error');
+  // Handle Metamask login
+  const handleMetamaskLogin = async () => {
+    try {
+      if (!window.ethereum) {
+        showToast('Please install Metamask wallet first', 'error');
+        return;
       }
-    } else if (provider === 'Google') {
-      try {
-        console.log('🔍 Starting Google OAuth process...');
 
-        // Save provider to localStorage (OAuth callback will read this)
-        localStorage.setItem('oauth_provider', 'google');
-
-        // Try to get Google OAuth URL - this should work for both login and binding
-        const oauthUrl = await AuthService.getGoogleOAuthUrl();
-
-        console.log('✅ Got Google OAuth URL:', oauthUrl);
-        console.log('💾 Saved provider to localStorage: google');
-
-        // Don't replace redirect_uri for localhost - use the OAuthRedirect flow instead
-        // Flow: Google -> test.copus.io/callback -> OAuthRedirect -> localhost/login
-        // This ensures the backend can verify the code with the same redirect_uri it used
-
-        // Add provider parameter for callback identification
-        const urlWithProvider = oauthUrl.includes('?')
-          ? `${oauthUrl}&provider=google`
-          : `${oauthUrl}?provider=google`;
-
-        console.log('🚀 Final redirect URL:', urlWithProvider);
-        window.location.href = urlWithProvider;
-      } catch (error: any) {
-        console.error('❌ Google OAuth handling failed:', error);
-        console.error('❌ Error details:', error.message);
-        console.error('❌ Full error:', error);
-        showToast(`Google login failed: ${error.message || 'Please try again'}`, 'error');
+      setIsLoginLoading(true);
+      
+      // 1. Connect Metamask to get accounts
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      if (!accounts || accounts.length === 0) {
+        throw new Error('Failed to get Metamask accounts');
       }
-    } else if (provider === 'Metamask') {
-      try {
-        // Check if Metamask is installed
-        if (!window.ethereum) {
-          showToast('Please install Metamask wallet first', 'error');
-          return;
-        }
 
-        setIsLoginLoading(true);
-        console.log('🔍 Metamask login started');
-
-        // 1. Connect Metamask to get accounts
-        console.log('🔍 Requesting Metamask accounts...');
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        console.log('✅ Received Metamask accounts:', accounts);
-        
-        if (!accounts || accounts.length === 0) {
-          throw new Error('Failed to get Metamask accounts');
-        }
-
-        const address = accounts[0];
-        console.log('👤 Selected account:', address);
-
-        // 2. Get signature data from backend
-        console.log('🔍 Requesting signature data from backend...');
-        const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
-        console.log('✅ Received signature data response:', signatureDataResponse);
-        
-        // Ensure signatureData is a string
-        let signatureData = signatureDataResponse;
-        if (typeof signatureDataResponse !== 'string') {
-          // If it's an object, try to extract the data field or convert to string
-          if (signatureDataResponse && typeof signatureDataResponse === 'object') {
-            if (signatureDataResponse.data) {
-              signatureData = signatureDataResponse.data;
-            } else if (signatureDataResponse.message) {
-              signatureData = signatureDataResponse.message;
-            } else if (signatureDataResponse.msg) {
-              signatureData = signatureDataResponse.msg;
-            } else {
-              // Try to convert the whole object to string
-              signatureData = JSON.stringify(signatureDataResponse);
-            }
+      const address = accounts[0];
+      
+      // 2. Get signature data from backend
+      const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
+      
+      // Ensure signatureData is a string
+      let signatureData = signatureDataResponse;
+      if (typeof signatureDataResponse !== 'string') {
+        if (signatureDataResponse && typeof signatureDataResponse === 'object') {
+          if (signatureDataResponse.data) {
+            signatureData = signatureDataResponse.data;
+          } else if (signatureDataResponse.message) {
+            signatureData = signatureDataResponse.message;
+          } else if (signatureDataResponse.msg) {
+            signatureData = signatureDataResponse.msg;
           } else {
-            signatureData = String(signatureDataResponse);
+            signatureData = JSON.stringify(signatureDataResponse);
           }
-        }
-        
-        // Ensure the signatureData is a non-empty string
-        if (!signatureData || typeof signatureData !== 'string' || signatureData.trim() === '') {
-          throw new Error('Invalid signature data received from server');
-        }
-        
-        console.log('✅ Signature data (string):', signatureData);
-
-        // 3. Sign the exact message returned by backend (snowflake ID)
-        // IMPORTANT: Must use signatureData directly without any wrapper text
-        // Backend will verify signature against this exact value
-        console.log('🔍 Requesting user to sign message with Metamask...');
-        console.log('🔍 Signature data:', signatureData);
-        console.log('🔍 Address:', address);
-        
-        // Check if window.ethereum has the request method
-        console.log('🔍 window.ethereum object:', window.ethereum);
-        console.log('🔍 window.ethereum.request method exists:', typeof window.ethereum.request === 'function');
-        
-        let signature;
-        try {
-          signature = await window.ethereum.request({
-            method: 'personal_sign',
-            params: [signatureData, address],
-          });
-          console.log('✅ Message signed successfully:', signature);
-        } catch (signError) {
-          console.error('❌ Error during signing process:', signError);
-          console.error('❌ Error name:', signError?.name);
-          console.error('❌ Error message:', signError?.message);
-          throw signError;
-        }
-
-
-        // 4. Submit login
-        const token = localStorage.getItem('copus_token');
-        const hasToken = !!token;
-
-        console.log('🔍 Sending login request to backend...');
-        const response:any = await AuthService.metamaskLogin(address, signature, hasToken);
-        console.log('🔍 response login request to backend...',response);
-        var data = response.data;
-        if (response.status==1) {
-           console.log('Login success data:', {
-          token: data.token,
-          access_token: data.access_token,
-          accessToken: data.accessToken,
-          authToken: data.authToken,
-          'data.token': data.data?.token,
-          'data.access_token': data.data?.access_token
-        });
-
-        // Try to get token from different possible fields
-        const possibleToken = data.data?.token || data.token || data.access_token || data.accessToken || data.authToken || data.data?.access_token;
-
-        // Save token to global state
-        if (data.user) {
-          login(data.user, possibleToken);
         } else {
-          // If API doesn't return user info, create a basic user object and save token
-          login({
-            id: data.id || 0,
-            username: data.username || loginEmail.split('@')[0],
-            email: "",
-            bio: '',
-            coverUrl: '',
-            faceUrl: '',
-            namespace: '',
-            walletAddress: address
-          }, possibleToken);
+          signatureData = String(signatureDataResponse);
         }
+      }
+      
+      if (!signatureData || typeof signatureData !== 'string' || signatureData.trim() === '') {
+        throw new Error('Invalid signature data received from server');
+      }
+      
+      // 3. Sign the exact message returned by backend
+      let signature;
+      try {
+        signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [signatureData, address],
+        });
+      } catch (signError) {
+        throw signError;
+      }
 
-        // Get complete user info, pass the token just obtained
+      // 4. Submit login
+      const response: any = await AuthService.metamaskLogin(address, signature, !!localStorage.getItem('copus_token'));
+      
+      if (response.status === 1) {
+        const possibleToken = extractTokenFromResponse(response);
+        login(createBasicUser(loginEmail, '', address), possibleToken);
+
         try {
           await fetchUserInfo(possibleToken);
         } catch (userInfoError) {
+          // Handle error silently
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
-        // Navigate to home page
         navigate('/');
-
-        } else {
-          console.error('❌ Metamask login failed:');
-          showToast(`Metamask login failed: ${response.msg || 'Please try again'}`, 'error');
-        }
-      } catch (error) {
-        console.error('❌ Metamask login failed:', error);
-        showToast(`Metamask login failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
-      } finally {
-        setIsLoginLoading(false);
+      } else {
+        showToast(`Metamask login failed: ${response.msg || 'Please try again'}`, 'error');
       }
+    } catch (error) {
+      showToast(`Metamask login failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+
+  // Unified social login handler
+  const handleSocialLogin = async (provider: string) => {
+    switch (provider) {
+      case 'X':
+        await handleXLogin();
+        break;
+      case 'Google':
+        await handleGoogleLogin();
+        break;
+      case 'Metamask':
+        await handleMetamaskLogin();
+        break;
+      default:
+        showToast(`Unsupported login provider: ${provider}`, 'error');
     }
   };
 
@@ -519,8 +710,6 @@ export const Login = (): JSX.Element => {
 
       if (response.ok) {
         const data = await response.json();
-        // API response format: {"status":1,"msg":"success","data":false}
-        // data=true means email already exists, false means available
         if (data.status === 1 && data.data === false) {
           setEmailStatus('available');
         } else if (data.status === 1 && data.data === true) {
@@ -529,11 +718,9 @@ export const Login = (): JSX.Element => {
           setEmailStatus('idle');
         }
       } else {
-        console.error('Email check request failed:', response.status);
         setEmailStatus('idle');
       }
     } catch (error) {
-      console.error('Check email failed:', error);
       setEmailStatus('idle');
     }
   };
@@ -571,87 +758,43 @@ export const Login = (): JSX.Element => {
       // MD5 encrypt password
       const encryptedPassword = CryptoJS.MD5(loginPassword).toString();
 
-      console.log('Login info:', {
-        username: loginEmail,
-        password: '***MD5 encrypted***'
-      });
-
       const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: loginEmail, // API expects username field, we pass email as username
-          password: encryptedPassword // Send MD5 encrypted password
+          username: loginEmail,
+          password: encryptedPassword
         }),
       });
 
-      console.log('Response info:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      });
-
       const data = await response.json();
-      console.log('Login response data:', data);
 
-      // Check JSON response status field (not HTTP status)
       if (data.status === 1) {
-        console.log('Login success data:', {
-          token: data.token,
-          access_token: data.access_token,
-          accessToken: data.accessToken,
-          authToken: data.authToken,
-          'data.token': data.data?.token,
-          'data.access_token': data.data?.access_token
-        });
+        const possibleToken = extractTokenFromResponse(data);
 
-        // Try to get token from different possible fields
-        const possibleToken = data.data?.token || data.token || data.access_token || data.accessToken || data.authToken || data.data?.access_token;
-
-        // Save token to global state
-        if (data.user) {
-          login(data.user, possibleToken);
-        } else {
-          // If API doesn't return user info, create a basic user object and save token
-          login({
-            id: data.id || 0,
-            username: data.username || loginEmail.split('@')[0],
-            email: loginEmail,
-            bio: '',
-            coverUrl: '',
-            faceUrl: '',
-            namespace: '',
-            walletAddress: ''
-          }, possibleToken);
-        }
-
-        // Get complete user info, pass the token just obtained
-        try {
-          await fetchUserInfo(possibleToken);
-        } catch (userInfoError) {
-        }
+        login(createBasicUser(loginEmail), possibleToken);
 
         // If user chooses Remember me, save email to local storage
         if (rememberMe) {
           localStorage.setItem('copus_remembered_email', loginEmail);
           localStorage.setItem('copus_remember_me_option', 'true');
         } else {
-          // If not remember, clear previously saved email
           localStorage.removeItem('copus_remembered_email');
           localStorage.setItem('copus_remember_me_option', 'false');
         }
 
-        showToast('Login successful! Welcome back 🎉', 'success');
+        try {
+          await fetchUserInfo(possibleToken);
+        } catch (userInfoError) {
+          // Handle error silently
+        }
 
-        // Navigate to home page
+        showToast('Login successful! Welcome back 🎉', 'success');
         navigate('/');
       } else {
-        // Login failed - status !== 1
-        console.error('Login failed:', data);
-
-        // Translate Chinese error messages to English
+        // Translate error messages
         let errorMessage = 'Login failed';
         if (data.msg) {
           if (data.msg.includes('错误的密码') || data.msg.includes('wrong password') || data.status === 2057) {
@@ -661,14 +804,13 @@ export const Login = (): JSX.Element => {
           } else if (data.msg.includes('账号被禁用') || data.msg.includes('account disabled')) {
             errorMessage = 'Account has been disabled';
           } else {
-            errorMessage = data.msg; // Use original message if we can't translate
+            errorMessage = data.msg;
           }
         }
 
         showToast(errorMessage, 'error');
       }
     } catch (error) {
-      console.error('Login request failed:', error);
       showToast('Login failed, please try again', 'error');
     } finally {
       setIsLoginLoading(false);
@@ -704,13 +846,6 @@ export const Login = (): JSX.Element => {
       // MD5 encrypt password
       const encryptedPassword = CryptoJS.MD5(password).toString();
 
-      console.log('Registration info:', {
-        username: username,
-        email: email,
-        password: '***MD5 encrypted***',
-        code: verificationCode
-      });
-
       const response = await fetch(`${APP_CONFIG.API.BASE_URL}/client/common/register`, {
         method: 'POST',
         headers: {
@@ -719,21 +854,13 @@ export const Login = (): JSX.Element => {
         body: JSON.stringify({
           username: username,
           email: email,
-          password: encryptedPassword, // Send MD5 encrypted password
+          password: encryptedPassword,
           code: verificationCode
         }),
       });
 
-      console.log('registration response info:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      });
-
       const data = await response.json();
 
-      // Determine if registration was truly successful
-      // response.ok means HTTP status code 2xx, data.status=1 means business logic success
       if (response.ok && data.status === 1) {
         showToast('Registration successful! Please log in', 'success');
         // Clear all registration form fields on success
@@ -747,13 +874,11 @@ export const Login = (): JSX.Element => {
         // Switch to login tab after successful registration
         setActiveTab("login");
       } else {
-        console.error('Registration failed:', data);
         showToast(`Registration failed: ${data.msg || data.message || 'Please try again'}`, 'error');
         // On failure, only clear verification code, keep other filled information
         setVerificationCode('');
       }
     } catch (error) {
-      console.error('Registration request failed:', error);
       showToast('Registration failed, please try again', 'error');
     } finally {
       setIsRegisterLoading(false);
@@ -772,14 +897,6 @@ export const Login = (): JSX.Element => {
 
   // Send verification code function
   const sendVerificationCode = async () => {
-    console.log('📧 Send verification code clicked', {
-      email,
-      emailStatus,
-      countdown,
-      hasEmail: !!email,
-      hasAt: email.includes('@')
-    });
-
     // Check various conditions and provide feedback
     if (!email || !email.includes('@')) {
       showToast('Please enter a valid email address', 'error');
@@ -806,12 +923,10 @@ export const Login = (): JSX.Element => {
     }
   };
 
-
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] overflow-x-hidden">
       <HeaderSection isLoggedIn={false} hideCreateButton={true} showDiscoverNow={true} hideLoginButton={true} />
-      <div className="flex w-full min-h-screen relative flex-col items-center pt-[70px] lg:pt-[120px]">{/* 添加顶部间距以适应fixed header */}
-
+      <div className="flex w-full min-h-screen relative flex-col items-center pt-[70px] lg:pt-[120px]">
         <main className="flex items-center justify-center gap-2.5 relative flex-1 grow py-4 sm:py-10 px-4 sm:px-0">
           <Card className="w-full max-w-[480px] bg-white rounded-lg border-0 shadow-none relative z-10">
             <CardContent className="flex flex-col items-center justify-center gap-8 sm:gap-[50px] px-6 sm:px-[50px] py-8 sm:py-[60px]">
@@ -847,83 +962,28 @@ export const Login = (): JSX.Element => {
                   </TabsList>
 
                   <TabsContent value="login" className="mt-6 sm:mt-[30px]">
-                    <div className="flex-col items-start gap-[15px] self-stretch w-full flex-[0_0_auto] flex relative">
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        className="flex items-center gap-[213px] p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
-                      />
-
-                      <div className="relative self-stretch w-full">
-                        <Input
-                          type={showLoginPassword ? "text" : "password"}
-                          placeholder="Password"
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          className="flex items-center gap-64 p-[15px] pr-12 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="absolute right-[10px] top-1/2 transform -translate-y-1/2 h-auto p-2 hover:bg-transparent"
-                          onClick={() => setShowLoginPassword(!showLoginPassword)}
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
-                            {showLoginPassword ? (
-                              <>
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                <circle cx="12" cy="12" r="3" />
-                              </>
-                            ) : (
-                              <>
-                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                <line x1="1" y1="1" x2="23" y2="23" />
-                              </>
-                            )}
-                          </svg>
-                        </Button>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-[5px] pb-2.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
-                        <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto]">
-                          <Checkbox
-                            id="remember"
-                            checked={rememberMe}
-                            onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                            className="w-[18px] h-[18px] rounded-[9px] border border-solid border-[#231f20] data-[state=checked]:bg-button-green data-[state=checked]:border-[#231f20]"
-                          />
-
-                          <label
-                            htmlFor="remember"
-                            className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] cursor-pointer"
-                          >
-                            Remember me
-                          </label>
-                        </div>
-
-                        <Button
-                          variant="ghost"
-                          className="h-auto p-0 hover:bg-transparent"
-                          onClick={() => setShowResetPassword(true)}
-                        >
-                          <div className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
-                            Forgot password?
-                          </div>
-                        </Button>
-                      </div>
-                    </div>
-
+                    <LoginForm
+                      email={loginEmail}
+                      setEmail={setLoginEmail}
+                      password={loginPassword}
+                      setPassword={setLoginPassword}
+                      showPassword={showLoginPassword}
+                      setShowPassword={setShowLoginPassword}
+                      rememberMe={rememberMe}
+                      setRememberMe={setRememberMe}
+                      isLoading={isLoginLoading}
+                      onLogin={handleLogin}
+                      onKeyPress={handleKeyDown}
+                      onForgotPassword={() => setShowResetPassword(true)}
+                    />
+                    
                     <Button
                       className="flex items-center justify-center px-8 sm:px-10 py-2.5 w-full rounded-[100px] border border-solid border-[#f23a00] bg-transparent hover:bg-red/5 mt-6 sm:mt-[30px] h-auto"
                       onClick={handleLogin}
                       disabled={isLoginLoading || !loginEmail || !loginPassword}
                     >
                       <span className="font-['Lato',_Helvetica] font-bold text-red text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-{isLoginLoading ? (
+                        {isLoginLoading ? (
                           <span className="flex items-center space-x-2">
                             <GemSpinner size="sm" />
                             <span>Logging in...</span>
@@ -936,189 +996,37 @@ export const Login = (): JSX.Element => {
                   </TabsContent>
 
                   <TabsContent value="signup" className="mt-6 sm:mt-[30px]">
-                    <div className="flex-col items-start gap-4 sm:gap-[15px] self-stretch w-full flex-[0_0_auto] flex relative">
-                      {/* User name */}
-                      <Input
-                        placeholder="User name"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="flex items-center p-3 sm:p-[15px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
-                      />
-
-                      {/* Email */}
-                      <div className="relative self-stretch w-full">
-                        <Input
-                          type="email"
-                          placeholder="Email"
-                          value={email}
-                          onChange={(e) => handleEmailChange(e.target.value)}
-                          className={`flex items-center p-3 sm:p-[15px] pr-[40px] relative self-stretch w-full bg-white rounded-[15px] border border-solid text-medium-dark-grey h-auto ${
-                            emailStatus === 'taken'
-                              ? 'border-red-500'
-                              : emailStatus === 'available'
-                                ? 'border-green-500'
-                                : 'border-[#a8a8a8]'
-                          }`}
-                        />
-                        {/* Email status icon */}
-                        <div className="absolute right-[12px] top-1/2 transform -translate-y-1/2">
-                          {emailStatus === 'checking' && (
-                            <BookFlip />
-                          )}
-                          {emailStatus === 'available' && (
-                            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                          {emailStatus === 'taken' && (
-                            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          )}
-                        </div>
-                        {/* Email status hint - gentler hint */}
-                        {emailStatus === 'taken' && (
-                          <div className="mt-1 text-xs text-red-400">
-                            This email is already registered
-                          </div>
-                        )}
-                        {emailStatus === 'available' && (
-                          <div className="mt-1 text-xs text-green-400 opacity-75">
-                            ✓ Email available
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Verification code section */}
-                      <div className="flex items-center gap-[15px] relative self-stretch w-full">
-                        <Input
-                          placeholder="Enter verification code"
-                          value={verificationCode}
-                          onChange={(e) => setVerificationCode(e.target.value)}
-                          className="flex items-center p-[15px] relative flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
-                        />
-                        <Button
-                          className={`px-[15px] h-auto min-h-[50px] text-white rounded-[15px] border-0 whitespace-nowrap flex items-center justify-center transition-all ${
-                            countdown > 0 || isSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')
-                              ? 'bg-gray-400 cursor-not-allowed'
-                              : 'bg-red hover:bg-red/90'
-                          }`}
-                          onClick={sendVerificationCode}
-                          disabled={countdown > 0 || isSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')}
-                        >
-                          <span className="font-['Lato',_Helvetica] font-normal text-white text-sm">
-                            {isSending
-                              ? 'Sending...'
-                              : countdown > 0
-                                ? `${countdown}s`
-                                : emailStatus === 'checking'
-                                  ? 'Checking'
-                                  : emailStatus === 'taken'
-                                    ? 'Email taken'
-                                    : !email.includes('@')
-                                      ? 'Enter email'
-                                      : 'Send code'
-                            }
-                          </span>
-                        </Button>
-                      </div>
-
-                      {/* Password label */}
-                      <div className="relative self-stretch w-full">
-                        <span className="font-['Lato',_Helvetica] font-normal text-off-black text-sm">
-                          *Password
-                        </span>
-                      </div>
-
-                      {/* Password */}
-                      <div className="relative self-stretch w-full">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Enter password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="flex items-center p-3 sm:p-[15px] pr-[45px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="absolute right-[10px] top-1/2 transform -translate-y-1/2 h-auto p-2 hover:bg-transparent"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
-                            {showPassword ? (
-                              <>
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                <circle cx="12" cy="12" r="3" />
-                              </>
-                            ) : (
-                              <>
-                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                <line x1="1" y1="1" x2="23" y2="23" />
-                              </>
-                            )}
-                          </svg>
-                        </Button>
-                      </div>
-
-                      {/* Confirm Password */}
-                      <div className="relative self-stretch w-full">
-                        <Input
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirm password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="flex items-center p-3 sm:p-[15px] pr-[45px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="absolute right-[10px] top-1/2 transform -translate-y-1/2 h-auto p-2 hover:bg-transparent"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
-                            {showConfirmPassword ? (
-                              <>
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                <circle cx="12" cy="12" r="3" />
-                              </>
-                            ) : (
-                              <>
-                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                                <line x1="1" y1="1" x2="23" y2="23" />
-                              </>
-                            )}
-                          </svg>
-                        </Button>
-                      </div>
-
-                      {/* Terms agreement */}
-                      <div className="flex items-center justify-start pt-[5px] pb-2.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
-                        <div className="inline-flex items-start gap-2.5 relative flex-[0_0_auto]">
-                          <Checkbox
-                            id="terms"
-                            checked={agreeToTerms}
-                            onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
-                            className="w-[18px] h-[18px] rounded-[3px] border border-solid border-[#a8a8a8] data-[state=checked]:bg-button-green data-[state=checked]:border-button-green mt-1"
-                          />
-
-                          <label
-                            htmlFor="terms"
-                            className="relative font-['Lato',_Helvetica] font-normal text-medium-dark-grey text-sm leading-[20px] cursor-pointer"
-                          >
-                            I have read and understood <span className="underline text-medium-dark-grey">the terms</span>.
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
+                    <RegistrationForm
+                      username={username}
+                      setUsername={setUsername}
+                      email={email}
+                      setEmail={setEmail}
+                      password={password}
+                      setPassword={setPassword}
+                      confirmPassword={confirmPassword}
+                      setConfirmPassword={setConfirmPassword}
+                      verificationCode={verificationCode}
+                      setVerificationCode={setVerificationCode}
+                      showPassword={showPassword}
+                      setShowPassword={setShowPassword}
+                      showConfirmPassword={showConfirmPassword}
+                      setShowConfirmPassword={setShowConfirmPassword}
+                      agreeToTerms={agreeToTerms}
+                      setAgreeToTerms={setAgreeToTerms}
+                      emailStatus={emailStatus}
+                      onEmailChange={handleEmailChange}
+                      onSendCode={sendVerificationCode}
+                      isSending={isSending}
+                      countdown={countdown}
+                    />
+                    
                     <Button
                       className="flex items-center justify-center px-8 sm:px-10 py-2.5 w-full rounded-[100px] border border-solid border-[#f23a00] bg-transparent hover:bg-red/5 mt-6 sm:mt-[30px] h-auto"
                       onClick={handleRegister}
                       disabled={isRegisterLoading || !username || !email || !password || !confirmPassword || !verificationCode || !agreeToTerms || emailStatus !== 'available'}
                     >
                       <span className="font-['Lato',_Helvetica] font-bold text-red text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-{isRegisterLoading ? (
+                        {isRegisterLoading ? (
                           <span className="flex items-center space-x-2">
                             <GemSpinner size="sm" />
                             <span>Signing up...</span>
