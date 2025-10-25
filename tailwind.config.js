@@ -69,6 +69,8 @@ module.exports = {
         "p-lato": "var(--p-lato-font-family)",
         "p-s": "var(--p-s-font-family)",
         sans: [
+          "Lato",
+          "Helvetica",
           "ui-sans-serif",
           "system-ui",
           "sans-serif",

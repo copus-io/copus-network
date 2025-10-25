@@ -162,7 +162,7 @@ export const Create = (): JSX.Element => {
                     className="relative self-stretch mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-medium-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] border-0 resize-none bg-transparent p-0 focus-visible:ring-0"
                   />
 
-                  <div className="relative self-stretch [font-family:'Maven_Pro',Helvetica] font-normal text-medium-grey text-base text-right tracking-[0] leading-[25px]">
+                  <div className="relative self-stretch [font-family:'Lato',Helvetica] font-normal text-medium-grey text-base text-right tracking-[0] leading-[25px]">
                     0/1000
                   </div>
                 </div>

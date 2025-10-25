@@ -162,7 +162,7 @@ export const Login = (): JSX.Element => {
                         src={provider.icon}
                       />
 
-                      <div className="relative flex items-center justify-center w-fit [font-family:'Maven_Pro',Helvetica] font-normal text-off-black text-sm text-center tracking-[0] leading-[19.6px] whitespace-nowrap">
+                      <div className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-sm text-center tracking-[0] leading-[19.6px] whitespace-nowrap">
                         {provider.name}
                       </div>
                     </Button>

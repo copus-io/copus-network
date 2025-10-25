@@ -149,7 +149,7 @@ export const NotificationListSection = (): JSX.Element => {
                     </div>
 
                     <div className="flex flex-col items-end justify-center gap-[5px] flex-shrink-0">
-                      <div className="[font-family:'Maven_Pro',Helvetica] font-normal text-medium-dark-grey text-sm leading-[23px]">
+                      <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm leading-[23px]">
                         {notification.timestamp}
                       </div>
                       <Button
@@ -209,7 +209,7 @@ export const NotificationListSection = (): JSX.Element => {
                       </div>
 
                       <div className="flex flex-col items-end justify-center gap-[5px] flex-shrink-0">
-                        <div className="[font-family:'Maven_Pro',Helvetica] font-normal text-medium-dark-grey text-sm leading-[23px]">
+                        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm leading-[23px]">
                           {notification.timestamp}
                         </div>
                         <Button

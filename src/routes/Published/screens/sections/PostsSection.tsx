@@ -60,7 +60,7 @@ const postsData = [
     treasureIcon: "https://c.animaapp.com/mfvxfxl8h2iGNO/img/treasure-icon.svg",
     viewIcon: "https://c.animaapp.com/mfvxfxl8h2iGNO/img/ic-view.svg",
     branchIcon: "https://c.animaapp.com/mfvxfxl8h2iGNO/img/branch-it.svg",
-    fontFamily: "[font-family:'Maven_Pro',Helvetica]",
+    fontFamily: "[font-family:'Lato',Helvetica]",
   },
   {
     id: 4,
@@ -99,7 +99,7 @@ const postsData = [
     treasureIcon: "https://c.animaapp.com/mfvxfxl8h2iGNO/img/treasure-icon.svg",
     viewIcon: "https://c.animaapp.com/mfvxfxl8h2iGNO/img/ic-view.svg",
     branchIcon: "https://c.animaapp.com/mfvxfxl8h2iGNO/img/branch-it.svg",
-    fontFamily: "[font-family:'Maven_Pro',Helvetica]",
+    fontFamily: "[font-family:'Lato',Helvetica]",
     coverShadow: "rounded-lg shadow-[0px_4px_4px_#00000040]",
   },
 ];

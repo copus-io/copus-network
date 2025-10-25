@@ -794,7 +794,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
                   <div
                     id="bio-counter"
-                    className="relative self-stretch [font-family:'Maven_Pro',Helvetica] font-normal text-medium-dark-grey text-sm text-right tracking-[0] leading-[normal]"
+                    className="relative self-stretch [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm text-right tracking-[0] leading-[normal]"
                     aria-live="polite"
                   >
                     {formData.bio.length}/140

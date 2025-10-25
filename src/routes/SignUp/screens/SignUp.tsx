@@ -139,7 +139,7 @@ export const SignUp = (): JSX.Element => {
                             placeholder="Enter password"
                             value={formData.password}
                             onChange={(e) => handleInputChange("password", e.target.value)}
-                            className="h-auto p-[15px] pr-12 bg-white border border-solid border-[#a8a8a8] rounded-[15px] [font-family:'Maven_Pro',Helvetica] font-normal text-[#a9a9a9] text-base tracking-[0] leading-[23px] placeholder:text-[#a9a9a9]"
+                            className="h-auto p-[15px] pr-12 bg-white border border-solid border-[#a8a8a8] rounded-[15px] [font-family:'Lato',Helvetica] font-normal text-[#a9a9a9] text-base tracking-[0] leading-[23px] placeholder:text-[#a9a9a9]"
                           />
                           <Button
                             type="button"
@@ -158,7 +158,7 @@ export const SignUp = (): JSX.Element => {
                             placeholder="Confirm password"
                             value={formData.confirmPassword}
                             onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                            className="h-auto p-[15px] pr-12 bg-white border border-solid border-[#a8a8a8] rounded-[15px] [font-family:'Maven_Pro',Helvetica] font-normal text-[#a9a9a9] text-base tracking-[0] leading-[23px] placeholder:text-[#a9a9a9]"
+                            className="h-auto p-[15px] pr-12 bg-white border border-solid border-[#a8a8a8] rounded-[15px] [font-family:'Lato',Helvetica] font-normal text-[#a9a9a9] text-base tracking-[0] leading-[23px] placeholder:text-[#a9a9a9]"
                           />
                           <Button
                             type="button"
