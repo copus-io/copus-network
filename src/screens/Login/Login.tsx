@@ -603,19 +603,21 @@ export const Login = (): JSX.Element => {
       }
 
       setIsLoginLoading(true);
-      
-      // 1. Connect Metamask to get accounts
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
-      if (!accounts || accounts.length === 0) {
-        throw new Error('Failed to get Metamask accounts');
-      }
 
-      const address = accounts[0];
+      // 1. Connect Metamask to get accounts (ensures user grants permission)
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+      // 2. Get the currently selected account from MetaMask
+      // Use selectedAddress which always reflects the active account the user has selected
+      const address = window.ethereum.selectedAddress;
+
+      if (!address) {
+        throw new Error('No account selected in MetaMask. Please select an account and try again.');
+      }
       
-      // 2. Get signature data from backend
+      // 3. Get signature data from backend
       const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
-      
+
       // Ensure signatureData is a string
       let signatureData = signatureDataResponse;
       if (typeof signatureDataResponse !== 'string') {
@@ -633,12 +635,12 @@ export const Login = (): JSX.Element => {
           signatureData = String(signatureDataResponse);
         }
       }
-      
+
       if (!signatureData || typeof signatureData !== 'string' || signatureData.trim() === '') {
         throw new Error('Invalid signature data received from server');
       }
-      
-      // 3. Sign the exact message returned by backend
+
+      // 4. Sign the exact message returned by backend
       let signature;
       try {
         signature = await window.ethereum.request({
@@ -649,7 +651,7 @@ export const Login = (): JSX.Element => {
         throw signError;
       }
 
-      // 4. Submit login
+      // 5. Submit login
       const response: any = await AuthService.metamaskLogin(address, signature, !!localStorage.getItem('copus_token'));
       
       if (response.status === 1) {
