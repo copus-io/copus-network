@@ -124,23 +124,12 @@ export const DiscoveryContentSection = (): JSX.Element => {
       return (
         <>
           <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus
+            Welcome to Copus!
           </h1>
           <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Discover a new way to share and explore knowledge. Copus is a community-driven platform where real people curate and share high-quality content they find valuable.
-              </span>
-            </p>
-            <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                <strong>Human-curated content</strong> with no algorithms, just genuine recommendations from our community.
-                <button
-                  onClick={() => navigate('/login')}
-                  className="inline-block ml-1 font-semibold text-red hover:text-red/80 transition-colors underline cursor-pointer"
-                >
-                  Join us
-                </button> to build your personal treasure trove of discoveries.
+                Today's Internet is noisy, meaning gets lost. We value human recommendations and add an economic engine that rewards quality sharing. Join us to weave a new internet: our collective opus. :)
               </span>
             </p>
           </div>
