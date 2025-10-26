@@ -129,7 +129,19 @@ export const DiscoveryContentSection = (): JSX.Element => {
           <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Today's Internet is noisy, meaning gets lost. We value human recommendations and add an economic engine that rewards quality sharing. Join us to weave a new internet: our collective opus. :)
+                Today's Internet is noisy, meaning gets lost.
+              </span>
+            </p>
+            <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
+                We value human recommendations and add an economic engine that rewards quality sharing.{' '}
+                <button
+                  onClick={() => navigate('/login')}
+                  className="text-[#2191FB] hover:underline cursor-pointer font-normal"
+                >
+                  Join us
+                </button>{' '}
+                to weave a new internet: our collective opus. :)
               </span>
             </p>
           </div>
