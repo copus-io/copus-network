@@ -99,20 +99,27 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   useEffect(() => {
     const checkGoogleLink = async () => {
       if (!user) {
+        console.log('🔍 No user logged in, skipping Google check');
         setCheckingGoogleLink(false);
         return;
       }
 
       try {
+        console.log('🔍 Checking if user has Google linked...');
         const googleProfile = await AuthService.getGoogleProfile();
+        console.log('✅ Google profile response:', googleProfile);
+
         // 如果成功获取Google profile，说明用户已绑定Google账号
-        if (googleProfile && (googleProfile.email || googleProfile.username)) {
+        if (googleProfile && (googleProfile.email || googleProfile.username || googleProfile.name)) {
+          console.log('✅ User has Google linked - hiding password section');
           setHasGoogleLinked(true);
         } else {
+          console.log('❌ Google profile empty - showing password section');
           setHasGoogleLinked(false);
         }
       } catch (error) {
         // 如果获取失败，说明用户没有绑定Google账号
+        console.log('❌ Failed to get Google profile (user likely not using Google login):', error);
         setHasGoogleLinked(false);
       } finally {
         setCheckingGoogleLink(false);
