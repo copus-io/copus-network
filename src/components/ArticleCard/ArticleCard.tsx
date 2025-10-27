@@ -511,7 +511,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             {/* Action buttons area */}
             <div className="flex items-center justify-between -mx-[30px] px-[30px]">
               {/* Left side: Treasure button and View count */}
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
                     isLiked={article.isLiked || false}
