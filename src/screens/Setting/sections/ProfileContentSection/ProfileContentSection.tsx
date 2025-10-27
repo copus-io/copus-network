@@ -75,6 +75,10 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [notificationSettings, setNotificationSettings] = useState<Array<{ isOpen: boolean; msgType: number }>>([]);
   const [notificationLoading, setNotificationLoading] = useState(true);
 
+  // Google OAuth状态
+  const [hasGoogleLinked, setHasGoogleLinked] = useState(false);
+  const [checkingGoogleLink, setCheckingGoogleLink] = useState(true);
+
   // 阻止背景滚动
   useEffect(() => {
     if (showPersonalInfoPopup || showSocialLinksPopup || showChangePasswordModal || showCoverUploader || showAvatarUploader) {
@@ -90,6 +94,33 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       document.body.style.overflow = 'unset';
     };
   }, [showPersonalInfoPopup, showSocialLinksPopup, showChangePasswordModal, showCoverUploader, showAvatarUploader]);
+
+  // 检查Google OAuth绑定状态
+  useEffect(() => {
+    const checkGoogleLink = async () => {
+      if (!user) {
+        setCheckingGoogleLink(false);
+        return;
+      }
+
+      try {
+        const googleProfile = await AuthService.getGoogleProfile();
+        // 如果成功获取Google profile，说明用户已绑定Google账号
+        if (googleProfile && (googleProfile.email || googleProfile.username)) {
+          setHasGoogleLinked(true);
+        } else {
+          setHasGoogleLinked(false);
+        }
+      } catch (error) {
+        // 如果获取失败，说明用户没有绑定Google账号
+        setHasGoogleLinked(false);
+      } finally {
+        setCheckingGoogleLink(false);
+      }
+    };
+
+    checkGoogleLink();
+  }, [user]);
 
   // 获取消息通知设置
   useEffect(() => {
@@ -629,23 +660,26 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </div>
           </div>
 
-          <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
-            <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
-                Password
-              </h3>
-            </div>
+          {/* Only show password section if user is NOT logged in via Google */}
+          {!hasGoogleLinked && (
+            <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
+              <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
+                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
+                  Password
+                </h3>
+              </div>
 
-            <Button
-              onClick={() => setShowChangePasswordModal(true)}
-              variant="outline"
-              className="inline-flex items-center justify-center gap-2.5 px-4 py-2 h-auto rounded-lg border border-solid border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
-            >
-              <span className="[font-family:'Lato',Helvetica] font-normal text-base leading-5">
-                Change Password
-              </span>
-            </Button>
-          </div>
+              <Button
+                onClick={() => setShowChangePasswordModal(true)}
+                variant="outline"
+                className="inline-flex items-center justify-center gap-2.5 px-4 py-2 h-auto rounded-lg border border-solid border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-normal text-base leading-5">
+                  Change Password
+                </span>
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -843,14 +877,16 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
       )}
 
-      {/* Change Password Modal */}
-      <ChangePasswordModal
-        isOpen={showChangePasswordModal}
-        onClose={() => setShowChangePasswordModal(false)}
-        onSuccess={() => {
-          showToast("Password changed successfully!", "success");
-        }}
-      />
+      {/* Change Password Modal - Only render if user is NOT logged in via Google */}
+      {!hasGoogleLinked && (
+        <ChangePasswordModal
+          isOpen={showChangePasswordModal}
+          onClose={() => setShowChangePasswordModal(false)}
+          onSuccess={() => {
+            showToast("Password changed successfully!", "success");
+          }}
+        />
+      )}
 
       {/* Cover image upload modal */}
       {showCoverUploader && (
