@@ -228,7 +228,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.username || "Guest User",
+        name: user.username || "Guest user",
         username: user.namespace ? `@${user.namespace}` : "@unknown",
         bio: user.bio || "Hello, welcome to my creative space.",
         email: user.email || "user@example.com",
@@ -565,7 +565,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               <header className="h-[60px] inline-flex flex-col items-start justify-center relative">
                 <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] mt-[-3.50px]">
                   <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
-                    {formData.name || (!user ? "Loading..." : "Guest User")}
+                    {formData.name || (!user ? "Loading..." : "Guest user")}
                   </h1>
 
                   {/* Edit button next to username */}

@@ -204,7 +204,7 @@ export const Create = (): JSX.Element => {
       : coverImageUrl || '',
     category: formData.selectedTopic,
     categoryColor: selectedCategoryData?.color,
-    userName: user?.username || 'Guest User',
+    userName: user?.username || 'Guest user',
     userAvatar: user?.faceUrl || profileDefaultAvatar,
     userId: user?.id,
     namespace: user?.namespace,
