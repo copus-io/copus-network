@@ -466,10 +466,13 @@ export const Login = (): JSX.Element => {
             } else {
               // Third-party login mode
               showToast('Google login successful! Welcome back 🎉', 'success');
-              
+
               if (!tokenToUse) {
                 throw new Error('No authentication token received');
               }
+
+              // Mark that user logged in via Google OAuth
+              localStorage.setItem('copus_auth_method', 'google');
 
               await fetchUserInfo(tokenToUse);
               
@@ -510,10 +513,13 @@ export const Login = (): JSX.Element => {
             } else {
               // Third-party login mode
               showToast('X login successful! Welcome back 🎉', 'success');
-              
+
               if (!tokenToUse) {
                 throw new Error('No authentication token received');
               }
+
+              // Mark that user logged in via X (Twitter)
+              localStorage.setItem('copus_auth_method', 'x');
 
               await fetchUserInfo(tokenToUse);
               
@@ -658,6 +664,9 @@ export const Login = (): JSX.Element => {
         const possibleToken = extractTokenFromResponse(response);
         login(createBasicUser(loginEmail, '', address), possibleToken);
 
+        // Mark that user logged in via Metamask
+        localStorage.setItem('copus_auth_method', 'metamask');
+
         try {
           await fetchUserInfo(possibleToken);
         } catch (userInfoError) {
@@ -777,6 +786,9 @@ export const Login = (): JSX.Element => {
         const possibleToken = extractTokenFromResponse(data);
 
         login(createBasicUser(loginEmail), possibleToken);
+
+        // Mark that user logged in via email/password
+        localStorage.setItem('copus_auth_method', 'email');
 
         // If user chooses Remember me, save email to local storage
         if (rememberMe) {

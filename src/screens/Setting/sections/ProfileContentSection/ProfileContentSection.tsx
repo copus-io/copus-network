@@ -97,33 +97,39 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
   // 检查Google OAuth绑定状态
   useEffect(() => {
-    const checkGoogleLink = async () => {
+    const checkGoogleLink = () => {
       if (!user) {
         console.log('🔍 No user logged in, skipping Google check');
         setCheckingGoogleLink(false);
+        setHasGoogleLinked(false);
         return;
       }
 
-      try {
-        console.log('🔍 Checking if user has Google linked...');
-        const googleProfile = await AuthService.getGoogleProfile();
-        console.log('✅ Google profile response:', googleProfile);
+      console.log('🔍 Checking login method for user:', {
+        email: user.email,
+        walletAddress: user.walletAddress,
+        hasEmail: !!user.email,
+        hasWallet: !!user.walletAddress
+      });
 
-        // 如果成功获取Google profile，说明用户已绑定Google账号
-        if (googleProfile && (googleProfile.email || googleProfile.username || googleProfile.name)) {
-          console.log('✅ User has Google linked - hiding password section');
-          setHasGoogleLinked(true);
-        } else {
-          console.log('❌ Google profile empty - showing password section');
-          setHasGoogleLinked(false);
-        }
-      } catch (error) {
-        // 如果获取失败，说明用户没有绑定Google账号
-        console.log('❌ Failed to get Google profile (user likely not using Google login):', error);
+      // Check localStorage for auth method flag set during login
+      const authMethod = localStorage.getItem('copus_auth_method');
+      console.log('🔍 Stored auth method:', authMethod);
+
+      // User logged in via Google OAuth if:
+      // 1. Auth method is explicitly set to 'google' in localStorage, OR
+      // 2. User has email but NO wallet address (indicating email/password or OAuth login)
+      //    AND we check if there's a Google-specific indicator
+
+      if (authMethod === 'google') {
+        console.log('✅ User logged in via Google (from localStorage) - hiding password section');
+        setHasGoogleLinked(true);
+      } else {
+        console.log('❌ User did not log in via Google - showing password section');
         setHasGoogleLinked(false);
-      } finally {
-        setCheckingGoogleLink(false);
       }
+
+      setCheckingGoogleLink(false);
     };
 
     checkGoogleLink();
