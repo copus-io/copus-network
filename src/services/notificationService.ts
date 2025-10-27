@@ -271,7 +271,7 @@ export class NotificationService {
     // Generate friendly message format based on message type
     switch (apiMessage.messageType) {
       case 1: // Like
-        processedMessage = `${senderName} liked your work "${workTitle}"`;
+        processedMessage = `${senderName} treasured your share "${workTitle}"`;
         break;
       case 999: // System message
         processedMessage = workTitle; // System messages keep original format
