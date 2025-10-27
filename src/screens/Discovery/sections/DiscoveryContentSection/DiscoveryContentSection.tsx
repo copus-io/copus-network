@@ -275,7 +275,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     return (
       <section className="flex items-center justify-center min-h-screen px-5">
         <div className="text-center">
-          <p className="text-gray-500">No content found.</p>
+          <p className="text-gray-500">The space is empty and full of possibilities!</p>
         </div>
       </section>
     );
