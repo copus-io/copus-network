@@ -59,7 +59,11 @@ const menuItems = [
   },
 ];
 
-const footerLinks = ["About", "Support", "Contact us", "Terms & Privacy"];
+const footerLinks = [
+  { label: "About", href: "#" },
+  { label: "Contact us", href: "mailto:admin@server31.io" },
+  { label: "Terms & Privacy", href: "https://www.copus.io/work/565b548277674c3bae3ccc016c7f58a2" }
+];
 
 export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Element => {
   return (
@@ -135,9 +139,15 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
           <div className="flex flex-col items-start gap-3">
             <div className="flex flex-col items-start">
               {footerLinks.map((link, index) => (
-                <div key={index} className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px]">
-                  • {link}
-                </div>
+                <a
+                  key={index}
+                  href={link.href}
+                  target={link.href.startsWith('http') ? '_blank' : undefined}
+                  rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px] hover:text-dark-grey transition-colors"
+                >
+                  • {link.label}
+                </a>
               ))}
             </div>
 

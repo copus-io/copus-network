@@ -61,12 +61,12 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
     },
     {
       id: "notification",
-      label: "Notification",
+      label: "Notifications",
       path: "/notification",
     },
     {
       id: "setting",
-      label: "Setting",
+      label: "Settings",
       path: "/setting",
     },
   ];
@@ -194,10 +194,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                 aria-label="Footer navigation"
               >
                 <div className="flex flex-col items-start [font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px]">
-                  <div>• About</div>
-                  <div>• Support</div>
-                  <div>• Contact us</div>
-                  <div>• Terms & Privacy</div>
+                  <a href="#" className="hover:text-dark-grey transition-colors">• About</a>
+                  <a href="mailto:admin@server31.io" className="hover:text-dark-grey transition-colors">• Contact us</a>
+                  <a href="https://www.copus.io/work/565b548277674c3bae3ccc016c7f58a2" target="_blank" rel="noopener noreferrer" className="hover:text-dark-grey transition-colors">• Terms & Privacy</a>
                 </div>
               </nav>
 
