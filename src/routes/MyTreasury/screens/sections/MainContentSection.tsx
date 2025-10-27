@@ -780,7 +780,7 @@ export const MainContentSection = (): JSX.Element => {
             >
               <div className="inline-flex items-center justify-center px-[15px] py-2.5">
                 <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s collection` : 'My collection'}
+                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s collections` : 'My collections'}
                 </span>
               </div>
             </TabsTrigger>
@@ -791,7 +791,7 @@ export const MainContentSection = (): JSX.Element => {
             >
               <div className="justify-center px-[15px] py-2.5 w-full flex items-center gap-2.5">
                 <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s share` : 'My share'}
+                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s shares` : 'My shares'}
                 </span>
               </div>
             </TabsTrigger>
