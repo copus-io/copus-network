@@ -105,15 +105,12 @@ export const DiscoveryContentSection = (): JSX.Element => {
           <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Discover high-quality content recommended by real users. Here,
-                there are no algorithmic recommendations, only knowledge sharing
-                between people.
+                Discover Internet gems hand-picked by people. No algorithmic feeds here.
               </span>
             </p>
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Start exploring content that interests you, or click the +
-                button in the lower right corner to share your treasured finds.
+                Click Curate (top-right) to share your finds.
               </span>
             </p>
           </div>
@@ -261,7 +258,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     return (
       <section className="flex items-center justify-center min-h-screen px-5">
         <div className="text-center">
-          <p className="text-red-500 mb-4">Error loading articles: {error}</p>
+          <p className="text-red-500 mb-4">Error loading content: {error}</p>
           <button
             onClick={refresh}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
@@ -278,7 +275,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     return (
       <section className="flex items-center justify-center min-h-screen px-5">
         <div className="text-center">
-          <p className="text-gray-500">No articles found.</p>
+          <p className="text-gray-500">No content found.</p>
         </div>
       </section>
     );

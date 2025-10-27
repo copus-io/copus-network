@@ -18,7 +18,7 @@ import profileDefaultAvatar from "../../../../assets/images/profile-default.svg"
 // Message type mapping - matches API msgType values
 const MESSAGE_TYPE_MAP = {
   0: { label: "Show all notifications", id: "all-notifications" },
-  1: { label: "Show like notifications", id: "like-notifications" },
+  1: { label: "Show treasured notifications", id: "like-notifications" },
   999: { label: "Show system notifications", id: "system-notifications" },
 } as const;
 

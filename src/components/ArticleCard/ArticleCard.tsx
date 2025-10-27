@@ -245,7 +245,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   backgroundImage: `url(${article.coverImage})`,
                   aspectRatio: '16 / 9'
                 }}
-                title="Click to view work details"
+                title="Click to view content details"
               >
                 {/* Category badge */}
                 <Badge

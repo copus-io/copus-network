@@ -68,7 +68,7 @@ export const NotificationListSection = (): JSX.Element => {
   const notificationList = contextNotifications.map(n => ({
     id: parseInt(n.id) || 1,
     type: n.type,
-    category: n.type === "system" ? "System" : n.type === "like" ? "Like" : n.type === "comment" ? "Comment" : "Treasury",
+    category: n.type === "system" ? "System" : n.type === "like" ? "Treasure" : n.type === "comment" ? "Comment" : "Treasury",
     message: n.message || n.title,
     timestamp: formatTimestamp(n.timestamp),
     isRead: n.isRead,
@@ -91,8 +91,7 @@ export const NotificationListSection = (): JSX.Element => {
       </div>
       <h3 className="text-xl font-medium text-gray-800 mb-2">All caught up!</h3>
       <p className="text-gray-500 text-center max-w-sm leading-relaxed">
-        You're all set! No new notifications at the moment.
-        We'll let you know when something important happens.
+        No new notifications at the moment.
       </p>
     </div>
   );
@@ -440,7 +439,7 @@ export const NotificationListSection = (): JSX.Element => {
             </div>
             <h3 className="text-xl font-medium text-gray-800 mb-2">No treasury notifications</h3>
             <p className="text-gray-500 text-center max-w-sm leading-relaxed">
-              Your treasury updates and financial notifications will appear here.
+              Your treasury updates will appear here.
             </p>
           </div>
         </TabsContent>

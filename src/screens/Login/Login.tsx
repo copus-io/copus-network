@@ -371,7 +371,7 @@ const RegistrationForm: React.FC<{
             htmlFor="terms"
             className="relative font-['Lato',_Helvetica] font-normal text-medium-dark-grey text-sm leading-[20px] cursor-pointer"
           >
-            I have read and understood <span className="underline text-medium-dark-grey">the terms</span>.
+            I agree to the <span className="underline text-medium-dark-grey">Terms and Privacy Policy</span>.
           </label>
         </div>
       </div>
@@ -950,7 +950,7 @@ export const Login = (): JSX.Element => {
                 </h1>
 
                 <p className="relative self-stretch font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] text-center tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] [font-style:var(--h-4-font-style)]">
-                  Discover and share valuable digital gem
+                  Discover and share internet gems
                 </p>
               </div>
 

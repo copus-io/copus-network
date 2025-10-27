@@ -47,13 +47,13 @@ const menuItems = [
   },
   {
     icon: NotificationIcon,
-    label: "Notification",
+    label: "Notifications",
     href: "/notification",
     key: "notification",
   },
   {
     icon: SettingIcon,
-    label: "Setting",
+    label: "Settings",
     href: "/setting",
     key: "setting",
   },

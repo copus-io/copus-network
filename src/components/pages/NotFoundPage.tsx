@@ -36,12 +36,12 @@ export const NotFoundPage: React.FC = () => {
             404
           </h1>
           <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            页面未找到
+            404 – Page Not Found
           </h2>
 
           {/* 描述 */}
           <p className="text-gray-600 mb-6">
-            抱歉，您访问的页面不存在。可能页面已被移动或删除，或者您输入的链接有误。
+            Sorry, we can't find that page. It may have been moved or deleted, or the link might be incorrect.
           </p>
 
           {/* 操作按钮 */}
@@ -50,7 +50,7 @@ export const NotFoundPage: React.FC = () => {
               onClick={() => navigate('/copus')}
               className="w-full bg-red hover:bg-red/90 text-white py-3 rounded-lg transition-colors"
             >
-              返回首页
+              Go to Home
             </Button>
 
             <Button
@@ -58,7 +58,7 @@ export const NotFoundPage: React.FC = () => {
               onClick={() => navigate(-1)}
               className="w-full border-red text-red hover:bg-red/5 py-3 rounded-lg transition-colors"
             >
-              返回上页
+              Go Back
             </Button>
 
             {user ? (
@@ -66,14 +66,14 @@ export const NotFoundPage: React.FC = () => {
                 to="/my-treasury"
                 className="block w-full text-gray-500 hover:text-gray-700 py-2 transition-colors"
               >
-                我的宝藏
+                My Treasures
               </Link>
             ) : (
               <Link
                 to="/login"
                 className="block w-full text-gray-500 hover:text-gray-700 py-2 transition-colors"
               >
-                登录账户
+                Log In
               </Link>
             )}
           </div>

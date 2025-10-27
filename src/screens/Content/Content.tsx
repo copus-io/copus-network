@@ -139,14 +139,14 @@ export const Content = (): JSX.Element => {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                {isArticleDeleted ? 'Article has been deleted' : (error ? 'Oops! Something went wrong' : 'Content not found')}
+                {isArticleDeleted ? 'The content has been deleted' : (error ? 'Oops! Something went wrong' : 'Content not found')}
               </h1>
               <p className="text-gray-600 mb-6">
-                {isArticleDeleted 
-                  ? 'This article has been removed by the author. Please explore other interesting content.' 
-                  : (error 
-                    ? 'We encountered an issue while loading this content. Please try again later.' 
-                    : 'The article you are looking for might have been removed or does not exist.')}
+                {isArticleDeleted
+                  ? 'This content has been removed by the author.'
+                  : (error
+                    ? 'We encountered an issue while loading this content. Please try again later.'
+                    : 'The content you are looking for might have been removed or does not exist.')}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link 
