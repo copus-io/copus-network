@@ -715,7 +715,7 @@ export const Create = (): JSX.Element => {
                   onChange={(e) => handleInputChange("recommendation", e.target.value)}
                   onFocus={() => setFocusedField('recommendation')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="What did you find valuable about this?"
+                  placeholder="What did you find valuable about this link?"
                   className="relative self-stretch flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none"
                   aria-label="Recommendation"
                   maxLength={1000}
