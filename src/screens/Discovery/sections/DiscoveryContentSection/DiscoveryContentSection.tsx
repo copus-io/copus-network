@@ -100,7 +100,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       return (
         <>
           <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus
+            Welcome to Copus!
           </h1>
           <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
