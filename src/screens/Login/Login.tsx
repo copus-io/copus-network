@@ -371,7 +371,7 @@ const RegistrationForm: React.FC<{
             htmlFor="terms"
             className="relative font-['Lato',_Helvetica] font-normal text-medium-dark-grey text-sm leading-[20px] cursor-pointer"
           >
-            I agree to the <span className="underline text-medium-dark-grey">Terms and Privacy Policy</span>.
+            I agree to the <a href="https://www.copus.io/work/565b548277674c3bae3ccc016c7f58a2" target="_blank" rel="noopener noreferrer" className="underline text-medium-dark-grey hover:text-dark-grey transition-colors">Terms and Privacy Policy</a>.
           </label>
         </div>
       </div>
