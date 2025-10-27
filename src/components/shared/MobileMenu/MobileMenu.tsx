@@ -167,19 +167,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
           {/* Footer Section */}
           <div className="px-5 py-0 relative self-stretch w-full flex-[0_0_auto] flex flex-col items-start">
             <div className="flex flex-col items-start justify-end gap-2.5 px-0 py-5 relative self-stretch w-full flex-[0_0_auto]">
-              <div className="inline-flex flex-col items-start gap-[5px] relative flex-[0_0_auto]">
-                <div className="inline-flex items-end gap-[3px] relative flex-[0_0_auto]">
-                  <p className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-3 whitespace-nowrap">
-                    Built on
-                  </p>
-                  <img
-                    className="relative w-[12.8px] h-3"
-                    alt="Ic fractopus"
-                    src="https://c.animaapp.com/mft9nppdGctUh1/img/ic-fractopus.svg"
-                  />
-                </div>
-              </div>
-
               {/* Social Links */}
               <div className="flex items-center gap-4 py-2">
                 <a href="https://github.com/copus-io/copus-network" target="_blank" rel="noopener noreferrer" className="text-dark-grey hover:text-gray-900 transition-colors">
@@ -213,9 +200,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
               </nav>
 
               <p className="flex items-center justify-center text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-                <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px]">
+                <a
+                  href="https://server31.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px] hover:text-dark-grey transition-colors"
+                >
                   © 2025 S31 Labs
-                </span>
+                </a>
               </p>
             </footer>
           </div>
