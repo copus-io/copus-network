@@ -59,6 +59,9 @@ export const Create = (): JSX.Element => {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
   const [showImageCropper, setShowImageCropper] = useState(false);
 
+  // Extension detection state
+  const [isExtensionInstalled, setIsExtensionInstalled] = useState(false);
+
   // Sort categories to show recently used ones first
   const sortedCategories = useMemo(() => {
     return sortCategoriesByRecent(categories);
@@ -67,6 +70,24 @@ export const Create = (): JSX.Element => {
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, []);
+
+  // Check if browser extension is installed
+  useEffect(() => {
+    // Check for the data attribute injected by the extension's content script
+    const checkExtension = () => {
+      const hasExtension = document.documentElement.getAttribute('data-copus-extension-installed') === 'true';
+      setIsExtensionInstalled(hasExtension);
+      console.log('[Create Page] Extension installed:', hasExtension);
+    };
+
+    // Check immediately
+    checkExtension();
+
+    // Also check after a short delay to ensure content script has loaded
+    const timeoutId = setTimeout(checkExtension, 500);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Extract domain from URL for display
@@ -540,19 +561,21 @@ export const Create = (): JSX.Element => {
                 (Edit Mode)
               </span>
             )}
-            <div className="ml-[10px]">
-              <Button
-                variant="outline"
-                className="flex items-center px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
-                asChild
-              >
-                <a href="#" target="_blank" rel="noopener noreferrer">
-                  <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red whitespace-nowrap">
-                    Install browser extension
-                  </span>
-                </a>
-              </Button>
-            </div>
+            {!isExtensionInstalled && (
+              <div className="ml-[10px]">
+                <Button
+                  variant="outline"
+                  className="flex items-center px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+                  asChild
+                >
+                  <a href="#" target="_blank" rel="noopener noreferrer">
+                    <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red whitespace-nowrap">
+                      Install browser extension
+                    </span>
+                  </a>
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col lg:flex-row items-start gap-[30px] lg:gap-[30px] xl:gap-[60px] w-full">
