@@ -75,9 +75,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [notificationSettings, setNotificationSettings] = useState<Array<{ isOpen: boolean; msgType: number }>>([]);
   const [notificationLoading, setNotificationLoading] = useState(true);
 
-  // Google OAuth状态
-  const [hasGoogleLinked, setHasGoogleLinked] = useState(false);
-  const [checkingGoogleLink, setCheckingGoogleLink] = useState(true);
+  // OAuth/Wallet authentication status (Google, Metamask, etc.)
+  const [isPasswordlessAuth, setIsPasswordlessAuth] = useState(false);
+  const [checkingAuthMethod, setCheckingAuthMethod] = useState(true);
 
   // 阻止背景滚动
   useEffect(() => {
@@ -95,13 +95,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     };
   }, [showPersonalInfoPopup, showSocialLinksPopup, showChangePasswordModal, showCoverUploader, showAvatarUploader]);
 
-  // 检查Google OAuth绑定状态
+  // Check authentication method to determine if password management should be shown
   useEffect(() => {
-    const checkGoogleLink = () => {
+    const checkAuthMethod = () => {
       if (!user) {
-        console.log('🔍 No user logged in, skipping Google check');
-        setCheckingGoogleLink(false);
-        setHasGoogleLinked(false);
+        console.log('🔍 No user logged in, skipping auth method check');
+        setCheckingAuthMethod(false);
+        setIsPasswordlessAuth(false);
         return;
       }
 
@@ -116,23 +116,22 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       const authMethod = localStorage.getItem('copus_auth_method');
       console.log('🔍 Stored auth method:', authMethod);
 
-      // User logged in via Google OAuth if:
-      // 1. Auth method is explicitly set to 'google' in localStorage, OR
-      // 2. User has email but NO wallet address (indicating email/password or OAuth login)
-      //    AND we check if there's a Google-specific indicator
+      // Hide password section for users who logged in via:
+      // - Google OAuth (no password in system, managed by Google)
+      // - Metamask wallet (no password in system, wallet-based auth)
 
-      if (authMethod === 'google') {
-        console.log('✅ User logged in via Google (from localStorage) - hiding password section');
-        setHasGoogleLinked(true);
+      if (authMethod === 'google' || authMethod === 'metamask') {
+        console.log(`✅ User logged in via ${authMethod} - hiding password section`);
+        setIsPasswordlessAuth(true);
       } else {
-        console.log('❌ User did not log in via Google - showing password section');
-        setHasGoogleLinked(false);
+        console.log('❌ User logged in via email/password or X - showing password section');
+        setIsPasswordlessAuth(false);
       }
 
-      setCheckingGoogleLink(false);
+      setCheckingAuthMethod(false);
     };
 
-    checkGoogleLink();
+    checkAuthMethod();
   }, [user]);
 
   // 获取消息通知设置
@@ -673,8 +672,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </div>
           </div>
 
-          {/* Only show password section if user is NOT logged in via Google */}
-          {!hasGoogleLinked && (
+          {/* Only show password section if user logged in via email/password */}
+          {!isPasswordlessAuth && (
             <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
               <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
                 <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
@@ -890,8 +889,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
       )}
 
-      {/* Change Password Modal - Only render if user is NOT logged in via Google */}
-      {!hasGoogleLinked && (
+      {/* Change Password Modal - Only render if user logged in via email/password */}
+      {!isPasswordlessAuth && (
         <ChangePasswordModal
           isOpen={showChangePasswordModal}
           onClose={() => setShowChangePasswordModal(false)}
