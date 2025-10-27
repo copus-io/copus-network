@@ -57,7 +57,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       className={`
         inline-flex items-center transition-all duration-200 rounded-lg
         ${size === 'large'
-          ? `h-[38px] rounded-[50px] gap-[10px] pr-[15px] py-2`
+          ? `h-[38px] rounded-[50px] gap-[10px] pl-[5px] pr-[15px] py-2`
           : `hover:bg-gray-100 ${currentSize.container}`
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
