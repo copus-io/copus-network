@@ -77,18 +77,34 @@ export const Create = (): JSX.Element => {
     // Check for the data attribute injected by the extension's content script
     const checkExtension = () => {
       const hasExtension = document.documentElement.getAttribute('data-copus-extension-installed') === 'true';
-      setIsExtensionInstalled(hasExtension);
-      console.log('[Create Page] Extension installed:', hasExtension);
+      if (hasExtension && !isExtensionInstalled) {
+        setIsExtensionInstalled(true);
+        console.log('[Create Page] Extension detected and installed');
+      }
+      return hasExtension;
     };
 
     // Check immediately
-    checkExtension();
+    if (checkExtension()) return;
 
-    // Also check after a short delay to ensure content script has loaded
-    const timeoutId = setTimeout(checkExtension, 500);
+    // Check multiple times with increasing delays to catch the extension marker
+    const timeouts: NodeJS.Timeout[] = [];
 
-    return () => clearTimeout(timeoutId);
-  }, []);
+    // Check after 100ms, 300ms, 600ms, and 1000ms
+    [100, 300, 600, 1000].forEach((delay) => {
+      const timeoutId = setTimeout(() => {
+        if (checkExtension()) {
+          // Clear remaining timeouts once detected
+          timeouts.forEach(clearTimeout);
+        }
+      }, delay);
+      timeouts.push(timeoutId);
+    });
+
+    return () => {
+      timeouts.forEach(clearTimeout);
+    };
+  }, [isExtensionInstalled]);
 
   // Extract domain from URL for display
   const extractDomain = (url: string): string => {
