@@ -228,7 +228,9 @@ export const Create = (): JSX.Element => {
     }
   };
 
-  const selectedCategoryData = categories.find(cat => cat.name === formData.selectedTopic) || categories[0];
+  // Only use selected category if it exists in the loaded categories
+  // Don't fall back to categories[0] to avoid showing Chinese placeholder text
+  const selectedCategoryData = categories.find(cat => cat.name === formData.selectedTopic);
   const selectedCategoryStyle = getCategoryStyle(formData.selectedTopic, selectedCategoryData?.color);
 
   // Create preview article data
@@ -239,7 +241,8 @@ export const Create = (): JSX.Element => {
     coverImage: formData.coverImage
       ? URL.createObjectURL(formData.coverImage)
       : coverImageUrl || '',
-    category: formData.selectedTopic,
+    // Only show category if user has selected one AND it's in the loaded categories
+    category: selectedCategoryData ? formData.selectedTopic : '',
     categoryColor: selectedCategoryData?.color,
     userName: user?.username || 'Guest user',
     userAvatar: user?.faceUrl || profileDefaultAvatar,

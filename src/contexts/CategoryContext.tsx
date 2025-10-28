@@ -4,21 +4,9 @@ import { ArticleCategoryItem, CategoryContextValue } from '../types/category';
 
 const CategoryContext = createContext<CategoryContextValue | undefined>(undefined);
 
-// Default category data (as fallback) - consistent with server response format
-const defaultCategories: ArticleCategoryItem[] = [
-  {
-    id: 1,
-    name: "科技",
-    color: "red", // Use color names, consistent with server response format
-    articleCount: 0,
-  },
-  {
-    id: 2,
-    name: "艺术",
-    color: "green", // Use color names, consistent with server response format
-    articleCount: 0,
-  },
-];
+// Start with empty categories until API loads
+// This prevents showing default/placeholder data with Chinese text before API responds
+const defaultCategories: ArticleCategoryItem[] = [];
 
 export const CategoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [categories, setCategories] = useState<ArticleCategoryItem[]>(defaultCategories);
@@ -48,12 +36,11 @@ export const CategoryProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       if (categoryList && categoryList.length > 0) {
         setCategories(categoryList);
-      } else {
-        setCategories(defaultCategories);
       }
+      // If API returns empty, keep categories as empty array (don't use defaultCategories)
     } catch (error) {
       console.error('Failed to fetch category list:', error);
-      setCategories(defaultCategories);
+      // On error, keep categories empty to avoid showing placeholder Chinese text
     } finally {
       setCategoriesLoading(false);
     }
