@@ -134,11 +134,20 @@ export async function signTransferWithAuthorization(
  * according to x402 protocol specification.
  *
  * @param signedAuth - Signed transfer authorization
+ * @param network - Network name (e.g., "base-sepolia")
+ * @param asset - Token contract address
  * @returns Base64-encoded payment payload for X-PAYMENT header
  */
-export function createX402PaymentHeader(signedAuth: SignedAuthorization): string {
-  // Create payment payload object
-  const payload = {
+export function createX402PaymentHeader(
+  signedAuth: SignedAuthorization,
+  network: string = 'base-sepolia',
+  asset: string = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+): string {
+  // Create the inner payment authorization payload
+  const paymentPayload = {
+    network,
+    asset,
+    scheme: 'exact',
     from: signedAuth.from,
     to: signedAuth.to,
     value: signedAuth.value,
@@ -152,8 +161,14 @@ export function createX402PaymentHeader(signedAuth: SignedAuthorization): string
     }
   };
 
+  // Wrap in x402 protocol envelope
+  const x402Envelope = {
+    x402Version: 1,
+    payload: paymentPayload
+  };
+
   // Encode as base64
-  const jsonString = JSON.stringify(payload);
+  const jsonString = JSON.stringify(x402Envelope);
   return btoa(jsonString);
 }
 
