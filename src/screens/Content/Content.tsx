@@ -455,8 +455,7 @@ export const Content = (): JSX.Element => {
       const paymentHeader = createX402PaymentHeader(
         signedAuth,
         x402PaymentInfo.network,
-        x402PaymentInfo.asset,
-        x402PaymentInfo.resource
+        x402PaymentInfo.asset
       );
 
       // Step 4: Call x402 API with signed payment authorization to unlock content
@@ -725,7 +724,7 @@ export const Content = (): JSX.Element => {
           walletAddress={walletAddress || 'Not connected'}
           availableBalance={`${walletBalance} USDC`}
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
-          network={x402PaymentInfo?.network || "base-sepolia"}
+          network="Base Sepolia"
           isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
         />
       </div>
