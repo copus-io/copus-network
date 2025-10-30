@@ -724,7 +724,7 @@ export const Content = (): JSX.Element => {
           walletAddress={walletAddress || 'Not connected'}
           availableBalance={`${walletBalance} USDC`}
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
-          network="Base Sepolia"
+          network={x402PaymentInfo?.network || "base-sepolia"}
           isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
         />
       </div>
