@@ -47,6 +47,10 @@ export const Create = (): JSX.Element => {
     coverImage: null as File | null,
   });
 
+  // x402 pay-to-unlock states
+  const [payToUnlock, setPayToUnlock] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("0.01");
+
   const [characterCount, setCharacterCount] = useState(0);
   const [titleCharacterCount, setTitleCharacterCount] = useState(0);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -492,6 +496,17 @@ export const Create = (): JSX.Element => {
         coverUrl: finalCoverUrl.substring(0, 500), // Ensure max 500 chars
         targetUrl: finalUrl.substring(0, 255), // Ensure max 255 chars
         title: formData.title.substring(0, 75), // Ensure max 75 chars
+        // x402 payment fields
+        ...(payToUnlock ? {
+          targetUrlIsLocked: true,
+          priceInfo: {
+            chainId: "8453", // Base mainnet chain ID (use "84532" for Base Sepolia testnet)
+            currency: "USDC",
+            price: parseFloat(paymentAmount || "0")
+          }
+        } : {
+          targetUrlIsLocked: false
+        })
       };
 
       console.log('📤 Sending article params:', articleParams);
@@ -500,7 +515,9 @@ export const Create = (): JSX.Element => {
         content: `"${articleParams.content}" (${articleParams.content.length} chars)`,
         targetUrl: `"${articleParams.targetUrl}" (${articleParams.targetUrl.length} chars)`,
         coverUrl: `"${articleParams.coverUrl}" (${articleParams.coverUrl.length} chars)`,
-        categoryId: articleParams.categoryId
+        categoryId: articleParams.categoryId,
+        targetUrlIsLocked: articleParams.targetUrlIsLocked,
+        ...(payToUnlock && articleParams.priceInfo ? { priceInfo: articleParams.priceInfo } : {})
       });
 
       const response = await publishArticle(articleParams);
@@ -826,6 +843,83 @@ export const Create = (): JSX.Element => {
                   );
                 })}
               </div>
+            </div>
+
+            {/* x402 Pay-to-unlock section */}
+            <div className="flex flex-col items-start gap-5 w-full pt-5 border-t border-light-grey">
+
+              {/* Toggle section */}
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2.5">
+                  <img
+                    className="relative w-[25px] h-[25px] aspect-[1] object-cover"
+                    alt="x402 icon"
+                    src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
+                  />
+                  <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[23px]">
+                    Pay to visit source link
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPayToUnlock(!payToUnlock)}
+                  role="switch"
+                  aria-checked={payToUnlock}
+                  className="relative inline-flex items-center h-[18px] w-[35px] rounded-[50px] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0052FF]"
+                  style={{ backgroundColor: payToUnlock ? '#52C41A' : '#D9D9D9' }}
+                >
+                  <span
+                    className={`inline-block w-3.5 h-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      payToUnlock ? 'translate-x-[18px]' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Payment details (shown when toggle is on) */}
+              {payToUnlock && (
+                <div className="flex flex-col items-start gap-5 w-full pl-[30px]">
+                  {/* Amount input */}
+                  <div className="flex flex-col items-start gap-2.5 w-full">
+                    <label className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-4">
+                      Amount
+                    </label>
+                    <div className="flex items-center gap-2.5 w-full">
+                      <input
+                        type="number"
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(e.target.value)}
+                        step="0.01"
+                        min="0.01"
+                        className="flex-1 h-[46px] px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]"
+                        placeholder="0.01"
+                      />
+                      <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
+                        USDC
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Network display */}
+                  <div className="flex items-center gap-2.5 w-full">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
+                      Network:
+                    </span>
+                    <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
+                      Base Sepolia
+                    </span>
+                  </div>
+
+                  {/* Estimated income */}
+                  <div className="flex items-center gap-2.5 w-full">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
+                      Estimated income:
+                    </span>
+                    <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
+                      {(parseFloat(paymentAmount || "0") * 0.04).toFixed(4)} per unlock
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

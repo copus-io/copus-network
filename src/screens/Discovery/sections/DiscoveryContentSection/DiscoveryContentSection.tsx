@@ -182,7 +182,10 @@ export const DiscoveryContentSection = (): JSX.Element => {
       visitCount: `${article.visitCount || 0} Visits`,
       isLiked: article.isLiked, // Use actual like status returned from server
       targetUrl: article.url,
-      website: article.website
+      website: article.website,
+      // x402 payment fields - pass through from article
+      isPaymentRequired: article.isPaymentRequired,
+      paymentPrice: article.paymentPrice
     };
   };
 

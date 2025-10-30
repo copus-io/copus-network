@@ -15,6 +15,13 @@ import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { ArticleDetailResponse } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
+import { WalletSignInModal } from "../../components/WalletSignInModal/WalletSignInModal";
+import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
+import {
+  generateNonce,
+  signTransferWithAuthorization,
+  createX402PaymentHeader
+} from "../../utils/x402Utils";
 
 
 // Image URL validation and fallback function
@@ -51,6 +58,21 @@ export const Content = (): JSX.Element => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
+  // x402 payment modal states
+  const [isWalletSignInOpen, setIsWalletSignInOpen] = useState(false);
+  const [isPayConfirmOpen, setIsPayConfirmOpen] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [walletBalance, setWalletBalance] = useState<string>('0');
+
+  // x402 payment info from API
+  const [x402PaymentInfo, setX402PaymentInfo] = useState<{
+    payTo: string;
+    asset: string;
+    amount: string;
+    network: string;
+    resource: string;
+  } | null>(null);
+
   // Use new article detail API hook
   const { article, loading, error } = useArticleDetail(id || '');
 
@@ -59,11 +81,15 @@ export const Content = (): JSX.Element => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Debug: Log article data to check arChainId
+  // Debug: Log article data to check arChainId and payment info
   useEffect(() => {
     if (article) {
       console.log('📄 Article data:', article);
       console.log('🔗 arChainId:', article.arChainId);
+      console.log('💰 Payment info:', {
+        targetUrlIsLocked: article.targetUrlIsLocked,
+        priceInfo: article.priceInfo
+      });
     }
   }, [article]);
 
@@ -226,6 +252,258 @@ export const Content = (): JSX.Element => {
     }
   };
 
+  // Handle unlock button click - opens payment flow
+  const handleUnlock = async () => {
+    // Check if user is logged in
+    if (!user) {
+      showToast('Please log in first to unlock content', 'error');
+      navigate('/login');
+      return;
+    }
+
+    if (!article?.uuid) {
+      showToast('Article information not available', 'error');
+      return;
+    }
+
+    try {
+      // Fetch x402 payment information
+      const x402Url = `https://api-test.copus.network/copus-node-api/api/x402/getUrl?uuid=${article.uuid}`;
+      const response = await fetch(x402Url);
+      const data = await response.json();
+
+      if (data.accepts && data.accepts.length > 0) {
+        const paymentOption = data.accepts[0];
+
+        // Store payment info
+        setX402PaymentInfo({
+          payTo: paymentOption.payTo,
+          asset: paymentOption.asset,
+          amount: paymentOption.maxAmountRequired,
+          network: paymentOption.network,
+          resource: paymentOption.resource
+        });
+
+        // Show wallet connection modal
+        setIsWalletSignInOpen(true);
+      } else {
+        showToast('Payment information not available', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to fetch x402 payment info:', error);
+      showToast('Failed to load payment information. Please try again.', 'error');
+    }
+  };
+
+  // Handle wallet selection
+  const handleWalletSelect = async (walletId: string) => {
+    // Handle MetaMask wallet connection
+    if (walletId === 'metamask') {
+      try {
+        // Check if user is logged in
+        if (!user) {
+          showToast('Please log in first to make payments', 'error');
+          navigate('/login');
+          return;
+        }
+
+        // Check if MetaMask is installed
+        if (!window.ethereum) {
+          showToast('Please install MetaMask wallet first', 'error');
+          return;
+        }
+
+        // Connect MetaMask to get accounts - this will show MetaMask popup
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+        // Use the first account returned (the one user selected in the popup)
+        const address = accounts[0];
+
+        if (!address) {
+          showToast('No account selected in MetaMask. Please select an account and try again.', 'error');
+          return;
+        }
+
+        // Store wallet address
+        setWalletAddress(address);
+
+        // Fetch USDC balance on Base Sepolia
+        // USDC contract address on Base Sepolia: 0x036CbD53842c5426634e7929541eC2318f3dCF7e
+        const usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+
+        try {
+          // Get USDC balance using eth_call (ERC-20 balanceOf)
+          // balanceOf function signature: 0x70a08231
+          const data = '0x70a08231' + address.slice(2).padStart(64, '0');
+
+          const balance = await window.ethereum.request({
+            method: 'eth_call',
+            params: [{
+              to: usdcContractAddress,
+              data: data
+            }, 'latest']
+          });
+
+          // Convert from hex to decimal and adjust for 6 decimals (USDC has 6 decimals)
+          const balanceInSmallestUnit = parseInt(balance, 16);
+          const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
+
+          setWalletBalance(balanceInUSDC);
+          showToast('MetaMask wallet connected successfully! 🎉', 'success');
+        } catch (balanceError) {
+          console.error('Failed to fetch USDC balance:', balanceError);
+          // Still proceed even if balance fetch fails
+          setWalletBalance('0.00');
+          showToast('MetaMask wallet connected! (Unable to fetch balance)', 'success');
+        }
+
+        // Close wallet modal and open payment confirmation
+        setIsWalletSignInOpen(false);
+        setIsPayConfirmOpen(true);
+      } catch (error) {
+        console.error('MetaMask connection error:', error);
+
+        // Handle user rejection
+        if (error instanceof Error) {
+          if (error.message.includes('User rejected')) {
+            showToast('MetaMask connection cancelled', 'info');
+          } else {
+            showToast(`MetaMask connection failed: ${error.message}`, 'error');
+          }
+        } else {
+          showToast('MetaMask connection failed. Please try again.', 'error');
+        }
+      }
+    } else {
+      // For other wallets, just show the payment modal for now
+      showToast(`${walletId} wallet integration coming soon`, 'info');
+      setIsWalletSignInOpen(false);
+      setIsPayConfirmOpen(true);
+    }
+  };
+
+  // Handle payment confirmation using x402 protocol with ERC-3009 TransferWithAuthorization
+  const handlePayNow = async () => {
+    if (!x402PaymentInfo) {
+      showToast('Payment information not available', 'error');
+      return;
+    }
+
+    if (!walletAddress) {
+      showToast('Wallet not connected', 'error');
+      return;
+    }
+
+    try {
+      // Step 1: Check if user is on the correct network (Base Sepolia = 84532 in hex = 0x14a34)
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const baseSepoliaChainId = '0x14a34'; // 84532 in hex
+
+      if (chainId !== baseSepoliaChainId) {
+        // Request network switch
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: baseSepoliaChainId }],
+          });
+        } catch (switchError: any) {
+          // This error code indicates that the chain has not been added to MetaMask
+          if (switchError.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: baseSepoliaChainId,
+                  chainName: 'Base Sepolia',
+                  nativeCurrency: {
+                    name: 'Ethereum',
+                    symbol: 'ETH',
+                    decimals: 18
+                  },
+                  rpcUrls: ['https://sepolia.base.org'],
+                  blockExplorerUrls: ['https://sepolia.basescan.org']
+                }],
+              });
+            } catch (addError) {
+              showToast('Failed to add Base Sepolia network', 'error');
+              return;
+            }
+          } else {
+            showToast('Please switch to Base Sepolia network', 'error');
+            return;
+          }
+        }
+      }
+
+      // Step 2: Generate gasless payment authorization using ERC-3009 TransferWithAuthorization
+      showToast('Please sign the payment authorization in MetaMask...', 'info');
+
+      // Generate random nonce for this authorization
+      const nonce = generateNonce();
+
+      // Set validity window: valid now and for the next 1 hour
+      const now = Math.floor(Date.now() / 1000);
+      const validAfter = now;
+      const validBefore = now + 3600; // 1 hour from now
+
+      // Sign the TransferWithAuthorization message (EIP-712)
+      // This is gasless - user only signs a message, doesn't execute a transaction
+      const signedAuth = await signTransferWithAuthorization({
+        from: walletAddress,
+        to: x402PaymentInfo.payTo,
+        value: x402PaymentInfo.amount,
+        validAfter,
+        validBefore,
+        nonce
+      }, window.ethereum);
+
+      console.log('✅ Signed TransferWithAuthorization:', signedAuth);
+
+      // Step 3: Create X-PAYMENT header with base64-encoded signed authorization
+      const paymentHeader = createX402PaymentHeader(signedAuth);
+
+      console.log('📤 X-PAYMENT header:', paymentHeader);
+
+      // Step 4: Call x402 API with signed payment authorization to unlock content
+      showToast('Payment authorization signed! Unlocking content...', 'success');
+
+      const unlockResponse = await fetch(x402PaymentInfo.resource, {
+        headers: {
+          'X-PAYMENT': paymentHeader
+        }
+      });
+
+      // Check response status
+      if (!unlockResponse.ok) {
+        const errorText = await unlockResponse.text();
+        console.error('Unlock API error:', unlockResponse.status, errorText);
+        throw new Error(`Server returned ${unlockResponse.status}: ${errorText}`);
+      }
+
+      const unlockData = await unlockResponse.json();
+
+      if (unlockData.targetUrl) {
+        // Successfully unlocked! Open the target URL
+        showToast('Content unlocked successfully! 🎉', 'success');
+        setIsPayConfirmOpen(false);
+
+        // Open the unlocked URL in a new tab
+        window.open(unlockData.targetUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        showToast('Failed to unlock content. Please contact support.', 'error');
+      }
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+
+      if (error.code === 4001) {
+        showToast('Signature cancelled', 'info');
+      } else {
+        showToast(`Payment failed: ${error.message || 'Unknown error'}`, 'error');
+      }
+    }
+  };
+
   return (
     <div
       className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
@@ -248,19 +526,38 @@ export const Content = (): JSX.Element => {
                     {content.category}
                   </span>
 
-                  <h1
-                    className="relative self-stretch [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] mt-2 break-all overflow-hidden"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
-                    }}
-                  >
-                    {content.title}
-                  </h1>
+                  {/* Title with x402 payment badge inline */}
+                  <div className="flex flex-col gap-2 w-full">
+                    <div className="flex items-center gap-2 w-full">
+                      {/* Payment badge - show if content is locked */}
+                      {article?.targetUrlIsLocked && article?.priceInfo && (
+                        <div className="h-[34px] px-2.5 py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
+                          <img
+                            className="relative w-[22px] h-5 aspect-[1.11]"
+                            alt="x402 icon"
+                            src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
+                          />
+                          <span className="[font-family:'Lato',Helvetica] font-semibold text-[#0052ff] text-xl tracking-[0] leading-5 whitespace-nowrap">
+                            {article.priceInfo.price}
+                          </span>
+                        </div>
+                      )}
+
+                      <h1
+                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-all overflow-hidden"
+                        style={{
+                          display: '-webkit-box',
+                          WebkitBoxOrient: 'vertical',
+                          WebkitLineClamp: 2,
+                          overflow: 'hidden',
+                          wordBreak: 'break-all',
+                          overflowWrap: 'break-word'
+                        }}
+                      >
+                        {content.title}
+                      </h1>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="relative w-full lg:w-[364px] h-[205px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
@@ -378,24 +675,61 @@ export const Content = (): JSX.Element => {
               />
             </div>
 
-            <a
-              href={content.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red no-underline"
-            >
-              <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
-                Visit
-              </span>
+{/* Conditional button - "Unlock now" for locked content, "Visit" for free content */}
+            {article?.targetUrlIsLocked ? (
+              <button
+                onClick={handleUnlock}
+                className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] transition-all active:scale-95"
+              >
+                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
+                  <img
+                    className="relative w-[27px] h-[25px] aspect-[1.09]"
+                    alt="x402 icon"
+                    src="https://c.animaapp.com/2ALjTCkW/img/x402-icon-blue-1@2x.png"
+                  />
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap">
+                    Unlock now
+                  </span>
+                </span>
+              </button>
+            ) : (
+              <a
+                href={content.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red no-underline hover:bg-red/90 transition-colors"
+              >
+                <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
+                  Visit
+                </span>
 
-              <img
-                className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
-                alt="Arrow"
-                src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
-              />
-            </a>
+                <img
+                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
+                  alt="Arrow"
+                  src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
+                />
+              </a>
+            )}
           </div>
         </div>
+
+        {/* x402 Payment Modals */}
+        <WalletSignInModal
+          isOpen={isWalletSignInOpen}
+          onClose={() => setIsWalletSignInOpen(false)}
+          onWalletSelect={handleWalletSelect}
+        />
+
+        <PayConfirmModal
+          isOpen={isPayConfirmOpen}
+          onClose={() => setIsPayConfirmOpen(false)}
+          onPayNow={handlePayNow}
+          walletAddress={walletAddress || 'Not connected'}
+          availableBalance={`${walletBalance} USDC`}
+          amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
+          network="Base Sepolia"
+          isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
+        />
       </div>
     </div>
   );

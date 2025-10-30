@@ -329,7 +329,10 @@ export const MainContentSection = (): JSX.Element => {
       visitCount: article.viewCount || 0,
       isLiked: article.isLiked || true,
       targetUrl: article.targetUrl,
-      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined
+      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
+      // x402 payment fields
+      isPaymentRequired: article.targetUrlIsLocked,
+      paymentPrice: article.priceInfo?.price?.toString()
     };
   };
 
@@ -352,7 +355,10 @@ export const MainContentSection = (): JSX.Element => {
       visitCount: article.viewCount || 0,
       isLiked: article.isLiked || false, // 创作文章的点赞状态来自API
       targetUrl: article.targetUrl,
-      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined
+      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
+      // x402 payment fields
+      isPaymentRequired: article.targetUrlIsLocked,
+      paymentPrice: article.priceInfo?.price?.toString()
     };
   };
 
@@ -535,7 +541,10 @@ export const MainContentSection = (): JSX.Element => {
       visitCount: `${article.viewCount || 0} Visits`,
       isLiked: false,
       targetUrl: article.targetUrl,
-      website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
+      website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
+      // x402 payment fields
+      isPaymentRequired: article.targetUrlIsLocked,
+      paymentPrice: article.priceInfo?.price?.toString()
     };
   };
 

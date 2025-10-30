@@ -4,7 +4,8 @@ import tailwind from "tailwindcss";
 import { defineConfig } from "vite";
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), mode === "development" && screenGraphPlugin()],
+  // Temporarily disabled screen-graph plugin due to parsing error
+  plugins: [react()], // , mode === "development" && screenGraphPlugin()],
   publicDir: "./static",
   base: "/",
   server: {

@@ -4,6 +4,16 @@ import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
+  // Debug: Log raw backend article payment data
+  if (backendArticle.targetUrlIsLocked || backendArticle.priceInfo) {
+    console.log('🔍 Backend article with payment data:', {
+      title: backendArticle.title.substring(0, 30),
+      targetUrlIsLocked: backendArticle.targetUrlIsLocked,
+      priceInfo: backendArticle.priceInfo,
+      priceType: typeof backendArticle.priceInfo?.price
+    });
+  }
+
   // Extract domain from URL as website
   const getWebsiteFromUrl = (url: string): string => {
     try {
@@ -76,8 +86,21 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     isLiked: backendArticle.isLiked, // Preserve like status returned from server
     website: getWebsiteFromUrl(backendArticle.targetUrl),
     url: backendArticle.targetUrl,
+    // x402 payment fields
+    isPaymentRequired: backendArticle.targetUrlIsLocked || false,
+    paymentPrice: backendArticle.priceInfo?.price?.toString() || undefined,
   };
 
+  // Debug: Log transformed article to verify payment fields are included
+  if (transformedArticle.isPaymentRequired || transformedArticle.paymentPrice) {
+    console.log('✅ Transformed article WITH payment data:', {
+      title: transformedArticle.title.substring(0, 30),
+      isPaymentRequired: transformedArticle.isPaymentRequired,
+      paymentPrice: transformedArticle.paymentPrice,
+      originalPrice: backendArticle.priceInfo?.price,
+      originalPriceType: typeof backendArticle.priceInfo?.price
+    });
+  }
 
   return transformedArticle;
 };

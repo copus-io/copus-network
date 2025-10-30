@@ -29,6 +29,9 @@ export interface ArticleData {
   isLiked?: boolean;
   targetUrl?: string;
   website?: string;
+  // x402 payment fields
+  paymentPrice?: string; // Price in USDC (e.g., "0.01")
+  isPaymentRequired?: boolean; // Whether content requires payment
 }
 
 // Layout mode
@@ -78,6 +81,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 }) => {
   const categoryStyle = getCategoryStyle(article.category, article.categoryColor);
   const categoryInlineStyle = getCategoryInlineStyle(article.categoryColor);
+
+  // Debug: Log payment data for this card
+  React.useEffect(() => {
+    console.log(`💳 Card payment data for "${article.title.substring(0, 30)}...":`, {
+      isPaymentRequired: article.isPaymentRequired,
+      paymentPrice: article.paymentPrice,
+      hasPaymentData: !!(article.isPaymentRequired && article.paymentPrice)
+    });
+  }, [article.title, article.isPaymentRequired, article.paymentPrice]);
 
   // Image preview related state
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
@@ -197,19 +209,34 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
 
               <div className="flex flex-col items-start gap-[15px] w-full">
-                <h3
-                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px]"
-                  style={{
-                    display: '-webkit-box',
-                    WebkitBoxOrient: 'vertical',
-                    WebkitLineClamp: 2,
-                    overflow: 'hidden',
-                    wordBreak: 'break-all',
-                    overflowWrap: 'break-word'
-                  }}
-                >
-                  {article.title || 'Enter a title...'}
-                </h3>
+                {/* Title with x402 payment badge */}
+                <div className="flex items-center gap-[5px] w-full">
+                  {article.isPaymentRequired && article.paymentPrice && (
+                    <div className="h-[30px] px-2.5 py-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                      <img
+                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        alt="x402 payment"
+                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                      />
+                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                        {article.paymentPrice}
+                      </span>
+                    </div>
+                  )}
+                  <h3
+                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
+                    {article.title || 'Enter a title...'}
+                  </h3>
+                </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                   <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] line-clamp-2 break-words overflow-hidden">
@@ -278,19 +305,34 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
 
               <div className="flex flex-col gap-[15px] flex-1">
-                <h3
-                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px]"
-                  style={{
-                    display: '-webkit-box',
-                    WebkitBoxOrient: 'vertical',
-                    WebkitLineClamp: 2,
-                    overflow: 'hidden',
-                    wordBreak: 'break-all',
-                    overflowWrap: 'break-word'
-                  }}
-                >
-                  {article.title}
-                </h3>
+                {/* Title with x402 payment badge */}
+                <div className="flex items-center gap-[5px]">
+                  {article.isPaymentRequired && article.paymentPrice && (
+                    <div className="h-[30px] px-2.5 py-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                      <img
+                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        alt="x402 payment"
+                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                      />
+                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                        {article.paymentPrice}
+                      </span>
+                    </div>
+                  )}
+                  <h3
+                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
+                    {article.title}
+                  </h3>
+                </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p
@@ -455,19 +497,34 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
 
               <div className="flex flex-col gap-[15px] flex-1">
-                <h3
-                  className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px]"
-                  style={{
-                    display: '-webkit-box',
-                    WebkitBoxOrient: 'vertical',
-                    WebkitLineClamp: 2,
-                    overflow: 'hidden',
-                    wordBreak: 'break-all',
-                    overflowWrap: 'break-word'
-                  }}
-                >
-                  {article.title}
-                </h3>
+                {/* Title with x402 payment badge */}
+                <div className="flex items-center gap-[5px]">
+                  {article.isPaymentRequired && article.paymentPrice && (
+                    <div className="h-[30px] px-2.5 py-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                      <img
+                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        alt="x402 payment"
+                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                      />
+                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                        {article.paymentPrice}
+                      </span>
+                    </div>
+                  )}
+                  <h3
+                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word'
+                    }}
+                  >
+                    {article.title}
+                  </h3>
+                </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p

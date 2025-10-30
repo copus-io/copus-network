@@ -26,6 +26,13 @@ export interface BackendArticle {
   likeCount: number;
   isLiked: boolean;
   categoryInfo: BackendCategoryInfo;
+  // x402 payment fields
+  targetUrlIsLocked?: boolean;
+  priceInfo?: {
+    chainId: string;
+    currency: string;
+    price: number;
+  };
 }
 
 export interface BackendApiResponse {
@@ -60,6 +67,9 @@ export interface Article {
   url?: string;
   createdAt?: string;
   updatedAt?: string;
+  // x402 payment fields
+  paymentPrice?: string; // Price in USDC (e.g., "0.01")
+  isPaymentRequired?: boolean; // Whether content requires payment
 }
 
 export interface PageArticleResponse {
@@ -102,6 +112,13 @@ export interface ArticleDetailResponse {
   uuid: string;
   viewCount: number;
   arChainId?: string; // Arweave chain ID for onchain storage
+  // x402 payment fields
+  targetUrlIsLocked?: boolean;
+  priceInfo?: {
+    chainId: string;
+    currency: string;
+    price: number;
+  };
 }
 
 // My created articles API parameters
