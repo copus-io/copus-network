@@ -457,8 +457,6 @@ export const Content = (): JSX.Element => {
         nonce
       }, window.ethereum);
 
-      console.log('✅ Signed TransferWithAuthorization:', signedAuth);
-
       // Step 3: Create X-PAYMENT header with base64-encoded signed authorization
       const paymentHeader = createX402PaymentHeader(
         signedAuth,
@@ -466,22 +464,8 @@ export const Content = (): JSX.Element => {
         x402PaymentInfo.asset
       );
 
-      console.log('📤 X-PAYMENT header length:', paymentHeader.length);
-      console.log('📤 X-PAYMENT header (first 100 chars):', paymentHeader.substring(0, 100));
-
-      // Decode to verify payload structure
-      try {
-        const decoded = JSON.parse(atob(paymentHeader));
-        console.log('✅ Decoded payload:', decoded);
-      } catch (e) {
-        console.error('❌ Failed to decode payment header:', e);
-      }
-
       // Step 4: Call x402 API with signed payment authorization to unlock content
       showToast('Payment authorization signed! Unlocking content...', 'success');
-
-      console.log('📡 Sending request to:', x402PaymentInfo.resource);
-      console.log('📡 Request headers:', { 'X-PAYMENT': paymentHeader.substring(0, 50) + '...' });
 
       const unlockResponse = await fetch(x402PaymentInfo.resource, {
         headers: {
@@ -489,19 +473,14 @@ export const Content = (): JSX.Element => {
         }
       });
 
-      console.log('📥 Response status:', unlockResponse.status);
-      console.log('📥 Response headers:', Object.fromEntries(unlockResponse.headers.entries()));
-
       // Check response status
       if (!unlockResponse.ok) {
         const errorText = await unlockResponse.text();
-        console.error('❌ Unlock API error:', {
+        console.error('x402 unlock error:', {
           status: unlockResponse.status,
-          statusText: unlockResponse.statusText,
-          responseText: errorText,
-          responseLength: errorText.length
+          error: errorText
         });
-        throw new Error(`Server returned ${unlockResponse.status}: ${errorText}`);
+        throw new Error(`Payment failed: ${unlockResponse.status}`);
       }
 
       const unlockData = await unlockResponse.json();
