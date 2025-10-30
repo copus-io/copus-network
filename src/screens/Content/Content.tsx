@@ -455,7 +455,8 @@ export const Content = (): JSX.Element => {
       const paymentHeader = createX402PaymentHeader(
         signedAuth,
         x402PaymentInfo.network,
-        x402PaymentInfo.asset
+        x402PaymentInfo.asset,
+        x402PaymentInfo.resource
       );
 
       // Step 4: Call x402 API with signed payment authorization to unlock content

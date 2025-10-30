@@ -314,7 +314,8 @@ export async function signTransferWithAuthorization(
 export function createX402PaymentHeader(
   signedAuth: SignedAuthorization,
   network: string = 'base-sepolia',
-  asset: string = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+  asset: string = '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+  resource: string = ''
 ): string {
   // Create the inner payment authorization payload
   const paymentPayload = {
@@ -327,6 +328,7 @@ export function createX402PaymentHeader(
     validAfter: signedAuth.validAfter,
     validBefore: signedAuth.validBefore,
     nonce: signedAuth.nonce,
+    resource,
     signature: {
       v: signedAuth.v,
       r: signedAuth.r,
