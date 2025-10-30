@@ -13,7 +13,7 @@ import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categorySt
 import { AuthService } from "../../services/authService";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
-import { ArticleDetailResponse } from "../../types/article";
+import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import { WalletSignInModal } from "../../components/WalletSignInModal/WalletSignInModal";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
@@ -65,13 +65,7 @@ export const Content = (): JSX.Element => {
   const [walletBalance, setWalletBalance] = useState<string>('0');
 
   // x402 payment info from API
-  const [x402PaymentInfo, setX402PaymentInfo] = useState<{
-    payTo: string;
-    asset: string;
-    amount: string;
-    network: string;
-    resource: string;
-  } | null>(null);
+  const [x402PaymentInfo, setX402PaymentInfo] = useState<X402PaymentInfo | null>(null);
 
   // Use new article detail API hook
   const { article, loading, error } = useArticleDetail(id || '');
