@@ -273,17 +273,6 @@ export const DiscoveryContentSection = (): JSX.Element => {
     );
   }
 
-  // Empty state
-  if (articles.length === 0) {
-    return (
-      <section className="flex items-center justify-center min-h-screen px-5">
-        <div className="text-center">
-          <p className="text-gray-500">The space is empty and full of possibilities!</p>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <main className="flex flex-col items-start gap-10 py-0 relative flex-1">
       {/* Welcome Guide Bar - Display different content based on login status */}
@@ -327,9 +316,17 @@ export const DiscoveryContentSection = (): JSX.Element => {
       )}
 
       {/* Content Cards Section - Responsive Grid Layout */}
-      <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:px-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
-        {localArticles.map((post, index) => renderPostCard(post, index))}
-      </section>
+      {articles.length === 0 ? (
+        <section className="flex items-center justify-center min-h-[400px] w-full px-5">
+          <div className="text-center">
+            <p className="text-gray-500">The space is empty and full of possibilities!</p>
+          </div>
+        </section>
+      ) : (
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:px-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
+          {localArticles.map((post, index) => renderPostCard(post, index))}
+        </section>
+      )}
 
       {/* Loading indicator */}
       {loading && (
