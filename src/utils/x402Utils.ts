@@ -98,13 +98,14 @@ export interface SignedAuthorization {
 /**
  * EIP-712 Domain for USDC TransferWithAuthorization on Base Sepolia.
  *
- * **Important:** Domain parameters vary by network. These values are specifically
- * for Base Sepolia testnet. For production use on Base mainnet or other networks,
- * update these values accordingly.
+ * **CRITICAL:** All domain parameters must EXACTLY match the USDC contract's EIP-712 domain.
+ * Backend uses 'USDC' as the domain name (confirmed from x402 error response).
+ * These values are specifically for Base Sepolia testnet. For production use on Base mainnet
+ * or other networks, update these values accordingly.
  *
  * @constant
  * @type {Object}
- * @property {string} name - Token name (must match contract)
+ * @property {string} name - Token name ('USDC' - matches backend configuration)
  * @property {string} version - EIP-712 version (must match contract)
  * @property {number} chainId - Base Sepolia chain ID (84532 = 0x14a34)
  * @property {string} verifyingContract - USDC contract address on Base Sepolia
@@ -112,7 +113,7 @@ export interface SignedAuthorization {
  * @see https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e
  */
 const EIP712_DOMAIN = {
-  name: 'USD Coin',
+  name: 'USDC', // IMPORTANT: Must match backend's EIP-712 domain name (from x402 error: "USDC")
   version: '2',
   chainId: 84532, // Base Sepolia
   verifyingContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' // USDC on Base Sepolia
@@ -211,6 +212,9 @@ export async function signTransferWithAuthorization(
   params: TransferWithAuthorizationParams,
   signer: any
 ): Promise<SignedAuthorization> {
+  // Debug: Log the domain being used for signing
+  console.log('🔐 EIP-712 Domain being used for signature:', EIP712_DOMAIN);
+
   // Construct EIP-712 typed data
   const typedData = {
     types: {
@@ -233,6 +237,9 @@ export async function signTransferWithAuthorization(
       nonce: params.nonce
     }
   };
+
+  // Debug: Log the complete typed data structure
+  console.log('📝 Complete EIP-712 typed data:', JSON.stringify(typedData, null, 2));
 
   // Sign using eth_signTypedData_v4
   const signature = await signer.request({
@@ -316,32 +323,31 @@ export function createX402PaymentHeader(
   network: string = 'base-sepolia',
   asset: string = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
 ): string {
-  // Create the inner payment authorization payload
+  // Combine signature components (v, r, s) into a single hex string
+  // The official x402 spec expects a single signature string, not separate components
+  const signature = signedAuth.r + signedAuth.s.slice(2) + signedAuth.v.toString(16).padStart(2, '0');
+
+  // Create payment payload following the official x402 specification
+  // Structure from: https://github.com/coinbase/x402/tree/main/examples/typescript
   const paymentPayload = {
-    network,
-    asset,
+    x402Version: 1,
     scheme: 'exact',
-    from: signedAuth.from,
-    to: signedAuth.to,
-    value: signedAuth.value,
-    validAfter: signedAuth.validAfter,
-    validBefore: signedAuth.validBefore,
-    nonce: signedAuth.nonce,
-    signature: {
-      v: signedAuth.v,
-      r: signedAuth.r,
-      s: signedAuth.s
+    network,
+    payload: {
+      signature,
+      authorization: {
+        from: signedAuth.from,
+        to: signedAuth.to,
+        value: signedAuth.value,
+        validAfter: signedAuth.validAfter.toString(),
+        validBefore: signedAuth.validBefore.toString(),
+        nonce: signedAuth.nonce
+      }
     }
   };
 
-  // Wrap in x402 protocol envelope
-  const x402Envelope = {
-    x402Version: 1,
-    payload: paymentPayload
-  };
-
   // Encode as base64
-  const jsonString = JSON.stringify(x402Envelope);
+  const jsonString = JSON.stringify(paymentPayload);
   return btoa(jsonString);
 }
 

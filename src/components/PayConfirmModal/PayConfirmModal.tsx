@@ -99,12 +99,12 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
           </header>
 
           <div
-            className="flex flex-col items-center gap-[5px] px-0 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent"
+            className="flex flex-col items-center gap-[5px] px-3 sm:px-4 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent"
             role="region"
             aria-label="Wallet address"
           >
-            <div className="inline-flex items-center justify-center gap-[5px] relative flex-[0_0_auto]">
-              <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-xl tracking-[0] leading-[23px] whitespace-nowrap">
+            <div className="flex items-center justify-center gap-[5px] relative w-full overflow-hidden">
+              <div className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-base sm:text-lg md:text-xl tracking-[0] leading-[23px] break-all text-center px-2">
                 {walletAddress}
               </div>
             </div>

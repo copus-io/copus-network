@@ -124,24 +124,80 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Logout API call failed:', error);
       // Continue with local logout even if API call fails
     } finally {
-      // Clear local state and storage
+      // Disconnect wallet from MetaMask/Coinbase Wallet
+      try {
+        if (typeof window !== 'undefined' && window.ethereum) {
+          // Try to revoke permissions to fully disconnect wallet
+          // This forces MetaMask to show account selection on next login
+          if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
+            // Multiple wallets installed - disconnect from all
+            for (const provider of window.ethereum.providers) {
+              try {
+                if (provider.isMetaMask || provider.isCoinbaseWallet) {
+                  await provider.request({
+                    method: 'wallet_revokePermissions',
+                    params: [{ eth_accounts: {} }]
+                  });
+                }
+              } catch (err) {
+                // wallet_revokePermissions might not be supported in older versions
+                console.log('Could not revoke permissions from provider:', err);
+              }
+            }
+          } else if (window.ethereum.isMetaMask || window.ethereum.isCoinbaseWallet) {
+            // Single wallet
+            try {
+              await window.ethereum.request({
+                method: 'wallet_revokePermissions',
+                params: [{ eth_accounts: {} }]
+              });
+            } catch (err) {
+              console.log('Could not revoke permissions:', err);
+            }
+          }
+          console.log('✅ Wallet permissions revoked');
+        }
+      } catch (error) {
+        console.log('Wallet disconnect warning (non-critical):', error);
+      }
+
+      // Clear local state - set user to null FIRST to trigger AuthGuard
       setUser(null);
       setToken(null);
+
+      // Clear localStorage
       localStorage.removeItem('copus_user');
       localStorage.removeItem('copus_token');
-      
+
+      // Disconnect wallet: Clear wallet authentication method
+      // This ensures user must reconnect wallet on next payment attempt
+      localStorage.removeItem('copus_auth_method');
+
       // Clear all React Query cache to remove sensitive data
       queryClient.clear();
-      
+
       // Clear all localStorage items that start with 'copus_' or are related to user actions
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('copus_') || 
-                   key.startsWith('lastMarkedAllReadTime') || 
+        if (key && (key.startsWith('copus_') ||
+                   key.startsWith('lastMarkedAllReadTime') ||
                    key.startsWith('lastUnreadCount') ||
                    key.startsWith('lastNotificationAction'))) {
           localStorage.removeItem(key);
         }
+      }
+
+      console.log('✅ Wallet fully disconnected - user will need to reconnect and select account on next login');
+
+      // Redirect to Discovery page if on a protected page
+      const currentPath = window.location.pathname;
+      const protectedPaths = ['/my-treasury', '/notification', '/setting', '/u/'];
+      const isOnProtectedPage = protectedPaths.some(path => currentPath.startsWith(path));
+
+      if (isOnProtectedPage) {
+        // Redirect to discovery page
+        console.log('🔄 Redirecting to Discovery page from protected route:', currentPath);
+        window.location.href = '/';
       }
     }
   }, []); // Empty dependencies since it uses setState and localStorage directly

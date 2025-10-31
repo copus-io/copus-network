@@ -58,6 +58,7 @@ npm run build:development      # Development build
 - **Styling**: Tailwind CSS 3.4 + Radix UI components
 - **State Management**: React Context + TanStack Query (React Query)
 - **Authentication**: Web3 (Metamask) + Email/Password
+- **Payment**: x402 Protocol + ERC-3009 (gasless USDC payments)
 
 ### API Configuration
 - **Development**: `https://api.test.copus.io/copusV2`
@@ -73,11 +74,13 @@ src/
 ├── components/          # Reusable UI components
 │   ├── ui/             # Base UI components (buttons, cards, etc.)
 │   ├── ImageUploader/  # Image upload functionality
-│   └── SocialLinksManager/
+│   ├── SocialLinksManager/
+│   ├── WalletSignInModal/    # Wallet selection for payments
+│   └── PayConfirmModal/      # Payment confirmation UI
 ├── screens/            # Page-level components (routes)
 │   ├── Discovery/      # Content discovery page
 │   ├── Treasury/       # User's saved content collection
-│   ├── Content/        # Article detail view
+│   ├── Content/        # Article detail view (includes x402 payment flow)
 │   ├── MainFrame/      # Main layout wrapper
 │   ├── UserProfile/    # User profile page
 │   ├── Notification/   # Notifications page
@@ -99,14 +102,15 @@ src/
 │   ├── NotificationContext.tsx
 │   └── ImagePreviewContext.tsx
 ├── types/              # TypeScript type definitions
-│   ├── article.ts
+│   ├── article.ts      # Includes x402 payment types
 │   ├── category.ts
 │   └── notification.ts
 ├── utils/              # Utility functions
 │   ├── validation.ts
 │   ├── categoryStyles.ts
 │   ├── imageUtils.ts
-│   └── apiUtils.ts
+│   ├── apiUtils.ts
+│   └── x402Utils.ts    # x402 payment protocol utilities
 └── config/             # App configuration
     └── app.ts
 ```
@@ -221,6 +225,59 @@ Before pushing changes:
 - All auth logic in `src/services/authService.ts`
 - Token management in `src/contexts/UserContext.tsx`
 - Login UI in `src/screens/MainFrame/sections/HeaderSection/`
+
+### Working with x402 Payments
+
+Copus uses the x402 protocol for pay-per-view content with gasless USDC payments on Base Sepolia.
+
+**Key Concepts**:
+- **Gasless payments**: Users sign a message (no transaction), server pays gas
+- **ERC-3009**: TransferWithAuthorization standard for meta-transactions
+- **Fast**: 2-3 seconds vs 60+ seconds for regular blockchain transactions
+
+**Files**:
+- `src/utils/x402Utils.ts` - Core payment utilities (nonce generation, signing, header creation)
+- `src/screens/Content/Content.tsx` - Payment flow implementation
+- `src/components/WalletSignInModal/` - Wallet selection UI
+- `src/components/PayConfirmModal/` - Payment confirmation UI
+- `src/types/article.ts` - Payment type definitions (PriceInfo, X402PaymentInfo)
+
+**Payment Flow**:
+1. User clicks "Unlock now" → fetch payment info from x402 API
+2. User selects wallet (MetaMask) → connect and fetch USDC balance
+3. User clicks "Pay now" → sign EIP-712 authorization (NO transaction!)
+4. Send signed authorization to server → server executes transfer and pays gas
+5. Content unlocked → user accesses premium content
+
+**Important Functions**:
+```typescript
+import {
+  generateNonce,
+  signTransferWithAuthorization,
+  createX402PaymentHeader
+} from './utils/x402Utils';
+
+// Generate unique nonce
+const nonce = generateNonce();
+
+// Sign authorization (shows MetaMask popup)
+const signedAuth = await signTransferWithAuthorization({
+  from, to, value, validAfter, validBefore, nonce
+}, window.ethereum);
+
+// Create X-PAYMENT header
+const paymentHeader = createX402PaymentHeader(signedAuth, network, asset);
+```
+
+**For detailed documentation**, see:
+- `X402_PAYMENT.md` - Complete integration guide
+- Inline comments in `src/screens/Content/Content.tsx`
+- JSDoc in `src/utils/x402Utils.ts`
+
+**Testing**:
+- Network: Base Sepolia (chainId: 84532 / 0x14a34)
+- USDC Contract: 0x036CbD53842c5426634e7929541eC2318f3dCF7e
+- Get test USDC from faucet (see X402_PAYMENT.md)
 
 ## Git Commit Format
 

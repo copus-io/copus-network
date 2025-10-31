@@ -131,7 +131,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             </p>
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                We value human recommendations and add an economic engine that rewards quality sharing.{' '}
+                We value human agency and power it with an x402-based economic engine that rewards quality sharing and creation.{' '}
                 <button
                   onClick={() => navigate('/login')}
                   className="text-[#2191FB] hover:underline cursor-pointer font-normal"

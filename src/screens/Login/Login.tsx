@@ -34,6 +34,10 @@ const socialProviders = [
     name: "Metamask",
     icon: "https://c.animaapp.com/mftc49qfOGKRUh/img/frame-1.svg",
   },
+  {
+    name: "Coinbase Wallet",
+    icon: "data:image/svg+xml,%3Csvg width='1024' height='1024' viewBox='0 0 1024 1024' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1024' height='1024' fill='%230052FF'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M152 512C152 710.823 313.177 872 512 872C710.823 872 872 710.823 872 512C872 313.177 710.823 152 512 152C313.177 152 152 313.177 152 512ZM420 396C406.745 396 396 406.745 396 420V604C396 617.255 406.745 628 420 628H604C617.255 628 628 617.255 628 604V420C628 406.745 617.255 396 604 396H420Z' fill='white'/%3E%3C/svg%3E",
+  },
 ];
 
 // Helper function to extract token from various response formats
@@ -610,17 +614,56 @@ export const Login = (): JSX.Element => {
 
       setIsLoginLoading(true);
 
-      // 1. Connect Metamask to get accounts (ensures user grants permission)
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      // Detect the correct MetaMask provider
+      let metamaskProvider = null;
 
-      // 2. Get the currently selected account from MetaMask
-      // Use selectedAddress which always reflects the active account the user has selected
-      const address = window.ethereum.selectedAddress;
+      // When multiple wallets are installed, they inject into window.ethereum.providers array
+      // Check providers array first to find the correct wallet
+      if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
+        console.log('Multiple wallet providers detected, searching for MetaMask...');
+        const providers = (window.ethereum as any).providers;
+
+        // Find MetaMask provider (must have isMetaMask and NOT be Coinbase)
+        metamaskProvider = providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
+
+        if (!metamaskProvider) {
+          showToast('MetaMask not found. Please ensure MetaMask is installed.', 'error');
+          setIsLoginLoading(false);
+          return;
+        }
+        console.log('Found MetaMask provider in providers array');
+      } else {
+        // Single wallet installed - check if it's MetaMask
+        if (window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
+          metamaskProvider = window.ethereum;
+          console.log('Using window.ethereum as MetaMask provider');
+        } else {
+          showToast('MetaMask not found. Please install MetaMask extension.', 'error');
+          setIsLoginLoading(false);
+          return;
+        }
+      }
+
+      // Request wallet connection - ensures user grants permission
+      await metamaskProvider.request({ method: 'eth_requestAccounts' });
+
+      // Get the currently selected account AFTER connection is established
+      // selectedAddress reflects the account that's currently active in MetaMask UI
+      // Note: We must read this AFTER eth_requestAccounts completes to get the latest value
+      let address = metamaskProvider.selectedAddress;
+
+      // Fallback: If selectedAddress is not available, get accounts and use first one
+      if (!address) {
+        const accounts = await metamaskProvider.request({ method: 'eth_accounts' });
+        address = accounts[0];
+      }
 
       if (!address) {
         throw new Error('No account selected in MetaMask. Please select an account and try again.');
       }
-      
+
+      console.log('✅ Connected to MetaMask account:', address);
+
       // 3. Get signature data from backend
       const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
 
@@ -649,7 +692,7 @@ export const Login = (): JSX.Element => {
       // 4. Sign the exact message returned by backend
       let signature;
       try {
-        signature = await window.ethereum.request({
+        signature = await metamaskProvider.request({
           method: 'personal_sign',
           params: [signatureData, address],
         });
@@ -659,7 +702,7 @@ export const Login = (): JSX.Element => {
 
       // 5. Submit login
       const response: any = await AuthService.metamaskLogin(address, signature, !!localStorage.getItem('copus_token'));
-      
+
       if (response.status === 1) {
         const possibleToken = extractTokenFromResponse(response);
         login(createBasicUser(loginEmail, '', address), possibleToken);
@@ -685,6 +728,124 @@ export const Login = (): JSX.Element => {
     }
   };
 
+  // Handle Coinbase Wallet login
+  const handleCoinbaseWalletLogin = async () => {
+    try {
+      if (!window.ethereum) {
+        showToast('Please install Coinbase Wallet first', 'error');
+        return;
+      }
+
+      setIsLoginLoading(true);
+
+      // Detect Coinbase Wallet provider
+      let coinbaseProvider = null;
+
+      // When multiple wallets are installed, they inject into window.ethereum.providers array
+      // Check providers array first to find the correct wallet
+      if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
+        console.log('Multiple wallet providers detected, searching for Coinbase Wallet...');
+        const providers = (window.ethereum as any).providers;
+
+        // Find Coinbase Wallet provider
+        coinbaseProvider = providers.find((p: any) => p.isCoinbaseWallet);
+
+        if (!coinbaseProvider) {
+          showToast('Coinbase Wallet not found. Please ensure Coinbase Wallet is installed.', 'error');
+          setIsLoginLoading(false);
+          return;
+        }
+        console.log('Found Coinbase Wallet provider in providers array');
+      } else {
+        // Single wallet installed - check if it's Coinbase Wallet
+        if (window.ethereum.isCoinbaseWallet) {
+          coinbaseProvider = window.ethereum;
+          console.log('Using window.ethereum as Coinbase Wallet provider');
+        } else if ((window as any).coinbaseWalletExtension) {
+          coinbaseProvider = (window as any).coinbaseWalletExtension;
+          console.log('Using coinbaseWalletExtension as provider');
+        } else {
+          showToast('Coinbase Wallet not found. Please install Coinbase Wallet extension.', 'error');
+          setIsLoginLoading(false);
+          return;
+        }
+      }
+
+      // 1. Connect Coinbase Wallet to get accounts (ensures user grants permission)
+      await coinbaseProvider.request({ method: 'eth_requestAccounts' });
+
+      // 2. Get the currently selected account from Coinbase Wallet
+      // Use selectedAddress which reflects the active account the user has selected
+      const address = coinbaseProvider.selectedAddress;
+
+      if (!address) {
+        throw new Error('No account selected in Coinbase Wallet. Please select an account and try again.');
+      }
+
+      // 3. Get signature data from backend
+      const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
+
+      // Ensure signatureData is a string
+      let signatureData = signatureDataResponse;
+      if (typeof signatureDataResponse !== 'string') {
+        if (signatureDataResponse && typeof signatureDataResponse === 'object') {
+          if (signatureDataResponse.data) {
+            signatureData = signatureDataResponse.data;
+          } else if (signatureDataResponse.message) {
+            signatureData = signatureDataResponse.message;
+          } else if (signatureDataResponse.msg) {
+            signatureData = signatureDataResponse.msg;
+          } else {
+            signatureData = JSON.stringify(signatureDataResponse);
+          }
+        } else {
+          signatureData = String(signatureDataResponse);
+        }
+      }
+
+      if (!signatureData || typeof signatureData !== 'string' || signatureData.trim() === '') {
+        throw new Error('Invalid signature data received from server');
+      }
+
+      // 4. Sign the exact message returned by backend
+      let signature;
+      try {
+        signature = await coinbaseProvider.request({
+          method: 'personal_sign',
+          params: [signatureData, address],
+        });
+      } catch (signError) {
+        throw signError;
+      }
+
+      // 5. Submit login (uses same metamaskLogin API - works for any EVM wallet)
+      const response: any = await AuthService.metamaskLogin(address, signature, !!localStorage.getItem('copus_token'));
+
+      if (response.status === 1) {
+        const possibleToken = extractTokenFromResponse(response);
+        login(createBasicUser(loginEmail, '', address), possibleToken);
+
+        // Mark that user logged in via Coinbase Wallet
+        localStorage.setItem('copus_auth_method', 'coinbase');
+
+        try {
+          await fetchUserInfo(possibleToken);
+        } catch (userInfoError) {
+          // Handle error silently
+        }
+
+        showToast('Login successful! Welcome back 🎉', 'success');
+        navigate('/');
+      } else {
+        showToast(`Coinbase Wallet login failed: ${response.msg || 'Please try again'}`, 'error');
+      }
+    } catch (error) {
+      showToast(`Coinbase Wallet login failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+
   // Unified social login handler
   const handleSocialLogin = async (provider: string) => {
     switch (provider) {
@@ -696,6 +857,9 @@ export const Login = (): JSX.Element => {
         break;
       case 'Metamask':
         await handleMetamaskLogin();
+        break;
+      case 'Coinbase Wallet':
+        await handleCoinbaseWalletLogin();
         break;
       default:
         showToast(`Unsupported login provider: ${provider}`, 'error');

@@ -210,9 +210,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col items-start gap-[15px] w-full">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-center gap-[5px] w-full">
+                <div className="flex items-start gap-[5px] w-full">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[30px] px-2.5 py-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
@@ -306,9 +306,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-center gap-[5px]">
+                <div className="flex items-start gap-[5px]">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[30px] px-2.5 py-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
@@ -498,9 +498,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-center gap-[5px]">
+                <div className="flex items-start gap-[5px]">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[30px] px-2.5 py-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
