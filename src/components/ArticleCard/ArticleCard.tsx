@@ -210,9 +210,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col items-start gap-[15px] w-full">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px] w-full">
+                <div className="relative min-h-[72px] w-full">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left mr-[5px] mb-[5px] h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
@@ -224,7 +224,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     </div>
                   )}
                   <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
+                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -306,9 +306,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px]">
+                <div className="relative min-h-[72px]">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left mr-[5px] mb-[5px] h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
@@ -320,7 +320,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     </div>
                   )}
                   <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
+                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -498,9 +498,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px]">
+                <div className="relative min-h-[72px]">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left mr-[5px] mb-[5px] h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
@@ -512,7 +512,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     </div>
                   )}
                   <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
+                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
