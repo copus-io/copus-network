@@ -117,7 +117,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 
       {/* Side Menu */}
       <aside
-        className="w-[310px] h-full pt-2.5 pb-5 px-0 fixed top-0 left-0 bg-white border-r border-solid border-light-grey flex flex-col items-start z-50 lg:hidden"
+        className="w-[310px] h-full pt-2.5 pb-5 px-0 fixed top-0 right-0 bg-white border-l border-solid border-light-grey flex flex-col items-start z-50 lg:hidden"
         role="navigation"
         aria-label="Mobile menu"
       >
@@ -154,7 +154,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 
                   <span
                     className={`relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap ${
-                      isActive ? "font-bold text-red" : "font-semibold text-off-black"
+                      isActive ? "font-normal text-red" : "font-normal text-off-black"
                     }`}
                   >
                     {item.label}
@@ -189,7 +189,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 
             <footer className="flex flex-col items-start justify-center gap-2.5 pt-5 pb-0 px-0 relative self-stretch w-full flex-[0_0_auto] bg-transparent">
               <nav
-                className="flex items-center justify-center text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]"
+                className="flex items-center justify-start text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]"
                 aria-label="Footer navigation"
               >
                 <div className="flex flex-col items-start [font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px]">
@@ -199,7 +199,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                 </div>
               </nav>
 
-              <p className="flex items-center justify-center text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+              <p className="flex items-center justify-start text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
                 <a
                   href="https://server31.io"
                   target="_blank"
