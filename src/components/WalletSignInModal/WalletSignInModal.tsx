@@ -48,7 +48,7 @@ export const WalletSignInModal: React.FC<WalletSignInModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="flex flex-col w-[500px] items-center justify-center gap-5 p-[30px] relative bg-white rounded-[15px]"
+        className="flex flex-col w-[400px] items-center justify-center gap-5 p-[30px] relative bg-white rounded-[15px]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-labelledby="signin-title"
@@ -66,10 +66,10 @@ export const WalletSignInModal: React.FC<WalletSignInModalProps> = ({
           />
         </button>
 
-        <div className="flex flex-col w-[360px] items-center justify-center gap-5 px-0 py-5 relative flex-[0_0_auto] bg-white rounded-lg">
-          <div className="flex flex-col items-start gap-5 self-stretch w-full relative flex-[0_0_auto]">
+        <div className="flex flex-col w-full items-center justify-center gap-5 px-0 pt-2 pb-5 relative flex-[0_0_auto] bg-white rounded-lg">
+          <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
             <h1
-              className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl text-center tracking-[0] leading-9"
+              className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl text-center tracking-[0] leading-9"
               id="signin-title"
             >
               Connect wallet
@@ -96,7 +96,7 @@ export const WalletSignInModal: React.FC<WalletSignInModalProps> = ({
                     src={wallet.icon}
                   />
 
-                  <span className="relative flex items-center justify-center w-fit [font-family:'Maven_Pro',Helvetica] font-normal text-off-black text-sm text-center tracking-[0] leading-[19.6px] whitespace-nowrap">
+                  <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-sm text-center tracking-[0] leading-[19.6px] whitespace-nowrap">
                     {wallet.name}
                   </span>
                 </button>

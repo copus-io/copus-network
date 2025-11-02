@@ -538,7 +538,7 @@ export const MainContentSection = (): JSX.Element => {
       userNamespace: article.authorInfo?.namespace || user?.namespace,
       date: new Date(article.createAt * 1000).toLocaleDateString(),
       treasureCount: article.likeCount || 0,
-      visitCount: `${article.viewCount || 0} Visits`,
+      visitCount: `${article.viewCount || 0}`,
       isLiked: false,
       targetUrl: article.targetUrl,
       website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',

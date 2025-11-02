@@ -96,7 +96,7 @@ export const TreasuryContentSection = (): JSX.Element => {
               userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
               date: new Date(article.createAt * 1000).toLocaleDateString(),
               treasureCount: article.likeCount || 0,
-              visitCount: `${article.viewCount || 0} Visits`,
+              visitCount: `${article.viewCount || 0}`,
               isLiked: article.isLiked || true, // 收藏页面的文章都是已点赞的
               targetUrl: article.targetUrl,
               website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
@@ -166,7 +166,7 @@ export const TreasuryContentSection = (): JSX.Element => {
                   userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
                   date: new Date(article.createAt * 1000).toLocaleDateString(),
                   treasureCount: article.likeCount || 0,
-                  visitCount: `${article.viewCount || 0} Visits`,
+                  visitCount: `${article.viewCount || 0}`,
                   isLiked: article.isLiked || true,
                   targetUrl: article.targetUrl,
                   website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'

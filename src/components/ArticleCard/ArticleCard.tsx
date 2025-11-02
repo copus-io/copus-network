@@ -210,30 +210,20 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col items-start gap-[15px] w-full">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px] w-full">
+                <div className="relative min-h-[72px] w-full overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 py-[8px] mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
                         src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
-                    }}
-                  >
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title || 'Enter a title...'}
                   </h3>
                 </div>
@@ -306,30 +296,20 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px]">
+                <div className="relative min-h-[72px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 py-[8px] mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
                         src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
-                    }}
-                  >
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
@@ -378,7 +358,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Action buttons area */}
             <div className="flex items-center justify-between mt-auto -mx-[30px] px-[30px]">
-              {/* Treasure button */}
+              {/* Left side: Treasure button */}
               {actions.showTreasure && (
                 <TreasureButton
                   isLiked={article.isLiked || false}
@@ -388,66 +368,69 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 />
               )}
 
-              {/* Visit count */}
-              {actions.showVisits && (
-                <div className="flex items-center gap-2">
+              {/* Right side: Visit count and Edit/Delete buttons */}
+              <div className="flex items-center gap-4">
+                {/* Visit count */}
+                {actions.showVisits && (
+                  <div className="flex items-center gap-2">
+                    <img
+                      className="w-5 h-3.5"
+                      alt="Ic view"
+                      src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
+                      style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
+                      {article.visitCount}
+                    </span>
+                  </div>
+                )}
+
+                {/* Edit and delete buttons area */}
+                {isHovered && (actions.showEdit || actions.showDelete) && (
+                  <div className="flex items-center gap-2 min-h-[24px]">
+                    {actions.showEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                        onClick={handleEdit}
+                      >
+                        <img
+                          className="w-5 h-3.5"
+                          alt="Edit"
+                          src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                        />
+                      </Button>
+                    )}
+
+                    {actions.showDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                        onClick={handleDelete}
+                      >
+                        <img
+                          className="w-5 h-3.5"
+                          alt="Delete"
+                          src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
+                          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                        />
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Branch It icon */}
+                {actions.showBranchIt && !isHovered && (
                   <img
-                    className="w-5 h-3.5"
-                    alt="Ic view"
-                    src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
-                    style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                    className="flex-shrink-0"
+                    alt="Branch it"
+                    src="https://c.animaapp.com/mftam89xRJwsqQ/img/branch-it.svg"
                   />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
-                    {article.visitCount}
-                  </span>
-                </div>
-              )}
-
-              {/* Edit and delete buttons area */}
-              {isHovered && (actions.showEdit || actions.showDelete) && (
-                <div className="flex items-center gap-2 min-h-[24px]">
-                  {actions.showEdit && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
-                      onClick={handleEdit}
-                    >
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Edit"
-                        src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
-                      />
-                    </Button>
-                  )}
-
-                  {actions.showDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
-                      onClick={handleDelete}
-                    >
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Delete"
-                        src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
-                      />
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {/* Branch It icon */}
-              {actions.showBranchIt && !isHovered && (
-                <img
-                  className="flex-shrink-0"
-                  alt="Branch it"
-                  src="https://c.animaapp.com/mftam89xRJwsqQ/img/branch-it.svg"
-                />
-              )}
+                )}
+              </div>
             </div>
           </CardContent>
         );
@@ -498,30 +481,20 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px]">
+                <div className="relative min-h-[72px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 py-[8px] mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="relative w-[21px] h-5 aspect-[1.09]"
                         alt="x402 payment"
                         src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
-                    }}
-                  >
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
@@ -567,7 +540,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Action buttons area */}
             <div className="flex items-center justify-between -mx-[30px] px-[30px]">
-              {/* Left side: Treasure button and View count */}
+              {/* Left side: Treasure button */}
               <div className="flex items-center gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
@@ -577,7 +550,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     size="large"
                   />
                 )}
+              </div>
 
+              {/* Right side: Visit count and Edit/Delete buttons */}
+              <div className="flex items-center gap-4">
                 {actions.showVisits && (
                   <div className="inline-flex items-center gap-2">
                     <img
@@ -591,44 +567,43 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     </span>
                   </div>
                 )}
+
+                {isHovered && (actions.showEdit || actions.showDelete) && (
+                  <div className="flex items-center gap-2">
+                    {actions.showEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                        onClick={handleEdit}
+                      >
+                        <img
+                          className="w-5 h-3.5"
+                          alt="Edit"
+                          src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                        />
+                      </Button>
+                    )}
+
+                    {actions.showDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                        onClick={handleDelete}
+                      >
+                        <img
+                          className="w-5 h-3.5"
+                          alt="Delete"
+                          src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
+                          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                        />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
-
-              {/* Right side: Edit and Delete buttons (visible on hover) */}
-              {isHovered && (actions.showEdit || actions.showDelete) && (
-                <div className="flex items-center gap-2">
-                  {actions.showEdit && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
-                      onClick={handleEdit}
-                    >
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Edit"
-                        src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
-                      />
-                    </Button>
-                  )}
-
-                  {actions.showDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
-                      onClick={handleDelete}
-                    >
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Delete"
-                        src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
-                      />
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
           </CardContent>
         );

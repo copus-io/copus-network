@@ -134,6 +134,16 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
           </a>
         </div>
 
+        <div className="pt-1">
+          <a href="https://x402.org" target="_blank" rel="noopener noreferrer">
+            <img
+              src="/x402-button-medium.png"
+              alt="x402"
+              className="h-5 hover:opacity-80 transition-opacity"
+            />
+          </a>
+        </div>
+
         <footer className="flex flex-col items-start gap-2.5 pt-2 relative self-stretch w-full flex-[0_0_auto] bg-transparent">
           <div className="flex flex-col items-start gap-3">
             <div className="flex flex-col items-start">

@@ -179,7 +179,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       namespace: article.namespace, // Add namespace field
       date: article.date,
       treasureCount: article.treasureCount,
-      visitCount: `${article.visitCount || 0} Visits`,
+      visitCount: `${article.visitCount || 0}`,
       isLiked: article.isLiked, // Use actual like status returned from server
       targetUrl: article.url,
       website: article.website,

@@ -254,8 +254,11 @@ export const Create = (): JSX.Element => {
     namespace: user?.namespace,
     date: new Date().toISOString(),
     treasureCount: 0,
-    visitCount: "0 Visits",
-    website: extractDomain(formData.link)
+    visitCount: "0",
+    website: extractDomain(formData.link),
+    // x402 payment fields
+    isPaymentRequired: payToUnlock,
+    paymentPrice: payToUnlock ? paymentAmount : undefined
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -877,7 +880,7 @@ export const Create = (): JSX.Element => {
 
               {/* Payment details (shown when toggle is on) */}
               {payToUnlock && (
-                <div className="flex flex-col items-start gap-5 w-full pl-[30px]">
+                <div className="flex flex-col items-start gap-5 w-full">
                   {/* Amount input */}
                   <div className="flex flex-col items-start gap-2.5 w-full">
                     <label className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-4">
@@ -890,7 +893,7 @@ export const Create = (): JSX.Element => {
                         onChange={(e) => setPaymentAmount(e.target.value)}
                         step="0.01"
                         min="0.01"
-                        className="flex-1 h-[46px] px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]"
+                        className="w-1/2 h-[46px] px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]"
                         placeholder="0.01"
                       />
                       <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
@@ -899,24 +902,25 @@ export const Create = (): JSX.Element => {
                     </div>
                   </div>
 
-                  {/* Network display */}
-                  <div className="flex items-center gap-2.5 w-full">
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                      Network:
-                    </span>
-                    <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
-                      Base Sepolia
-                    </span>
-                  </div>
+                  {/* Network display and Estimated income */}
+                  <div className="flex flex-col items-start w-full">
+                    <div className="flex items-center gap-2.5 w-full">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
+                        Network:
+                      </span>
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
+                        Base Sepolia
+                      </span>
+                    </div>
 
-                  {/* Estimated income */}
-                  <div className="flex items-center gap-2.5 w-full">
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                      Estimated income:
-                    </span>
-                    <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
-                      {(parseFloat(paymentAmount || "0") * 0.04).toFixed(4)} per unlock
-                    </span>
+                    <div className="flex items-center gap-2.5 w-full">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
+                        Estimated income:
+                      </span>
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
+                        {(parseFloat(paymentAmount || "0") * 0.04).toFixed(4)} per unlock
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}

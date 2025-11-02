@@ -119,7 +119,7 @@ export const Content = (): JSX.Element => {
     userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
     date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
-    visitCount: `${article.viewCount || 0} Visits`,
+    visitCount: `${article.viewCount || 0}`,
     likes: article.likeCount || 0,
     isLiked: article.isLiked || false,
     website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
