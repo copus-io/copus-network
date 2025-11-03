@@ -260,6 +260,8 @@ export const Content = (): JSX.Element => {
   // This API returns payment options including recipient, amount, network, and unlock URL.
   // No login required - account will be auto-created when wallet connects.
   const handleUnlock = async () => {
+    console.log('🔓 handleUnlock called for article:', article?.uuid);
+
     if (!article?.uuid) {
       showToast('Article information not available', 'error');
       return;
@@ -1397,16 +1399,23 @@ export const Content = (): JSX.Element => {
             ) : article?.targetUrlIsLocked ? (
               // Content is locked and requires payment - show "Unlock now" button
               <button
-                onClick={handleUnlock}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🖱️ Unlock button clicked!');
+                  handleUnlock();
+                }}
                 className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] transition-all active:scale-95"
+                style={{ pointerEvents: 'auto' }}
               >
-                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
+                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]" style={{ pointerEvents: 'auto' }}>
                   <img
                     className="relative w-[27px] h-[25px] aspect-[1.09]"
                     alt="x402 icon"
                     src="https://c.animaapp.com/2ALjTCkW/img/x402-icon-blue-1@2x.png"
+                    style={{ pointerEvents: 'auto' }}
                   />
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap">
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap" style={{ pointerEvents: 'auto' }}>
                     Unlock now
                   </span>
                 </span>
