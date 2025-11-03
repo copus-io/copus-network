@@ -629,7 +629,7 @@ export const Create = (): JSX.Element => {
           </div>
 
           <div className="flex flex-col lg:flex-row items-start gap-[30px] lg:gap-[30px] xl:gap-[60px] w-full">
-            <div className="flex flex-col items-start gap-[30px] pl-0 lg:pr-[30px] xl:pr-[60px] py-0 flex-1 lg:border-r lg:[border-right-style:solid] lg:border-light-grey w-full">
+            <div className="flex flex-col items-start gap-[30px] pl-0 lg:pr-[30px] xl:pr-[60px] py-0 flex-1 lg:border-r lg:[border-right-style:solid] lg:border-light-grey w-full min-w-0">
             <div className="flex flex-col items-start gap-2.5 w-full">
               <div className="flex flex-col w-[60px] h-[23px] items-start justify-center gap-2.5">
                 <label className="relative flex items-center justify-center w-fit mt-[-2.00px] font-p-l font-[number:var(--p-l-font-weight)] text-transparent text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
@@ -781,7 +781,7 @@ export const Create = (): JSX.Element => {
               </div>
             </div>
 
-            <div className="flex flex-col items-start gap-2.5 w-full">
+            <div className="flex flex-col items-start gap-2.5 w-full min-w-0">
               <label className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-transparent text-base tracking-[0] leading-4">
                 <span className="text-[#f23a00] leading-[var(--p-line-height)] font-p [font-style:var(--p-font-style)] font-[number:var(--p-font-weight)] tracking-[var(--p-letter-spacing)] text-[length:var(--p-font-size)]">
                   *
@@ -791,7 +791,7 @@ export const Create = (): JSX.Element => {
                 </span>
               </label>
 
-              <div className={`flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid transition-all ${
+              <div className={`flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full min-w-0 bg-white rounded-[15px] border border-solid transition-all ${
                 focusedField === 'recommendation' ? 'border-red shadow-sm' : 'border-light-grey'
               }`}>
                 <textarea
@@ -800,12 +800,12 @@ export const Create = (): JSX.Element => {
                   onFocus={() => setFocusedField('recommendation')}
                   onBlur={() => setFocusedField(null)}
                   placeholder="What did you find valuable about this link?"
-                  className="w-full flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none overflow-y-auto overflow-x-hidden"
+                  className="w-full min-w-0 flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none overflow-y-auto overflow-x-hidden"
                   aria-label="Recommendation"
                   maxLength={1000}
                   style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                 />
-                <div className="w-full [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px] flex-shrink-0">
+                <div className="w-full min-w-0 [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px] flex-shrink-0">
                   {characterCount}/1000
                 </div>
               </div>
