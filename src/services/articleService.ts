@@ -199,10 +199,10 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
   if (params.pageIndex !== undefined) queryParams.append('pageIndex', params.pageIndex.toString());
   if (params.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
 
-  const endpoint = `/client/myHome/pageMyCreatedArticle${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+  const endpoint = `/client/userHome/pageMyCreatedArticle${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
   try {
-    const response = await apiRequest<{status: number, msg: string, data: MyCreatedArticleResponse}>(endpoint, { requiresAuth: true });
+    const response = await apiRequest<{status: number, msg: string, data: MyCreatedArticleResponse}>(endpoint);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
@@ -227,7 +227,7 @@ export const getMyUnlockedArticles = async (params: MyUnlockedArticleParams): Pr
   const endpoint = `/client/userHome/pageMyUnlockedArticle?${queryParams.toString()}`;
 
   try {
-    const response = await apiRequest<{status: number, msg: string, data: MyUnlockedArticleResponse}>(endpoint, { requiresAuth: true });
+    const response = await apiRequest<{status: number, msg: string, data: MyUnlockedArticleResponse}>(endpoint);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
@@ -256,7 +256,6 @@ export const publishArticle = async (articleData: {
     const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),
-      requiresAuth: true,
     });
 
 

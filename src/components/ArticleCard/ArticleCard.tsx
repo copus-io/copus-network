@@ -161,8 +161,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     switch (layout) {
       case 'preview':
         return (
-          <CardContent className="flex flex-col items-start gap-[15px] p-5">
-            <div className="flex flex-col items-start justify-center gap-[15px] w-full">
+          <CardContent className="flex flex-col items-start gap-[15px] p-5 w-full overflow-hidden">
+            <div className="flex flex-col items-start justify-center gap-[15px] w-full min-w-0">
               <div
                 className="flex flex-col items-start p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
                 style={{
@@ -215,10 +215,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
 
               <div className="flex flex-col items-start gap-[15px] w-full">
-                {/* Title with x402 payment badge */}
-                <div className="relative min-h-[72px] w-full overflow-hidden">
+                {/* Title with x402 payment badge - Fixed height */}
+                <div className="relative h-[72px] w-full overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="absolute top-0 left-0 z-10 h-[36px] px-1.5 mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
                         className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
@@ -229,15 +229,17 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
+                  <h3 className={`[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2 w-full ${article.isPaymentRequired && article.paymentPrice ? 'pt-[40px]' : ''}`}>
                     {article.title || 'Enter a title...'}
                   </h3>
                 </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] line-clamp-2 break-words overflow-hidden">
-                    "{article.description || 'Write your recommendation...'}"
-                  </p>
+                  <div className="h-[54px] overflow-hidden">
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] line-clamp-2 break-words overflow-hidden">
+                      "{article.description || 'Write your recommendation...'}"
+                    </p>
+                  </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -619,7 +621,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   };
 
   const cardClasses = layout === 'preview'
-    ? "bg-white rounded-lg shadow-card-white border-0"
+    ? "bg-white rounded-lg shadow-card-white border-0 h-[500px] w-full"
     : "bg-white rounded-[8px] border shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[500px]";
 
   const cardContent = (
@@ -630,7 +632,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   return (
     <div
-      className={`${layout === 'preview' ? 'w-[500px]' : 'w-full'} ${className}`}
+      className={`${layout === 'preview' ? 'w-[500px] min-w-[500px] max-w-[500px]' : 'w-full'} ${className}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

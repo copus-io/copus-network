@@ -845,7 +845,7 @@ export class AuthService {
     walletAddress: string;
   }> {
 
-    return apiRequest('/client/myHome/userInfo', {
+    return apiRequest('/client/userHome/userInfo', {
       method: 'GET',
       requiresAuth: true,
     });
@@ -885,7 +885,7 @@ export class AuthService {
     totalCount: number;
   }> {
 
-    return apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+    return apiRequest(`/client/userHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
       method: 'GET',
       requiresAuth: true,
     });
@@ -925,9 +925,30 @@ export class AuthService {
     totalCount: number;
   }> {
 
-    return apiRequest(`/client/myHome/pageMyPaidArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('pageIndex', pageIndex.toString());
+    params.append('pageSize', pageSize.toString());
+
+    // Get current user ID from localStorage for targetUserId
+    const userStr = localStorage.getItem('copus_user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.id) {
+          params.append('targetUserId', user.id.toString());
+        } else {
+          throw new Error('User ID not found in localStorage');
+        }
+      } catch (error) {
+        throw new Error('Failed to parse user data from localStorage');
+      }
+    } else {
+      throw new Error('User not logged in');
+    }
+
+    return apiRequest(`/client/userHome/pageMyUnlockedArticle?${params.toString()}`, {
       method: 'GET',
-      requiresAuth: true,
     });
   }
 
