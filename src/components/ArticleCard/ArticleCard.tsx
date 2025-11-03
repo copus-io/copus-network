@@ -199,13 +199,16 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                <div className="absolute bottom-2.5 right-2.5">
-                  <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
-                      {article.website || 'example.com'}
-                    </span>
+                {/* Hide website link for paid/locked content */}
+                {!article.isPaymentRequired && (
+                  <div className="absolute bottom-2.5 right-2.5">
+                    <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
+                        {article.website || 'example.com'}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="flex flex-col items-start gap-[15px] w-full">
@@ -282,9 +285,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                {/* Website link */}
+                {/* Website link - hide for paid content */}
                 <div className="flex justify-end">
-                  {actions.showWebsite && article.website && (
+                  {actions.showWebsite && article.website && !article.isPaymentRequired && (
                     <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
                         {article.website}
@@ -467,9 +470,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                {/* Website link */}
+                {/* Website link - hide for paid content */}
                 <div className="flex justify-end">
-                  {article.website && (
+                  {article.website && !article.isPaymentRequired && (
                     <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
                         {article.website}
