@@ -9,6 +9,11 @@ import { useUser } from "../../../contexts/UserContext";
 import { HeaderSection } from "../../../components/shared/HeaderSection/HeaderSection";
 import { useVerificationCode } from "../../../hooks/useVerificationCode";
 import { useToast } from "../../../components/ui/toast";
+import {
+  signDeleteAccountMessage,
+  createSignatureTimestamp,
+  WalletSignatureResult
+} from "../../../utils/walletSignatureUtils";
 
 export const DeleteAccount = (): JSX.Element => {
   const navigate = useNavigate();
@@ -24,6 +29,8 @@ export const DeleteAccount = (): JSX.Element => {
   // Wallet verification state
   const [isWalletVerified, setIsWalletVerified] = useState(false);
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+  const [walletSignatureResult, setWalletSignatureResult] = useState<WalletSignatureResult | null>(null);
+  const [isRequestingSignature, setIsRequestingSignature] = useState(false);
 
   // Determine if user logged in with wallet
   const authMethod = typeof localStorage !== 'undefined' ? localStorage.getItem('copus_auth_method') : null;
@@ -67,7 +74,7 @@ export const DeleteAccount = (): JSX.Element => {
     await sendCode(user.email, CODE_TYPES.DELETE_ACCOUNT);
   };
 
-  // Handle wallet connection for verification
+  // Handle wallet connection and signature for verification
   const handleConnectWallet = async () => {
     if (!user?.walletAddress) {
       showToast('No wallet address found', 'error');
@@ -103,7 +110,33 @@ export const DeleteAccount = (): JSX.Element => {
       // Verify the connected wallet matches the user's registered wallet
       if (connectedAddress === userAddress) {
         setIsWalletVerified(true);
-        showToast('Wallet verified successfully', 'success');
+
+        // Now request signature for account deletion verification
+        setIsRequestingSignature(true);
+        try {
+          const timestamp = createSignatureTimestamp();
+          const signatureResult = await signDeleteAccountMessage(
+            {
+              walletAddress: user.walletAddress,
+              timestamp,
+              reason: deleteReason
+            },
+            provider
+          );
+
+          setWalletSignatureResult(signatureResult);
+          showToast('Wallet signature obtained successfully', 'success');
+        } catch (signatureError: any) {
+          console.error('Signature error:', signatureError);
+          if (signatureError.message.includes('rejected')) {
+            showToast('Signature rejected. Account deletion requires wallet signature.', 'error');
+          } else {
+            showToast('Failed to get wallet signature: ' + signatureError.message, 'error');
+          }
+          setIsWalletVerified(false);
+        } finally {
+          setIsRequestingSignature(false);
+        }
       } else {
         showToast('Connected wallet does not match your registered wallet', 'error');
         setIsWalletVerified(false);
@@ -124,8 +157,8 @@ export const DeleteAccount = (): JSX.Element => {
   const handleConfirmDelete = async () => {
     // Validate based on auth method
     if (isWalletUser) {
-      if (!isConfirmed || !isWalletVerified) {
-        showToast('Please confirm and verify your wallet', 'error');
+      if (!isConfirmed || !isWalletVerified || !walletSignatureResult) {
+        showToast('Please confirm and complete wallet signature verification', 'error');
         return;
       }
     } else {
@@ -137,11 +170,22 @@ export const DeleteAccount = (): JSX.Element => {
 
     setIsLoading(true);
     try {
-      const success = await AuthService.deleteAccount({
-        accountType: 0, // Normal account type
-        code: isWalletUser ? 'wallet_verified' : verificationCode.trim(), // Use placeholder for wallet users
-        reason: deleteReason.trim()
-      });
+      const deleteParams = isWalletUser
+        ? {
+            accountType: 0, // Normal account type
+            code: 'wallet_signature', // Indicate this is wallet-based verification
+            reason: deleteReason.trim(),
+            walletSignature: walletSignatureResult!.signature,
+            walletMessage: walletSignatureResult!.message,
+            walletTimestamp: walletSignatureResult!.timestamp
+          }
+        : {
+            accountType: 0,
+            code: verificationCode.trim(),
+            reason: deleteReason.trim()
+          };
+
+      const success = await AuthService.deleteAccount(deleteParams);
 
       if (success) {
         setShowSuccessPopup(true);
@@ -162,9 +206,9 @@ export const DeleteAccount = (): JSX.Element => {
     navigate('/');
   };
 
-  // Validation logic: wallet users need wallet verification, email users need verification code
+  // Validation logic: wallet users need wallet verification and signature, email users need verification code
   const isFormValid = isWalletUser
-    ? (isConfirmed && isWalletVerified)
+    ? (isConfirmed && isWalletVerified && walletSignatureResult !== null)
     : (isConfirmed && verificationCode.trim() !== "");
 
   return (
@@ -223,28 +267,38 @@ export const DeleteAccount = (): JSX.Element => {
                     <div className="font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)]">
                       {user?.walletAddress || 'Loading...'}
                     </div>
-                    {isWalletVerified && (
+                    {isWalletVerified && !walletSignatureResult && (
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">Wallet connected - signature required</span>
+                      </div>
+                    )}
+                    {walletSignatureResult && (
                       <div className="flex items-center gap-2 text-green-600">
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
-                        <span className="text-sm font-medium">Wallet verified</span>
+                        <span className="text-sm font-medium">Wallet signature verified</span>
                       </div>
                     )}
                   </div>
 
                   <Button
                     onClick={handleConnectWallet}
-                    disabled={isConnectingWallet || isWalletVerified}
+                    disabled={isConnectingWallet || isRequestingSignature || walletSignatureResult !== null}
                     className="h-auto bg-red px-[30px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isConnectingWallet
                       ? 'Connecting...'
-                      : isWalletVerified
-                        ? 'Wallet Connected'
-                        : authMethod === 'metamask'
-                          ? 'Connect MetaMask'
-                          : 'Connect Coinbase Wallet'}
+                      : isRequestingSignature
+                        ? 'Requesting Signature...'
+                        : walletSignatureResult
+                          ? 'Signature Complete'
+                          : authMethod === 'metamask'
+                            ? 'Connect & Sign with MetaMask'
+                            : 'Connect & Sign with Coinbase Wallet'}
                   </Button>
                 </div>
               ) : (

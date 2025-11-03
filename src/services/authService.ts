@@ -26,6 +26,10 @@ export interface DeleteAccountParams {
   accountType: number;
   code: string;
   reason: string;
+  // For wallet users: signature-based verification
+  walletSignature?: string;
+  walletMessage?: string;
+  walletTimestamp?: number;
 }
 
 export interface UserHomeRequest {
