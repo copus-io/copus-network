@@ -723,50 +723,61 @@ export const Create = (): JSX.Element => {
                 </label>
               </div>
 
-              <div
-                className={`relative w-full max-w-[400px] h-[225px] border border-dashed cursor-pointer transition-all rounded-lg ${
-                  formData.coverImage || coverImageUrl
-                    ? 'border-green-400 bg-cover bg-[50%_50%]'
-                    : 'border-medium-grey hover:border-dark-grey bg-gray-50'
-                }`}
-                style={{
-                  backgroundImage: formData.coverImage
-                    ? `url(${URL.createObjectURL(formData.coverImage)})`
-                    : coverImageUrl
-                    ? `url(${coverImageUrl})`
-                    : 'none'
-                }}
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.accept = "image/*";
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) {
-                      handleImageUpload({ target: { files: [file] } } as any);
-                    }
-                  };
-                  input.click();
-                }}
-              >
-                {!formData.coverImage && !coverImageUrl && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mb-4">
-                      <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                    <p className="text-medium-grey text-lg font-medium mb-2">Click to upload cover image</p>
-                    <p className="text-medium-grey text-sm">Supports JPG, PNG formats</p>
-                  </div>
-                )}
-                {isEditMode && coverImageUrl && !formData.coverImage && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-30 transition-all">
-                    <div className="opacity-0 hover:opacity-100 text-white text-center">
-                      <p className="text-lg font-medium">Click to change cover image</p>
-                    </div>
-                  </div>
-                )}
+              <div className="flex items-center gap-5 w-full">
+                {/* Upload button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*";
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        handleImageUpload({ target: { files: [file] } } as any);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="flex items-center justify-center px-5 py-2.5 bg-white rounded-[15px] border border-solid border-light-grey hover:border-red hover:shadow-sm transition-all cursor-pointer"
+                >
+                  <svg className="w-5 h-5 text-medium-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span className="ml-2 [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">
+                    Upload
+                  </span>
+                </button>
+
+                {/* Text and preview */}
+                <div className="flex items-center gap-3 flex-1">
+                  {formData.coverImage || coverImageUrl ? (
+                    <>
+                      <div
+                        className="w-20 h-12 bg-cover bg-center rounded-lg border border-green-400"
+                        style={{
+                          backgroundImage: formData.coverImage
+                            ? `url(${URL.createObjectURL(formData.coverImage)})`
+                            : coverImageUrl
+                            ? `url(${coverImageUrl})`
+                            : 'none'
+                        }}
+                      />
+                      <div className="flex flex-col">
+                        <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm">
+                          Cover image uploaded
+                        </span>
+                        <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-xs">
+                          Click Upload to change
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm">
+                      Supports JPG, PNG formats
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -780,7 +791,7 @@ export const Create = (): JSX.Element => {
                 </span>
               </label>
 
-              <div className={`flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid transition-all ${
+              <div className={`flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full max-w-full bg-white rounded-[15px] border border-solid transition-all ${
                 focusedField === 'recommendation' ? 'border-red shadow-sm' : 'border-light-grey'
               }`}>
                 <textarea
@@ -789,18 +800,18 @@ export const Create = (): JSX.Element => {
                   onFocus={() => setFocusedField('recommendation')}
                   onBlur={() => setFocusedField(null)}
                   placeholder="What did you find valuable about this link?"
-                  className="relative self-stretch flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none"
+                  className="relative w-full flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none overflow-y-auto"
                   aria-label="Recommendation"
                   maxLength={1000}
                 />
-                <div className="relative self-stretch [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px]">
+                <div className="relative w-full [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px]">
                   {characterCount}/1000
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col items-start gap-2.5 w-full">
-              <div className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+              <div className="relative w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-[#686868] text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
                 Choose a topic {categoriesLoading && <span className="text-medium-grey">(Loading...)</span>}
               </div>
 
