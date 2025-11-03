@@ -288,7 +288,7 @@ export const DeleteAccount = (): JSX.Element => {
                   <Button
                     onClick={handleConnectWallet}
                     disabled={isConnectingWallet || isRequestingSignature || walletSignatureResult !== null}
-                    className="h-auto bg-red px-[30px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-auto bg-orange-dark px-[30px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-orange-dark/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isConnectingWallet
                       ? 'Connecting...'
@@ -321,7 +321,7 @@ export const DeleteAccount = (): JSX.Element => {
                     <Button
                       onClick={handleSendCode}
                       disabled={isSendingCode || !user?.email || countdown > 0}
-                      className="h-auto bg-red px-[15px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-auto bg-orange-dark px-[15px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-orange-dark/90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSendingCode ? 'Sending...' : countdown > 0 ? `${countdown}s` : 'Send code'}
                     </Button>
@@ -376,7 +376,7 @@ export const DeleteAccount = (): JSX.Element => {
             <Button
               className={`h-auto h-[45px] px-5 py-[15px] rounded-[15px] font-h-4 font-[number:var(--h-4-font-weight)] text-white text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)] ${
                 isFormValid && !isLoading
-                  ? "bg-red hover:bg-red/90"
+                  ? "bg-orange-dark hover:bg-orange-dark/90"
                   : "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent"
               }`}
               disabled={!isFormValid || isLoading}
@@ -424,7 +424,7 @@ export const DeleteAccount = (): JSX.Element => {
 
                     <Button
                       variant="outline"
-                      className="inline-flex h-[45px] items-center justify-center gap-[15px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red hover:text-white h-auto transition-colors"
+                      className="inline-flex h-[45px] items-center justify-center gap-[15px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[50px] border border-solid border-orange-dark bg-transparent text-orange-dark hover:bg-orange-dark hover:text-white h-auto transition-colors"
                       onClick={handleFinalConfirm}
                     >
                       <span className="relative w-fit mt-[-2.50px] mb-[-0.50px] [font-family:'Lato',Helvetica] font-semibold text-xl tracking-[0] leading-7 whitespace-nowrap">
