@@ -62,6 +62,11 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 
   const menuItems: MenuItem[] = [
     {
+      id: "curate",
+      label: "Curate",
+      path: "/create",
+    },
+    {
       id: "discovery",
       label: "Discovery",
       path: "/",
@@ -89,9 +94,11 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   };
 
   const renderIcon = (id: string, isActive: boolean) => {
-    const className = `${isActive ? 'text-red' : 'text-dark-grey'}`;
+    const className = 'text-dark-grey';
 
     switch (id) {
+      case 'curate':
+        return <img className="w-5 h-5" alt="Curate" src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg" />;
       case 'discovery':
         return <DiscoverIcon className={className} />;
       case 'treasury':
@@ -141,6 +148,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   key={item.id}
                   onClick={() => handleMenuItemClick(item)}
                   className={`flex items-center gap-5 px-5 py-[25px] relative self-stretch w-full flex-[0_0_auto] cursor-pointer hover:bg-gray-50 transition-colors ${
+                    isActive ? "bg-gray-50" : ""
+                  } ${
                     index < menuItems.length - 1
                       ? "border-b border-solid border-light-grey"
                       : ""
@@ -154,7 +163,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 
                   <span
                     className={`relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap ${
-                      isActive ? "font-normal text-red" : "font-normal text-off-black"
+                      item.id === "curate"
+                        ? `text-red ${isActive ? "font-bold" : "font-normal"}`
+                        : `text-off-black ${isActive ? "font-bold" : "font-normal"}`
                     }`}
                   >
                     {item.label}

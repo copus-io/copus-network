@@ -103,9 +103,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
                   />
                 </div>
                 <span
-                  className={`relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap ${
-                    isActive ? "font-bold" : "font-normal"
-                  }`}
+                  className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap font-normal"
                 >
                   {item.label}
                 </span>
