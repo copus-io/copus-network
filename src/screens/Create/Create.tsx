@@ -956,7 +956,7 @@ export const Create = (): JSX.Element => {
             </div>
 
             <div className="flex flex-col items-center gap-10 w-full">
-              <div className="w-[500px] flex-shrink-0">
+              <div className="w-full max-w-[500px] lg:max-w-[300px] xl:max-w-[350px] 2xl:max-w-[400px]">
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
