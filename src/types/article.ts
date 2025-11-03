@@ -51,7 +51,7 @@ export interface X402PaymentInfo {
   resource: string;
 }
 
-// Backend API raw data structure
+// Backend API raw data structures
 export interface BackendAuthorInfo {
   id: number;
   namespace: string;
@@ -99,22 +99,22 @@ export interface BackendApiResponse {
   };
 }
 
-// Frontend transformed data structure
+// Frontend transformed data structures
 export interface Article {
   id: string;
   title: string;
   description: string;
   category: string;
-  categoryColor?: string; // Add category color field
+  categoryColor?: string; // Category color field
   coverImage: string;
   userName: string;
   userId: number;
-  namespace?: string; // Add user namespace field
+  namespace?: string; // User namespace field
   userAvatar: string;
   date: string;
   treasureCount: number;
   visitCount: number;
-  isLiked: boolean; // Add like status field
+  isLiked: boolean; // Like status field
   website: string;
   url?: string;
   createdAt?: string;
@@ -184,6 +184,22 @@ export interface MyCreatedArticleParams {
 
 // My created articles API response data structure
 export interface MyCreatedArticleResponse {
+  data: ArticleDetailResponse[];
+  pageCount: number;
+  pageIndex: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+// My unlocked articles API parameters
+export interface MyUnlockedArticleParams {
+  pageIndex?: number;
+  pageSize?: number;
+  targetUserId: number;
+}
+
+// My unlocked articles API response data structure
+export interface MyUnlockedArticleResponse {
   data: ArticleDetailResponse[];
   pageCount: number;
   pageIndex: number;

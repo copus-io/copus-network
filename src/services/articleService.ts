@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams } from '../types/article';
+import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
@@ -177,17 +177,17 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
     articlesArray = responseData.data.data;
   }
 
-  // Safety check: ensure articlesArray is an array and has map method
+  // Safety check: ensure articlesArray is an array with map method
   if (!Array.isArray(articlesArray)) {
     articlesArray = [];
   }
 
-  // Handle pagination info
+  // Pagination info processing
   const pageIndex = responseData.pageIndex || 0;
   const pageCount = responseData.pageCount || 0;
   const totalCount = responseData.totalCount || 0;
   const currentPageSize = responseData.pageSize || 10;
-  const hasMore = pageIndex < pageCount; // Backend uses 1-based paging, so no +1 needed
+  const hasMore = pageIndex < pageCount; // Backend uses 1-based page numbering, so no need to +1
 
   return {
     articles: articlesArray.map(transformBackendArticle),
@@ -243,7 +243,31 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
   }
 };
 
-// 发布文章（支持创建和编辑）
+// Get my unlocked articles
+export const getMyUnlockedArticles = async (params: MyUnlockedArticleParams): Promise<MyUnlockedArticleResponse> => {
+
+  const queryParams = new URLSearchParams();
+  if (params.pageIndex !== undefined) queryParams.append('pageIndex', params.pageIndex.toString());
+  if (params.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
+  queryParams.append('targetUserId', params.targetUserId.toString());
+
+  const endpoint = `/client/userHome/pageMyUnlockedArticle?${queryParams.toString()}`;
+
+  try {
+    const response = await apiRequest<{status: number, msg: string, data: MyUnlockedArticleResponse}>(endpoint, { requiresAuth: true });
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'API request failed');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Failed to fetch my unlocked articles:', error);
+    throw new Error(`Failed to fetch my unlocked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Publish article (supports creation and editing)
 export const publishArticle = async (articleData: {
   uuid?: string; // 编辑模式时传递
   title: string;
