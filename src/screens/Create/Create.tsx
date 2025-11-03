@@ -791,7 +791,7 @@ export const Create = (): JSX.Element => {
                 </span>
               </label>
 
-              <div className={`flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full max-w-full bg-white rounded-[15px] border border-solid transition-all ${
+              <div className={`flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid transition-all ${
                 focusedField === 'recommendation' ? 'border-red shadow-sm' : 'border-light-grey'
               }`}>
                 <textarea
@@ -800,11 +800,12 @@ export const Create = (): JSX.Element => {
                   onFocus={() => setFocusedField('recommendation')}
                   onBlur={() => setFocusedField(null)}
                   placeholder="What did you find valuable about this link?"
-                  className="relative w-full flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none overflow-y-auto"
+                  className="w-full flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none overflow-y-auto overflow-x-hidden"
                   aria-label="Recommendation"
                   maxLength={1000}
+                  style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                 />
-                <div className="relative w-full [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px]">
+                <div className="w-full [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px] flex-shrink-0">
                   {characterCount}/1000
                 </div>
               </div>
@@ -881,7 +882,7 @@ export const Create = (): JSX.Element => {
                     alt="x402 icon"
                     src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
                   />
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[23px]">
+                  <p className="font-p-l font-[number:var(--p-l-font-weight)] text-[#686868] text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)]">
                     Pay to visit source link
                   </p>
                 </div>
