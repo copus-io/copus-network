@@ -872,7 +872,7 @@ export const Create = (): JSX.Element => {
             </div>
 
             {/* x402 Pay-to-unlock section */}
-            <div className="flex flex-col items-start gap-5 w-full pt-5 border-t border-light-grey">
+            <div className="flex flex-col items-start gap-5 w-full pt-5">
 
               {/* Toggle section */}
               <div className="flex items-center justify-between w-full">
