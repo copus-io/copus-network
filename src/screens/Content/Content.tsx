@@ -11,6 +11,7 @@ import { ContentPageSkeleton } from "../../components/ui/skeleton";
 import { useArticleDetail } from "../../hooks/queries";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
+import { apiRequest } from "../../services/api";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
@@ -267,9 +268,8 @@ export const Content = (): JSX.Element => {
     try {
       // Call x402 API to get payment options for this article
       // Response format: { accepts: [{ payTo, asset, maxAmountRequired, network, resource, ... }] }
-      const x402Url = `https://api-test.copus.network/client/payment/getTargetUrl?uuid=${article.uuid}`;
-      const response = await fetch(x402Url);
-      const data = await response.json();
+      const endpoint = `/client/payment/getTargetUrl?uuid=${article.uuid}`;
+      const data = await apiRequest(endpoint);
 
       if (data.accepts && data.accepts.length > 0) {
         // Extract first payment option (we use USDC on Base Sepolia)

@@ -780,9 +780,7 @@ export const Create = (): JSX.Element => {
                 </span>
               </label>
 
-              <div className={`flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid transition-all ${
-                focusedField === 'recommendation' ? 'border-red shadow-sm' : 'border-light-grey'
-              }`}>
+              <div className="flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid border-light-grey">
                 <textarea
                   value={formData.recommendation}
                   onChange={(e) => handleInputChange("recommendation", e.target.value)}
@@ -945,8 +943,8 @@ export const Create = (): JSX.Element => {
               </div>
             </div>
 
-            <div className="flex flex-col items-start gap-10 w-full">
-              <div className="w-full max-w-[500px] lg:max-w-[350px] xl:max-w-[450px] 2xl:max-w-[500px]">
+            <div className="flex flex-col items-center gap-10 w-full">
+              <div className="w-[500px] flex-shrink-0">
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
@@ -955,7 +953,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full"
+                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-[500px]"
                 onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
                 style={{
                     opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,
