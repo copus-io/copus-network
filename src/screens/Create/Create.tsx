@@ -398,6 +398,17 @@ export const Create = (): JSX.Element => {
         setCharacterCount(articleData.content?.length || 0);
         setTitleCharacterCount(articleData.title?.length || 0);
 
+        // Set payment information if exists
+        if (articleData.targetUrlIsLocked && articleData.priceInfo?.price) {
+          setPayToUnlock(true);
+          setPaymentAmount(articleData.priceInfo.price.toString());
+          console.log('✅ Loaded payment settings - Locked:', true, 'Price:', articleData.priceInfo.price);
+        } else {
+          setPayToUnlock(false);
+          setPaymentAmount("0.01");
+          console.log('ℹ️ Article has no payment lock');
+        }
+
       } catch (error) {
         console.error('Failed to load article data:', error);
         showToast('Failed to load article data, please try again', 'error');

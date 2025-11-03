@@ -892,6 +892,46 @@ export class AuthService {
   }
 
   /**
+   * Get user's unlocked (paid) articles
+   */
+  static async getUserUnlockedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<{
+    data: Array<{
+      authorInfo: {
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+      categoryInfo: {
+        articleCount: number;
+        color: string;
+        id: number;
+        name: string;
+      };
+      content: string;
+      coverUrl: string;
+      createAt: number;
+      isLiked: boolean;
+      likeCount: number;
+      publishAt: number;
+      targetUrl: string;
+      title: string;
+      uuid: string;
+      viewCount: number;
+    }>;
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  }> {
+
+    return apiRequest(`/client/myHome/pageMyPaidArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
    * Get user social links list
    */
   static async getUserSocialLinks(): Promise<Array<{
