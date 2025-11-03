@@ -123,39 +123,13 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
   const endpoint = `/client/home/pageArticle?${queryParams.toString()}`;
 
 
-  // Try with authentication first for personalized data, fallback to no-auth for guests
+  // Make the request - token will be included automatically if available
   let backendResponse: BackendApiResponse;
   try {
-    // Check if user is logged in by looking for token
-    const token = localStorage.getItem('copus_token');
-    if (token) {
-      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: true });
-    } else {
-      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
-    }
+    backendResponse = await apiRequest<BackendApiResponse>(endpoint);
   } catch (error) {
-    console.warn('⚠️ Authenticated request failed, retrying without authentication:', error);
-
-    // Clear invalid tokens if authentication failed
-    if (error instanceof Error && (
-      error.message.includes('认证') || // Chinese: authentication
-      error.message.includes('令牌') || // Chinese: token
-      error.message.includes('Authentication failed') ||
-      error.message.includes('authentication token') ||
-      error.message.includes('401') ||
-      error.message.includes('403')
-    )) {
-      console.log('🔄 Clearing invalid authentication token');
-      localStorage.removeItem('copus_token');
-    }
-
-    // Always retry without authentication to allow guest browsing
-    try {
-      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
-    } catch (retryError) {
-      console.error('❌ Failed to fetch articles even without authentication:', retryError);
-      throw new Error('Failed to load articles. Please refresh the page and try again.');
-    }
+    console.error('❌ Failed to fetch articles:', error);
+    throw new Error('Failed to load articles. Please refresh the page and try again.');
   }
 
   // Handle different response formats
@@ -204,9 +178,8 @@ export const getArticleDetail = async (uuid: string): Promise<ArticleDetailRespo
   const endpoint = `/client/reader/article/info?uuid=${uuid}`;
 
   try {
-    // requiresAuth: false - article details should be publicly viewable without login
-    // Only interactions (like, comment, etc.) require authentication
-    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, { requiresAuth: false });
+    // Article details are publicly viewable but will include token if available for personalized data
+    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');

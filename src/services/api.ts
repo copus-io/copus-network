@@ -18,25 +18,25 @@ export const apiRequest = async <T>(
     defaultHeaders['Content-Type'] = 'application/json';
   }
 
-  // Add to headers if authentication is required or token exists
+  // Add token to headers by default if available
   // Try both localStorage and sessionStorage
   const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
 
-  if (requiresAuth) {
-    if (!token || token.trim() === '') {
-      throw new Error('Valid authentication token not found, please log in again');
-    }
-
+  if (token && token.trim() !== '') {
     // Check token format (JWT typically has 3 parts separated by dots)
     const tokenParts = token.split('.');
-    if (tokenParts.length !== 3) {
-      // Clear invalid token
+    if (tokenParts.length === 3) {
+      // Add token to all requests when available and valid
+      defaultHeaders.Authorization = `Bearer ${token}`;
+    } else if (requiresAuth) {
+      // Only clear invalid token and throw error if auth is required
       localStorage.removeItem('copus_token');
       localStorage.removeItem('copus_user');
       throw new Error('Invalid authentication token format, please log in again');
     }
-
-    defaultHeaders.Authorization = `Bearer ${token}`;
+  } else if (requiresAuth) {
+    // Only throw error if auth is specifically required
+    throw new Error('Valid authentication token not found, please log in again');
   }
 
   try {

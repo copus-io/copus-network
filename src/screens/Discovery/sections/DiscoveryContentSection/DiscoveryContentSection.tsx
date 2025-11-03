@@ -222,11 +222,18 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   const renderPostCard = (post: Article, index: number) => {
     const articleData = transformArticleToCardData(post);
-    const articleLikeState = getArticleLikeState(post.id, post.isLiked, post.treasureCount);
 
-    // Update article like status
-    articleData.isLiked = articleLikeState.isLiked;
-    articleData.treasureCount = articleLikeState.likeCount;
+    // Only show like states for logged-in users
+    if (user) {
+      const articleLikeState = getArticleLikeState(post.id, post.isLiked, post.treasureCount);
+      // Update article like status
+      articleData.isLiked = articleLikeState.isLiked;
+      articleData.treasureCount = articleLikeState.likeCount;
+    } else {
+      // For non-logged-in users, remove like state and use original count
+      articleData.isLiked = false;
+      articleData.treasureCount = post.treasureCount;
+    }
 
     // Check if this is the current user's own article
     const isOwnArticle = user && user.id === post.userId;
@@ -240,7 +247,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             showTreasure: true,
             showVisits: true
           }}
-          onLike={handleLike}
+          onLike={user ? handleLike : undefined} // Only pass onLike for logged-in users
           onUserClick={handleUserClick}
         />
       </div>

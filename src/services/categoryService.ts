@@ -20,8 +20,8 @@ export interface CategoryListResponse {
 export const getCategoryList = async (): Promise<Category[]> => {
 
   const response = await apiRequest<CategoryListResponse>(
-    '/client/author/article/categoryList',
-    { requiresAuth: false } // Categories should be publicly accessible
+    '/client/author/article/categoryList'
+    // Categories are publicly accessible but will use token if available
   );
 
   if (response.status !== 1) {

@@ -101,12 +101,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    if (onLike) {
-      const currentCount = typeof article.treasureCount === 'string'
-        ? parseInt(article.treasureCount) || 0
-        : article.treasureCount;
-      await onLike(article.uuid || article.id, article.isLiked || false, currentCount);
+    // Do nothing if no onLike callback (user not logged in)
+    if (!onLike) {
+      return;
     }
+
+    const currentCount = typeof article.treasureCount === 'string'
+      ? parseInt(article.treasureCount) || 0
+      : article.treasureCount;
+    await onLike(article.uuid || article.id, article.isLiked || false, currentCount);
   };
 
   // Handle user click
@@ -364,10 +367,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               {/* Left side: Treasure button */}
               {actions.showTreasure && (
                 <TreasureButton
-                  isLiked={article.isLiked || false}
+                  isLiked={onLike ? (article.isLiked || false) : false} // Always false when no onLike callback
                   likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                   onClick={handleLikeClick}
                   size="large"
+                  disabled={!onLike} // Disable when no onLike callback (user not logged in)
                 />
               )}
 
@@ -547,10 +551,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               <div className="flex items-center gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
-                    isLiked={article.isLiked || false}
+                    isLiked={onLike ? (article.isLiked || false) : false} // Always false when no onLike callback
                     likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                     onClick={handleLikeClick}
                     size="large"
+                    disabled={!onLike} // Disable when no onLike callback (user not logged in)
                   />
                 )}
               </div>
