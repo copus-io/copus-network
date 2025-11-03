@@ -20,6 +20,14 @@ export const DeleteAccount = (): JSX.Element => {
   const [deleteReason, setDeleteReason] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Wallet verification state
+  const [isWalletVerified, setIsWalletVerified] = useState(false);
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+
+  // Determine if user logged in with wallet
+  const authMethod = typeof localStorage !== 'undefined' ? localStorage.getItem('copus_auth_method') : null;
+  const isWalletUser = !!(user?.walletAddress && (authMethod === 'metamask' || authMethod === 'coinbase'));
   
   // Scroll to top when page loads
   useEffect(() => {
@@ -59,28 +67,90 @@ export const DeleteAccount = (): JSX.Element => {
     await sendCode(user.email, CODE_TYPES.DELETE_ACCOUNT);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!isConfirmed || !verificationCode.trim()) {
-      showToast('请确认并输入验证码', 'error');
+  // Handle wallet connection for verification
+  const handleConnectWallet = async () => {
+    if (!user?.walletAddress) {
+      showToast('No wallet address found', 'error');
       return;
+    }
+
+    setIsConnectingWallet(true);
+
+    try {
+      // Check if wallet provider is available
+      if (!window.ethereum) {
+        showToast('No wallet found. Please install MetaMask or Coinbase Wallet', 'error');
+        setIsConnectingWallet(false);
+        return;
+      }
+
+      // Determine which provider to use
+      let provider = window.ethereum;
+
+      if (authMethod === 'metamask' && window.ethereum.providers) {
+        // Multiple wallets installed - find MetaMask
+        provider = window.ethereum.providers.find((p: any) => p.isMetaMask) || window.ethereum;
+      } else if (authMethod === 'coinbase' && window.ethereum.providers) {
+        // Multiple wallets installed - find Coinbase Wallet
+        provider = window.ethereum.providers.find((p: any) => p.isCoinbaseWallet) || window.ethereum;
+      }
+
+      // Request account access
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      const connectedAddress = accounts[0].toLowerCase();
+      const userAddress = user.walletAddress.toLowerCase();
+
+      // Verify the connected wallet matches the user's registered wallet
+      if (connectedAddress === userAddress) {
+        setIsWalletVerified(true);
+        showToast('Wallet verified successfully', 'success');
+      } else {
+        showToast('Connected wallet does not match your registered wallet', 'error');
+        setIsWalletVerified(false);
+      }
+    } catch (error: any) {
+      console.error('Wallet connection error:', error);
+      if (error.code === 4001) {
+        showToast('Wallet connection rejected', 'error');
+      } else {
+        showToast('Failed to connect wallet', 'error');
+      }
+      setIsWalletVerified(false);
+    } finally {
+      setIsConnectingWallet(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    // Validate based on auth method
+    if (isWalletUser) {
+      if (!isConfirmed || !isWalletVerified) {
+        showToast('Please confirm and verify your wallet', 'error');
+        return;
+      }
+    } else {
+      if (!isConfirmed || !verificationCode.trim()) {
+        showToast('请确认并输入验证码', 'error');
+        return;
+      }
     }
 
     setIsLoading(true);
     try {
       const success = await AuthService.deleteAccount({
         accountType: 0, // Normal account type
-        code: verificationCode.trim(),
+        code: isWalletUser ? 'wallet_verified' : verificationCode.trim(), // Use placeholder for wallet users
         reason: deleteReason.trim()
       });
 
       if (success) {
         setShowSuccessPopup(true);
       } else {
-        showToast('账户删除失败，请检查验证码是否正确', 'error');
+        showToast(isWalletUser ? 'Account deletion failed' : '账户删除失败，请检查验证码是否正确', 'error');
       }
     } catch (error) {
       console.error('Failed to delete account:', error);
-      showToast('账户删除失败，请稍后重试', 'error');
+      showToast(isWalletUser ? 'Account deletion failed, please try again' : '账户删除失败，请稍后重试', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -92,7 +162,10 @@ export const DeleteAccount = (): JSX.Element => {
     navigate('/');
   };
 
-  const isFormValid = isConfirmed && verificationCode.trim() !== "";
+  // Validation logic: wallet users need wallet verification, email users need verification code
+  const isFormValid = isWalletUser
+    ? (isConfirmed && isWalletVerified)
+    : (isConfirmed && verificationCode.trim() !== "");
 
   return (
     <div className="min-h-screen flex bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
@@ -135,37 +208,72 @@ export const DeleteAccount = (): JSX.Element => {
               </div>
             </div>
 
+            {/* Verification Section - Email or Wallet */}
             <div className="flex flex-col items-start gap-5 pt-0 pb-[30px] px-0 w-full border-b border-solid border-[#ffffff]">
               <div className="flex flex-col items-start justify-center">
                 <h2 className="font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
-                  Email verification
+                  {isWalletUser ? 'Wallet verification' : 'Email verification'}
                 </h2>
               </div>
 
-              <div className="flex flex-col items-start gap-5 w-full">
-                <div className="flex items-center gap-5">
-                  <div className="font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                    {user?.email || 'Loading...'}
+              {isWalletUser ? (
+                // Wallet Verification UI
+                <div className="flex flex-col items-start gap-5 w-full">
+                  <div className="flex flex-col gap-2">
+                    <div className="font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)]">
+                      {user?.walletAddress || 'Loading...'}
+                    </div>
+                    {isWalletVerified && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">Wallet verified</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                <div className="flex items-start gap-5 w-full">
-                  <Input
-                    placeholder="Enter verification code"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    className="flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] shadow-[0px_2px_5px_#00000040] px-[15px] py-2.5 [font-family:'Lato',Helvetica] font-normal text-[#a9a9a9] text-lg tracking-[0] leading-[25.2px] h-auto placeholder:text-[#a9a9a9]"
-                  />
 
                   <Button
-                    onClick={handleSendCode}
-                    disabled={isSendingCode || !user?.email || countdown > 0}
-                    className="h-auto bg-red px-[15px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleConnectWallet}
+                    disabled={isConnectingWallet || isWalletVerified}
+                    className="h-auto bg-red px-[30px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSendingCode ? 'Sending...' : countdown > 0 ? `${countdown}s` : 'Send code'}
+                    {isConnectingWallet
+                      ? 'Connecting...'
+                      : isWalletVerified
+                        ? 'Wallet Connected'
+                        : authMethod === 'metamask'
+                          ? 'Connect MetaMask'
+                          : 'Connect Coinbase Wallet'}
                   </Button>
                 </div>
-              </div>
+              ) : (
+                // Email Verification UI
+                <div className="flex flex-col items-start gap-5 w-full">
+                  <div className="flex items-center gap-5">
+                    <div className="font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
+                      {user?.email || 'Loading...'}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-5 w-full">
+                    <Input
+                      placeholder="Enter verification code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] shadow-[0px_2px_5px_#00000040] px-[15px] py-2.5 [font-family:'Lato',Helvetica] font-normal text-[#a9a9a9] text-lg tracking-[0] leading-[25.2px] h-auto placeholder:text-[#a9a9a9]"
+                    />
+
+                    <Button
+                      onClick={handleSendCode}
+                      disabled={isSendingCode || !user?.email || countdown > 0}
+                      className="h-auto bg-red px-[15px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSendingCode ? 'Sending...' : countdown > 0 ? `${countdown}s` : 'Send code'}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col items-start gap-5 pt-0 pb-[30px] px-0 w-full border-b border-solid border-[#ffffff]">

@@ -758,7 +758,7 @@ export const MainContentSection = (): JSX.Element => {
             <div className="inline-flex flex-col items-start justify-center">
               <div className="inline-flex items-center gap-[15px]">
                 <h1 className="mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42px] whitespace-nowrap">
-                  {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Guest user")}
+                  {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Anonymous")}
                 </h1>
 
                 {/* Show "Account deleted" text beside username when account is disabled */}

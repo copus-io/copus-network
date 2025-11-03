@@ -248,7 +248,7 @@ export const Create = (): JSX.Element => {
     // Only show category if user has selected one AND it's in the loaded categories
     category: selectedCategoryData ? formData.selectedTopic : '',
     categoryColor: selectedCategoryData?.color,
-    userName: user?.username || 'Guest user',
+    userName: user?.username || 'Anonymous',
     userAvatar: user?.faceUrl || profileDefaultAvatar,
     userId: user?.id,
     namespace: user?.namespace,
