@@ -126,7 +126,7 @@ export class AuthService {
 
     try {
       // Check if user has token for account binding mode
-      const token = localStorage.getItem('copus_token');
+      const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
 
       if (token) {
         // Try with authentication (for account binding)
@@ -370,7 +370,7 @@ export class AuthService {
 
     try {
       // Check if user has token for account binding mode
-      const token = localStorage.getItem('copus_token');
+      const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
 
       if (token) {
         // Try with authentication (for account binding)
@@ -624,7 +624,7 @@ export class AuthService {
     });
 
     // Check authentication token before attempting upload
-    const token = localStorage.getItem('copus_token');
+    const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
     const user = localStorage.getItem('copus_user');
     console.log('🔥 Authentication check:', {
       hasToken: !!token,
@@ -886,6 +886,46 @@ export class AuthService {
   }> {
 
     return apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Get user's unlocked (paid) articles
+   */
+  static async getUserUnlockedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<{
+    data: Array<{
+      authorInfo: {
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+      categoryInfo: {
+        articleCount: number;
+        color: string;
+        id: number;
+        name: string;
+      };
+      content: string;
+      coverUrl: string;
+      createAt: number;
+      isLiked: boolean;
+      likeCount: number;
+      publishAt: number;
+      targetUrl: string;
+      title: string;
+      uuid: string;
+      viewCount: number;
+    }>;
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  }> {
+
+    return apiRequest(`/client/myHome/pageMyPaidArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
       method: 'GET',
       requiresAuth: true,
     });

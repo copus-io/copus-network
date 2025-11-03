@@ -113,7 +113,7 @@ export const Content = (): JSX.Element => {
     categoryApiColor: article.categoryInfo?.color,
     categoryStyle: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color),
     categoryInlineStyle: getCategoryInlineStyle(article.categoryInfo?.color),
-    userName: article.authorInfo?.username || 'Anonymous',
+    userName: (article.authorInfo?.username && article.authorInfo.username.trim() !== '') ? article.authorInfo.username : 'Anonymous',
     userId: article.authorInfo?.id,
     userNamespace: article.authorInfo?.namespace,
     userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
@@ -1224,7 +1224,7 @@ export const Content = (): JSX.Element => {
 
                   {/* Title with x402 payment badge inline */}
                   <div className="flex flex-col gap-2 w-full">
-                    <div className="flex items-center gap-2 w-full">
+                    <div className="flex items-start gap-2 w-full">
                       {/* Payment badge - show if content is locked */}
                       {article?.targetUrlIsLocked && article?.priceInfo && (
                         <div className="h-[34px] px-2.5 py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
@@ -1265,7 +1265,7 @@ export const Content = (): JSX.Element => {
 
               <blockquote className="flex flex-col items-start gap-5 p-5 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                 <div className="flex items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex items-end justify-center self-stretch w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
+                  <div className="flex items-start justify-center self-stretch w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
                     &quot;
                   </div>
 
@@ -1296,9 +1296,15 @@ export const Content = (): JSX.Element => {
                     src={content.userAvatar}
                   />
 
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
-                    {content.userName}
-                  </span>
+                  {content?.userName && content.userName.trim() !== '' ? (
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
+                      {content.userName}
+                    </span>
+                  ) : (
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
+                      Anonymous
+                    </span>
+                  )}
                 </cite>
               </blockquote>
             </div>

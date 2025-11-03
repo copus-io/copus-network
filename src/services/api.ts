@@ -19,7 +19,8 @@ export const apiRequest = async <T>(
   }
 
   // Add to headers if authentication is required or token exists
-  const token = localStorage.getItem('copus_token');
+  // Try both localStorage and sessionStorage
+  const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
 
   if (requiresAuth) {
     if (!token || token.trim() === '') {

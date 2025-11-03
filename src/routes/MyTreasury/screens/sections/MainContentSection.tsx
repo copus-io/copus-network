@@ -241,8 +241,8 @@ export const MainContentSection = (): JSX.Element => {
           // 只在创作标签页时加载创作文章
           await fetchCreatedArticles(userId);
         } else if (activeTab === 'unlocked') {
-          // Only load unlocked articles when on unlocked tab
-          await fetchUnlockedArticles(userId);
+          // Load unlocked articles when on unlocked tab
+          await fetchUnlockedArticles();
         }
       } catch (error) {
         console.error('❌ 加载文章数据失败:', error);
@@ -296,23 +296,25 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   // Unlocked articles loading function
-  const fetchUnlockedArticles = async (userId: number) => {
+  const fetchUnlockedArticles = async () => {
+    // Only logged-in users can view their unlocked articles
+    if (!user) {
+      console.warn('⚠️ No user logged in, skipping unlocked articles fetch');
+      return;
+    }
+
     setUnlockedArticlesLoading(true);
     setUnlockedArticlesError(null);
 
     try {
-      const response = await getMyUnlockedArticles({
-        pageIndex: 1,
-        pageSize: 10,
-        targetUserId: userId
-      });
+      const response = await AuthService.getUserUnlockedArticles(1, 20);
 
-      const articlesArray = extractArticlesFromResponse(response, '已解锁');
+      const articlesArray = extractArticlesFromResponse(response, 'Unlocked');
       setUnlockedArticles(articlesArray);
 
     } catch (error) {
-      console.error('❌ 获取已解锁文章失败:', error);
-      setUnlockedArticlesError(`获取已解锁文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      console.error('❌ Failed to fetch unlocked articles:', error);
+      setUnlockedArticlesError(`Failed to fetch unlocked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setUnlockedArticles([]);
     } finally {
       setUnlockedArticlesLoading(false);
@@ -392,6 +394,32 @@ export const MainContentSection = (): JSX.Element => {
       website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
       // x402 payment fields
       isPaymentRequired: article.targetUrlIsLocked,
+      paymentPrice: article.priceInfo?.price?.toString()
+    };
+  };
+
+  // Transform API data to unlocked article card format
+  const transformUnlockedApiToCard = (article: any): ArticleData => {
+    return {
+      id: article.uuid,
+      uuid: article.uuid,
+      title: article.title,
+      description: article.content,
+      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.categoryInfo?.name || 'Uncategorized',
+      categoryColor: article.categoryInfo?.color || '#666666',
+      userName: article.authorInfo?.username || 'Anonymous',
+      userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
+      userId: article.authorInfo?.id,
+      userNamespace: article.authorInfo?.namespace,
+      date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
+      treasureCount: article.likeCount || 0,
+      visitCount: article.viewCount || 0,
+      isLiked: article.isLiked || false,
+      targetUrl: article.targetUrl,
+      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
+      // x402 payment fields - unlocked articles are already paid
+      isPaymentRequired: false, // Already unlocked
       paymentPrice: article.priceInfo?.price?.toString()
     };
   };
@@ -839,16 +867,24 @@ export const MainContentSection = (): JSX.Element => {
               </div>
             </TabsTrigger>
 
-            <TabsTrigger
-              value="unlocked"
-              className="flex-1 flex items-center justify-center bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none p-0 relative data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:transform data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-[calc(100%-30px)] data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[#454545]"
-            >
-              <div className="justify-center px-[15px] py-2.5 w-full flex items-center gap-2.5">
-                <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s unlocked` : 'My unlocked'}
-                </span>
-              </div>
-            </TabsTrigger>
+            {/* Only show Unlocked links tab for own treasury, not when viewing other users */}
+            {!isViewingOtherUser && (
+              <TabsTrigger
+                value="unlocked"
+                className="flex-1 flex items-center justify-center bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none p-0 relative data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:transform data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-[calc(100%-30px)] data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[#454545]"
+              >
+                <div className="justify-center px-[15px] py-2.5 w-full flex items-center gap-2.5">
+                  {/* Open lock icon */}
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                  </svg>
+                  <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
+                    Unlocked links
+                  </span>
+                </div>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="collection" className="mt-[30px]">
@@ -919,18 +955,23 @@ export const MainContentSection = (): JSX.Element => {
             ) : unlockedArticles.length > 0 ? (
               <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
                 {unlockedArticles.map((article) => {
-                  const card = transformCreatedApiToCard(article);
+                  const card = transformUnlockedApiToCard(article);
                   return renderCard(card);
                 })}
               </div>
             ) : (
-              <div className="flex flex-col justify-center items-center py-20 gap-4">
+              <div className="flex flex-col justify-center items-center py-20 gap-6">
                 <div className="text-lg text-gray-600">
-                  {isViewingOtherUser ? 'This user has no unlocked content yet' : 'No unlocked content yet'}
+                  Nothing here yet
                 </div>
-                <div className="text-sm text-gray-400">
-                  {isViewingOtherUser ? 'No unlocked content available' : 'Unlock some premium content to see it here!'}
-                </div>
+                <Button
+                  onClick={() => navigate('/')}
+                  className="inline-flex h-[45px] items-center justify-center gap-[15px] px-[30px] py-2.5 rounded-[50px] bg-red hover:bg-red/90 text-white transition-colors"
+                >
+                  <span className="[font-family:'Lato',Helvetica] font-semibold text-xl tracking-[0] leading-7 whitespace-nowrap">
+                    Explore more content
+                  </span>
+                </Button>
               </div>
             )}
           </TabsContent>
