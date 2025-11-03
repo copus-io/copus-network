@@ -381,17 +381,17 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               )}
 
               {/* Right side: Visit count and Edit/Delete buttons */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 {/* Visit count */}
                 {actions.showVisits && (
                   <div className="flex items-center gap-2">
                     <img
-                      className="w-5 h-3.5"
+                      className="w-5 h-5"
                       alt="Ic view"
                       src={getIconUrl('VIEW')}
-                      style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                     />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1rem' }}>
                       {article.visitCount}
                     </span>
                   </div>
@@ -408,7 +408,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         onClick={handleEdit}
                       >
                         <img
-                          className="w-5 h-3.5"
+                          className="w-5 h-5"
                           alt="Edit"
                           src={getIconUrl('EDIT')}
                           style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
@@ -424,7 +424,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         onClick={handleDelete}
                       >
                         <img
-                          className="w-5 h-3.5"
+                          className="w-5 h-5"
                           alt="Delete"
                           src={getIconUrl('DELETE')}
                           style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
@@ -570,12 +570,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 {actions.showVisits && (
                   <div className="inline-flex items-center gap-2">
                     <img
-                      className="w-5 h-3.5"
+                      className="w-5 h-5"
                       alt="Ic view"
                       src={getIconUrl('VIEW')}
-                      style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                     />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1rem' }}>
                       {article.visitCount}
                     </span>
                   </div>

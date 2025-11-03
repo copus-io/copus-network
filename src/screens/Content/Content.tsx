@@ -9,7 +9,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
 import { useArticleDetail } from "../../hooks/queries";
-import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
+import { getCategoryStyle, getCategoryInlineStyle, formatDate } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { apiRequest } from "../../services/api";
 import { TreasureButton } from "../../components/ui/TreasureButton";
@@ -118,7 +118,7 @@ export const Content = (): JSX.Element => {
     userId: article.authorInfo?.id,
     userNamespace: article.authorInfo?.namespace,
     userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
-    date: new Date(article.createAt * 1000).toLocaleDateString(),
+    date: formatDate(new Date(article.createAt * 1000).toISOString()),
     treasureCount: article.likeCount || 0,
     visitCount: `${article.viewCount || 0}`,
     likes: article.likeCount || 0,
@@ -1544,7 +1544,11 @@ export const Content = (): JSX.Element => {
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
           network="Base Sepolia"
           faucetLink="https://faucet.circle.com/"
-          isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
+          isInsufficientBalance={
+            x402PaymentInfo && walletBalance !== '...'
+              ? (parseFloat(walletBalance) || 0) < (parseInt(x402PaymentInfo.amount) / 1000000)
+              : false
+          }
         />
       </div>
     </div>

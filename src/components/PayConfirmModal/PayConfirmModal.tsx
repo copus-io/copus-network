@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface PaymentDetail {
   label: string;
@@ -28,6 +28,8 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
   faucetLink = "#",
   isInsufficientBalance = false,
 }) => {
+  const [showCopied, setShowCopied] = useState(false);
+
   const paymentDetails: PaymentDetail[] = [
     { label: "Available balance:", value: availableBalance },
     { label: "Amount:", value: amount },
@@ -37,6 +39,16 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
   const handlePayNow = () => {
     if (onPayNow) {
       onPayNow();
+    }
+  };
+
+  const handleCopyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(walletAddress);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy address:', err);
     }
   };
 
@@ -99,15 +111,21 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
           </header>
 
           <div
-            className="flex flex-col items-center gap-[5px] px-3 sm:px-4 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent"
-            role="region"
-            aria-label="Wallet address"
+            className="flex flex-col items-center gap-[5px] px-3 sm:px-4 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent cursor-pointer hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.5)_0%,rgba(224,224,224,0.5)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all"
+            role="button"
+            aria-label="Click to copy wallet address"
+            onClick={handleCopyAddress}
           >
             <div className="flex items-center justify-center gap-[5px] relative w-full overflow-hidden">
               <div className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-base sm:text-lg md:text-xl tracking-[0] leading-[23px] break-all text-center px-2">
                 {walletAddress}
               </div>
             </div>
+            {showCopied && (
+              <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-off-black text-white text-sm rounded-lg whitespace-nowrap [font-family:'Lato',Helvetica] shadow-lg">
+                Wallet address copied
+              </div>
+            )}
           </div>
 
           <dl className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">

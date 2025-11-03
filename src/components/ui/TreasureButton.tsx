@@ -76,7 +76,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
             ${currentSize.icon}
             ${isLiked
               ? 'filter brightness-0 saturate-200 hue-rotate-45deg transform scale-110 drop-shadow-md'
-              : 'opacity-60 hover:opacity-100 hover:scale-110'
+              : 'hover:scale-110'
             }
           `}
           alt="Treasure icon"
@@ -84,7 +84,9 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
           style={
             isLiked ? {
               filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
-            } : undefined
+            } : {
+              filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)'
+            }
           }
         />
         {/* 黄色悬停效果叠加层 */}
@@ -108,10 +110,10 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
         className={`
           [font-family:'Lato',Helvetica] font-normal text-center tracking-[0] leading-[20.8px]
           ${currentSize.text}
-          text-dark-grey
+          text-[#696969]
           transition-colors duration-200
         `}
-        style={{ fontSize: '1.125rem' }}
+        style={{ fontSize: '1rem' }}
       >
         {formatCount(likesCount)}
       </span>
