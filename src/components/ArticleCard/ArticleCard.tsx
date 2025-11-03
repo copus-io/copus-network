@@ -212,9 +212,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 {/* Title with x402 payment badge */}
                 <div className="relative min-h-[72px] w-full overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="float-left h-[36px] px-1.5 py-[8px] mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
                         src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
                       />
@@ -298,9 +298,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 {/* Title with x402 payment badge */}
                 <div className="relative min-h-[72px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="float-left h-[36px] px-1.5 py-[8px] mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
                         src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
                       />
@@ -483,9 +483,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 {/* Title with x402 payment badge */}
                 <div className="relative min-h-[72px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="float-left h-[36px] px-1.5 py-[8px] mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
                         src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
                       />
