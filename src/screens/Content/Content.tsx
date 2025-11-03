@@ -1265,7 +1265,7 @@ export const Content = (): JSX.Element => {
 
               <blockquote className="flex flex-col items-start gap-5 p-5 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                 <div className="flex items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex items-end justify-center self-stretch w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
+                  <div className="flex items-start justify-center self-stretch w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
                     &quot;
                   </div>
 
