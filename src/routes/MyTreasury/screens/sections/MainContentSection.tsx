@@ -844,40 +844,37 @@ export const MainContentSection = (): JSX.Element => {
           const newUrl = `${window.location.pathname}?${newSearchParams.toString()}`;
           navigate(newUrl, { replace: true });
         }} className="w-full">
-          <TabsList className="flex items-center justify-between w-full bg-transparent h-auto p-0 rounded-none relative border-b border-[#E0E0E0]">
+          <TabsList className="flex w-full bg-transparent h-auto p-0 gap-0 border-b border-gray-100">
             <TabsTrigger
               value="collection"
-              className="flex-1 flex items-center justify-center bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none p-0 relative data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:transform data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-[calc(100%-30px)] data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[#454545]"
+              className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
             >
-              <div className="inline-flex items-center justify-center px-[15px] py-2.5">
-                <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s collections` : 'My collections'}
-                </span>
-              </div>
+              <span className="relative z-10">
+                {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s collections` : 'My collections'}
+              </span>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
             </TabsTrigger>
 
             <TabsTrigger
               value="share"
-              className="flex-1 flex items-center justify-center bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none p-0 relative data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:transform data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-[calc(100%-30px)] data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[#454545]"
+              className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
             >
-              <div className="justify-center px-[15px] py-2.5 w-full flex items-center gap-2.5">
-                <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s shares` : 'My shares'}
-                </span>
-              </div>
+              <span className="relative z-10">
+                {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s shares` : 'My shares'}
+              </span>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
             </TabsTrigger>
 
             {/* Only show Unlocked links tab for own treasury, not when viewing other users */}
             {!isViewingOtherUser && (
               <TabsTrigger
                 value="unlocked"
-                className="flex-1 flex items-center justify-center bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none p-0 relative data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:transform data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-[calc(100%-30px)] data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[#454545]"
+                className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
               >
-                <div className="justify-center px-[15px] py-2.5 w-full flex items-center gap-2.5">
-                  <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                    Unlocked links
-                  </span>
-                </div>
+                <span className="relative z-10">
+                  Unlocked links
+                </span>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
               </TabsTrigger>
             )}
           </TabsList>
