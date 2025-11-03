@@ -1,6 +1,6 @@
 import React from 'react';
 
-// 基础骨架屏组件
+// Base skeleton component
 export const Skeleton: React.FC<{ className?: string }> = ({ className }) => {
   return (
     <div
@@ -81,15 +81,18 @@ export const ContentPageSkeleton: React.FC = () => {
   );
 };
 
-// 文章卡片骨架屏 - 模仿首页卡片设计
+// Article card skeleton - Match current homepage card design
 export const ArticleCardSkeleton: React.FC = () => {
   return (
     <div className="bg-white rounded-lg border-0 shadow-none transition-all duration-200 cursor-wait animate-pulse">
-      <div className="flex flex-col gap-[25px] p-[30px]">
-        <div className="flex flex-col gap-5">
-          {/* 封面图片骨架屏 - 模仿真实卡片的背景图样式 */}
-          <div className="flex flex-col h-60 justify-between p-[15px] rounded-lg bg-gray-200 relative overflow-hidden">
-            {/* 闪烁动画 */}
+      <div className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
+        <div className="flex flex-col gap-5 flex-1">
+          {/* Cover image skeleton - match discovery layout style */}
+          <div
+            className="flex flex-col w-full justify-between p-[15px] rounded-lg bg-gray-200 relative overflow-hidden"
+            style={{ aspectRatio: '16 / 9' }}
+          >
+            {/* Shimmer animation */}
             <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] animate-shimmer"></div>
 
             {/* Category badge skeleton */}
@@ -107,53 +110,54 @@ export const ArticleCardSkeleton: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-col gap-[15px]">
-            {/* Title skeleton - 模仿真实标题的字体大小 */}
-            <div className="space-y-2">
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-9 w-4/5" />
+          <div className="flex flex-col gap-[15px] flex-1">
+            {/* Title skeleton with x402 payment badge area */}
+            <div className="relative min-h-[72px] overflow-hidden">
+              {/* Optional payment badge skeleton */}
+              <div className="float-left h-[36px] px-1.5 py-[8px] mr-[5px] mb-[5px] rounded-[50px] bg-gray-200 w-20 animate-pulse"></div>
+              <div className="space-y-2">
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-4/5" />
+              </div>
             </div>
 
-            {/* 描述区域骨架屏 - 模仿带背景的描述框 */}
+            {/* Description area skeleton - match the styled background */}
             <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-              {/* 引用描述 */}
+              {/* Quote description skeleton */}
               <div className="space-y-2">
                 <Skeleton className="h-[27px] w-full" />
                 <Skeleton className="h-[27px] w-5/6" />
-                <Skeleton className="h-[27px] w-3/4" />
               </div>
 
-              {/* 作者和日期信息 */}
-              <div className="flex items-start justify-between">
-                <div className="inline-flex items-center gap-2.5">
+              {/* Author and date info skeleton */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <Skeleton className="w-[18px] h-[18px] rounded-full" />
                   <Skeleton className="h-[22.4px] w-20" />
                 </div>
-                <div className="inline-flex h-[25px] items-center">
-                  <Skeleton className="h-[23px] w-16" />
-                </div>
+                <Skeleton className="h-[23px] w-16" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* 底部统计和操作区域 */}
+        {/* Bottom stats and action area */}
         <div className="flex items-center justify-between">
           <div className="inline-flex items-center gap-[15px]">
-            {/* 宝箱统计 */}
+            {/* Treasure count skeleton */}
             <div className="inline-flex items-center gap-2">
               <div className="w-[13px] h-5 bg-gray-300 rounded animate-pulse"></div>
               <Skeleton className="h-[20.8px] w-8" />
             </div>
 
-            {/* 访问统计 */}
+            {/* Visit count skeleton */}
             <div className="inline-flex items-center gap-2">
               <div className="w-5 h-3.5 bg-gray-300 rounded animate-pulse"></div>
               <Skeleton className="h-[20.8px] w-16" />
             </div>
           </div>
 
-          {/* 分享按钮 */}
+          {/* Share button skeleton */}
           <div className="flex-shrink-0">
             <div className="w-6 h-6 bg-gray-300 rounded animate-pulse"></div>
           </div>
@@ -163,28 +167,16 @@ export const ArticleCardSkeleton: React.FC = () => {
   );
 };
 
-// 文章列表骨架屏 - 模仿首页的两列布局
+// Article list skeleton - Match current homepage responsive grid layout
 export const ArticleListSkeleton: React.FC = () => {
-  // 创建6个骨架屏卡片，分为两列显示
+  // Create 6 skeleton cards to show loading state
   const skeletonCards = Array.from({ length: 6 }).map((_, index) => (
     <ArticleCardSkeleton key={index} />
   ));
 
-  // 分为左右两列
-  const leftColumnCards = skeletonCards.filter((_, index) => index % 2 === 0);
-  const rightColumnCards = skeletonCards.filter((_, index) => index % 2 === 1);
-
   return (
-    <section className="flex items-start gap-[60px] pt-5 pb-[30px] min-h-screen px-5">
-      {/* 左列 */}
-      <div className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
-        {leftColumnCards}
-      </div>
-
-      {/* 右列 */}
-      <div className="flex flex-col gap-10 pt-0 pb-5 flex-1 rounded-[0px_0px_25px_25px]">
-        {rightColumnCards}
-      </div>
+    <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:px-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
+      {skeletonCards}
     </section>
   );
 };
