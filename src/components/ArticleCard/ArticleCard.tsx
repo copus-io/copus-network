@@ -342,7 +342,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={handleUserClick}
                       >
-                        {article.userName}
+                        {(article.userName && article.userName.trim() !== '') ? article.userName : 'Anonymous'}
                       </span>
                     </div>
 
@@ -527,7 +527,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={handleUserClick}
                       >
-                        {article.userName}
+                        {(article.userName && article.userName.trim() !== '') ? article.userName : 'Anonymous'}
                       </span>
                     </div>
                     <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">

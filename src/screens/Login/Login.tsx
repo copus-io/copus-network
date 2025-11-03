@@ -20,6 +20,7 @@ import {
 } from "../../components/ui/tabs";
 import { APP_CONFIG } from "../../config/app";
 import { useVerificationCode } from '../../hooks/useVerificationCode';
+import * as storage from "../../utils/storage";
 
 const socialProviders = [
   {
@@ -710,6 +711,10 @@ export const Login = (): JSX.Element => {
         // Mark that user logged in via Metamask
         localStorage.setItem('copus_auth_method', 'metamask');
 
+        // Set remember me preference - wallet logins default to remember me
+        storage.setRememberMePreference(true);
+        storage.migrateToLocalStorage();
+
         try {
           await fetchUserInfo(possibleToken);
         } catch (userInfoError) {
@@ -827,6 +832,10 @@ export const Login = (): JSX.Element => {
 
         // Mark that user logged in via Coinbase Wallet
         localStorage.setItem('copus_auth_method', 'coinbase');
+
+        // Set remember me preference - wallet logins default to remember me
+        storage.setRememberMePreference(true);
+        storage.migrateToLocalStorage();
 
         try {
           await fetchUserInfo(possibleToken);
@@ -954,13 +963,20 @@ export const Login = (): JSX.Element => {
         // Mark that user logged in via email/password
         localStorage.setItem('copus_auth_method', 'email');
 
+        // Set remember me preference - controls whether to use localStorage or sessionStorage
+        storage.setRememberMePreference(rememberMe);
+
         // If user chooses Remember me, save email to local storage
         if (rememberMe) {
           localStorage.setItem('copus_remembered_email', loginEmail);
           localStorage.setItem('copus_remember_me_option', 'true');
+          // Migrate any existing session data to localStorage
+          storage.migrateToLocalStorage();
         } else {
           localStorage.removeItem('copus_remembered_email');
           localStorage.setItem('copus_remember_me_option', 'false');
+          // Migrate any existing localStorage data to sessionStorage
+          storage.migrateToSessionStorage();
         }
 
         try {

@@ -126,7 +126,7 @@ export class AuthService {
 
     try {
       // Check if user has token for account binding mode
-      const token = localStorage.getItem('copus_token');
+      const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
 
       if (token) {
         // Try with authentication (for account binding)
@@ -370,7 +370,7 @@ export class AuthService {
 
     try {
       // Check if user has token for account binding mode
-      const token = localStorage.getItem('copus_token');
+      const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
 
       if (token) {
         // Try with authentication (for account binding)
@@ -624,7 +624,7 @@ export class AuthService {
     });
 
     // Check authentication token before attempting upload
-    const token = localStorage.getItem('copus_token');
+    const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
     const user = localStorage.getItem('copus_user');
     console.log('🔥 Authentication check:', {
       hasToken: !!token,
