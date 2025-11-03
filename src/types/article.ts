@@ -1,4 +1,4 @@
-// 后端API返回的原始数据结构
+// Backend API raw data structures
 export interface BackendAuthorInfo {
   id: number;
   namespace: string;
@@ -40,22 +40,22 @@ export interface BackendApiResponse {
   };
 }
 
-// 前端使用的转换后的数据结构
+// Frontend transformed data structures
 export interface Article {
   id: string;
   title: string;
   description: string;
   category: string;
-  categoryColor?: string; // 添加分类颜色字段
+  categoryColor?: string; // Category color field
   coverImage: string;
   userName: string;
   userId: number;
-  namespace?: string; // 添加用户namespace字段
+  namespace?: string; // User namespace field
   userAvatar: string;
   date: string;
   treasureCount: number;
   visitCount: number;
-  isLiked: boolean; // 添加点赞状态字段
+  isLiked: boolean; // Like status field
   website: string;
   url?: string;
   createdAt?: string;
@@ -77,7 +77,7 @@ export interface PageArticleParams {
   search?: string;
 }
 
-// 文章详情API返回的数据结构
+// Article detail API response data structure
 export interface ArticleDetailResponse {
   authorInfo: {
     faceUrl: string;
@@ -104,14 +104,30 @@ export interface ArticleDetailResponse {
   arChainId?: string; // Arweave chain ID for onchain storage
 }
 
-// 我创作的作品API参数
+// My created articles API parameters
 export interface MyCreatedArticleParams {
   pageIndex?: number;
   pageSize?: number;
 }
 
-// 我创作的作品API返回的数据结构
+// My created articles API response data structure
 export interface MyCreatedArticleResponse {
+  data: ArticleDetailResponse[];
+  pageCount: number;
+  pageIndex: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+// My unlocked articles API parameters
+export interface MyUnlockedArticleParams {
+  pageIndex?: number;
+  pageSize?: number;
+  targetUserId: number;
+}
+
+// My unlocked articles API response data structure
+export interface MyUnlockedArticleResponse {
   data: ArticleDetailResponse[];
   pageCount: number;
   pageIndex: number;

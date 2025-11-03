@@ -21,6 +21,8 @@ import {
 } from "../../../../components/ui/dialog";
 import { useToast } from "../../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
+import { useMyUnlockedArticles } from "../../../../hooks/useMyUnlockedArticles";
+import { getMyUnlockedArticles } from "../../../../services/articleService";
 
 
 const collectionItems = [
@@ -131,6 +133,11 @@ export const MainContentSection = (): JSX.Element => {
   const [createdArticlesLoading, setCreatedArticlesLoading] = useState(false);
   const [createdArticlesError, setCreatedArticlesError] = useState<string | null>(null);
 
+  // Unlocked articles state
+  const [unlockedArticles, setUnlockedArticles] = useState<any[]>([]);
+  const [unlockedArticlesLoading, setUnlockedArticlesLoading] = useState(false);
+  const [unlockedArticlesError, setUnlockedArticlesError] = useState<string | null>(null);
+
   // 添加缓存机制防止重复请求
   const [lastFetchedUserId, setLastFetchedUserId] = useState<number | null>(null);
   const [lastFetchedTab, setLastFetchedTab] = useState<string | null>(null);
@@ -226,6 +233,9 @@ export const MainContentSection = (): JSX.Element => {
         } else if (activeTab === 'share') {
           // 只在创作标签页时加载创作文章
           await fetchCreatedArticles(userId);
+        } else if (activeTab === 'unlocked') {
+          // Only load unlocked articles when on unlocked tab
+          await fetchUnlockedArticles(userId);
         }
       } catch (error) {
         console.error('❌ 加载文章数据失败:', error);
@@ -275,6 +285,30 @@ export const MainContentSection = (): JSX.Element => {
       setCreatedArticles([]);
     } finally {
       setCreatedArticlesLoading(false);
+    }
+  };
+
+  // Unlocked articles loading function
+  const fetchUnlockedArticles = async (userId: number) => {
+    setUnlockedArticlesLoading(true);
+    setUnlockedArticlesError(null);
+
+    try {
+      const response = await getMyUnlockedArticles({
+        pageIndex: 1,
+        pageSize: 10,
+        targetUserId: userId
+      });
+
+      const articlesArray = extractArticlesFromResponse(response, '已解锁');
+      setUnlockedArticles(articlesArray);
+
+    } catch (error) {
+      console.error('❌ 获取已解锁文章失败:', error);
+      setUnlockedArticlesError(`获取已解锁文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setUnlockedArticles([]);
+    } finally {
+      setUnlockedArticlesLoading(false);
     }
   };
 
@@ -748,6 +782,17 @@ export const MainContentSection = (): JSX.Element => {
                 </span>
               </div>
             </TabsTrigger>
+
+            <TabsTrigger
+              value="unlocked"
+              className="flex-1 flex items-center justify-center bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none p-0 relative data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:transform data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-[calc(100%-30px)] data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[#454545]"
+            >
+              <div className="justify-center px-[15px] py-2.5 w-full flex items-center gap-2.5">
+                <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
+                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s unlocked` : 'My unlocked'}
+                </span>
+              </div>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="collection" className="mt-[30px]">
@@ -801,6 +846,34 @@ export const MainContentSection = (): JSX.Element => {
                 </div>
                 <div className="text-sm text-gray-400">
                   {isViewingOtherUser ? 'No public shared content available' : 'Start sharing some amazing content!'}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="unlocked" className="mt-[30px]">
+            {unlockedArticlesLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="text-lg text-gray-600">Loading unlocked content...</div>
+              </div>
+            ) : unlockedArticlesError ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="text-lg text-red-600">Loading failed: {unlockedArticlesError}</div>
+              </div>
+            ) : unlockedArticles.length > 0 ? (
+              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
+                {unlockedArticles.map((article) => {
+                  const card = transformCreatedApiToCard(article);
+                  return renderCard(card);
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col justify-center items-center py-20 gap-4">
+                <div className="text-lg text-gray-600">
+                  {isViewingOtherUser ? 'This user has no unlocked content yet' : 'No unlocked content yet'}
+                </div>
+                <div className="text-sm text-gray-400">
+                  {isViewingOtherUser ? 'No unlocked content available' : 'Unlock some premium content to see it here!'}
                 </div>
               </div>
             )}

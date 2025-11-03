@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams } from '../types/article';
+import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
@@ -62,11 +62,11 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
 export const getPageArticles = async (params: PageArticleParams = {}): Promise<PageArticleResponse> => {
   const queryParams = new URLSearchParams();
 
-  // 确保总是有page参数，默认为第1页
+  // Ensure page parameter is always present, default to page 1
   const page = params.page || 1;
-  queryParams.append('pageIndex', page.toString()); // 后端也使用1基页码系统
+  queryParams.append('pageIndex', page.toString()); // Backend also uses 1-based page numbering
 
-  // 确保总是有pageSize参数
+  // Ensure pageSize parameter is always present
   const pageSize = params.pageSize || 10;
   queryParams.append('pageSize', pageSize.toString());
 
@@ -91,15 +91,15 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
     backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
   }
 
-  // 处理不同的响应格式
+  // Handle different response formats
   let responseData = backendResponse as any;
 
-  // 检查是否是包装格式 {status: 1, data: {...}}
+  // Check if it's wrapped format {status: 1, data: {...}}
   if (responseData.status === 1 && responseData.data) {
     responseData = responseData.data;
   }
 
-  // 确保articles数组存在
+  // Ensure articles array exists
   let articlesArray = [];
 
   if (Array.isArray(responseData.data)) {
@@ -110,22 +110,22 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
     articlesArray = responseData.data.data;
   }
 
-  // 安全检查：确保articlesArray是数组且有map方法
+  // Safety check: ensure articlesArray is an array with map method
   if (!Array.isArray(articlesArray)) {
     articlesArray = [];
   }
 
-  // 分页信息处理
+  // Pagination info processing
   const pageIndex = responseData.pageIndex || 0;
   const pageCount = responseData.pageCount || 0;
   const totalCount = responseData.totalCount || 0;
   const currentPageSize = responseData.pageSize || 10;
-  const hasMore = pageIndex < pageCount; // 后端使用1基页码，所以不需要+1
+  const hasMore = pageIndex < pageCount; // Backend uses 1-based page numbering, so no need to +1
 
   return {
     articles: articlesArray.map(transformBackendArticle),
     total: totalCount,
-    page: pageIndex, // 后端返回的页码就是1基的，直接使用
+    page: pageIndex, // Backend returns 1-based page number, use directly
     pageSize: currentPageSize,
     hasMore: hasMore,
   };
@@ -173,6 +173,30 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
   } catch (error) {
     console.error('❌ Failed to fetch my created articles:', error);
     throw new Error(`Failed to fetch my created articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Get my unlocked articles
+export const getMyUnlockedArticles = async (params: MyUnlockedArticleParams): Promise<MyUnlockedArticleResponse> => {
+
+  const queryParams = new URLSearchParams();
+  if (params.pageIndex !== undefined) queryParams.append('pageIndex', params.pageIndex.toString());
+  if (params.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
+  queryParams.append('targetUserId', params.targetUserId.toString());
+
+  const endpoint = `/client/userHome/pageMyUnlockedArticle?${queryParams.toString()}`;
+
+  try {
+    const response = await apiRequest<{status: number, msg: string, data: MyUnlockedArticleResponse}>(endpoint, { requiresAuth: true });
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'API request failed');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Failed to fetch my unlocked articles:', error);
+    throw new Error(`Failed to fetch my unlocked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 
