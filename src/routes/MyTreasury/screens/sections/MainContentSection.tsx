@@ -560,7 +560,8 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   const renderCard = (card: ArticleData) => {
-    const articleLikeState = getArticleLikeState(card.id, card.isLiked || true, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+    // Use exact like state from backend API response - no frontend assumptions
+    const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
     // 更新文章的点赞状态
     const articleData = {
@@ -628,8 +629,8 @@ export const MainContentSection = (): JSX.Element => {
 
   // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
   const renderMyShareCard = (card: ArticleData) => {
-    // 获取文章的点赞状态
-    const articleLikeState = getArticleLikeState(card.id, card.isLiked || false, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+    // Use exact like state from backend API response - no frontend assumptions
+    const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
     // 更新文章的点赞状态
     const articleData = {

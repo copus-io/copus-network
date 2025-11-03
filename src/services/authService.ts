@@ -1546,7 +1546,7 @@ export class AuthService {
 
     return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
       method: 'GET',
-      requiresAuth: false,
+      requiresAuth: true, // Need auth to get current user's like status for each article
     });
   }
 

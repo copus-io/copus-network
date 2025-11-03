@@ -124,10 +124,27 @@ export async function supportsWalletSigning(provider: any): Promise<boolean> {
 }
 
 /**
- * Create a timestamp-based nonce for signature verification.
+ * Get signature data from server for wallet verification.
  *
- * @returns Unix timestamp in seconds
+ * @param address - Wallet address
+ * @returns Promise<any> - Signature data from server
  */
-export function createSignatureTimestamp(): number {
-  return Math.floor(Date.now() / 1000);
+export async function getWalletSignatureData(address: string): Promise<any> {
+  // Import apiRequest function
+  const { apiRequest } = await import('../services/api');
+
+  const endpoint = `/client/common/getSnowflake?address=${encodeURIComponent(address)}`;
+
+  try {
+    const response = await apiRequest<any>(endpoint, {
+      method: 'GET',
+      requiresAuth: false
+    });
+
+    console.log('✅ Got wallet signature data from server:', response);
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to get wallet signature data:', error);
+    throw error;
+  }
 }

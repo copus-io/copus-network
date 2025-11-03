@@ -269,9 +269,62 @@ export const Content = (): JSX.Element => {
 
     try {
       // Call x402 API to get payment options for this article
-      // Response format: { accepts: [{ payTo, asset, maxAmountRequired, network, resource, ... }] }
+      // For x402 protocol, we expect a 402 Payment Required response with payment options
       const endpoint = `/client/payment/getTargetUrl?uuid=${article.uuid}`;
-      const data = await apiRequest(endpoint);
+
+      // Use fetch directly to handle 402 responses properly (x402 protocol)
+      const { APP_CONFIG } = await import('../../config/app');
+      const baseUrl = APP_CONFIG.API.BASE_URL;
+      const url = `${baseUrl}${endpoint}`;
+
+      console.log('🌐 Fetching x402 payment info from:', url);
+
+      // Get authentication token
+      const token = localStorage.getItem('copus_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add Authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔐 Adding authentication token to x402 request');
+      } else {
+        console.log('⚠️ No authentication token found for x402 request');
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+      });
+
+      console.log('📡 x402 API response status:', response.status);
+
+      let data;
+      // For x402 protocol, 402 Payment Required is the expected response with payment options
+      if (response.status === 402) {
+        console.log('✅ Received 402 Payment Required - extracting payment options');
+        data = await response.json();
+        console.log('📥 x402 payment data:', data);
+      } else if (response.ok) {
+        // 2xx response means content is free or already unlocked
+        console.log('✅ Content is free or already unlocked');
+        data = await response.json();
+        if (data.url) {
+          // Redirect to unlocked content
+          window.open(data.url, '_blank');
+          return;
+        } else {
+          showToast('Content unlocked successfully', 'success');
+          return;
+        }
+      } else {
+        // Other error responses
+        const errorText = await response.text();
+        console.error(`❌ Unexpected response status ${response.status}:`, errorText);
+        showToast('Failed to load payment information. Please try again.', 'error');
+        return;
+      }
 
       if (data.accepts && data.accepts.length > 0) {
         // Extract first payment option (we use USDC on Base Sepolia)
@@ -281,7 +334,7 @@ export const Content = (): JSX.Element => {
 
         // Store payment details in state for later use in handlePayNow
         // Always construct the resource URL with UUID to ensure backend receives it
-        const resourceUrl = `https://api-test.copus.network/client/payment/getTargetUrl?uuid=${article.uuid}`;
+        const resourceUrl = `${baseUrl}${endpoint}`;
 
         const paymentInfo = {
           payTo: paymentOption.payTo,              // Recipient wallet address
@@ -1140,15 +1193,26 @@ export const Content = (): JSX.Element => {
       // ---- Step 3d: Send signed authorization to server to unlock content ----
       showToast('Payment authorization signed! Unlocking content...', 'success');
 
-      // Call the x402 resource endpoint with X-PAYMENT header
+      // Call the x402 resource endpoint with X-PAYMENT header and authentication token
       // Server will:
       // 1. Validate the signature
       // 2. Execute the USDC transfer on-chain (server pays gas)
       // 3. Return the unlocked target URL
+      const token = localStorage.getItem('copus_token');
+      const unlockHeaders: Record<string, string> = {
+        'X-PAYMENT': paymentHeader
+      };
+
+      // Add authorization token if available
+      if (token) {
+        unlockHeaders['Authorization'] = `Bearer ${token}`;
+        console.log('🔐 Adding authentication token to x402 unlock request');
+      } else {
+        console.log('⚠️ No authentication token found for x402 unlock request');
+      }
+
       const unlockResponse = await fetch(x402PaymentInfo.resource, {
-        headers: {
-          'X-PAYMENT': paymentHeader
-        }
+        headers: unlockHeaders
       });
 
       // Check if unlock was successful
@@ -1380,6 +1444,26 @@ export const Content = (): JSX.Element => {
             </div>
 
 {/* Conditional button - "Visit" for unlocked/free content, "Unlock now" for locked content */}
+            {(() => {
+              console.log('🔍 Button condition check:', {
+                unlockedUrl,
+                targetUrlIsLocked: article?.targetUrlIsLocked,
+                article: article?.uuid,
+                articleData: article
+              });
+              console.log('🎯 Which button will render?',
+                unlockedUrl ? 'Visit (unlocked)' :
+                article?.targetUrlIsLocked ? 'Unlock now' : 'Visit (free)'
+              );
+
+              if (article?.targetUrlIsLocked) {
+                console.log('🚀 SHOULD RENDER "Unlock now" button');
+              } else {
+                console.log('❌ NOT rendering "Unlock now" button - targetUrlIsLocked is:', article?.targetUrlIsLocked);
+              }
+
+              return null;
+            })()}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
               <button
@@ -1403,6 +1487,8 @@ export const Content = (): JSX.Element => {
                   e.preventDefault();
                   e.stopPropagation();
                   console.log('🖱️ Unlock button clicked!');
+                  console.log('📄 Article data during click:', article);
+                  console.log('🔗 handleUnlock function:', typeof handleUnlock, handleUnlock);
                   handleUnlock();
                 }}
                 className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] transition-all active:scale-95"

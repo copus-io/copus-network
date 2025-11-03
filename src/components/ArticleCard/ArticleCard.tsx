@@ -8,6 +8,7 @@ import { TreasureButton } from "../ui/TreasureButton";
 import { ImagePreviewModal } from "../ui/image-preview-modal";
 import { LazyImage } from "../ui/lazy-image";
 import { getCategoryStyle, getCategoryInlineStyle, formatCount, formatDate } from "../../utils/categoryStyles";
+import { getIconUrl, getIconStyle } from "../../config/icons";
 
 // Generic article data interface
 export interface ArticleData {
@@ -82,13 +83,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const categoryStyle = getCategoryStyle(article.category, article.categoryColor);
   const categoryInlineStyle = getCategoryInlineStyle(article.categoryColor);
 
-  // Debug: Log payment data for this card
+  // Debug: Log payment data for this card (only in development)
   React.useEffect(() => {
-    console.log(`💳 Card payment data for "${article.title.substring(0, 30)}...":`, {
-      isPaymentRequired: article.isPaymentRequired,
-      paymentPrice: article.paymentPrice,
-      hasPaymentData: !!(article.isPaymentRequired && article.paymentPrice)
-    });
+    if (import.meta.env.DEV) {
+      console.log(`💳 Card payment data for "${article.title.substring(0, 30)}...":`, {
+        isPaymentRequired: article.isPaymentRequired,
+        paymentPrice: article.paymentPrice,
+        hasPaymentData: !!(article.isPaymentRequired && article.paymentPrice)
+      });
+    }
   }, [article.title, article.isPaymentRequired, article.paymentPrice]);
 
   // Image preview related state
@@ -127,7 +130,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
     if (onEdit) {
-      onEdit(article.id);
+      onEdit(article.uuid || article.id);
     }
   };
 
@@ -136,7 +139,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
     if (onDelete) {
-      onDelete(article.id);
+      onDelete(article.uuid || article.id);
     }
   };
 
@@ -207,7 +210,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   <div className="absolute bottom-2.5 right-2.5">
                     <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
-                        {article.website || 'example.com'}
+                        {article.website || 'Visit content'}
                       </span>
                     </div>
                   </div>
@@ -222,7 +225,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       <img
                         className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
-                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                        src={getIconUrl('X402_PAYMENT')}
                       />
                       <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
@@ -310,7 +313,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       <img
                         className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
-                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                        src={getIconUrl('X402_PAYMENT')}
                       />
                       <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
@@ -385,8 +388,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     <img
                       className="w-5 h-3.5"
                       alt="Ic view"
-                      src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
-                      style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                      src={getIconUrl('VIEW')}
+                      style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
                     />
                     <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
                       {article.visitCount}
@@ -407,8 +410,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         <img
                           className="w-5 h-3.5"
                           alt="Edit"
-                          src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                          src={getIconUrl('EDIT')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
                         />
                       </Button>
                     )}
@@ -423,8 +426,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         <img
                           className="w-5 h-3.5"
                           alt="Delete"
-                          src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
-                          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                          src={getIconUrl('DELETE')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
                         />
                       </Button>
                     )}
@@ -436,7 +439,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   <img
                     className="flex-shrink-0"
                     alt="Branch it"
-                    src="https://c.animaapp.com/mftam89xRJwsqQ/img/branch-it.svg"
+                    src={getIconUrl('BRANCH_IT')}
                   />
                 )}
               </div>
@@ -496,7 +499,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       <img
                         className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
-                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                        src={getIconUrl('X402_PAYMENT')}
                       />
                       <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
@@ -569,8 +572,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     <img
                       className="w-5 h-3.5"
                       alt="Ic view"
-                      src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
-                      style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                      src={getIconUrl('VIEW')}
+                      style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
                     />
                     <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
                       {article.visitCount}
@@ -590,8 +593,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         <img
                           className="w-5 h-3.5"
                           alt="Edit"
-                          src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                          src={getIconUrl('EDIT')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
                         />
                       </Button>
                     )}
@@ -606,8 +609,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         <img
                           className="w-5 h-3.5"
                           alt="Delete"
-                          src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
-                          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                          src={getIconUrl('DELETE')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
                         />
                       </Button>
                     )}
@@ -639,7 +642,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       {layout === 'preview' ? (
         cardContent
       ) : (
-        <Link to={`/work/${article.id}`}>
+        <Link to={`/work/${article.uuid || article.id}`}>
           {cardContent}
         </Link>
       )}
