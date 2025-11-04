@@ -26,7 +26,9 @@ export const NotificationListSection = (): JSX.Element => {
   const {
     notifications: contextNotifications,
     isLoading,
+    hasMore,
     fetchNotifications,
+    loadMoreNotifications,
     markAsRead,
     markAllAsRead,
     deleteNotification
@@ -40,6 +42,25 @@ export const NotificationListSection = (): JSX.Element => {
 
     return () => clearTimeout(timer);
   }, []); // 移除fetchNotifications依赖，只在组件首次加载时执行
+
+  // 无限滚动效果
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // 提前1000px触发
+
+      if (scrolledToBottom && hasMore && !isLoading) {
+        loadMoreNotifications();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMore, isLoading, loadMoreNotifications]);
 
   // Format timestamp with stable calculation to avoid frequent re-renders
   const formatTimestamp = (timestamp: number | string): string => {
@@ -346,6 +367,20 @@ export const NotificationListSection = (): JSX.Element => {
                   </Card>
                 );
               })}
+            </div>
+          )}
+
+          {/* 分页加载指示器 */}
+          {isLoading && notificationList.length > 0 && (
+            <div className="flex justify-center items-center py-8">
+              <div className="text-lg text-gray-600">正在加载更多通知...</div>
+            </div>
+          )}
+
+          {/* 没有更多内容提示 */}
+          {!isLoading && !hasMore && notificationList.length > 0 && (
+            <div className="flex justify-center items-center py-8">
+              <div className="text-gray-500">已经到底了！没有更多通知可加载。</div>
             </div>
           )}
         </TabsContent>

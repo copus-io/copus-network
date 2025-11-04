@@ -13,7 +13,13 @@ export class NotificationService {
     page: number = 1,
     pageSize: number = 20,
     msgType: number = 0
-  ): Promise<Notification[]> {
+  ): Promise<{
+    data: Notification[];
+    hasMore: boolean;
+    totalCount?: number;
+    pageCount?: number;
+    currentPage: number;
+  }> {
     // Restored API calls, optimized time formatting to reduce re-renders
 
     try {
@@ -23,6 +29,8 @@ export class NotificationService {
         pageSize: pageSize.toString(),
         msgType: msgType.toString(), // Always pass msgType, default is 0(all)
       });
+
+      console.log(`[NotificationService] Fetching page ${page}, pageSize ${pageSize}, msgType ${msgType}`);
 
 
       const response: any = await apiRequest(
@@ -46,18 +54,33 @@ export class NotificationService {
         fullDataStructure: JSON.stringify(response, null, 2)
       });
 
+      let notifications: Notification[] = [];
+      let totalCount = 0;
+      let pageCount = 0;
+
       // Handle real API response format
       if (response.data && Array.isArray(response.data)) {
-        return response.data.map(this.transformApiMessage);
+        notifications = response.data.map(this.transformApiMessage);
+        // For direct array response, estimate pagination info
+        totalCount = response.totalCount || 0;
+        pageCount = response.pageCount || 0;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        // Handle nested data structure
+        notifications = response.data.data.map(this.transformApiMessage);
+        totalCount = response.data.totalCount || response.totalCount || 0;
+        pageCount = response.data.pageCount || response.pageCount || 0;
       }
 
-      // Check nested data field
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        return response.data.data.map(this.transformApiMessage);
-      }
+      // Calculate if there are more pages
+      const hasMore = notifications.length === pageSize && (pageCount === 0 || page < pageCount);
 
-      // If no data, return empty array instead of mock data
-      return [];
+      return {
+        data: notifications,
+        hasMore,
+        totalCount,
+        pageCount,
+        currentPage: page
+      };
     } catch (error) {
       console.error('❌ Failed to get message list:', error);
       
@@ -71,9 +94,15 @@ export class NotificationService {
           throw error;
         }
       }
-      
-      // Return empty array instead of mock data when API call fails
-      return [];
+
+      // Return empty result instead of mock data when API call fails
+      return {
+        data: [],
+        hasMore: false,
+        totalCount: 0,
+        pageCount: 0,
+        currentPage: page
+      };
     }
   }
 
