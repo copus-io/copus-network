@@ -928,10 +928,20 @@ export class AuthService {
     } else {
       // Without token: get public data without like status
       console.log('📝 No token found, fetching public liked articles data');
-      return apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+      const response = await apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
         method: 'GET',
         requiresAuth: false,
       });
+
+      // 确保没有token时所有文章的isLiked都设为false
+      if (response && response.data && Array.isArray(response.data)) {
+        response.data = response.data.map((article: any) => ({
+          ...article,
+          isLiked: false // 强制设为false，因为用户未登录无法确定真实状态
+        }));
+      }
+
+      return response;
     }
   }
 
@@ -1598,10 +1608,20 @@ export class AuthService {
     } else {
       // Without token: get public data without like status
       console.log('📝 No token found, fetching public liked articles data');
-      return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
+      const response = await apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
         method: 'GET',
         requiresAuth: false,
       });
+
+      // 确保没有token时所有文章的isLiked都设为false
+      if (response && response.data && Array.isArray(response.data)) {
+        response.data = response.data.map((article: any) => ({
+          ...article,
+          isLiked: false // 强制设为false，因为用户未登录无法确定真实状态
+        }));
+      }
+
+      return response;
     }
   }
 
