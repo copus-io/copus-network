@@ -34,22 +34,22 @@ export const NotificationListSection = (): JSX.Element => {
     deleteNotification
   } = useNotification();
 
-  // 页面加载时获取通知列表 - 添加延迟避免资源冲突
+  // Fetch notification list on page load - add delay to avoid resource conflicts
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchNotifications();
     }, 500);
 
     return () => clearTimeout(timer);
-  }, []); // 移除fetchNotifications依赖，只在组件首次加载时执行
+  }, []); // Remove fetchNotifications dependency, only execute on first component load
 
-  // 无限滚动效果
+  // Infinite scroll effect
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
-      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // 提前1000px触发
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
 
       if (scrolledToBottom && hasMore && !isLoading) {
         loadMoreNotifications();
@@ -85,7 +85,7 @@ export const NotificationListSection = (): JSX.Element => {
     });
   };
 
-  // 使用Context的真实通知数据，使用稳定的时间格式化
+  // Use real notification data from Context with stable time formatting
   const notificationList = contextNotifications.map(n => ({
     id: parseInt(n.id) || 1,
     type: n.type,
@@ -96,12 +96,12 @@ export const NotificationListSection = (): JSX.Element => {
     icon: n.type === "system" ? "https://c.animaapp.com/mft4oqz6uyUKY7/img/icon-wrap-1.svg" : undefined,
     profileImage: n.avatar,
     deleteIcon: n.type === "system" ? "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete.svg" : "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg",
-    userId: n.metadata?.senderId, // 使用senderId
-    namespace: n.metadata?.senderNamespace, // 添加namespace用于导航
-    articleId: n.metadata?.articleUuid || n.metadata?.articleId, // 优先使用UUID，因为work路由使用UUID
+    userId: n.metadata?.senderId, // Use senderId
+    namespace: n.metadata?.senderNamespace, // Add namespace for navigation
+    articleId: n.metadata?.articleUuid || n.metadata?.articleId, // Prefer UUID as work routes use UUID
   }));
 
-  // 渲染空状态组件
+  // Render empty state component
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center py-20 px-5">
       <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -117,7 +117,7 @@ export const NotificationListSection = (): JSX.Element => {
     </div>
   );
 
-  // 渲染加载状态
+  // Render loading state
   const renderLoadingState = () => (
     <div className="flex flex-col gap-5 pb-[30px]">
       {[1, 2, 3].map((index) => (
@@ -155,16 +155,16 @@ export const NotificationListSection = (): JSX.Element => {
     await deleteNotification(id.toString());
   };
 
-  // 处理用户点击跳转到个人资料页
+  // Handle user click to navigate to profile page
   const handleUserClick = (notification: any, e: React.MouseEvent) => {
-    e.stopPropagation(); // 防止触发通知卡片的点击事件
+    e.stopPropagation(); // Prevent triggering notification card click event
 
-    // 优先使用namespace，其次使用userId
+    // Prefer namespace, fallback to userId
     if (notification.namespace) {
-      // 使用短链接格式跳转到用户资料页
+      // Use short link format to navigate to user profile page
       navigate(`/u/${notification.namespace}`);
     } else if (notification.userId) {
-      // 兜底方案：使用userId
+      // Fallback: use userId
       navigate(`/user/${notification.userId}/treasury`);
     }
   };
@@ -265,19 +265,19 @@ export const NotificationListSection = (): JSX.Element => {
                         </div>
                         <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-lg leading-[23px]">
                           {notification.type !== "system" ? (
-                            // 为非系统通知解析用户名和文章标题
+                            // Parse username and article title for non-system notifications
                             (() => {
                               const message = notification.message;
-                              // 提取用户名：通常在消息开头
+                              // Extract username: usually at the beginning of the message
                               const userNameMatch = message.match(/^([^<>\s]+(?:\s+[^<>\s]+)*?)\s+(liked|commented|treasured)/);
-                              // 提取文章标题：通常在引号中
+                              // Extract article title: usually in quotes
                               const postTitleMatch = message.match(/"([^"]+)"/);
 
                               if (userNameMatch || postTitleMatch) {
                                 let parts = [];
                                 let remainingMessage = message;
 
-                                // 处理用户名部分
+                                // Handle username part
                                 if (userNameMatch && (notification.namespace || notification.userId)) {
                                   const userName = userNameMatch[1];
                                   const beforeUser = remainingMessage.substring(0, userNameMatch.index);
@@ -295,18 +295,18 @@ export const NotificationListSection = (): JSX.Element => {
                                   remainingMessage = remainingMessage.substring(userNameMatch.index + userName.length);
                                 }
 
-                                // 处理文章标题部分
+                                // Handle article title part
                                 if (postTitleMatch) {
                                   const fullMatch = postTitleMatch[0]; // 包含引号的完整匹配
                                   const postTitle = postTitleMatch[1]; // 不含引号的标题
                                   const matchIndex = remainingMessage.indexOf(fullMatch);
 
                                   if (matchIndex !== -1) {
-                                    // 添加标题前的文本
+                                    // Add text before title
                                     parts.push(remainingMessage.substring(0, matchIndex));
                                     parts.push('"');
 
-                                    // 添加可点击的标题
+                                    // Add clickable title
                                     if (notification.articleId) {
                                       parts.push(
                                         <span
@@ -330,7 +330,7 @@ export const NotificationListSection = (): JSX.Element => {
                                   }
                                 }
 
-                                // 添加剩余的消息
+                                // Add remaining message
                                 parts.push(remainingMessage);
 
                                 return <span>{parts}</span>;
@@ -370,17 +370,17 @@ export const NotificationListSection = (): JSX.Element => {
             </div>
           )}
 
-          {/* 分页加载指示器 */}
+          {/* Pagination loading indicator */}
           {isLoading && notificationList.length > 0 && (
             <div className="flex justify-center items-center py-8">
-              <div className="text-lg text-gray-600">正在加载更多通知...</div>
+              <div className="text-lg text-gray-600">Loading more notifications...</div>
             </div>
           )}
 
-          {/* 没有更多内容提示 */}
+          {/* No more content indicator */}
           {!isLoading && !hasMore && notificationList.length > 0 && (
             <div className="flex justify-center items-center py-8">
-              <div className="text-gray-500">已经到底了！没有更多通知可加载。</div>
+              <div className="text-gray-500">You've reached the end! No more notifications to load.</div>
             </div>
           )}
         </TabsContent>

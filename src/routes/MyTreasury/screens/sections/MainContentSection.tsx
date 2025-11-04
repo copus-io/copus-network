@@ -119,16 +119,22 @@ export const MainContentSection = (): JSX.Element => {
   const [likedArticles, setLikedArticles] = useState<any[]>([]);
   const [likedArticlesLoading, setLikedArticlesLoading] = useState(false);
   const [likedArticlesError, setLikedArticlesError] = useState<string | null>(null);
+  const [likedCurrentPage, setLikedCurrentPage] = useState(1);
+  const [likedHasMore, setLikedHasMore] = useState(true);
 
   // 创作文章状态
   const [createdArticles, setCreatedArticles] = useState<any[]>([]);
   const [createdArticlesLoading, setCreatedArticlesLoading] = useState(false);
   const [createdArticlesError, setCreatedArticlesError] = useState<string | null>(null);
+  const [createdCurrentPage, setCreatedCurrentPage] = useState(1);
+  const [createdHasMore, setCreatedHasMore] = useState(true);
 
   // Unlocked articles state
   const [unlockedArticles, setUnlockedArticles] = useState<any[]>([]);
   const [unlockedArticlesLoading, setUnlockedArticlesLoading] = useState(false);
   const [unlockedArticlesError, setUnlockedArticlesError] = useState<string | null>(null);
+  const [unlockedCurrentPage, setUnlockedCurrentPage] = useState(1);
+  const [unlockedHasMore, setUnlockedHasMore] = useState(true);
 
   // 添加缓存机制防止重复请求
   const [lastFetchedUserId, setLastFetchedUserId] = useState<number | null>(null);
@@ -235,14 +241,23 @@ export const MainContentSection = (): JSX.Element => {
         setLastFetchedTab(activeTab);
 
         if (activeTab === 'collection') {
-          // 只在收藏标签页时加载收藏文章
-          await fetchLikedArticles(userId);
+          // Reset pagination and load first page of liked articles
+          setLikedCurrentPage(1);
+          setLikedHasMore(true);
+          setLikedArticles([]);
+          await fetchLikedArticles(userId, 1, false);
         } else if (activeTab === 'share') {
-          // 只在创作标签页时加载创作文章
-          await fetchCreatedArticles(userId);
+          // Reset pagination and load first page of created articles
+          setCreatedCurrentPage(1);
+          setCreatedHasMore(true);
+          setCreatedArticles([]);
+          await fetchCreatedArticles(userId, 1, false);
         } else if (activeTab === 'unlocked') {
-          // Load unlocked articles when on unlocked tab
-          await fetchUnlockedArticles();
+          // Reset pagination and load first page of unlocked articles
+          setUnlockedCurrentPage(1);
+          setUnlockedHasMore(true);
+          setUnlockedArticles([]);
+          await fetchUnlockedArticles(1, false);
         }
       } catch (error) {
         console.error('❌ 加载文章数据失败:', error);
@@ -255,48 +270,129 @@ export const MainContentSection = (): JSX.Element => {
     fetchArticleData();
   }, [treasuryUserInfo?.id, activeTab]);
 
-  // 收藏文章加载函数
-  const fetchLikedArticles = async (userId: number) => {
+  // 无限滚动加载更多数据的函数
+  const loadMoreLikedArticles = async () => {
+    if (!likedArticlesLoading && likedHasMore && treasuryUserInfo?.id) {
+      const nextPage = likedCurrentPage + 1;
+      await fetchLikedArticles(treasuryUserInfo.id, nextPage, true);
+    }
+  };
+
+  const loadMoreCreatedArticles = async () => {
+    if (!createdArticlesLoading && createdHasMore && treasuryUserInfo?.id) {
+      const nextPage = createdCurrentPage + 1;
+      await fetchCreatedArticles(treasuryUserInfo.id, nextPage, true);
+    }
+  };
+
+  const loadMoreUnlockedArticles = async () => {
+    if (!unlockedArticlesLoading && unlockedHasMore) {
+      const nextPage = unlockedCurrentPage + 1;
+      await fetchUnlockedArticles(nextPage, true);
+    }
+  };
+
+  // 无限滚动效果
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
+
+      if (scrolledToBottom) {
+        if (activeTab === 'collection' && likedHasMore && !likedArticlesLoading) {
+          loadMoreLikedArticles();
+        } else if (activeTab === 'share' && createdHasMore && !createdArticlesLoading) {
+          loadMoreCreatedArticles();
+        } else if (activeTab === 'unlocked' && unlockedHasMore && !unlockedArticlesLoading) {
+          loadMoreUnlockedArticles();
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [activeTab, likedHasMore, likedArticlesLoading, createdHasMore, createdArticlesLoading, unlockedHasMore, unlockedArticlesLoading]);
+
+  // 收藏文章加载函数 - 支持分页
+  const fetchLikedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
     setLikedArticlesLoading(true);
     setLikedArticlesError(null);
 
     try {
-      const response = await AuthService.getMyLikedArticlesCorrect(1, 10, userId);
+      const response = await AuthService.getMyLikedArticlesCorrect(page, 20, userId);
+      console.log(`[Treasury] Fetching liked articles page ${page}:`, response);
 
-      const articlesArray = extractArticlesFromResponse(response, '收藏');
-      setLikedArticles(articlesArray);
+      const articlesArray = extractArticlesFromResponse(response, 'Collection');
+
+      if (append) {
+        // Append new articles to existing ones
+        setLikedArticles(prev => [...prev, ...articlesArray]);
+      } else {
+        // Replace existing articles
+        setLikedArticles(articlesArray);
+      }
+
+      // Update pagination state based on API response
+      const pageIndex = response?.pageIndex || response?.data?.pageIndex || page;
+      const pageCount = response?.pageCount || response?.data?.pageCount || 0;
+
+      setLikedCurrentPage(pageIndex);
+      setLikedHasMore(pageIndex < pageCount && articlesArray.length === 20);
 
     } catch (error) {
-      console.error('❌ 获取收藏文章失败:', error);
-      setLikedArticlesError(`获取收藏文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
-      setLikedArticles([]);
+      console.error('❌ Failed to fetch liked articles:', error);
+      setLikedArticlesError(`Failed to fetch liked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (!append) {
+        setLikedArticles([]);
+      }
     } finally {
       setLikedArticlesLoading(false);
     }
   };
 
-  // 创作文章加载函数
-  const fetchCreatedArticles = async (userId: number) => {
+  // 创作文章加载函数 - 支持分页
+  const fetchCreatedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
     setCreatedArticlesLoading(true);
     setCreatedArticlesError(null);
 
     try {
-      const response = await AuthService.getMyCreatedArticles(1, 10, userId);
+      const response = await AuthService.getMyCreatedArticles(page, 20, userId);
+      console.log(`[Treasury] Fetching created articles page ${page}:`, response);
 
-      const articlesArray = extractArticlesFromResponse(response, '创作');
-      setCreatedArticles(articlesArray);
+      const articlesArray = extractArticlesFromResponse(response, 'Shares');
+
+      if (append) {
+        // Append new articles to existing ones
+        setCreatedArticles(prev => [...prev, ...articlesArray]);
+      } else {
+        // Replace existing articles
+        setCreatedArticles(articlesArray);
+      }
+
+      // Update pagination state based on API response
+      const pageIndex = response?.pageIndex || response?.data?.pageIndex || page;
+      const pageCount = response?.pageCount || response?.data?.pageCount || 0;
+
+      setCreatedCurrentPage(pageIndex);
+      setCreatedHasMore(pageIndex < pageCount && articlesArray.length === 20);
 
     } catch (error) {
-      console.error('❌ 获取创作文章失败:', error);
-      setCreatedArticlesError(`获取创作文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
-      setCreatedArticles([]);
+      console.error('❌ Failed to fetch created articles:', error);
+      setCreatedArticlesError(`Failed to fetch created articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (!append) {
+        setCreatedArticles([]);
+      }
     } finally {
       setCreatedArticlesLoading(false);
     }
   };
 
-  // Unlocked articles loading function
-  const fetchUnlockedArticles = async () => {
+  // Unlocked articles loading function - 支持分页
+  const fetchUnlockedArticles = async (page: number = 1, append: boolean = false) => {
     // Only logged-in users can view their unlocked articles
     if (!user) {
       console.warn('⚠️ No user logged in, skipping unlocked articles fetch');
@@ -307,15 +403,32 @@ export const MainContentSection = (): JSX.Element => {
     setUnlockedArticlesError(null);
 
     try {
-      const response = await AuthService.getUserUnlockedArticles(1, 20);
+      const response = await AuthService.getUserUnlockedArticles(page, 20);
+      console.log(`[Treasury] Fetching unlocked articles page ${page}:`, response);
 
       const articlesArray = extractArticlesFromResponse(response, 'Unlocked');
-      setUnlockedArticles(articlesArray);
+
+      if (append) {
+        // Append new articles to existing ones
+        setUnlockedArticles(prev => [...prev, ...articlesArray]);
+      } else {
+        // Replace existing articles
+        setUnlockedArticles(articlesArray);
+      }
+
+      // Update pagination state based on API response
+      const pageIndex = response?.pageIndex || response?.data?.pageIndex || page;
+      const pageCount = response?.pageCount || response?.data?.pageCount || 0;
+
+      setUnlockedCurrentPage(pageIndex);
+      setUnlockedHasMore(pageIndex < pageCount && articlesArray.length === 20);
 
     } catch (error) {
       console.error('❌ Failed to fetch unlocked articles:', error);
       setUnlockedArticlesError(`Failed to fetch unlocked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setUnlockedArticles([]);
+      if (!append) {
+        setUnlockedArticles([]);
+      }
     } finally {
       setUnlockedArticlesLoading(false);
     }
@@ -890,12 +1003,28 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {likedArticlesError}</div>
               </div>
             ) : likedArticles.length > 0 ? (
-              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
-                {likedArticles.map((article) => {
-                  const card = transformLikedApiToCard(article);
-                  return renderCard(card);
-                })}
-              </div>
+              <>
+                <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
+                  {likedArticles.map((article) => {
+                    const card = transformLikedApiToCard(article);
+                    return renderCard(card);
+                  })}
+                </div>
+
+                {/* Pagination loading indicator */}
+                {likedArticlesLoading && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-lg text-gray-600">Loading more collections...</div>
+                  </div>
+                )}
+
+                {/* No more content indicator */}
+                {!likedArticlesLoading && !likedHasMore && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-gray-500">You've reached the end! No more collections to load.</div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-4">
                 <div className="text-lg text-gray-600">
@@ -918,12 +1047,28 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {createdArticlesError}</div>
               </div>
             ) : createdArticles.length > 0 ? (
-              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
-                {createdArticles.map((article) => {
-                  const card = transformCreatedApiToCard(article);
-                  return renderMyShareCard(card);
-                })}
-              </div>
+              <>
+                <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
+                  {createdArticles.map((article) => {
+                    const card = transformCreatedApiToCard(article);
+                    return renderMyShareCard(card);
+                  })}
+                </div>
+
+                {/* Pagination loading indicator */}
+                {createdArticlesLoading && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-lg text-gray-600">Loading more shares...</div>
+                  </div>
+                )}
+
+                {/* No more content indicator */}
+                {!createdArticlesLoading && !createdHasMore && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-gray-500">You've reached the end! No more shares to load.</div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-4">
                 <div className="text-lg text-gray-600">
@@ -946,12 +1091,28 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {unlockedArticlesError}</div>
               </div>
             ) : unlockedArticles.length > 0 ? (
-              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
-                {unlockedArticles.map((article) => {
-                  const card = transformUnlockedApiToCard(article);
-                  return renderCard(card);
-                })}
-              </div>
+              <>
+                <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
+                  {unlockedArticles.map((article) => {
+                    const card = transformUnlockedApiToCard(article);
+                    return renderCard(card);
+                  })}
+                </div>
+
+                {/* Pagination loading indicator */}
+                {unlockedArticlesLoading && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-lg text-gray-600">Loading more unlocked content...</div>
+                  </div>
+                )}
+
+                {/* No more content indicator */}
+                {!unlockedArticlesLoading && !unlockedHasMore && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-gray-500">You've reached the end! No more unlocked content to load.</div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-6">
                 <div className="text-lg text-gray-600">
@@ -1105,7 +1266,7 @@ export const MainContentSection = (): JSX.Element => {
             borderRadius: '20px',
             fontSize: '14px'
           }}>
-            点击空白区域或按ESC关闭
+Click anywhere or press ESC to close
           </div>
         </div>
       )}
