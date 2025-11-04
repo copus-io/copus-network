@@ -376,14 +376,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     const hasCallback = !!onLike;
                     const isLikedValue = hasCallback ? (article.isLiked || false) : false;
 
-                    // 专门追踪问题文章
-                    if (article.title?.includes('这个太美了啊') || article.title?.includes('asdfasdf')) {
-                      console.log(`🔍 ArticleCard TreasureButton (1st) - "${article.title}":`);
-                      console.log(`  hasOnLikeCallback: ${hasCallback}`);
-                      console.log(`  articleIsLiked: ${article.isLiked}`);
-                      console.log(`  finalIsLikedValue: ${isLikedValue}`);
-                      console.log(`  treasureCount: ${article.treasureCount}`);
-                    }
 
                     return isLikedValue;
                   })()} // Always false when no onLike callback
