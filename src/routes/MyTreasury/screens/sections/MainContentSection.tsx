@@ -140,6 +140,9 @@ export const MainContentSection = (): JSX.Element => {
   const [lastFetchedUserId, setLastFetchedUserId] = useState<number | null>(null);
   const [lastFetchedTab, setLastFetchedTab] = useState<string | null>(null);
 
+  // 防止滚动事件重复触发的flag
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   const [treasuryStats, setTreasuryStats] = useState({
     likedArticleCount: 0,
     articleCount: 0,
@@ -272,23 +275,41 @@ export const MainContentSection = (): JSX.Element => {
 
   // 无限滚动加载更多数据的函数
   const loadMoreLikedArticles = async () => {
-    if (!likedArticlesLoading && likedHasMore && treasuryUserInfo?.id) {
+    if (!likedArticlesLoading && likedHasMore && treasuryUserInfo?.id && !isLoadingMore) {
+      setIsLoadingMore(true);
       const nextPage = likedCurrentPage + 1;
-      await fetchLikedArticles(treasuryUserInfo.id, nextPage, true);
+      console.log(`[Treasury] Loading more liked articles - page ${nextPage}`);
+      try {
+        await fetchLikedArticles(treasuryUserInfo.id, nextPage, true);
+      } finally {
+        setIsLoadingMore(false);
+      }
     }
   };
 
   const loadMoreCreatedArticles = async () => {
-    if (!createdArticlesLoading && createdHasMore && treasuryUserInfo?.id) {
+    if (!createdArticlesLoading && createdHasMore && treasuryUserInfo?.id && !isLoadingMore) {
+      setIsLoadingMore(true);
       const nextPage = createdCurrentPage + 1;
-      await fetchCreatedArticles(treasuryUserInfo.id, nextPage, true);
+      console.log(`[Treasury] Loading more created articles - page ${nextPage}`);
+      try {
+        await fetchCreatedArticles(treasuryUserInfo.id, nextPage, true);
+      } finally {
+        setIsLoadingMore(false);
+      }
     }
   };
 
   const loadMoreUnlockedArticles = async () => {
-    if (!unlockedArticlesLoading && unlockedHasMore) {
+    if (!unlockedArticlesLoading && unlockedHasMore && !isLoadingMore) {
+      setIsLoadingMore(true);
       const nextPage = unlockedCurrentPage + 1;
-      await fetchUnlockedArticles(nextPage, true);
+      console.log(`[Treasury] Loading more unlocked articles - page ${nextPage}`);
+      try {
+        await fetchUnlockedArticles(nextPage, true);
+      } finally {
+        setIsLoadingMore(false);
+      }
     }
   };
 
@@ -300,7 +321,7 @@ export const MainContentSection = (): JSX.Element => {
       const documentHeight = document.documentElement.scrollHeight;
       const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
 
-      if (scrolledToBottom) {
+      if (scrolledToBottom && !isLoadingMore) {
         if (activeTab === 'collection' && likedHasMore && !likedArticlesLoading) {
           loadMoreLikedArticles();
         } else if (activeTab === 'share' && createdHasMore && !createdArticlesLoading) {
@@ -315,7 +336,7 @@ export const MainContentSection = (): JSX.Element => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [activeTab, likedHasMore, likedArticlesLoading, createdHasMore, createdArticlesLoading, unlockedHasMore, unlockedArticlesLoading]);
+  }, [activeTab, likedHasMore, likedArticlesLoading, createdHasMore, createdArticlesLoading, unlockedHasMore, unlockedArticlesLoading, isLoadingMore]);
 
   // 收藏文章加载函数 - 支持分页
   const fetchLikedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
@@ -341,7 +362,12 @@ export const MainContentSection = (): JSX.Element => {
       const pageCount = response?.pageCount || response?.data?.pageCount || 0;
 
       setLikedCurrentPage(pageIndex);
-      setLikedHasMore(pageIndex < pageCount && articlesArray.length === 20);
+      // More accurate hasMore logic:
+      // 1. If we got fewer than expected items (20), we've definitely reached the end
+      // 2. If we got exactly 20 items, check if current page is less than total pages
+      // 3. Also handle edge case where pageCount might be 0 or invalid
+      const hasMorePages = pageCount > 0 && pageIndex < pageCount;
+      setLikedHasMore(articlesArray.length === 20 && hasMorePages);
 
     } catch (error) {
       console.error('❌ Failed to fetch liked articles:', error);
@@ -378,7 +404,12 @@ export const MainContentSection = (): JSX.Element => {
       const pageCount = response?.pageCount || response?.data?.pageCount || 0;
 
       setCreatedCurrentPage(pageIndex);
-      setCreatedHasMore(pageIndex < pageCount && articlesArray.length === 20);
+      // More accurate hasMore logic:
+      // 1. If we got fewer than expected items (20), we've definitely reached the end
+      // 2. If we got exactly 20 items, check if current page is less than total pages
+      // 3. Also handle edge case where pageCount might be 0 or invalid
+      const hasMorePages = pageCount > 0 && pageIndex < pageCount;
+      setCreatedHasMore(articlesArray.length === 20 && hasMorePages);
 
     } catch (error) {
       console.error('❌ Failed to fetch created articles:', error);
@@ -421,7 +452,12 @@ export const MainContentSection = (): JSX.Element => {
       const pageCount = response?.pageCount || response?.data?.pageCount || 0;
 
       setUnlockedCurrentPage(pageIndex);
-      setUnlockedHasMore(pageIndex < pageCount && articlesArray.length === 20);
+      // More accurate hasMore logic:
+      // 1. If we got fewer than expected items (20), we've definitely reached the end
+      // 2. If we got exactly 20 items, check if current page is less than total pages
+      // 3. Also handle edge case where pageCount might be 0 or invalid
+      const hasMorePages = pageCount > 0 && pageIndex < pageCount;
+      setUnlockedHasMore(articlesArray.length === 20 && hasMorePages);
 
     } catch (error) {
       console.error('❌ Failed to fetch unlocked articles:', error);
