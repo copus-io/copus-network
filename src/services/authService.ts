@@ -856,7 +856,7 @@ export class AuthService {
   }
 
   /**
-   * Get user's liked articles list (paginated)
+   * Get user's liked articles list (paginated) - only if user is logged in
    */
   static async getUserLikedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<{
     data: Array<{
@@ -887,7 +887,13 @@ export class AuthService {
     pageIndex: number;
     pageSize: number;
     totalCount: number;
-  }> {
+  } | null> {
+    // Check if user has token, if not, return null instead of throwing error
+    const token = localStorage.getItem('copus_token');
+    if (!token || token.trim() === '') {
+      console.log('📝 No token found, skipping liked articles request');
+      return null;
+    }
 
     return apiRequest(`/client/userHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
       method: 'GET',
