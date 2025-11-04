@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Copus Human Internet** - A decentralized social content platform that empowers creators and connects communities. Built with React, TypeScript, Vite, and Tailwind CSS.
+**Copus Internet Treasure Map** - A decentralized social content platform that empowers creators and connects communities. Built with React, TypeScript, Vite, and Tailwind CSS.
 
 ### Core Concept
-"Human Internet" - In an AI-saturated era, Copus emphasizes human curation and judgment for discovering and sharing valuable content through a "Treasury" collection system.
+"Internet Treasure Map" - In an AI-saturated era, Copus emphasizes human curation and judgment for discovering and sharing valuable content through a "Treasury" collection system.
 
 ## Branch Structure & Deployment
 

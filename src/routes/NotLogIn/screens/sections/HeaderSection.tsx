@@ -20,7 +20,7 @@ export const HeaderSection = (): JSX.Element => {
 
         <div className="inline-flex items-center justify-center gap-2.5 pl-[15px] pr-0 py-0 relative flex-[0_0_auto] border-l [border-left-style:solid] border-[#a8a8a8]">
           <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-            Human Internet
+            Internet Treasure Map
           </div>
         </div>
       </div>
