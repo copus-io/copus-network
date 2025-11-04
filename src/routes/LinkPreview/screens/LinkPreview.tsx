@@ -107,7 +107,7 @@ export const LinkPreview = (): JSX.Element => {
 
           <div className="inline-flex items-center justify-center gap-2.5 pl-[15px] pr-0 py-0 border-l border-[#a8a8a8]">
             <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-              Human Internet
+              Internet Treasure Map
             </div>
           </div>
         </div>

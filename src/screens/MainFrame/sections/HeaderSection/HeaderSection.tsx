@@ -26,7 +26,7 @@ export const HeaderSection = (): JSX.Element => {
         />
 
         <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-lg leading-[27px] whitespace-nowrap">
-          Human Internet
+          Internet Treasure Map
         </div>
       </div>
 
