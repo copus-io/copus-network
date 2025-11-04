@@ -898,12 +898,7 @@ export class AuthService {
   }
 
   /**
-<<<<<<< HEAD
-   * Get user's liked articles list (paginated)
-   * If no token, still fetches public data but without like status
-=======
    * Get user's liked articles list (paginated) - only if user is logged in
->>>>>>> 8405598 (fix: 优化收藏文章API调用逻辑)
    */
   static async getUserLikedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<{
     data: Array<{
