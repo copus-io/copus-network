@@ -235,8 +235,17 @@ export const MainContentSection = (): JSX.Element => {
 
     // 检查是否已经获取过相同用户和标签页的数据，避免重复请求
     if (lastFetchedUserId === userId && lastFetchedTab === activeTab) {
+      console.log('[Treasury] Skipping fetch - same user and tab already loaded');
       return;
     }
+
+    console.log('[Treasury] Initial fetch triggered:', {
+      userId,
+      activeTab,
+      lastFetchedUserId,
+      lastFetchedTab,
+      reason: lastFetchedUserId !== userId ? 'user changed' : 'tab changed'
+    });
 
     const fetchArticleData = async () => {
       try {
@@ -245,18 +254,21 @@ export const MainContentSection = (): JSX.Element => {
 
         if (activeTab === 'collection') {
           // Reset pagination and load first page of liked articles
+          console.log('[Treasury] Resetting liked articles for initial load');
           setLikedCurrentPage(1);
           setLikedHasMore(true);
           setLikedArticles([]);
           await fetchLikedArticles(userId, 1, false);
         } else if (activeTab === 'share') {
           // Reset pagination and load first page of created articles
+          console.log('[Treasury] Resetting created articles for initial load');
           setCreatedCurrentPage(1);
           setCreatedHasMore(true);
           setCreatedArticles([]);
           await fetchCreatedArticles(userId, 1, false);
         } else if (activeTab === 'unlocked') {
           // Reset pagination and load first page of unlocked articles
+          console.log('[Treasury] Resetting unlocked articles for initial load');
           setUnlockedCurrentPage(1);
           setUnlockedHasMore(true);
           setUnlockedArticles([]);
@@ -351,9 +363,14 @@ export const MainContentSection = (): JSX.Element => {
 
       if (append) {
         // Append new articles to existing ones
-        setLikedArticles(prev => [...prev, ...articlesArray]);
+        console.log(`[Treasury] Appending ${articlesArray.length} articles to existing ${likedArticles.length} articles`);
+        setLikedArticles(prev => {
+          console.log(`[Treasury] Before append: ${prev.length} articles, After: ${prev.length + articlesArray.length} articles`);
+          return [...prev, ...articlesArray];
+        });
       } else {
         // Replace existing articles
+        console.log(`[Treasury] Replacing with ${articlesArray.length} articles`);
         setLikedArticles(articlesArray);
       }
 
@@ -393,9 +410,14 @@ export const MainContentSection = (): JSX.Element => {
 
       if (append) {
         // Append new articles to existing ones
-        setCreatedArticles(prev => [...prev, ...articlesArray]);
+        console.log(`[Treasury] Appending ${articlesArray.length} created articles to existing ${createdArticles.length} articles`);
+        setCreatedArticles(prev => {
+          console.log(`[Treasury] Before append: ${prev.length} created articles, After: ${prev.length + articlesArray.length} created articles`);
+          return [...prev, ...articlesArray];
+        });
       } else {
         // Replace existing articles
+        console.log(`[Treasury] Replacing with ${articlesArray.length} created articles`);
         setCreatedArticles(articlesArray);
       }
 
@@ -441,9 +463,14 @@ export const MainContentSection = (): JSX.Element => {
 
       if (append) {
         // Append new articles to existing ones
-        setUnlockedArticles(prev => [...prev, ...articlesArray]);
+        console.log(`[Treasury] Appending ${articlesArray.length} unlocked articles to existing ${unlockedArticles.length} articles`);
+        setUnlockedArticles(prev => {
+          console.log(`[Treasury] Before append: ${prev.length} unlocked articles, After: ${prev.length + articlesArray.length} unlocked articles`);
+          return [...prev, ...articlesArray];
+        });
       } else {
         // Replace existing articles
+        console.log(`[Treasury] Replacing with ${articlesArray.length} unlocked articles`);
         setUnlockedArticles(articlesArray);
       }
 
