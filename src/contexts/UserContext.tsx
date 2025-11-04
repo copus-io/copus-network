@@ -66,7 +66,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [socialLinksLoading, setSocialLinksLoading] = useState(false);
 
   // Use article state management hook
-  const { articleLikeStates, updateArticleLikeState, getArticleLikeState, toggleLike, syncArticleStates } = useArticleState();
+  const { articleLikeStates, updateArticleLikeState, getArticleLikeState, toggleLike, syncArticleStates } = useArticleState(undefined, !!user);
 
   // Restore user state from storage (localStorage or sessionStorage based on remember me preference)
   useEffect(() => {

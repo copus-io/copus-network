@@ -933,7 +933,6 @@ export class AuthService {
         requiresAuth: false,
       });
 
-      console.log('📝 Response data for unauthenticated request:', response);
       return response;
     }
   }
@@ -1606,7 +1605,6 @@ export class AuthService {
         requiresAuth: false,
       });
 
-      console.log('📝 Response data for unauthenticated request (getMyLikedArticlesCorrect):', response);
 
       return response;
     }

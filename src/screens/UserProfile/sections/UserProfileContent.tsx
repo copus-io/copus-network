@@ -15,7 +15,7 @@ interface UserProfileContentProps {
 
 export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespace }) => {
   const navigate = useNavigate();
-  const { user, toggleLike, updateUser } = useUser();
+  const { user, toggleLike, updateUser, getArticleLikeState } = useUser();
   const { openPreview } = useImagePreview();
   const { showToast } = useToast();
 
@@ -92,14 +92,6 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
 
         // Transform API data to ArticleData format
         const transformedArticles: ArticleData[] = articlesData.data.map(article => {
-          // 专门追踪问题文章的数据转换
-          if (article.title?.includes('这个太美了啊') || article.title?.includes('asdfasdf')) {
-            console.log(`🔍 UserProfile 数据转换 - "${article.title}":`, {
-              原始isLiked: article.isLiked,
-              uuid: article.uuid,
-              authorId: article.authorInfo.id
-            });
-          }
 
           return {
             id: article.uuid,
@@ -381,10 +373,21 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           // Check if this is the current user's own article
           const isOwnArticle = user && user.id === article.userId;
 
+          // Use global state management to get correct like state, same as other components
+          const articleLikeState = getArticleLikeState(article.id, article.isLiked, article.likeCount);
+
+          // Update article data with global state like information
+          const articleWithUpdatedState = {
+            ...article,
+            isLiked: articleLikeState.isLiked,
+            likeCount: articleLikeState.likeCount
+          };
+
+
           return (
             <ArticleCard
               key={article.id}
-              article={article}
+              article={articleWithUpdatedState}
               layout="treasury"
               actions={{
                 showTreasure: true, // Show treasure button for all articles
