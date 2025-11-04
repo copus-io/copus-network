@@ -1577,6 +1577,10 @@ export class AuthService {
     pageSize: number;
     totalCount: number;
   }> {
+    // Check if user has token for personalized data
+    const token = localStorage.getItem('copus_token');
+    const hasValidToken = token && token.trim() !== '';
+
     const params = new URLSearchParams();
     params.append('pageIndex', pageIndex.toString());
     params.append('pageSize', pageSize.toString());
@@ -1584,10 +1588,21 @@ export class AuthService {
       params.append('targetUserId', targetUserId.toString());
     }
 
-    return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
-      method: 'GET',
-      requiresAuth: true, // Need auth to get current user's like status for each article
-    });
+    if (hasValidToken) {
+      // With token: get personalized data with like status
+      console.log('📝 Fetching liked articles with authentication for personalized data');
+      return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
+        method: 'GET',
+        requiresAuth: true,
+      });
+    } else {
+      // Without token: get public data without like status
+      console.log('📝 No token found, fetching public liked articles data');
+      return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
+        method: 'GET',
+        requiresAuth: false,
+      });
+    }
   }
 
   /**
