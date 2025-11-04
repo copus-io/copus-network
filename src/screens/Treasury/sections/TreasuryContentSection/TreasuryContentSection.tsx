@@ -30,11 +30,7 @@ export const TreasuryContentSection = (): JSX.Element => {
   useEffect(() => {
     const fetchLikedArticles = async () => {
 
-      if (!user) {
-        setLikedArticles([]);
-        setLoading(false);
-        return;
-      }
+      // 不再强制要求登录用户，允许访问公开内容
 
       try {
         setLoading(true);
@@ -75,7 +71,8 @@ export const TreasuryContentSection = (): JSX.Element => {
         const articles = articlesArray
           .filter((article: any) => {
             // Filter out user's own articles - users shouldn't see their own articles in collection
-            return article.authorInfo?.id !== user?.id;
+            // 如果没有登录用户，显示所有文章
+            return !user || article.authorInfo?.id !== user?.id;
           })
           .sort((a: any, b: any) => {
             // Sort by creation time in descending order (newest first)
@@ -125,13 +122,13 @@ export const TreasuryContentSection = (): JSX.Element => {
     };
 
     fetchLikedArticles();
-  }, [user]);
+  }, []); // 移除user依赖，现在总是加载内容
 
   // Refresh collection when page becomes visible (user navigates back)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && user) {
-        // Re-fetch collection when page becomes visible
+      if (!document.hidden) {
+        // Re-fetch collection when page becomes visible (不再要求必须有登录用户)
         const fetchLikedArticles = async () => {
           try {
             const likedArticlesResponse = await AuthService.getUserLikedArticles(1, 20);
@@ -150,7 +147,8 @@ export const TreasuryContentSection = (): JSX.Element => {
             const articles = articlesArray
               .filter((article: any) => {
                 // Filter out user's own articles
-                return article.authorInfo?.id !== user?.id;
+                // 如果没有登录用户，显示所有文章
+                return !user || article.authorInfo?.id !== user?.id;
               })
               .sort((a: any, b: any) => {
                 // Sort by creation time in descending order (newest first)
@@ -192,7 +190,7 @@ export const TreasuryContentSection = (): JSX.Element => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user]);
+  }, []); // 移除user依赖，使用token来控制内容
 
   // 处理点赞
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
