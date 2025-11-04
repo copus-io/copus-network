@@ -285,14 +285,26 @@ export const MainContentSection = (): JSX.Element => {
     fetchArticleData();
   }, [treasuryUserInfo?.id, activeTab]);
 
-  // 无限滚动加载更多数据的函数
+  // 无限滚动加载更多数据的函数 - 优化滚动位置保持
   const loadMoreLikedArticles = async () => {
     if (!likedArticlesLoading && likedHasMore && treasuryUserInfo?.id && !isLoadingMore) {
+      // 保存当前滚动位置
+      const currentScrollPosition = window.scrollY;
+
       setIsLoadingMore(true);
       const nextPage = likedCurrentPage + 1;
-      console.log(`[Treasury] Loading more liked articles - page ${nextPage}`);
+      console.log(`[Treasury] Loading more liked articles - page ${nextPage}, scroll position:`, currentScrollPosition);
+
       try {
         await fetchLikedArticles(treasuryUserInfo.id, nextPage, true);
+
+        // 确保滚动位置不变（防止跳到顶部）
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
+            window.scrollTo(0, currentScrollPosition);
+            console.log('[Treasury] Restored scroll position after pagination load');
+          }
+        }, 50);
       } finally {
         setIsLoadingMore(false);
       }
@@ -301,11 +313,23 @@ export const MainContentSection = (): JSX.Element => {
 
   const loadMoreCreatedArticles = async () => {
     if (!createdArticlesLoading && createdHasMore && treasuryUserInfo?.id && !isLoadingMore) {
+      // 保存当前滚动位置
+      const currentScrollPosition = window.scrollY;
+
       setIsLoadingMore(true);
       const nextPage = createdCurrentPage + 1;
-      console.log(`[Treasury] Loading more created articles - page ${nextPage}`);
+      console.log(`[Treasury] Loading more created articles - page ${nextPage}, scroll position:`, currentScrollPosition);
+
       try {
         await fetchCreatedArticles(treasuryUserInfo.id, nextPage, true);
+
+        // 确保滚动位置不变（防止跳到顶部）
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
+            window.scrollTo(0, currentScrollPosition);
+            console.log('[Treasury] Restored scroll position after created articles pagination load');
+          }
+        }, 50);
       } finally {
         setIsLoadingMore(false);
       }
@@ -314,11 +338,23 @@ export const MainContentSection = (): JSX.Element => {
 
   const loadMoreUnlockedArticles = async () => {
     if (!unlockedArticlesLoading && unlockedHasMore && !isLoadingMore) {
+      // 保存当前滚动位置
+      const currentScrollPosition = window.scrollY;
+
       setIsLoadingMore(true);
       const nextPage = unlockedCurrentPage + 1;
-      console.log(`[Treasury] Loading more unlocked articles - page ${nextPage}`);
+      console.log(`[Treasury] Loading more unlocked articles - page ${nextPage}, scroll position:`, currentScrollPosition);
+
       try {
         await fetchUnlockedArticles(nextPage, true);
+
+        // 确保滚动位置不变（防止跳到顶部）
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
+            window.scrollTo(0, currentScrollPosition);
+            console.log('[Treasury] Restored scroll position after unlocked articles pagination load');
+          }
+        }, 50);
       } finally {
         setIsLoadingMore(false);
       }
@@ -352,7 +388,10 @@ export const MainContentSection = (): JSX.Element => {
 
   // 收藏文章加载函数 - 支持分页
   const fetchLikedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
-    setLikedArticlesLoading(true);
+    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    if (!append) {
+      setLikedArticlesLoading(true);
+    }
     setLikedArticlesError(null);
 
     try {
@@ -393,13 +432,19 @@ export const MainContentSection = (): JSX.Element => {
         setLikedArticles([]);
       }
     } finally {
-      setLikedArticlesLoading(false);
+      // 只在初始加载完成时重置 loading 状态
+      if (!append) {
+        setLikedArticlesLoading(false);
+      }
     }
   };
 
   // 创作文章加载函数 - 支持分页
   const fetchCreatedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
-    setCreatedArticlesLoading(true);
+    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    if (!append) {
+      setCreatedArticlesLoading(true);
+    }
     setCreatedArticlesError(null);
 
     try {
@@ -440,7 +485,10 @@ export const MainContentSection = (): JSX.Element => {
         setCreatedArticles([]);
       }
     } finally {
-      setCreatedArticlesLoading(false);
+      // 只在初始加载完成时重置 loading 状态
+      if (!append) {
+        setCreatedArticlesLoading(false);
+      }
     }
   };
 
@@ -452,7 +500,10 @@ export const MainContentSection = (): JSX.Element => {
       return;
     }
 
-    setUnlockedArticlesLoading(true);
+    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    if (!append) {
+      setUnlockedArticlesLoading(true);
+    }
     setUnlockedArticlesError(null);
 
     try {
@@ -493,7 +544,10 @@ export const MainContentSection = (): JSX.Element => {
         setUnlockedArticles([]);
       }
     } finally {
-      setUnlockedArticlesLoading(false);
+      // 只在初始加载完成时重置 loading 状态
+      if (!append) {
+        setUnlockedArticlesLoading(false);
+      }
     }
   };
 
