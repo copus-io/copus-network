@@ -933,14 +933,7 @@ export class AuthService {
         requiresAuth: false,
       });
 
-      // 确保没有token时所有文章的isLiked都设为false
-      if (response && response.data && Array.isArray(response.data)) {
-        response.data = response.data.map((article: any) => ({
-          ...article,
-          isLiked: false // 强制设为false，因为用户未登录无法确定真实状态
-        }));
-      }
-
+      console.log('📝 Response data for unauthenticated request:', response);
       return response;
     }
   }
@@ -1613,13 +1606,7 @@ export class AuthService {
         requiresAuth: false,
       });
 
-      // 确保没有token时所有文章的isLiked都设为false
-      if (response && response.data && Array.isArray(response.data)) {
-        response.data = response.data.map((article: any) => ({
-          ...article,
-          isLiked: false // 强制设为false，因为用户未登录无法确定真实状态
-        }));
-      }
+      console.log('📝 Response data for unauthenticated request (getMyLikedArticlesCorrect):', response);
 
       return response;
     }

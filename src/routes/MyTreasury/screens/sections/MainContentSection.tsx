@@ -363,7 +363,7 @@ export const MainContentSection = (): JSX.Element => {
       date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
       treasureCount: article.likeCount || 0,
       visitCount: article.viewCount || 0,
-      isLiked: article.isLiked || true,
+      isLiked: article.isLiked || false,
       targetUrl: article.targetUrl,
       website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
       // x402 payment fields

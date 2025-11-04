@@ -91,28 +91,39 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         console.log('[UserProfile] Successfully fetched liked articles:', articlesData);
 
         // Transform API data to ArticleData format
-        const transformedArticles: ArticleData[] = articlesData.data.map(article => ({
-          id: article.uuid,
-          title: article.title,
-          content: article.content,
-          cover: article.coverUrl,
-          author: {
-            id: article.authorInfo.id,
-            name: article.authorInfo.username,
-            namespace: article.authorInfo.namespace,
-            avatar: article.authorInfo.faceUrl
-          },
-          category: article.categoryInfo.name,
-          categoryColor: article.categoryInfo.color,
-          categoryId: article.categoryInfo.id,
-          userId: article.authorInfo.id,
-          isLiked: article.isLiked,
-          likeCount: article.likeCount,
-          createTime: article.createAt,
-          publishTime: article.publishAt,
-          link: article.targetUrl,
-          viewCount: article.viewCount
-        }));
+        const transformedArticles: ArticleData[] = articlesData.data.map(article => {
+          // 专门追踪问题文章的数据转换
+          if (article.title?.includes('这个太美了啊') || article.title?.includes('asdfasdf')) {
+            console.log(`🔍 UserProfile 数据转换 - "${article.title}":`, {
+              原始isLiked: article.isLiked,
+              uuid: article.uuid,
+              authorId: article.authorInfo.id
+            });
+          }
+
+          return {
+            id: article.uuid,
+            title: article.title,
+            content: article.content,
+            cover: article.coverUrl,
+            author: {
+              id: article.authorInfo.id,
+              name: article.authorInfo.username,
+              namespace: article.authorInfo.namespace,
+              avatar: article.authorInfo.faceUrl
+            },
+            category: article.categoryInfo.name,
+            categoryColor: article.categoryInfo.color,
+            categoryId: article.categoryInfo.id,
+            userId: article.authorInfo.id,
+            isLiked: article.isLiked,
+            likeCount: article.likeCount,
+            createTime: article.createAt,
+            publishTime: article.publishAt,
+            link: article.targetUrl,
+            viewCount: article.viewCount
+          };
+        });
 
         setArticles(transformedArticles);
         console.log('[UserProfile] All data loaded successfully');

@@ -372,7 +372,21 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               {/* Left side: Treasure button */}
               {actions.showTreasure && (
                 <TreasureButton
-                  isLiked={onLike ? (article.isLiked || false) : false} // Always false when no onLike callback
+                  isLiked={(() => {
+                    const hasCallback = !!onLike;
+                    const isLikedValue = hasCallback ? (article.isLiked || false) : false;
+
+                    // 专门追踪问题文章
+                    if (article.title?.includes('这个太美了啊') || article.title?.includes('asdfasdf')) {
+                      console.log(`🔍 ArticleCard TreasureButton (1st) - "${article.title}":`);
+                      console.log(`  hasOnLikeCallback: ${hasCallback}`);
+                      console.log(`  articleIsLiked: ${article.isLiked}`);
+                      console.log(`  finalIsLikedValue: ${isLikedValue}`);
+                      console.log(`  treasureCount: ${article.treasureCount}`);
+                    }
+
+                    return isLikedValue;
+                  })()} // Always false when no onLike callback
                   likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                   onClick={handleLikeClick}
                   size="large"
@@ -556,7 +570,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               <div className="flex items-center gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
-                    isLiked={onLike ? (article.isLiked || false) : false} // Always false when no onLike callback
+                    isLiked={(() => {
+                      const hasCallback = !!onLike;
+                      const isLikedValue = hasCallback ? (article.isLiked || false) : false;
+
+
+                      return isLikedValue;
+                    })()} // Always false when no onLike callback
                     likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                     onClick={handleLikeClick}
                     size="large"

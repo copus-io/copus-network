@@ -95,7 +95,7 @@ export const TreasuryContentSection = (): JSX.Element => {
               date: new Date(article.createAt * 1000).toLocaleDateString(),
               treasureCount: article.likeCount || 0,
               visitCount: `${article.viewCount || 0}`,
-              isLiked: article.isLiked || true, // 收藏页面的文章都是已点赞的
+              isLiked: article.isLiked || false, // 根据API返回的真实状态
               targetUrl: article.targetUrl,
               website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
             };
@@ -169,7 +169,7 @@ export const TreasuryContentSection = (): JSX.Element => {
                   date: new Date(article.createAt * 1000).toLocaleDateString(),
                   treasureCount: article.likeCount || 0,
                   visitCount: `${article.viewCount || 0}`,
-                  isLiked: article.isLiked || true,
+                  isLiked: article.isLiked || false,
                   targetUrl: article.targetUrl,
                   website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
                 };
