@@ -827,6 +827,7 @@ export class AuthService {
 
   /**
    * Get user treasury information (including favorites statistics)
+   * If no token, returns default/empty data
    */
   static async getUserTreasuryInfo(): Promise<{
     bio: string;
@@ -848,11 +849,36 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
+    // Check if user has token for personalized data
+    const token = localStorage.getItem('copus_token');
+    const hasValidToken = token && token.trim() !== '';
 
-    return apiRequest('/client/userHome/userInfo', {
-      method: 'GET',
-      requiresAuth: true,
-    });
+    if (hasValidToken) {
+      // With token: get personalized treasury info
+      return apiRequest('/client/userHome/userInfo', {
+        method: 'GET',
+        requiresAuth: true,
+      });
+    } else {
+      // Without token: return default empty data
+      console.log('📝 No token found, returning default treasury info');
+      return {
+        bio: '',
+        coverUrl: '',
+        email: '',
+        faceUrl: '',
+        id: 0,
+        namespace: '',
+        socialLinks: [],
+        statistics: {
+          articleCount: 0,
+          likedArticleCount: 0,
+          myArticleLikedCount: 0
+        },
+        username: '',
+        walletAddress: ''
+      };
+    }
   }
 
   /**
