@@ -48,7 +48,13 @@ export const TreasuryContentSection = (): JSX.Element => {
           setTreasuryStats(treasuryInfo.statistics);
         }
 
-        // 现在getUserLikedArticles总是返回数据（有token时包含like状态，无token时为公开数据）
+        // 如果没有token，getUserLikedArticles会返回null，这时跳过文章处理
+        if (likedArticlesResponse === null) {
+          console.log('📝 No token available, showing empty collection');
+          setLikedArticles([]);
+          setLoading(false);
+          return;
+        }
 
         // 社交链接数据直接从UserContext获取，无需额外API调用
 
@@ -133,7 +139,11 @@ export const TreasuryContentSection = (): JSX.Element => {
           try {
             const likedArticlesResponse = await AuthService.getUserLikedArticles(1, 20);
 
-            // 现在getUserLikedArticles总是返回数据（有/无token都有数据）
+            // 如果没有token，getUserLikedArticles会返回null
+            if (likedArticlesResponse === null) {
+              console.log('📝 No token available for refresh, skipping');
+              return;
+            }
 
             const articlesData = likedArticlesResponse.data || likedArticlesResponse;
 

@@ -898,8 +898,12 @@ export class AuthService {
   }
 
   /**
+<<<<<<< HEAD
    * Get user's liked articles list (paginated)
    * If no token, still fetches public data but without like status
+=======
+   * Get user's liked articles list (paginated) - only if user is logged in
+>>>>>>> 8405598 (fix: 优化收藏文章API调用逻辑)
    */
   static async getUserLikedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<{
     data: Array<{
@@ -930,27 +934,19 @@ export class AuthService {
     pageIndex: number;
     pageSize: number;
     totalCount: number;
-  }> {
-    // Check if user has token for personalized data
+  } | null> {
+    // Check if user has token, if not, return null instead of throwing error
     const token = localStorage.getItem('copus_token');
-    const hasValidToken = token && token.trim() !== '';
-
-    if (hasValidToken) {
-      // With token: get personalized data with like status
-      return apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
-        method: 'GET',
-        requiresAuth: true,
-      });
-    } else {
-      // Without token: get public data without like status
-      console.log('📝 No token found, fetching public liked articles data');
-      const response = await apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
-        method: 'GET',
-        requiresAuth: false,
-      });
-
-      return response;
+    if (!token || token.trim() === '') {
+      console.log('📝 No token found, skipping liked articles request');
+      return null;
     }
+
+    // With token: get personalized data with like status
+    return apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
   }
 
   /**
