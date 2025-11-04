@@ -26,6 +26,7 @@ export const NotificationListSection = (): JSX.Element => {
   const {
     notifications: contextNotifications,
     isLoading,
+    isLoadingMore,
     hasMore,
     fetchNotifications,
     loadMoreNotifications,
@@ -43,16 +44,32 @@ export const NotificationListSection = (): JSX.Element => {
     return () => clearTimeout(timer);
   }, []); // Remove fetchNotifications dependency, only execute on first component load
 
-  // Infinite scroll effect
+  // Infinite scroll effect with scroll position preservation
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = async () => {
       const scrollTop = window.scrollY;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
 
-      if (scrolledToBottom && hasMore && !isLoading) {
-        loadMoreNotifications();
+      if (scrolledToBottom && hasMore && !isLoading && !isLoadingMore) {
+        // Save current scroll position before loading more
+        const currentScrollPosition = window.scrollY;
+        console.log('[Notification] Loading more notifications, scroll position:', currentScrollPosition);
+
+        try {
+          await loadMoreNotifications();
+
+          // Restore scroll position after loading to prevent jumping to top
+          setTimeout(() => {
+            if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
+              window.scrollTo(0, currentScrollPosition);
+              console.log('[Notification] Restored scroll position after pagination load');
+            }
+          }, 50);
+        } catch (error) {
+          console.error('Failed to load more notifications:', error);
+        }
       }
     };
 
@@ -60,7 +77,7 @@ export const NotificationListSection = (): JSX.Element => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [hasMore, isLoading, loadMoreNotifications]);
+  }, [hasMore, isLoading, isLoadingMore, loadMoreNotifications]);
 
   // Format timestamp with stable calculation to avoid frequent re-renders
   const formatTimestamp = (timestamp: number | string): string => {

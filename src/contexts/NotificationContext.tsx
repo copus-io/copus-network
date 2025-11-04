@@ -7,12 +7,14 @@ interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
+  isLoadingMore: boolean;
   hasMore: boolean;
   currentPage: number;
 }
 
 type NotificationAction =
   | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_LOADING_MORE'; payload: boolean }
   | { type: 'SET_NOTIFICATIONS'; payload: Notification[] }
   | { type: 'APPEND_NOTIFICATIONS'; payload: { notifications: Notification[]; hasMore: boolean; page: number } }
   | { type: 'SET_UNREAD_COUNT'; payload: number }
@@ -26,6 +28,7 @@ const initialState: NotificationState = {
   notifications: [],
   unreadCount: 0,
   isLoading: false,
+  isLoadingMore: false,
   hasMore: true,
   currentPage: 0,
 };
@@ -34,6 +37,9 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
+
+    case 'SET_LOADING_MORE':
+      return { ...state, isLoadingMore: action.payload };
 
     case 'SET_NOTIFICATIONS':
       return {
@@ -138,7 +144,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     append: boolean = false // New parameter to control append vs replace
   ): Promise<void> => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      // Only set loading state for initial load, not for pagination to avoid scroll jumping
+      if (!append) {
+        dispatch({ type: 'SET_LOADING', payload: true });
+      }
+
       const result = await notificationService.getNotifications(page, pageSize, msgType);
 
       if (append) {
@@ -164,7 +174,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       } else {
         console.error('❌ Failed to fetch notifications:', error);
       }
-      dispatch({ type: 'SET_LOADING', payload: false });
+
+      // Only reset loading state if it was set for initial load
+      if (!append) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
     }
   };
 
@@ -293,12 +307,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   };
 
   const loadMoreNotifications = async (): Promise<void> => {
-    if (state.isLoading || !state.hasMore) {
+    if (state.isLoading || state.isLoadingMore || !state.hasMore) {
       return;
     }
 
-    const nextPage = state.currentPage + 1;
-    await fetchNotifications(nextPage, 20, 0, true);
+    try {
+      dispatch({ type: 'SET_LOADING_MORE', payload: true });
+      const nextPage = state.currentPage + 1;
+      console.log(`[NotificationContext] Loading more notifications - page ${nextPage}`);
+      await fetchNotifications(nextPage, 20, 0, true);
+    } finally {
+      dispatch({ type: 'SET_LOADING_MORE', payload: false });
+    }
   };
 
   const clearAllNotifications = async (): Promise<void> => {
@@ -367,6 +387,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     notifications: state.notifications,
     unreadCount: state.unreadCount,
     isLoading: state.isLoading,
+    isLoadingMore: state.isLoadingMore,
     hasMore: state.hasMore,
     currentPage: state.currentPage,
     fetchNotifications,
