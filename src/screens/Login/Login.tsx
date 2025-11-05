@@ -566,8 +566,28 @@ export const Login = (): JSX.Element => {
               throw new Error('No authentication token received');
             }
           }
-        } catch (error) {
-          showToast(`${provider || 'X'} login failed, please try again`, 'error');
+        } catch (error: any) {
+          console.error(`❌ ${provider || 'OAuth'} login failed:`, error);
+
+          // Check for specific backend errors
+          const errorMessage = error?.message || error?.msg || '';
+          const errorString = typeof error === 'string' ? error : errorMessage;
+
+          // Provide user-friendly error messages based on error type
+          if (errorString.includes('value too long') || errorString.includes('SQLSTATE 22001')) {
+            showToast(
+              `${provider || 'OAuth'} login is temporarily unavailable due to a server issue. Our team has been notified. Please try email/password or wallet login.`,
+              'error'
+            );
+          } else if (errorString.includes('401') || errorString.includes('403') || errorString.includes('unauthorized')) {
+            showToast(`${provider || 'OAuth'} authorization failed. Please try logging in again.`, 'error');
+          } else if (errorString.includes('network') || errorString.includes('fetch')) {
+            showToast('Network error. Please check your connection and try again.', 'error');
+          } else if (errorString.includes('token')) {
+            showToast(`${provider || 'OAuth'} login failed: Could not receive authentication token. Please try again.`, 'error');
+          } else {
+            showToast(`${provider || 'OAuth'} login failed. Please try again or use another login method.`, 'error');
+          }
         } finally {
           setIsLoginLoading(false);
         }
