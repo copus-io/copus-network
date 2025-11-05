@@ -440,7 +440,7 @@ export const DeleteAccount = (): JSX.Element => {
 
                   <div className="inline-flex flex-col items-center justify-center gap-[25px] relative flex-[0_0_auto] mt-6">
                     <h1 className="relative w-[400px] mt-[-1.00px] font-h3-s font-[number:var(--h3-s-font-weight)] text-off-black text-[length:var(--h3-s-font-size)] text-center tracking-[var(--h3-s-letter-spacing)] leading-[var(--h3-s-line-height)] [font-style:var(--h3-s-font-style)]">
-                      Are you sure you want to delete your account?
+                      Are you sure to delete your account?
                     </h1>
                   </div>
 

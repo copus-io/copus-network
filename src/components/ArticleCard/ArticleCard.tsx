@@ -190,13 +190,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
                 <Badge
                   variant="outline"
-                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit ${
+                  className={`inline-flex items-center gap-[3px] px-2 py-1 rounded-[50px] border w-fit ${
                     article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
                   }`}
                   style={article.categoryColor ? categoryInlineStyle : undefined}
                 >
                   <span
-                    className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
+                    className={`[font-family:'Lato',Helvetica] font-semibold text-xs tracking-[0] leading-[12px] ${
                       article.categoryColor ? '' : categoryStyle.text
                     }`}
                     style={article.categoryColor ? { color: categoryInlineStyle.color } : undefined}
@@ -218,29 +218,29 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
 
               <div className="flex flex-col items-start gap-[10px] w-full min-w-0 max-w-full">
-                {/* Title with x402 payment badge - Fixed height */}
-                <div className="relative h-[72px] w-full overflow-hidden">
+                {/* Title with x402 payment badge - Same line */}
+                <div className="w-full min-h-[54px]">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="absolute top-0 left-0 z-10 h-[36px] px-1.5 mr-[5px] mb-[10px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[24px] px-1.5 mr-2 mt-[1.5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[2px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="w-[21px] h-5 flex-shrink-0"
+                        className="w-[16px] h-[15px] flex-shrink-0"
                         alt="x402 payment"
                         src={getIconUrl('X402_PAYMENT')}
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-sm tracking-[0] leading-3 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3 className={`[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2 w-full ${article.isPaymentRequired && article.paymentPrice ? 'pt-[48px]' : ''}`}>
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] break-words line-clamp-2 overflow-hidden">
                     {article.title || 'Enter a title...'}
                   </h3>
                 </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full max-w-[600px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                  <div className="h-[54px] overflow-hidden w-full min-w-0 max-w-full">
+                  <div className="h-[45px] overflow-hidden w-full min-w-0 max-w-full">
                     <p
-                      className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden"
+                      className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.5px] overflow-hidden"
                       style={{
                         display: '-webkit-box',
                         WebkitBoxOrient: 'vertical',
