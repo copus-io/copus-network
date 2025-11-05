@@ -597,13 +597,13 @@ export const Create = (): JSX.Element => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+    <div className="w-full min-h-screen overflow-x-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
       <HeaderSection isLoggedIn={isLoggedIn} hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
-      <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[120px]">
-        <div className="flex flex-col items-start gap-[30px] px-5 md:px-8 lg:px-12 xl:px-20 2xl:px-40 py-0 pb-[100px] w-full">
-          <div className="flex items-center gap-2.5 w-full">
-            <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
+      <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[120px] overflow-x-hidden">
+        <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] px-3 sm:px-5 md:px-8 lg:px-12 xl:px-20 2xl:px-40 py-0 pb-[100px] w-full overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
+            <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-left sm:text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
               {isEditMode ? 'Edit treasure' : 'Share treasure'}
             </h1>
             {isEditMode && (
@@ -628,8 +628,8 @@ export const Create = (): JSX.Element => {
             )}
           </div>
 
-          <div className="flex flex-col lg:flex-row items-start gap-[30px] lg:gap-[30px] xl:gap-[60px] w-full">
-            <div className="flex flex-col items-start gap-[30px] pl-0 lg:pr-[15px] xl:pr-[30px] py-0 flex-1 lg:border-r lg:[border-right-style:solid] lg:border-light-grey w-full min-w-0">
+          <div className="flex flex-col lg:flex-row items-start gap-[20px] sm:gap-[30px] lg:gap-[30px] xl:gap-[60px] w-full">
+            <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] pl-0 py-0 flex-1 w-full min-w-0 lg:pr-[15px] lg:border-r lg:[border-right-style:solid] lg:border-light-grey xl:pr-[30px]">
             <div className="flex flex-col items-start gap-2.5 w-full">
               <div className="flex flex-col w-[60px] h-[23px] items-start justify-center gap-2.5">
                 <label className="relative flex items-center justify-center w-fit mt-[-2.00px] font-p-l font-[number:var(--p-l-font-weight)] text-transparent text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
@@ -955,7 +955,7 @@ export const Create = (): JSX.Element => {
               </div>
             </div>
 
-            <div className="flex flex-col items-start gap-10 w-full">
+            <div className="flex flex-col items-start gap-10 w-full max-w-[700px]">
               <div className="w-full">
                 <ArticleCard
                   article={previewArticleData}

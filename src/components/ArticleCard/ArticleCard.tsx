@@ -165,7 +165,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       case 'preview':
         return (
           <CardContent className="flex flex-col items-start gap-[15px] p-5 w-full">
-            <div className="flex flex-col items-start justify-center gap-[10px] w-full min-w-0 max-w-full">
+            <div className="flex flex-col items-start justify-center gap-[15px] w-full min-w-0 max-w-full">
               <div
                 className="flex flex-col items-start p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
                 style={{
@@ -217,7 +217,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 )}
               </div>
 
-              <div className="flex flex-col items-start gap-[5px] w-full min-w-0 max-w-full">
+              <div className="flex flex-col items-start gap-[10px] w-full min-w-0 max-w-full">
                 {/* Title with x402 payment badge - Fixed height */}
                 <div className="relative h-[72px] w-full overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
@@ -237,7 +237,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </h3>
                 </div>
 
-                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full max-w-[600px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                   <div className="h-[54px] overflow-hidden w-full min-w-0 max-w-full">
                     <p
                       className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden"
@@ -646,7 +646,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   };
 
   const cardClasses = layout === 'preview'
-    ? "bg-white rounded-lg shadow-card-white border-0 h-[500px] w-full"
+    ? "bg-white rounded-lg border-0 min-h-[500px] w-full shadow-sm lg:shadow-card-white flex flex-col"
     : "bg-white rounded-[8px] border shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[500px]";
 
   const cardContent = (
