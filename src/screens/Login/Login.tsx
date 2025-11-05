@@ -459,9 +459,16 @@ export const Login = (): JSX.Element => {
           // Call different login methods based on provider type
           if (provider === 'google') {
             response = await AuthService.googleLogin(code, state, !!localStorage.getItem('copus_token'));
-            
+
+            console.log('📦 Google OAuth response:', response);
+            console.log('📦 Response keys:', Object.keys(response || {}));
+
             const savedToken = localStorage.getItem('copus_token');
             const tokenToUse = response.token || savedToken;
+
+            console.log('🔑 Token to use:', tokenToUse ? `${tokenToUse.substring(0, 20)}...` : 'NONE');
+            console.log('🔑 Response token:', response.token ? `${response.token.substring(0, 20)}...` : 'NONE');
+            console.log('🔑 Saved token:', savedToken ? `${savedToken.substring(0, 20)}...` : 'NONE');
 
             if (response.isBinding) {
               // Account binding mode
@@ -470,11 +477,13 @@ export const Login = (): JSX.Element => {
               navigate('/setting', { replace: true });
             } else {
               // Third-party login mode
-              showToast('Google login successful! Welcome back 🎉', 'success');
 
               if (!tokenToUse) {
-                throw new Error('No authentication token received');
+                console.error('❌ No token available! Full response:', JSON.stringify(response, null, 2));
+                throw new Error('No authentication token received from server. The account may need to be registered first.');
               }
+
+              showToast('Google login successful! Welcome back 🎉', 'success');
 
               // Mark that user logged in via Google OAuth
               localStorage.setItem('copus_auth_method', 'google');
