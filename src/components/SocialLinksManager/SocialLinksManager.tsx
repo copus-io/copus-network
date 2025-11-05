@@ -23,7 +23,7 @@ const SOCIAL_PLATFORMS = [
     id: 'youtube',
     name: 'YouTube',
     placeholder: 'Enter your YouTube channel link',
-    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNMTkuMjkzIDhzLS4xOTItMS4zODctLjc4OC0xLjk5N2MtLjc1NC0uODE1LTEuNTk4LS44MTktMi4wMDUtLjg2N0MxMy40ODggNS4wODUgMTIuNzUgNS4wODMgMTIgNS4wODNjLS43NSAwLTEuNDg4LjAwMi0zLjUuMDUzLS40MDYuMDQ4LTEuMjUuMDUyLTIuMDA0Ljg2N0M1LjkgNi42MTMgNS43MDcgOCA1LjcwNyA4cy0uMTkzIDEuNjY3LS4xOTMgMy4zMzN2MS41ODRjMCAxLjY2Ni4xOTMgMy4zMzMuMTkzIDMuMzMzczEuMDkyIDEuMzg3IDEuNjkgMS45OTdjLjc1My44MTQgMS41OTcuODE5IDIuMDA0Ljg2N0MxMCA1LjkxNyAxMiA1LjkxNyAxMiA1LjkxN3MxMCAuMDA0IDExIDEuMTY2YzEuNTA4LjA0OCAxLjY5Ni0xLjk5NyAxLjY5Ni0xLjk5N3MuMTkzLTEuNjY3LjE5My0zLjMzM3YtMS41ODRDMTkuNDg2IDkuNjY3IDE5LjI5MyA4IDE5LjI5MyA4eiIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNOS45NTEgMTQuODhWOVYxMS4yNDVsMy4wNDkgMS44MzVMMTMgMTMuMDhsLTMuMDQ5IDEuOCIgZmlsbD0id2hpdGUiLz4KPC9zdmc+',
+    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNMTkuNjE1IDcuNjU0Yy0uMTg4LS43MDYtLjczNi0xLjI2Mi0xLjQzOC0xLjQ1MkMxNi45MDYgNiAxMiA2IDEyIDZzLTQuOTA2IDAtNi4xNzcuMzQ4Yy0uNzAyLjE5LTEuMjUuNzQ2LTEuNDM4IDEuNDUyQzQgOC45MjggNCA5LjI5OCA0IDEyYzAgMi43MDIgMCAzLjA3Mi4zODUgNC4zNDYuMTg4LjcwNi43MzYgMS4yNjIgMS40MzggMS40NTJDNy4wOTQgMTggMTIgMTggMTIgMThzNC45MDYgMCA2LjE3Ny0uMzQ4Yy43MDItLjE5IDEuMjUtLjc0NiAxLjQzOC0xLjQ1MkMyMCAxNS4wNzIgMjAgMTQuNzAyIDIwIDEyYzAtMi43MDIgMC0zLjA3Mi0uMzg1LTQuMzQ2eiIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNOS45ODUgMTQuOTY1VjkuMDM1TDE1LjIxMyAxMmwtNS4yMjggMi45NjV6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=',
     color: '#FF0000',
   },
   {
@@ -354,7 +354,7 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
                     <img
                       src={link.iconUrl}
                       alt={link.title}
-                      className="w-6 h-6"
+                      className="w-7 h-7"
                       onError={(e) => {
                         e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDEzYTUgNSAwIDAgMCA3LjU0LjU0bDMtM2E1IDUgMCAwIDAtNy4wNy03LjA3bC0xLjcyIDEuNzEiIHN0cm9rZT0iIzZiNzI4MCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0ibTE0IDExYTUgNSAwIDAgMC03LjU0LS41NGwtMy0zYTUgNSAwIDAgMCA3LjA3LTcuMDdsMS43MS0xLjcxIiBzdHJva2U9IiM2YjcyODAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=';
                       }}
@@ -471,8 +471,8 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
                           : 'border-gray-200 hover:border-blue-300 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 hover:shadow-md hover:scale-[1.01]'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
-                      <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100 group-hover:shadow-md transition-shadow">
-                        <img src={platform.icon} alt={platform.name} className="w-6 h-6" />
+                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100 group-hover:shadow-md transition-shadow">
+                        <img src={platform.icon} alt={platform.name} className="w-7 h-7" />
                       </div>
                       <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">{platform.name}</span>
                     </button>
@@ -666,8 +666,8 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
                   <span>Current Platform</span>
                 </label>
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100">
-                    <img src={editingLink.iconUrl} alt={editingLink.title} className="w-6 h-6" />
+                  <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100">
+                    <img src={editingLink.iconUrl} alt={editingLink.title} className="w-7 h-7" />
                   </div>
                   <span className="text-sm font-semibold text-gray-900">
                     {SOCIAL_PLATFORMS.find(p => p.id === selectedPlatform)?.name || editingLink.title}

@@ -600,7 +600,7 @@ export const Create = (): JSX.Element => {
     <div className="w-full min-h-screen overflow-x-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
       <HeaderSection isLoggedIn={isLoggedIn} hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
-      <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[120px] overflow-x-hidden">
+      <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[110px] overflow-x-hidden">
         <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] px-3 sm:px-5 md:px-8 lg:px-12 xl:px-20 2xl:px-40 py-0 pb-[100px] w-full overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
             <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-left sm:text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
@@ -955,8 +955,8 @@ export const Create = (): JSX.Element => {
               </div>
             </div>
 
-            <div className="flex flex-col items-start gap-10 w-full max-w-[700px]">
-              <div className="w-full">
+            <div className="flex flex-col items-start lg:items-center gap-10 w-full">
+              <div className="w-full lg:max-w-[250px] xl:max-w-[280px] 2xl:max-w-[320px]">
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
@@ -965,7 +965,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full"
+                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full lg:w-[500px]"
                 onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
                 style={{
                     opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,
