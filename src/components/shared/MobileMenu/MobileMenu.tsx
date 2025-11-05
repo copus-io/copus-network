@@ -200,22 +200,22 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 
             <footer className="flex flex-col items-start justify-center gap-2.5 pt-5 pb-0 px-0 relative self-stretch w-full flex-[0_0_auto] bg-transparent">
               <nav
-                className="flex items-center justify-start text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]"
+                className="flex items-center justify-start text-medium-dark-grey text-sm leading-[20px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]"
                 aria-label="Footer navigation"
               >
-                <div className="flex flex-col items-start [font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px]">
+                <div className="flex flex-col items-start [font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px]">
                   <a href="#" className="hover:text-dark-grey transition-colors">• About</a>
                   <button onClick={handleContactClick} className="hover:text-dark-grey transition-colors cursor-pointer text-left">• Contact us</button>
                   <a href="https://www.copus.io/work/565b548277674c3bae3ccc016c7f58a2" target="_blank" rel="noopener noreferrer" className="hover:text-dark-grey transition-colors">• Terms & Privacy</a>
                 </div>
               </nav>
 
-              <p className="flex items-center justify-start text-medium-dark-grey text-base leading-[25px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+              <p className="flex items-center justify-start text-medium-dark-grey text-sm leading-[20px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
                 <a
                   href="https://server31.io"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px] hover:text-dark-grey transition-colors"
+                  className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px] hover:text-dark-grey transition-colors"
                 >
                   © 2025 S31 Labs
                 </a>

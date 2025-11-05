@@ -150,7 +150,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
                     <button
                       key={index}
                       onClick={handleContactClick}
-                      className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px] hover:text-dark-grey transition-colors cursor-pointer text-left"
+                      className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px] hover:text-dark-grey transition-colors cursor-pointer text-left"
                     >
                       • {link.label}
                     </button>
@@ -162,7 +162,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
                     href={link.href}
                     target={link.isExternal ? '_blank' : undefined}
                     rel={link.isExternal ? 'noopener noreferrer' : undefined}
-                    className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px] hover:text-dark-grey transition-colors"
+                    className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px] hover:text-dark-grey transition-colors"
                   >
                     • {link.label}
                   </a>
@@ -174,7 +174,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
               href="https://server31.io"
               target="_blank"
               rel="noopener noreferrer"
-              className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-[25px] hover:text-dark-grey transition-colors"
+              className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px] hover:text-dark-grey transition-colors"
             >
               © 2025 S31 Labs
             </a>
