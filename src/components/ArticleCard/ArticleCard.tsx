@@ -164,8 +164,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     switch (layout) {
       case 'preview':
         return (
-          <CardContent className="flex flex-col items-start gap-[15px] p-5 w-full overflow-hidden">
-            <div className="flex flex-col items-start justify-center gap-[15px] w-full min-w-0">
+          <CardContent className="flex flex-col items-start gap-[15px] p-5 w-full">
+            <div className="flex flex-col items-start justify-center gap-[10px] w-full min-w-0 max-w-full">
               <div
                 className="flex flex-col items-start p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
                 style={{
@@ -217,7 +217,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 )}
               </div>
 
-              <div className="flex flex-col items-start gap-[15px] w-full">
+              <div className="flex flex-col items-start gap-[5px] w-full min-w-0 max-w-full">
                 {/* Title with x402 payment badge - Fixed height */}
                 <div className="relative h-[72px] w-full overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
@@ -238,18 +238,28 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                  <div className="h-[54px] overflow-hidden">
-                    <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] line-clamp-2 break-words overflow-hidden">
+                  <div className="h-[54px] overflow-hidden w-full min-w-0 max-w-full">
+                    <p
+                      className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: 2,
+                        overflow: 'hidden',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
+                    >
                       "{article.description || 'Write your recommendation...'}"
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="w-[18px] h-[18px]">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2 min-w-0 max-w-[60%]">
+                      <Avatar className="w-[18px] h-[18px] flex-shrink-0">
                         <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
                       </Avatar>
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] truncate">
                         {article.userName}
                       </span>
                     </div>
@@ -647,7 +657,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   return (
     <div
-      className={`${layout === 'preview' ? 'w-[500px] min-w-[500px] max-w-[500px]' : 'w-full'} ${className}`}
+      className={`w-full ${className}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
