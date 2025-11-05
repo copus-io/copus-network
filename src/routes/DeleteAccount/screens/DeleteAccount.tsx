@@ -47,7 +47,7 @@ export const DeleteAccount = (): JSX.Element => {
     sendCode,
     cleanup: cleanupVerificationCode
   } = useVerificationCode({
-    onSendSuccess: () => showToast('验证码已发送到您的邮箱', 'success'),
+    onSendSuccess: () => showToast('Verification code sent to your email', 'success'),
     onSendError: (error) => showToast(error, 'error')
   });
 
@@ -187,8 +187,8 @@ export const DeleteAccount = (): JSX.Element => {
     }
   };
 
-  const handleConfirmDelete = async () => {
-    // Validate based on auth method
+  const handleShowConfirmation = () => {
+    // Validate before showing confirmation popup
     if (isWalletUser) {
       if (!isConfirmed || !isWalletVerified || !walletSignatureResult) {
         showToast('Please confirm and complete wallet signature verification', 'error');
@@ -201,6 +201,11 @@ export const DeleteAccount = (): JSX.Element => {
       }
     }
 
+    // Show confirmation popup
+    setShowSuccessPopup(true);
+  };
+
+  const handleConfirmDelete = async () => {
     setIsLoading(true);
     try {
       const deleteParams = isWalletUser
@@ -218,22 +223,20 @@ export const DeleteAccount = (): JSX.Element => {
       const success = await AuthService.deleteAccount(deleteParams);
 
       if (success) {
-        setShowSuccessPopup(true);
+        // After successful deletion, log out and redirect
+        await logout();
+        navigate('/');
       } else {
         showToast(isWalletUser ? 'Account deletion failed' : '账户删除失败，请检查验证码是否正确', 'error');
+        setShowSuccessPopup(false);
       }
     } catch (error) {
       console.error('Failed to delete account:', error);
       showToast(isWalletUser ? 'Account deletion failed, please try again' : '账户删除失败，请稍后重试', 'error');
+      setShowSuccessPopup(false);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleFinalConfirm = async () => {
-    // After final confirmation, log out user and redirect to homepage
-    await logout();
-    navigate('/');
   };
 
   // Validation logic: wallet users need wallet verification and signature, email users need verification code
@@ -318,7 +321,7 @@ export const DeleteAccount = (): JSX.Element => {
                   <Button
                     onClick={handleConnectWallet}
                     disabled={isConnectingWallet || isRequestingSignature || walletSignatureResult !== null}
-                    className="h-auto bg-red px-[30px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-auto bg-red px-[30px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-normal text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isConnectingWallet
                       ? 'Connecting...'
@@ -351,7 +354,7 @@ export const DeleteAccount = (): JSX.Element => {
                     <Button
                       onClick={handleSendCode}
                       disabled={isSendingCode || !user?.email || countdown > 0}
-                      className="h-auto bg-red px-[15px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-semibold text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-auto bg-red px-[15px] py-2.5 rounded-[15px] shadow-[0px_2px_5px_#00000040] [font-family:'Lato',Helvetica] font-normal text-white text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSendingCode ? 'Sending...' : countdown > 0 ? `${countdown}s` : 'Send code'}
                     </Button>
@@ -396,7 +399,7 @@ export const DeleteAccount = (): JSX.Element => {
             <Button
               variant="ghost"
               className="h-auto h-[45px] px-5 py-[15px] rounded-[15px] font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] [font-style:var(--h-4-font-style)] hover:bg-transparent"
-              onClick={() => setShowSuccessPopup(false)}
+              onClick={() => navigate('/setting')}
             >
               <span className="relative w-fit mt-[-3.50px] font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)]">
                 Cancel
@@ -410,10 +413,10 @@ export const DeleteAccount = (): JSX.Element => {
                   : "bg-medium-grey hover:bg-medium-grey/90"
               }`}
               disabled={!isFormValid || isLoading}
-              onClick={handleConfirmDelete}
+              onClick={handleShowConfirmation}
             >
               <span className="relative w-fit mt-[-3.50px] mb-[-0.50px] font-h-4 font-[number:var(--h-4-font-weight)] text-white text-[length:var(--h-4-font-size)] tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] whitespace-nowrap [font-style:var(--h-4-font-style)]">
-                {isLoading ? "Deleting..." : "Delete"}
+                Delete
               </span>
             </Button>
           </div>
@@ -423,7 +426,7 @@ export const DeleteAccount = (): JSX.Element => {
         {showSuccessPopup && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="relative w-[500px]">
-              <Card className="relative">
+              <Card className="relative bg-white">
                 <CardContent className="flex flex-col items-center gap-[30px] p-[30px]">
                   <button
                     onClick={() => setShowSuccessPopup(false)}
@@ -435,9 +438,9 @@ export const DeleteAccount = (): JSX.Element => {
                     <span className="sr-only">Close</span>
                   </button>
 
-                  <div className="inline-flex flex-col items-center justify-center gap-[25px] relative flex-[0_0_auto]">
+                  <div className="inline-flex flex-col items-center justify-center gap-[25px] relative flex-[0_0_auto] mt-6">
                     <h1 className="relative w-[400px] mt-[-1.00px] font-h3-s font-[number:var(--h3-s-font-weight)] text-off-black text-[length:var(--h3-s-font-size)] text-center tracking-[var(--h3-s-letter-spacing)] leading-[var(--h3-s-line-height)] [font-style:var(--h3-s-font-style)]">
-                      Your account has been successfully deleted
+                      Are you sure you want to delete your account?
                     </h1>
                   </div>
 
@@ -455,10 +458,11 @@ export const DeleteAccount = (): JSX.Element => {
                     <Button
                       variant="outline"
                       className="inline-flex h-[45px] items-center justify-center gap-[15px] px-[30px] py-2.5 relative flex-[0_0_auto] rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red hover:text-white h-auto transition-colors"
-                      onClick={handleFinalConfirm}
+                      onClick={handleConfirmDelete}
+                      disabled={isLoading}
                     >
-                      <span className="relative w-fit mt-[-2.50px] mb-[-0.50px] [font-family:'Lato',Helvetica] font-semibold text-xl tracking-[0] leading-7 whitespace-nowrap">
-                        Yes
+                      <span className="relative w-fit mt-[-2.50px] mb-[-0.50px] [font-family:'Lato',Helvetica] font-normal text-xl tracking-[0] leading-7 whitespace-nowrap">
+                        {isLoading ? 'Deleting...' : 'Yes'}
                       </span>
                     </Button>
                   </div>

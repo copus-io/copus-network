@@ -426,9 +426,10 @@ export const Login = (): JSX.Element => {
     const savedEmail = localStorage.getItem('copus_remembered_email');
     const savedRememberMe = localStorage.getItem('copus_remember_me_option');
 
-    if (savedEmail) {
-      setLoginEmail(savedEmail);
-    }
+    // Don't auto-fill email - let user enter it manually
+    // if (savedEmail) {
+    //   setLoginEmail(savedEmail);
+    // }
 
     if (savedRememberMe !== null) {
       setRememberMe(savedRememberMe === 'true');

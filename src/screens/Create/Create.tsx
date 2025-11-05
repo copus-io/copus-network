@@ -600,8 +600,8 @@ export const Create = (): JSX.Element => {
     <div className="w-full min-h-screen overflow-x-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
       <HeaderSection isLoggedIn={isLoggedIn} hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
-      <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[110px] overflow-x-hidden">
-        <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] px-3 sm:px-5 md:px-8 lg:px-12 xl:px-20 2xl:px-40 py-0 pb-[100px] w-full overflow-hidden">
+      <div className="lg:ml-[350px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[110px] overflow-x-hidden">
+        <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] px-3 sm:px-5 md:px-8 lg:pl-8 lg:pr-4 xl:pl-12 xl:pr-6 2xl:pl-20 2xl:pr-10 py-0 pb-[100px] w-full overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
             <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-left sm:text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
               {isEditMode ? 'Edit treasure' : 'Share treasure'}
@@ -628,8 +628,8 @@ export const Create = (): JSX.Element => {
             )}
           </div>
 
-          <div className="flex flex-col lg:flex-row items-start gap-[20px] sm:gap-[30px] lg:gap-[30px] xl:gap-[60px] w-full">
-            <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] pl-0 py-0 flex-1 w-full min-w-0 lg:pr-[15px] lg:border-r lg:[border-right-style:solid] lg:border-light-grey xl:pr-[30px]">
+          <div className="flex flex-col lg:flex-row items-start gap-[20px] sm:gap-[30px] lg:gap-[40px] xl:gap-[60px] w-full">
+            <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] pl-0 py-0 flex-1 w-full min-w-0 lg:pr-[40px] lg:border-r lg:[border-right-style:solid] lg:border-[#e0e0e0] xl:pr-[60px]">
             <div className="flex flex-col items-start gap-2.5 w-full">
               <div className="flex flex-col w-[60px] h-[23px] items-start justify-center gap-2.5">
                 <label className="relative flex items-center justify-center w-fit mt-[-2.00px] font-p-l font-[number:var(--p-l-font-weight)] text-transparent text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
@@ -814,58 +814,29 @@ export const Create = (): JSX.Element => {
                 Choose a topic {categoriesLoading && <span className="text-medium-grey">(Loading...)</span>}
               </div>
 
-              <div className="gap-2.5 inline-flex items-start flex-wrap">
-                {sortedCategories.map((category) => {
-                  const categoryStyle = getCategoryStyle(category.name, category.color);
-                  const categoryInlineStyle = getCategoryInlineStyle(category.color);
-                  const isSelected = formData.selectedTopic === category.name;
-                  const isHovered = hoveredCategory === category.id;
-                  const showBackground = isSelected || isHovered;
-
-                  // Create styles without background for default, with background for hover/selected
-                  const borderOnlyStyle = category.color ? {
-                    border: `1px solid ${categoryInlineStyle.color}`,
-                    borderRadius: '50px',
-                  } : undefined;
-
-                  const withBackgroundStyle = category.color ? {
-                    border: `1px solid ${categoryInlineStyle.color}`,
-                    borderRadius: '50px',
-                    background: categoryInlineStyle.background,
-                  } : undefined;
-
-                  return (
-                    <Badge
-                      key={category.id}
-                      variant="outline"
-                      className={`cursor-pointer transition-all inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit focus:outline-none focus:ring-0 ${
-                        category.color ? '' : `${categoryStyle.border} ${showBackground ? categoryStyle.bg : ''}`
-                      }`}
-                      style={showBackground ? withBackgroundStyle : borderOnlyStyle}
-                      onClick={() => handleTopicSelect(category.name, category.id)}
-                      onMouseEnter={() => setHoveredCategory(category.id)}
-                      onMouseLeave={() => setHoveredCategory(null)}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={isSelected}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          handleTopicSelect(category.name, category.id);
-                        }
-                      }}
-                    >
-                      <span
-                        className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
-                          category.color ? '' : categoryStyle.text
-                        }`}
-                        style={category.color ? { color: categoryInlineStyle.color } : undefined}
-                      >
-                        {category.name}
-                      </span>
-                    </Badge>
-                  );
-                })}
+              <div className="relative w-full">
+                <select
+                  value={formData.selectedTopicId}
+                  onChange={(e) => {
+                    const selectedCategory = sortedCategories.find(cat => cat.id === parseInt(e.target.value));
+                    if (selectedCategory) {
+                      handleTopicSelect(selectedCategory.name, selectedCategory.id);
+                    }
+                  }}
+                  className="w-full px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23686868' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 15px center',
+                    paddingRight: '40px'
+                  }}
+                >
+                  {sortedCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -965,7 +936,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full lg:w-[500px]"
+                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full lg:max-w-[250px] xl:max-w-[280px] 2xl:max-w-[320px]"
                 onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
                 style={{
                     opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,

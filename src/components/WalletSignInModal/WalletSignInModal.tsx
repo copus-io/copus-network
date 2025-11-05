@@ -91,7 +91,9 @@ export const WalletSignInModal: React.FC<WalletSignInModalProps> = ({
                   aria-pressed={selectedWallet === wallet.id}
                 >
                   <img
-                    className="relative flex-[0_0_auto] w-[30px] h-[30px] object-contain"
+                    className={`relative flex-[0_0_auto] object-contain ${
+                      wallet.id === 'coinbase' ? 'w-[100px] h-[30px]' : 'w-[30px] h-[30px]'
+                    }`}
                     alt={`${wallet.name} icon`}
                     src={wallet.icon}
                   />
