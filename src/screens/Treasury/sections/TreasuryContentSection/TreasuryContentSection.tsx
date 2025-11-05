@@ -30,11 +30,7 @@ export const TreasuryContentSection = (): JSX.Element => {
   useEffect(() => {
     const fetchLikedArticles = async () => {
 
-      if (!user) {
-        setLikedArticles([]);
-        setLoading(false);
-        return;
-      }
+      // 不再强制要求登录用户，允许访问公开内容
 
       try {
         setLoading(true);
@@ -46,12 +42,13 @@ export const TreasuryContentSection = (): JSX.Element => {
           AuthService.getUserLikedArticles(1, 20), // 获取前20篇文章
         ]);
 
-
         // 处理统计信息
         const treasuryInfo = treasuryInfoResponse.data || treasuryInfoResponse;
         if (treasuryInfo.statistics) {
           setTreasuryStats(treasuryInfo.statistics);
         }
+
+        // 现在getUserLikedArticles总是返回数据（有token时包含like状态，无token时为公开数据）
 
         // 社交链接数据直接从UserContext获取，无需额外API调用
 
@@ -74,7 +71,8 @@ export const TreasuryContentSection = (): JSX.Element => {
         const articles = articlesArray
           .filter((article: any) => {
             // Filter out user's own articles - users shouldn't see their own articles in collection
-            return article.authorInfo?.id !== user?.id;
+            // 如果没有登录用户，显示所有文章
+            return !user || article.authorInfo?.id !== user?.id;
           })
           .sort((a: any, b: any) => {
             // Sort by creation time in descending order (newest first)
@@ -96,8 +94,8 @@ export const TreasuryContentSection = (): JSX.Element => {
               userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
               date: new Date(article.createAt * 1000).toLocaleDateString(),
               treasureCount: article.likeCount || 0,
-              visitCount: `${article.viewCount || 0} Visits`,
-              isLiked: article.isLiked || true, // 收藏页面的文章都是已点赞的
+              visitCount: `${article.viewCount || 0}`,
+              isLiked: article.isLiked || false, // 根据API返回的真实状态
               targetUrl: article.targetUrl,
               website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
             };
@@ -124,16 +122,19 @@ export const TreasuryContentSection = (): JSX.Element => {
     };
 
     fetchLikedArticles();
-  }, [user]);
+  }, []); // 移除user依赖，现在总是加载内容
 
   // Refresh collection when page becomes visible (user navigates back)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && user) {
-        // Re-fetch collection when page becomes visible
+      if (!document.hidden) {
+        // Re-fetch collection when page becomes visible (不再要求必须有登录用户)
         const fetchLikedArticles = async () => {
           try {
             const likedArticlesResponse = await AuthService.getUserLikedArticles(1, 20);
+
+            // 现在getUserLikedArticles总是返回数据（有/无token都有数据）
+
             const articlesData = likedArticlesResponse.data || likedArticlesResponse;
 
             let articlesArray = [];
@@ -146,7 +147,8 @@ export const TreasuryContentSection = (): JSX.Element => {
             const articles = articlesArray
               .filter((article: any) => {
                 // Filter out user's own articles
-                return article.authorInfo?.id !== user?.id;
+                // 如果没有登录用户，显示所有文章
+                return !user || article.authorInfo?.id !== user?.id;
               })
               .sort((a: any, b: any) => {
                 // Sort by creation time in descending order (newest first)
@@ -166,8 +168,8 @@ export const TreasuryContentSection = (): JSX.Element => {
                   userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
                   date: new Date(article.createAt * 1000).toLocaleDateString(),
                   treasureCount: article.likeCount || 0,
-                  visitCount: `${article.viewCount || 0} Visits`,
-                  isLiked: article.isLiked || true,
+                  visitCount: `${article.viewCount || 0}`,
+                  isLiked: article.isLiked || false,
                   targetUrl: article.targetUrl,
                   website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com'
                 };
@@ -188,7 +190,7 @@ export const TreasuryContentSection = (): JSX.Element => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user]);
+  }, []); // 移除user依赖，使用token来控制内容
 
   // 处理点赞
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {

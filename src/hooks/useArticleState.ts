@@ -3,7 +3,7 @@ import { AuthService } from '../services/authService';
 
 const ARTICLE_STATES_KEY = 'copus_article_states';
 
-// 从localStorage读取状态
+// Load states from localStorage
 const loadArticleStates = (): Record<string, { isLiked: boolean; likeCount: number }> => {
   try {
     const saved = localStorage.getItem(ARTICLE_STATES_KEY);
@@ -11,49 +11,58 @@ const loadArticleStates = (): Record<string, { isLiked: boolean; likeCount: numb
     const stateCount = Object.keys(states).length;
     return states;
   } catch (error) {
-    console.error('❌ 加载文章状态失败:', error);
+    console.error('❌ Failed to load article states:', error);
     return {};
   }
 };
 
-// 保存状态到localStorage
+// Save states to localStorage
 const saveArticleStates = (states: Record<string, { isLiked: boolean; likeCount: number }>) => {
   try {
     const stateCount = Object.keys(states).length;
     localStorage.setItem(ARTICLE_STATES_KEY, JSON.stringify(states));
   } catch (error) {
-    console.error('❌ 保存文章状态失败:', error);
+    console.error('❌ Failed to save article states:', error);
   }
 };
 
-// 文章状态管理hook
-export const useArticleState = (showToast?: (message: string, type: 'success' | 'error') => void) => {
+// Article state management hook
+export const useArticleState = (
+  showToast?: (message: string, type: 'success' | 'error') => void,
+  isUserLoggedIn?: boolean
+) => {
 
-  // 全局文章点赞状态缓存 - 从localStorage初始化
+  // Global article like state cache - initialized from localStorage
   const [articleLikeStates, setArticleLikeStates] = useState<Record<string, {
     isLiked: boolean;
     likeCount: number;
   }>>(loadArticleStates);
 
-  // 更新文章点赞状态
+  // Update article like state
   const updateArticleLikeState = useCallback((articleId: string, isLiked: boolean, likeCount: number) => {
     setArticleLikeStates(prev => {
       const newStates = {
         ...prev,
         [articleId]: { isLiked, likeCount }
       };
-      // 保存到localStorage
+      // Save to localStorage
       saveArticleStates(newStates);
       return newStates;
     });
   }, []);
 
-  // 获取文章点赞状态
+  // Get article like state
   const getArticleLikeState = useCallback((articleId: string, defaultIsLiked: boolean, defaultLikeCount: number) => {
-    return articleLikeStates[articleId] || { isLiked: defaultIsLiked, likeCount: defaultLikeCount };
-  }, [articleLikeStates]);
+    // If user is not logged in, directly use default values (API data), don't use cached global state
+    if (!isUserLoggedIn) {
+      return { isLiked: defaultIsLiked, likeCount: defaultLikeCount };
+    }
 
-  // 切换点赞状态的通用函数
+    // When user is logged in, use global state or default values
+    return articleLikeStates[articleId] || { isLiked: defaultIsLiked, likeCount: defaultLikeCount };
+  }, [articleLikeStates, isUserLoggedIn]);
+
+  // Toggle like state function
   const toggleLike = useCallback(async (
     articleId: string,
     currentIsLiked: boolean,
@@ -65,34 +74,34 @@ export const useArticleState = (showToast?: (message: string, type: 'success' | 
       const newLikeCount = newIsLiked ? currentLikeCount + 1 : Math.max(0, currentLikeCount - 1);
 
 
-      // 立即更新全局状态（乐观更新）
+      // Immediately update global state (optimistic update)
       updateArticleLikeState(articleId, newIsLiked, newLikeCount);
 
-      // 如果提供了本地更新回调，也执行它
+      // If local update callback is provided, execute it
       onOptimisticUpdate?.(newIsLiked, newLikeCount);
 
-      // 调用API
+      // Call API
       const apiResponse = await AuthService.likeArticle(articleId);
 
-      showToast?.(newIsLiked ? '已点赞 💖' : '已取消点赞', 'success');
+      showToast?.(newIsLiked ? 'Liked 💖' : 'Unliked', 'success');
 
       return { success: true, isLiked: newIsLiked, likeCount: newLikeCount };
     } catch (error) {
-      console.error('❌ 点赞失败:', error);
+      console.error('❌ Like operation failed:', error);
 
-      // API失败时回滚全局状态
+      // Rollback global state when API fails
       updateArticleLikeState(articleId, currentIsLiked, currentLikeCount);
 
-      // 如果提供了本地更新回调，也回滚它
+      // If local update callback is provided, rollback it too
       onOptimisticUpdate?.(currentIsLiked, currentLikeCount);
 
-      showToast?.('操作失败，请重试', 'error');
+      showToast?.('Operation failed, please try again', 'error');
 
       return { success: false, isLiked: currentIsLiked, likeCount: currentLikeCount };
     }
   }, [updateArticleLikeState, showToast]);
 
-  // 批量同步文章状态（从API数据初始化）
+  // Batch sync article states (initialize from API data)
   const syncArticleStates = useCallback((articles: Array<{
     id: string;
     uuid?: string;
@@ -108,7 +117,7 @@ export const useArticleState = (showToast?: (message: string, type: 'success' | 
       articles.forEach(article => {
         const articleId = article.uuid || article.id;
         if (articleId) {
-          // 只在状态不同时才更新，避免不必要的localStorage写入
+          // Only update when state is different, avoid unnecessary localStorage writes
           const currentState = prev[articleId];
           if (!currentState ||
               currentState.isLiked !== article.isLiked ||
@@ -125,7 +134,6 @@ export const useArticleState = (showToast?: (message: string, type: 'success' | 
 
       if (hasChanges) {
         saveArticleStates(newStates);
-      } else {
       }
 
       return newStates;

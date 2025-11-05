@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { queryClient } from '../lib/queryClient';
 import { AuthService } from '../services/authService';
 import { useArticleState } from '../hooks/useArticleState';
+import * as storage from '../utils/storage';
 
 interface User {
   id: number;
@@ -65,12 +66,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [socialLinksLoading, setSocialLinksLoading] = useState(false);
 
   // Use article state management hook
-  const { articleLikeStates, updateArticleLikeState, getArticleLikeState, toggleLike, syncArticleStates } = useArticleState();
+  const { articleLikeStates, updateArticleLikeState, getArticleLikeState, toggleLike, syncArticleStates } = useArticleState(undefined, !!user);
 
-  // Restore user state from localStorage
+  // Restore user state from storage (localStorage or sessionStorage based on remember me preference)
   useEffect(() => {
-    const savedUser = localStorage.getItem('copus_user');
-    const savedToken = localStorage.getItem('copus_token');
+    const savedUser = storage.getItem('copus_user');
+    const savedToken = storage.getItem('copus_token');
 
     if (savedUser && savedToken) {
       try {
@@ -79,8 +80,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setToken(savedToken);
       } catch (error) {
         console.error('Failed to parse user data:', error);
-        localStorage.removeItem('copus_user');
-        localStorage.removeItem('copus_token');
+        storage.removeItem('copus_user');
+        storage.removeItem('copus_token');
       }
     }
 
@@ -88,31 +89,31 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false);
   }, []);
 
-  // Sync token and user to localStorage whenever they change in state
+  // Sync token and user to storage whenever they change in state
   useEffect(() => {
     if (user && token) {
-      // Ensure both are saved to localStorage
-      const storedToken = localStorage.getItem('copus_token');
-      const storedUser = localStorage.getItem('copus_user');
+      // Ensure both are saved to the appropriate storage
+      const storedToken = storage.getItem('copus_token');
+      const storedUser = storage.getItem('copus_user');
 
       if (storedToken !== token) {
-        console.log('🔄 Syncing token to localStorage');
-        localStorage.setItem('copus_token', token);
+        console.log('🔄 Syncing token to storage');
+        storage.setItem('copus_token', token);
       }
 
       if (storedUser !== JSON.stringify(user)) {
-        console.log('🔄 Syncing user to localStorage');
-        localStorage.setItem('copus_user', JSON.stringify(user));
+        console.log('🔄 Syncing user to storage');
+        storage.setItem('copus_user', JSON.stringify(user));
       }
     }
   }, [user, token]);
 
   const login = (userData: User, userToken?: string) => {
     setUser(userData);
-    localStorage.setItem('copus_user', JSON.stringify(userData));
+    storage.setItem('copus_user', JSON.stringify(userData));
     if (userToken) {
       setToken(userToken);
-      localStorage.setItem('copus_token', userToken);
+      storage.setItem('copus_token', userToken);
     }
   };
 
@@ -165,27 +166,37 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(null);
       setToken(null);
 
-      // Clear localStorage
-      localStorage.removeItem('copus_user');
-      localStorage.removeItem('copus_token');
+      // Clear storage (both localStorage and sessionStorage)
+      storage.removeItem('copus_user');
+      storage.removeItem('copus_token');
 
       // Disconnect wallet: Clear wallet authentication method
       // This ensures user must reconnect wallet on next payment attempt
-      localStorage.removeItem('copus_auth_method');
+      storage.removeItem('copus_auth_method');
 
       // Clear all React Query cache to remove sensitive data
       queryClient.clear();
 
-      // Clear all localStorage items that start with 'copus_' or are related to user actions
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('copus_') ||
-                   key.startsWith('lastMarkedAllReadTime') ||
-                   key.startsWith('lastUnreadCount') ||
-                   key.startsWith('lastNotificationAction'))) {
-          localStorage.removeItem(key);
+      // Clear all items from both storages that start with 'copus_' or are related to user actions
+      const clearFromStorage = (storageType: Storage) => {
+        for (let i = storageType.length - 1; i >= 0; i--) {
+          const key = storageType.key(i);
+          if (key && (key.startsWith('copus_') ||
+                     key.startsWith('lastMarkedAllReadTime') ||
+                     key.startsWith('lastUnreadCount') ||
+                     key.startsWith('lastNotificationAction'))) {
+            // Don't remove the remember me preference
+            if (key !== 'copus_remember_me_preference' &&
+                key !== 'copus_remembered_email' &&
+                key !== 'copus_remember_me_option') {
+              storageType.removeItem(key);
+            }
+          }
         }
-      }
+      };
+
+      clearFromStorage(localStorage);
+      clearFromStorage(sessionStorage);
 
       console.log('✅ Wallet fully disconnected - user will need to reconnect and select account on next login');
 

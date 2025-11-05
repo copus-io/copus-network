@@ -61,7 +61,6 @@ const menuItems = [
 ];
 
 const footerLinks = [
-  { label: "About", href: "#", isExternal: false },
   { label: "Contact us", href: "#", isContact: true },
   { label: "Terms & Privacy", href: "https://www.copus.io/work/565b548277674c3bae3ccc016c7f58a2", isExternal: true }
 ];
@@ -80,7 +79,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
   };
 
   return (
-    <aside className="hidden lg:flex flex-col h-screen w-[300px] fixed left-0 top-0 pt-[120px] px-[30px] pb-[15px]">
+    <aside className="hidden lg:flex flex-col h-screen w-[300px] fixed left-0 top-0 pt-[110px] px-[30px] pb-[15px]">
       <nav className="inline-flex items-center gap-5 px-5 py-[30px] bg-[#ffffff] flex-col relative flex-[0_0_auto] rounded-lg w-[240px]">
         {menuItems.map((item, index) => {
           const isActive = activeItem === item.key;
@@ -103,9 +102,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
                   />
                 </div>
                 <span
-                  className={`relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap ${
-                    isActive ? "font-bold" : "font-normal"
-                  }`}
+                  className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap font-normal"
                 >
                   {item.label}
                 </span>
@@ -131,6 +128,16 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>
+          </a>
+        </div>
+
+        <div className="pt-1">
+          <a href="https://x402.org" target="_blank" rel="noopener noreferrer">
+            <img
+              src="/x402-button-medium.png"
+              alt="x402"
+              className="h-5 hover:opacity-80 transition-opacity"
+            />
           </a>
         </div>
 

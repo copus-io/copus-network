@@ -20,6 +20,7 @@ import {
 } from "../../components/ui/tabs";
 import { APP_CONFIG } from "../../config/app";
 import { useVerificationCode } from '../../hooks/useVerificationCode';
+import * as storage from "../../utils/storage";
 
 const socialProviders = [
   {
@@ -425,9 +426,10 @@ export const Login = (): JSX.Element => {
     const savedEmail = localStorage.getItem('copus_remembered_email');
     const savedRememberMe = localStorage.getItem('copus_remember_me_option');
 
-    if (savedEmail) {
-      setLoginEmail(savedEmail);
-    }
+    // Don't auto-fill email - let user enter it manually
+    // if (savedEmail) {
+    //   setLoginEmail(savedEmail);
+    // }
 
     if (savedRememberMe !== null) {
       setRememberMe(savedRememberMe === 'true');
@@ -458,9 +460,16 @@ export const Login = (): JSX.Element => {
           // Call different login methods based on provider type
           if (provider === 'google') {
             response = await AuthService.googleLogin(code, state, !!localStorage.getItem('copus_token'));
-            
+
+            console.log('📦 Google OAuth response:', response);
+            console.log('📦 Response keys:', Object.keys(response || {}));
+
             const savedToken = localStorage.getItem('copus_token');
             const tokenToUse = response.token || savedToken;
+
+            console.log('🔑 Token to use:', tokenToUse ? `${tokenToUse.substring(0, 20)}...` : 'NONE');
+            console.log('🔑 Response token:', response.token ? `${response.token.substring(0, 20)}...` : 'NONE');
+            console.log('🔑 Saved token:', savedToken ? `${savedToken.substring(0, 20)}...` : 'NONE');
 
             if (response.isBinding) {
               // Account binding mode
@@ -469,11 +478,13 @@ export const Login = (): JSX.Element => {
               navigate('/setting', { replace: true });
             } else {
               // Third-party login mode
-              showToast('Google login successful! Welcome back 🎉', 'success');
 
               if (!tokenToUse) {
-                throw new Error('No authentication token received');
+                console.error('❌ No token available! Full response:', JSON.stringify(response, null, 2));
+                throw new Error('No authentication token received from server. The account may need to be registered first.');
               }
+
+              showToast('Google login successful! Welcome back 🎉', 'success');
 
               // Mark that user logged in via Google OAuth
               localStorage.setItem('copus_auth_method', 'google');
@@ -565,8 +576,28 @@ export const Login = (): JSX.Element => {
               throw new Error('No authentication token received');
             }
           }
-        } catch (error) {
-          showToast(`${provider || 'X'} login failed, please try again`, 'error');
+        } catch (error: any) {
+          console.error(`❌ ${provider || 'OAuth'} login failed:`, error);
+
+          // Check for specific backend errors
+          const errorMessage = error?.message || error?.msg || '';
+          const errorString = typeof error === 'string' ? error : errorMessage;
+
+          // Provide user-friendly error messages based on error type
+          if (errorString.includes('value too long') || errorString.includes('SQLSTATE 22001')) {
+            showToast(
+              `${provider || 'OAuth'} login is temporarily unavailable due to a server issue. Our team has been notified. Please try email/password or wallet login.`,
+              'error'
+            );
+          } else if (errorString.includes('401') || errorString.includes('403') || errorString.includes('unauthorized')) {
+            showToast(`${provider || 'OAuth'} authorization failed. Please try logging in again.`, 'error');
+          } else if (errorString.includes('network') || errorString.includes('fetch')) {
+            showToast('Network error. Please check your connection and try again.', 'error');
+          } else if (errorString.includes('token')) {
+            showToast(`${provider || 'OAuth'} login failed: Could not receive authentication token. Please try again.`, 'error');
+          } else {
+            showToast(`${provider || 'OAuth'} login failed. Please try again or use another login method.`, 'error');
+          }
         } finally {
           setIsLoginLoading(false);
         }
@@ -579,6 +610,14 @@ export const Login = (): JSX.Element => {
   // Handle X (Twitter) login
   const handleXLogin = async () => {
     try {
+      // Clear any existing user data before starting OAuth flow
+      // This ensures we don't confuse the new login with account binding
+      console.log('🧹 Clearing old user data before X OAuth login');
+      localStorage.removeItem('copus_token');
+      localStorage.removeItem('copus_user');
+      sessionStorage.removeItem('copus_token');
+      sessionStorage.removeItem('copus_user');
+
       localStorage.setItem('oauth_provider', 'x');
       const oauthUrl = await AuthService.getXOAuthUrl();
       const urlWithProvider = oauthUrl.includes('?')
@@ -593,6 +632,14 @@ export const Login = (): JSX.Element => {
   // Handle Google login
   const handleGoogleLogin = async () => {
     try {
+      // Clear any existing user data before starting OAuth flow
+      // This ensures we don't confuse the new login with account binding
+      console.log('🧹 Clearing old user data before Google OAuth login');
+      localStorage.removeItem('copus_token');
+      localStorage.removeItem('copus_user');
+      sessionStorage.removeItem('copus_token');
+      sessionStorage.removeItem('copus_user');
+
       localStorage.setItem('oauth_provider', 'google');
       const oauthUrl = await AuthService.getGoogleOAuthUrl();
       const urlWithProvider = oauthUrl.includes('?')
@@ -709,6 +756,10 @@ export const Login = (): JSX.Element => {
 
         // Mark that user logged in via Metamask
         localStorage.setItem('copus_auth_method', 'metamask');
+
+        // Set remember me preference - wallet logins default to remember me
+        storage.setRememberMePreference(true);
+        storage.migrateToLocalStorage();
 
         try {
           await fetchUserInfo(possibleToken);
@@ -827,6 +878,10 @@ export const Login = (): JSX.Element => {
 
         // Mark that user logged in via Coinbase Wallet
         localStorage.setItem('copus_auth_method', 'coinbase');
+
+        // Set remember me preference - wallet logins default to remember me
+        storage.setRememberMePreference(true);
+        storage.migrateToLocalStorage();
 
         try {
           await fetchUserInfo(possibleToken);
@@ -954,13 +1009,20 @@ export const Login = (): JSX.Element => {
         // Mark that user logged in via email/password
         localStorage.setItem('copus_auth_method', 'email');
 
+        // Set remember me preference - controls whether to use localStorage or sessionStorage
+        storage.setRememberMePreference(rememberMe);
+
         // If user chooses Remember me, save email to local storage
         if (rememberMe) {
           localStorage.setItem('copus_remembered_email', loginEmail);
           localStorage.setItem('copus_remember_me_option', 'true');
+          // Migrate any existing session data to localStorage
+          storage.migrateToLocalStorage();
         } else {
           localStorage.removeItem('copus_remembered_email');
           localStorage.setItem('copus_remember_me_option', 'false');
+          // Migrate any existing localStorage data to sessionStorage
+          storage.migrateToSessionStorage();
         }
 
         try {

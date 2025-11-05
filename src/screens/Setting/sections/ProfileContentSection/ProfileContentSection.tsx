@@ -228,7 +228,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.username || "Guest user",
+        name: user.username || "Anonymous",
         username: user.namespace ? `@${user.namespace}` : "@unknown",
         bio: user.bio || "Hello, welcome to my creative space.",
         email: user.email || "user@example.com",
@@ -565,7 +565,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               <header className="h-[60px] inline-flex flex-col items-start justify-center relative">
                 <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] mt-[-3.50px]">
                   <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
-                    {formData.name || (!user ? "Loading..." : "Guest user")}
+                    {formData.name || (!user ? "Loading..." : "Anonymous")}
                   </h1>
 
                   {/* Edit button next to username */}
@@ -598,28 +598,36 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
               <div className="flex flex-col gap-3 relative self-stretch w-full flex-[0_0_auto]">
                 {/* 显示已填写的社交链接 */}
-                <div className="inline-flex items-center gap-[25px] relative flex-[0_0_auto] flex-wrap">
-                  {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).map((link) => (
-                    <button
-                      key={link.id}
-                      className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                      onClick={() => setShowSocialLinksPopup(true)}
-                      title={`Edit ${link.title}`}
-                    >
-                      <img
-                        className="relative w-6 h-6 flex-[0_0_auto]"
-                        alt={`${link.title} logo`}
-                        src={link.iconUrl || 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg'}
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg';
-                        }}
-                      />
+                <div className="flex items-start gap-[25px] relative self-stretch w-full flex-wrap">
+                  {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).map((link) => {
+                    // Update old YouTube icons to new one
+                    const NEW_YOUTUBE_ICON = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNMTkuNjE1IDcuNjU0Yy0uMTg4LS43MDYtLjczNi0xLjI2Mi0xLjQzOC0xLjQ1MkMxNi45MDYgNiAxMiA2IDEyIDZzLTQuOTA2IDAtNi4xNzcuMzQ4Yy0uNzAyLjE5LTEuMjUuNzQ2LTEuNDM4IDEuNDUyQzQgOC45MjggNCA5LjI5OCA0IDEyYzAgMi43MDIgMCAzLjA3Mi4zODUgNC4zNDYuMTg4LjcwNi43MzYgMS4yNjIgMS40MzggMS40NTJDNy4wOTQgMTggMTIgMTggMTIgMThzNC45MDYgMCA2LjE3Ny0uMzQ4Yy43MDItLjE5IDEuMjUtLjc0NiAxLjQzOC0xLjQ1MkMyMCAxNS4wNzIgMjAgMTQuNzAyIDIwIDEyYzAtMi43MDIgMC0zLjA3Mi0uMzg1LTQuMzQ2eiIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNOS45ODUgMTQuOTY1VjkuMDM1TDE1LjIxMyAxMmwtNS4yMjggMi45NjV6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=';
+                    const displayIconUrl = (link.title === 'YouTube' && link.iconUrl?.includes('M19.293'))
+                      ? NEW_YOUTUBE_ICON
+                      : link.iconUrl;
+
+                    return (
+                      <button
+                        key={link.id}
+                        className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] pr-3 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                        onClick={() => setShowSocialLinksPopup(true)}
+                        title={`Edit ${link.title}`}
+                      >
+                        <img
+                          className="relative w-6 h-6 flex-[0_0_auto]"
+                          alt={`${link.title} logo`}
+                          src={displayIconUrl || 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg'}
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg';
+                          }}
+                        />
 
                       <div className="relative w-fit font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)] max-w-[120px] overflow-hidden text-ellipsis">
                         {link.title}
                       </div>
                     </button>
-                  ))}
+                    );
+                  })}
 
                   {/* Edit social links button */}
                   <button

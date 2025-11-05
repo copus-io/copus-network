@@ -179,7 +179,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       namespace: article.namespace, // Add namespace field
       date: article.date,
       treasureCount: article.treasureCount,
-      visitCount: `${article.visitCount || 0} Visits`,
+      visitCount: `${article.visitCount || 0}`,
       isLiked: article.isLiked, // Use actual like status returned from server
       targetUrl: article.url,
       website: article.website,
@@ -222,11 +222,18 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   const renderPostCard = (post: Article, index: number) => {
     const articleData = transformArticleToCardData(post);
-    const articleLikeState = getArticleLikeState(post.id, post.isLiked, post.treasureCount);
 
-    // Update article like status
-    articleData.isLiked = articleLikeState.isLiked;
-    articleData.treasureCount = articleLikeState.likeCount;
+    // Only show like states for logged-in users
+    if (user) {
+      const articleLikeState = getArticleLikeState(post.id, post.isLiked, post.treasureCount);
+      // Update article like status
+      articleData.isLiked = articleLikeState.isLiked;
+      articleData.treasureCount = articleLikeState.likeCount;
+    } else {
+      // For non-logged-in users, remove like state and use original count
+      articleData.isLiked = false;
+      articleData.treasureCount = post.treasureCount;
+    }
 
     // Check if this is the current user's own article
     const isOwnArticle = user && user.id === post.userId;
@@ -240,7 +247,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             showTreasure: true,
             showVisits: true
           }}
-          onLike={handleLike}
+          onLike={user ? handleLike : undefined} // Only pass onLike for logged-in users
           onUserClick={handleUserClick}
         />
       </div>
@@ -277,7 +284,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     <main className="flex flex-col items-start gap-10 py-0 relative flex-1">
       {/* Welcome Guide Bar - Display different content based on login status */}
       {showWelcomeGuide && (
-        <section className="pl-4 sm:pl-[30px] pr-4 py-4 sm:py-[30px] rounded-lg border-l-[3px] [border-left-style:solid] border-red shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-start gap-[15px] relative w-full min-h-fit overflow-hidden">
+        <section className="mx-4 sm:mx-0 pl-4 sm:pl-[30px] pr-4 py-4 sm:py-[30px] rounded-lg border-l-[3px] [border-left-style:solid] border-red shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-start gap-[15px] relative w-auto sm:w-full min-h-fit overflow-hidden">
           {/* Close button - Keep in top right corner */}
           <button
             onClick={handleCloseWelcomeGuide}

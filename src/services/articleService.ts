@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams } from '../types/article';
+import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
@@ -123,39 +123,13 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
   const endpoint = `/client/home/pageArticle?${queryParams.toString()}`;
 
 
-  // Try with authentication first for personalized data, fallback to no-auth for guests
+  // Make the request - token will be included automatically if available
   let backendResponse: BackendApiResponse;
   try {
-    // Check if user is logged in by looking for token
-    const token = localStorage.getItem('copus_token');
-    if (token) {
-      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: true });
-    } else {
-      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
-    }
+    backendResponse = await apiRequest<BackendApiResponse>(endpoint);
   } catch (error) {
-    console.warn('⚠️ Authenticated request failed, retrying without authentication:', error);
-
-    // Clear invalid tokens if authentication failed
-    if (error instanceof Error && (
-      error.message.includes('认证') || // Chinese: authentication
-      error.message.includes('令牌') || // Chinese: token
-      error.message.includes('Authentication failed') ||
-      error.message.includes('authentication token') ||
-      error.message.includes('401') ||
-      error.message.includes('403')
-    )) {
-      console.log('🔄 Clearing invalid authentication token');
-      localStorage.removeItem('copus_token');
-    }
-
-    // Always retry without authentication to allow guest browsing
-    try {
-      backendResponse = await apiRequest<BackendApiResponse>(endpoint, { requiresAuth: false });
-    } catch (retryError) {
-      console.error('❌ Failed to fetch articles even without authentication:', retryError);
-      throw new Error('Failed to load articles. Please refresh the page and try again.');
-    }
+    console.error('❌ Failed to fetch articles:', error);
+    throw new Error('Failed to load articles. Please refresh the page and try again.');
   }
 
   // Handle different response formats
@@ -177,17 +151,17 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
     articlesArray = responseData.data.data;
   }
 
-  // Safety check: ensure articlesArray is an array and has map method
+  // Safety check: ensure articlesArray is an array with map method
   if (!Array.isArray(articlesArray)) {
     articlesArray = [];
   }
 
-  // Handle pagination info
+  // Pagination info processing
   const pageIndex = responseData.pageIndex || 0;
   const pageCount = responseData.pageCount || 0;
   const totalCount = responseData.totalCount || 0;
   const currentPageSize = responseData.pageSize || 10;
-  const hasMore = pageIndex < pageCount; // Backend uses 1-based paging, so no +1 needed
+  const hasMore = pageIndex < pageCount; // Backend uses 1-based page numbering, so no need to +1
 
   return {
     articles: articlesArray.map(transformBackendArticle),
@@ -204,9 +178,8 @@ export const getArticleDetail = async (uuid: string): Promise<ArticleDetailRespo
   const endpoint = `/client/reader/article/info?uuid=${uuid}`;
 
   try {
-    // requiresAuth: false - article details should be publicly viewable without login
-    // Only interactions (like, comment, etc.) require authentication
-    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, { requiresAuth: false });
+    // Article details are publicly viewable but will include token if available for personalized data
+    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
@@ -226,10 +199,10 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
   if (params.pageIndex !== undefined) queryParams.append('pageIndex', params.pageIndex.toString());
   if (params.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
 
-  const endpoint = `/client/myHome/pageMyCreatedArticle${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+  const endpoint = `/client/userHome/pageMyCreatedArticle${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
   try {
-    const response = await apiRequest<{status: number, msg: string, data: MyCreatedArticleResponse}>(endpoint, { requiresAuth: true });
+    const response = await apiRequest<{status: number, msg: string, data: MyCreatedArticleResponse}>(endpoint);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
@@ -243,7 +216,31 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
   }
 };
 
-// 发布文章（支持创建和编辑）
+// Get my unlocked articles
+export const getMyUnlockedArticles = async (params: MyUnlockedArticleParams): Promise<MyUnlockedArticleResponse> => {
+
+  const queryParams = new URLSearchParams();
+  if (params.pageIndex !== undefined) queryParams.append('pageIndex', params.pageIndex.toString());
+  if (params.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
+  queryParams.append('targetUserId', params.targetUserId.toString());
+
+  const endpoint = `/client/userHome/pageMyUnlockedArticle?${queryParams.toString()}`;
+
+  try {
+    const response = await apiRequest<{status: number, msg: string, data: MyUnlockedArticleResponse}>(endpoint);
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'API request failed');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Failed to fetch my unlocked articles:', error);
+    throw new Error(`Failed to fetch my unlocked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Publish article (supports creation and editing)
 export const publishArticle = async (articleData: {
   uuid?: string; // 编辑模式时传递
   title: string;
@@ -259,7 +256,6 @@ export const publishArticle = async (articleData: {
     const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),
-      requiresAuth: true,
     });
 
 

@@ -9,8 +9,9 @@ import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
 import { useArticleDetail } from "../../hooks/queries";
-import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
+import { getCategoryStyle, getCategoryInlineStyle, formatDate } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
+import { apiRequest } from "../../services/api";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
@@ -113,13 +114,13 @@ export const Content = (): JSX.Element => {
     categoryApiColor: article.categoryInfo?.color,
     categoryStyle: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color),
     categoryInlineStyle: getCategoryInlineStyle(article.categoryInfo?.color),
-    userName: article.authorInfo?.username || 'Anonymous',
+    userName: (article.authorInfo?.username && article.authorInfo.username.trim() !== '') ? article.authorInfo.username : 'Anonymous',
     userId: article.authorInfo?.id,
     userNamespace: article.authorInfo?.namespace,
     userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
-    date: new Date(article.createAt * 1000).toLocaleDateString(),
+    date: formatDate(new Date(article.createAt * 1000).toISOString()),
     treasureCount: article.likeCount || 0,
-    visitCount: `${article.viewCount || 0} Visits`,
+    visitCount: `${article.viewCount || 0}`,
     likes: article.likeCount || 0,
     isLiked: article.isLiked || false,
     website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
@@ -157,7 +158,7 @@ export const Content = (): JSX.Element => {
         <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
           <HeaderSection isLoggedIn={!!user} />
 
-          <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center pt-[70px] lg:pt-[120px]">
+          <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center pt-[70px] lg:pt-[110px]">
             <div className="text-center p-8 max-w-md">
               <div className="mb-6">
                 <svg className="w-24 h-24 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,6 +260,8 @@ export const Content = (): JSX.Element => {
   // This API returns payment options including recipient, amount, network, and unlock URL.
   // No login required - account will be auto-created when wallet connects.
   const handleUnlock = async () => {
+    console.log('🔓 handleUnlock called for article:', article?.uuid);
+
     if (!article?.uuid) {
       showToast('Article information not available', 'error');
       return;
@@ -266,10 +269,62 @@ export const Content = (): JSX.Element => {
 
     try {
       // Call x402 API to get payment options for this article
-      // Response format: { accepts: [{ payTo, asset, maxAmountRequired, network, resource, ... }] }
-      const x402Url = `https://api-test.copus.network/client/payment/getTargetUrl?uuid=${article.uuid}`;
-      const response = await fetch(x402Url);
-      const data = await response.json();
+      // For x402 protocol, we expect a 402 Payment Required response with payment options
+      const endpoint = `/client/payment/getTargetUrl?uuid=${article.uuid}`;
+
+      // Use fetch directly to handle 402 responses properly (x402 protocol)
+      const { APP_CONFIG } = await import('../../config/app');
+      const baseUrl = APP_CONFIG.API.BASE_URL;
+      const url = `${baseUrl}${endpoint}`;
+
+      console.log('🌐 Fetching x402 payment info from:', url);
+
+      // Get authentication token
+      const token = localStorage.getItem('copus_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add Authorization header if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔐 Adding authentication token to x402 request');
+      } else {
+        console.log('⚠️ No authentication token found for x402 request');
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+      });
+
+      console.log('📡 x402 API response status:', response.status);
+
+      let data;
+      // For x402 protocol, 402 Payment Required is the expected response with payment options
+      if (response.status === 402) {
+        console.log('✅ Received 402 Payment Required - extracting payment options');
+        data = await response.json();
+        console.log('📥 x402 payment data:', data);
+      } else if (response.ok) {
+        // 2xx response means content is free or already unlocked
+        console.log('✅ Content is free or already unlocked');
+        data = await response.json();
+        if (data.url) {
+          // Redirect to unlocked content
+          window.open(data.url, '_blank');
+          return;
+        } else {
+          showToast('Content unlocked successfully', 'success');
+          return;
+        }
+      } else {
+        // Other error responses
+        const errorText = await response.text();
+        console.error(`❌ Unexpected response status ${response.status}:`, errorText);
+        showToast('Failed to load payment information. Please try again.', 'error');
+        return;
+      }
 
       if (data.accepts && data.accepts.length > 0) {
         // Extract first payment option (we use USDC on Base Sepolia)
@@ -279,7 +334,7 @@ export const Content = (): JSX.Element => {
 
         // Store payment details in state for later use in handlePayNow
         // Always construct the resource URL with UUID to ensure backend receives it
-        const resourceUrl = `https://api-test.copus.network/client/payment/getTargetUrl?uuid=${article.uuid}`;
+        const resourceUrl = `${baseUrl}${endpoint}`;
 
         const paymentInfo = {
           payTo: paymentOption.payTo,              // Recipient wallet address
@@ -1138,15 +1193,26 @@ export const Content = (): JSX.Element => {
       // ---- Step 3d: Send signed authorization to server to unlock content ----
       showToast('Payment authorization signed! Unlocking content...', 'success');
 
-      // Call the x402 resource endpoint with X-PAYMENT header
+      // Call the x402 resource endpoint with X-PAYMENT header and authentication token
       // Server will:
       // 1. Validate the signature
       // 2. Execute the USDC transfer on-chain (server pays gas)
       // 3. Return the unlocked target URL
+      const token = localStorage.getItem('copus_token');
+      const unlockHeaders: Record<string, string> = {
+        'X-PAYMENT': paymentHeader
+      };
+
+      // Add authorization token if available
+      if (token) {
+        unlockHeaders['Authorization'] = `Bearer ${token}`;
+        console.log('🔐 Adding authentication token to x402 unlock request');
+      } else {
+        console.log('⚠️ No authentication token found for x402 unlock request');
+      }
+
       const unlockResponse = await fetch(x402PaymentInfo.resource, {
-        headers: {
-          'X-PAYMENT': paymentHeader
-        }
+        headers: unlockHeaders
       });
 
       // Check if unlock was successful
@@ -1208,7 +1274,7 @@ export const Content = (): JSX.Element => {
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection isLoggedIn={!!user} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[120px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
+        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[110px] pb-[120px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
           <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
@@ -1224,7 +1290,7 @@ export const Content = (): JSX.Element => {
 
                   {/* Title with x402 payment badge inline */}
                   <div className="flex flex-col gap-2 w-full">
-                    <div className="flex items-center gap-2 w-full">
+                    <div className="flex items-start gap-2 w-full">
                       {/* Payment badge - show if content is locked */}
                       {article?.targetUrlIsLocked && article?.priceInfo && (
                         <div className="h-[34px] px-2.5 py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
@@ -1265,7 +1331,7 @@ export const Content = (): JSX.Element => {
 
               <blockquote className="flex flex-col items-start gap-5 p-5 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                 <div className="flex items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex items-end justify-center self-stretch w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
+                  <div className="flex items-start justify-center self-stretch w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
                     &quot;
                   </div>
 
@@ -1296,9 +1362,15 @@ export const Content = (): JSX.Element => {
                     src={content.userAvatar}
                   />
 
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
-                    {content.userName}
-                  </span>
+                  {content?.userName && content.userName.trim() !== '' ? (
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
+                      {content.userName}
+                    </span>
+                  ) : (
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
+                      Anonymous
+                    </span>
+                  )}
                 </cite>
               </blockquote>
             </div>
@@ -1372,6 +1444,26 @@ export const Content = (): JSX.Element => {
             </div>
 
 {/* Conditional button - "Visit" for unlocked/free content, "Unlock now" for locked content */}
+            {(() => {
+              console.log('🔍 Button condition check:', {
+                unlockedUrl,
+                targetUrlIsLocked: article?.targetUrlIsLocked,
+                article: article?.uuid,
+                articleData: article
+              });
+              console.log('🎯 Which button will render?',
+                unlockedUrl ? 'Visit (unlocked)' :
+                article?.targetUrlIsLocked ? 'Unlock now' : 'Visit (free)'
+              );
+
+              if (article?.targetUrlIsLocked) {
+                console.log('🚀 SHOULD RENDER "Unlock now" button');
+              } else {
+                console.log('❌ NOT rendering "Unlock now" button - targetUrlIsLocked is:', article?.targetUrlIsLocked);
+              }
+
+              return null;
+            })()}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
               <button
@@ -1391,16 +1483,25 @@ export const Content = (): JSX.Element => {
             ) : article?.targetUrlIsLocked ? (
               // Content is locked and requires payment - show "Unlock now" button
               <button
-                onClick={handleUnlock}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🖱️ Unlock button clicked!');
+                  console.log('📄 Article data during click:', article);
+                  console.log('🔗 handleUnlock function:', typeof handleUnlock, handleUnlock);
+                  handleUnlock();
+                }}
                 className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] transition-all active:scale-95"
+                style={{ pointerEvents: 'auto' }}
               >
-                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
+                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]" style={{ pointerEvents: 'auto' }}>
                   <img
                     className="relative w-[27px] h-[25px] aspect-[1.09]"
                     alt="x402 icon"
                     src="https://c.animaapp.com/2ALjTCkW/img/x402-icon-blue-1@2x.png"
+                    style={{ pointerEvents: 'auto' }}
                   />
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap">
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap" style={{ pointerEvents: 'auto' }}>
                     Unlock now
                   </span>
                 </span>
@@ -1443,7 +1544,11 @@ export const Content = (): JSX.Element => {
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
           network="Base Sepolia"
           faucetLink="https://faucet.circle.com/"
-          isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
+          isInsufficientBalance={
+            x402PaymentInfo && walletBalance !== '...'
+              ? (parseFloat(walletBalance) || 0) < (parseInt(x402PaymentInfo.amount) / 1000000)
+              : false
+          }
         />
       </div>
     </div>

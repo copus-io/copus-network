@@ -1,0 +1,238 @@
+import React, { useEffect } from "react";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
+import { UserProvider, useUser } from "./contexts/UserContext";
+import { CategoryProvider } from "./contexts/CategoryContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+import { ImagePreviewProvider } from "./contexts/ImagePreviewContext";
+import { ToastProvider, useToast } from "./components/ui/toast";
+import { GlobalImagePreview } from "./components/ui/GlobalImagePreview";
+import { Discovery } from "./screens/Discovery/Discovery";
+import { MainFrame } from "./screens/MainFrame/MainFrame";
+import { Notification } from "./screens/Notification/Notification";
+import { Setting } from "./screens/Setting/Setting";
+import { Treasury } from "./screens/Treasury/Treasury";
+import { Login } from "./screens/Login/Login";
+import { Create } from "./screens/Create/Create";
+import { Content } from "./screens/Content/Content";
+import { NotLogIn } from "./routes/NotLogIn/screens/NotLogIn";
+import { NewExplore } from "./routes/NewExplore/screens/NewExplore";
+import { MyTreasury } from "./routes/MyTreasury/screens/MyTreasury";
+import { LinkPreview } from "./routes/LinkPreview/screens/LinkPreview";
+import { DeleteAccount } from "./routes/DeleteAccount/screens/DeleteAccount";
+import { Published } from "./routes/Published/screens/Published";
+import { Screen } from "./routes/Screen/screens/Screen";
+import { Screen as Screen24 } from "./routes/Screen24/screens/Screen";
+import { Screen as Screen25 } from "./routes/Screen25/screens/Screen";
+import { Screen as Screen26 } from "./routes/Screen26/screens/Screen";
+import { Screen as Screen27 } from "./routes/Screen27/screens/Screen";
+import { SignUp } from "./routes/SignUp/screens/SignUp";
+import { SwitchDemo } from "./components/demo/SwitchDemo";
+import { AuthGuard } from "./components/guards/AuthGuard";
+import { UserProfile } from "./screens/UserProfile/UserProfile";
+import { NotFoundPage } from "./components/pages/NotFoundPage";
+import OAuthRedirect from "./components/OAuthRedirect";
+import { ShortLinkHandler } from "./components/ShortLinkHandler";
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Discovery />,
+  },
+  {
+    path: "/home",
+    element: <Discovery />,
+  },
+  {
+    path: "/copus",
+    element: <Discovery />,
+  },
+  {
+    path: "/treasury",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Treasury />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/notification",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Notification />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/setting",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Setting />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/callback",
+    element: <OAuthRedirect />,
+  },
+  {
+    path: "/newglobal",
+    element: <OAuthRedirect />,
+  },
+  {
+    path: "/explore/new",
+    element: <NewExplore />,
+  },
+  {
+    path: "/my-treasury",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <MyTreasury />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/user/:namespace",
+    element: <UserProfile />,
+  },
+  {
+    path: "/user/:namespace/treasury",
+    element: <MyTreasury />,
+  },
+  {
+    path: "/u/:namespace",
+    element: <ShortLinkHandler />, // Short link format: /u/namespace
+  },
+  {
+    path: "/create",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Create />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/work/:id",
+    element: <Content />,
+  },
+  {
+    path: "/auth/unauthorized",
+    element: <NotLogIn />,
+  },
+  {
+    path: "/preview/link/:id?",
+    element: <LinkPreview />,
+  },
+  {
+    path: "/account/delete",
+    element: (
+      <AuthGuard requireAuth={true} fallbackPath="/login">
+        <DeleteAccount />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/published",
+    element: <Published />,
+  },
+  {
+    path: "/screen/default",
+    element: <Screen />,
+  },
+  {
+    path: "/screen/v24",
+    element: <Screen24 />,
+  },
+  {
+    path: "/screen/v25",
+    element: <Screen25 />,
+  },
+  {
+    path: "/screen/v26",
+    element: <Screen26 />,
+  },
+  {
+    path: "/screen/v27",
+    element: <Screen27 />,
+  },
+  {
+    path: "/signup",
+    element: <SignUp />,
+  },
+  {
+    path: "/demo/components/switch",
+    element: <SwitchDemo />,
+  },
+  // 404 catch-all route - must be last
+  {
+    path: "*",
+    element: <NotFoundPage />,
+  },
+]);
+
+// Create a component that handles global events
+const GlobalEventHandler: React.FC = () => {
+  const { logout } = useUser();
+  const { showToast } = useToast();
+  
+  // 使用一个标志来防止重复的 toast 提示
+  const isProcessing = React.useRef(false);
+
+  useEffect(() => {
+    const handleUnauthorizedAccess = async (event: CustomEvent) => {
+      // 防止重复处理
+      if (isProcessing.current) {
+        return;
+      }
+      
+      isProcessing.current = true;
+      
+      try {
+        await logout();
+        showToast('Session expired, please log in again', 'error');
+        // Only redirect to login page if user is on a protected page
+        // For public pages like home, just update the user state without redirecting
+      } finally {
+        // 确保在下一个事件循环中重置标志
+        setTimeout(() => {
+          isProcessing.current = false;
+        }, 0);
+      }
+    };
+
+    // Add event listener for unauthorized access
+    window.addEventListener('unauthorized-access', handleUnauthorizedAccess as EventListener);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('unauthorized-access', handleUnauthorizedAccess as EventListener);
+    };
+  }, [logout, showToast]);
+
+  return null;
+};
+
+export const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <CategoryProvider>
+          <NotificationProvider>
+            <ImagePreviewProvider>
+              <ToastProvider>
+                <GlobalEventHandler />
+                <RouterProvider router={router} />
+                <GlobalImagePreview />
+              </ToastProvider>
+            </ImagePreviewProvider>
+          </NotificationProvider>
+        </CategoryProvider>
+      </UserProvider>
+    </QueryClientProvider>
+  );
+};

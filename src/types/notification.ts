@@ -22,7 +22,11 @@ export interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
-  fetchNotifications: (page?: number, pageSize?: number, msgType?: number) => Promise<void>;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  currentPage: number;
+  fetchNotifications: (page?: number, pageSize?: number, msgType?: number, append?: boolean) => Promise<void>;
+  loadMoreNotifications: () => Promise<void>;
   fetchUnreadCount: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;

@@ -7,11 +7,16 @@ interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  currentPage: number;
 }
 
 type NotificationAction =
   | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_LOADING_MORE'; payload: boolean }
   | { type: 'SET_NOTIFICATIONS'; payload: Notification[] }
+  | { type: 'APPEND_NOTIFICATIONS'; payload: { notifications: Notification[]; hasMore: boolean; page: number } }
   | { type: 'SET_UNREAD_COUNT'; payload: number }
   | { type: 'ADD_NOTIFICATION'; payload: Notification }
   | { type: 'MARK_AS_READ'; payload: string }
@@ -23,6 +28,9 @@ const initialState: NotificationState = {
   notifications: [],
   unreadCount: 0,
   isLoading: false,
+  isLoadingMore: false,
+  hasMore: true,
+  currentPage: 0,
 };
 
 const notificationReducer = (state: NotificationState, action: NotificationAction): NotificationState => {
@@ -30,12 +38,32 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
 
+    case 'SET_LOADING_MORE':
+      return { ...state, isLoadingMore: action.payload };
+
     case 'SET_NOTIFICATIONS':
       return {
         ...state,
         notifications: action.payload,
         unreadCount: action.payload.filter(n => !n.isRead).length,
         isLoading: false,
+        hasMore: action.payload.length === 20, // Assume more if we got a full page
+        currentPage: 1,
+      };
+
+    case 'APPEND_NOTIFICATIONS':
+      // Deduplicate notifications by id
+      const existingIds = new Set(state.notifications.map(n => n.id));
+      const newNotifications = action.payload.notifications.filter(n => !existingIds.has(n.id));
+      const allNotifications = [...state.notifications, ...newNotifications];
+
+      return {
+        ...state,
+        notifications: allNotifications,
+        unreadCount: allNotifications.filter(n => !n.isRead).length,
+        isLoading: false,
+        hasMore: action.payload.hasMore,
+        currentPage: action.payload.page,
       };
 
     case 'SET_UNREAD_COUNT':
@@ -45,11 +73,11 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
       };
 
     case 'ADD_NOTIFICATION':
-      const newNotifications = [action.payload, ...state.notifications];
+      const addedNotifications = [action.payload, ...state.notifications];
       return {
         ...state,
-        notifications: newNotifications,
-        unreadCount: newNotifications.filter(n => !n.isRead).length,
+        notifications: addedNotifications,
+        unreadCount: addedNotifications.filter(n => !n.isRead).length,
       };
 
     case 'MARK_AS_READ':
@@ -83,6 +111,8 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
         ...state,
         notifications: [],
         unreadCount: 0,
+        hasMore: true,
+        currentPage: 0,
       };
 
     default:
@@ -110,24 +140,45 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const fetchNotifications = async (
     page: number = 1,
     pageSize: number = 20,
-    msgType: number = 0 // Default to fetch all types of messages
+    msgType: number = 0, // Default to fetch all types of messages
+    append: boolean = false // New parameter to control append vs replace
   ): Promise<void> => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const notifications = await notificationService.getNotifications(page, pageSize, msgType);
-      dispatch({ type: 'SET_NOTIFICATIONS', payload: notifications });
+      // Only set loading state for initial load, not for pagination to avoid scroll jumping
+      if (!append) {
+        dispatch({ type: 'SET_LOADING', payload: true });
+      }
+
+      const result = await notificationService.getNotifications(page, pageSize, msgType);
+
+      if (append) {
+        dispatch({
+          type: 'APPEND_NOTIFICATIONS',
+          payload: {
+            notifications: result.data,
+            hasMore: result.hasMore,
+            page: result.currentPage
+          }
+        });
+      } else {
+        dispatch({ type: 'SET_NOTIFICATIONS', payload: result.data });
+      }
     } catch (error) {
       // Special handling for authentication errors (401/403)
       // Let the global event handler take care of logout
-      if (error instanceof Error && (error.message.includes('Authentication failed') || 
-          error.message.includes('401') || 
+      if (error instanceof Error && (error.message.includes('Authentication failed') ||
+          error.message.includes('401') ||
           error.message.includes('403'))) {
         // Re-throw authentication errors so global handler can catch them
         throw error;
       } else {
         console.error('❌ Failed to fetch notifications:', error);
       }
-      dispatch({ type: 'SET_LOADING', payload: false });
+
+      // Only reset loading state if it was set for initial load
+      if (!append) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
     }
   };
 
@@ -255,6 +306,21 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     }
   };
 
+  const loadMoreNotifications = async (): Promise<void> => {
+    if (state.isLoading || state.isLoadingMore || !state.hasMore) {
+      return;
+    }
+
+    try {
+      dispatch({ type: 'SET_LOADING_MORE', payload: true });
+      const nextPage = state.currentPage + 1;
+      console.log(`[NotificationContext] Loading more notifications - page ${nextPage}`);
+      await fetchNotifications(nextPage, 20, 0, true);
+    } finally {
+      dispatch({ type: 'SET_LOADING_MORE', payload: false });
+    }
+  };
+
   const clearAllNotifications = async (): Promise<void> => {
     try {
       const success = await notificationService.clearAll();
@@ -321,7 +387,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     notifications: state.notifications,
     unreadCount: state.unreadCount,
     isLoading: state.isLoading,
+    isLoadingMore: state.isLoadingMore,
+    hasMore: state.hasMore,
+    currentPage: state.currentPage,
     fetchNotifications,
+    loadMoreNotifications,
     fetchUnreadCount,
     markAsRead,
     markAllAsRead,

@@ -248,14 +248,17 @@ export const Create = (): JSX.Element => {
     // Only show category if user has selected one AND it's in the loaded categories
     category: selectedCategoryData ? formData.selectedTopic : '',
     categoryColor: selectedCategoryData?.color,
-    userName: user?.username || 'Guest user',
+    userName: user?.username || 'Anonymous',
     userAvatar: user?.faceUrl || profileDefaultAvatar,
     userId: user?.id,
     namespace: user?.namespace,
     date: new Date().toISOString(),
     treasureCount: 0,
-    visitCount: "0 Visits",
-    website: extractDomain(formData.link)
+    visitCount: "0",
+    website: extractDomain(formData.link),
+    // x402 payment fields
+    isPaymentRequired: payToUnlock,
+    paymentPrice: payToUnlock ? paymentAmount : undefined
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -394,6 +397,17 @@ export const Create = (): JSX.Element => {
         setCoverImageUrl(articleData.coverUrl || "");
         setCharacterCount(articleData.content?.length || 0);
         setTitleCharacterCount(articleData.title?.length || 0);
+
+        // Set payment information if exists
+        if (articleData.targetUrlIsLocked && articleData.priceInfo?.price) {
+          setPayToUnlock(true);
+          setPaymentAmount(articleData.priceInfo.price.toString());
+          console.log('✅ Loaded payment settings - Locked:', true, 'Price:', articleData.priceInfo.price);
+        } else {
+          setPayToUnlock(false);
+          setPaymentAmount("0.01");
+          console.log('ℹ️ Article has no payment lock');
+        }
 
       } catch (error) {
         console.error('Failed to load article data:', error);
@@ -583,13 +597,13 @@ export const Create = (): JSX.Element => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+    <div className="w-full min-h-screen overflow-x-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
       <HeaderSection isLoggedIn={isLoggedIn} hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
-      <div className="lg:ml-[360px] lg:mr-[70px] min-h-screen overflow-y-auto pt-[70px] lg:pt-[120px]">
-        <div className="flex flex-col items-start gap-[30px] px-5 md:px-8 lg:px-12 xl:px-20 2xl:px-40 py-0 pb-[100px] w-full">
-          <div className="flex items-center gap-2.5 w-full">
-            <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
+      <div className="lg:ml-[350px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[110px] overflow-x-hidden">
+        <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] px-3 sm:px-5 md:px-8 lg:pl-8 lg:pr-4 xl:pl-12 xl:pr-6 2xl:pl-20 2xl:pr-10 py-0 pb-[100px] w-full overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
+            <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-left sm:text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
               {isEditMode ? 'Edit treasure' : 'Share treasure'}
             </h1>
             {isEditMode && (
@@ -614,8 +628,8 @@ export const Create = (): JSX.Element => {
             )}
           </div>
 
-          <div className="flex flex-col lg:flex-row items-start gap-[30px] lg:gap-[30px] xl:gap-[60px] w-full">
-            <div className="flex flex-col items-start gap-[30px] pl-0 lg:pr-[30px] xl:pr-[60px] py-0 flex-1 lg:border-r lg:[border-right-style:solid] lg:border-light-grey w-full">
+          <div className="flex flex-col lg:flex-row items-start gap-[20px] sm:gap-[30px] lg:gap-[40px] xl:gap-[60px] w-full">
+            <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] pl-0 py-0 flex-1 w-full min-w-0 lg:pr-[40px] lg:border-r lg:[border-right-style:solid] lg:border-[#e0e0e0] xl:pr-[60px]">
             <div className="flex flex-col items-start gap-2.5 w-full">
               <div className="flex flex-col w-[60px] h-[23px] items-start justify-center gap-2.5">
                 <label className="relative flex items-center justify-center w-fit mt-[-2.00px] font-p-l font-[number:var(--p-l-font-weight)] text-transparent text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
@@ -709,54 +723,65 @@ export const Create = (): JSX.Element => {
                 </label>
               </div>
 
-              <div
-                className={`relative w-full max-w-[400px] h-[225px] border border-dashed cursor-pointer transition-all rounded-lg ${
-                  formData.coverImage || coverImageUrl
-                    ? 'border-green-400 bg-cover bg-[50%_50%]'
-                    : 'border-medium-grey hover:border-dark-grey bg-gray-50'
-                }`}
-                style={{
-                  backgroundImage: formData.coverImage
-                    ? `url(${URL.createObjectURL(formData.coverImage)})`
-                    : coverImageUrl
-                    ? `url(${coverImageUrl})`
-                    : 'none'
-                }}
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.accept = "image/*";
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) {
-                      handleImageUpload({ target: { files: [file] } } as any);
-                    }
-                  };
-                  input.click();
-                }}
-              >
-                {!formData.coverImage && !coverImageUrl && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mb-4">
-                      <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                    <p className="text-medium-grey text-lg font-medium mb-2">Click to upload cover image</p>
-                    <p className="text-medium-grey text-sm">Supports JPG, PNG formats</p>
-                  </div>
-                )}
-                {isEditMode && coverImageUrl && !formData.coverImage && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-30 transition-all">
-                    <div className="opacity-0 hover:opacity-100 text-white text-center">
-                      <p className="text-lg font-medium">Click to change cover image</p>
-                    </div>
-                  </div>
-                )}
+              <div className="flex items-center gap-5 w-full">
+                {/* Upload button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*";
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        handleImageUpload({ target: { files: [file] } } as any);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="flex items-center justify-center px-5 py-2.5 bg-white rounded-[15px] border border-solid border-light-grey hover:border-red hover:shadow-sm transition-all cursor-pointer"
+                >
+                  <svg className="w-5 h-5 text-medium-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span className="ml-2 [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">
+                    Upload
+                  </span>
+                </button>
+
+                {/* Text and preview */}
+                <div className="flex items-center gap-3 flex-1">
+                  {formData.coverImage || coverImageUrl ? (
+                    <>
+                      <div
+                        className="w-20 h-12 bg-cover bg-center rounded-lg border border-green-400"
+                        style={{
+                          backgroundImage: formData.coverImage
+                            ? `url(${URL.createObjectURL(formData.coverImage)})`
+                            : coverImageUrl
+                            ? `url(${coverImageUrl})`
+                            : 'none'
+                        }}
+                      />
+                      <div className="flex flex-col">
+                        <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm">
+                          Cover image uploaded
+                        </span>
+                        <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-xs">
+                          Click Upload to change
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm">
+                      Supports JPG, PNG formats
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-start gap-2.5 w-full">
+            <div className="flex flex-col items-start gap-2.5 w-full min-w-0">
               <label className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-transparent text-base tracking-[0] leading-4">
                 <span className="text-[#f23a00] leading-[var(--p-line-height)] font-p [font-style:var(--p-font-style)] font-[number:var(--p-font-weight)] tracking-[var(--p-letter-spacing)] text-[length:var(--p-font-size)]">
                   *
@@ -766,87 +791,57 @@ export const Create = (): JSX.Element => {
                 </span>
               </label>
 
-              <div className={`flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid transition-all ${
-                focusedField === 'recommendation' ? 'border-red shadow-sm' : 'border-light-grey'
-              }`}>
+              <div className="flex flex-col h-44 items-start justify-between px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid border-light-grey">
                 <textarea
                   value={formData.recommendation}
                   onChange={(e) => handleInputChange("recommendation", e.target.value)}
                   onFocus={() => setFocusedField('recommendation')}
                   onBlur={() => setFocusedField(null)}
                   placeholder="What did you find valuable about this link?"
-                  className="relative self-stretch flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none"
+                  className="w-full min-w-0 flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none overflow-y-auto overflow-x-hidden"
                   aria-label="Recommendation"
                   maxLength={1000}
+                  style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                 />
-                <div className="relative self-stretch [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px]">
+                <div className="w-full min-w-0 [font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm text-right tracking-[0] leading-[25px] flex-shrink-0">
                   {characterCount}/1000
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col items-start gap-2.5 w-full">
-              <div className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+              <div className="relative w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-[#686868] text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
                 Choose a topic {categoriesLoading && <span className="text-medium-grey">(Loading...)</span>}
               </div>
 
-              <div className="gap-2.5 inline-flex items-start flex-wrap">
-                {sortedCategories.map((category) => {
-                  const categoryStyle = getCategoryStyle(category.name, category.color);
-                  const categoryInlineStyle = getCategoryInlineStyle(category.color);
-                  const isSelected = formData.selectedTopic === category.name;
-                  const isHovered = hoveredCategory === category.id;
-                  const showBackground = isSelected || isHovered;
-
-                  // Create styles without background for default, with background for hover/selected
-                  const borderOnlyStyle = category.color ? {
-                    border: `1px solid ${categoryInlineStyle.color}`,
-                    borderRadius: '50px',
-                  } : undefined;
-
-                  const withBackgroundStyle = category.color ? {
-                    border: `1px solid ${categoryInlineStyle.color}`,
-                    borderRadius: '50px',
-                    background: categoryInlineStyle.background,
-                  } : undefined;
-
-                  return (
-                    <Badge
-                      key={category.id}
-                      variant="outline"
-                      className={`cursor-pointer transition-all inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit focus:outline-none focus:ring-0 ${
-                        category.color ? '' : `${categoryStyle.border} ${showBackground ? categoryStyle.bg : ''}`
-                      }`}
-                      style={showBackground ? withBackgroundStyle : borderOnlyStyle}
-                      onClick={() => handleTopicSelect(category.name, category.id)}
-                      onMouseEnter={() => setHoveredCategory(category.id)}
-                      onMouseLeave={() => setHoveredCategory(null)}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={isSelected}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          handleTopicSelect(category.name, category.id);
-                        }
-                      }}
-                    >
-                      <span
-                        className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
-                          category.color ? '' : categoryStyle.text
-                        }`}
-                        style={category.color ? { color: categoryInlineStyle.color } : undefined}
-                      >
-                        {category.name}
-                      </span>
-                    </Badge>
-                  );
-                })}
+              <div className="relative w-full">
+                <select
+                  value={formData.selectedTopicId}
+                  onChange={(e) => {
+                    const selectedCategory = sortedCategories.find(cat => cat.id === parseInt(e.target.value));
+                    if (selectedCategory) {
+                      handleTopicSelect(selectedCategory.name, selectedCategory.id);
+                    }
+                  }}
+                  className="w-full px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23686868' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 15px center',
+                    paddingRight: '40px'
+                  }}
+                >
+                  {sortedCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
             {/* x402 Pay-to-unlock section */}
-            <div className="flex flex-col items-start gap-5 w-full pt-5 border-t border-light-grey">
+            <div className="flex flex-col items-start gap-5 w-full pt-5">
 
               {/* Toggle section */}
               <div className="flex items-center justify-between w-full">
@@ -856,7 +851,7 @@ export const Create = (): JSX.Element => {
                     alt="x402 icon"
                     src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
                   />
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[23px]">
+                  <p className="font-p-l font-[number:var(--p-l-font-weight)] text-[#686868] text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)]">
                     Pay to visit source link
                   </p>
                 </div>
@@ -877,7 +872,7 @@ export const Create = (): JSX.Element => {
 
               {/* Payment details (shown when toggle is on) */}
               {payToUnlock && (
-                <div className="flex flex-col items-start gap-5 w-full pl-[30px]">
+                <div className="flex flex-col items-start gap-5 w-full">
                   {/* Amount input */}
                   <div className="flex flex-col items-start gap-2.5 w-full">
                     <label className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-4">
@@ -890,7 +885,7 @@ export const Create = (): JSX.Element => {
                         onChange={(e) => setPaymentAmount(e.target.value)}
                         step="0.01"
                         min="0.01"
-                        className="flex-1 h-[46px] px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]"
+                        className="w-1/2 h-[46px] px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]"
                         placeholder="0.01"
                       />
                       <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
@@ -899,39 +894,40 @@ export const Create = (): JSX.Element => {
                     </div>
                   </div>
 
-                  {/* Network display */}
-                  <div className="flex items-center gap-2.5 w-full">
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                      Network:
-                    </span>
-                    <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
-                      Base Sepolia
-                    </span>
-                  </div>
+                  {/* Network display and Estimated income */}
+                  <div className="flex flex-col items-start w-full">
+                    <div className="flex items-center gap-2.5 w-full">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
+                        Network:
+                      </span>
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
+                        Base Sepolia
+                      </span>
+                    </div>
 
-                  {/* Estimated income */}
-                  <div className="flex items-center gap-2.5 w-full">
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                      Estimated income:
-                    </span>
-                    <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
-                      {(parseFloat(paymentAmount || "0") * 0.04).toFixed(4)} per unlock
-                    </span>
+                    <div className="flex items-center gap-2.5 w-full">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
+                        Estimated income:
+                      </span>
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
+                        {(parseFloat(paymentAmount || "0") * 0.04).toFixed(4)} per unlock
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="inline-flex flex-col items-start gap-5">
+          <div className="flex flex-col items-start gap-5 w-full lg:flex-1 lg:pl-[15px] xl:pl-[30px]">
             <div className="flex w-[60px] items-center gap-2.5">
               <div className="relative flex items-center justify-center w-fit mt-[-1.00px] mr-[-4.00px] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
                 Preview
               </div>
             </div>
 
-            <div className="flex flex-col items-start gap-10 w-full">
-              <div className="w-full max-w-[500px] lg:max-w-[350px] xl:max-w-[450px] 2xl:max-w-[500px]">
+            <div className="flex flex-col items-start lg:items-center gap-10 w-full">
+              <div className="w-full lg:max-w-[250px] xl:max-w-[280px] 2xl:max-w-[320px]">
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
@@ -940,7 +936,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full"
+                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors w-full lg:max-w-[250px] xl:max-w-[280px] 2xl:max-w-[320px]"
                 onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
                 style={{
                     opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,

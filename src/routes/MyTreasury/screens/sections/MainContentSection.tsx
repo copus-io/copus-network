@@ -13,6 +13,8 @@ import {
 } from "../../../../components/ui/tabs";
 import { useToast } from "../../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
+import { useMyUnlockedArticles } from "../../../../hooks/useMyUnlockedArticles";
+import { getMyUnlockedArticles } from "../../../../services/articleService";
 
 
 const collectionItems = [
@@ -117,15 +119,29 @@ export const MainContentSection = (): JSX.Element => {
   const [likedArticles, setLikedArticles] = useState<any[]>([]);
   const [likedArticlesLoading, setLikedArticlesLoading] = useState(false);
   const [likedArticlesError, setLikedArticlesError] = useState<string | null>(null);
+  const [likedCurrentPage, setLikedCurrentPage] = useState(1);
+  const [likedHasMore, setLikedHasMore] = useState(true);
 
   // 创作文章状态
   const [createdArticles, setCreatedArticles] = useState<any[]>([]);
   const [createdArticlesLoading, setCreatedArticlesLoading] = useState(false);
   const [createdArticlesError, setCreatedArticlesError] = useState<string | null>(null);
+  const [createdCurrentPage, setCreatedCurrentPage] = useState(1);
+  const [createdHasMore, setCreatedHasMore] = useState(true);
+
+  // Unlocked articles state
+  const [unlockedArticles, setUnlockedArticles] = useState<any[]>([]);
+  const [unlockedArticlesLoading, setUnlockedArticlesLoading] = useState(false);
+  const [unlockedArticlesError, setUnlockedArticlesError] = useState<string | null>(null);
+  const [unlockedCurrentPage, setUnlockedCurrentPage] = useState(1);
+  const [unlockedHasMore, setUnlockedHasMore] = useState(true);
 
   // 添加缓存机制防止重复请求
   const [lastFetchedUserId, setLastFetchedUserId] = useState<number | null>(null);
   const [lastFetchedTab, setLastFetchedTab] = useState<string | null>(null);
+
+  // 防止滚动事件重复触发的flag
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const [treasuryStats, setTreasuryStats] = useState({
     likedArticleCount: 0,
@@ -219,8 +235,17 @@ export const MainContentSection = (): JSX.Element => {
 
     // 检查是否已经获取过相同用户和标签页的数据，避免重复请求
     if (lastFetchedUserId === userId && lastFetchedTab === activeTab) {
+      console.log('[Treasury] Skipping fetch - same user and tab already loaded');
       return;
     }
+
+    console.log('[Treasury] Initial fetch triggered:', {
+      userId,
+      activeTab,
+      lastFetchedUserId,
+      lastFetchedTab,
+      reason: lastFetchedUserId !== userId ? 'user changed' : 'tab changed'
+    });
 
     const fetchArticleData = async () => {
       try {
@@ -228,11 +253,26 @@ export const MainContentSection = (): JSX.Element => {
         setLastFetchedTab(activeTab);
 
         if (activeTab === 'collection') {
-          // 只在收藏标签页时加载收藏文章
-          await fetchLikedArticles(userId);
+          // Reset pagination and load first page of liked articles
+          console.log('[Treasury] Resetting liked articles for initial load');
+          setLikedCurrentPage(1);
+          setLikedHasMore(true);
+          setLikedArticles([]);
+          await fetchLikedArticles(userId, 1, false);
         } else if (activeTab === 'share') {
-          // 只在创作标签页时加载创作文章
-          await fetchCreatedArticles(userId);
+          // Reset pagination and load first page of created articles
+          console.log('[Treasury] Resetting created articles for initial load');
+          setCreatedCurrentPage(1);
+          setCreatedHasMore(true);
+          setCreatedArticles([]);
+          await fetchCreatedArticles(userId, 1, false);
+        } else if (activeTab === 'unlocked') {
+          // Reset pagination and load first page of unlocked articles
+          console.log('[Treasury] Resetting unlocked articles for initial load');
+          setUnlockedCurrentPage(1);
+          setUnlockedHasMore(true);
+          setUnlockedArticles([]);
+          await fetchUnlockedArticles(1, false);
         }
       } catch (error) {
         console.error('❌ 加载文章数据失败:', error);
@@ -245,43 +285,269 @@ export const MainContentSection = (): JSX.Element => {
     fetchArticleData();
   }, [treasuryUserInfo?.id, activeTab]);
 
-  // 收藏文章加载函数
-  const fetchLikedArticles = async (userId: number) => {
-    setLikedArticlesLoading(true);
-    setLikedArticlesError(null);
+  // 无限滚动加载更多数据的函数 - 优化滚动位置保持
+  const loadMoreLikedArticles = async () => {
+    if (!likedArticlesLoading && likedHasMore && treasuryUserInfo?.id && !isLoadingMore) {
+      // 保存当前滚动位置
+      const currentScrollPosition = window.scrollY;
 
-    try {
-      const response = await AuthService.getMyLikedArticlesCorrect(1, 10, userId);
+      setIsLoadingMore(true);
+      const nextPage = likedCurrentPage + 1;
+      console.log(`[Treasury] Loading more liked articles - page ${nextPage}, scroll position:`, currentScrollPosition);
 
-      const articlesArray = extractArticlesFromResponse(response, '收藏');
-      setLikedArticles(articlesArray);
+      try {
+        await fetchLikedArticles(treasuryUserInfo.id, nextPage, true);
 
-    } catch (error) {
-      console.error('❌ 获取收藏文章失败:', error);
-      setLikedArticlesError(`获取收藏文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
-      setLikedArticles([]);
-    } finally {
-      setLikedArticlesLoading(false);
+        // 确保滚动位置不变（防止跳到顶部）
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
+            window.scrollTo(0, currentScrollPosition);
+            console.log('[Treasury] Restored scroll position after pagination load');
+          }
+        }, 50);
+      } finally {
+        setIsLoadingMore(false);
+      }
     }
   };
 
-  // 创作文章加载函数
-  const fetchCreatedArticles = async (userId: number) => {
-    setCreatedArticlesLoading(true);
+  const loadMoreCreatedArticles = async () => {
+    if (!createdArticlesLoading && createdHasMore && treasuryUserInfo?.id && !isLoadingMore) {
+      // 保存当前滚动位置
+      const currentScrollPosition = window.scrollY;
+
+      setIsLoadingMore(true);
+      const nextPage = createdCurrentPage + 1;
+      console.log(`[Treasury] Loading more created articles - page ${nextPage}, scroll position:`, currentScrollPosition);
+
+      try {
+        await fetchCreatedArticles(treasuryUserInfo.id, nextPage, true);
+
+        // 确保滚动位置不变（防止跳到顶部）
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
+            window.scrollTo(0, currentScrollPosition);
+            console.log('[Treasury] Restored scroll position after created articles pagination load');
+          }
+        }, 50);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    }
+  };
+
+  const loadMoreUnlockedArticles = async () => {
+    if (!unlockedArticlesLoading && unlockedHasMore && !isLoadingMore) {
+      // 保存当前滚动位置
+      const currentScrollPosition = window.scrollY;
+
+      setIsLoadingMore(true);
+      const nextPage = unlockedCurrentPage + 1;
+      console.log(`[Treasury] Loading more unlocked articles - page ${nextPage}, scroll position:`, currentScrollPosition);
+
+      try {
+        await fetchUnlockedArticles(nextPage, true);
+
+        // 确保滚动位置不变（防止跳到顶部）
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
+            window.scrollTo(0, currentScrollPosition);
+            console.log('[Treasury] Restored scroll position after unlocked articles pagination load');
+          }
+        }, 50);
+      } finally {
+        setIsLoadingMore(false);
+      }
+    }
+  };
+
+  // 无限滚动效果
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
+
+      if (scrolledToBottom && !isLoadingMore) {
+        if (activeTab === 'collection' && likedHasMore && !likedArticlesLoading) {
+          loadMoreLikedArticles();
+        } else if (activeTab === 'share' && createdHasMore && !createdArticlesLoading) {
+          loadMoreCreatedArticles();
+        } else if (activeTab === 'unlocked' && unlockedHasMore && !unlockedArticlesLoading) {
+          loadMoreUnlockedArticles();
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [activeTab, likedHasMore, likedArticlesLoading, createdHasMore, createdArticlesLoading, unlockedHasMore, unlockedArticlesLoading, isLoadingMore]);
+
+  // 收藏文章加载函数 - 支持分页
+  const fetchLikedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
+    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    if (!append) {
+      setLikedArticlesLoading(true);
+    }
+    setLikedArticlesError(null);
+
+    try {
+      const response = await AuthService.getMyLikedArticlesCorrect(page, 20, userId);
+      console.log(`[Treasury] Fetching liked articles page ${page}:`, response);
+
+      const articlesArray = extractArticlesFromResponse(response, 'Collection');
+
+      if (append) {
+        // Append new articles to existing ones
+        console.log(`[Treasury] Appending ${articlesArray.length} articles to existing ${likedArticles.length} articles`);
+        setLikedArticles(prev => {
+          console.log(`[Treasury] Before append: ${prev.length} articles, After: ${prev.length + articlesArray.length} articles`);
+          return [...prev, ...articlesArray];
+        });
+      } else {
+        // Replace existing articles
+        console.log(`[Treasury] Replacing with ${articlesArray.length} articles`);
+        setLikedArticles(articlesArray);
+      }
+
+      // Update pagination state based on API response
+      const pageIndex = response?.pageIndex || response?.data?.pageIndex || page;
+      const pageCount = response?.pageCount || response?.data?.pageCount || 0;
+
+      setLikedCurrentPage(pageIndex);
+      // More accurate hasMore logic:
+      // 1. If we got fewer than expected items (20), we've definitely reached the end
+      // 2. If we got exactly 20 items, check if current page is less than total pages
+      // 3. Also handle edge case where pageCount might be 0 or invalid
+      const hasMorePages = pageCount > 0 && pageIndex < pageCount;
+      setLikedHasMore(articlesArray.length === 20 && hasMorePages);
+
+    } catch (error) {
+      console.error('❌ Failed to fetch liked articles:', error);
+      setLikedArticlesError(`Failed to fetch liked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (!append) {
+        setLikedArticles([]);
+      }
+    } finally {
+      // 只在初始加载完成时重置 loading 状态
+      if (!append) {
+        setLikedArticlesLoading(false);
+      }
+    }
+  };
+
+  // 创作文章加载函数 - 支持分页
+  const fetchCreatedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
+    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    if (!append) {
+      setCreatedArticlesLoading(true);
+    }
     setCreatedArticlesError(null);
 
     try {
-      const response = await AuthService.getMyCreatedArticles(1, 10, userId);
+      const response = await AuthService.getMyCreatedArticles(page, 20, userId);
+      console.log(`[Treasury] Fetching created articles page ${page}:`, response);
 
-      const articlesArray = extractArticlesFromResponse(response, '创作');
-      setCreatedArticles(articlesArray);
+      const articlesArray = extractArticlesFromResponse(response, 'Shares');
+
+      if (append) {
+        // Append new articles to existing ones
+        console.log(`[Treasury] Appending ${articlesArray.length} created articles to existing ${createdArticles.length} articles`);
+        setCreatedArticles(prev => {
+          console.log(`[Treasury] Before append: ${prev.length} created articles, After: ${prev.length + articlesArray.length} created articles`);
+          return [...prev, ...articlesArray];
+        });
+      } else {
+        // Replace existing articles
+        console.log(`[Treasury] Replacing with ${articlesArray.length} created articles`);
+        setCreatedArticles(articlesArray);
+      }
+
+      // Update pagination state based on API response
+      const pageIndex = response?.pageIndex || response?.data?.pageIndex || page;
+      const pageCount = response?.pageCount || response?.data?.pageCount || 0;
+
+      setCreatedCurrentPage(pageIndex);
+      // More accurate hasMore logic:
+      // 1. If we got fewer than expected items (20), we've definitely reached the end
+      // 2. If we got exactly 20 items, check if current page is less than total pages
+      // 3. Also handle edge case where pageCount might be 0 or invalid
+      const hasMorePages = pageCount > 0 && pageIndex < pageCount;
+      setCreatedHasMore(articlesArray.length === 20 && hasMorePages);
 
     } catch (error) {
-      console.error('❌ 获取创作文章失败:', error);
-      setCreatedArticlesError(`获取创作文章失败: ${error instanceof Error ? error.message : '未知错误'}`);
-      setCreatedArticles([]);
+      console.error('❌ Failed to fetch created articles:', error);
+      setCreatedArticlesError(`Failed to fetch created articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (!append) {
+        setCreatedArticles([]);
+      }
     } finally {
-      setCreatedArticlesLoading(false);
+      // 只在初始加载完成时重置 loading 状态
+      if (!append) {
+        setCreatedArticlesLoading(false);
+      }
+    }
+  };
+
+  // Unlocked articles loading function - 支持分页
+  const fetchUnlockedArticles = async (page: number = 1, append: boolean = false) => {
+    // Only logged-in users can view their unlocked articles
+    if (!user) {
+      console.warn('⚠️ No user logged in, skipping unlocked articles fetch');
+      return;
+    }
+
+    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    if (!append) {
+      setUnlockedArticlesLoading(true);
+    }
+    setUnlockedArticlesError(null);
+
+    try {
+      const response = await AuthService.getUserUnlockedArticles(page, 20);
+      console.log(`[Treasury] Fetching unlocked articles page ${page}:`, response);
+
+      const articlesArray = extractArticlesFromResponse(response, 'Unlocked');
+
+      if (append) {
+        // Append new articles to existing ones
+        console.log(`[Treasury] Appending ${articlesArray.length} unlocked articles to existing ${unlockedArticles.length} articles`);
+        setUnlockedArticles(prev => {
+          console.log(`[Treasury] Before append: ${prev.length} unlocked articles, After: ${prev.length + articlesArray.length} unlocked articles`);
+          return [...prev, ...articlesArray];
+        });
+      } else {
+        // Replace existing articles
+        console.log(`[Treasury] Replacing with ${articlesArray.length} unlocked articles`);
+        setUnlockedArticles(articlesArray);
+      }
+
+      // Update pagination state based on API response
+      const pageIndex = response?.pageIndex || response?.data?.pageIndex || page;
+      const pageCount = response?.pageCount || response?.data?.pageCount || 0;
+
+      setUnlockedCurrentPage(pageIndex);
+      // More accurate hasMore logic:
+      // 1. If we got fewer than expected items (20), we've definitely reached the end
+      // 2. If we got exactly 20 items, check if current page is less than total pages
+      // 3. Also handle edge case where pageCount might be 0 or invalid
+      const hasMorePages = pageCount > 0 && pageIndex < pageCount;
+      setUnlockedHasMore(articlesArray.length === 20 && hasMorePages);
+
+    } catch (error) {
+      console.error('❌ Failed to fetch unlocked articles:', error);
+      setUnlockedArticlesError(`Failed to fetch unlocked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (!append) {
+        setUnlockedArticles([]);
+      }
+    } finally {
+      // 只在初始加载完成时重置 loading 状态
+      if (!append) {
+        setUnlockedArticlesLoading(false);
+      }
     }
   };
 
@@ -327,7 +593,7 @@ export const MainContentSection = (): JSX.Element => {
       date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
       treasureCount: article.likeCount || 0,
       visitCount: article.viewCount || 0,
-      isLiked: article.isLiked || true,
+      isLiked: article.isLiked || false,
       targetUrl: article.targetUrl,
       website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
       // x402 payment fields
@@ -358,6 +624,32 @@ export const MainContentSection = (): JSX.Element => {
       website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
       // x402 payment fields
       isPaymentRequired: article.targetUrlIsLocked,
+      paymentPrice: article.priceInfo?.price?.toString()
+    };
+  };
+
+  // Transform API data to unlocked article card format
+  const transformUnlockedApiToCard = (article: any): ArticleData => {
+    return {
+      id: article.uuid,
+      uuid: article.uuid,
+      title: article.title,
+      description: article.content,
+      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.categoryInfo?.name || 'Uncategorized',
+      categoryColor: article.categoryInfo?.color || '#666666',
+      userName: article.authorInfo?.username || 'Anonymous',
+      userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
+      userId: article.authorInfo?.id,
+      userNamespace: article.authorInfo?.namespace,
+      date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
+      treasureCount: article.likeCount || 0,
+      visitCount: article.viewCount || 0,
+      isLiked: article.isLiked || false,
+      targetUrl: article.targetUrl,
+      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
+      // x402 payment fields - unlocked articles are already paid
+      isPaymentRequired: false, // Already unlocked
       paymentPrice: article.priceInfo?.price?.toString()
     };
   };
@@ -498,7 +790,8 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   const renderCard = (card: ArticleData) => {
-    const articleLikeState = getArticleLikeState(card.id, card.isLiked || true, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+    // Use exact like state from backend API response - no frontend assumptions
+    const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
     // 更新文章的点赞状态
     const articleData = {
@@ -538,7 +831,7 @@ export const MainContentSection = (): JSX.Element => {
       userNamespace: article.authorInfo?.namespace || user?.namespace,
       date: new Date(article.createAt * 1000).toLocaleDateString(),
       treasureCount: article.likeCount || 0,
-      visitCount: `${article.viewCount || 0} Visits`,
+      visitCount: `${article.viewCount || 0}`,
       isLiked: false,
       targetUrl: article.targetUrl,
       website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
@@ -566,8 +859,8 @@ export const MainContentSection = (): JSX.Element => {
 
   // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
   const renderMyShareCard = (card: ArticleData) => {
-    // 获取文章的点赞状态
-    const articleLikeState = getArticleLikeState(card.id, card.isLiked || false, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+    // Use exact like state from backend API response - no frontend assumptions
+    const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
     // 更新文章的点赞状态
     const articleData = {
@@ -696,7 +989,7 @@ export const MainContentSection = (): JSX.Element => {
             <div className="inline-flex flex-col items-start justify-center">
               <div className="inline-flex items-center gap-[15px]">
                 <h1 className="mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42px] whitespace-nowrap">
-                  {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Guest user")}
+                  {isViewingOtherUser ? (treasuryUserInfo?.username || "Loading...") : (user?.username || "Anonymous")}
                 </h1>
 
                 {/* Show "Account deleted" text beside username when account is disabled */}
@@ -782,28 +1075,39 @@ export const MainContentSection = (): JSX.Element => {
           const newUrl = `${window.location.pathname}?${newSearchParams.toString()}`;
           navigate(newUrl, { replace: true });
         }} className="w-full">
-          <TabsList className="flex items-center justify-between w-full bg-transparent h-auto p-0 rounded-none relative border-b border-[#E0E0E0]">
+          <TabsList className="flex w-full bg-transparent h-auto p-0 gap-0 border-b border-gray-100">
             <TabsTrigger
               value="collection"
-              className="flex-1 flex items-center justify-center bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none p-0 relative data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:transform data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-[calc(100%-30px)] data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[#454545]"
+              className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
             >
-              <div className="inline-flex items-center justify-center px-[15px] py-2.5">
-                <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s collections` : 'My collections'}
-                </span>
-              </div>
+              <span className="relative z-10">
+                {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s collections` : 'My collections'}
+              </span>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
             </TabsTrigger>
 
             <TabsTrigger
               value="share"
-              className="flex-1 flex items-center justify-center bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none p-0 relative data-[state=active]:after:content-[''] data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-1/2 data-[state=active]:after:transform data-[state=active]:after:-translate-x-1/2 data-[state=active]:after:w-[calc(100%-30px)] data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[#454545]"
+              className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
             >
-              <div className="justify-center px-[15px] py-2.5 w-full flex items-center gap-2.5">
-                <span className="mt-[-1.00px] [font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey data-[state=active]:text-lg text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s shares` : 'My shares'}
-                </span>
-              </div>
+              <span className="relative z-10">
+                {isViewingOtherUser ? `${treasuryUserInfo?.username || 'User'}'s shares` : 'My shares'}
+              </span>
+              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
             </TabsTrigger>
+
+            {/* Only show Unlocked links tab for own treasury, not when viewing other users */}
+            {!isViewingOtherUser && (
+              <TabsTrigger
+                value="unlocked"
+                className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
+              >
+                <span className="relative z-10">
+                  Unlocked links
+                </span>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="collection" className="mt-[30px]">
@@ -816,12 +1120,28 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {likedArticlesError}</div>
               </div>
             ) : likedArticles.length > 0 ? (
-              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
-                {likedArticles.map((article) => {
-                  const card = transformLikedApiToCard(article);
-                  return renderCard(card);
-                })}
-              </div>
+              <>
+                <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
+                  {likedArticles.map((article) => {
+                    const card = transformLikedApiToCard(article);
+                    return renderCard(card);
+                  })}
+                </div>
+
+                {/* Pagination loading indicator */}
+                {likedArticlesLoading && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-lg text-gray-600">Loading more collections...</div>
+                  </div>
+                )}
+
+                {/* No more content indicator */}
+                {!likedArticlesLoading && !likedHasMore && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-gray-500">You've reached the end! No more collections to load.</div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-4">
                 <div className="text-lg text-gray-600">
@@ -844,12 +1164,28 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-lg text-red-600">Loading failed: {createdArticlesError}</div>
               </div>
             ) : createdArticles.length > 0 ? (
-              <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
-                {createdArticles.map((article) => {
-                  const card = transformCreatedApiToCard(article);
-                  return renderMyShareCard(card);
-                })}
-              </div>
+              <>
+                <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
+                  {createdArticles.map((article) => {
+                    const card = transformCreatedApiToCard(article);
+                    return renderMyShareCard(card);
+                  })}
+                </div>
+
+                {/* Pagination loading indicator */}
+                {createdArticlesLoading && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-lg text-gray-600">Loading more shares...</div>
+                  </div>
+                )}
+
+                {/* No more content indicator */}
+                {!createdArticlesLoading && !createdHasMore && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-gray-500">You've reached the end! No more shares to load.</div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col justify-center items-center py-20 gap-4">
                 <div className="text-lg text-gray-600">
@@ -858,6 +1194,55 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="text-sm text-gray-400">
                   {isViewingOtherUser ? 'No public shared content available' : 'Start sharing some amazing content!'}
                 </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="unlocked" className="mt-[30px]">
+            {unlockedArticlesLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="text-lg text-gray-600">Loading unlocked content...</div>
+              </div>
+            ) : unlockedArticlesError ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="text-lg text-red-600">Loading failed: {unlockedArticlesError}</div>
+              </div>
+            ) : unlockedArticles.length > 0 ? (
+              <>
+                <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8">
+                  {unlockedArticles.map((article) => {
+                    const card = transformUnlockedApiToCard(article);
+                    return renderCard(card);
+                  })}
+                </div>
+
+                {/* Pagination loading indicator */}
+                {unlockedArticlesLoading && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-lg text-gray-600">Loading more unlocked content...</div>
+                  </div>
+                )}
+
+                {/* No more content indicator */}
+                {!unlockedArticlesLoading && !unlockedHasMore && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-gray-500">You've reached the end! No more unlocked content to load.</div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col justify-center items-center py-20 gap-6">
+                <div className="text-lg text-gray-600">
+                  Nothing here yet
+                </div>
+                <Button
+                  onClick={() => navigate('/')}
+                  className="inline-flex h-[45px] items-center justify-center gap-[15px] px-[30px] py-2.5 rounded-[50px] bg-red hover:bg-red/90 text-white transition-colors"
+                >
+                  <span className="[font-family:'Lato',Helvetica] font-semibold text-xl tracking-[0] leading-7 whitespace-nowrap">
+                    Explore more content
+                  </span>
+                </Button>
               </div>
             )}
           </TabsContent>
@@ -998,7 +1383,7 @@ export const MainContentSection = (): JSX.Element => {
             borderRadius: '20px',
             fontSize: '14px'
           }}>
-            点击空白区域或按ESC关闭
+Click anywhere or press ESC to close
           </div>
         </div>
       )}

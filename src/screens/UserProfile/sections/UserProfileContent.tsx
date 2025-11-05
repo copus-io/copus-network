@@ -15,7 +15,7 @@ interface UserProfileContentProps {
 
 export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespace }) => {
   const navigate = useNavigate();
-  const { user, toggleLike, updateUser } = useUser();
+  const { user, toggleLike, updateUser, getArticleLikeState } = useUser();
   const { openPreview } = useImagePreview();
   const { showToast } = useToast();
 
@@ -24,6 +24,9 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [articles, setArticles] = useState<ArticleData[]>([]);
   const [showCoverUploader, setShowCoverUploader] = useState(false);
   const [accountExists, setAccountExists] = useState(true);
+  const [articlesLoading, setArticlesLoading] = useState(false);
+  const [hasMoreArticles, setHasMoreArticles] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch user info and articles list
   useEffect(() => {
@@ -90,29 +93,36 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         const articlesData = await AuthService.getMyLikedArticlesCorrect(1, 20, userData.id);
         console.log('[UserProfile] Successfully fetched liked articles:', articlesData);
 
+        // Set pagination state based on real API response
+        setCurrentPage(articlesData.pageIndex || 1);
+        setHasMoreArticles(articlesData.pageIndex < articlesData.pageCount);
+
         // Transform API data to ArticleData format
-        const transformedArticles: ArticleData[] = articlesData.data.map(article => ({
-          id: article.uuid,
-          title: article.title,
-          content: article.content,
-          cover: article.coverUrl,
-          author: {
-            id: article.authorInfo.id,
-            name: article.authorInfo.username,
-            namespace: article.authorInfo.namespace,
-            avatar: article.authorInfo.faceUrl
-          },
-          category: article.categoryInfo.name,
-          categoryColor: article.categoryInfo.color,
-          categoryId: article.categoryInfo.id,
-          userId: article.authorInfo.id,
-          isLiked: article.isLiked,
-          likeCount: article.likeCount,
-          createTime: article.createAt,
-          publishTime: article.publishAt,
-          link: article.targetUrl,
-          viewCount: article.viewCount
-        }));
+        const transformedArticles: ArticleData[] = articlesData.data.map(article => {
+
+          return {
+            id: article.uuid,
+            title: article.title,
+            content: article.content,
+            cover: article.coverUrl,
+            author: {
+              id: article.authorInfo.id,
+              name: article.authorInfo.username,
+              namespace: article.authorInfo.namespace,
+              avatar: article.authorInfo.faceUrl
+            },
+            category: article.categoryInfo.name,
+            categoryColor: article.categoryInfo.color,
+            categoryId: article.categoryInfo.id,
+            userId: article.authorInfo.id,
+            isLiked: article.isLiked,
+            likeCount: article.likeCount,
+            createTime: article.createAt,
+            publishTime: article.publishAt,
+            link: article.targetUrl,
+            viewCount: article.viewCount
+          };
+        });
 
         setArticles(transformedArticles);
         console.log('[UserProfile] All data loaded successfully');
@@ -144,6 +154,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           coverUrl: 'https://c.animaapp.com/w7obk4mX/img/banner.png',
           walletAddress: ''
         });
+        setHasMoreArticles(false);
 
         showToast("This account doesn't exist", "error");
       } finally {
@@ -158,6 +169,75 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       console.warn('[UserProfile] No namespace provided');
     }
   }, [namespace, showToast]);
+
+  // Load more articles function
+  const loadMoreArticles = async () => {
+    if (!userInfo || articlesLoading || !hasMoreArticles) {
+      return;
+    }
+
+    setArticlesLoading(true);
+    try {
+      const nextPage = currentPage + 1;
+      const articlesData = await AuthService.getMyLikedArticlesCorrect(nextPage, 20, userInfo.id);
+      console.log(`[UserProfile] Loaded page ${nextPage} articles:`, articlesData);
+
+      // Transform new articles
+      const newTransformedArticles: ArticleData[] = articlesData.data.map(article => ({
+        id: article.uuid,
+        title: article.title,
+        content: article.content,
+        cover: article.coverUrl,
+        author: {
+          id: article.authorInfo.id,
+          name: article.authorInfo.username,
+          namespace: article.authorInfo.namespace,
+          avatar: article.authorInfo.faceUrl
+        },
+        category: article.categoryInfo.name,
+        categoryColor: article.categoryInfo.color,
+        categoryId: article.categoryInfo.id,
+        userId: article.authorInfo.id,
+        isLiked: article.isLiked,
+        likeCount: article.likeCount,
+        createTime: article.createAt,
+        publishTime: article.publishAt,
+        link: article.targetUrl,
+        viewCount: article.viewCount
+      }));
+
+      // Append new articles to existing ones
+      setArticles(prev => [...prev, ...newTransformedArticles]);
+      setCurrentPage(articlesData.pageIndex || nextPage);
+      setHasMoreArticles(articlesData.pageIndex < articlesData.pageCount);
+
+      console.log(`[UserProfile] Page ${nextPage} loaded, hasMore: ${articlesData.pageIndex < articlesData.pageCount}`);
+    } catch (error) {
+      console.error('[UserProfile] Failed to load more articles:', error);
+      showToast('Failed to load more articles', 'error');
+    } finally {
+      setArticlesLoading(false);
+    }
+  };
+
+  // Infinite scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
+
+      if (scrolledToBottom && hasMoreArticles && !articlesLoading && userInfo) {
+        loadMoreArticles();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMoreArticles, articlesLoading, userInfo, currentPage]);
 
   // Handle like/treasure action
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -370,10 +450,21 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           // Check if this is the current user's own article
           const isOwnArticle = user && user.id === article.userId;
 
+          // Use global state management to get correct like state, same as other components
+          const articleLikeState = getArticleLikeState(article.id, article.isLiked, article.likeCount);
+
+          // Update article data with global state like information
+          const articleWithUpdatedState = {
+            ...article,
+            isLiked: articleLikeState.isLiked,
+            likeCount: articleLikeState.likeCount
+          };
+
+
           return (
             <ArticleCard
               key={article.id}
-              article={article}
+              article={articleWithUpdatedState}
               layout="treasury"
               actions={{
                 showTreasure: true, // Show treasure button for all articles
@@ -394,6 +485,20 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               ? `${userInfo.username} has created ${userInfo.statistics.articleCount} articles, not shown here yet`
               : `${userInfo.username} hasn't published any articles yet`}
           </p>
+        </div>
+      )}
+
+      {/* Loading indicator for pagination */}
+      {articlesLoading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-lg text-gray-600">Loading more articles...</div>
+        </div>
+      )}
+
+      {/* No more content hint */}
+      {!articlesLoading && !hasMoreArticles && articles.length > 0 && (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-gray-500">You've reached the bottom! No more articles to load.</div>
         </div>
       )}
 

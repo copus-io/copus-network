@@ -26,6 +26,10 @@ export interface DeleteAccountParams {
   accountType: number;
   code: string;
   reason: string;
+  // For wallet users: signature-based verification
+  walletSignature?: string;
+  walletMessage?: string;
+  walletTimestamp?: number;
 }
 
 export interface UserHomeRequest {
@@ -126,7 +130,7 @@ export class AuthService {
 
     try {
       // Check if user has token for account binding mode
-      const token = localStorage.getItem('copus_token');
+      const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
 
       if (token) {
         // Try with authentication (for account binding)
@@ -370,7 +374,7 @@ export class AuthService {
 
     try {
       // Check if user has token for account binding mode
-      const token = localStorage.getItem('copus_token');
+      const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
 
       if (token) {
         // Try with authentication (for account binding)
@@ -624,7 +628,7 @@ export class AuthService {
     });
 
     // Check authentication token before attempting upload
-    const token = localStorage.getItem('copus_token');
+    const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
     const user = localStorage.getItem('copus_user');
     console.log('🔥 Authentication check:', {
       hasToken: !!token,
@@ -752,7 +756,7 @@ export class AuthService {
   static async getCategoryList(): Promise<ArticleCategoryListResponse> {
     return apiRequest('/client/author/article/categoryList', {
       method: 'GET',
-      requiresAuth: false, // Categories should be publicly accessible
+      // Categories are publicly accessible but may include personalized data with token
     });
   }
 
@@ -823,6 +827,7 @@ export class AuthService {
 
   /**
    * Get user treasury information (including favorites statistics)
+   * If no token, returns default/empty data
    */
   static async getUserTreasuryInfo(): Promise<{
     bio: string;
@@ -844,15 +849,41 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
+    // Check if user has token for personalized data
+    const token = localStorage.getItem('copus_token');
+    const hasValidToken = token && token.trim() !== '';
 
-    return apiRequest('/client/myHome/userInfo', {
-      method: 'GET',
-      requiresAuth: true,
-    });
+    if (hasValidToken) {
+      // With token: get personalized treasury info
+      return apiRequest('/client/userHome/userInfo', {
+        method: 'GET',
+        requiresAuth: true,
+      });
+    } else {
+      // Without token: return default empty data
+      console.log('📝 No token found, returning default treasury info');
+      return {
+        bio: '',
+        coverUrl: '',
+        email: '',
+        faceUrl: '',
+        id: 0,
+        namespace: '',
+        socialLinks: [],
+        statistics: {
+          articleCount: 0,
+          likedArticleCount: 0,
+          myArticleLikedCount: 0
+        },
+        username: '',
+        walletAddress: ''
+      };
+    }
   }
 
   /**
    * Get user's liked articles list (paginated)
+   * If no token, still fetches public data but without like status
    */
   static async getUserLikedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<{
     data: Array<{
@@ -884,10 +915,86 @@ export class AuthService {
     pageSize: number;
     totalCount: number;
   }> {
+    // Check if user has token for personalized data
+    const token = localStorage.getItem('copus_token');
+    const hasValidToken = token && token.trim() !== '';
 
-    return apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+    if (hasValidToken) {
+      // With token: get personalized data with like status
+      return apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+        method: 'GET',
+        requiresAuth: true,
+      });
+    } else {
+      // Without token: get public data without like status
+      console.log('📝 No token found, fetching public liked articles data');
+      const response = await apiRequest(`/client/myHome/pageMyLikedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+        method: 'GET',
+        requiresAuth: false,
+      });
+
+      return response;
+    }
+  }
+
+  /**
+   * Get user's unlocked (paid) articles
+   */
+  static async getUserUnlockedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<{
+    data: Array<{
+      authorInfo: {
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+      categoryInfo: {
+        articleCount: number;
+        color: string;
+        id: number;
+        name: string;
+      };
+      content: string;
+      coverUrl: string;
+      createAt: number;
+      isLiked: boolean;
+      likeCount: number;
+      publishAt: number;
+      targetUrl: string;
+      title: string;
+      uuid: string;
+      viewCount: number;
+    }>;
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  }> {
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('pageIndex', pageIndex.toString());
+    params.append('pageSize', pageSize.toString());
+
+    // Get current user ID from localStorage for targetUserId
+    const userStr = localStorage.getItem('copus_user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.id) {
+          params.append('targetUserId', user.id.toString());
+        } else {
+          throw new Error('User ID not found in localStorage');
+        }
+      } catch (error) {
+        throw new Error('Failed to parse user data from localStorage');
+      }
+    } else {
+      throw new Error('User not logged in');
+    }
+
+    return apiRequest(`/client/userHome/pageMyUnlockedArticle?${params.toString()}`, {
       method: 'GET',
-      requiresAuth: true,
     });
   }
 
@@ -1472,6 +1579,10 @@ export class AuthService {
     pageSize: number;
     totalCount: number;
   }> {
+    // Check if user has token for personalized data
+    const token = localStorage.getItem('copus_token');
+    const hasValidToken = token && token.trim() !== '';
+
     const params = new URLSearchParams();
     params.append('pageIndex', pageIndex.toString());
     params.append('pageSize', pageSize.toString());
@@ -1479,10 +1590,24 @@ export class AuthService {
       params.append('targetUserId', targetUserId.toString());
     }
 
-    return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
-      method: 'GET',
-      requiresAuth: false,
-    });
+    if (hasValidToken) {
+      // With token: get personalized data with like status
+      console.log('📝 Fetching liked articles with authentication for personalized data');
+      return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
+        method: 'GET',
+        requiresAuth: true,
+      });
+    } else {
+      // Without token: get public data without like status
+      console.log('📝 No token found, fetching public liked articles data');
+      const response = await apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
+        method: 'GET',
+        requiresAuth: false,
+      });
+
+
+      return response;
+    }
   }
 
   /**

@@ -8,6 +8,7 @@ import { TreasureButton } from "../ui/TreasureButton";
 import { ImagePreviewModal } from "../ui/image-preview-modal";
 import { LazyImage } from "../ui/lazy-image";
 import { getCategoryStyle, getCategoryInlineStyle, formatCount, formatDate } from "../../utils/categoryStyles";
+import { getIconUrl, getIconStyle } from "../../config/icons";
 
 // Generic article data interface
 export interface ArticleData {
@@ -82,13 +83,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const categoryStyle = getCategoryStyle(article.category, article.categoryColor);
   const categoryInlineStyle = getCategoryInlineStyle(article.categoryColor);
 
-  // Debug: Log payment data for this card
+  // Debug: Log payment data for this card (only in development)
   React.useEffect(() => {
-    console.log(`💳 Card payment data for "${article.title.substring(0, 30)}...":`, {
-      isPaymentRequired: article.isPaymentRequired,
-      paymentPrice: article.paymentPrice,
-      hasPaymentData: !!(article.isPaymentRequired && article.paymentPrice)
-    });
+    if (import.meta.env.DEV) {
+      console.log(`💳 Card payment data for "${article.title.substring(0, 30)}...":`, {
+        isPaymentRequired: article.isPaymentRequired,
+        paymentPrice: article.paymentPrice,
+        hasPaymentData: !!(article.isPaymentRequired && article.paymentPrice)
+      });
+    }
   }, [article.title, article.isPaymentRequired, article.paymentPrice]);
 
   // Image preview related state
@@ -101,12 +104,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    if (onLike) {
-      const currentCount = typeof article.treasureCount === 'string'
-        ? parseInt(article.treasureCount) || 0
-        : article.treasureCount;
-      await onLike(article.uuid || article.id, article.isLiked || false, currentCount);
+    // Do nothing if no onLike callback (user not logged in)
+    if (!onLike) {
+      return;
     }
+
+    const currentCount = typeof article.treasureCount === 'string'
+      ? parseInt(article.treasureCount) || 0
+      : article.treasureCount;
+    await onLike(article.uuid || article.id, article.isLiked || false, currentCount);
   };
 
   // Handle user click
@@ -124,7 +130,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
     if (onEdit) {
-      onEdit(article.id);
+      onEdit(article.uuid || article.id);
     }
   };
 
@@ -133,7 +139,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
     if (onDelete) {
-      onDelete(article.id);
+      onDelete(article.uuid || article.id);
     }
   };
 
@@ -158,8 +164,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     switch (layout) {
       case 'preview':
         return (
-          <CardContent className="flex flex-col items-start gap-[15px] p-5">
-            <div className="flex flex-col items-start justify-center gap-[15px] w-full">
+          <CardContent className="flex flex-col items-start gap-[15px] p-5 w-full">
+            <div className="flex flex-col items-start justify-center gap-[15px] w-full min-w-0 max-w-full">
               <div
                 className="flex flex-col items-start p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
                 style={{
@@ -184,13 +190,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
                 <Badge
                   variant="outline"
-                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit ${
+                  className={`inline-flex items-center gap-[3px] px-2 py-1 rounded-[50px] border w-fit ${
                     article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
                   }`}
                   style={article.categoryColor ? categoryInlineStyle : undefined}
                 >
                   <span
-                    className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
+                    className={`[font-family:'Lato',Helvetica] font-semibold text-xs tracking-[0] leading-[12px] ${
                       article.categoryColor ? '' : categoryStyle.text
                     }`}
                     style={article.categoryColor ? { color: categoryInlineStyle.color } : undefined}
@@ -199,56 +205,61 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                <div className="absolute bottom-2.5 right-2.5">
-                  <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
-                      {article.website || 'example.com'}
-                    </span>
+                {/* Hide website link for paid/locked content */}
+                {!article.isPaymentRequired && (
+                  <div className="absolute bottom-2.5 right-2.5">
+                    <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
+                        {article.website || 'Visit content'}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
-              <div className="flex flex-col items-start gap-[15px] w-full">
-                {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px] w-full">
+              <div className="flex flex-col items-start gap-[10px] w-full min-w-0 max-w-full">
+                {/* Title with x402 payment badge - Same line */}
+                <div className="w-full min-h-[54px]">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[24px] px-1.5 mr-2 mt-[1.5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[2px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        className="w-[16px] h-[15px] flex-shrink-0"
                         alt="x402 payment"
-                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                        src={getIconUrl('X402_PAYMENT')}
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-sm tracking-[0] leading-3 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
-                    }}
-                  >
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] break-words line-clamp-2 overflow-hidden">
                     {article.title || 'Enter a title...'}
                   </h3>
                 </div>
 
-                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] line-clamp-2 break-words overflow-hidden">
-                    "{article.description || 'Write your recommendation...'}"
-                  </p>
+                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full max-w-[600px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                  <div className="h-[45px] overflow-hidden w-full min-w-0 max-w-full">
+                    <p
+                      className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.5px] overflow-hidden"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitBoxOrient: 'vertical',
+                        WebkitLineClamp: 2,
+                        overflow: 'hidden',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
+                    >
+                      "{article.description || 'Write your recommendation...'}"
+                    </p>
+                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="w-[18px] h-[18px]">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2 min-w-0 max-w-[60%]">
+                      <Avatar className="w-[18px] h-[18px] flex-shrink-0">
                         <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
                       </Avatar>
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] truncate">
                         {article.userName}
                       </span>
                     </div>
@@ -264,7 +275,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
       case 'treasury':
         return (
-          <CardContent className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
+          <CardContent className="flex flex-col gap-[20px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
               <div
                 className="flex flex-col w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
@@ -292,9 +303,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                {/* Website link */}
+                {/* Website link - hide for paid content */}
                 <div className="flex justify-end">
-                  {actions.showWebsite && article.website && (
+                  {actions.showWebsite && article.website && !article.isPaymentRequired && (
                     <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
                         {article.website}
@@ -306,30 +317,20 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px]">
+                <div className="relative min-h-[72px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[10px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
-                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                        src={getIconUrl('X402_PAYMENT')}
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
-                    }}
-                  >
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
@@ -362,7 +363,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={handleUserClick}
                       >
-                        {article.userName}
+                        {(article.userName && article.userName.trim() !== '') ? article.userName : 'Anonymous'}
                       </span>
                     </div>
 
@@ -378,76 +379,86 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Action buttons area */}
             <div className="flex items-center justify-between mt-auto -mx-[30px] px-[30px]">
-              {/* Treasure button */}
+              {/* Left side: Treasure button */}
               {actions.showTreasure && (
                 <TreasureButton
-                  isLiked={article.isLiked || false}
+                  isLiked={(() => {
+                    const hasCallback = !!onLike;
+                    const isLikedValue = hasCallback ? (article.isLiked || false) : false;
+
+
+                    return isLikedValue;
+                  })()} // Always false when no onLike callback
                   likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                   onClick={handleLikeClick}
                   size="large"
+                  disabled={!onLike} // Disable when no onLike callback (user not logged in)
                 />
               )}
 
-              {/* Visit count */}
-              {actions.showVisits && (
-                <div className="flex items-center gap-2">
+              {/* Right side: Visit count and Edit/Delete buttons */}
+              <div className="flex items-center gap-2">
+                {/* Visit count */}
+                {actions.showVisits && (
+                  <div className="flex items-center gap-2">
+                    <img
+                      className="w-5 h-5"
+                      alt="Ic view"
+                      src={getIconUrl('VIEW')}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1rem' }}>
+                      {article.visitCount}
+                    </span>
+                  </div>
+                )}
+
+                {/* Edit and delete buttons area */}
+                {isHovered && (actions.showEdit || actions.showDelete) && (
+                  <div className="flex items-center gap-2 min-h-[24px]">
+                    {actions.showEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                        onClick={handleEdit}
+                      >
+                        <img
+                          className="w-5 h-5"
+                          alt="Edit"
+                          src={getIconUrl('EDIT')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                        />
+                      </Button>
+                    )}
+
+                    {actions.showDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                        onClick={handleDelete}
+                      >
+                        <img
+                          className="w-5 h-5"
+                          alt="Delete"
+                          src={getIconUrl('DELETE')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                        />
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Branch It icon */}
+                {actions.showBranchIt && !isHovered && (
                   <img
-                    className="w-5 h-3.5"
-                    alt="Ic view"
-                    src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
-                    style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                    className="flex-shrink-0"
+                    alt="Branch it"
+                    src={getIconUrl('BRANCH_IT')}
                   />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
-                    {article.visitCount}
-                  </span>
-                </div>
-              )}
-
-              {/* Edit and delete buttons area */}
-              {isHovered && (actions.showEdit || actions.showDelete) && (
-                <div className="flex items-center gap-2 min-h-[24px]">
-                  {actions.showEdit && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
-                      onClick={handleEdit}
-                    >
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Edit"
-                        src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
-                      />
-                    </Button>
-                  )}
-
-                  {actions.showDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
-                      onClick={handleDelete}
-                    >
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Delete"
-                        src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
-                      />
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {/* Branch It icon */}
-              {actions.showBranchIt && !isHovered && (
-                <img
-                  className="flex-shrink-0"
-                  alt="Branch it"
-                  src="https://c.animaapp.com/mftam89xRJwsqQ/img/branch-it.svg"
-                />
-              )}
+                )}
+              </div>
             </div>
           </CardContent>
         );
@@ -455,7 +466,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       case 'discovery':
       default:
         return (
-          <CardContent className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
+          <CardContent className="flex flex-col gap-[20px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
               <div
                 className="flex flex-col w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat"
@@ -484,9 +495,9 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   </span>
                 </Badge>
 
-                {/* Website link */}
+                {/* Website link - hide for paid content */}
                 <div className="flex justify-end">
-                  {article.website && (
+                  {article.website && !article.isPaymentRequired && (
                     <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
                         {article.website}
@@ -498,30 +509,20 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
               <div className="flex flex-col gap-[15px] flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="flex items-start gap-[5px]">
+                <div className="relative min-h-[72px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="h-[36px] px-2.5 py-[8px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0 backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[10px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="relative w-[21px] h-5 aspect-[1.09]"
+                        className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
-                        src="https://c.animaapp.com/ikGVr3RO/img/x402-icon-blue-1@2x.png"
+                        src={getIconUrl('X402_PAYMENT')}
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-semibold text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3
-                    className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-all overflow-hidden min-h-[72px] flex-1"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitBoxOrient: 'vertical',
-                      WebkitLineClamp: 2,
-                      overflow: 'hidden',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
-                    }}
-                  >
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
@@ -554,7 +555,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={handleUserClick}
                       >
-                        {article.userName}
+                        {(article.userName && article.userName.trim() !== '') ? article.userName : 'Anonymous'}
                       </span>
                     </div>
                     <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
@@ -567,68 +568,77 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Action buttons area */}
             <div className="flex items-center justify-between -mx-[30px] px-[30px]">
-              {/* Left side: Treasure button and View count */}
+              {/* Left side: Treasure button */}
               <div className="flex items-center gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
-                    isLiked={article.isLiked || false}
+                    isLiked={(() => {
+                      const hasCallback = !!onLike;
+                      const isLikedValue = hasCallback ? (article.isLiked || false) : false;
+
+
+                      return isLikedValue;
+                    })()} // Always false when no onLike callback
                     likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                     onClick={handleLikeClick}
                     size="large"
+                    disabled={!onLike} // Disable when no onLike callback (user not logged in)
                   />
                 )}
+              </div>
 
+              {/* Right side: Visit count and Edit/Delete buttons */}
+              <div className="flex items-center gap-4">
                 {actions.showVisits && (
                   <div className="inline-flex items-center gap-2">
                     <img
-                      className="w-5 h-3.5"
+                      className="w-5 h-5"
                       alt="Ic view"
-                      src="https://c.animaapp.com/mft5gmofxQLTNf/img/ic-view.svg"
-                      style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
+                      src={getIconUrl('VIEW')}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                     />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1.125rem' }}>
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1rem' }}>
                       {article.visitCount}
                     </span>
                   </div>
                 )}
+
+                {isHovered && (actions.showEdit || actions.showDelete) && (
+                  <div className="flex items-center gap-2">
+                    {actions.showEdit && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                        onClick={handleEdit}
+                      >
+                        <img
+                          className="w-5 h-3.5"
+                          alt="Edit"
+                          src={getIconUrl('EDIT')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                        />
+                      </Button>
+                    )}
+
+                    {actions.showDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 h-auto hover:bg-gray-100 transition-colors"
+                        onClick={handleDelete}
+                      >
+                        <img
+                          className="w-5 h-3.5"
+                          alt="Delete"
+                          src={getIconUrl('DELETE')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                        />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
-
-              {/* Right side: Edit and Delete buttons (visible on hover) */}
-              {isHovered && (actions.showEdit || actions.showDelete) && (
-                <div className="flex items-center gap-2">
-                  {actions.showEdit && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
-                      onClick={handleEdit}
-                    >
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Edit"
-                        src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
-                      />
-                    </Button>
-                  )}
-
-                  {actions.showDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 h-auto hover:bg-gray-100 transition-colors"
-                      onClick={handleDelete}
-                    >
-                      <img
-                        className="w-5 h-3.5"
-                        alt="Delete"
-                        src="https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg"
-                        style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)' }}
-                      />
-                    </Button>
-                  )}
-                </div>
-              )}
             </div>
           </CardContent>
         );
@@ -636,8 +646,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   };
 
   const cardClasses = layout === 'preview'
-    ? "bg-white rounded-lg shadow-card-white border-0"
-    : "bg-white rounded-[8px] border shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[500px]";
+    ? "bg-white rounded-lg border-0 w-full shadow-sm lg:shadow-card-white flex flex-col"
+    : "bg-white rounded-[8px] border-0 shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[500px]";
 
   const cardContent = (
     <Card className={cardClasses}>
@@ -647,14 +657,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   return (
     <div
-      className={`${layout === 'preview' ? 'w-[500px]' : 'w-full'} ${className}`}
+      className={`w-full ${className}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       {layout === 'preview' ? (
         cardContent
       ) : (
-        <Link to={`/work/${article.id}`}>
+        <Link to={`/work/${article.uuid || article.id}`}>
           {cardContent}
         </Link>
       )}
