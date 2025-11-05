@@ -600,6 +600,14 @@ export const Login = (): JSX.Element => {
   // Handle X (Twitter) login
   const handleXLogin = async () => {
     try {
+      // Clear any existing user data before starting OAuth flow
+      // This ensures we don't confuse the new login with account binding
+      console.log('🧹 Clearing old user data before X OAuth login');
+      localStorage.removeItem('copus_token');
+      localStorage.removeItem('copus_user');
+      sessionStorage.removeItem('copus_token');
+      sessionStorage.removeItem('copus_user');
+
       localStorage.setItem('oauth_provider', 'x');
       const oauthUrl = await AuthService.getXOAuthUrl();
       const urlWithProvider = oauthUrl.includes('?')
@@ -614,6 +622,14 @@ export const Login = (): JSX.Element => {
   // Handle Google login
   const handleGoogleLogin = async () => {
     try {
+      // Clear any existing user data before starting OAuth flow
+      // This ensures we don't confuse the new login with account binding
+      console.log('🧹 Clearing old user data before Google OAuth login');
+      localStorage.removeItem('copus_token');
+      localStorage.removeItem('copus_user');
+      sessionStorage.removeItem('copus_token');
+      sessionStorage.removeItem('copus_user');
+
       localStorage.setItem('oauth_provider', 'google');
       const oauthUrl = await AuthService.getGoogleOAuthUrl();
       const urlWithProvider = oauthUrl.includes('?')
