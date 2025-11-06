@@ -238,14 +238,30 @@ export const Create = (): JSX.Element => {
   const selectedCategoryData = categories.find(cat => cat.name === formData.selectedTopic);
   const selectedCategoryStyle = getCategoryStyle(formData.selectedTopic, selectedCategoryData?.color);
 
+  // Memoize preview cover image URL to prevent flickering on re-renders
+  // Only recreate blob URL when coverImage file actually changes
+  const previewCoverImageUrl = useMemo(() => {
+    if (formData.coverImage) {
+      return URL.createObjectURL(formData.coverImage);
+    }
+    return coverImageUrl || '';
+  }, [formData.coverImage, coverImageUrl]);
+
+  // Clean up blob URL when component unmounts or image changes
+  useEffect(() => {
+    return () => {
+      if (formData.coverImage && previewCoverImageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewCoverImageUrl);
+      }
+    };
+  }, [previewCoverImageUrl, formData.coverImage]);
+
   // Create preview article data
   const previewArticleData: ArticleData = {
     id: 'preview',
     title: formData.title || 'Enter a title...',
     description: formData.recommendation || 'Write your recommendation...',
-    coverImage: formData.coverImage
-      ? URL.createObjectURL(formData.coverImage)
-      : coverImageUrl || '',
+    coverImage: previewCoverImageUrl,
     // Only show category if user has selected one AND it's in the loaded categories
     category: selectedCategoryData ? formData.selectedTopic : '',
     categoryColor: selectedCategoryData?.color,
