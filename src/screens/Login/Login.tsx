@@ -457,19 +457,14 @@ export const Login = (): JSX.Element => {
         try {
           let response;
 
+          // Cache token check to avoid multiple localStorage reads
+          const savedToken = localStorage.getItem('copus_token');
+          const hasExistingToken = !!savedToken;
+
           // Call different login methods based on provider type
           if (provider === 'google') {
-            response = await AuthService.googleLogin(code, state, !!localStorage.getItem('copus_token'));
-
-            console.log('📦 Google OAuth response:', response);
-            console.log('📦 Response keys:', Object.keys(response || {}));
-
-            const savedToken = localStorage.getItem('copus_token');
+            response = await AuthService.googleLogin(code, state, hasExistingToken);
             const tokenToUse = response.token || savedToken;
-
-            console.log('🔑 Token to use:', tokenToUse ? `${tokenToUse.substring(0, 20)}...` : 'NONE');
-            console.log('🔑 Response token:', response.token ? `${response.token.substring(0, 20)}...` : 'NONE');
-            console.log('🔑 Saved token:', savedToken ? `${savedToken.substring(0, 20)}...` : 'NONE');
 
             if (response.isBinding) {
               // Account binding mode
@@ -480,7 +475,6 @@ export const Login = (): JSX.Element => {
               // Third-party login mode
 
               if (!tokenToUse) {
-                console.error('❌ No token available! Full response:', JSON.stringify(response, null, 2));
                 throw new Error('No authentication token received from server. The account may need to be registered first.');
               }
 
@@ -489,8 +483,10 @@ export const Login = (): JSX.Element => {
               // Mark that user logged in via Google OAuth
               localStorage.setItem('copus_auth_method', 'google');
 
-              await fetchUserInfo(tokenToUse);
-              
+              // Set remember me preference - OAuth logins default to remember me for cross-tab consistency
+              storage.setRememberMePreference(true);
+              storage.migrateToLocalStorage();
+
               // Sync Google profile data to Copus profile
               if (response.googleProfile) {
                 try {
@@ -504,20 +500,19 @@ export const Login = (): JSX.Element => {
 
                   if (Object.keys(updateData).length > 0) {
                     await AuthService.updateUserInfo(updateData);
-                    await fetchUserInfo(tokenToUse);
                   }
                 } catch (profileError) {
                   // Don't block login if profile sync fails
                 }
               }
+
+              await fetchUserInfo(tokenToUse);
               
               navigate('/', { replace: true });
             }
           } else if (provider === 'x') {
             // X (Twitter) login handling
-            response = await AuthService.xLogin(code, state, !!localStorage.getItem('copus_token'));
-            
-            const savedToken = localStorage.getItem('copus_token');
+            response = await AuthService.xLogin(code, state, hasExistingToken);
             const tokenToUse = response.token || savedToken;
 
             if (response.isBinding) {
@@ -536,8 +531,10 @@ export const Login = (): JSX.Element => {
               // Mark that user logged in via X (Twitter)
               localStorage.setItem('copus_auth_method', 'x');
 
-              await fetchUserInfo(tokenToUse);
-              
+              // Set remember me preference - OAuth logins default to remember me for cross-tab consistency
+              storage.setRememberMePreference(true);
+              storage.migrateToLocalStorage();
+
               // Sync X profile data to Copus profile
               if (response.xProfile) {
                 try {
@@ -554,18 +551,19 @@ export const Login = (): JSX.Element => {
 
                   if (Object.keys(updateData).length > 0) {
                     await AuthService.updateUserInfo(updateData);
-                    await fetchUserInfo(tokenToUse);
                   }
                 } catch (profileError) {
                   // Don't block login if profile sync fails
                 }
               }
+
+              await fetchUserInfo(tokenToUse);
               
               navigate('/', { replace: true });
             }
           } else {
             // Default fallback (for backward compatibility)
-            response = await AuthService.xLogin(code, state, !!localStorage.getItem('copus_token'));
+            response = await AuthService.xLogin(code, state, hasExistingToken);
 
             if (response.token || response.data?.token) {
               showToast('Login successful! Welcome back 🎉', 'success');
@@ -612,7 +610,6 @@ export const Login = (): JSX.Element => {
     try {
       // Clear any existing user data before starting OAuth flow
       // This ensures we don't confuse the new login with account binding
-      console.log('🧹 Clearing old user data before X OAuth login');
       localStorage.removeItem('copus_token');
       localStorage.removeItem('copus_user');
       sessionStorage.removeItem('copus_token');
@@ -634,7 +631,6 @@ export const Login = (): JSX.Element => {
     try {
       // Clear any existing user data before starting OAuth flow
       // This ensures we don't confuse the new login with account binding
-      console.log('🧹 Clearing old user data before Google OAuth login');
       localStorage.removeItem('copus_token');
       localStorage.removeItem('copus_user');
       sessionStorage.removeItem('copus_token');
@@ -660,6 +656,9 @@ export const Login = (): JSX.Element => {
       }
 
       setIsLoginLoading(true);
+
+      // Cache token check at start of function
+      const hasExistingToken = !!localStorage.getItem('copus_token');
 
       // Detect the correct MetaMask provider
       let metamaskProvider = null;
@@ -709,8 +708,6 @@ export const Login = (): JSX.Element => {
         throw new Error('No account selected in MetaMask. Please select an account and try again.');
       }
 
-      console.log('✅ Connected to MetaMask account:', address);
-
       // 3. Get signature data from backend
       const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
 
@@ -748,7 +745,7 @@ export const Login = (): JSX.Element => {
       }
 
       // 5. Submit login
-      const response: any = await AuthService.metamaskLogin(address, signature, !!localStorage.getItem('copus_token'));
+      const response: any = await AuthService.metamaskLogin(address, signature, hasExistingToken);
 
       if (response.status === 1) {
         const possibleToken = extractTokenFromResponse(response);
@@ -788,6 +785,9 @@ export const Login = (): JSX.Element => {
       }
 
       setIsLoginLoading(true);
+
+      // Cache token check at start of function
+      const hasExistingToken = !!localStorage.getItem('copus_token');
 
       // Detect Coinbase Wallet provider
       let coinbaseProvider = null;
@@ -870,7 +870,7 @@ export const Login = (): JSX.Element => {
       }
 
       // 5. Submit login (uses same metamaskLogin API - works for any EVM wallet)
-      const response: any = await AuthService.metamaskLogin(address, signature, !!localStorage.getItem('copus_token'));
+      const response: any = await AuthService.metamaskLogin(address, signature, hasExistingToken);
 
       if (response.status === 1) {
         const possibleToken = extractTokenFromResponse(response);
@@ -1165,7 +1165,7 @@ export const Login = (): JSX.Element => {
 
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] overflow-x-hidden">
-      <HeaderSection isLoggedIn={false} hideCreateButton={true} showDiscoverNow={true} hideLoginButton={true} />
+      <HeaderSection hideCreateButton={true} showDiscoverNow={true} hideLoginButton={true} />
       <div className="flex w-full min-h-screen relative flex-col items-center pt-[70px] lg:pt-[120px]">
         <main className="flex items-center justify-center gap-2.5 relative flex-1 grow py-4 sm:py-10 px-4 sm:px-0">
           <Card className="w-full max-w-[480px] bg-white rounded-lg border-0 shadow-none relative z-10">

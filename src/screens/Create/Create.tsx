@@ -22,6 +22,7 @@ import { ImageCropper } from "../../components/ImageCropper/ImageCropper";
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from "../../utils/imageUtils";
 import { addRecentCategory, sortCategoriesByRecent } from "../../utils/recentCategories";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
+import { queryClient } from "../../lib/queryClient";
 
 
 export const Create = (): JSX.Element => {
@@ -411,7 +412,7 @@ export const Create = (): JSX.Element => {
 
       } catch (error) {
         console.error('Failed to load article data:', error);
-        showToast('Failed to load article data, please try again', 'error');
+        showToast('Failed to load data, please try again', 'error');
         navigate('/my-treasury');
       } finally {
         setIsLoadingArticle(false);
@@ -538,7 +539,13 @@ export const Create = (): JSX.Element => {
       console.log('✅ Publish response:', response);
       console.log('✅ Response type:', typeof response);
 
-      showToast(isEditMode ? 'Article updated successfully!' : 'Article published successfully!', 'success');
+      showToast(isEditMode ? 'Updated successfully!' : 'Published successfully!', 'success');
+
+      // Invalidate article caches to ensure fresh data is loaded
+      // This is especially important for edit mode to show updated content
+      queryClient.invalidateQueries({ queryKey: ['article'] });
+      queryClient.invalidateQueries({ queryKey: ['articles'] });
+      queryClient.invalidateQueries({ queryKey: ['myCreatedArticles'] });
 
       // The API returns the UUID as a string directly in response.data
       // So publishArticle returns the UUID string, not an object
@@ -560,15 +567,17 @@ export const Create = (): JSX.Element => {
       // Always redirect to the work page if we have a UUID
       if (articleUuid) {
         console.log(`✅ Redirecting to /work/${articleUuid}`);
+        // Longer delay for edit mode to ensure server has processed the update
+        const redirectDelay = isEditMode ? 2000 : 1500;
         setTimeout(() => {
           console.log(`🚀 Now navigating to /work/${articleUuid}`);
           navigate(`/work/${articleUuid}`);
-        }, 1500);
+        }, redirectDelay);
       } else {
         // This should rarely happen
         console.error('❌ No UUID found in response');
         console.error('Response was:', response);
-        showToast('Article published but could not navigate to it. Please check My Treasury.', 'warning');
+        showToast('Published but could not navigate to it. Please check My Treasury.', 'warning');
         setTimeout(() => {
           navigate('/my-treasury');
         }, 1500);
@@ -590,7 +599,7 @@ export const Create = (): JSX.Element => {
       }
 
       // Show more specific error message
-      showToast(errorMessage || 'Article publishing failed, please try again', 'error');
+      showToast(errorMessage || 'Publishing failed, please try again', 'error');
     } finally {
       setIsPublishing(false);
     }
@@ -598,7 +607,7 @@ export const Create = (): JSX.Element => {
 
   return (
     <div className="w-full min-h-screen overflow-x-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-      <HeaderSection isLoggedIn={isLoggedIn} hideCreateButton={true} />
+      <HeaderSection hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
       <div className="lg:ml-[350px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[110px] overflow-x-hidden">
         <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] px-3 sm:px-5 md:px-8 lg:pl-8 lg:pr-4 xl:pl-12 xl:pr-6 2xl:pl-20 2xl:pr-10 py-0 pb-[100px] w-full overflow-hidden">

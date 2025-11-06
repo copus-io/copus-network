@@ -2,6 +2,8 @@
 // Default to the test API for backwards compatibility
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network';
 
+import * as storage from '../utils/storage';
+
 // Generic API request function
 export const apiRequest = async <T>(
   endpoint: string,
@@ -19,8 +21,8 @@ export const apiRequest = async <T>(
   }
 
   // Add token to headers by default if available
-  // Try both localStorage and sessionStorage
-  const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
+  // Use storage utility to check both localStorage and sessionStorage
+  const token = storage.getItem('copus_token');
 
   if (token && token.trim() !== '') {
     // Check token format (JWT typically has 3 parts separated by dots)
@@ -30,8 +32,8 @@ export const apiRequest = async <T>(
       defaultHeaders.Authorization = `Bearer ${token}`;
     } else if (requiresAuth) {
       // Only clear invalid token and throw error if auth is required
-      localStorage.removeItem('copus_token');
-      localStorage.removeItem('copus_user');
+      storage.removeItem('copus_token');
+      storage.removeItem('copus_user');
       throw new Error('Invalid authentication token format, please log in again');
     }
   } else if (requiresAuth) {

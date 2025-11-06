@@ -33,7 +33,7 @@ export const Published = (): JSX.Element => {
         </Alert>
       )}
 
-      <HeaderSection isLoggedIn={true} />
+      <HeaderSection />
       <SideMenuSection activeItem="treasury" />
       <div className="ml-[360px] mr-[70px] min-h-screen overflow-y-auto pt-[120px]">
         <MainContentSection />

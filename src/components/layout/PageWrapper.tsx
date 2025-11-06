@@ -28,7 +28,7 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
 
   return (
     <div className={`w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${className}`}>
-      <HeaderSection isLoggedIn={isLoggedIn} />
+      <HeaderSection />
       <SideMenuSection activeItem={activeMenuItem} />
       <div className="px-4 lg:ml-[360px] lg:mr-[40px] min-h-screen overflow-y-auto pt-[80px] lg:pt-[110px] pb-[100px] overflow-x-visible">
         {children}

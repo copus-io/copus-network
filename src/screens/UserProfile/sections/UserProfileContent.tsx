@@ -214,7 +214,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       console.log(`[UserProfile] Page ${nextPage} loaded, hasMore: ${articlesData.pageIndex < articlesData.pageCount}`);
     } catch (error) {
       console.error('[UserProfile] Failed to load more articles:', error);
-      showToast('Failed to load more articles', 'error');
+      showToast('Failed to load more content', 'error');
     } finally {
       setArticlesLoading(false);
     }

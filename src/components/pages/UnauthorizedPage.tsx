@@ -8,7 +8,7 @@ export const UnauthorizedPage: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-      <HeaderSection isLoggedIn={false} />
+      <HeaderSection />
 
       <div className="flex items-center justify-center min-h-screen pt-[120px]">
         <div className="max-w-md mx-auto text-center p-8 bg-white rounded-2xl shadow-lg">

@@ -246,7 +246,7 @@ export const DeleteAccount = (): JSX.Element => {
 
   return (
     <div className="min-h-screen flex bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-      <HeaderSection isLoggedIn={true} hideCreateButton={true} />
+      <HeaderSection hideCreateButton={true} />
       <div className="flex w-full min-h-screen flex-col items-center pt-[110px]">{/* 增加顶部间距适配HeaderSection */}
 
         <main className="flex flex-col w-[540px] items-center pt-5 pb-10 px-0">

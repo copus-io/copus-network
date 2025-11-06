@@ -10,14 +10,18 @@ import { MobileMenu } from "../MobileMenu";
 import { Menu } from "lucide-react";
 
 interface HeaderSectionProps {
-  isLoggedIn?: boolean;
   hideCreateButton?: boolean;
   showDiscoverNow?: boolean;
   hideLoginButton?: boolean;
 }
 
-export const HeaderSection = ({ isLoggedIn = true, hideCreateButton = false, showDiscoverNow = false, hideLoginButton = false }: HeaderSectionProps): JSX.Element => {
-  const { user, logout } = useUser();
+export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = false, hideLoginButton = false }: HeaderSectionProps): JSX.Element => {
+  const { user, logout, isLoggedIn: userIsLoggedIn, loading } = useUser();
+  // Always use actual UserContext state, not props
+  // If still loading, optimistically check if token exists in storage
+  const isLoggedIn = loading
+    ? !!(localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token'))
+    : userIsLoggedIn;
   const { unreadCount } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
