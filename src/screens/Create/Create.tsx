@@ -571,7 +571,11 @@ export const Create = (): JSX.Element => {
         const redirectDelay = isEditMode ? 2000 : 1500;
         setTimeout(() => {
           console.log(`🚀 Now navigating to /work/${articleUuid}`);
-          navigate(`/work/${articleUuid}`);
+          // Add cache-busting timestamp for edit mode to force fresh fetch
+          const targetUrl = isEditMode
+            ? `/work/${articleUuid}?refresh=${Date.now()}`
+            : `/work/${articleUuid}`;
+          navigate(targetUrl, { replace: true });
         }, redirectDelay);
       } else {
         // This should rarely happen

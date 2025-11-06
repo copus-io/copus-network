@@ -84,7 +84,19 @@ export const Content = (): JSX.Element => {
   const [unlockedUrl, setUnlockedUrl] = useState<string | null>(null);
 
   // Use new article detail API hook
-  const { article, loading, error } = useArticleDetail(id || '');
+  const { article, loading, error, refetch } = useArticleDetail(id || '');
+
+  // Force refetch if coming from edit with refresh parameter
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.has('refresh')) {
+      console.log('🔄 Refresh parameter detected, forcing article refetch');
+      refetch();
+      // Clean up URL by removing the refresh parameter
+      const newUrl = `${location.pathname}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search, refetch, location.pathname]);
 
   // Scroll to top when page loads
   useEffect(() => {
