@@ -87,16 +87,24 @@ export const Content = (): JSX.Element => {
   const { article, loading, error, refetch } = useArticleDetail(id || '');
 
   // Force refetch if coming from edit with refresh parameter
+  // This bypasses ALL caches (React Query + server-side)
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    if (searchParams.has('refresh')) {
-      console.log('🔄 Refresh parameter detected, forcing article refetch');
-      refetch();
+    if (searchParams.has('refresh') && id) {
+      console.log('🔄 Refresh parameter detected, forcing cache-busted refetch');
+      // Import the service directly to bypass React Query cache completely
+      import('../../services/articleService').then(({ getArticleDetail }) => {
+        // Call with bustCache=true to add timestamp and cache headers
+        getArticleDetail(id, true).then(() => {
+          // After fresh fetch, invalidate React Query cache and refetch
+          refetch();
+        });
+      });
       // Clean up URL by removing the refresh parameter
       const newUrl = `${location.pathname}`;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [location.search, refetch, location.pathname]);
+  }, [location.search, refetch, id]);
 
   // Scroll to top when page loads
   useEffect(() => {

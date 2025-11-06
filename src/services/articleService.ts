@@ -173,13 +173,21 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
 };
 
 // Get article details
-export const getArticleDetail = async (uuid: string): Promise<ArticleDetailResponse> => {
+export const getArticleDetail = async (uuid: string, bustCache: boolean = false): Promise<ArticleDetailResponse> => {
 
-  const endpoint = `/client/reader/article/info?uuid=${uuid}`;
+  // Add cache-busting timestamp when needed (e.g., after edit)
+  const cacheBuster = bustCache ? `&_t=${Date.now()}` : '';
+  const endpoint = `/client/reader/article/info?uuid=${uuid}${cacheBuster}`;
 
   try {
     // Article details are publicly viewable but will include token if available for personalized data
-    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint);
+    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, {
+      headers: bustCache ? {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      } : {}
+    });
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
