@@ -96,27 +96,26 @@ export interface SignedAuthorization {
 }
 
 /**
- * EIP-712 Domain for USDC TransferWithAuthorization on Base Sepolia.
+ * EIP-712 Domain for USDC TransferWithAuthorization on Base mainnet.
  *
  * **CRITICAL:** All domain parameters must EXACTLY match the USDC contract's EIP-712 domain.
  * Backend uses 'USDC' as the domain name (confirmed from x402 error response).
- * These values are specifically for Base Sepolia testnet. For production use on Base mainnet
- * or other networks, update these values accordingly.
+ * These values are for Base mainnet production use.
  *
  * @constant
  * @type {Object}
  * @property {string} name - Token name ('USDC' - matches backend configuration)
  * @property {string} version - EIP-712 version (must match contract)
- * @property {number} chainId - Base Sepolia chain ID (84532 = 0x14a34)
- * @property {string} verifyingContract - USDC contract address on Base Sepolia
+ * @property {number} chainId - Base mainnet chain ID (8453 = 0x2105)
+ * @property {string} verifyingContract - USDC contract address on Base mainnet
  *
- * @see https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e
+ * @see https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
  */
 const EIP712_DOMAIN = {
   name: 'USDC', // IMPORTANT: Must match backend's EIP-712 domain name (from x402 error: "USDC")
   version: '2',
-  chainId: 84532, // Base Sepolia
-  verifyingContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' // USDC on Base Sepolia
+  chainId: 8453, // Base mainnet
+  verifyingContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' // USDC on Base mainnet
 };
 
 /**
@@ -320,8 +319,8 @@ export async function signTransferWithAuthorization(
  */
 export function createX402PaymentHeader(
   signedAuth: SignedAuthorization,
-  network: string = 'base-sepolia',
-  asset: string = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+  network: string = 'base',
+  asset: string = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
 ): string {
   // Combine signature components (v, r, s) into a single hex string
   // The official x402 spec expects a single signature string, not separate components

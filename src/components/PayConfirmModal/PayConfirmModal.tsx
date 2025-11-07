@@ -24,7 +24,7 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
   walletAddress = "OX8091....0912",
   availableBalance = "....USDC",
   amount = "0.01 USDC",
-  network = "Base Sepolia",
+  network = "Base",
   faucetLink = "#",
   isInsufficientBalance = false,
 }) => {
@@ -93,7 +93,7 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
                 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm text-center tracking-[0] leading-[23px]"
               >
                 <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                  Need Base Sepolia USDC? Get some{" "}
+                  Need Base USDC? Get some{" "}
                 </span>
                 <a
                   href={faucetLink}

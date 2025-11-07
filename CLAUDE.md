@@ -228,7 +228,7 @@ Before pushing changes:
 
 ### Working with x402 Payments
 
-Copus uses the x402 protocol for pay-per-view content with gasless USDC payments on Base Sepolia.
+Copus uses the x402 protocol for pay-per-view content with gasless USDC payments on Base mainnet.
 
 **Key Concepts**:
 - **Gasless payments**: Users sign a message (no transaction), server pays gas
@@ -275,7 +275,7 @@ const paymentHeader = createX402PaymentHeader(signedAuth, network, asset);
 - JSDoc in `src/utils/x402Utils.ts`
 
 **Testing**:
-- Network: Base Sepolia (chainId: 84532 / 0x14a34)
+- Network: Base mainnet (chainId: 8453 / 0x2105)
 - USDC Contract: 0x036CbD53842c5426634e7929541eC2318f3dCF7e
 - Get test USDC from faucet (see X402_PAYMENT.md)
 

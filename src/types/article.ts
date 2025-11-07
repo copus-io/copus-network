@@ -11,7 +11,7 @@
  * Price information for paid content from backend API.
  *
  * @interface PriceInfo
- * @property {string} chainId - Blockchain network chain ID (e.g., "84532" for Base Sepolia)
+ * @property {string} chainId - Blockchain network chain ID (e.g., "8453" for Base mainnet)
  * @property {string} currency - Token symbol (e.g., "USDC")
  * @property {number} price - Price in token's smallest unit (e.g., 1000000 = 1 USDC with 6 decimals)
  */
@@ -29,7 +29,7 @@ export interface PriceInfo {
  * @property {string} payTo - Recipient wallet address for payment
  * @property {string} asset - Token contract address (e.g., USDC contract)
  * @property {string} amount - Payment amount in smallest unit (e.g., "1000000" for 1 USDC)
- * @property {string} network - Network identifier (e.g., "base-sepolia")
+ * @property {string} network - Network identifier (e.g., "base")
  * @property {string} resource - API endpoint URL to unlock content after payment
  *
  * @example
@@ -38,7 +38,7 @@ export interface PriceInfo {
  *   payTo: '0x95C2259343Bca2E1c1E6bd4F0CBe5b4C8ac2890F',
  *   asset: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
  *   amount: '1000000', // 1 USDC
- *   network: 'base-sepolia',
+ *   network: 'base',
  *   resource: 'https://api.example.com/unlock/abc123'
  * };
  * ```
