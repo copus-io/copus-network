@@ -247,7 +247,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         WebkitLineClamp: 2,
                         overflow: 'hidden',
                         wordBreak: 'break-word',
-                        overflowWrap: 'break-word'
+                        overflowWrap: 'break-word',
+                        whiteSpace: 'pre-wrap'
                       }}
                     >
                       "{article.description || 'Write your recommendation...'}"
@@ -344,7 +345,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       WebkitLineClamp: 2,
                       overflow: 'hidden',
                       wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
+                      overflowWrap: 'break-word',
+                      whiteSpace: 'pre-wrap'
                     }}
                   >
                     "{article.description}"
@@ -536,7 +538,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                       WebkitLineClamp: 2,
                       overflow: 'hidden',
                       wordBreak: 'break-all',
-                      overflowWrap: 'break-word'
+                      overflowWrap: 'break-word',
+                      whiteSpace: 'pre-wrap'
                     }}
                   >
                     "{article.description}"
