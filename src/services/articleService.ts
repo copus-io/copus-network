@@ -120,6 +120,12 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
   if (params.category) queryParams.append('keyword', params.category);
   if (params.search) queryParams.append('keyword', params.search);
 
+  // Default to sorting by creation date (newest first) to keep posts in original order
+  const sortBy = params.sortBy || 'createAt';
+  const orderBy = params.orderBy || 'desc';
+  queryParams.append('sortBy', sortBy);
+  queryParams.append('orderBy', orderBy);
+
   const endpoint = `/client/home/pageArticle?${queryParams.toString()}`;
 
 

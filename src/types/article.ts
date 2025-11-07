@@ -137,6 +137,8 @@ export interface PageArticleParams {
   pageSize?: number;
   category?: string;
   search?: string;
+  sortBy?: string; // Field to sort by (e.g., 'createAt', 'publishAt')
+  orderBy?: 'asc' | 'desc'; // Sort order
 }
 
 // Article detail API response data structure
