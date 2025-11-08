@@ -87,27 +87,6 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
               Payment required
             </h1>
 
-            <div className="flex flex-col items-center gap-[5px] relative self-stretch w-full flex-[0_0_auto]">
-              <p
-                id="payment-description"
-                className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm text-center tracking-[0] leading-[23px]"
-              >
-                <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                  Need Base USDC? Get some{" "}
-                </span>
-                <a
-                  href={faucetLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline text-[#686868] hover:text-off-black transition-colors"
-                >
-                  here
-                </a>
-                <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                  .
-                </span>
-              </p>
-            </div>
           </header>
 
           <div
