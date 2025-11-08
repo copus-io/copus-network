@@ -518,7 +518,7 @@ export const Content = (): JSX.Element => {
                     decimals: 18
                   },
                   rpcUrls: ['https://mainnet.base.org'],
-                  blockExplorerUrls: ['https://sepolia.basescan.org']
+                  blockExplorerUrls: ['https://basescan.org']
                 }],
               });
               console.log('✅ Network added successfully');
@@ -1048,7 +1048,7 @@ export const Content = (): JSX.Element => {
                       decimals: 18
                     },
                     rpcUrls: ['https://mainnet.base.org'],
-                    blockExplorerUrls: ['https://sepolia.basescan.org']
+                    blockExplorerUrls: ['https://basescan.org']
                   }],
                 });
                 console.log('✅ Network added successfully');
@@ -1157,7 +1157,7 @@ export const Content = (): JSX.Element => {
       // ---- Step 3a: Ensure user is on Base network ----
       // Check current network (chainId is returned in hex format)
       const chainId = await walletProvider.request({ method: 'eth_chainId' });
-      const baseMainnetChainId = '0x14a34'; // 84532 in decimal, 0x14a34 in hex
+      const baseMainnetChainId = '0x2105'; // 8453 in decimal, 0x2105 in hex
 
       if (chainId !== baseMainnetChainId) {
         // User is on wrong network - request network switch
@@ -1182,7 +1182,7 @@ export const Content = (): JSX.Element => {
                     decimals: 18
                   },
                   rpcUrls: ['https://mainnet.base.org'],
-                  blockExplorerUrls: ['https://sepolia.basescan.org']
+                  blockExplorerUrls: ['https://basescan.org']
                 }],
               });
             } catch (addError) {
