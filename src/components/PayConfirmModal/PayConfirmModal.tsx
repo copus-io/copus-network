@@ -25,7 +25,7 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
   availableBalance = "....USDC",
   amount = "0.01 USDC",
   network = "Base",
-  faucetLink = "https://app.uniswap.org/#/swap?outputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&chain=base",
+  faucetLink = "https://app.metamask.io/buy/build-quote",
   isInsufficientBalance = false,
 }) => {
   const [showCopied, setShowCopied] = useState(false);
