@@ -542,7 +542,22 @@ export const Content = (): JSX.Element => {
 
         console.log('📊 Raw balance response:', balance);
 
+        // Validate balance response
+        if (!balance || balance === '0x' || typeof balance !== 'string') {
+          console.warn('⚠️ Invalid balance response, setting to 0');
+          setWalletBalance('0.00');
+          return;
+        }
+
         const balanceInSmallestUnit = parseInt(balance, 16);
+        console.log('🔢 Parsed balance in smallest unit:', balanceInSmallestUnit);
+
+        if (isNaN(balanceInSmallestUnit)) {
+          console.error('❌ Failed to parse balance as hex number:', balance);
+          setWalletBalance('0.00');
+          return;
+        }
+
         const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
 
         console.log('💵 USDC Balance:', balanceInUSDC);
@@ -782,8 +797,25 @@ export const Content = (): JSX.Element => {
           // Convert balance from hex string to decimal
           // USDC has 6 decimals, so divide by 1,000,000 to get human-readable amount
           // Example: 1000000 (smallest unit) = 1.00 USDC
+          console.log('📊 Raw balance response:', balance);
+
+          // Validate balance response
+          if (!balance || balance === '0x' || typeof balance !== 'string') {
+            console.warn('⚠️ Invalid balance response, setting to 0');
+            setWalletBalance('0.00');
+            return;
+          }
+
           const balanceInSmallestUnit = parseInt(balance, 16);
+
+          if (isNaN(balanceInSmallestUnit)) {
+            console.error('❌ Failed to parse balance as hex number:', balance);
+            setWalletBalance('0.00');
+            return;
+          }
+
           const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
+          console.log('💵 USDC Balance:', balanceInUSDC);
 
           setWalletBalance(balanceInUSDC);
           // Success toast already shown after account creation or in else block for logged-in users
@@ -1042,8 +1074,22 @@ export const Content = (): JSX.Element => {
 
           console.log('📊 Raw balance response:', balance);
 
+          // Validate balance response
+          if (!balance || balance === '0x' || typeof balance !== 'string') {
+            console.warn('⚠️ Invalid balance response, setting to 0');
+            setWalletBalance('0.00');
+            return;
+          }
+
           // Convert balance from hex to USDC (6 decimals)
           const balanceInSmallestUnit = parseInt(balance, 16);
+
+          if (isNaN(balanceInSmallestUnit)) {
+            console.error('❌ Failed to parse balance as hex number:', balance);
+            setWalletBalance('0.00');
+            return;
+          }
+
           const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
 
           console.log('💵 USDC Balance:', balanceInUSDC);
