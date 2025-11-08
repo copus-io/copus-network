@@ -1609,7 +1609,7 @@ export const Content = (): JSX.Element => {
           availableBalance={`${walletBalance} USDC`}
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
           network="Base"
-          faucetLink="https://faucet.circle.com/"
+          faucetLink="https://app.metamask.io/buy/build-quote"
           isInsufficientBalance={
             x402PaymentInfo && walletBalance !== '...'
               ? (parseFloat(walletBalance) || 0) < (parseInt(x402PaymentInfo.amount) / 1000000)
