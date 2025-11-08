@@ -276,7 +276,7 @@ export async function signTransferWithAuthorization(
  * {
  *   "x402Version": 1,
  *   "payload": {
- *     "network": "base-sepolia",
+ *     "network": "base",
  *     "asset": "0x036CbD...",
  *     "scheme": "exact",
  *     "from": "0x...",
@@ -291,8 +291,8 @@ export async function signTransferWithAuthorization(
  * ```
  *
  * @param {SignedAuthorization} signedAuth - Signed transfer authorization from signTransferWithAuthorization()
- * @param {string} [network='base-sepolia'] - Network identifier (default: 'base-sepolia')
- * @param {string} [asset='0x036CbD53842c5426634e7929541eC2318f3dCF7e'] - Token contract address (default: Base Sepolia USDC)
+ * @param {string} [network='base'] - Network identifier (default: 'base')
+ * @param {string} [asset='0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'] - Token contract address (default: Base mainnet USDC)
  * @returns {string} Base64-encoded payment payload for X-PAYMENT header
  *
  * @example
@@ -303,7 +303,7 @@ export async function signTransferWithAuthorization(
  * // Create X-PAYMENT header
  * const paymentHeader = createX402PaymentHeader(
  *   signedAuth,
- *   'base-sepolia',
+ *   'base',
  *   '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
  * );
  *
