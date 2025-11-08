@@ -338,13 +338,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-all overflow-hidden min-h-[54px]"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden min-h-[54px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
                       WebkitLineClamp: 2,
                       overflow: 'hidden',
-                      wordBreak: 'break-all',
+                      wordBreak: 'break-word',
                       overflowWrap: 'break-word',
                       whiteSpace: 'pre-wrap'
                     }}
@@ -531,13 +531,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] break-all overflow-hidden min-h-[54px]"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden min-h-[54px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
                       WebkitLineClamp: 2,
                       overflow: 'hidden',
-                      wordBreak: 'break-all',
+                      wordBreak: 'break-word',
                       overflowWrap: 'break-word',
                       whiteSpace: 'pre-wrap'
                     }}
