@@ -13,7 +13,7 @@
 
 ## Overview
 
-The x402 protocol enables pay-per-view content using HTTP 402 Payment Required status codes combined with ERC-3009 gasless payment authorizations. This integration allows users to pay for premium content using USDC on Base Sepolia **without paying gas fees**.
+The x402 protocol enables pay-per-view content using HTTP 402 Payment Required status codes combined with ERC-3009 gasless payment authorizations. This integration allows users to pay for premium content using USDC on Base mainnet **without paying gas fees**.
 
 ### Key Benefits
 
@@ -26,8 +26,8 @@ The x402 protocol enables pay-per-view content using HTTP 402 Payment Required s
 
 - **Protocol**: [x402](https://x402.gitbook.io/x402)
 - **Payment Standard**: [ERC-3009 TransferWithAuthorization](https://eips.ethereum.org/EIPS/eip-3009)
-- **Network**: Base Sepolia (testnet)
-- **Token**: USDC (0x036CbD53842c5426634e7929541eC2318f3dCF7e)
+- **Network**: Base (mainnet)
+- **Token**: USDC (0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
 - **Signature Standard**: EIP-712 Typed Data
 
 ---
@@ -123,7 +123,7 @@ function transferWithAuthorization(
 ┌─────────────────────────────────────────────────────────────┐
 │              Base Sepolia Blockchain                         │
 │                                                              │
-│  USDC Contract: 0x036CbD53842c5426634e7929541eC2318f3dCF7e │
+│  USDC Contract: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 │
 │  - Validates EIP-712 signature                               │
 │  - Executes transfer from user to seller                     │
 │  - Emits Transfer event                                      │
@@ -229,8 +229,8 @@ Create X-PAYMENT header and unlock content:
 // Create base64-encoded X-PAYMENT header
 const paymentHeader = createX402PaymentHeader(
   signedAuth,
-  'base-sepolia',
-  '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+  'base',
+  '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
 );
 
 // Send to x402 API
@@ -304,7 +304,7 @@ The X-PAYMENT header contains a base64-encoded JSON payload:
      - Network (Base Sepolia)
 
 4. **Click "Pay now"**
-   - If on wrong network: MetaMask asks to switch to Base Sepolia
+   - If on wrong network: MetaMask asks to switch to Base mainnet
    - MetaMask shows signature request (NOT transaction)
    - Should see structured data:
      ```
@@ -329,7 +329,7 @@ The X-PAYMENT header contains a base64-encoded JSON payload:
 | User not logged in | Redirect to login |
 | Insufficient USDC balance | "Insufficient balance" error, Pay button disabled |
 | User rejects signature | "Signature cancelled" toast |
-| Wrong network | Prompt to switch/add Base Sepolia |
+| Wrong network | Prompt to switch/add Base mainnet |
 | Invalid payment info | "Payment information not available" error |
 | Backend error | "Payment failed" with error details |
 
@@ -346,7 +346,7 @@ The payment flow includes emoji-prefixed console logs for easy debugging:
 
 #### "Invalid network" error
 - **Cause**: `chainId` sent as number instead of string
-- **Fix**: Ensure `chainId: '84532'` (string, not number)
+- **Fix**: Ensure `chainId: '8453'` (string, not number)
 
 #### Payment works but content doesn't unlock
 - **Cause**: Server returned success but no `targetUrl`
@@ -415,11 +415,11 @@ chainId: 84532
 **Problem**: USDC balance shows as 0.00 despite user having funds
 **Cause**: Reading balance from wrong network or contract
 
-**Solution**: Verify you're reading from correct USDC contract on Base Sepolia:
+**Solution**: Verify you're reading from correct USDC contract on Base mainnet:
 ```typescript
-const usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+const usdcContractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-// chainId should be '0x14a34' (84532 in hex)
+// chainId should be '0x2105' (8453 in hex)
 ```
 
 ---
@@ -505,8 +505,8 @@ function createX402PaymentHeader(
 ```typescript
 const paymentHeader = createX402PaymentHeader(
   signedAuth,
-  'base-sepolia',
-  '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+  'base',
+  '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
 );
 
 const response = await fetch('https://api.example.com/unlock', {
@@ -523,8 +523,8 @@ const response = await fetch('https://api.example.com/unlock', {
 - [x402 Protocol Documentation](https://x402.gitbook.io/x402)
 - [EIP-3009 Specification](https://eips.ethereum.org/EIPS/eip-3009)
 - [EIP-712 Typed Data Signing](https://eips.ethereum.org/EIPS/eip-712)
-- [Base Sepolia USDC Contract](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e)
-- [Base Sepolia Explorer](https://sepolia.basescan.org)
+- [Base Mainnet USDC Contract](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
+- [Base Explorer](https://basescan.org)
 
 ---
 

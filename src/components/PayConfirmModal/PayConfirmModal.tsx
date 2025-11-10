@@ -24,8 +24,8 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
   walletAddress = "OX8091....0912",
   availableBalance = "....USDC",
   amount = "0.01 USDC",
-  network = "Base Sepolia",
-  faucetLink = "#",
+  network = "Base",
+  faucetLink = "https://app.metamask.io/buy/build-quote",
   isInsufficientBalance = false,
 }) => {
   const [showCopied, setShowCopied] = useState(false);
@@ -93,7 +93,7 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
                 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm text-center tracking-[0] leading-[23px]"
               >
                 <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                  Need Base Sepolia USDC? Get some{" "}
+                  Need USDC? Buy some{" "}
                 </span>
                 <a
                   href={faucetLink}

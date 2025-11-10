@@ -930,7 +930,7 @@ export const Create = (): JSX.Element => {
                         Network:
                       </span>
                       <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
-                        Base Sepolia
+                        Base
                       </span>
                     </div>
 

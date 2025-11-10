@@ -381,26 +381,23 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Action buttons area */}
             <div className="flex items-center justify-between mt-auto -mx-[30px] px-[30px]">
-              {/* Left side: Treasure button */}
-              {actions.showTreasure && (
-                <TreasureButton
-                  isLiked={(() => {
-                    const hasCallback = !!onLike;
-                    const isLikedValue = hasCallback ? (article.isLiked || false) : false;
+              {/* Left side: Treasure button and visit count */}
+              <div className="flex items-center gap-4">
+                {actions.showTreasure && (
+                  <TreasureButton
+                    isLiked={(() => {
+                      const hasCallback = !!onLike;
+                      const isLikedValue = hasCallback ? (article.isLiked || false) : false;
 
 
-                    return isLikedValue;
-                  })()} // Always false when no onLike callback
-                  likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
-                  onClick={handleLikeClick}
-                  size="large"
-                  disabled={!onLike} // Disable when no onLike callback (user not logged in)
-                />
-              )}
-
-              {/* Right side: Visit count and Edit/Delete buttons */}
-              <div className="flex items-center gap-2">
-                {/* Visit count */}
+                      return isLikedValue;
+                    })()} // Always false when no onLike callback
+                    likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
+                    onClick={handleLikeClick}
+                    size="medium"
+                    disabled={!onLike} // Disable when no onLike callback (user not logged in)
+                  />
+                )}
                 {actions.showVisits && (
                   <div className="flex items-center gap-2">
                     <img
@@ -414,7 +411,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     </span>
                   </div>
                 )}
+              </div>
 
+              {/* Right side: Edit/Delete buttons and Branch It */}
+              <div className="flex items-center gap-2">
                 {/* Edit and delete buttons area */}
                 {isHovered && (actions.showEdit || actions.showDelete) && (
                   <div className="flex items-center gap-2 min-h-[24px]">
@@ -571,7 +571,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Action buttons area */}
             <div className="flex items-center justify-between -mx-[30px] px-[30px]">
-              {/* Left side: Treasure button */}
+              {/* Left side: Treasure button and visit count */}
               <div className="flex items-center gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
@@ -584,14 +584,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     })()} // Always false when no onLike callback
                     likesCount={typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
                     onClick={handleLikeClick}
-                    size="large"
+                    size="medium"
                     disabled={!onLike} // Disable when no onLike callback (user not logged in)
                   />
                 )}
-              </div>
-
-              {/* Right side: Visit count and Edit/Delete buttons */}
-              <div className="flex items-center gap-4">
                 {actions.showVisits && (
                   <div className="inline-flex items-center gap-2">
                     <img
@@ -605,7 +601,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     </span>
                   </div>
                 )}
+              </div>
 
+              {/* Right side: Edit/Delete buttons */}
+              <div className="flex items-center gap-4">
                 {isHovered && (actions.showEdit || actions.showDelete) && (
                   <div className="flex items-center gap-2">
                     {actions.showEdit && (

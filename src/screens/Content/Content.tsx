@@ -63,7 +63,7 @@ export const Content = (): JSX.Element => {
   // x402 Payment Protocol State Management
   // ========================================
   // The x402 protocol enables pay-per-view content using HTTP 402 Payment Required.
-  // We use ERC-3009 TransferWithAuthorization for gasless USDC payments on Base Sepolia.
+  // We use ERC-3009 TransferWithAuthorization for gasless USDC payments on Base mainnet.
   // Users sign a message (no gas) and the server executes the transfer on their behalf.
 
   // Payment modal visibility states
@@ -347,7 +347,7 @@ export const Content = (): JSX.Element => {
       }
 
       if (data.accepts && data.accepts.length > 0) {
-        // Extract first payment option (we use USDC on Base Sepolia)
+        // Extract first payment option (we use USDC on Base)
         const paymentOption = data.accepts[0];
 
         console.log('📥 Received 402 payment option:', paymentOption);
@@ -360,7 +360,7 @@ export const Content = (): JSX.Element => {
           payTo: paymentOption.payTo,              // Recipient wallet address
           asset: paymentOption.asset,              // USDC contract address (0x036CbD...)
           amount: paymentOption.maxAmountRequired, // Amount in smallest unit (e.g., "10000" = 0.01 USDC)
-          network: paymentOption.network,          // Network identifier ("base-sepolia")
+          network: paymentOption.network,          // Network identifier ("base")
           resource: resourceUrl                    // API endpoint to unlock content after payment (with UUID)
         };
 
@@ -485,40 +485,40 @@ export const Content = (): JSX.Element => {
       setWalletProvider(provider);
       setWalletType(authMethod);
 
-      // Fetch USDC balance on Base Sepolia
-      const usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
-      const baseSepoliaChainId = '0x14a34'; // 84532 in hex
+      // Fetch USDC balance on Base
+      const usdcContractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+      const baseMainnetChainId = '0x2105'; // 8453 in hex
 
       try {
-        // Check if we're on Base Sepolia network
+        // Check if we're on Base network
         const currentChainId = await provider.request({ method: 'eth_chainId' });
-        console.log('🌐 Current network:', currentChainId, 'Expected:', baseSepoliaChainId);
+        console.log('🌐 Current network:', currentChainId, 'Expected:', baseMainnetChainId);
 
-        // If not on Base Sepolia, try to switch
-        if (currentChainId !== baseSepoliaChainId) {
-          console.log('🔄 Switching to Base Sepolia network...');
+        // If not on Base, try to switch
+        if (currentChainId !== baseMainnetChainId) {
+          console.log('🔄 Switching to Base network...');
           try {
             await provider.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: baseSepoliaChainId }],
+              params: [{ chainId: baseMainnetChainId }],
             });
             console.log('✅ Network switched successfully');
           } catch (switchError: any) {
             // Error code 4902: Chain not added yet
             if (switchError.code === 4902) {
-              console.log('➕ Adding Base Sepolia network...');
+              console.log('➕ Adding Base network...');
               await provider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: baseSepoliaChainId,
-                  chainName: 'Base Sepolia',
+                  chainId: baseMainnetChainId,
+                  chainName: 'Base',
                   nativeCurrency: {
                     name: 'Ethereum',
                     symbol: 'ETH',
                     decimals: 18
                   },
-                  rpcUrls: ['https://sepolia.base.org'],
-                  blockExplorerUrls: ['https://sepolia.basescan.org']
+                  rpcUrls: ['https://mainnet.base.org'],
+                  blockExplorerUrls: ['https://basescan.org']
                 }],
               });
               console.log('✅ Network added successfully');
@@ -542,7 +542,22 @@ export const Content = (): JSX.Element => {
 
         console.log('📊 Raw balance response:', balance);
 
+        // Validate balance response
+        if (!balance || balance === '0x' || typeof balance !== 'string') {
+          console.warn('⚠️ Invalid balance response, setting to 0');
+          setWalletBalance('0.00');
+          return;
+        }
+
         const balanceInSmallestUnit = parseInt(balance, 16);
+        console.log('🔢 Parsed balance in smallest unit:', balanceInSmallestUnit);
+
+        if (isNaN(balanceInSmallestUnit)) {
+          console.error('❌ Failed to parse balance as hex number:', balance);
+          setWalletBalance('0.00');
+          return;
+        }
+
         const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
 
         console.log('💵 USDC Balance:', balanceInUSDC);
@@ -760,9 +775,9 @@ export const Content = (): JSX.Element => {
           showToast('Loading wallet balance...', 'info');
         }
 
-        // ---- Fetch USDC balance on Base Sepolia ----
-        // USDC is an ERC-20 token on Base Sepolia at this address
-        const usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+        // ---- Fetch USDC balance on Base ----
+        // USDC is an ERC-20 token on Base mainnet at this address
+        const usdcContractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
         try {
           // Call balanceOf(address) function on USDC contract using eth_call
@@ -782,8 +797,25 @@ export const Content = (): JSX.Element => {
           // Convert balance from hex string to decimal
           // USDC has 6 decimals, so divide by 1,000,000 to get human-readable amount
           // Example: 1000000 (smallest unit) = 1.00 USDC
+          console.log('📊 Raw balance response:', balance);
+
+          // Validate balance response
+          if (!balance || balance === '0x' || typeof balance !== 'string') {
+            console.warn('⚠️ Invalid balance response, setting to 0');
+            setWalletBalance('0.00');
+            return;
+          }
+
           const balanceInSmallestUnit = parseInt(balance, 16);
+
+          if (isNaN(balanceInSmallestUnit)) {
+            console.error('❌ Failed to parse balance as hex number:', balance);
+            setWalletBalance('0.00');
+            return;
+          }
+
           const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
+          console.log('💵 USDC Balance:', balanceInUSDC);
 
           setWalletBalance(balanceInUSDC);
           // Success toast already shown after account creation or in else block for logged-in users
@@ -983,40 +1015,40 @@ export const Content = (): JSX.Element => {
           showToast('Loading wallet balance...', 'info');
         }
 
-        // ---- Fetch USDC balance on Base Sepolia ----
-        const usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
-        const baseSepoliaChainId = '0x14a34'; // 84532 in hex
+        // ---- Fetch USDC balance on Base ----
+        const usdcContractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+        const baseMainnetChainId = '0x2105'; // 8453 in hex
 
         try {
-          // First, check if we're on Base Sepolia network
+          // First, check if we're on Base network
           const currentChainId = await coinbaseProvider.request({ method: 'eth_chainId' });
-          console.log('🌐 Current network:', currentChainId, 'Expected:', baseSepoliaChainId);
+          console.log('🌐 Current network:', currentChainId, 'Expected:', baseMainnetChainId);
 
-          // If not on Base Sepolia, try to switch
-          if (currentChainId !== baseSepoliaChainId) {
-            console.log('🔄 Switching to Base Sepolia network...');
+          // If not on Base, try to switch
+          if (currentChainId !== baseMainnetChainId) {
+            console.log('🔄 Switching to Base network...');
             try {
               await coinbaseProvider.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: baseSepoliaChainId }],
+                params: [{ chainId: baseMainnetChainId }],
               });
               console.log('✅ Network switched successfully');
             } catch (switchError: any) {
               // Error code 4902: Chain not added yet
               if (switchError.code === 4902) {
-                console.log('➕ Adding Base Sepolia network...');
+                console.log('➕ Adding Base network...');
                 await coinbaseProvider.request({
                   method: 'wallet_addEthereumChain',
                   params: [{
-                    chainId: baseSepoliaChainId,
-                    chainName: 'Base Sepolia',
+                    chainId: baseMainnetChainId,
+                    chainName: 'Base',
                     nativeCurrency: {
                       name: 'Ethereum',
                       symbol: 'ETH',
                       decimals: 18
                     },
-                    rpcUrls: ['https://sepolia.base.org'],
-                    blockExplorerUrls: ['https://sepolia.basescan.org']
+                    rpcUrls: ['https://mainnet.base.org'],
+                    blockExplorerUrls: ['https://basescan.org']
                   }],
                 });
                 console.log('✅ Network added successfully');
@@ -1026,7 +1058,7 @@ export const Content = (): JSX.Element => {
             }
           }
 
-          // Now fetch USDC balance on Base Sepolia
+          // Now fetch USDC balance on Base
           // Call balanceOf(address) function on USDC contract using eth_call
           const data = '0x70a08231' + address.slice(2).padStart(64, '0');
           console.log('💰 Fetching USDC balance for:', address);
@@ -1042,8 +1074,22 @@ export const Content = (): JSX.Element => {
 
           console.log('📊 Raw balance response:', balance);
 
+          // Validate balance response
+          if (!balance || balance === '0x' || typeof balance !== 'string') {
+            console.warn('⚠️ Invalid balance response, setting to 0');
+            setWalletBalance('0.00');
+            return;
+          }
+
           // Convert balance from hex to USDC (6 decimals)
           const balanceInSmallestUnit = parseInt(balance, 16);
+
+          if (isNaN(balanceInSmallestUnit)) {
+            console.error('❌ Failed to parse balance as hex number:', balance);
+            setWalletBalance('0.00');
+            return;
+          }
+
           const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
 
           console.log('💵 USDC Balance:', balanceInUSDC);
@@ -1108,43 +1154,43 @@ export const Content = (): JSX.Element => {
     }
 
     try {
-      // ---- Step 3a: Ensure user is on Base Sepolia network ----
+      // ---- Step 3a: Ensure user is on Base network ----
       // Check current network (chainId is returned in hex format)
       const chainId = await walletProvider.request({ method: 'eth_chainId' });
-      const baseSepoliaChainId = '0x14a34'; // 84532 in decimal, 0x14a34 in hex
+      const baseMainnetChainId = '0x2105'; // 8453 in decimal, 0x2105 in hex
 
-      if (chainId !== baseSepoliaChainId) {
+      if (chainId !== baseMainnetChainId) {
         // User is on wrong network - request network switch
         try {
           await walletProvider.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: baseSepoliaChainId }],
+            params: [{ chainId: baseMainnetChainId }],
           });
         } catch (switchError: any) {
           // Error code 4902: Chain not added to wallet yet
           if (switchError.code === 4902) {
-            // Add Base Sepolia network to wallet
+            // Add Base network to wallet
             try {
               await walletProvider.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: baseSepoliaChainId,
-                  chainName: 'Base Sepolia',
+                  chainId: baseMainnetChainId,
+                  chainName: 'Base',
                   nativeCurrency: {
                     name: 'Ethereum',
                     symbol: 'ETH',
                     decimals: 18
                   },
-                  rpcUrls: ['https://sepolia.base.org'],
-                  blockExplorerUrls: ['https://sepolia.basescan.org']
+                  rpcUrls: ['https://mainnet.base.org'],
+                  blockExplorerUrls: ['https://basescan.org']
                 }],
               });
             } catch (addError) {
-              showToast('Failed to add Base Sepolia network', 'error');
+              showToast('Failed to add Base network', 'error');
               return;
             }
           } else {
-            showToast('Please switch to Base Sepolia network', 'error');
+            showToast('Please switch to Base network', 'error');
             return;
           }
         }
@@ -1198,7 +1244,7 @@ export const Content = (): JSX.Element => {
       // - payload: { network, asset, chainId, scheme, from, to, value, validAfter, validBefore, nonce, signature }
       const paymentHeader = createX402PaymentHeader(
         signedAuth,
-        x402PaymentInfo.network,  // "base-sepolia"
+        x402PaymentInfo.network,  // "base"
         x402PaymentInfo.asset     // USDC contract address
       );
 
@@ -1326,7 +1372,7 @@ export const Content = (): JSX.Element => {
                       )}
 
                       <h1
-                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] overflow-hidden"
+                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
                         style={{
                           display: '-webkit-box',
                           WebkitBoxOrient: 'vertical',
@@ -1562,8 +1608,8 @@ export const Content = (): JSX.Element => {
           walletAddress={walletAddress || 'Not connected'}
           availableBalance={`${walletBalance} USDC`}
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
-          network="Base Sepolia"
-          faucetLink="https://faucet.circle.com/"
+          network="Base"
+          faucetLink="https://app.metamask.io/buy/build-quote"
           isInsufficientBalance={
             x402PaymentInfo && walletBalance !== '...'
               ? (parseFloat(walletBalance) || 0) < (parseInt(x402PaymentInfo.amount) / 1000000)
