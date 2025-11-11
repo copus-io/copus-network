@@ -647,7 +647,7 @@ export const Create = (): JSX.Element => {
                   className="flex items-center px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
                   asChild
                 >
-                  <a href="#" target="_blank" rel="noopener noreferrer">
+                  <a href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb?authuser=5&hl=en" target="_blank" rel="noopener noreferrer">
                     <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red whitespace-nowrap">
                       Install browser extension
                     </span>
