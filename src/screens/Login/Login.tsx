@@ -487,25 +487,7 @@ export const Login = (): JSX.Element => {
               storage.setRememberMePreference(true);
               storage.migrateToLocalStorage();
 
-              // Sync Google profile data to Copus profile
-              if (response.googleProfile) {
-                try {
-                  const updateData: any = {};
-                  if (response.googleProfile.username) {
-                    updateData.userName = response.googleProfile.username;
-                  }
-                  if (response.googleProfile.faceUrl) {
-                    updateData.faceUrl = response.googleProfile.faceUrl;
-                  }
-
-                  if (Object.keys(updateData).length > 0) {
-                    await AuthService.updateUserInfo(updateData);
-                  }
-                } catch (profileError) {
-                  // Don't block login if profile sync fails
-                }
-              }
-
+              // Fetch user info (backend handles profile data from OAuth provider)
               await fetchUserInfo(tokenToUse);
               
               navigate('/', { replace: true });
@@ -535,28 +517,7 @@ export const Login = (): JSX.Element => {
               storage.setRememberMePreference(true);
               storage.migrateToLocalStorage();
 
-              // Sync X profile data to Copus profile
-              if (response.xProfile) {
-                try {
-                  const updateData: any = {};
-                  if (response.xProfile.username) {
-                    updateData.userName = response.xProfile.username;
-                  }
-                  if (response.xProfile.faceUrl) {
-                    updateData.faceUrl = response.xProfile.faceUrl;
-                  }
-                  if (response.xProfile.bio) {
-                    updateData.bio = response.xProfile.bio;
-                  }
-
-                  if (Object.keys(updateData).length > 0) {
-                    await AuthService.updateUserInfo(updateData);
-                  }
-                } catch (profileError) {
-                  // Don't block login if profile sync fails
-                }
-              }
-
+              // Fetch user info (backend handles profile data from OAuth provider)
               await fetchUserInfo(tokenToUse);
               
               navigate('/', { replace: true });
