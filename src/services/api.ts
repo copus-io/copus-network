@@ -77,6 +77,10 @@ export const apiRequest = async <T>(
                 message: errorMessage
               }
             }));
+
+            // Also tell extension to clear its invalid token
+            // This prevents infinite logout loops when extension has stale token
+            window.dispatchEvent(new CustomEvent('copus_logout'));
           }
 
           throw new Error(`Authentication failed: ${errorMessage}, please log in again`);
