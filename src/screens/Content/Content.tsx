@@ -1356,10 +1356,10 @@ export const Content = (): JSX.Element => {
 
                   {/* Title with x402 payment badge inline */}
                   <div className="flex flex-col gap-2 w-full">
-                    <div className="flex items-start gap-2 w-full">
-                      {/* Payment badge - show if content is locked */}
+                    <div className="w-full">
+                      {/* Payment badge - floats left with first line only */}
                       {article?.targetUrlIsLocked && article?.priceInfo && (
-                        <div className="h-[34px] px-2.5 py-[5px] mt-[5px] lg:mt-2 border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
+                        <div className="float-left h-[34px] px-2.5 py-[5px] mt-[5px] lg:mt-2 mr-2 border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
                           <img
                             className="relative w-[22px] h-5 aspect-[1.11]"
                             alt="x402 icon"
@@ -1372,7 +1372,7 @@ export const Content = (): JSX.Element => {
                       )}
 
                       <h1
-                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
+                        className="relative [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
                         style={{
                           display: '-webkit-box',
                           WebkitBoxOrient: 'vertical',
@@ -1384,6 +1384,8 @@ export const Content = (): JSX.Element => {
                       >
                         {content.title}
                       </h1>
+                      {/* Clear float after title */}
+                      <div className="clear-both"></div>
                     </div>
                   </div>
                 </div>
