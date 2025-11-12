@@ -1359,7 +1359,13 @@ export const Content = (): JSX.Element => {
                     <div className="w-full">
                       {/* Payment badge - floats left with first line only */}
                       {article?.targetUrlIsLocked && article?.priceInfo && (
-                        <div className="float-left h-[34px] px-2.5 py-[5px] mt-[5px] lg:mt-2 mr-2 border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
+                        <div
+                          className="float-left h-[34px] px-2.5 py-[5px] mt-[5px] lg:mt-2 mr-2 border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0"
+                          style={{
+                            shapeOutside: 'inset(calc(100% - 44px) 0 0 0)',
+                            shapeMargin: '8px'
+                          }}
+                        >
                           <img
                             className="relative w-[22px] h-5 aspect-[1.11]"
                             alt="x402 icon"
@@ -1374,10 +1380,7 @@ export const Content = (): JSX.Element => {
                       <h1
                         className="relative [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
                         style={{
-                          display: '-webkit-box',
-                          WebkitBoxOrient: 'vertical',
-                          WebkitLineClamp: 2,
-                          overflow: 'hidden',
+                          maxHeight: '88px', // 44px * 2 lines for mobile
                           wordBreak: 'break-word',
                           overflowWrap: 'break-word'
                         }}
