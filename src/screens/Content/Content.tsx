@@ -1356,7 +1356,7 @@ export const Content = (): JSX.Element => {
 
                   {/* Title with x402 payment badge inline */}
                   <div className="flex flex-col gap-2 w-full">
-                    <div className="flex items-start gap-2 w-full">
+                    <div className="flex items-center gap-2 w-full">
                       {/* Payment badge - show if content is locked */}
                       {article?.targetUrlIsLocked && article?.priceInfo && (
                         <div className="h-[34px] px-2.5 py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
