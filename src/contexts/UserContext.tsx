@@ -435,6 +435,32 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user, fetchSocialLinks]);
 
+  // Listen for copus_logout event (triggered by API on 401/403 errors)
+  // This clears invalid tokens from localStorage to prevent infinite loops
+  useEffect(() => {
+    const handleLogoutEvent = () => {
+      console.log('[UserContext] Received copus_logout event, clearing auth state');
+
+      // Clear user and token state
+      setUser(null);
+      setToken(null);
+
+      // Clear localStorage
+      storage.removeItem('copus_user');
+      storage.removeItem('copus_token');
+      storage.removeItem('copus_auth_method');
+
+      // Clear React Query cache
+      queryClient.clear();
+    };
+
+    window.addEventListener('copus_logout', handleLogoutEvent);
+
+    return () => {
+      window.removeEventListener('copus_logout', handleLogoutEvent);
+    };
+  }, []);
+
   return (
     <UserContext.Provider
       value={{
