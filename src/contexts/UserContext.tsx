@@ -162,7 +162,40 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('Wallet disconnect warning (non-critical):', error);
       }
 
-      // Clear local state - set user to null FIRST to trigger AuthGuard
+      console.log('✅ Starting logout - notifying extension first');
+
+      // Wait for extension to confirm logout BEFORE clearing website storage
+      // This ensures extension clears first, preventing it from syncing back
+      const waitForExtensionLogout = () => {
+        return new Promise<void>((resolve) => {
+          let timeout: NodeJS.Timeout;
+
+          const handleLogoutComplete = () => {
+            console.log('✅ Extension confirmed logout, now clearing website storage');
+            clearTimeout(timeout);
+            window.removeEventListener('copus_logout_complete', handleLogoutComplete);
+            resolve();
+          };
+
+          // Listen for extension confirmation
+          window.addEventListener('copus_logout_complete', handleLogoutComplete);
+
+          // Timeout after 300ms if no response (extension might not be installed)
+          timeout = setTimeout(() => {
+            console.log('⏱️ Extension logout timeout (extension may not be installed)');
+            window.removeEventListener('copus_logout_complete', handleLogoutComplete);
+            resolve();
+          }, 300);
+
+          // Notify extension to clear its storage FIRST
+          window.dispatchEvent(new CustomEvent('copus_logout'));
+        });
+      };
+
+      // Wait for extension to clear, THEN clear website
+      await waitForExtensionLogout();
+
+      // Now clear local state - set user to null to trigger AuthGuard
       setUser(null);
       setToken(null);
 
@@ -198,40 +231,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearFromStorage(localStorage);
       clearFromStorage(sessionStorage);
 
-      console.log('✅ Logout complete - notifying extension and redirecting');
+      console.log('✅ Logout complete - redirecting to discovery page');
 
-      // Wait for extension to confirm logout before redirecting
-      // This keeps extension and website in perfect sync
-      const waitForExtensionLogout = () => {
-        return new Promise<void>((resolve) => {
-          let timeout: NodeJS.Timeout;
-
-          const handleLogoutComplete = () => {
-            console.log('✅ Extension confirmed logout');
-            clearTimeout(timeout);
-            window.removeEventListener('copus_logout_complete', handleLogoutComplete);
-            resolve();
-          };
-
-          // Listen for extension confirmation
-          window.addEventListener('copus_logout_complete', handleLogoutComplete);
-
-          // Timeout after 500ms if no response (extension might not be installed)
-          timeout = setTimeout(() => {
-            console.log('⏱️ Extension logout timeout (extension may not be installed)');
-            window.removeEventListener('copus_logout_complete', handleLogoutComplete);
-            resolve();
-          }, 500);
-
-          // Notify extension to clear its storage
-          window.dispatchEvent(new CustomEvent('copus_logout'));
-        });
-      };
-
-      // Wait for extension, then redirect
-      waitForExtensionLogout().then(() => {
-        window.location.href = '/';
-      });
+      // Redirect to discovery page
+      window.location.href = '/';
     }
   }, []); // Empty dependencies since it uses setState and localStorage directly
 
