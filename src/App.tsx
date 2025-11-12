@@ -177,6 +177,7 @@ const router = createBrowserRouter([
 
 // Create a component that handles global events
 const GlobalEventHandler: React.FC = () => {
+  const { user } = useUser();
   const { showToast } = useToast();
 
   // Use flag to prevent duplicate toast notifications
@@ -192,10 +193,14 @@ const GlobalEventHandler: React.FC = () => {
       isProcessing.current = true;
 
       try {
-        // Just show error message - don't logout or redirect
-        // The api.ts already dispatches 'copus_logout' event to clear extension token
-        // Individual components/routes handle auth requirements via AuthGuard
-        showToast('Session expired, please log in again', 'error');
+        // Only show toast if user is NOT currently logged in
+        // This prevents showing "session expired" right after successful login
+        // (which can happen due to race conditions with old API calls)
+        if (!user) {
+          showToast('Session expired, please log in again', 'error');
+        }
+        // If user IS logged in, the 401/403 was likely from a stale request
+        // The copus_logout event will still clear extension token if needed
       } finally {
         // Reset flag in next event loop
         setTimeout(() => {
@@ -211,7 +216,7 @@ const GlobalEventHandler: React.FC = () => {
     return () => {
       window.removeEventListener('unauthorized-access', handleUnauthorizedAccess as EventListener);
     };
-  }, [showToast]);
+  }, [user, showToast]);
 
   return null;
 };
