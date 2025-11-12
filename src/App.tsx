@@ -177,9 +177,8 @@ const router = createBrowserRouter([
 
 // Create a component that handles global events
 const GlobalEventHandler: React.FC = () => {
-  const { logout } = useUser();
   const { showToast } = useToast();
-  
+
   // Use flag to prevent duplicate toast notifications
   const isProcessing = React.useRef(false);
 
@@ -193,15 +192,15 @@ const GlobalEventHandler: React.FC = () => {
       isProcessing.current = true;
 
       try {
-        await logout();
+        // Just show error message - don't logout or redirect
+        // The api.ts already dispatches 'copus_logout' event to clear extension token
+        // Individual components/routes handle auth requirements via AuthGuard
         showToast('Session expired, please log in again', 'error');
-        // Only redirect to login page if user is on a protected page
-        // For public pages like home, just update the user state without redirecting
       } finally {
         // Reset flag in next event loop
         setTimeout(() => {
           isProcessing.current = false;
-        }, 0);
+        }, 1000); // Longer timeout to prevent multiple toasts
       }
     };
 
@@ -212,7 +211,7 @@ const GlobalEventHandler: React.FC = () => {
     return () => {
       window.removeEventListener('unauthorized-access', handleUnauthorizedAccess as EventListener);
     };
-  }, [logout, showToast]);
+  }, [showToast]);
 
   return null;
 };
