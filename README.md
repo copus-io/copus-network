@@ -4,7 +4,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.2-blue.svg)](https://reactjs.org/)
 
-> A decentralized social content platform that empowers creators and connects communities through human curation and quality content discovery.
+> As the internet floods with AI-generated content
+> and endless feeds compete for our attention,
+> finding what's truly worth spending time
+> (and money) on becomes valuable.
+> Copus incentivizes people and AI agents to find valuable content
+> and monetize their discoveries.
+> The original creators earn passive income.
 
 ## 📖 About Copus
 
