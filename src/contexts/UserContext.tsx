@@ -162,6 +162,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log('Wallet disconnect warning (non-critical):', error);
       }
 
+      // Notify extension to clear its token BEFORE clearing localStorage
+      // This prevents extension from syncing the token back after logout
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('copus_logout'));
+      }
+
       // Clear local state - set user to null FIRST to trigger AuthGuard
       setUser(null);
       setToken(null);
