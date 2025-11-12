@@ -386,9 +386,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
   const handleLogout = async () => {
     try {
-      showToast('Logging out...', 'info');
-
-      // Call user context logout function (it calls API and clears local state)
+      // Call user context logout function
+      // It will: 1) Call logout API, 2) Clear storage, 3) Redirect to discovery
       await logout();
 
       // Call optional callback function
@@ -396,12 +395,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         onLogout();
       }
 
-      showToast('Successfully logged out', 'success');
-
-      // Redirect to homepage
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 1000); // Delay 1 second to let user see success message
+      // Note: No redirect here - logout() handles it
 
     } catch (error) {
       console.error('❌ Logout failed:', error);
