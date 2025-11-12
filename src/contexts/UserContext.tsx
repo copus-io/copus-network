@@ -191,10 +191,11 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                      key.startsWith('lastMarkedAllReadTime') ||
                      key.startsWith('lastUnreadCount') ||
                      key.startsWith('lastNotificationAction'))) {
-            // Don't remove the remember me preference
+            // Don't remove the remember me preference or logout flag
             if (key !== 'copus_remember_me_preference' &&
                 key !== 'copus_remembered_email' &&
-                key !== 'copus_remember_me_option') {
+                key !== 'copus_remember_me_option' &&
+                key !== 'copus_logout_in_progress') {
               storageType.removeItem(key);
             }
           }
@@ -204,11 +205,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearFromStorage(localStorage);
       clearFromStorage(sessionStorage);
 
-      console.log('✅ Logout complete - redirecting to discovery page');
+      // Set flag AFTER clearing to prevent extension from syncing on page reload
+      sessionStorage.setItem('copus_logout_in_progress', 'true');
 
-      // Always redirect to discovery page after logout
-      // This ensures a clean state regardless of where user logs out from
-      window.location.href = '/';
+      console.log('✅ Logout complete - waiting for extension to clear, then redirecting');
+
+      // Wait 300ms for extension to finish clearing its storage before redirecting
+      // This prevents race condition where page reloads before extension clears storage
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 300);
     }
   }, []); // Empty dependencies since it uses setState and localStorage directly
 
