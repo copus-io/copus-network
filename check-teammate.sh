@@ -1,76 +1,76 @@
 #!/bin/bash
 
-# 同事更改监控脚本
-# 快速查看同事在文案分支的更改情况
+# Teammate Change Monitoring Script
+# Quickly view teammate's changes in the content branch
 
-echo "👥 检查同事的更改情况..."
+echo "👥 Checking teammate's changes..."
 echo "================================"
 
-# 获取最新信息
+# Fetch latest information
 git fetch origin > /dev/null 2>&1
 
-# 检查同事分支是否存在
+# Check if teammate's branch exists
 if ! git show-ref --verify --quiet refs/remotes/origin/content/text-updates; then
-    echo "❌ 同事的分支 content/text-updates 还不存在或未推送"
+    echo "❌ Teammate's branch content/text-updates does not exist or hasn't been pushed"
     exit 1
 fi
 
-echo "📍 分支对比信息："
-echo "   - 你的分支: feature/functionality-updates"
-echo "   - 同事分支: content/text-updates"
+echo "📍 Branch comparison info:"
+echo "   - Your branch: feature/functionality-updates"
+echo "   - Teammate's branch: content/text-updates"
 echo ""
 
-# 显示同事分支的最新提交
-echo "📝 同事分支最新提交（最近5条）："
+# Show latest commits from teammate's branch
+echo "📝 Teammate's latest commits (last 5):"
 git log origin/content/text-updates --oneline -5 --pretty=format:"   %C(yellow)%h%C(reset) - %C(green)%an%C(reset) - %s %C(blue)(%cr)%C(reset)"
 echo ""
 echo ""
 
-# 比较同事分支与develop分支的差异
+# Compare teammate's branch with develop branch
 CHANGES=$(git diff --name-only origin/develop..origin/content/text-updates)
 if [ -z "$CHANGES" ]; then
-    echo "💡 同事还没有做任何更改"
+    echo "💡 Teammate hasn't made any changes yet"
 else
-    echo "📋 同事修改的文件："
+    echo "📋 Files modified by teammate:"
     echo "$CHANGES" | while read file; do
         echo "   📄 $file"
     done
 
     echo ""
-    echo "🔍 详细更改内容："
+    echo "🔍 Detailed changes:"
     git diff --stat origin/develop..origin/content/text-updates
 
     echo ""
-    echo "📖 如果需要查看具体更改内容，运行："
+    echo "📖 To view specific changes, run:"
     echo "   git diff origin/develop..origin/content/text-updates"
 fi
 
-# 检查是否有潜在冲突
+# Check for potential conflicts
 echo ""
-echo "⚠️  冲突预警："
+echo "⚠️  Conflict warning:"
 YOUR_CHANGES=$(git diff --name-only origin/develop..origin/feature/functionality-updates)
 TEAMMATE_CHANGES=$(git diff --name-only origin/develop..origin/content/text-updates)
 
 if [ -z "$YOUR_CHANGES" ] && [ -z "$TEAMMATE_CHANGES" ]; then
-    echo "   ✅ 双方都还没有更改"
+    echo "   ✅ Neither party has made changes yet"
 elif [ -z "$TEAMMATE_CHANGES" ]; then
-    echo "   ✅ 同事还没有更改，无冲突风险"
+    echo "   ✅ Teammate hasn't made changes, no conflict risk"
 elif [ -z "$YOUR_CHANGES" ]; then
-    echo "   ✅ 你还没有更改，无冲突风险"
+    echo "   ✅ You haven't made changes, no conflict risk"
 else
-    # 检查是否修改了相同文件
+    # Check if same files were modified
     COMMON_FILES=$(comm -12 <(echo "$YOUR_CHANGES" | sort) <(echo "$TEAMMATE_CHANGES" | sort))
     if [ -z "$COMMON_FILES" ]; then
-        echo "   ✅ 双方修改不同文件，无冲突风险"
+        echo "   ✅ Both parties modified different files, no conflict risk"
     else
-        echo "   🚨 潜在冲突！双方都修改了以下文件："
+        echo "   🚨 Potential conflict! Both parties modified the following files:"
         echo "$COMMON_FILES" | while read file; do
             echo "      ⚠️  $file"
         done
-        echo "   💬 建议立即和同事沟通协调"
+        echo "   💬 Recommend immediate communication with teammate"
     fi
 fi
 
 echo ""
-echo "🔄 要实时监控同事更改，可以运行："
+echo "🔄 To monitor teammate's changes in real-time, run:"
 echo "   watch -n 30 './check-teammate.sh'"

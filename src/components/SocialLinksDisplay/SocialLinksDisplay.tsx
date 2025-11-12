@@ -2,13 +2,13 @@ import React from 'react';
 import { useUser } from '../../contexts/UserContext';
 
 interface SocialLinksDisplayProps {
-  /** 显示模式 */
+  /** Display mode */
   mode?: 'horizontal' | 'vertical';
-  /** 自定义样式类名 */
+  /** Custom CSS class name */
   className?: string;
-  /** 是否显示标题 */
+  /** Whether to show title */
   showTitle?: boolean;
-  /** 最大显示数量 */
+  /** Maximum number of items to display */
   maxCount?: number;
 }
 
@@ -20,13 +20,13 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
 }) => {
   const { socialLinks, socialLinksLoading } = useUser();
 
-  // 处理数据
+  // Process data
   const displayLinks = maxCount ? socialLinks.slice(0, maxCount) : socialLinks;
   const hasMoreLinks = maxCount && socialLinks.length > maxCount;
 
-  // 打开链接
+  // Open link
   const openLink = (url: string) => {
-    // 确保链接是完整的URL
+    // Ensure link is a complete URL
     let fullUrl = url;
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       fullUrl = `https://${url}`;
@@ -38,7 +38,7 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
     return (
       <div className={`${className}`}>
         {showTitle && (
-          <h4 className="text-sm font-medium text-gray-700 mb-3">社交链接</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Social Links</h4>
         )}
         <div className="animate-pulse flex space-x-2">
           {[1, 2, 3].map((i) => (
@@ -50,13 +50,13 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
   }
 
   if (displayLinks.length === 0) {
-    return null; // 没有链接时不显示
+    return null; // Don't display when no links
   }
 
   return (
     <div className={`${className}`}>
       {showTitle && (
-        <h4 className="text-sm font-medium text-gray-700 mb-3">社交链接</h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">Social Links</h4>
       )}
 
       <div className={`
@@ -76,7 +76,7 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
                 : 'flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50'
               }
             `}
-            title={`访问 ${link.title}: ${link.linkUrl}`}
+            title={`Visit ${link.title}: ${link.linkUrl}`}
           >
             <img
               src={link.iconUrl}
@@ -86,7 +86,7 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
                 rounded-full group-hover:shadow-lg transition-shadow
               `}
               onError={(e) => {
-                // 备用图标
+                // Fallback icon
                 e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDEzYTUgNSAwIDAgMCA3LjU0LjU0bDMtM2E1IDUgMCAwIDAtNy4wNy03LjA3bC0xLjcyIDEuNzEiIHN0cm9rZT0iIzZiNzI4MCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0ibTE0IDExYTUgNSAwIDAgMC03LjU0LS41NGwtMy0zYTUgNSAwIDAgMCA3LjA3LTcuMDdsMS43MS0xLjcxIiBzdHJva2U9IiM2YjcyODAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=';
               }}
             />
@@ -100,7 +100,7 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
 
         {hasMoreLinks && (
           <span className="text-xs text-gray-500">
-            +{socialLinks.length - maxCount!} 更多
+            +{socialLinks.length - maxCount!} more
           </span>
         )}
       </div>

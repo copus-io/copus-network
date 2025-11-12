@@ -23,13 +23,13 @@ export const LazyBackgroundImage: React.FC<LazyBackgroundImageProps> = ({
   useEffect(() => {
     if (!elementRef) return;
 
-    // 如果浏览器支持 IntersectionObserver
+    // Check if browser supports IntersectionObserver
     if ('IntersectionObserver' in window) {
       observerRef.current = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
-              // 预加载图片
+              // Preload image
               const img = new Image();
               img.src = src;
               img.onload = () => {
@@ -37,11 +37,11 @@ export const LazyBackgroundImage: React.FC<LazyBackgroundImageProps> = ({
                 setIsLoaded(true);
               };
               img.onerror = () => {
-                // 如果加载失败，保持占位背景
+                // Keep placeholder background if loading fails
                 setBackgroundImage(placeholder);
               };
 
-              // 停止观察
+              // Stop observing
               if (observerRef.current) {
                 observerRef.current.disconnect();
               }
@@ -49,13 +49,13 @@ export const LazyBackgroundImage: React.FC<LazyBackgroundImageProps> = ({
           });
         },
         {
-          rootMargin: '50px' // 提前50px开始加载
+          rootMargin: '50px' // Start loading 50px early
         }
       );
 
       observerRef.current.observe(elementRef);
     } else {
-      // 如果不支持 IntersectionObserver，直接加载
+      // Load directly if IntersectionObserver not supported
       setBackgroundImage(`url(${src})`);
       setIsLoaded(true);
     }

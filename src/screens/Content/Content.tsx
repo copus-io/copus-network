@@ -163,12 +163,12 @@ export const Content = (): JSX.Element => {
     return <ContentPageSkeleton />;
   }
 
-  // 检查是否是文章被删除的情况
+  // Check if article is deleted
   const isArticleDeleted = error && (
-    error.includes('not found') || 
-    error.includes('不存在') || 
-    error.includes('deleted') || 
-    error.includes('删除') ||
+    error.includes('not found') ||
+    error.includes('does not exist') ||
+    error.includes('deleted') ||
+    error.includes('removed') ||
     error.includes('404')
   );
 

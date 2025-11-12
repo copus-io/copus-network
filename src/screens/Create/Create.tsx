@@ -43,7 +43,7 @@ export const Create = (): JSX.Element => {
     link: "",
     title: "",
     recommendation: "",
-    selectedTopic: "生活", // Default to Chinese category
+    selectedTopic: "Life", // Default category
     selectedTopicId: 1, // Corresponding ID
     coverImage: null as File | null,
   });
@@ -405,7 +405,7 @@ export const Create = (): JSX.Element => {
           link: articleData.targetUrl || "",
           title: articleData.title || "",
           recommendation: articleData.content || "",
-          selectedTopic: articleData.categoryInfo?.name || "生活",
+          selectedTopic: articleData.categoryInfo?.name || "Life",
           selectedTopicId: articleData.categoryInfo?.id || 1,
           coverImage: null, // Don't load image file directly in edit mode
         });

@@ -105,24 +105,24 @@ export const MainContentSection = (): JSX.Element => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  // 直接在组件内实现图片预览
+  // Implement image preview directly in component
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState('');
   const [previewImageAlt, setPreviewImageAlt] = useState('');
 
-  // 统一状态管理
+  // Unified state management
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
   const [userInfoLoading, setUserInfoLoading] = useState(true);
   const [userInfoError, setUserInfoError] = useState<string | null>(null);
 
-  // 收藏文章状态
+  // Liked articles state
   const [likedArticles, setLikedArticles] = useState<any[]>([]);
   const [likedArticlesLoading, setLikedArticlesLoading] = useState(false);
   const [likedArticlesError, setLikedArticlesError] = useState<string | null>(null);
   const [likedCurrentPage, setLikedCurrentPage] = useState(1);
   const [likedHasMore, setLikedHasMore] = useState(true);
 
-  // 创作文章状态
+  // Created articles state
   const [createdArticles, setCreatedArticles] = useState<any[]>([]);
   const [createdArticlesLoading, setCreatedArticlesLoading] = useState(false);
   const [createdArticlesError, setCreatedArticlesError] = useState<string | null>(null);
@@ -136,11 +136,11 @@ export const MainContentSection = (): JSX.Element => {
   const [unlockedCurrentPage, setUnlockedCurrentPage] = useState(1);
   const [unlockedHasMore, setUnlockedHasMore] = useState(true);
 
-  // 添加缓存机制防止重复请求
+  // Add caching mechanism to prevent duplicate requests
   const [lastFetchedUserId, setLastFetchedUserId] = useState<number | null>(null);
   const [lastFetchedTab, setLastFetchedTab] = useState<string | null>(null);
 
-  // 防止滚动事件重复触发的flag
+  // Flag to prevent duplicate scroll event triggers
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const [treasuryStats, setTreasuryStats] = useState({
@@ -152,15 +152,15 @@ export const MainContentSection = (): JSX.Element => {
   // Track if account is enabled
   const [accountEnabled, setAccountEnabled] = useState(true);
 
-  // 判断是否在查看其他用户的宝藏
-  // 如果有namespace参数但是namespace等于当前用户的namespace，说明是在查看自己的页面
+  // Determine if viewing another user's treasury
+  // If namespace param exists but equals current user's namespace, viewing own page
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
   const targetNamespace = namespace || user?.namespace;
 
-  // 移除对404 API的调用，改用统计信息显示
+  // Removed 404 API calls, use statistics display instead
 
 
-  // 1. 首先获取用户信息和ID
+  // 1. First fetch user info and ID
   useEffect(() => {
     const fetchUserInfo = async () => {
       if (!isViewingOtherUser && !user) {
@@ -211,8 +211,8 @@ export const MainContentSection = (): JSX.Element => {
         }
 
       } catch (error) {
-        console.error('❌ 获取用户信息失败:', error);
-        setUserInfoError(`获取用户信息失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        console.error('❌ Failed to fetch user info:', error);
+        setUserInfoError(`Failed to fetch user info: ${error instanceof Error ? error.message : 'Unknown error'}`);
       } finally {
         setUserInfoLoading(false);
       }
@@ -221,19 +221,19 @@ export const MainContentSection = (): JSX.Element => {
     fetchUserInfo();
   }, [user, namespace, isViewingOtherUser, targetNamespace]);
 
-  // 2. 根据当前标签页和用户信息获取相应的文章数据
+  // 2. Fetch corresponding article data based on current tab and user info
   useEffect(() => {
     if (userInfoLoading || !treasuryUserInfo) {
-      return; // 等待用户信息加载完成
+      return; // Wait for user info to load
     }
 
     const userId = treasuryUserInfo.id || user?.id;
     if (!userId) {
-      console.warn('⚠️ 无法获取用户ID，跳过文章数据加载');
+      console.warn('⚠️ Cannot get user ID, skipping article data loading');
       return;
     }
 
-    // 检查是否已经获取过相同用户和标签页的数据，避免重复请求
+    // Check if already fetched data for same user and tab to avoid duplicate requests
     if (lastFetchedUserId === userId && lastFetchedTab === activeTab) {
       console.log('[Treasury] Skipping fetch - same user and tab already loaded');
       return;
@@ -275,8 +275,8 @@ export const MainContentSection = (): JSX.Element => {
           await fetchUnlockedArticles(1, false);
         }
       } catch (error) {
-        console.error('❌ 加载文章数据失败:', error);
-        // 请求失败时重置缓存，允许重试
+        console.error('❌ Failed to load article data:', error);
+        // Reset cache on failure to allow retry
         setLastFetchedUserId(null);
         setLastFetchedTab(null);
       }
@@ -285,10 +285,10 @@ export const MainContentSection = (): JSX.Element => {
     fetchArticleData();
   }, [treasuryUserInfo?.id, activeTab]);
 
-  // 无限滚动加载更多数据的函数 - 优化滚动位置保持
+  // Infinite scroll load more function - optimized scroll position preservation
   const loadMoreLikedArticles = async () => {
     if (!likedArticlesLoading && likedHasMore && treasuryUserInfo?.id && !isLoadingMore) {
-      // 保存当前滚动位置
+      // Save current scroll position
       const currentScrollPosition = window.scrollY;
 
       setIsLoadingMore(true);
@@ -298,7 +298,7 @@ export const MainContentSection = (): JSX.Element => {
       try {
         await fetchLikedArticles(treasuryUserInfo.id, nextPage, true);
 
-        // 确保滚动位置不变（防止跳到顶部）
+        // Ensure scroll position doesn't change (prevent jumping to top)
         setTimeout(() => {
           if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
             window.scrollTo(0, currentScrollPosition);
@@ -313,7 +313,7 @@ export const MainContentSection = (): JSX.Element => {
 
   const loadMoreCreatedArticles = async () => {
     if (!createdArticlesLoading && createdHasMore && treasuryUserInfo?.id && !isLoadingMore) {
-      // 保存当前滚动位置
+      // Save current scroll position
       const currentScrollPosition = window.scrollY;
 
       setIsLoadingMore(true);
@@ -323,7 +323,7 @@ export const MainContentSection = (): JSX.Element => {
       try {
         await fetchCreatedArticles(treasuryUserInfo.id, nextPage, true);
 
-        // 确保滚动位置不变（防止跳到顶部）
+        // Ensure scroll position doesn't change (prevent jumping to top)
         setTimeout(() => {
           if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
             window.scrollTo(0, currentScrollPosition);
@@ -338,7 +338,7 @@ export const MainContentSection = (): JSX.Element => {
 
   const loadMoreUnlockedArticles = async () => {
     if (!unlockedArticlesLoading && unlockedHasMore && !isLoadingMore) {
-      // 保存当前滚动位置
+      // Save current scroll position
       const currentScrollPosition = window.scrollY;
 
       setIsLoadingMore(true);
@@ -348,7 +348,7 @@ export const MainContentSection = (): JSX.Element => {
       try {
         await fetchUnlockedArticles(nextPage, true);
 
-        // 确保滚动位置不变（防止跳到顶部）
+        // Ensure scroll position doesn't change (prevent jumping to top)
         setTimeout(() => {
           if (Math.abs(window.scrollY - currentScrollPosition) > 100) {
             window.scrollTo(0, currentScrollPosition);
@@ -361,7 +361,7 @@ export const MainContentSection = (): JSX.Element => {
     }
   };
 
-  // 无限滚动效果
+  // Infinite scroll effect
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
@@ -386,9 +386,9 @@ export const MainContentSection = (): JSX.Element => {
     };
   }, [activeTab, likedHasMore, likedArticlesLoading, createdHasMore, createdArticlesLoading, unlockedHasMore, unlockedArticlesLoading, isLoadingMore]);
 
-  // 收藏文章加载函数 - 支持分页
+  // Liked articles loading function - supports pagination
   const fetchLikedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
-    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    // Only set loading state on initial load, use isLoadingMore for pagination to avoid scroll jumping
     if (!append) {
       setLikedArticlesLoading(true);
     }
@@ -432,16 +432,16 @@ export const MainContentSection = (): JSX.Element => {
         setLikedArticles([]);
       }
     } finally {
-      // 只在初始加载完成时重置 loading 状态
+      // Only reset loading state after initial load completes
       if (!append) {
         setLikedArticlesLoading(false);
       }
     }
   };
 
-  // 创作文章加载函数 - 支持分页
+  // Created articles loading function - supports pagination
   const fetchCreatedArticles = async (userId: number, page: number = 1, append: boolean = false) => {
-    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    // Only set loading state on initial load, use isLoadingMore for pagination to avoid scroll jumping
     if (!append) {
       setCreatedArticlesLoading(true);
     }
@@ -485,14 +485,14 @@ export const MainContentSection = (): JSX.Element => {
         setCreatedArticles([]);
       }
     } finally {
-      // 只在初始加载完成时重置 loading 状态
+      // Only reset loading state after initial load completes
       if (!append) {
         setCreatedArticlesLoading(false);
       }
     }
   };
 
-  // Unlocked articles loading function - 支持分页
+  // Unlocked articles loading function - supports pagination
   const fetchUnlockedArticles = async (page: number = 1, append: boolean = false) => {
     // Only logged-in users can view their unlocked articles
     if (!user) {
@@ -500,7 +500,7 @@ export const MainContentSection = (): JSX.Element => {
       return;
     }
 
-    // 只在初始加载时设置 loading 状态，分页加载时用 isLoadingMore 避免滚动跳跃
+    // Only set loading state on initial load, use isLoadingMore for pagination to avoid scroll jumping
     if (!append) {
       setUnlockedArticlesLoading(true);
     }
@@ -544,29 +544,29 @@ export const MainContentSection = (): JSX.Element => {
         setUnlockedArticles([]);
       }
     } finally {
-      // 只在初始加载完成时重置 loading 状态
+      // Only reset loading state after initial load completes
       if (!append) {
         setUnlockedArticlesLoading(false);
       }
     }
   };
 
-  // 统一的文章数据提取函数
+  // Unified article data extraction function
   const extractArticlesFromResponse = (response: any, type: string) => {
     if (response?.data?.data && Array.isArray(response.data.data)) {
-      console.log(`✅ ${type}文章使用嵌套结构 response.data.data:`, response.data.data.length, '条记录');
+      console.log(`✅ ${type} articles using nested structure response.data.data:`, response.data.data.length, 'records');
       return response.data.data;
     } else if (response?.data && Array.isArray(response.data)) {
-      console.log(`✅ ${type}文章使用标准结构 response.data:`, response.data.length, '条记录');
+      console.log(`✅ ${type} articles using standard structure response.data:`, response.data.length, 'records');
       return response.data;
     } else if (Array.isArray(response)) {
-      console.log(`✅ ${type}文章使用直接数组结构:`, response.length, '条记录');
+      console.log(`✅ ${type} articles using direct array structure:`, response.length, 'records');
       return response;
     } else if (response?.data === '' || response?.data === null) {
-      console.log(`📭 ${type}文章API返回空数据`);
+      console.log(`📭 ${type} articles API returned empty data`);
       return [];
     } else {
-      console.warn(`⚠️ ${type}文章未识别的API响应结构:`, {
+      console.warn(`⚠️ ${type} articles unrecognized API response structure:`, {
         type: typeof response,
         hasData: !!response?.data,
         dataType: typeof response?.data,
@@ -576,7 +576,7 @@ export const MainContentSection = (): JSX.Element => {
     }
   };
 
-  // 将API数据转换为收藏卡片格式
+  // Convert API data to liked article card format
   const transformLikedApiToCard = (article: any): ArticleData => {
     return {
       id: article.uuid,
@@ -602,7 +602,7 @@ export const MainContentSection = (): JSX.Element => {
     };
   };
 
-  // 将API数据转换为创作卡片格式（与收藏格式相同）
+  // Convert API data to created article card format (same as liked format)
   const transformCreatedApiToCard = (article: any): ArticleData => {
     return {
       id: article.uuid,
@@ -610,7 +610,7 @@ export const MainContentSection = (): JSX.Element => {
       title: article.title,
       description: article.content,
       coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
-      category: article.categoryInfo?.name || '未分类',
+      category: article.categoryInfo?.name || 'Uncategorized',
       categoryColor: article.categoryInfo?.color || '#666666',
       userName: article.authorInfo?.username || 'Anonymous',
       userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
@@ -619,7 +619,7 @@ export const MainContentSection = (): JSX.Element => {
       date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
       treasureCount: article.likeCount || 0,
       visitCount: article.viewCount || 0,
-      isLiked: article.isLiked || false, // 创作文章的点赞状态来自API
+      isLiked: article.isLiked || false, // Created article like state from API
       targetUrl: article.targetUrl,
       website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
       // x402 payment fields
@@ -671,50 +671,50 @@ export const MainContentSection = (): JSX.Element => {
     }
   };
 
-  // 处理用户点击 - 现在需要传递namespace
+  // Handle user click - now requires namespace parameter
   const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
-    // 如果没有userId和namespace，直接返回
+    // Return early if no userId and namespace
     if (!userId && !userNamespace) {
       return;
     }
 
-    // 如果没有namespace，尝试从文章数据中查找
+    // Try to find namespace from article data if not provided
     if (!userNamespace && userId !== undefined) {
-      // 在likedArticles中查找 - 这些是收藏的文章，作者信息在authorInfo中
+      // Search in likedArticles - these are collected articles with author info
       const likedArticle = likedArticles.find(a => a.userId === userId);
       if (likedArticle) {
         userNamespace = likedArticle.userNamespace;
       }
 
-      // 注：之前会在myCreatedData中查找，但该API已移除
+      // Note: Previously would search in myCreatedData, but that API has been removed
     }
 
-    // 判断是否是当前用户
-    // 优先使用namespace判断（更准确），其次才是id
+    // Determine if current user
+    // Prioritize namespace for accuracy, then fall back to id
     const isCurrentUser = (user && userNamespace && user.namespace === userNamespace) ||
                          (user && userId && user.id === userId && !userNamespace);
 
     if (isCurrentUser) {
-      // 如果是点击自己，跳转到自己的宝藏页面
+      // If clicking on self, navigate to own treasury
       navigate('/my-treasury');
     } else if (userNamespace) {
-      // 跳转到其他用户的宝藏页面
+      // Navigate to other user's treasury
       navigate(`/u/${userNamespace}`);
     } else if (userId) {
-      // 如果没有namespace，使用userId作为降级方案
+      // Fallback to userId if no namespace available
       navigate(`/user/${userId}/treasury`);
     }
   };
 
-  // 处理头像点击预览
+  // Handle avatar click for preview
   const handleAvatarClick = useCallback((e) => {
     e?.preventDefault?.();
     e?.stopPropagation?.();
 
-    // 从点击的元素获取实际显示的头像URL
+    // Get actual avatar URL from clicked element
     let actualAvatarUrl = null;
 
-    // 尝试从多种可能的点击目标获取头像URL
+    // Try to get avatar URL from various possible click targets
     if (e?.target) {
       if (e.target.tagName === 'IMG') {
         actualAvatarUrl = e.target.src;
@@ -725,13 +725,13 @@ export const MainContentSection = (): JSX.Element => {
       }
     }
 
-    // 根据是否查看其他用户来获取正确的头像和用户名
+    // Get correct avatar and username based on viewing other user or not
     const currentUser = isViewingOtherUser ? treasuryUserInfo : user;
 
-    // 智能头像URL获取：支持真实头像和系统生成头像
+    // Smart avatar URL retrieval: supports real avatars and system-generated avatars
     let avatarUrl;
 
-    // 优先尝试API中的真实头像字段
+    // Try real avatar fields from API first
     const realAvatarUrl = (currentUser?.faceUrl && currentUser.faceUrl.trim()) ||
                          (currentUser?.avatarUrl && currentUser.avatarUrl.trim()) ||
                          (currentUser?.avatar && currentUser.avatar.trim()) ||
@@ -749,13 +749,13 @@ export const MainContentSection = (): JSX.Element => {
       avatarUrl = profileDefaultAvatar;
     }
 
-    // 直接设置预览状态
+    // Set preview state directly
     setShowImagePreview(true);
     setPreviewImageUrl(avatarUrl);
     setPreviewImageAlt(`${currentUser?.username || 'User'}'s avatar`);
   }, [isViewingOtherUser, treasuryUserInfo, user]);
 
-  // ESC键关闭预览
+  // Close preview with ESC key
   useEffect(() => {
     const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && showImagePreview) {
@@ -776,13 +776,13 @@ export const MainContentSection = (): JSX.Element => {
     };
   }, [showImagePreview]);
 
-  // Share personal homepage - copy Instagram-style short link ✨
+  // Share personal homepage - copy Instagram-style short link
   const handleShare = () => {
     const currentNamespace = isViewingOtherUser ? treasuryUserInfo?.namespace : user?.namespace;
     if (currentNamespace) {
       const shortLink = `${window.location.origin}/u/${currentNamespace}`;
       navigator.clipboard.writeText(shortLink).then(() => {
-        showToast('Link copied to clipboard! Share it now! 🎉', 'success');
+        showToast('Link copied to clipboard! Share it now!', 'success');
       }).catch(() => {
         showToast('Failed to copy link, please copy manually: ' + shortLink, 'error');
       });
@@ -815,7 +815,7 @@ export const MainContentSection = (): JSX.Element => {
     );
   };
 
-  // 将API数据转换为我的分享卡片格式
+  // Convert API data to my share card format
   const transformApiToCard = (article: any): ArticleData => {
     return {
       id: article.uuid,
@@ -841,13 +841,13 @@ export const MainContentSection = (): JSX.Element => {
     };
   };
 
-  // 处理编辑
+  // Handle edit
   const handleEdit = (articleId: string) => {
-    // 导航到编辑页面，传递文章ID
+    // Navigate to edit page with article ID
     navigate(`/create?edit=${articleId}`);
   };
 
-  // 处理删除
+  // Handle delete
   const handleDelete = (articleId: string) => {
     // Find the article to delete
     const article = createdArticles.find(a => a.uuid === articleId);
@@ -857,12 +857,12 @@ export const MainContentSection = (): JSX.Element => {
     }
   };
 
-  // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
+  // Card render function specifically for My Share tab, supports hover edit and delete
   const renderMyShareCard = (card: ArticleData) => {
     // Use exact like state from backend API response - no frontend assumptions
     const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
-    // 更新文章的点赞状态
+    // Update article like state
     const articleData = {
       ...card,
       isLiked: articleLikeState.isLiked,
@@ -877,8 +877,8 @@ export const MainContentSection = (): JSX.Element => {
         actions={{
           showTreasure: true, // Always show treasure button for unified style
           showVisits: true,
-          showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
-          showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
+          showEdit: !isViewingOtherUser, // Only show edit when viewing own page
+          showDelete: !isViewingOtherUser // Only show delete when viewing own page
         }}
         isHovered={hoveredCard === card.id}
         onLike={handleLike} // Always provide like callback
@@ -891,7 +891,7 @@ export const MainContentSection = (): JSX.Element => {
     );
   };
 
-  // 处理删除文章
+  // Handle delete article
   const handleDeleteArticle = async () => {
     if (!articleToDelete) {
       return;
@@ -907,7 +907,7 @@ export const MainContentSection = (): JSX.Element => {
       console.log('Response.data:', deleteResult.data);
       console.log('Response.status:', deleteResult.status);
 
-      // 检查删除是否真正成功 - handle various response formats
+      // Check if deletion truly succeeded - handle various response formats
       const isSuccess =
         deleteResult === true ||
         deleteResult.data === true ||
@@ -926,10 +926,10 @@ export const MainContentSection = (): JSX.Element => {
         return;
       }
 
-      // 更新UI状态以立即反映删除操作，而不是重新获取整个列表
+      // Update UI state immediately to reflect deletion instead of refetching entire list
       setCreatedArticles(prev => prev.filter(article => article.uuid !== articleToDelete.uuid));
-      
-      // 如果在收藏列表中也有这篇文章，同时更新收藏列表
+
+      // If this article is also in liked list, update liked list too
       setLikedArticles(prev => prev.filter(article => article.uuid !== articleToDelete.uuid));
 
       setDeleteDialogOpen(false);
@@ -1251,7 +1251,7 @@ export const MainContentSection = (): JSX.Element => {
 
       <div className="h-[50px]" />
 
-      {/* 删除确认对话框 */}
+      {/* Delete confirmation dialog */}
       {deleteDialogOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="inline-flex flex-col items-center justify-center gap-10 pt-[100px] pb-[50px] px-10 bg-white rounded-[15px] relative shadow-lg">
@@ -1307,7 +1307,7 @@ export const MainContentSection = (): JSX.Element => {
         </div>
       )}
 
-      {/* 简单直接的图片预览模态框 */}
+      {/* Simple direct image preview modal */}
       {showImagePreview && (
         <div
           style={{

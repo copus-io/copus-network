@@ -30,14 +30,14 @@ export const Create = (): JSX.Element => {
           setCategories(categoriesData);
         }
       } catch (error: any) {
-        console.error('❌ 获取分类列表失败:', error);
-        console.error('❌ 错误详情:', error.message);
-        // 使用fallback数据（中文分类）
+        console.error('❌ Failed to fetch category list:', error);
+        console.error('❌ Error details:', error.message);
+        // Use fallback data
         const fallbackCategories: ArticleCategoryItem[] = [
-          { id: 1, name: "科技", color: "red", articleCount: 0 },
-          { id: 2, name: "艺术", color: "green", articleCount: 0 },
-          { id: 3, name: "体育", color: "blue", articleCount: 0 },
-          { id: 4, name: "生活", color: "pink", articleCount: 0 }
+          { id: 1, name: "Technology", color: "red", articleCount: 0 },
+          { id: 2, name: "Art", color: "green", articleCount: 0 },
+          { id: 3, name: "Sports", color: "blue", articleCount: 0 },
+          { id: 4, name: "Life", color: "pink", articleCount: 0 }
         ];
         setCategories(fallbackCategories);
       } finally {

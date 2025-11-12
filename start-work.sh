@@ -1,53 +1,53 @@
 #!/bin/bash
 
-# Copus 项目开始工作脚本
-# 自动切换到正确分支并同步最新代码
+# Copus Project Start Work Script
+# Automatically switch to correct branch and sync latest code
 
-echo "🚀 准备开始 Copus 项目开发..."
+echo "🚀 Preparing to start Copus project development..."
 
-# 检查当前是否在项目目录
+# Check if we're in the project directory
 if [ ! -d ".git" ]; then
-    echo "❌ 错误: 请在项目根目录运行此脚本"
+    echo "❌ Error: Please run this script from the project root directory"
     exit 1
 fi
 
-# 显示当前状态
-echo "📍 当前状态:"
-echo "   - 项目目录: $(pwd)"
-echo "   - 当前分支: $(git branch --show-current)"
+# Show current status
+echo "📍 Current status:"
+echo "   - Project directory: $(pwd)"
+echo "   - Current branch: $(git branch --show-current)"
 
-# 确保我们有最新的远程信息
+# Ensure we have the latest remote information
 echo ""
-echo "🔄 获取最新的远程更新..."
+echo "🔄 Fetching latest remote updates..."
 git fetch origin
 
-# 切换到功能开发分支
+# Switch to feature development branch
 echo ""
-echo "🌟 切换到功能开发分支..."
+echo "🌟 Switching to feature development branch..."
 git checkout feature/functionality-updates
 
-# 同步develop分支的最新更改
+# Sync latest changes from develop branch
 echo ""
-echo "🔀 同步develop分支的最新更改..."
+echo "🔀 Syncing latest changes from develop branch..."
 git checkout develop
 git pull origin develop
 git checkout feature/functionality-updates
 git merge develop
 
 if [ $? -eq 0 ]; then
-    echo "✅ 代码同步成功！"
+    echo "✅ Code sync successful!"
 else
-    echo "⚠️ 合并时遇到冲突，请手动解决后再继续"
-    echo "💡 解决冲突后运行: git add . && git commit -m '解决合并冲突'"
+    echo "⚠️ Encountered conflicts during merge, please resolve manually before continuing"
+    echo "💡 After resolving conflicts, run: git add . && git commit -m 'Resolve merge conflicts'"
     exit 1
 fi
 
 echo ""
-echo "🎉 准备完成！你现在可以安全地开始编码了"
+echo "🎉 Setup complete! You can now safely start coding"
 echo ""
-echo "📝 记住:"
-echo "   - 经常运行 ./git-backup.sh 保存进度"
-echo "   - 完成功能后创建 PR 到 develop 分支"
-echo "   - 有问题及时和同事沟通"
+echo "📝 Remember:"
+echo "   - Run ./git-backup.sh frequently to save progress"
+echo "   - Create PR to develop branch after completing features"
+echo "   - Communicate with teammates promptly if issues arise"
 echo ""
-echo "开始愉快的编码吧！ 🎨"
+echo "Happy coding! 🎨"

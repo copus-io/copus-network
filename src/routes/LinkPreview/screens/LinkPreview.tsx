@@ -17,10 +17,10 @@ export const LinkPreview = (): JSX.Element => {
   const { user, isLoggedIn } = useUser();
   const { showToast } = useToast();
 
-  // 文章数据（实际应该从API获取）
+  // Article data (should actually be fetched from API)
   const [articleData, setArticleData] = useState({
-    category: "科技",
-    categoryColor: "", // 从服务器返回的颜色名称
+    category: "Technology",
+    categoryColor: "", // Color name returned from server
     title: "We overestimate AI's impact in the short-term and underestimate it long-term",
     url: "https://example.com"
   });

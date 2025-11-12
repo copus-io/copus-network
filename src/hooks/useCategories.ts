@@ -28,8 +28,8 @@ export const useCategories = () => {
       let errorMessage = 'Failed to fetch categories';
 
       if (error instanceof Error) {
-        if (error.message.includes('系统内部错误')) {
-          errorMessage = '后端服务暂时不可用，请联系技术团队检查服务状态';
+        if (error.message.includes('Internal server error') || error.message.includes('系统内部错误')) {
+          errorMessage = 'Backend service is temporarily unavailable. Please contact the technical team to check service status';
         } else {
           errorMessage = error.message;
         }

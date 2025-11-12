@@ -1,115 +1,115 @@
 #!/bin/bash
 
-# 智能推送脚本
-# 只在有意义的更改时才推送到远程
+# Smart Push Script
+# Only push to remote when there are meaningful changes
 
-echo "🔍 检查是否需要推送到远程..."
+echo "🔍 Checking if push to remote is needed..."
 
-# 获取当前分支
+# Get current branch
 CURRENT_BRANCH=$(git branch --show-current)
-echo "📍 当前分支: $CURRENT_BRANCH"
+echo "📍 Current branch: $CURRENT_BRANCH"
 
-# 检查是否有未提交的更改
+# Check for uncommitted changes
 if ! git diff --quiet || ! git diff --cached --quiet; then
-    echo "📝 发现未提交的更改，先进行本地提交..."
+    echo "📝 Found uncommitted changes, committing locally first..."
 
-    # 显示更改概要
+    # Show change summary
     echo ""
-    echo "📋 更改概要:"
+    echo "📋 Change summary:"
     git status --porcelain
 
-    # 询问是否提交
+    # Ask whether to commit
     echo ""
-    read -p "💾 是否提交这些更改？(y/n): " -n 1 -r
+    read -p "💾 Commit these changes? (y/n): " -n 1 -r
     echo
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         git add .
 
-        # 询问提交信息
-        echo "✏️  请输入提交信息 (按回车使用默认信息):"
+        # Ask for commit message
+        echo "✏️  Enter commit message (press Enter for default):"
         read -r COMMIT_MSG
 
         if [ -z "$COMMIT_MSG" ]; then
-            COMMIT_MSG="🔨 本地开发进度保存 - $(date '+%Y-%m-%d %H:%M')"
+            COMMIT_MSG="🔨 Local development progress save - $(date '+%Y-%m-%d %H:%M')"
         fi
 
         git commit -m "$COMMIT_MSG"
-        echo "✅ 本地提交完成"
+        echo "✅ Local commit completed"
     else
-        echo "❌ 取消操作"
+        echo "❌ Operation cancelled"
         exit 1
     fi
 fi
 
-# 检查与远程的差异
+# Check difference with remote
 LOCAL_COMMITS=$(git rev-list --count $CURRENT_BRANCH ^origin/$CURRENT_BRANCH 2>/dev/null || echo "0")
 
 if [ "$LOCAL_COMMITS" = "0" ]; then
-    echo "💡 没有新的本地提交需要推送"
+    echo "💡 No new local commits to push"
     exit 0
 fi
 
 echo ""
-echo "📊 发现 $LOCAL_COMMITS 个本地提交待推送"
+echo "📊 Found $LOCAL_COMMITS local commits to push"
 
-# 显示待推送的提交
+# Show commits to be pushed
 echo ""
-echo "📝 待推送的提交:"
+echo "📝 Commits to be pushed:"
 git log --oneline origin/$CURRENT_BRANCH..$CURRENT_BRANCH
 
-# 询问推送策略
+# Ask for push strategy
 echo ""
-echo "🚀 推送选项:"
-echo "1. 立即推送 (push now)"
-echo "2. 稍后推送 (push later)"
-echo "3. 查看详细差异 (show diff)"
-echo "4. 取消 (cancel)"
+echo "🚀 Push options:"
+echo "1. Push now (push now)"
+echo "2. Push later (push later)"
+echo "3. Show detailed diff (show diff)"
+echo "4. Cancel (cancel)"
 echo ""
-read -p "请选择 (1-4): " -n 1 -r
+read -p "Please select (1-4): " -n 1 -r
 echo ""
 
 case $REPLY in
     1)
-        echo "🌐 推送到远程仓库..."
+        echo "🌐 Pushing to remote repository..."
         git push origin $CURRENT_BRANCH
 
         if [ $? -eq 0 ]; then
-            echo "✅ 推送成功！"
+            echo "✅ Push successful!"
             echo ""
-            echo "📊 推送统计:"
-            echo "   - 分支: $CURRENT_BRANCH"
-            echo "   - 提交数量: $LOCAL_COMMITS"
-            echo "   - 最新提交: $(git log -1 --pretty=format:'%h - %s')"
+            echo "📊 Push statistics:"
+            echo "   - Branch: $CURRENT_BRANCH"
+            echo "   - Number of commits: $LOCAL_COMMITS"
+            echo "   - Latest commit: $(git log -1 --pretty=format:'%h - %s')"
         else
-            echo "❌ 推送失败，请检查网络或权限"
+            echo "❌ Push failed, please check network or permissions"
             exit 1
         fi
         ;;
     2)
-        echo "⏰ 稍后推送，本地更改已保存"
-        echo "💡 提示：下次运行 ./smart-push.sh 或 ./git-backup.sh 时会再次询问"
+        echo "⏰ Push later, local changes saved"
+        echo "💡 Tip: Next time you run ./smart-push.sh or ./git-backup.sh, you'll be asked again"
         ;;
     3)
-        echo "📖 显示详细差异:"
+        echo "📖 Showing detailed diff:"
         git diff origin/$CURRENT_BRANCH..$CURRENT_BRANCH --stat
         echo ""
-        read -p "现在是否推送？(y/n): " -n 1 -r
+        read -p "Push now? (y/n): " -n 1 -r
         echo ""
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             git push origin $CURRENT_BRANCH
-            echo "✅ 推送完成！"
+            echo "✅ Push completed!"
         else
-            echo "⏰ 稍后推送"
+            echo "⏰ Push later"
         fi
         ;;
     4)
-        echo "❌ 取消推送"
+        echo "❌ Push cancelled"
         ;;
     *)
-        echo "❌ 无效选择"
+        echo "❌ Invalid selection"
         ;;
 esac
 
 echo ""
-echo "🎉 操作完成！"
+echo "🎉 Operation completed!"

@@ -17,36 +17,36 @@ export const NewPassword = (): JSX.Element => {
   const [isChanging, setIsChanging] = useState(false);
 
   const handleSavePassword = async () => {
-    // 验证输入
+    // Validate input
     if (!newPassword || !confirmPassword) {
-      showToast("请填写所有密码字段", "error");
+      showToast("Please fill in all password fields", "error");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showToast("两次输入的密码不一致", "error");
+      showToast("Passwords do not match", "error");
       return;
     }
 
     if (newPassword.length < 6) {
-      showToast("密码长度至少为6位", "error");
+      showToast("Password must be at least 6 characters", "error");
       return;
     }
 
     setIsChanging(true);
     try {
-      // 调用更新密码API (这里假设直接更新，因为已经通过了验证)
+      // Call update password API (assuming direct update since verification passed)
       const result = await AuthService.updatePassword(newPassword);
 
       if (result) {
-        showToast("密码修改成功！", "success");
+        showToast("Password changed successfully!", "success");
         navigate("/setting");
       } else {
-        showToast("密码修改失败，请重试", "error");
+        showToast("Password change failed, please retry", "error");
       }
     } catch (error) {
-      console.error("修改密码失败:", error);
-      showToast("密码修改失败，请稍后重试", "error");
+      console.error("Password change failed:", error);
+      showToast("Password change failed, please try again later", "error");
     } finally {
       setIsChanging(false);
     }
@@ -126,10 +126,10 @@ export const NewPassword = (): JSX.Element => {
                 Minimum 6 characters.
               </div>
 
-              {/* 密码匹配提示 */}
+              {/* Password match indicator */}
               {confirmPassword && (
                 <div className={`text-sm ${newPassword === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
-                  {newPassword === confirmPassword ? '✓ 密码匹配' : '✗ 密码不匹配'}
+                  {newPassword === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
                 </div>
               )}
             </div>

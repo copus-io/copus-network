@@ -35,7 +35,7 @@ export const DeleteAccount = (): JSX.Element => {
   // Determine if user logged in with wallet
   const authMethod = typeof localStorage !== 'undefined' ? localStorage.getItem('copus_auth_method') : null;
   const isWalletUser = !!(user?.walletAddress && (authMethod === 'metamask' || authMethod === 'coinbase'));
-  
+
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -51,7 +51,7 @@ export const DeleteAccount = (): JSX.Element => {
     onSendError: (error) => showToast(error, 'error')
   });
 
-  // 组件卸载时清理
+  // Cleanup on component unmount
   useEffect(() => {
     return () => {
       cleanupVerificationCode();
@@ -67,7 +67,7 @@ export const DeleteAccount = (): JSX.Element => {
 
   const handleSendCode = async () => {
     if (!user?.email) {
-      showToast('无法获取用户邮箱地址', 'error');
+      showToast('Unable to retrieve user email address', 'error');
       return;
     }
 
@@ -196,7 +196,7 @@ export const DeleteAccount = (): JSX.Element => {
       }
     } else {
       if (!isConfirmed || !verificationCode.trim()) {
-        showToast('请确认并输入验证码', 'error');
+        showToast('Please confirm and enter verification code', 'error');
         return;
       }
     }
@@ -210,13 +210,13 @@ export const DeleteAccount = (): JSX.Element => {
     try {
       const deleteParams = isWalletUser
         ? {
-            accountType: 1, // 钱包账户
-            code: walletSignatureResult!.signature, // 钱包签名结果
+            accountType: 1, // Wallet account
+            code: walletSignatureResult!.signature, // Wallet signature result
             reason: deleteReason.trim()
           }
         : {
-            accountType: 0, // 邮箱账户
-            code: verificationCode.trim(), // 验证码
+            accountType: 0, // Email account
+            code: verificationCode.trim(), // Verification code
             reason: deleteReason.trim()
           };
 
@@ -227,12 +227,12 @@ export const DeleteAccount = (): JSX.Element => {
         await logout();
         navigate('/');
       } else {
-        showToast(isWalletUser ? 'Account deletion failed' : '账户删除失败，请检查验证码是否正确', 'error');
+        showToast(isWalletUser ? 'Account deletion failed' : 'Account deletion failed, please check your verification code', 'error');
         setShowSuccessPopup(false);
       }
     } catch (error) {
       console.error('Failed to delete account:', error);
-      showToast(isWalletUser ? 'Account deletion failed, please try again' : '账户删除失败，请稍后重试', 'error');
+      showToast(isWalletUser ? 'Account deletion failed, please try again' : 'Account deletion failed, please try again later', 'error');
       setShowSuccessPopup(false);
     } finally {
       setIsLoading(false);
@@ -247,7 +247,7 @@ export const DeleteAccount = (): JSX.Element => {
   return (
     <div className="min-h-screen flex bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
       <HeaderSection hideCreateButton={true} />
-      <div className="flex w-full min-h-screen flex-col items-center pt-[110px]">{/* 增加顶部间距适配HeaderSection */}
+      <div className="flex w-full min-h-screen flex-col items-center pt-[110px]">{/* Increased top spacing for HeaderSection */}
 
         <main className="flex flex-col w-[540px] items-center pt-5 pb-10 px-0">
           <div className="flex flex-col items-center gap-10 w-full">

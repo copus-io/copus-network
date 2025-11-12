@@ -3,55 +3,55 @@ import { AuthService, CODE_TYPES } from '../services/authService';
 import { FormValidator, VALIDATION_RULES, ValidationError } from '../utils/validation';
 
 interface AuthFormState {
-  // 表单字段
+  // Form fields
   username: string;
   email: string;
   password: string;
   confirmPassword: string;
   verificationCode: string;
 
-  // UI状态
+  // UI state
   showPassword: boolean;
   showConfirmPassword: boolean;
   rememberMe: boolean;
   agreeToTerms: boolean;
 
-  // 邮箱验证状态
+  // Email verification state
   emailStatus: 'idle' | 'checking' | 'available' | 'taken';
   isCodeSending: boolean;
   countdown: number;
 
-  // 表单验证
+  // Form validation
   errors: Record<string, string>;
   touched: Record<string, boolean>;
 }
 
 export const useAuthForm = () => {
   const [state, setState] = useState<AuthFormState>({
-    // 表单字段
+    // Form fields
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
     verificationCode: '',
 
-    // UI状态
+    // UI state
     showPassword: false,
     showConfirmPassword: false,
     rememberMe: true,
     agreeToTerms: false,
 
-    // 邮箱验证状态
+    // Email verification state
     emailStatus: 'idle',
     isCodeSending: false,
     countdown: 0,
 
-    // 表单验证
+    // Form validation
     errors: {},
     touched: {},
   });
 
-  // 更新字段值
+  // Update field value
   const updateField = useCallback((field: keyof AuthFormState, value: any) => {
     setState(prev => ({
       ...prev,
@@ -60,7 +60,7 @@ export const useAuthForm = () => {
     }));
   }, []);
 
-  // 验证表单
+  // Validate form
   const validateForm = useCallback((mode: 'login' | 'register') => {
     const rules = mode === 'register'
       ? {
@@ -95,7 +95,7 @@ export const useAuthForm = () => {
     return validationErrors.length === 0;
   }, [state]);
 
-  // 检查邮箱是否已存在
+  // Check if email already exists
   const checkEmailExist = useCallback(async (email: string) => {
     if (!email || !email.includes('@')) {
       setState(prev => ({ ...prev, emailStatus: 'idle' }));
@@ -111,12 +111,12 @@ export const useAuthForm = () => {
         emailStatus: result.exists ? 'taken' : 'available'
       }));
     } catch (error) {
-      console.error('检查邮箱失败:', error);
+      console.error('Failed to check email:', error);
       setState(prev => ({ ...prev, emailStatus: 'idle' }));
     }
   }, []);
 
-  // 发送验证码
+  // Send verification code
   const sendVerificationCode = useCallback(async () => {
     if (!state.email ||
         !state.email.includes('@') ||
@@ -134,7 +134,7 @@ export const useAuthForm = () => {
         codeType: CODE_TYPES.REGISTER
       });
 
-      // 开始倒计时
+      // Start countdown
       setState(prev => ({ ...prev, countdown: 60 }));
       const timer = setInterval(() => {
         setState(prev => {
@@ -148,14 +148,14 @@ export const useAuthForm = () => {
 
       return true;
     } catch (error) {
-      console.error('发送验证码失败:', error);
+      console.error('Failed to send verification code:', error);
       return false;
     } finally {
       setState(prev => ({ ...prev, isCodeSending: false }));
     }
   }, [state.email, state.emailStatus, state.countdown]);
 
-  // 注册
+  // Register
   const register = useCallback(async () => {
     if (!validateForm('register')) {
       return { success: false, message: 'Please check form information' };
@@ -179,7 +179,7 @@ export const useAuthForm = () => {
     }
   }, [state, validateForm]);
 
-  // 登录
+  // Login
   const login = useCallback(async () => {
     if (!validateForm('login')) {
       return { success: false, message: 'Please check form information' };
@@ -199,10 +199,10 @@ export const useAuthForm = () => {
   }, [state, validateForm]);
 
   return {
-    // 状态
+    // State
     ...state,
 
-    // 方法
+    // Methods
     updateField,
     checkEmailExist,
     sendVerificationCode,
@@ -210,7 +210,7 @@ export const useAuthForm = () => {
     login,
     validateForm,
 
-    // 计算属性
+    // Computed properties
     canSendCode: state.email.includes('@') &&
                  state.emailStatus === 'available' &&
                  state.countdown === 0 &&

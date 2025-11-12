@@ -19,20 +19,20 @@ export const MainContentSection = (): JSX.Element => {
 
   const handleLikeToggle = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
     if (!isLoggedIn) {
-      showToast('请先登录再点赞', 'error');
+      showToast('Please log in first to like', 'error');
       return;
     }
 
     try {
       await toggleLike(articleId, currentIsLiked, currentLikeCount);
     } catch (error) {
-      console.error('点赞操作失败:', error);
-      showToast('操作失败，请重试', 'error');
+      console.error('Like operation failed:', error);
+      showToast('Operation failed, please try again', 'error');
     }
   };
 
   const handleShareProfile = () => {
-    // 分享个人资料
+    // Share profile
     if (navigator.share) {
       navigator.share({
         title: 'Sophiaaaaa\'s Profile',
@@ -40,7 +40,7 @@ export const MainContentSection = (): JSX.Element => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      showToast('链接已复制到剪贴板', 'success');
+      showToast('Link copied to clipboard', 'success');
     }
   };
   const socialLinks = [
@@ -58,19 +58,19 @@ export const MainContentSection = (): JSX.Element => {
     },
   ];
 
-  // 转换静态数据为ArticleData格式
+  // Convert static data to ArticleData format
   const transformStaticToArticleData = (card: any, index: number): ArticleData => {
     return {
       id: card.id.toString(),
       uuid: card.id.toString(),
       title: card.title,
-      description: card.description.replace(/^"|"$/g, ''), // 移除引号
+      description: card.description.replace(/^"|"$/g, ''), // Remove quotes
       coverImage: card.coverImage,
       category: card.category,
       categoryColor: card.categoryColor,
       userName: card.author,
       userAvatar: card.authorImage,
-      userId: 1, // 静态数据使用固定ID
+      userId: 1, // Static data uses fixed ID
       date: card.date,
       treasureCount: parseInt(card.treasures) || 0,
       visitCount: card.visits,
@@ -83,7 +83,7 @@ export const MainContentSection = (): JSX.Element => {
   const projectCardsData = [
     {
       id: 1,
-      category: "艺术",
+      category: "Art",
       categoryColor: "green",
       coverImage: "https://c.animaapp.com/mfvyjo4ej1WzJf/img/cover.png",
       title: "Window Swap",
@@ -98,7 +98,7 @@ export const MainContentSection = (): JSX.Element => {
     },
     {
       id: 2,
-      category: "科技",
+      category: "Technology",
       categoryColor: "red",
       coverImage: "https://c.animaapp.com/mfvyjo4ej1WzJf/img/cover-1.png",
       title: "Window Swap",
@@ -115,7 +115,7 @@ export const MainContentSection = (): JSX.Element => {
 
   const projectCards = projectCardsData.map(transformStaticToArticleData);
 
-  // 同步文章状态到localStorage
+  // Sync article states to localStorage
   useEffect(() => {
     if (projectCards.length > 0) {
       syncArticleStates(projectCards);
@@ -146,7 +146,7 @@ export const MainContentSection = (): JSX.Element => {
                 <ShareIcon
                   className="mr-[-0.39px] w-5 h-5 text-off-black cursor-pointer hover:opacity-70 transition-opacity"
                   onClick={handleShareProfile}
-                  title="分享个人资料"
+                  title="Share profile"
                 />
               </div>
 
