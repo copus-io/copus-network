@@ -267,14 +267,6 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   // Check if viewing own profile
   const isOwnProfile = user && userInfo && user.namespace === userInfo.namespace;
 
-  // Debug information
-  console.log('UserProfile Debug:', {
-    user: user ? { id: user.id, namespace: user.namespace } : null,
-    userInfo: userInfo ? { id: userInfo.id, namespace: userInfo.namespace } : null,
-    isOwnProfile,
-    requestedNamespace: namespace
-  });
-
   // Handle cover image click
   const handleCoverClick = () => {
     if (isOwnProfile) {
