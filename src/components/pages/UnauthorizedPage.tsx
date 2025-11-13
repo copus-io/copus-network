@@ -1,10 +1,11 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { HeaderSection } from '../shared/HeaderSection/HeaderSection';
 
 export const UnauthorizedPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
@@ -42,7 +43,10 @@ export const UnauthorizedPage: React.FC = () => {
           {/* Action buttons */}
           <div className="space-y-3">
             <Button
-              onClick={() => navigate('/login')}
+              onClick={() => {
+                localStorage.setItem('copus_return_url', location.pathname + location.search);
+                navigate('/login');
+              }}
               className="w-full bg-red hover:bg-red/90 text-white py-3 rounded-lg transition-colors"
             >
               Sign In / Sign Up

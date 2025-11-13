@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useImagePreview } from "../../../contexts/ImagePreviewContext";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
@@ -15,6 +15,7 @@ interface UserProfileContentProps {
 
 export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespace }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, toggleLike, updateUser, getArticleLikeState } = useUser();
   const { openPreview } = useImagePreview();
   const { showToast } = useToast();
@@ -245,7 +246,10 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => navigate('/login')
+          onClick: () => {
+            localStorage.setItem('copus_return_url', location.pathname + location.search);
+            navigate('/login');
+          }
         }
       });
       return;

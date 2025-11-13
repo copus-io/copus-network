@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useArticles } from "../../../../hooks/useArticles";
 import { Article } from "../../../../types/article";
 import { ArticleListSkeleton } from "../../../../components/ui/skeleton";
@@ -14,6 +14,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
   const { user, getArticleLikeState, updateArticleLikeState, toggleLike, syncArticleStates } = useUser();
   const [localArticles, setLocalArticles] = React.useState<Article[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Set test token to ensure API authentication - temporarily disable expired token
   // React.useEffect(() => {
@@ -133,7 +134,10 @@ export const DiscoveryContentSection = (): JSX.Element => {
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
                 We value human agency and power it with an x402-based economic engine that rewards quality sharing and creation.{' '}
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={() => {
+                    localStorage.setItem('copus_return_url', location.pathname + location.search);
+                    navigate('/login');
+                  }}
                   className="text-[#2191FB] hover:underline cursor-pointer font-normal"
                 >
                   Join us
@@ -195,7 +199,10 @@ export const DiscoveryContentSection = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => navigate('/login')
+          onClick: () => {
+            localStorage.setItem('copus_return_url', location.pathname + location.search);
+            navigate('/login');
+          }
         }
       });
       return;

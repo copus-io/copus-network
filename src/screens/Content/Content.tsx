@@ -225,7 +225,10 @@ export const Content = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => navigate('/login')
+          onClick: () => {
+            localStorage.setItem('copus_return_url', location.pathname + location.search);
+            navigate('/login');
+          }
         }
       });
       return;
