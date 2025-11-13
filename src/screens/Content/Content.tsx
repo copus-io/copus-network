@@ -1515,31 +1515,13 @@ export const Content = (): JSX.Element => {
             </div>
 
 {/* Conditional button - "Visit" for unlocked/free content, "Unlock now" for locked content */}
-            {(() => {
-              console.log('🔍 Button condition check:', {
-                unlockedUrl,
-                targetUrlIsLocked: article?.targetUrlIsLocked,
-                article: article?.uuid,
-                articleData: article
-              });
-              console.log('🎯 Which button will render?',
-                unlockedUrl ? 'Visit (unlocked)' :
-                article?.targetUrlIsLocked ? 'Unlock now' : 'Visit (free)'
-              );
-
-              if (article?.targetUrlIsLocked) {
-                console.log('🚀 SHOULD RENDER "Unlock now" button');
-              } else {
-                console.log('❌ NOT rendering "Unlock now" button - targetUrlIsLocked is:', article?.targetUrlIsLocked);
-              }
-
-              return null;
-            })()}
-            {unlockedUrl ? (
-              // Content has been unlocked via payment - show "Visit" button
-              <button
-                onClick={() => window.open(unlockedUrl, '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
+            {unlockedUrl || (user && content && user.id === content.userId) ? (
+              // Content has been unlocked via payment OR user is the author - show "Visit" button
+              <a
+                href={unlockedUrl || content.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red no-underline hover:bg-red/90 transition-colors"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                   Visit
@@ -1550,16 +1532,13 @@ export const Content = (): JSX.Element => {
                   alt="Arrow"
                   src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
                 />
-              </button>
+              </a>
             ) : article?.targetUrlIsLocked ? (
               // Content is locked and requires payment - show "Unlock now" button
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('🖱️ Unlock button clicked!');
-                  console.log('📄 Article data during click:', article);
-                  console.log('🔗 handleUnlock function:', typeof handleUnlock, handleUnlock);
                   handleUnlock();
                 }}
                 className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] transition-all active:scale-95"
