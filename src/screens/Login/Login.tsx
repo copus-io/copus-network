@@ -549,7 +549,7 @@ export const Login = (): JSX.Element => {
               showToast('Login successful! Welcome back 🎉', 'success');
               const tokenToUse = response.token || response.data?.token;
               await fetchUserInfo(tokenToUse);
-              navigate('/', { replace: true });
+              navigate(getRedirectUrl(), { replace: true });
             } else {
               throw new Error('No authentication token received');
             }
