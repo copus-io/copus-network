@@ -412,14 +412,15 @@ export const Content = (): JSX.Element => {
           console.log('⚠️ User logged in via wallet but walletAddress missing, attempting auto-detection...');
 
           tryAutoConnectWallet(authMethod);
+        } else if (user && !isWalletUser) {
+          // User is logged in via email but might have wallet connected in browser
+          // Try to auto-detect connected wallet for seamless experience
+          console.log('🔍 User logged in via email, attempting to detect connected wallets...');
+
+          tryAutoDetectAnyWallet();
         } else {
-          // User is not logged in OR logged in with email - show wallet selection modal
-          console.log('📱 User needs to select wallet:', {
-            hasUser: !!user,
-            authMethod,
-            isWalletUser,
-            hasWalletAddress: !!user?.walletAddress
-          });
+          // User is not logged in - show wallet selection modal
+          console.log('📱 User not logged in, showing wallet selection modal');
           setIsWalletSignInOpen(true);
         }
       } else {
@@ -428,6 +429,83 @@ export const Content = (): JSX.Element => {
     } catch (error) {
       console.error('Failed to fetch x402 payment info:', error);
       showToast('Failed to load payment information. Please try again.', 'error');
+    }
+  };
+
+  // Helper function to auto-detect any connected wallet for email users
+  const tryAutoDetectAnyWallet = async () => {
+    console.log('🔄 Attempting to detect any connected wallets...');
+
+    try {
+      if (!window.ethereum) {
+        console.log('❌ No ethereum provider found');
+        setIsWalletSignInOpen(true);
+        return;
+      }
+
+      // Try MetaMask first
+      let metamaskProvider = null;
+      if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
+        const providers = (window.ethereum as any).providers;
+        metamaskProvider = providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
+      } else if (window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
+        metamaskProvider = window.ethereum;
+      }
+
+      if (metamaskProvider) {
+        const accounts = await metamaskProvider.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          console.log('✅ Auto-detected connected MetaMask account:', accounts[0]);
+
+          // Set up wallet state
+          setWalletAddress(accounts[0]);
+          setWalletProvider(metamaskProvider);
+          setWalletType('metamask');
+
+          // Skip wallet selection and go directly to payment
+          setIsWalletSignInOpen(false);
+          setIsPayConfirmOpen(true);
+          setWalletBalance('...');
+
+          // Fetch balance
+          setupLoggedInWallet(accounts[0], 'metamask').catch(error => {
+            console.error('Failed to setup auto-detected wallet:', error);
+            setWalletBalance('0.00');
+          });
+          return;
+        }
+      }
+
+      // Try Coinbase Wallet
+      if (window.ethereum?.isCoinbaseWallet) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          console.log('✅ Auto-detected connected Coinbase Wallet account:', accounts[0]);
+
+          setWalletAddress(accounts[0]);
+          setWalletProvider(window.ethereum);
+          setWalletType('coinbase');
+
+          setIsWalletSignInOpen(false);
+          setIsPayConfirmOpen(true);
+          setWalletBalance('...');
+
+          setupLoggedInWallet(accounts[0], 'coinbase').catch(error => {
+            console.error('Failed to setup auto-detected wallet:', error);
+            setWalletBalance('0.00');
+          });
+          return;
+        }
+      }
+
+      // If no wallets detected, fall back to wallet selection
+      console.log('❌ No connected wallets detected, showing wallet selection modal');
+      setIsWalletSignInOpen(true);
+
+    } catch (error) {
+      console.error('Auto-detect any wallet error:', error);
+      // Fall back to manual wallet selection
+      setIsWalletSignInOpen(true);
     }
   };
 
