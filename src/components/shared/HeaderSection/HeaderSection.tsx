@@ -199,9 +199,12 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               <Button
                 variant="outline"
                 className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
-                asChild
+                onClick={() => {
+                  localStorage.setItem('copus_return_url', location.pathname + location.search);
+                  navigate('/login');
+                }}
               >
-                <Link to="/login">Log in / Sign up</Link>
+                Log in / Sign up
               </Button>
             )}
           </div>
