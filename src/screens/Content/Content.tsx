@@ -371,22 +371,10 @@ export const Content = (): JSX.Element => {
         const authMethod = localStorage.getItem('copus_auth_method');
         const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase';
 
-        // Debug: Log all wallet-related state for diagnosis
-        console.log('🔍 Wallet connection check:', {
-          user: !!user,
-          userId: user?.id,
-          userEmail: user?.email,
-          userWalletAddress: user?.walletAddress,
-          authMethod,
-          isWalletUser,
-          allConditionsMet: !!(user && isWalletUser && user.walletAddress)
-        });
 
         if (user && isWalletUser && user.walletAddress) {
           // User is already logged in with a wallet - skip wallet selection modal
           // and go directly to payment confirmation with their logged-in wallet
-          console.log('✅ User already logged in with wallet - skipping wallet selection modal');
-          console.log('🔄 Auth method:', authMethod, 'Wallet:', user.walletAddress);
 
           // Store wallet address immediately
           setWalletAddress(user.walletAddress);
@@ -409,18 +397,15 @@ export const Content = (): JSX.Element => {
         } else if (user && isWalletUser && !user.walletAddress) {
           // User is logged in via wallet but walletAddress is missing from user object
           // Try to detect and use current wallet connection
-          console.log('⚠️ User logged in via wallet but walletAddress missing, attempting auto-detection...');
 
           tryAutoConnectWallet(authMethod);
         } else if (user && !isWalletUser) {
           // User is logged in via email but might have wallet connected in browser
           // Try to auto-detect connected wallet for seamless experience
-          console.log('🔍 User logged in via email, attempting to detect connected wallets...');
 
           tryAutoDetectAnyWallet();
         } else {
           // User is not logged in - show wallet selection modal
-          console.log('📱 User not logged in, showing wallet selection modal');
           setIsWalletSignInOpen(true);
         }
       } else {
@@ -434,11 +419,9 @@ export const Content = (): JSX.Element => {
 
   // Helper function to auto-detect any connected wallet for email users
   const tryAutoDetectAnyWallet = async () => {
-    console.log('🔄 Attempting to detect any connected wallets...');
 
     try {
       if (!window.ethereum) {
-        console.log('❌ No ethereum provider found');
         setIsWalletSignInOpen(true);
         return;
       }
@@ -455,8 +438,6 @@ export const Content = (): JSX.Element => {
       if (metamaskProvider) {
         const accounts = await metamaskProvider.request({ method: 'eth_accounts' });
         if (accounts && accounts.length > 0) {
-          console.log('✅ Auto-detected connected MetaMask account:', accounts[0]);
-
           // Set up wallet state
           setWalletAddress(accounts[0]);
           setWalletProvider(metamaskProvider);
@@ -480,8 +461,6 @@ export const Content = (): JSX.Element => {
       if (window.ethereum?.isCoinbaseWallet) {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts && accounts.length > 0) {
-          console.log('✅ Auto-detected connected Coinbase Wallet account:', accounts[0]);
-
           setWalletAddress(accounts[0]);
           setWalletProvider(window.ethereum);
           setWalletType('coinbase');
@@ -499,11 +478,9 @@ export const Content = (): JSX.Element => {
       }
 
       // If no wallets detected, fall back to wallet selection
-      console.log('❌ No connected wallets detected, showing wallet selection modal');
       setIsWalletSignInOpen(true);
 
     } catch (error) {
-      console.error('Auto-detect any wallet error:', error);
       // Fall back to manual wallet selection
       setIsWalletSignInOpen(true);
     }
@@ -511,7 +488,6 @@ export const Content = (): JSX.Element => {
 
   // Helper function to auto-connect wallet when user is logged in via wallet but walletAddress is missing
   const tryAutoConnectWallet = async (authMethod: string) => {
-    console.log('🔄 Attempting auto-connect for wallet type:', authMethod);
 
     try {
       if (authMethod === 'metamask') {
@@ -534,8 +510,6 @@ export const Content = (): JSX.Element => {
         // Try to get current accounts (this won't trigger connection prompt if already connected)
         const accounts = await provider.request({ method: 'eth_accounts' });
         if (accounts && accounts.length > 0) {
-          console.log('✅ Auto-detected connected MetaMask account:', accounts[0]);
-
           // Set up wallet state
           setWalletAddress(accounts[0]);
           setWalletProvider(provider);
@@ -578,11 +552,9 @@ export const Content = (): JSX.Element => {
       }
 
       // If auto-connect failed, fall back to wallet selection
-      console.log('❌ Auto-connect failed, showing wallet selection modal');
       setIsWalletSignInOpen(true);
 
     } catch (error) {
-      console.error('Auto-connect wallet error:', error);
       // Fall back to manual wallet selection
       setIsWalletSignInOpen(true);
     }
@@ -591,7 +563,6 @@ export const Content = (): JSX.Element => {
   // Helper function to set up wallet connection for already logged-in wallet users
   const setupLoggedInWallet = async (walletAddress: string, authMethod: string) => {
     try {
-      console.log('🔧 Setting up wallet for logged-in user...');
 
       // Detect the correct provider based on auth method
       let provider = null;
@@ -728,7 +699,6 @@ export const Content = (): JSX.Element => {
 
         // Validate balance response
         if (!balance || balance === '0x' || typeof balance !== 'string') {
-          console.warn('⚠️ Invalid balance response, setting to 0');
           setWalletBalance('0.00');
           return;
         }
@@ -830,7 +800,6 @@ export const Content = (): JSX.Element => {
           return;
         }
 
-        console.log('✅ Connected to MetaMask account:', address);
 
         // Store wallet address and provider for later use in payment authorization
         setWalletAddress(address);
@@ -985,8 +954,7 @@ export const Content = (): JSX.Element => {
 
           // Validate balance response
           if (!balance || balance === '0x' || typeof balance !== 'string') {
-            console.warn('⚠️ Invalid balance response, setting to 0');
-            setWalletBalance('0.00');
+              setWalletBalance('0.00');
             return;
           }
 
@@ -1260,8 +1228,7 @@ export const Content = (): JSX.Element => {
 
           // Validate balance response
           if (!balance || balance === '0x' || typeof balance !== 'string') {
-            console.warn('⚠️ Invalid balance response, setting to 0');
-            setWalletBalance('0.00');
+              setWalletBalance('0.00');
             return;
           }
 
