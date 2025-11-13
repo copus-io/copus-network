@@ -398,10 +398,10 @@ export const Login = (): JSX.Element => {
       return returnUrl;
     }
 
-    // Check sessionStorage for saved return URL
-    const savedReturnUrl = sessionStorage.getItem('copus_return_url');
+    // Check localStorage for saved return URL (persists across OAuth redirects)
+    const savedReturnUrl = localStorage.getItem('copus_return_url');
     if (savedReturnUrl) {
-      sessionStorage.removeItem('copus_return_url'); // Clear after use
+      localStorage.removeItem('copus_return_url'); // Clear after use
       return savedReturnUrl;
     }
 
