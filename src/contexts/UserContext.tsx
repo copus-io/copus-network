@@ -235,12 +235,12 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const currentPath = window.location.pathname;
       const protectedPaths = ['/setting', '/treasury', '/notification', '/create', '/my-treasury'];
 
-      // If on a protected page, redirect to discovery
+      // If on a protected page, redirect to homepage
       // Otherwise, stay on current page (like content pages) but reload to show logged out state
       const isProtectedPage = protectedPaths.some(path => currentPath.startsWith(path));
 
       if (isProtectedPage) {
-        window.location.href = '/discovery';
+        window.location.href = '/';
       } else {
         window.location.reload();
       }
