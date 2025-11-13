@@ -36,7 +36,9 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
 
     // Save current page path to localStorage (not sessionStorage!) so user can return after login
     // localStorage persists across OAuth redirects (Google, X), sessionStorage does not
-    localStorage.setItem('copus_return_url', location.pathname + location.search);
+    const returnUrl = location.pathname + location.search;
+    console.log('🔒 AuthGuard: Saving return URL to localStorage:', returnUrl);
+    localStorage.setItem('copus_return_url', returnUrl);
 
     // Also save in navigation state as fallback
     return <Navigate to={fallbackPath} state={{ from: location }} replace />;
