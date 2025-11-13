@@ -374,12 +374,15 @@ export const Content = (): JSX.Element => {
         if (user && isWalletUser && user.walletAddress) {
           // User is already logged in with a wallet - skip wallet selection modal
           // and go directly to payment confirmation with their logged-in wallet
-          console.log('✅ User already logged in with wallet:', user.walletAddress);
-          console.log('🔄 Auth method:', authMethod);
+          console.log('✅ User already logged in with wallet - skipping wallet selection modal');
+          console.log('🔄 Auth method:', authMethod, 'Wallet:', user.walletAddress);
 
           // Store wallet address immediately
           setWalletAddress(user.walletAddress);
           setWalletType(authMethod);
+
+          // Hide wallet selection modal to ensure clean UI state
+          setIsWalletSignInOpen(false);
 
           // Show payment modal immediately with loading state
           setIsPayConfirmOpen(true);
@@ -389,10 +392,17 @@ export const Content = (): JSX.Element => {
           setupLoggedInWallet(user.walletAddress, authMethod).catch(error => {
             console.error('Failed to setup wallet:', error);
             setWalletBalance('0.00');
+            // If wallet setup fails, still allow user to see payment modal
+            // They can close it and try manual wallet connection if needed
           });
         } else {
           // User is not logged in OR logged in with email - show wallet selection modal
-          console.log('📱 Opening wallet selection modal');
+          console.log('📱 User needs to select wallet:', {
+            hasUser: !!user,
+            authMethod,
+            isWalletUser,
+            hasWalletAddress: !!user?.walletAddress
+          });
           setIsWalletSignInOpen(true);
         }
       } else {
