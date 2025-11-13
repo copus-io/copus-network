@@ -371,6 +371,17 @@ export const Content = (): JSX.Element => {
         const authMethod = localStorage.getItem('copus_auth_method');
         const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase';
 
+        // Debug: Log all wallet-related state for diagnosis
+        console.log('🔍 Wallet connection check:', {
+          user: !!user,
+          userId: user?.id,
+          userEmail: user?.email,
+          userWalletAddress: user?.walletAddress,
+          authMethod,
+          isWalletUser,
+          allConditionsMet: !!(user && isWalletUser && user.walletAddress)
+        });
+
         if (user && isWalletUser && user.walletAddress) {
           // User is already logged in with a wallet - skip wallet selection modal
           // and go directly to payment confirmation with their logged-in wallet
@@ -395,6 +406,12 @@ export const Content = (): JSX.Element => {
             // If wallet setup fails, still allow user to see payment modal
             // They can close it and try manual wallet connection if needed
           });
+        } else if (user && isWalletUser && !user.walletAddress) {
+          // User is logged in via wallet but walletAddress is missing from user object
+          // Try to detect and use current wallet connection
+          console.log('⚠️ User logged in via wallet but walletAddress missing, attempting auto-detection...');
+
+          tryAutoConnectWallet(authMethod);
         } else {
           // User is not logged in OR logged in with email - show wallet selection modal
           console.log('📱 User needs to select wallet:', {
@@ -411,6 +428,85 @@ export const Content = (): JSX.Element => {
     } catch (error) {
       console.error('Failed to fetch x402 payment info:', error);
       showToast('Failed to load payment information. Please try again.', 'error');
+    }
+  };
+
+  // Helper function to auto-connect wallet when user is logged in via wallet but walletAddress is missing
+  const tryAutoConnectWallet = async (authMethod: string) => {
+    console.log('🔄 Attempting auto-connect for wallet type:', authMethod);
+
+    try {
+      if (authMethod === 'metamask') {
+        if (!window.ethereum) {
+          throw new Error('MetaMask not found');
+        }
+
+        let provider = null;
+        if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
+          const providers = (window.ethereum as any).providers;
+          provider = providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
+        } else if (window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
+          provider = window.ethereum;
+        }
+
+        if (!provider) {
+          throw new Error('MetaMask provider not found');
+        }
+
+        // Try to get current accounts (this won't trigger connection prompt if already connected)
+        const accounts = await provider.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          console.log('✅ Auto-detected connected MetaMask account:', accounts[0]);
+
+          // Set up wallet state
+          setWalletAddress(accounts[0]);
+          setWalletProvider(provider);
+          setWalletType('metamask');
+
+          // Skip wallet selection and go directly to payment
+          setIsWalletSignInOpen(false);
+          setIsPayConfirmOpen(true);
+          setWalletBalance('...');
+
+          // Fetch balance
+          setupLoggedInWallet(accounts[0], 'metamask').catch(error => {
+            console.error('Failed to setup auto-connected wallet:', error);
+            setWalletBalance('0.00');
+          });
+          return;
+        }
+      } else if (authMethod === 'coinbase') {
+        // Similar logic for Coinbase Wallet
+        if (window.ethereum?.isCoinbaseWallet) {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts && accounts.length > 0) {
+            console.log('✅ Auto-detected connected Coinbase Wallet account:', accounts[0]);
+
+            setWalletAddress(accounts[0]);
+            setWalletProvider(window.ethereum);
+            setWalletType('coinbase');
+
+            setIsWalletSignInOpen(false);
+            setIsPayConfirmOpen(true);
+            setWalletBalance('...');
+
+            setupLoggedInWallet(accounts[0], 'coinbase').catch(error => {
+              console.error('Failed to setup auto-connected wallet:', error);
+              setWalletBalance('0.00');
+            });
+            return;
+          }
+        }
+      }
+
+      // If auto-connect failed, fall back to wallet selection
+      console.log('❌ Auto-connect failed, showing wallet selection modal');
+      setIsWalletSignInOpen(true);
+
+    } catch (error) {
+      console.error('Auto-connect wallet error:', error);
+      // Fall back to manual wallet selection
+      setIsWalletSignInOpen(true);
     }
   };
 
