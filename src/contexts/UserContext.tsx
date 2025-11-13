@@ -231,21 +231,17 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearFromStorage(localStorage);
       clearFromStorage(sessionStorage);
 
-      console.log('✅ Logout complete - determining redirect location');
-
       // Determine where to redirect after logout
       const currentPath = window.location.pathname;
       const protectedPaths = ['/setting', '/treasury', '/notification', '/create', '/my-treasury'];
 
-      // If on a protected page, redirect to homepage
-      // Otherwise, stay on current page (like content pages, discovery, etc.)
+      // If on a protected page, redirect to discovery
+      // Otherwise, stay on current page (like content pages) but reload to show logged out state
       const isProtectedPage = protectedPaths.some(path => currentPath.startsWith(path));
 
       if (isProtectedPage) {
-        console.log('Logged out from protected page, redirecting to homepage');
-        window.location.href = '/';
+        window.location.href = '/discovery';
       } else {
-        console.log('Logged out from public page, reloading current page');
         window.location.reload();
       }
     }

@@ -392,26 +392,20 @@ export const Login = (): JSX.Element => {
 
   // Helper function to get redirect URL after login
   const getRedirectUrl = () => {
-    console.log('🔍 getRedirectUrl called');
-
     // Check for return_url query parameter
     const returnUrl = searchParams.get('return_url');
     if (returnUrl) {
-      console.log('✅ Found return_url in query params:', returnUrl);
       return returnUrl;
     }
 
     // Check localStorage for saved return URL (persists across OAuth redirects)
     const savedReturnUrl = localStorage.getItem('copus_return_url');
-    console.log('📦 localStorage copus_return_url:', savedReturnUrl);
     if (savedReturnUrl) {
       localStorage.removeItem('copus_return_url'); // Clear after use
-      console.log('✅ Using saved return URL:', savedReturnUrl);
       return savedReturnUrl;
     }
 
     // Default to homepage
-    console.log('⚠️ No return URL found, defaulting to /');
     return '/';
   };
 
@@ -515,9 +509,7 @@ export const Login = (): JSX.Element => {
               // Fetch user info (backend handles profile data from OAuth provider)
               await fetchUserInfo(tokenToUse);
 
-              const redirectUrl = getRedirectUrl();
-              console.log('🎯 Google OAuth complete, redirecting to:', redirectUrl);
-              navigate(redirectUrl, { replace: true });
+              navigate(getRedirectUrl(), { replace: true });
             }
           } else if (provider === 'x') {
             // X (Twitter) login handling
@@ -618,10 +610,6 @@ export const Login = (): JSX.Element => {
   // Handle Google login
   const handleGoogleLogin = async () => {
     try {
-      // Check what return URL is saved before OAuth flow
-      const currentReturnUrl = localStorage.getItem('copus_return_url');
-      console.log('🚀 Starting Google OAuth flow, copus_return_url:', currentReturnUrl);
-
       // Clear any existing user data before starting OAuth flow
       // This ensures we don't confuse the new login with account binding
       // IMPORTANT: Don't clear copus_return_url - we need it after OAuth redirect
@@ -635,8 +623,6 @@ export const Login = (): JSX.Element => {
       const urlWithProvider = oauthUrl.includes('?')
         ? `${oauthUrl}&provider=google`
         : `${oauthUrl}?provider=google`;
-
-      console.log('🔄 Redirecting to Google OAuth URL:', urlWithProvider);
       window.location.href = urlWithProvider;
     } catch (error: any) {
       showToast(`Google login failed: ${error.message || 'Please try again'}`, 'error');
