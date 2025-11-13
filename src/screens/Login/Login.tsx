@@ -389,7 +389,26 @@ export const Login = (): JSX.Element => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
-  
+
+  // Helper function to get redirect URL after login
+  const getRedirectUrl = () => {
+    // Check for return_url query parameter
+    const returnUrl = searchParams.get('return_url');
+    if (returnUrl) {
+      return returnUrl;
+    }
+
+    // Check sessionStorage for saved return URL
+    const savedReturnUrl = sessionStorage.getItem('copus_return_url');
+    if (savedReturnUrl) {
+      sessionStorage.removeItem('copus_return_url'); // Clear after use
+      return savedReturnUrl;
+    }
+
+    // Default to homepage
+    return '/';
+  };
+
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -726,7 +745,7 @@ export const Login = (): JSX.Element => {
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
-        navigate('/');
+        navigate(getRedirectUrl());
       } else {
         showToast(`Metamask login failed: ${response.msg || 'Please try again'}`, 'error');
       }
@@ -851,7 +870,7 @@ export const Login = (): JSX.Element => {
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
-        navigate('/');
+        navigate(getRedirectUrl());
       } else {
         showToast(`Coinbase Wallet login failed: ${response.msg || 'Please try again'}`, 'error');
       }
@@ -993,7 +1012,7 @@ export const Login = (): JSX.Element => {
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
-        navigate('/');
+        navigate(getRedirectUrl());
       } else {
         // Translate error messages
         let errorMessage = 'Login failed';

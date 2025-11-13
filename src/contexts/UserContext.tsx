@@ -231,10 +231,23 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearFromStorage(localStorage);
       clearFromStorage(sessionStorage);
 
-      console.log('✅ Logout complete - redirecting to discovery page');
+      console.log('✅ Logout complete - determining redirect location');
 
-      // Redirect to discovery page
-      window.location.href = '/';
+      // Determine where to redirect after logout
+      const currentPath = window.location.pathname;
+      const protectedPaths = ['/setting', '/treasury', '/notification', '/create', '/my-treasury'];
+
+      // If on a protected page, redirect to homepage
+      // Otherwise, stay on current page (like content pages, discovery, etc.)
+      const isProtectedPage = protectedPaths.some(path => currentPath.startsWith(path));
+
+      if (isProtectedPage) {
+        console.log('Logged out from protected page, redirecting to homepage');
+        window.location.href = '/';
+      } else {
+        console.log('Logged out from public page, reloading current page');
+        window.location.reload();
+      }
     }
   }, []); // Empty dependencies since it uses setState and localStorage directly
 

@@ -34,7 +34,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
       return <UnauthorizedPage />;
     }
 
-    // Save current page path, can redirect back after login
+    // Save current page path to sessionStorage so user can return after login
+    // This works across OAuth redirects and page reloads
+    sessionStorage.setItem('copus_return_url', location.pathname + location.search);
+
+    // Also save in navigation state as fallback
     return <Navigate to={fallbackPath} state={{ from: location }} replace />;
   }
 
