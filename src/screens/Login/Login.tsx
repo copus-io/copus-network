@@ -508,8 +508,8 @@ export const Login = (): JSX.Element => {
 
               // Fetch user info (backend handles profile data from OAuth provider)
               await fetchUserInfo(tokenToUse);
-              
-              navigate('/', { replace: true });
+
+              navigate(getRedirectUrl(), { replace: true });
             }
           } else if (provider === 'x') {
             // X (Twitter) login handling
@@ -538,8 +538,8 @@ export const Login = (): JSX.Element => {
 
               // Fetch user info (backend handles profile data from OAuth provider)
               await fetchUserInfo(tokenToUse);
-              
-              navigate('/', { replace: true });
+
+              navigate(getRedirectUrl(), { replace: true });
             }
           } else {
             // Default fallback (for backward compatibility)
@@ -590,6 +590,7 @@ export const Login = (): JSX.Element => {
     try {
       // Clear any existing user data before starting OAuth flow
       // This ensures we don't confuse the new login with account binding
+      // IMPORTANT: Don't clear copus_return_url - we need it after OAuth redirect
       localStorage.removeItem('copus_token');
       localStorage.removeItem('copus_user');
       sessionStorage.removeItem('copus_token');
@@ -611,6 +612,7 @@ export const Login = (): JSX.Element => {
     try {
       // Clear any existing user data before starting OAuth flow
       // This ensures we don't confuse the new login with account binding
+      // IMPORTANT: Don't clear copus_return_url - we need it after OAuth redirect
       localStorage.removeItem('copus_token');
       localStorage.removeItem('copus_user');
       sessionStorage.removeItem('copus_token');
