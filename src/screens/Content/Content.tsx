@@ -532,8 +532,6 @@ export const Content = (): JSX.Element => {
         if (window.ethereum?.isCoinbaseWallet) {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts && accounts.length > 0) {
-            console.log('✅ Auto-detected connected Coinbase Wallet account:', accounts[0]);
-
             setWalletAddress(accounts[0]);
             setWalletProvider(window.ethereum);
             setWalletType('coinbase');
