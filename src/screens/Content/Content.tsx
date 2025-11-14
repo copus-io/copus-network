@@ -1381,9 +1381,8 @@ export const Content = (): JSX.Element => {
                       )}
 
                       <h1
-                        className="relative [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
+                        className="relative [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
                         style={{
-                          maxHeight: '88px', // 44px * 2 lines for mobile
                           wordBreak: 'break-word',
                           overflowWrap: 'break-word'
                         }}
