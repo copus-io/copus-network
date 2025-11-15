@@ -22,7 +22,8 @@ import {
   generateNonce,
   signTransferWithAuthorization,
   createX402PaymentHeader,
-  formatUSDCPrice
+  formatUSDCPrice,
+  formatUSDCPriceForCard
 } from "../../utils/x402Utils";
 
 
@@ -1376,7 +1377,7 @@ export const Content = (): JSX.Element => {
                             src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
                           />
                           <span className="[font-family:'Lato',Helvetica] font-semibold text-[#0052ff] text-xl tracking-[0] leading-5 whitespace-nowrap">
-                            {formatUSDCPrice(article.priceInfo.price)}
+                            {formatUSDCPriceForCard(article.priceInfo.price)}
                           </span>
                         </div>
                       )}

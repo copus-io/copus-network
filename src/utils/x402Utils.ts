@@ -384,10 +384,10 @@ export async function supportsTransferWithAuthorization(provider: any): Promise<
 }
 
 /**
- * Format USDC price for display in a compact, readable way.
+ * Format USDC price for display in payment modals (precise format).
  *
  * Handles very small decimal values by using scientific notation
- * to avoid long strings of zeros.
+ * to avoid long strings of zeros while maintaining precision.
  *
  * @param {string | number} price - The price value to format
  * @returns {string} Formatted price string
@@ -422,4 +422,40 @@ export function formatUSDCPrice(price: string | number): string {
   // For very small prices < 0.0001, use scientific notation
   // This makes 0.00000001 display as '1e-8'
   return numPrice.toExponential().replace(/e\+?/, 'e');
+}
+
+/**
+ * Format USDC price for display on article cards/badges (simplified format).
+ *
+ * Uses a simple threshold approach that's immediately understandable:
+ * - Shows actual price if >= $0.01
+ * - Shows "< $0.01" for anything smaller
+ *
+ * @param {string | number} price - The price value to format
+ * @returns {string} Formatted price string
+ *
+ * @example
+ * ```typescript
+ * formatUSDCPriceForCard('0.5')        // '$0.5'
+ * formatUSDCPriceForCard('1.25')       // '$1.25'
+ * formatUSDCPriceForCard('0.05')       // '$0.05'
+ * formatUSDCPriceForCard('0.00000001') // '< $0.01'
+ * formatUSDCPriceForCard('0.0025')     // '< $0.01'
+ * ```
+ */
+export function formatUSDCPriceForCard(price: string | number): string {
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+
+  // Handle invalid numbers
+  if (isNaN(numPrice) || numPrice < 0) {
+    return '$0';
+  }
+
+  // For prices >= 0.01, show with dollar sign
+  if (numPrice >= 0.01) {
+    return `$${numPrice}`;
+  }
+
+  // For anything less than $0.01, show threshold
+  return '< $0.01';
 }

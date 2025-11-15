@@ -9,7 +9,7 @@ import { ImagePreviewModal } from "../ui/image-preview-modal";
 import { LazyImage } from "../ui/lazy-image";
 import { getCategoryStyle, getCategoryInlineStyle, formatCount, formatDate } from "../../utils/categoryStyles";
 import { getIconUrl, getIconStyle } from "../../config/icons";
-import { formatUSDCPrice } from "../../utils/x402Utils";
+import { formatUSDCPriceForCard } from "../../utils/x402Utils";
 
 // Generic article data interface
 export interface ArticleData {
@@ -229,7 +229,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         src={getIconUrl('X402_PAYMENT')}
                       />
                       <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-sm tracking-[0] leading-3 whitespace-nowrap">
-                        {formatUSDCPrice(article.paymentPrice)}
+                        {formatUSDCPriceForCard(article.paymentPrice)}
                       </span>
                     </div>
                   )}
@@ -328,7 +328,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         src={getIconUrl('X402_PAYMENT')}
                       />
                       <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
-                        {formatUSDCPrice(article.paymentPrice)}
+                        {formatUSDCPriceForCard(article.paymentPrice)}
                       </span>
                     </div>
                   )}
@@ -521,7 +521,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                         src={getIconUrl('X402_PAYMENT')}
                       />
                       <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
-                        {formatUSDCPrice(article.paymentPrice)}
+                        {formatUSDCPriceForCard(article.paymentPrice)}
                       </span>
                     </div>
                   )}
