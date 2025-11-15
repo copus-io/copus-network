@@ -382,3 +382,44 @@ export async function supportsTransferWithAuthorization(provider: any): Promise<
     return false;
   }
 }
+
+/**
+ * Format USDC price for display in a compact, readable way.
+ *
+ * Handles very small decimal values by using scientific notation
+ * to avoid long strings of zeros.
+ *
+ * @param {string | number} price - The price value to format
+ * @returns {string} Formatted price string
+ *
+ * @example
+ * ```typescript
+ * formatUSDCPrice('0.5')        // '0.5'
+ * formatUSDCPrice('1.25')       // '1.25'
+ * formatUSDCPrice('0.0025')     // '0.0025'
+ * formatUSDCPrice('0.00000001') // '1e-8'
+ * formatUSDCPrice('0.000123')   // '1.23e-4'
+ * ```
+ */
+export function formatUSDCPrice(price: string | number): string {
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+
+  // Handle invalid numbers
+  if (isNaN(numPrice) || numPrice < 0) {
+    return '0';
+  }
+
+  // For prices >= 0.01, show as is with up to 6 decimal places
+  if (numPrice >= 0.01) {
+    return numPrice.toString();
+  }
+
+  // For prices < 0.01 but >= 0.0001, show up to 4 significant decimals
+  if (numPrice >= 0.0001) {
+    return numPrice.toFixed(4).replace(/\.?0+$/, '');
+  }
+
+  // For very small prices < 0.0001, use scientific notation
+  // This makes 0.00000001 display as '1e-8'
+  return numPrice.toExponential().replace(/e\+?/, 'e');
+}

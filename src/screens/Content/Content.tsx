@@ -21,7 +21,8 @@ import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModa
 import {
   generateNonce,
   signTransferWithAuthorization,
-  createX402PaymentHeader
+  createX402PaymentHeader,
+  formatUSDCPrice
 } from "../../utils/x402Utils";
 
 
@@ -1375,7 +1376,7 @@ export const Content = (): JSX.Element => {
                             src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
                           />
                           <span className="[font-family:'Lato',Helvetica] font-semibold text-[#0052ff] text-xl tracking-[0] leading-5 whitespace-nowrap">
-                            {article.priceInfo.price}
+                            {formatUSDCPrice(article.priceInfo.price)}
                           </span>
                         </div>
                       )}
@@ -1593,7 +1594,7 @@ export const Content = (): JSX.Element => {
           onPayNow={handlePayNow}
           walletAddress={walletAddress || 'Not connected'}
           availableBalance={`${walletBalance} USDC`}
-          amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
+          amount={article?.priceInfo ? `${formatUSDCPrice(article.priceInfo.price)} ${article.priceInfo.currency}` : '0.01 USDC'}
           network="Base"
           faucetLink="https://app.metamask.io/buy/build-quote"
           isInsufficientBalance={
