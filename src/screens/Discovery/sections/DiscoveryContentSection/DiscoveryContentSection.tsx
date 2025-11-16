@@ -111,7 +111,16 @@ export const DiscoveryContentSection = (): JSX.Element => {
             </p>
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Click "Curate" (top-right) to share your finds.
+                Click "Curate" (top-right) to share your finds. Install the{' '}
+                <a
+                  href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb?authuser=5&hl=en"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#2191FB] hover:underline"
+                >
+                  browser extension
+                </a>
+                {' '}to curate as you browse the web.
               </span>
             </p>
           </div>
