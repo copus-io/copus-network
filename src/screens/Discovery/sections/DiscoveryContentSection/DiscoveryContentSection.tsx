@@ -106,7 +106,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
           <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Discover Internet gems hand-picked by people. No algorithmic feeds here.
+                Discover Internet gems hand-picked by people.
               </span>
             </p>
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
