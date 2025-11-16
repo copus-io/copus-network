@@ -352,7 +352,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       {/* No more content hint */}
       {!loading && !hasMore && articles.length > 0 && (
         <div className="flex justify-center items-center py-8">
-          <div className="text-gray-500">You've reached the bottom! No more content to load.</div>
+          <div className="text-gray-500 text-center">You've reached the bottom! No more content to load.</div>
         </div>
       )}
     </main>
