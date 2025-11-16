@@ -76,12 +76,45 @@ const ToastItem: React.FC<{
   toast: Toast;
   onRemove: (id: string) => void;
 }> = ({ toast, onRemove }) => {
+  // Determine colors based on toast type
+  const getToastStyles = () => {
+    switch (toast.type) {
+      case 'success':
+        return {
+          bg: 'bg-[#f0fdf4]',        // Light green background
+          border: 'border-[#86efac]', // Green border
+          text: 'text-[#16a34a]'      // Green text
+        };
+      case 'error':
+        return {
+          bg: 'bg-[#fdf2f2]',        // Light red background
+          border: 'border-[#fbb6b6]', // Red border
+          text: 'text-[#e53e3e]'      // Red text
+        };
+      case 'warning':
+        return {
+          bg: 'bg-[#fefce8]',        // Light yellow background
+          border: 'border-[#fde047]', // Yellow border
+          text: 'text-[#ca8a04]'      // Yellow text
+        };
+      case 'info':
+      default:
+        return {
+          bg: 'bg-[#eff6ff]',        // Light blue background
+          border: 'border-[#93c5fd]', // Blue border
+          text: 'text-[#2563eb]'      // Blue text
+        };
+    }
+  };
+
+  const styles = getToastStyles();
+
   return (
     <div
-      className="px-6 py-3 bg-[#fdf2f2] border border-[#fbb6b6] rounded-full shadow-sm transform transition-all duration-300 animate-in slide-in-from-top-2 fade-in-0"
+      className={`px-6 py-3 ${styles.bg} border ${styles.border} rounded-full shadow-sm transform transition-all duration-300 animate-in slide-in-from-top-2 fade-in-0`}
     >
       <div className="flex items-center gap-3">
-        <p className="text-[#e53e3e] text-sm font-medium whitespace-nowrap">
+        <p className={`${styles.text} text-sm font-medium whitespace-nowrap`}>
           {toast.message}
         </p>
         {toast.action && (
@@ -90,7 +123,7 @@ const ToastItem: React.FC<{
               toast.action!.onClick();
               onRemove(toast.id);
             }}
-            className="text-[#e53e3e] text-sm font-semibold underline hover:no-underline whitespace-nowrap"
+            className={`${styles.text} text-sm font-semibold underline hover:no-underline whitespace-nowrap`}
           >
             {toast.action.label}
           </button>
