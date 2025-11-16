@@ -13,9 +13,10 @@ interface HeaderSectionProps {
   hideCreateButton?: boolean;
   showDiscoverNow?: boolean;
   hideLoginButton?: boolean;
+  articleAuthorId?: string; // For conditional rendering in article detail page
 }
 
-export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = false, hideLoginButton = false }: HeaderSectionProps): JSX.Element => {
+export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = false, hideLoginButton = false, articleAuthorId }: HeaderSectionProps): JSX.Element => {
   const { user, logout, isLoggedIn: userIsLoggedIn, loading } = useUser();
   // Always use actual UserContext state, not props
   // If still loading, optimistically check if token exists in storage
@@ -109,16 +110,30 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             className="flex items-center gap-[15px] px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
             asChild
           >
-            <Link to="/create">
-              <img
-                className="w-5 h-5"
-                alt="Vector"
-                src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
-              />
-              <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red">
-                Curate
-              </span>
-            </Link>
+            {/* Conditional rendering: Show "Re-edit" for author, "Curate" for others */}
+            {articleAuthorId && user?.id === articleAuthorId ? (
+              <Link to="/create">
+                <img
+                  className="w-5 h-5"
+                  alt="Vector"
+                  src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+                />
+                <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red">
+                  Re-edit
+                </span>
+              </Link>
+            ) : (
+              <Link to="/create">
+                <img
+                  className="w-5 h-5"
+                  alt="Vector"
+                  src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+                />
+                <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red">
+                  Curate
+                </span>
+              </Link>
+            )}
           </Button>
         )}
 
