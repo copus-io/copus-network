@@ -1,7 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useToast } from '../../ui/toast';
+import { Avatar, AvatarImage } from '../../ui/avatar';
+import { Button } from '../../ui/button';
+import { useUser } from '../../../contexts/UserContext';
+import profileDefaultAvatar from '../../../assets/images/profile-default.svg';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -49,6 +53,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user } = useUser();
 
   const handleContactClick = async () => {
     const email = 'handuo@server31.io';
@@ -136,6 +141,48 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
         >
           <X className="w-6 h-6 text-dark-grey" />
         </button>
+
+        {/* Login/Profile Section */}
+        <div className="flex items-center justify-start px-5 py-5 w-full border-b border-solid border-light-grey">
+          {isLoggedIn ? (
+            <Link
+              to="/setting"
+              onClick={onClose}
+              className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <Avatar className="w-[47px] h-[47px]">
+                <AvatarImage
+                  src={
+                    user?.faceUrl ||
+                    user?.avatar ||
+                    profileDefaultAvatar
+                  }
+                  alt="Avatar"
+                />
+              </Avatar>
+              {user && (
+                <div className="flex flex-col items-start">
+                  <p className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-lg leading-[27px] truncate max-w-[200px]">
+                    {user.username}
+                  </p>
+                  <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm leading-[20px] truncate max-w-[200px]">
+                    {user.email}
+                  </p>
+                </div>
+              )}
+            </Link>
+          ) : (
+            <Button
+              variant="outline"
+              className="flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
+              asChild
+            >
+              <Link to="/login" onClick={onClose}>
+                Log in / Sign up
+              </Link>
+            </Button>
+          )}
+        </div>
 
         <div className="flex flex-col items-start justify-between relative flex-1 self-stretch w-full grow">
           {/* Main Navigation */}

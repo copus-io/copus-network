@@ -3,7 +3,7 @@
   "source": "./index.html",
   "type": "module",
   "name": "copus-human-internet",
-  "description": "copus-human Internet - A decentralized social content platform",
+  "description": "Copus - Internet Treasure Map",
   "scripts": {
     "dev": "vite --mode development",
     "dev:staging": "vite --mode staging",
