@@ -192,7 +192,8 @@ export const MainContentSection = (): JSX.Element => {
         }
 
 
-        const processedInfo = userInfo.data || userInfo;
+        // getUserHomeInfo already returns response.data, so userInfo is the actual data
+        const processedInfo = userInfo;
 
         // Check if account is disabled/deleted and use default images
         if (processedInfo.isEnabled === false || processedInfo.isEnabled === 0) {
