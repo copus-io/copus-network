@@ -42,14 +42,15 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
   const currentSize = sizeStyles[size];
 
   // 格式化数字显示
-  const formatCount = (count: number): string => {
-    if (count >= 1000000) {
-      return Math.floor(count / 1000000) + 'M';
+  const formatCount = (count: number | undefined): string => {
+    const safeCount = count || 0;
+    if (safeCount >= 1000000) {
+      return Math.floor(safeCount / 1000000) + 'M';
     }
-    if (count >= 1000) {
-      return Math.floor(count / 1000) + 'K';
+    if (safeCount >= 1000) {
+      return Math.floor(safeCount / 1000) + 'K';
     }
-    return count.toString();
+    return safeCount.toString();
   };
 
   return (

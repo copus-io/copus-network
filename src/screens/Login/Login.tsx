@@ -39,6 +39,10 @@ const socialProviders = [
     name: "Coinbase Wallet",
     icon: "data:image/svg+xml,%3Csvg width='1024' height='1024' viewBox='0 0 1024 1024' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1024' height='1024' fill='%230052FF'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M152 512C152 710.823 313.177 872 512 872C710.823 872 872 710.823 872 512C872 313.177 710.823 152 512 152C313.177 152 152 313.177 152 512ZM420 396C406.745 396 396 406.745 396 420V604C396 617.255 406.745 628 420 628H604C617.255 628 628 617.255 628 604V420C628 406.745 617.255 396 604 396H420Z' fill='white'/%3E%3C/svg%3E",
   },
+  {
+    name: "OKX Wallet",
+    icon: "https://lh3.googleusercontent.com/2bBevW79q6gRZTFdm42CzUetuEKndq4fn41HQGknMpKMF_d-Ae2sJJzgfFUAVb1bJKCBb4ptZ9EAPp-QhWYIvc35yw=s120",
+  },
 ];
 
 // Helper function to extract token from various response formats
@@ -901,6 +905,136 @@ export const Login = (): JSX.Element => {
     }
   };
 
+  // Handle OKX Wallet login
+  const handleOKXWalletLogin = async () => {
+    try {
+      if (!window.ethereum) {
+        showToast('Please install OKX Wallet first', 'error');
+        return;
+      }
+
+      setIsLoginLoading(true);
+
+      // Cache token check at start of function
+      const hasExistingToken = !!localStorage.getItem('copus_token');
+
+      // Detect OKX Wallet provider
+      let okxProvider = null;
+
+      // When multiple wallets are installed, they inject into window.ethereum.providers array
+      // Check providers array first to find the correct wallet
+      if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
+        console.log('Multiple wallet providers detected, searching for OKX Wallet...');
+        const providers = (window.ethereum as any).providers;
+
+        // Find OKX Wallet provider
+        okxProvider = providers.find((p: any) => p.isOkxWallet);
+
+        if (!okxProvider) {
+          showToast('OKX Wallet not found. Please ensure OKX Wallet is installed.', 'error');
+          setIsLoginLoading(false);
+          return;
+        }
+        console.log('Found OKX Wallet provider in providers array');
+      } else {
+        // Single wallet installed - check if it's OKX Wallet
+        if (window.ethereum.isOkxWallet) {
+          okxProvider = window.ethereum;
+          console.log('Using window.ethereum as OKX Wallet provider');
+        } else if ((window as any).okxwallet) {
+          okxProvider = (window as any).okxwallet;
+          console.log('Using window.okxwallet as provider');
+        } else {
+          showToast('OKX Wallet not found. Please install OKX Wallet extension.', 'error');
+          setIsLoginLoading(false);
+          return;
+        }
+      }
+
+      // Request wallet connection - ensures user grants permission
+      await okxProvider.request({ method: 'eth_requestAccounts' });
+
+      // Get the currently selected account AFTER connection is established
+      let address = okxProvider.selectedAddress;
+
+      // Fallback: If selectedAddress is not available, get accounts and use first one
+      if (!address) {
+        const accounts = await okxProvider.request({ method: 'eth_accounts' });
+        address = accounts[0];
+      }
+
+      if (!address) {
+        throw new Error('No account selected in OKX Wallet. Please select an account and try again.');
+      }
+
+      // Get signature data from backend
+      const signatureDataResponse = await AuthService.okxWalletSignature(address);
+
+      // Ensure signatureData is a string
+      let signatureData = signatureDataResponse;
+      if (typeof signatureDataResponse !== 'string') {
+        if (signatureDataResponse && typeof signatureDataResponse === 'object') {
+          if (signatureDataResponse.data) {
+            signatureData = signatureDataResponse.data;
+          } else if (signatureDataResponse.message) {
+            signatureData = signatureDataResponse.message;
+          } else if (signatureDataResponse.msg) {
+            signatureData = signatureDataResponse.msg;
+          } else {
+            signatureData = JSON.stringify(signatureDataResponse);
+          }
+        } else {
+          signatureData = String(signatureDataResponse);
+        }
+      }
+
+      if (!signatureData || typeof signatureData !== 'string' || signatureData.trim() === '') {
+        throw new Error('Invalid signature data received from server');
+      }
+
+      // Sign the exact message returned by backend
+      let signature;
+      try {
+        signature = await okxProvider.request({
+          method: 'personal_sign',
+          params: [signatureData, address],
+        });
+      } catch (signError) {
+        throw signError;
+      }
+
+      // Submit login using OKX wallet login endpoint
+      const response: any = await AuthService.okxWalletLogin(address, signature, hasExistingToken);
+
+      if (response.status === 1) {
+        const possibleToken = extractTokenFromResponse(response);
+        login(createBasicUser(loginEmail, '', address), possibleToken);
+
+        // Mark that user logged in via OKX Wallet
+        localStorage.setItem('copus_auth_method', 'okx');
+
+        // Set remember me preference - wallet logins default to remember me
+        storage.setRememberMePreference(true);
+        storage.migrateToLocalStorage();
+
+        try {
+          await fetchUserInfo(possibleToken);
+        } catch (userInfoError) {
+          // Handle error silently
+        }
+
+        showToast('Login successful! Welcome back 🎉', 'success');
+        navigate('/');
+      } else {
+        showToast(`OKX Wallet login failed: ${response.msg || 'Please try again'}`, 'error');
+      }
+    } catch (error) {
+      showToast(`OKX Wallet login failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+
   // Unified social login handler
   const handleSocialLogin = async (provider: string) => {
     switch (provider) {
@@ -915,6 +1049,9 @@ export const Login = (): JSX.Element => {
         break;
       case 'Coinbase Wallet':
         await handleCoinbaseWalletLogin();
+        break;
+      case 'OKX Wallet':
+        await handleOKXWalletLogin();
         break;
       default:
         showToast(`Unsupported login provider: ${provider}`, 'error');

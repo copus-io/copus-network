@@ -9,9 +9,8 @@ import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
 import { useArticleDetail } from "../../hooks/queries";
-import { getCategoryStyle, getCategoryInlineStyle, formatDate } from "../../utils/categoryStyles";
+import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
-import { apiRequest } from "../../services/api";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
@@ -63,7 +62,7 @@ export const Content = (): JSX.Element => {
   // x402 Payment Protocol State Management
   // ========================================
   // The x402 protocol enables pay-per-view content using HTTP 402 Payment Required.
-  // We use ERC-3009 TransferWithAuthorization for gasless USDC payments on Base mainnet.
+  // We use ERC-3009 TransferWithAuthorization for gasless USDC payments on Base Sepolia.
   // Users sign a message (no gas) and the server executes the transfer on their behalf.
 
   // Payment modal visibility states
@@ -84,27 +83,201 @@ export const Content = (): JSX.Element => {
   const [unlockedUrl, setUnlockedUrl] = useState<string | null>(null);
 
   // Use new article detail API hook
-  const { article, loading, error, refetch } = useArticleDetail(id || '');
+  const { article, loading, error } = useArticleDetail(id || '');
 
-  // Force refetch if coming from edit with refresh parameter
-  // This bypasses ALL caches (React Query + server-side)
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    if (searchParams.has('refresh') && id) {
-      console.log('🔄 Refresh parameter detected, forcing cache-busted refetch');
-      // Import the service directly to bypass React Query cache completely
-      import('../../services/articleService').then(({ getArticleDetail }) => {
-        // Call with bustCache=true to add timestamp and cache headers
-        getArticleDetail(id, true).then(() => {
-          // After fresh fetch, invalidate React Query cache and refetch
-          refetch();
-        });
-      });
-      // Clean up URL by removing the refresh parameter
-      const newUrl = `${location.pathname}`;
-      window.history.replaceState({}, '', newUrl);
+  // ========================================
+  // Helper Functions (extracted for code reuse)
+  // ========================================
+
+  // Helper: Extract signature data from various response formats
+  const extractSignatureData = (signatureDataResponse: any): string => {
+    if (typeof signatureDataResponse === 'string') {
+      return signatureDataResponse;
     }
-  }, [location.search, refetch, id]);
+
+    if (signatureDataResponse && typeof signatureDataResponse === 'object') {
+      if (signatureDataResponse.data) {
+        return signatureDataResponse.data;
+      } else if (signatureDataResponse.message) {
+        return signatureDataResponse.message;
+      } else if (signatureDataResponse.msg) {
+        return signatureDataResponse.msg;
+      } else {
+        return JSON.stringify(signatureDataResponse);
+      }
+    }
+
+    throw new Error('Invalid signature data received from server');
+  };
+
+  // Helper: Detect wallet provider from providers array or single provider
+  const detectWalletProvider = (walletType: 'metamask' | 'coinbase'): any => {
+    if (!window.ethereum) {
+      return null;
+    }
+
+    if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
+      const providers = (window.ethereum as any).providers;
+
+      if (walletType === 'metamask') {
+        return providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
+      } else if (walletType === 'coinbase') {
+        return providers.find((p: any) => p.isCoinbaseWallet);
+      }
+    } else {
+      if (walletType === 'metamask') {
+        return window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet ? window.ethereum : null;
+      } else if (walletType === 'coinbase') {
+        return window.ethereum.isCoinbaseWallet ? window.ethereum : (window as any).coinbaseWalletExtension;
+      }
+    }
+
+    return null;
+  };
+
+  // Helper: Connect to wallet and get address
+  const connectToWallet = async (provider: any): Promise<string> => {
+    await provider.request({ method: 'eth_requestAccounts' });
+
+    let address = provider.selectedAddress;
+    if (!address) {
+      const accounts = await provider.request({ method: 'eth_accounts' });
+      address = accounts[0];
+    }
+
+    if (!address) {
+      throw new Error('No account selected in wallet. Please select an account and try again.');
+    }
+
+    return address;
+  };
+
+  // Helper: Handle wallet login process
+  const handleWalletLogin = async (address: string, provider: any, walletType: string) => {
+    showToast('Connecting wallet...', 'info');
+
+    const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
+    const signatureData = extractSignatureData(signatureDataResponse);
+
+    if (typeof signatureData !== 'string' || !signatureData) {
+      throw new Error('Invalid signature data received from server');
+    }
+
+    const signature = await provider.request({
+      method: 'personal_sign',
+      params: [signatureData, address],
+    });
+
+    const response = await AuthService.metamaskLogin(address, signature, false);
+    const token = response?.data?.token || response?.token;
+    const namespace = response?.data?.namespace || response?.namespace;
+
+    if (!token) {
+      throw new Error('Failed to create account - no token received from backend');
+    }
+
+    const basicUser = { email: '', namespace: namespace || '', walletAddress: address };
+    login(basicUser, token);
+    localStorage.setItem('copus_auth_method', walletType);
+
+    try {
+      await fetchUserInfo(token);
+    } catch (userInfoError) {
+      console.warn('Failed to fetch user info after wallet login:', userInfoError);
+    }
+
+    setIsWalletSignInOpen(false);
+    setIsPayConfirmOpen(true);
+    setWalletBalance('...');
+    showToast(`${walletType === 'metamask' ? 'MetaMask' : 'Coinbase'} wallet connected successfully! 🎉`, 'success');
+  };
+
+  // Helper: Switch to Base Sepolia network
+  const switchToBaseSepolia = async (provider: any): Promise<void> => {
+    const baseSepoliaChainId = '0x14a34'; // 84532 in hex
+
+    try {
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: baseSepoliaChainId }],
+      });
+    } catch (switchError: any) {
+      if (switchError.code === 4902) {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: baseSepoliaChainId,
+            chainName: 'Base Sepolia',
+            nativeCurrency: {
+              name: 'Ethereum',
+              symbol: 'ETH',
+              decimals: 18
+            },
+            rpcUrls: ['https://sepolia.base.org'],
+            blockExplorerUrls: ['https://sepolia.basescan.org']
+          }],
+        });
+      } else {
+        throw switchError;
+      }
+    }
+  };
+
+  // Helper: Fetch USDC balance on Base Sepolia
+  const fetchUSDCBalance = async (provider: any, address: string): Promise<string> => {
+    const usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+    const data = '0x70a08231' + address.slice(2).padStart(64, '0');
+
+    const balance = await provider.request({
+      method: 'eth_call',
+      params: [{
+        to: usdcContractAddress,
+        data: data
+      }, 'latest']
+    });
+
+    const balanceInSmallestUnit = parseInt(balance, 16);
+    return (balanceInSmallestUnit / 1000000).toFixed(2);
+  };
+
+  // Helper: Handle wallet connection logic (shared between MetaMask and Coinbase)
+  const handleWalletConnection = async (walletType: 'metamask' | 'coinbase') => {
+    const provider = detectWalletProvider(walletType);
+
+    if (!provider) {
+      const walletName = walletType === 'metamask' ? 'MetaMask' : 'Coinbase Wallet';
+      showToast(`${walletName} not found. Please install ${walletName} extension.`, 'error');
+      return;
+    }
+
+    const address = await connectToWallet(provider);
+
+    setWalletAddress(address);
+    setWalletProvider(provider);
+    setWalletType(walletType);
+
+    if (!user) {
+      await handleWalletLogin(address, provider, walletType);
+    } else {
+      setIsWalletSignInOpen(false);
+      setIsPayConfirmOpen(true);
+      setWalletBalance('...');
+      showToast('Loading wallet balance...', 'info');
+    }
+
+    try {
+      await switchToBaseSepolia(provider);
+      const balance = await fetchUSDCBalance(provider, address);
+      setWalletBalance(balance);
+    } catch (balanceError) {
+      console.error('Failed to fetch USDC balance:', balanceError);
+      setWalletBalance('0.00');
+    }
+  };
+
+  // ========================================
+  // Effect Hooks
+  // ========================================
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -134,20 +307,17 @@ export const Content = (): JSX.Element => {
     categoryApiColor: article.categoryInfo?.color,
     categoryStyle: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color),
     categoryInlineStyle: getCategoryInlineStyle(article.categoryInfo?.color),
-    userName: (article.authorInfo?.username && article.authorInfo.username.trim() !== '') ? article.authorInfo.username : 'Anonymous',
+    userName: article.authorInfo?.username || 'Anonymous',
     userId: article.authorInfo?.id,
     userNamespace: article.authorInfo?.namespace,
     userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
-    date: formatDate(new Date(article.createAt * 1000).toISOString()),
+    date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
-    visitCount: `${article.viewCount || 0}`,
+    visitCount: `${article.viewCount || 0} Visits`,
     likes: article.likeCount || 0,
     isLiked: article.isLiked || false,
     website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
   } : null;
-
-  // Debug: Log author info (only once when article loads)
-  // Removed to prevent console spam from re-render loops
 
   // Set like state when article data is fetched
   useEffect(() => {
@@ -159,15 +329,19 @@ export const Content = (): JSX.Element => {
     }
   }, [content, article, getArticleLikeState]);
 
+  // ========================================
+  // Event Handlers
+  // ========================================
+
   if (loading) {
     return <ContentPageSkeleton />;
   }
 
   // 检查是否是文章被删除的情况
   const isArticleDeleted = error && (
-    error.includes('not found') || 
-    error.includes('不存在') || 
-    error.includes('deleted') || 
+    error.includes('not found') ||
+    error.includes('不存在') ||
+    error.includes('deleted') ||
     error.includes('删除') ||
     error.includes('404')
   );
@@ -178,7 +352,7 @@ export const Content = (): JSX.Element => {
         <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
           <HeaderSection articleAuthorId={content?.userId} />
 
-          <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center pt-[70px] lg:pt-[110px]">
+          <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center pt-[70px] lg:pt-[120px]">
             <div className="text-center p-8 max-w-md">
               <div className="mb-6">
                 <svg className="w-24 h-24 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,8 +370,8 @@ export const Content = (): JSX.Element => {
                     : 'The content you are looking for might have been removed or does not exist.')}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link 
-                  to="/" 
+                <Link
+                  to="/"
                   className="px-6 py-3 bg-red text-white rounded-full hover:bg-red/90 transition-colors font-medium"
                 >
                   Explore More Content
@@ -260,7 +434,6 @@ export const Content = (): JSX.Element => {
     }
   };
 
-
   const handleUserClick = () => {
     if (!content?.userNamespace) return;
 
@@ -276,136 +449,46 @@ export const Content = (): JSX.Element => {
   // ========================================
   // Step 1: Fetch x402 Payment Information
   // ========================================
-  // When user clicks "Unlock now", we fetch payment details from the x402 API.
-  // This API returns payment options including recipient, amount, network, and unlock URL.
-  // No login required - account will be auto-created when wallet connects.
   const handleUnlock = async () => {
-    console.log('🔓 handleUnlock called for article:', article?.uuid);
-
     if (!article?.uuid) {
-      showToast('Content information not available', 'error');
+      showToast('Article information not available', 'error');
       return;
     }
 
     try {
-      // Call x402 API to get payment options for this article
-      // For x402 protocol, we expect a 402 Payment Required response with payment options
-      const endpoint = `/client/payment/getTargetUrl?uuid=${article.uuid}`;
-
-      // Use fetch directly to handle 402 responses properly (x402 protocol)
-      const { APP_CONFIG } = await import('../../config/app');
-      const baseUrl = APP_CONFIG.API.BASE_URL;
-      const url = `${baseUrl}${endpoint}`;
-
-      console.log('🌐 Fetching x402 payment info from:', url);
-
-      // Get authentication token
-      const token = localStorage.getItem('copus_token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      // Add Authorization header if token exists
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-        console.log('🔐 Adding authentication token to x402 request');
-      } else {
-        console.log('⚠️ No authentication token found for x402 request');
-      }
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-      });
-
-      console.log('📡 x402 API response status:', response.status);
-
-      let data;
-      // For x402 protocol, 402 Payment Required is the expected response with payment options
-      if (response.status === 402) {
-        console.log('✅ Received 402 Payment Required - extracting payment options');
-        data = await response.json();
-        console.log('📥 x402 payment data:', data);
-      } else if (response.ok) {
-        // 2xx response means content is free or already unlocked
-        console.log('✅ Content is free or already unlocked');
-        data = await response.json();
-        if (data.url) {
-          // Redirect to unlocked content
-          window.open(data.url, '_blank');
-          return;
-        } else {
-          showToast('Content unlocked successfully', 'success');
-          return;
-        }
-      } else {
-        // Other error responses
-        const errorText = await response.text();
-        console.error(`❌ Unexpected response status ${response.status}:`, errorText);
-        showToast('Failed to load payment information. Please try again.', 'error');
-        return;
-      }
+      const x402Url = `https://api-test.copus.network/client/payment/getTargetUrl?uuid=${article.uuid}`;
+      const response = await fetch(x402Url);
+      const data = await response.json();
 
       if (data.accepts && data.accepts.length > 0) {
-        // Extract first payment option (we use USDC on Base)
         const paymentOption = data.accepts[0];
-
         console.log('📥 Received 402 payment option:', paymentOption);
 
-        // Store payment details in state for later use in handlePayNow
-        // Always construct the resource URL with UUID to ensure backend receives it
-        const resourceUrl = `${baseUrl}${endpoint}`;
-
+        const resourceUrl = `https://api-test.copus.network/client/payment/getTargetUrl?uuid=${article.uuid}`;
         const paymentInfo = {
-          payTo: paymentOption.payTo,              // Recipient wallet address
-          asset: paymentOption.asset,              // USDC contract address (0x036CbD...)
-          amount: paymentOption.maxAmountRequired, // Amount in smallest unit (e.g., "10000" = 0.01 USDC)
-          network: paymentOption.network,          // Network identifier ("base")
-          resource: resourceUrl                    // API endpoint to unlock content after payment (with UUID)
+          payTo: paymentOption.payTo,
+          asset: paymentOption.asset,
+          amount: paymentOption.maxAmountRequired,
+          network: paymentOption.network,
+          resource: resourceUrl
         };
 
-        console.log('💾 Storing payment info with resource URL:', paymentInfo);
         setX402PaymentInfo(paymentInfo);
 
-        // Check if user is already logged in with a wallet
         const authMethod = localStorage.getItem('copus_auth_method');
         const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase';
 
-
         if (user && isWalletUser && user.walletAddress) {
-          // User is already logged in with a wallet - skip wallet selection modal
-          // and go directly to payment confirmation with their logged-in wallet
-
-          // Store wallet address immediately
           setWalletAddress(user.walletAddress);
           setWalletType(authMethod);
-
-          // Hide wallet selection modal to ensure clean UI state
-          setIsWalletSignInOpen(false);
-
-          // Show payment modal immediately with loading state
           setIsPayConfirmOpen(true);
-          setWalletBalance('...'); // Loading indicator
+          setWalletBalance('...');
 
-          // Set up wallet connection and fetch balance in background
           setupLoggedInWallet(user.walletAddress, authMethod).catch(error => {
             console.error('Failed to setup wallet:', error);
             setWalletBalance('0.00');
-            // If wallet setup fails, still allow user to see payment modal
-            // They can close it and try manual wallet connection if needed
           });
-        } else if (user && isWalletUser && !user.walletAddress) {
-          // User is logged in via wallet but walletAddress is missing from user object
-          // Try to detect and use current wallet connection
-
-          tryAutoConnectWallet(authMethod);
-        } else if (user && !isWalletUser) {
-          // User is logged in via email but might have wallet connected in browser
-          // Try to auto-detect connected wallet for seamless experience
-
-          tryAutoDetectAnyWallet();
         } else {
-          // User is not logged in - show wallet selection modal
           setIsWalletSignInOpen(true);
         }
       } else {
@@ -417,321 +500,28 @@ export const Content = (): JSX.Element => {
     }
   };
 
-  // Helper function to auto-detect any connected wallet for email users
-  const tryAutoDetectAnyWallet = async () => {
-
-    try {
-      if (!window.ethereum) {
-        setIsWalletSignInOpen(true);
-        return;
-      }
-
-      // Try MetaMask first
-      let metamaskProvider = null;
-      if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
-        const providers = (window.ethereum as any).providers;
-        metamaskProvider = providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
-      } else if (window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
-        metamaskProvider = window.ethereum;
-      }
-
-      if (metamaskProvider) {
-        const accounts = await metamaskProvider.request({ method: 'eth_accounts' });
-        if (accounts && accounts.length > 0) {
-          // Set up wallet state
-          setWalletAddress(accounts[0]);
-          setWalletProvider(metamaskProvider);
-          setWalletType('metamask');
-
-          // Skip wallet selection and go directly to payment
-          setIsWalletSignInOpen(false);
-          setIsPayConfirmOpen(true);
-          setWalletBalance('...');
-
-          // Fetch balance
-          setupLoggedInWallet(accounts[0], 'metamask').catch(error => {
-            console.error('Failed to setup auto-detected wallet:', error);
-            setWalletBalance('0.00');
-          });
-          return;
-        }
-      }
-
-      // Try Coinbase Wallet
-      if (window.ethereum?.isCoinbaseWallet) {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts && accounts.length > 0) {
-          setWalletAddress(accounts[0]);
-          setWalletProvider(window.ethereum);
-          setWalletType('coinbase');
-
-          setIsWalletSignInOpen(false);
-          setIsPayConfirmOpen(true);
-          setWalletBalance('...');
-
-          setupLoggedInWallet(accounts[0], 'coinbase').catch(error => {
-            console.error('Failed to setup auto-detected wallet:', error);
-            setWalletBalance('0.00');
-          });
-          return;
-        }
-      }
-
-      // If no wallets detected, fall back to wallet selection
-      setIsWalletSignInOpen(true);
-
-    } catch (error) {
-      // Fall back to manual wallet selection
-      setIsWalletSignInOpen(true);
-    }
-  };
-
-  // Helper function to auto-connect wallet when user is logged in via wallet but walletAddress is missing
-  const tryAutoConnectWallet = async (authMethod: string) => {
-
-    try {
-      if (authMethod === 'metamask') {
-        if (!window.ethereum) {
-          throw new Error('MetaMask not found');
-        }
-
-        let provider = null;
-        if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
-          const providers = (window.ethereum as any).providers;
-          provider = providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
-        } else if (window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
-          provider = window.ethereum;
-        }
-
-        if (!provider) {
-          throw new Error('MetaMask provider not found');
-        }
-
-        // Try to get current accounts (this won't trigger connection prompt if already connected)
-        const accounts = await provider.request({ method: 'eth_accounts' });
-        if (accounts && accounts.length > 0) {
-          // Set up wallet state
-          setWalletAddress(accounts[0]);
-          setWalletProvider(provider);
-          setWalletType('metamask');
-
-          // Skip wallet selection and go directly to payment
-          setIsWalletSignInOpen(false);
-          setIsPayConfirmOpen(true);
-          setWalletBalance('...');
-
-          // Fetch balance
-          setupLoggedInWallet(accounts[0], 'metamask').catch(error => {
-            console.error('Failed to setup auto-connected wallet:', error);
-            setWalletBalance('0.00');
-          });
-          return;
-        }
-      } else if (authMethod === 'coinbase') {
-        // Similar logic for Coinbase Wallet
-        if (window.ethereum?.isCoinbaseWallet) {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts && accounts.length > 0) {
-            setWalletAddress(accounts[0]);
-            setWalletProvider(window.ethereum);
-            setWalletType('coinbase');
-
-            setIsWalletSignInOpen(false);
-            setIsPayConfirmOpen(true);
-            setWalletBalance('...');
-
-            setupLoggedInWallet(accounts[0], 'coinbase').catch(error => {
-              console.error('Failed to setup auto-connected wallet:', error);
-              setWalletBalance('0.00');
-            });
-            return;
-          }
-        }
-      }
-
-      // If auto-connect failed, fall back to wallet selection
-      setIsWalletSignInOpen(true);
-
-    } catch (error) {
-      // Fall back to manual wallet selection
-      setIsWalletSignInOpen(true);
-    }
-  };
-
   // Helper function to set up wallet connection for already logged-in wallet users
   const setupLoggedInWallet = async (walletAddress: string, authMethod: string) => {
     try {
+      console.log('🔧 Setting up wallet for logged-in user...');
 
-      // Detect the correct provider based on auth method
-      let provider = null;
-      let walletName = '';
-
-      if (authMethod === 'metamask') {
-        // For MetaMask, we need to ensure we're NOT using Coinbase Wallet's injected provider
-        // when both wallets are installed
-        if (!window.ethereum) {
-          showToast('MetaMask wallet not found. Please install MetaMask extension.', 'error');
-          setIsWalletSignInOpen(true); // Fall back to wallet selection
-          return;
-        }
-
-        // Check providers array first to find the correct wallet
-        if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
-          console.log('Multiple wallet providers detected, searching for MetaMask...');
-          const providers = (window.ethereum as any).providers;
-
-          // Find MetaMask provider (must have isMetaMask and NOT be Coinbase)
-          const metamaskProvider = providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
-
-          if (metamaskProvider) {
-            provider = metamaskProvider;
-            console.log('Found MetaMask provider in providers array');
-          } else {
-            showToast('MetaMask not found. Please ensure MetaMask is installed.', 'error');
-            setIsWalletSignInOpen(true);
-            return;
-          }
-        } else {
-          // Single wallet installed - check if it's MetaMask
-          if (window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
-            provider = window.ethereum;
-            console.log('Using window.ethereum as MetaMask provider');
-          } else {
-            showToast('MetaMask not found. Please install MetaMask extension.', 'error');
-            setIsWalletSignInOpen(true);
-            return;
-          }
-        }
-        walletName = 'MetaMask';
-      } else if (authMethod === 'coinbase') {
-        // Detect Coinbase Wallet provider
-        if (window.ethereum?.isCoinbaseWallet) {
-          provider = window.ethereum;
-        } else if ((window as any).coinbaseWalletExtension) {
-          provider = (window as any).coinbaseWalletExtension;
-        } else if ((window.ethereum as any)?.providers) {
-          // Try to find Coinbase Wallet in providers array
-          const coinbaseProvider = (window.ethereum as any).providers.find((p: any) => p.isCoinbaseWallet);
-          if (coinbaseProvider) {
-            provider = coinbaseProvider;
-          } else {
-            showToast('Coinbase Wallet not found. Please install Coinbase Wallet extension.', 'error');
-            setIsWalletSignInOpen(true);
-            return;
-          }
-        } else {
-          showToast('Coinbase Wallet not found. Please install Coinbase Wallet extension.', 'error');
-          setIsWalletSignInOpen(true); // Fall back to wallet selection
-          return;
-        }
-        walletName = 'Coinbase Wallet';
-      }
+      const provider = detectWalletProvider(authMethod as 'metamask' | 'coinbase');
 
       if (!provider) {
-        showToast('Wallet provider not found', 'error');
         setIsWalletSignInOpen(true);
         return;
       }
 
-      // Store wallet info
       setWalletAddress(walletAddress);
       setWalletProvider(provider);
       setWalletType(authMethod);
 
-      // Fetch USDC balance on Base
-      const usdcContractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-      const baseMainnetChainId = '0x2105'; // 8453 in hex
-
-      try {
-        // Check if we're on Base network
-        const currentChainId = await provider.request({ method: 'eth_chainId' });
-        console.log('🌐 Current network:', currentChainId, 'Expected:', baseMainnetChainId);
-
-        // If not on Base, try to switch
-        if (currentChainId !== baseMainnetChainId) {
-          console.log('🔄 Switching to Base network...');
-          try {
-            await provider.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: baseMainnetChainId }],
-            });
-            console.log('✅ Network switched successfully');
-          } catch (switchError: any) {
-            // Error code 4902: Chain not added yet
-            if (switchError.code === 4902) {
-              console.log('➕ Adding Base network...');
-              await provider.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: baseMainnetChainId,
-                  chainName: 'Base',
-                  nativeCurrency: {
-                    name: 'Ethereum',
-                    symbol: 'ETH',
-                    decimals: 18
-                  },
-                  rpcUrls: ['https://mainnet.base.org'],
-                  blockExplorerUrls: ['https://basescan.org']
-                }],
-              });
-              console.log('✅ Network added successfully');
-            } else {
-              throw switchError;
-            }
-          }
-        }
-
-        // Fetch USDC balance
-        const data = '0x70a08231' + walletAddress.slice(2).padStart(64, '0');
-        console.log('💰 Fetching USDC balance for:', walletAddress);
-
-        const balance = await provider.request({
-          method: 'eth_call',
-          params: [{
-            to: usdcContractAddress,
-            data: data
-          }, 'latest']
-        });
-
-        console.log('📊 Raw balance response:', balance);
-
-        // Validate balance response
-        if (!balance || balance === '0x' || typeof balance !== 'string') {
-          setWalletBalance('0.00');
-          return;
-        }
-
-        const balanceInSmallestUnit = parseInt(balance, 16);
-        console.log('🔢 Parsed balance in smallest unit:', balanceInSmallestUnit);
-
-        if (isNaN(balanceInSmallestUnit)) {
-          console.error('❌ Failed to parse balance as hex number:', balance);
-          setWalletBalance('0.00');
-          return;
-        }
-
-        const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
-
-        console.log('💵 USDC Balance:', balanceInUSDC);
-        setWalletBalance(balanceInUSDC);
-
-        // Modal is already open from handleUnlock, just update balance
-        // setIsPayConfirmOpen(true); // Commented out - modal already shown
-      } catch (balanceError: any) {
-        console.error('❌ Failed to fetch USDC balance:', balanceError);
-        console.error('Error details:', {
-          message: balanceError?.message,
-          code: balanceError?.code,
-          data: balanceError?.data
-        });
-        setWalletBalance('0.00');
-        // Modal is already shown from handleUnlock
-        // setIsPayConfirmOpen(true); // Commented out - modal already shown
-      }
+      await switchToBaseSepolia(provider);
+      const balance = await fetchUSDCBalance(provider, walletAddress);
+      setWalletBalance(balance);
     } catch (error: any) {
       console.error('Failed to set up logged-in wallet:', error);
       showToast('Failed to connect to your wallet. Please try again.', 'error');
-      // Fall back to wallet selection modal
       setIsWalletSignInOpen(true);
     }
   };
@@ -739,248 +529,12 @@ export const Content = (): JSX.Element => {
   // ========================================
   // Step 2: Connect Wallet and Fetch Balance
   // ========================================
-  // After user selects a wallet, we connect to it and fetch their USDC balance.
-  // Currently supports MetaMask (other wallets coming soon).
-  // NOTE: No login required! We auto-create an account when wallet connects.
   const handleWalletSelect = async (walletId: string) => {
-    // Handle MetaMask wallet connection
     if (walletId === 'metamask') {
       try {
-        // Detect the correct MetaMask provider
-        // When multiple wallets are installed, they inject into window.ethereum.providers array
-        let metamaskProvider = null;
-
-        if (!window.ethereum) {
-          showToast('Please install MetaMask wallet first', 'error');
-          return;
-        }
-
-        // Check providers array first to find the correct wallet
-        if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
-          console.log('Multiple wallet providers detected, searching for MetaMask...');
-          const providers = (window.ethereum as any).providers;
-
-          // Find MetaMask provider (must have isMetaMask and NOT be Coinbase)
-          metamaskProvider = providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
-
-          if (!metamaskProvider) {
-            showToast('MetaMask not found. Please ensure MetaMask is installed.', 'error');
-            return;
-          }
-          console.log('Found MetaMask provider in providers array');
-        } else {
-          // Single wallet installed - check if it's MetaMask
-          if (window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
-            metamaskProvider = window.ethereum;
-            console.log('Using window.ethereum as MetaMask provider');
-          } else {
-            showToast('MetaMask not found. Please install MetaMask extension.', 'error');
-            return;
-          }
-        }
-
-        // Request wallet connection - ensures user grants permission
-        await metamaskProvider.request({ method: 'eth_requestAccounts' });
-
-        // Get the currently selected account AFTER connection is established
-        // selectedAddress reflects the account that's currently active in MetaMask UI
-        // Note: We must read this AFTER eth_requestAccounts completes to get the latest value
-        let address = metamaskProvider.selectedAddress;
-
-        // Fallback: If selectedAddress is not available, get accounts and use first one
-        if (!address) {
-          const accounts = await metamaskProvider.request({ method: 'eth_accounts' });
-          address = accounts[0];
-        }
-
-        if (!address) {
-          showToast('No account selected in MetaMask. Please select an account and try again.', 'error');
-          return;
-        }
-
-
-        // Store wallet address and provider for later use in payment authorization
-        setWalletAddress(address);
-        setWalletProvider(metamaskProvider);
-        setWalletType('metamask');
-
-        // ---- Handle wallet connection based on login status ----
-        if (!user) {
-          // User NOT logged in: Must complete wallet connection and account creation FIRST
-          // Then show payment modal after successful login
-          showToast('Connecting wallet...', 'info');
-          try {
-
-            // Get signature data from backend (snowflake ID that user will sign)
-            const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
-
-            // Extract the actual string from the response object
-            // The API returns an object like { data: "snowflake_id_string" }
-            let signatureData = signatureDataResponse;
-            if (typeof signatureDataResponse !== 'string') {
-              if (signatureDataResponse && typeof signatureDataResponse === 'object') {
-                if (signatureDataResponse.data) {
-                  signatureData = signatureDataResponse.data;
-                } else if (signatureDataResponse.message) {
-                  signatureData = signatureDataResponse.message;
-                } else if (signatureDataResponse.msg) {
-                  signatureData = signatureDataResponse.msg;
-                } else {
-                  // Last resort - stringify the object (shouldn't happen)
-                  signatureData = JSON.stringify(signatureDataResponse);
-                }
-              }
-            }
-
-            // Verify we have a valid string to sign
-            if (typeof signatureData !== 'string' || !signatureData) {
-              throw new Error('Invalid signature data received from server');
-            }
-
-            // Request user to sign the message via MetaMask
-            // This proves they own the wallet address
-            const signature = await metamaskProvider.request({
-              method: 'personal_sign',
-              params: [signatureData, address],
-            });
-
-            // Call backend to create/login account with this wallet
-            // Backend creates account if first time, or logs in if account exists
-            console.log('🔐 Calling metamaskLogin with address:', address);
-            const response = await AuthService.metamaskLogin(address, signature, false);
-            console.log('📩 metamaskLogin response:', response);
-
-            // Extract token from response - it's nested in response.data.token
-            const token = response?.data?.token || response?.token;
-            const namespace = response?.data?.namespace || response?.namespace;
-
-            if (token) {
-              // Save token and create basic user object
-              const basicUser = { email: '', namespace: namespace || '', walletAddress: address };
-              login(basicUser, token);
-
-              // Mark that user logged in via Metamask
-              localStorage.setItem('copus_auth_method', 'metamask');
-
-              // Fetch full user info from backend
-              try {
-                await fetchUserInfo(token);
-              } catch (userInfoError) {
-                // Silently handle user info fetch error - account is created but info fetch failed
-                console.warn('Failed to fetch user info after wallet login:', userInfoError);
-              }
-
-              // Account created successfully - now show payment modal
-              setIsWalletSignInOpen(false);
-              setIsPayConfirmOpen(true);
-              setWalletBalance('...'); // Will be updated after balance fetch below
-              showToast('MetaMask wallet connected successfully! 🎉', 'success');
-            } else {
-              // Log what we actually received to help debug
-              console.error('❌ No token in response. Full response:', JSON.stringify(response, null, 2));
-
-              // Check if backend returned an error message
-              const errorMsg = response?.msg || response?.message || response?.error;
-              throw new Error(`Failed to create account - no token received from backend`);
-            }
-          } catch (accountError: any) {
-            console.error('Failed to create account:', accountError);
-            console.error('Error details:', {
-              message: accountError?.message,
-              code: accountError?.code,
-              type: typeof accountError
-            });
-
-            // Handle MetaMask user rejection (code 4001)
-            if (accountError?.code === 4001 || (accountError instanceof Error && accountError.message.includes('User rejected'))) {
-              showToast('Signature cancelled. Wallet connection is required for payment.', 'info');
-              setIsWalletSignInOpen(true); // Keep wallet modal open so user can try again
-              return;
-            }
-
-            // Handle other MetaMask/wallet errors
-            if (accountError?.code) {
-              showToast(`Wallet error (${accountError.code}): ${accountError.message || 'Unknown error'}`, 'error');
-              setIsWalletSignInOpen(true);
-              return;
-            }
-
-            // Handle backend API errors
-            if (accountError instanceof Error) {
-              showToast(`Wallet connection failed: ${accountError.message}`, 'error');
-              console.error('Backend error creating account:', accountError);
-              setIsWalletSignInOpen(true);
-              return;
-            }
-
-            // Unknown error type
-            showToast('Wallet connection failed. Please try again or contact support.', 'error');
-            setIsWalletSignInOpen(true);
-            return;
-          }
-        } else {
-          // User IS logged in: Show payment modal immediately
-          setIsWalletSignInOpen(false);
-          setIsPayConfirmOpen(true);
-          setWalletBalance('...'); // Loading indicator
-          showToast('Loading wallet balance...', 'info');
-        }
-
-        // ---- Fetch USDC balance on Base ----
-        // USDC is an ERC-20 token on Base mainnet at this address
-        const usdcContractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-
-        try {
-          // Call balanceOf(address) function on USDC contract using eth_call
-          // ERC-20 balanceOf function signature: 0x70a08231 (keccak256("balanceOf(address)")[:4])
-          // Encode parameter: pad address to 32 bytes (64 hex chars)
-          const data = '0x70a08231' + address.slice(2).padStart(64, '0');
-
-          // Execute read-only call to USDC contract (no gas required)
-          const balance = await metamaskProvider.request({
-            method: 'eth_call',
-            params: [{
-              to: usdcContractAddress,
-              data: data
-            }, 'latest']
-          });
-
-          // Convert balance from hex string to decimal
-          // USDC has 6 decimals, so divide by 1,000,000 to get human-readable amount
-          // Example: 1000000 (smallest unit) = 1.00 USDC
-          console.log('📊 Raw balance response:', balance);
-
-          // Validate balance response
-          if (!balance || balance === '0x' || typeof balance !== 'string') {
-              setWalletBalance('0.00');
-            return;
-          }
-
-          const balanceInSmallestUnit = parseInt(balance, 16);
-
-          if (isNaN(balanceInSmallestUnit)) {
-            console.error('❌ Failed to parse balance as hex number:', balance);
-            setWalletBalance('0.00');
-            return;
-          }
-
-          const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
-          console.log('💵 USDC Balance:', balanceInUSDC);
-
-          setWalletBalance(balanceInUSDC);
-          // Success toast already shown after account creation or in else block for logged-in users
-        } catch (balanceError) {
-          console.error('Failed to fetch USDC balance:', balanceError);
-          // Still proceed even if balance fetch fails (user might still have sufficient balance)
-          setWalletBalance('0.00');
-          showToast('MetaMask wallet connected! (Unable to fetch balance)', 'success');
-        }
-
-        // Modal is already open from earlier (line 561), balance has been updated
+        await handleWalletConnection('metamask');
       } catch (error) {
         console.error('MetaMask connection error:', error);
-
-        // Handle user rejection of wallet connection
         if (error instanceof Error) {
           if (error.message.includes('User rejected')) {
             showToast('MetaMask connection cancelled', 'info');
@@ -992,274 +546,10 @@ export const Content = (): JSX.Element => {
         }
       }
     } else if (walletId === 'coinbase') {
-      // ========================================
-      // Coinbase Wallet Integration
-      // ========================================
       try {
-        if (!window.ethereum) {
-          showToast('Please install Coinbase Wallet extension first', 'error');
-          return;
-        }
-
-        // Detect Coinbase Wallet provider
-        let coinbaseProvider = null;
-
-        // When multiple wallets are installed, they inject into window.ethereum.providers array
-        // Check providers array first to find the correct wallet
-        if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
-          console.log('Multiple wallet providers detected, searching for Coinbase Wallet...');
-          const providers = (window.ethereum as any).providers;
-
-          // Find Coinbase Wallet provider
-          coinbaseProvider = providers.find((p: any) => p.isCoinbaseWallet);
-
-          if (!coinbaseProvider) {
-            showToast('Coinbase Wallet not found. Please ensure Coinbase Wallet is installed.', 'error');
-            return;
-          }
-          console.log('Found Coinbase Wallet provider in providers array');
-        } else {
-          // Single wallet installed - check if it's Coinbase Wallet
-          if (window.ethereum.isCoinbaseWallet) {
-            coinbaseProvider = window.ethereum;
-            console.log('Using window.ethereum as Coinbase Wallet provider');
-          } else if ((window as any).coinbaseWalletExtension) {
-            coinbaseProvider = (window as any).coinbaseWalletExtension;
-            console.log('Using coinbaseWalletExtension as provider');
-          } else {
-            showToast('Coinbase Wallet not found. Please install Coinbase Wallet extension.', 'error');
-            return;
-          }
-        }
-
-        // Request wallet connection - shows Coinbase Wallet popup for user to select account
-        await coinbaseProvider.request({ method: 'eth_requestAccounts' });
-
-        // Get the currently selected account from Coinbase Wallet
-        const address = coinbaseProvider.selectedAddress ||
-                       (await coinbaseProvider.request({ method: 'eth_accounts' }))[0];
-
-        if (!address) {
-          showToast('No account selected in Coinbase Wallet. Please select an account and try again.', 'error');
-          return;
-        }
-
-        // Store wallet address and provider for later use in payment authorization
-        setWalletAddress(address);
-        setWalletProvider(coinbaseProvider);
-        setWalletType('coinbase');
-
-        // ---- Handle wallet connection based on login status ----
-        if (!user) {
-          // User NOT logged in: Must complete wallet connection and account creation FIRST
-          // Then show payment modal after successful login
-          showToast('Connecting wallet...', 'info');
-          try {
-
-            // Get signature data from backend (snowflake ID that user will sign)
-            const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
-
-            // Extract the actual string from the response object
-            let signatureData = signatureDataResponse;
-            if (typeof signatureDataResponse !== 'string') {
-              if (signatureDataResponse && typeof signatureDataResponse === 'object') {
-                if (signatureDataResponse.data) {
-                  signatureData = signatureDataResponse.data;
-                } else if (signatureDataResponse.message) {
-                  signatureData = signatureDataResponse.message;
-                } else if (signatureDataResponse.msg) {
-                  signatureData = signatureDataResponse.msg;
-                } else {
-                  signatureData = JSON.stringify(signatureDataResponse);
-                }
-              }
-            }
-
-            // Verify we have a valid string to sign
-            if (typeof signatureData !== 'string' || !signatureData) {
-              throw new Error('Invalid signature data received from server');
-            }
-
-            // Request user to sign the message via Coinbase Wallet
-            // This proves they own the wallet address
-            const signature = await coinbaseProvider.request({
-              method: 'personal_sign',
-              params: [signatureData, address],
-            });
-
-            // Call backend to create/login account with this wallet
-            // Note: Using metamaskLogin endpoint as it works for any EVM wallet
-            console.log('🔐 Calling metamaskLogin with Coinbase Wallet address:', address);
-            const response = await AuthService.metamaskLogin(address, signature, false);
-            console.log('📩 metamaskLogin response:', response);
-
-            // Extract token from response
-            const token = response?.data?.token || response?.token;
-            const namespace = response?.data?.namespace || response?.namespace;
-
-            if (token) {
-              // Save token and create basic user object
-              const basicUser = { email: '', namespace: namespace || '', walletAddress: address };
-              login(basicUser, token);
-
-              // Mark that user logged in via Coinbase Wallet
-              localStorage.setItem('copus_auth_method', 'coinbase');
-
-              // Fetch full user info from backend
-              try {
-                await fetchUserInfo(token);
-              } catch (userInfoError) {
-                console.warn('Failed to fetch user info after wallet login:', userInfoError);
-              }
-
-              // Account created successfully - now show payment modal
-              setIsWalletSignInOpen(false);
-              setIsPayConfirmOpen(true);
-              setWalletBalance('...'); // Will be updated after balance fetch below
-              showToast('Coinbase Wallet connected successfully! 🎉', 'success');
-            } else {
-              console.error('❌ No token in response. Full response:', JSON.stringify(response, null, 2));
-              const errorMsg = response?.msg || response?.message || response?.error;
-              throw new Error(`Failed to create account - no token received from backend`);
-            }
-          } catch (accountError: any) {
-            console.error('Failed to create account:', accountError);
-            console.error('Error details:', {
-              message: accountError?.message,
-              code: accountError?.code,
-              type: typeof accountError
-            });
-
-            // Handle user rejection (code 4001)
-            if (accountError?.code === 4001 || (accountError instanceof Error && accountError.message.includes('User rejected'))) {
-              showToast('Signature cancelled. Wallet connection is required for payment.', 'info');
-              setIsWalletSignInOpen(true);
-              return;
-            }
-
-            // Handle other wallet errors
-            if (accountError?.code) {
-              showToast(`Wallet error (${accountError.code}): ${accountError.message || 'Unknown error'}`, 'error');
-              setIsWalletSignInOpen(true);
-              return;
-            }
-
-            // Handle backend API errors
-            if (accountError instanceof Error) {
-              showToast(`Wallet connection failed: ${accountError.message}`, 'error');
-              console.error('Backend error creating account:', accountError);
-              setIsWalletSignInOpen(true);
-              return;
-            }
-
-            // Unknown error type
-            showToast('Wallet connection failed. Please try again or contact support.', 'error');
-            setIsWalletSignInOpen(true);
-            return;
-          }
-        } else {
-          // User IS logged in: Show payment modal immediately
-          setIsWalletSignInOpen(false);
-          setIsPayConfirmOpen(true);
-          setWalletBalance('...'); // Loading indicator
-          showToast('Loading wallet balance...', 'info');
-        }
-
-        // ---- Fetch USDC balance on Base ----
-        const usdcContractAddress = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-        const baseMainnetChainId = '0x2105'; // 8453 in hex
-
-        try {
-          // First, check if we're on Base network
-          const currentChainId = await coinbaseProvider.request({ method: 'eth_chainId' });
-          console.log('🌐 Current network:', currentChainId, 'Expected:', baseMainnetChainId);
-
-          // If not on Base, try to switch
-          if (currentChainId !== baseMainnetChainId) {
-            console.log('🔄 Switching to Base network...');
-            try {
-              await coinbaseProvider.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: baseMainnetChainId }],
-              });
-              console.log('✅ Network switched successfully');
-            } catch (switchError: any) {
-              // Error code 4902: Chain not added yet
-              if (switchError.code === 4902) {
-                console.log('➕ Adding Base network...');
-                await coinbaseProvider.request({
-                  method: 'wallet_addEthereumChain',
-                  params: [{
-                    chainId: baseMainnetChainId,
-                    chainName: 'Base',
-                    nativeCurrency: {
-                      name: 'Ethereum',
-                      symbol: 'ETH',
-                      decimals: 18
-                    },
-                    rpcUrls: ['https://mainnet.base.org'],
-                    blockExplorerUrls: ['https://basescan.org']
-                  }],
-                });
-                console.log('✅ Network added successfully');
-              } else {
-                throw switchError;
-              }
-            }
-          }
-
-          // Now fetch USDC balance on Base
-          // Call balanceOf(address) function on USDC contract using eth_call
-          const data = '0x70a08231' + address.slice(2).padStart(64, '0');
-          console.log('💰 Fetching USDC balance for:', address);
-
-          // Execute read-only call to USDC contract
-          const balance = await coinbaseProvider.request({
-            method: 'eth_call',
-            params: [{
-              to: usdcContractAddress,
-              data: data
-            }, 'latest']
-          });
-
-          console.log('📊 Raw balance response:', balance);
-
-          // Validate balance response
-          if (!balance || balance === '0x' || typeof balance !== 'string') {
-              setWalletBalance('0.00');
-            return;
-          }
-
-          // Convert balance from hex to USDC (6 decimals)
-          const balanceInSmallestUnit = parseInt(balance, 16);
-
-          if (isNaN(balanceInSmallestUnit)) {
-            console.error('❌ Failed to parse balance as hex number:', balance);
-            setWalletBalance('0.00');
-            return;
-          }
-
-          const balanceInUSDC = (balanceInSmallestUnit / 1000000).toFixed(2);
-
-          console.log('💵 USDC Balance:', balanceInUSDC);
-          setWalletBalance(balanceInUSDC);
-          // Success toast already shown after account creation or in else block for logged-in users
-        } catch (balanceError: any) {
-          console.error('❌ Failed to fetch USDC balance:', balanceError);
-          console.error('Error details:', {
-            message: balanceError?.message,
-            code: balanceError?.code,
-            data: balanceError?.data
-          });
-          setWalletBalance('0.00');
-          // Still proceed even if balance fetch fails
-        }
-
-        // Modal is already open from earlier, balance has been updated
+        await handleWalletConnection('coinbase');
       } catch (error) {
         console.error('Coinbase Wallet connection error:', error);
-
-        // Handle user rejection of wallet connection
         if (error instanceof Error) {
           if (error.message.includes('User rejected')) {
             showToast('Coinbase Wallet connection cancelled', 'info');
@@ -1271,7 +561,6 @@ export const Content = (): JSX.Element => {
         }
       }
     } else {
-      // For other wallets not yet supported
       showToast(`${walletId} wallet integration coming soon`, 'info');
       setIsWalletSignInOpen(false);
     }
@@ -1280,190 +569,75 @@ export const Content = (): JSX.Element => {
   // ========================================
   // Step 3: Execute Payment using x402 + ERC-3009
   // ========================================
-  // This is the main payment flow using x402 protocol with ERC-3009 TransferWithAuthorization.
-  //
-  // KEY CONCEPT: This is a GASLESS payment!
-  // - User signs a message (EIP-712 typed data), NOT a transaction
-  // - No gas fees for the user
-  // - Server executes the actual USDC transfer and pays gas
-  // - Completes in 2-3 seconds vs 60+ seconds for regular transactions
-  //
-  // Flow: Network check → Sign authorization → Send to server → Unlock content
   const handlePayNow = async () => {
-    // Validate we have payment info from Step 1
     if (!x402PaymentInfo) {
       showToast('Payment information not available', 'error');
       return;
     }
 
-    // Validate wallet is connected from Step 2
     if (!walletAddress || !walletProvider) {
       showToast('Wallet not connected', 'error');
       return;
     }
 
     try {
-      // ---- Step 3a: Ensure user is on Base network ----
-      // Check current network (chainId is returned in hex format)
+      // Ensure user is on Base Sepolia network
       const chainId = await walletProvider.request({ method: 'eth_chainId' });
-      const baseMainnetChainId = '0x2105'; // 8453 in decimal, 0x2105 in hex
+      const baseSepoliaChainId = '0x14a34';
 
-      if (chainId !== baseMainnetChainId) {
-        // User is on wrong network - request network switch
-        try {
-          await walletProvider.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: baseMainnetChainId }],
-          });
-        } catch (switchError: any) {
-          // Error code 4902: Chain not added to wallet yet
-          if (switchError.code === 4902) {
-            // Add Base network to wallet
-            try {
-              await walletProvider.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: baseMainnetChainId,
-                  chainName: 'Base',
-                  nativeCurrency: {
-                    name: 'Ethereum',
-                    symbol: 'ETH',
-                    decimals: 18
-                  },
-                  rpcUrls: ['https://mainnet.base.org'],
-                  blockExplorerUrls: ['https://basescan.org']
-                }],
-              });
-            } catch (addError) {
-              showToast('Failed to add Base network', 'error');
-              return;
-            }
-          } else {
-            showToast('Please switch to Base network', 'error');
-            return;
-          }
-        }
+      if (chainId !== baseSepoliaChainId) {
+        await switchToBaseSepolia(walletProvider);
       }
 
-      // ---- Step 3b: Create ERC-3009 TransferWithAuthorization signature ----
+      // Create ERC-3009 TransferWithAuthorization signature
       const walletName = walletType === 'metamask' ? 'MetaMask' : 'Coinbase Wallet';
       showToast(`Please sign the payment authorization in ${walletName}...`, 'info');
 
-      // Generate cryptographically secure random nonce (prevents replay attacks)
-      // Each authorization must have a unique nonce
-      const nonce = generateNonce(); // Returns 32-byte hex string like "0x1234..."
+      const nonce = generateNonce();
+      const now = Math.floor(Date.now() / 1000);
+      const validAfter = now;
+      const validBefore = now + 3600;
 
-      // Set validity window for this authorization
-      // validAfter: Authorization becomes valid at this timestamp
-      // validBefore: Authorization expires at this timestamp
-      const now = Math.floor(Date.now() / 1000); // Unix timestamp in seconds
-      const validAfter = now;                     // Valid immediately
-      const validBefore = now + 3600;             // Expires in 1 hour
-
-      // Sign the TransferWithAuthorization message using EIP-712 typed data signing
-      //
-      // IMPORTANT: This is NOT a transaction! User is signing structured data.
-      // - Wallet shows clear details: from, to, amount, validity window
-      // - No gas fees are charged to the user
-      // - User can reject without losing anything
-      // - Server will later execute the actual transfer using this signature
-      //
-      // Parameters: from, to, value, validAfter, validBefore, nonce
-      // Returns: SignedAuthorization with signature components (v, r, s)
       const signedAuth = await signTransferWithAuthorization({
-        from: walletAddress,              // User's wallet address
-        to: x402PaymentInfo.payTo,        // Content seller's address
-        value: x402PaymentInfo.amount,    // Amount in smallest unit (e.g., "10000" = 0.01 USDC)
-        validAfter,                       // When authorization becomes valid
-        validBefore,                      // When authorization expires
-        nonce                             // Unique nonce for this authorization
+        from: walletAddress,
+        to: x402PaymentInfo.payTo,
+        value: x402PaymentInfo.amount,
+        validAfter,
+        validBefore,
+        nonce
       }, walletProvider);
 
-      // ---- Step 3c: Create X-PAYMENT header with signed authorization ----
-      // The x402 protocol requires payment info in the X-PAYMENT HTTP header
-      console.log('🔍 Payment Info:', {
-        network: x402PaymentInfo.network,
-        asset: x402PaymentInfo.asset,
-        amount: x402PaymentInfo.amount,
-        payTo: x402PaymentInfo.payTo
-      });
-
-      // Create base64-encoded payload containing:
-      // - x402Version: 1
-      // - payload: { network, asset, chainId, scheme, from, to, value, validAfter, validBefore, nonce, signature }
+      // Create X-PAYMENT header with signed authorization
       const paymentHeader = createX402PaymentHeader(
         signedAuth,
-        x402PaymentInfo.network,  // "base"
-        x402PaymentInfo.asset     // USDC contract address
+        x402PaymentInfo.network,
+        x402PaymentInfo.asset
       );
 
-      // Debug: decode and log the payment payload to verify structure
-      try {
-        const decoded = JSON.parse(atob(paymentHeader));
-        console.log('📤 Sending X-PAYMENT payload:', JSON.stringify(decoded, null, 2));
-      } catch (e) {
-        console.error('Failed to decode payment header:', e);
-      }
-
-      // ---- Step 3d: Send signed authorization to server to unlock content ----
       showToast('Payment authorization signed! Unlocking content...', 'success');
 
-      // Call the x402 resource endpoint with X-PAYMENT header and authentication token
-      // Server will:
-      // 1. Validate the signature
-      // 2. Execute the USDC transfer on-chain (server pays gas)
-      // 3. Return the unlocked target URL
-      const token = localStorage.getItem('copus_token');
-      const unlockHeaders: Record<string, string> = {
-        'X-PAYMENT': paymentHeader
-      };
-
-      // Add authorization token if available
-      if (token) {
-        unlockHeaders['Authorization'] = `Bearer ${token}`;
-        console.log('🔐 Adding authentication token to x402 unlock request');
-      } else {
-        console.log('⚠️ No authentication token found for x402 unlock request');
-      }
-
       const unlockResponse = await fetch(x402PaymentInfo.resource, {
-        headers: unlockHeaders
+        headers: {
+          'X-PAYMENT': paymentHeader
+        }
       });
 
-      // Check if unlock was successful
       if (!unlockResponse.ok) {
         const errorText = await unlockResponse.text();
         console.error('x402 unlock error:', {
           status: unlockResponse.status,
           errorText: errorText
         });
-
-        // Try to parse the error response to see what the backend expects
-        try {
-          const parsedError = JSON.parse(errorText);
-          console.error('📋 Parsed x402 error:', JSON.stringify(parsedError, null, 2));
-        } catch (e) {
-          console.error('Could not parse error response as JSON');
-        }
-
         throw new Error(`Payment failed: ${unlockResponse.status}`);
       }
 
       const unlockData = await unlockResponse.json();
-
-      // ---- Step 3e: Open unlocked content ----
-      // Backend returns URL in 'data' field for successful payments
       const targetUrl = unlockData.data || unlockData.targetUrl;
 
       if (targetUrl) {
-        // Success! Payment completed and content is unlocked
-        // Store the unlocked URL so the button changes to "Visit"
         setUnlockedUrl(targetUrl);
-
         showToast('Payment successful! Content unlocked 🎉', 'success');
         setIsPayConfirmOpen(false);
-
-        // Open the unlocked URL in a new tab
         window.open(targetUrl, '_blank', 'noopener,noreferrer');
       } else {
         showToast('Payment completed but no URL returned. Please contact support.', 'error');
@@ -1471,8 +645,6 @@ export const Content = (): JSX.Element => {
 
     } catch (error: any) {
       console.error('Payment error:', error);
-
-      // Handle user rejection of signature (error code 4001)
       if (error.code === 4001) {
         showToast('Signature cancelled', 'info');
       } else {
@@ -1481,6 +653,9 @@ export const Content = (): JSX.Element => {
     }
   };
 
+  // ========================================
+  // JSX Return (unchanged from original)
+  // ========================================
   return (
     <div
       className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
@@ -1489,7 +664,7 @@ export const Content = (): JSX.Element => {
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection articleAuthorId={content?.userId} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[110px] pb-[120px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
+        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[120px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
           <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
@@ -1505,7 +680,7 @@ export const Content = (): JSX.Element => {
 
                   {/* Title with x402 payment badge inline */}
                   <div className="flex flex-col gap-2 w-full">
-                    <div className="flex items-start gap-2 w-full">
+                    <div className="flex items-center gap-2 w-full">
                       {/* Payment badge - show if content is locked */}
                       {article?.targetUrlIsLocked && article?.priceInfo && (
                         <div className="h-[34px] px-2.5 py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
@@ -1521,13 +696,13 @@ export const Content = (): JSX.Element => {
                       )}
 
                       <h1
-                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
+                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-all overflow-hidden"
                         style={{
                           display: '-webkit-box',
                           WebkitBoxOrient: 'vertical',
                           WebkitLineClamp: 2,
                           overflow: 'hidden',
-                          wordBreak: 'break-word',
+                          wordBreak: 'break-all',
                           overflowWrap: 'break-word'
                         }}
                       >
@@ -1546,7 +721,7 @@ export const Content = (): JSX.Element => {
 
               <blockquote className="flex flex-col items-start gap-5 p-5 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                 <div className="flex items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex items-start justify-center self-stretch w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
+                  <div className="flex items-start justify-center w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
                     &quot;
                   </div>
 
@@ -1577,15 +752,9 @@ export const Content = (): JSX.Element => {
                     src={content.userAvatar}
                   />
 
-                  {content?.userName && content.userName.trim() !== '' ? (
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
-                      {content.userName}
-                    </span>
-                  ) : (
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
-                      Anonymous
-                    </span>
-                  )}
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
+                    {content.userName}
+                  </span>
                 </cite>
               </blockquote>
             </div>
@@ -1659,26 +828,6 @@ export const Content = (): JSX.Element => {
             </div>
 
 {/* Conditional button - "Visit" for unlocked/free content, "Unlock now" for locked content */}
-            {(() => {
-              console.log('🔍 Button condition check:', {
-                unlockedUrl,
-                targetUrlIsLocked: article?.targetUrlIsLocked,
-                article: article?.uuid,
-                articleData: article
-              });
-              console.log('🎯 Which button will render?',
-                unlockedUrl ? 'Visit (unlocked)' :
-                article?.targetUrlIsLocked ? 'Unlock now' : 'Visit (free)'
-              );
-
-              if (article?.targetUrlIsLocked) {
-                console.log('🚀 SHOULD RENDER "Unlock now" button');
-              } else {
-                console.log('❌ NOT rendering "Unlock now" button - targetUrlIsLocked is:', article?.targetUrlIsLocked);
-              }
-
-              return null;
-            })()}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
               <button
@@ -1698,25 +847,16 @@ export const Content = (): JSX.Element => {
             ) : article?.targetUrlIsLocked ? (
               // Content is locked and requires payment - show "Unlock now" button
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('🖱️ Unlock button clicked!');
-                  console.log('📄 Article data during click:', article);
-                  console.log('🔗 handleUnlock function:', typeof handleUnlock, handleUnlock);
-                  handleUnlock();
-                }}
-                className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] transition-all active:scale-95"
-                style={{ pointerEvents: 'auto' }}
+                onClick={handleUnlock}
+                className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,255,255,1)_100%)] transition-all active:scale-95"
               >
-                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]" style={{ pointerEvents: 'auto' }}>
+                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
                   <img
                     className="relative w-[27px] h-[25px] aspect-[1.09]"
                     alt="x402 icon"
                     src="https://c.animaapp.com/2ALjTCkW/img/x402-icon-blue-1@2x.png"
-                    style={{ pointerEvents: 'auto' }}
                   />
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap" style={{ pointerEvents: 'auto' }}>
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap">
                     Unlock now
                   </span>
                 </span>
@@ -1757,13 +897,9 @@ export const Content = (): JSX.Element => {
           walletAddress={walletAddress || 'Not connected'}
           availableBalance={`${walletBalance} USDC`}
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
-          network="Base"
-          faucetLink="https://app.metamask.io/buy/build-quote"
-          isInsufficientBalance={
-            x402PaymentInfo && walletBalance !== '...'
-              ? (parseFloat(walletBalance) || 0) < (parseInt(x402PaymentInfo.amount) / 1000000)
-              : false
-          }
+          network="Base Sepolia"
+          faucetLink="https://faucet.circle.com/"
+          isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
         />
       </div>
     </div>

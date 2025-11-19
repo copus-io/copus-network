@@ -587,6 +587,22 @@ export class AuthService {
   }
 
   /**
+   * Get OKX Wallet signature data (uses same endpoint as MetaMask)
+   */
+  static async okxWalletSignature(address?: string): Promise<any> {
+    return this.getMetamaskSignatureData(address);
+  }
+
+  /**
+   * OKX Wallet login (supports both login and binding modes)
+   * Uses same endpoint as MetaMask since both are EVM-compatible wallets
+   */
+  static async okxWalletLogin(address: string, signature: string, hasToken: boolean = false): Promise<any> {
+    // OKX Wallet is EVM-compatible, so we can use the same MetaMask login endpoint
+    return this.metamaskLogin(address, signature, hasToken);
+  }
+
+  /**
    * Get user information
    */
   static async getUserInfo(token?: string): Promise<{
