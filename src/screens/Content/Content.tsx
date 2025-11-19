@@ -827,11 +827,27 @@ export const Content = (): JSX.Element => {
               />
             </div>
 
-{/* Conditional button - "Visit" for unlocked/free content, "Unlock now" for locked content */}
+{/* Conditional button - "Visit" for unlocked/targetUrl content, "Unlock now" for locked content without targetUrl */}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
               <button
                 onClick={() => window.open(unlockedUrl, '_blank', 'noopener,noreferrer')}
+                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
+              >
+                <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
+                  Visit
+                </span>
+
+                <img
+                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
+                  alt="Arrow"
+                  src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
+                />
+              </button>
+            ) : article?.targetUrl && article.targetUrl.trim() !== '' ? (
+              // Content has targetUrl - show "Visit" button regardless of lock status
+              <button
+                onClick={() => window.open(article.targetUrl, '_blank', 'noopener,noreferrer')}
                 className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
@@ -862,23 +878,12 @@ export const Content = (): JSX.Element => {
                 </span>
               </button>
             ) : (
-              // Content is free - show regular "Visit" link
-              <a
-                href={content.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red no-underline hover:bg-red/90 transition-colors"
-              >
+              // No targetUrl available and not locked - show disabled state
+              <div className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-gray-400 rounded-[100px] border border-solid border-gray-400 opacity-50 cursor-not-allowed">
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
-                  Visit
+                  No Link Available
                 </span>
-
-                <img
-                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
-                  alt="Arrow"
-                  src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
-                />
-              </a>
+              </div>
             )}
           </div>
         </div>
