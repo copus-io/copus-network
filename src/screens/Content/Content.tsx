@@ -286,9 +286,17 @@ export const Content = (): JSX.Element => {
   // No login required - account will be auto-created when wallet connects.
   const handleUnlock = async () => {
     console.log('🔓 handleUnlock called for article:', article?.uuid);
+    console.log('🔍 Debug - user.id:', user?.id, 'content.userId:', content?.userId, 'article.authorInfo?.id:', article?.authorInfo?.id);
 
     if (!article?.uuid) {
       showToast('Content information not available', 'error');
+      return;
+    }
+
+    // Authors should not need to unlock their own content
+    if (user && content && user.id === content.userId) {
+      console.log('✅ User is the author - redirecting to content');
+      window.open(content.url, '_blank');
       return;
     }
 
@@ -1519,7 +1527,11 @@ export const Content = (): JSX.Element => {
             </div>
 
 {/* Conditional button - "Visit" for unlocked/free content, "Unlock now" for locked content */}
-            {unlockedUrl || (user && content && user.id === content.userId) ? (
+            {(() => {
+              const isAuthor = user && content && user.id === content.userId;
+              console.log('🔍 Button render - isAuthor:', isAuthor, 'user.id:', user?.id, 'content.userId:', content?.userId);
+              return unlockedUrl || isAuthor;
+            })() ? (
               // Content has been unlocked via payment OR user is the author - show "Visit" button
               <a
                 href={unlockedUrl || content.url}
