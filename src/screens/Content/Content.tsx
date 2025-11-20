@@ -270,7 +270,8 @@ export const Content = (): JSX.Element => {
     if (!content?.userNamespace) return;
 
     // If logged in and it's the current user's own article, navigate to my treasury page
-    if (user && user.id === content.userId) {
+    // Handle type mismatch - user.id might be number, content.userId might be string
+    if (user && content && (user.id === content.userId || String(user.id) === String(content.userId))) {
       navigate('/my-treasury');
     } else {
       // Navigate to the user's profile page using short link format
@@ -294,7 +295,8 @@ export const Content = (): JSX.Element => {
     }
 
     // Authors should not need to unlock their own content
-    if (user && content && user.id === content.userId) {
+    // Handle type mismatch - user.id might be number, content.userId might be string
+    if (user && content && (user.id === content.userId || String(user.id) === String(content.userId))) {
       console.log('✅ User is the author - redirecting to content');
       window.open(content.url, '_blank');
       return;
@@ -1528,8 +1530,9 @@ export const Content = (): JSX.Element => {
 
 {/* Conditional button - "Visit" for unlocked/free content, "Unlock now" for locked content */}
             {(() => {
-              const isAuthor = user && content && user.id === content.userId;
-              console.log('🔍 Button render - isAuthor:', isAuthor, 'user.id:', user?.id, 'content.userId:', content?.userId);
+              // Check if user is author - handle type mismatch (number vs string)
+              const isAuthor = user && content && (user.id === content.userId || String(user.id) === String(content.userId));
+              console.log('🔍 Button render - isAuthor:', isAuthor, 'user.id:', user?.id, '(type:', typeof user?.id, '), content.userId:', content?.userId, '(type:', typeof content?.userId, ')');
               return unlockedUrl || isAuthor;
             })() ? (
               // Content has been unlocked via payment OR user is the author - show "Visit" button
