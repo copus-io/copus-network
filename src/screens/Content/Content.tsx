@@ -111,7 +111,12 @@ export const Content = (): JSX.Element => {
   };
 
   // Helper: Detect wallet provider from providers array or single provider
-  const detectWalletProvider = (walletType: 'metamask' | 'coinbase'): any => {
+  const detectWalletProvider = (walletType: 'metamask' | 'coinbase' | 'okx'): any => {
+    // OKX Wallet uses its own injection point
+    if (walletType === 'okx') {
+      return (window as any).okxwallet || null;
+    }
+
     if (!window.ethereum) {
       return null;
     }
@@ -189,7 +194,8 @@ export const Content = (): JSX.Element => {
     setIsWalletSignInOpen(false);
     setIsPayConfirmOpen(true);
     setWalletBalance('...');
-    showToast(`${walletType === 'metamask' ? 'MetaMask' : 'Coinbase'} wallet connected successfully! 🎉`, 'success');
+    const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX' : 'Coinbase';
+    showToast(`${walletName} wallet connected successfully! 🎉`, 'success');
   };
 
   // Helper: Switch to Base Sepolia network
@@ -240,12 +246,12 @@ export const Content = (): JSX.Element => {
     return (balanceInSmallestUnit / 1000000).toFixed(2);
   };
 
-  // Helper: Handle wallet connection logic (shared between MetaMask and Coinbase)
-  const handleWalletConnection = async (walletType: 'metamask' | 'coinbase') => {
+  // Helper: Handle wallet connection logic (shared between MetaMask, Coinbase, and OKX)
+  const handleWalletConnection = async (walletType: 'metamask' | 'coinbase' | 'okx') => {
     const provider = detectWalletProvider(walletType);
 
     if (!provider) {
-      const walletName = walletType === 'metamask' ? 'MetaMask' : 'Coinbase Wallet';
+      const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
       showToast(`${walletName} not found. Please install ${walletName} extension.`, 'error');
       return;
     }
@@ -476,7 +482,7 @@ export const Content = (): JSX.Element => {
         setX402PaymentInfo(paymentInfo);
 
         const authMethod = localStorage.getItem('copus_auth_method');
-        const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase';
+        const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase' || authMethod === 'okx';
 
         if (user && isWalletUser && user.walletAddress) {
           setWalletAddress(user.walletAddress);
@@ -505,7 +511,7 @@ export const Content = (): JSX.Element => {
     try {
       console.log('🔧 Setting up wallet for logged-in user...');
 
-      const provider = detectWalletProvider(authMethod as 'metamask' | 'coinbase');
+      const provider = detectWalletProvider(authMethod as 'metamask' | 'coinbase' | 'okx');
 
       if (!provider) {
         setIsWalletSignInOpen(true);
@@ -560,6 +566,11 @@ export const Content = (): JSX.Element => {
           showToast('Coinbase Wallet connection failed. Please try again.', 'error');
         }
       }
+    } else if (walletId === 'okx') {
+      // For OKX wallet, skip connection and go directly to payment modal
+      setWalletType('okx');
+      setIsWalletSignInOpen(false);
+      setIsPayConfirmOpen(true);
     } else {
       showToast(`${walletId} wallet integration coming soon`, 'info');
       setIsWalletSignInOpen(false);
@@ -590,7 +601,7 @@ export const Content = (): JSX.Element => {
       }
 
       // Create ERC-3009 TransferWithAuthorization signature
-      const walletName = walletType === 'metamask' ? 'MetaMask' : 'Coinbase Wallet';
+      const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
       showToast(`Please sign the payment authorization in ${walletName}...`, 'info');
 
       const nonce = generateNonce();
@@ -900,11 +911,12 @@ export const Content = (): JSX.Element => {
           onClose={() => setIsPayConfirmOpen(false)}
           onPayNow={handlePayNow}
           walletAddress={walletAddress || 'Not connected'}
-          availableBalance={`${walletBalance} USDC`}
+          availableBalance={walletBalance}
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
           network="Base Sepolia"
           faucetLink="https://faucet.circle.com/"
           isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
+          walletType={walletType}
         />
       </div>
     </div>

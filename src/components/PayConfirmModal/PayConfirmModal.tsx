@@ -15,26 +15,48 @@ interface PayConfirmModalProps {
   network?: string;
   faucetLink?: string;
   isInsufficientBalance?: boolean;
+  walletType?: string;
 }
+
+const networkOptions = [
+  { value: 'xlayer', label: 'X Layer' },
+  { value: 'base-sepolia', label: 'Base Sepolia' },
+];
+
+const xlayerCurrencyOptions = [
+  { value: 'usdc', label: 'USDC' },
+  { value: 'usdt', label: 'USDT' },
+];
 
 export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
   isOpen,
   onClose,
   onPayNow,
   walletAddress = "OX8091....0912",
-  availableBalance = "....USDC",
-  amount = "0.01 USDC",
+  availableBalance = "....",
+  amount = "0.01",
   network = "Base",
   faucetLink = "https://app.metamask.io/buy/build-quote",
   isInsufficientBalance = false,
+  walletType = "metamask",
 }) => {
   const [showCopied, setShowCopied] = useState(false);
+  const [selectedNetwork, setSelectedNetwork] = useState(
+    walletType === 'okx' ? 'xlayer' : 'base-sepolia'
+  );
+  const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState('usdc');
+  const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
 
-  const paymentDetails: PaymentDetail[] = [
-    { label: "Available balance:", value: availableBalance },
-    { label: "Amount:", value: amount },
-    { label: "Network:", value: network },
-  ];
+  // Update network when walletType changes
+  React.useEffect(() => {
+    setSelectedNetwork(walletType === 'okx' ? 'xlayer' : 'base-sepolia');
+  }, [walletType]);
+
+  // Get display currency based on network
+  const displayCurrency = selectedNetwork === 'xlayer'
+    ? xlayerCurrencyOptions.find(c => c.value === selectedCurrency)?.label || 'USDC'
+    : 'USDC';
 
   const handlePayNow = () => {
     if (onPayNow) {
@@ -93,15 +115,15 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
                 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm text-center tracking-[0] leading-[23px]"
               >
                 <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                  Need USDC? Buy some{" "}
+                  Need {displayCurrency}? {walletType === 'okx' ? 'Buy on ' : 'Buy some '}
                 </span>
                 <a
-                  href={faucetLink}
+                  href={walletType === 'okx' ? 'https://www.okx.com/web3/dex-swap' : faucetLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline text-[#686868] hover:text-off-black transition-colors"
                 >
-                  here
+                  {walletType === 'okx' ? 'OKX DEX' : 'here'}
                 </a>
                 <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
                   .
@@ -130,21 +152,114 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
 
           <dl className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
             <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
-              {paymentDetails.map((detail, index) => (
-                <div
-                  key={index}
-                  className="flex items-start justify-between px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey"
-                >
-                  <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
-                    {detail.label}
-                  </dt>
-                  <dd className="inline-flex items-center justify-center gap-[5px] relative flex-[0_0_auto]">
-                    <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
-                      {detail.value}
+              {/* Network dropdown - at the top */}
+              <div className="flex items-center justify-between px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey">
+                <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+                  Network:
+                </dt>
+                <dd className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors [font-family:'Lato',Helvetica] font-medium text-off-black text-base"
+                  >
+                    {networkOptions.find(n => n.value === selectedNetwork)?.label}
+                    <svg
+                      className={`w-4 h-4 transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isNetworkDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[140px]">
+                      {networkOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setSelectedNetwork(option.value);
+                            setIsNetworkDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 hover:bg-gray-100 [font-family:'Lato',Helvetica] text-sm first:rounded-t-lg last:rounded-b-lg ${
+                            selectedNetwork === option.value ? 'bg-gray-50 font-medium' : ''
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
                     </div>
-                  </dd>
-                </div>
-              ))}
+                  )}
+                </dd>
+              </div>
+
+              {/* Available balance with currency dropdown for X Layer */}
+              <div className="flex items-center justify-between px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey">
+                <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+                  Available balance:
+                </dt>
+                <dd className="inline-flex items-center gap-2 relative">
+                  <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
+                    {availableBalance}
+                  </span>
+                  {selectedNetwork === 'xlayer' ? (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors [font-family:'Lato',Helvetica] font-medium text-off-black text-sm"
+                      >
+                        {displayCurrency}
+                        <svg
+                          className={`w-3 h-3 transition-transform ${isCurrencyDropdownOpen ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {isCurrencyDropdownOpen && (
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[80px]">
+                          {xlayerCurrencyOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCurrency(option.value);
+                                setIsCurrencyDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 hover:bg-gray-100 [font-family:'Lato',Helvetica] text-sm first:rounded-t-lg last:rounded-b-lg ${
+                                selectedCurrency === option.value ? 'bg-gray-50 font-medium' : ''
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base">
+                      USDC
+                    </span>
+                  )}
+                </dd>
+              </div>
+
+              {/* Amount */}
+              <div className="flex items-start justify-between px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey">
+                <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+                  Amount:
+                </dt>
+                <dd className="inline-flex items-center justify-center gap-[5px] relative flex-[0_0_auto]">
+                  <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
+                    {amount}
+                  </div>
+                </dd>
+              </div>
             </div>
           </dl>
 
@@ -154,7 +269,7 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
               <span style={{ color: '#ef4444' }} className="[font-family:'Lato',Helvetica] font-medium text-sm">
-                Insufficient balance. Please add more USDC to your wallet.
+                Insufficient balance. Please add more {displayCurrency} to your wallet.
               </span>
             </div>
           )}
