@@ -19,8 +19,8 @@ const contractAddresses = {
       usdt: '0x1E4a5963aBFD975d8c9021ce480b42188849D41d',
     },
     test: {
-      usdc: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d', // 测试环境USDC合约
-      usdt: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d', // 暂用同一个合约地址
+      usdc: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d', // X Layer testnet USDC合约
+      usdt: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d', // X Layer testnet USDT合约
     },
   },
   // Base Sepolia 网络 (测试网)
@@ -41,10 +41,10 @@ const contractAddresses = {
  */
 export const networkConfigs = {
   xlayer: {
-    chainId: '0xc4', // 196 in hex
-    name: 'X Layer',
-    rpcUrls: ['https://rpc.xlayer.tech'],
-    blockExplorerUrls: ['https://okx.com/explorer/xlayer'],
+    chainId: '0x7a0', // 1952 in hex (X Layer testnet)
+    name: 'X Layer Testnet',
+    rpcUrls: ['https://testrpc.xlayer.tech', 'https://xlayertestrpc.okx.com'],
+    blockExplorerUrls: ['https://www.oklink.com/x-layer-testnet'],
     nativeCurrency: {
       name: 'OKB',
       symbol: 'OKB',

@@ -83,6 +83,9 @@ export const Content = (): JSX.Element => {
   // Contains: payTo (recipient), asset (USDC contract), amount, network, resource (unlock URL)
   const [x402PaymentInfo, setX402PaymentInfo] = useState<X402PaymentInfo | null>(null);
 
+  // OKX EIP-712 data for direct signing (X Layer)
+  const [okxEip712Data, setOkxEip712Data] = useState<any>(null);
+
   // Unlocked content URL after successful payment
   const [unlockedUrl, setUnlockedUrl] = useState<string | null>(null);
 
@@ -235,30 +238,36 @@ export const Content = (): JSX.Element => {
 
   // Helper: Switch to X Layer network
   const switchToXLayer = async (provider: any): Promise<void> => {
-    const xlayerChainId = '0xc4'; // 196 in hex
+    const xlayerChainId = '0x7a0'; // 1952 in hex (X Layer testnet)
 
     try {
+      console.log(`🔄 Attempting to switch to X Layer testnet (chainId: ${xlayerChainId})`);
       await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: xlayerChainId }],
       });
+      console.log(`✅ Successfully switched to X Layer testnet`);
     } catch (switchError: any) {
+      console.log(`⚠️ Network switch failed, attempting to add network. Error:`, switchError);
       if (switchError.code === 4902) {
+        console.log(`➕ Adding X Layer testnet to wallet...`);
         await provider.request({
           method: 'wallet_addEthereumChain',
           params: [{
             chainId: xlayerChainId,
-            chainName: 'X Layer',
+            chainName: 'X Layer Testnet',
             nativeCurrency: {
               name: 'OKB',
               symbol: 'OKB',
               decimals: 18
             },
-            rpcUrls: ['https://rpc.xlayer.tech'],
-            blockExplorerUrls: ['https://okx.com/explorer/xlayer']
+            rpcUrls: ['https://testrpc.xlayer.tech', 'https://xlayertestrpc.okx.com'],
+            blockExplorerUrls: ['https://www.oklink.com/x-layer-testnet']
           }],
         });
+        console.log(`✅ Successfully added and switched to X Layer testnet`);
       } else {
+        console.error(`❌ Failed to switch to X Layer:`, switchError);
         throw switchError;
       }
     }
@@ -269,10 +278,18 @@ export const Content = (): JSX.Element => {
   const fetchTokenBalance = async (provider: any, address: string, network: NetworkType, currency: TokenType = 'usdc'): Promise<string> => {
     console.log(`💰 Fetching ${currency} balance for address ${address} on ${network}...`);
 
+    // Check current network
+    try {
+      const currentChainId = await provider.request({ method: 'eth_chainId' });
+      console.log(`🌐 Current wallet network: ${currentChainId}`);
+    } catch (error) {
+      console.warn(`⚠️ Could not determine current network:`, error);
+    }
+
     const contractAddress = getTokenContract(network, currency);
 
     if (!contractAddress) {
-      console.warn(`Token ${currency} not supported on network ${network}`);
+      console.warn(`Token ${currency} contract not configured for network ${network}. Check official faucet for correct address.`);
       return '0.00';
     }
 
@@ -292,14 +309,35 @@ export const Content = (): JSX.Element => {
 
       console.log(`🔢 Raw balance response: ${balance}`);
 
+      // Handle empty or invalid response
+      if (!balance || balance === '0x' || balance === '0x0') {
+        console.warn(`⚠️ Empty balance response, returning 0.00`);
+        return '0.00';
+      }
+
       const balanceInSmallestUnit = parseInt(balance, 16);
+
+      // Handle NaN case
+      if (isNaN(balanceInSmallestUnit)) {
+        console.warn(`⚠️ Invalid balance response: ${balance}, returning 0.00`);
+        return '0.00';
+      }
+
       const formattedBalance = (balanceInSmallestUnit / Math.pow(10, networkConfig.tokenDecimals)).toFixed(2);
 
       console.log(`✅ Formatted balance: ${formattedBalance} ${currency.toUpperCase()}`);
 
       return formattedBalance;
-    } catch (error) {
-      console.error(`❌ Balance query failed:`, error);
+    } catch (error: any) {
+      console.error(`❌ Balance query failed for ${network} ${currency}:`, error);
+      console.error(`🔍 Error details:`, {
+        message: error?.message,
+        code: error?.code,
+        data: error?.data,
+        contractAddress,
+        network,
+        address
+      });
       return '0.00';
     }
   };
@@ -535,6 +573,12 @@ export const Content = (): JSX.Element => {
     try {
       const { apiBaseUrl } = getCurrentEnvironment();
 
+      // Determine network based on current auth method (dynamic detection)
+      const authMethod = localStorage.getItem('copus_auth_method');
+      const effectiveNetwork = authMethod === 'okx' ? 'xlayer' : 'base-sepolia';
+
+      console.log(`🌐 Auth method: ${authMethod}, Using network: ${effectiveNetwork}`);
+
       // Use different API endpoints based on network
       const getPaymentEndpoint = (network: NetworkType) => {
         return network === 'xlayer'
@@ -542,8 +586,18 @@ export const Content = (): JSX.Element => {
           : '/client/payment/getTargetUrl';
       };
 
-      const paymentEndpoint = getPaymentEndpoint(selectedNetwork);
-      const x402Url = `${apiBaseUrl}${paymentEndpoint}?uuid=${article.uuid}`;
+      const paymentEndpoint = getPaymentEndpoint(effectiveNetwork as NetworkType);
+
+      // Build URL with uuid and from parameters
+      const urlParams = new URLSearchParams({ uuid: article.uuid });
+
+      // Add from parameter for OKX payment endpoint (user's wallet address)
+      if (effectiveNetwork === 'xlayer' && walletAddress) {
+        urlParams.append('from', walletAddress);
+      }
+
+      const x402Url = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
+      console.log(`🌍 Making payment request to: ${x402Url}`);
 
       // Add user authentication token
       const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
@@ -555,11 +609,39 @@ export const Content = (): JSX.Element => {
       const response = await fetch(x402Url, { headers });
       const data = await response.json();
 
-      if (data.accepts && data.accepts.length > 0) {
+      // Handle different response formats based on endpoint
+      if (effectiveNetwork === 'xlayer' && data.domain && data.message) {
+        // OKX endpoint returns EIP-712 structure directly
+        console.log('📥 Received OKX EIP-712 structure:', data);
+
+        // Fill in the from field with user's wallet address
+        const eip712Data = {
+          ...data,
+          message: {
+            ...data.message,
+            from: walletAddress
+          }
+        };
+
+        // Store EIP-712 data for signing
+        setOkxEip712Data(eip712Data);
+
+        const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
+        const paymentInfo = {
+          payTo: data.message.to,
+          asset: data.domain.verifyingContract,
+          amount: data.message.value,
+          network: effectiveNetwork,
+          resource: resourceUrl
+        };
+
+        setX402PaymentInfo(paymentInfo);
+      } else if (data.accepts && data.accepts.length > 0) {
+        // Standard x402 response format
         const paymentOption = data.accepts[0];
         console.log('📥 Received 402 payment option:', paymentOption);
 
-        const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?uuid=${article.uuid}`;
+        const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
         const paymentInfo = {
           payTo: paymentOption.payTo,
           asset: paymentOption.asset,
@@ -569,25 +651,27 @@ export const Content = (): JSX.Element => {
         };
 
         setX402PaymentInfo(paymentInfo);
-
-        const authMethod = localStorage.getItem('copus_auth_method');
-        const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase' || authMethod === 'okx';
-
-        if (user && isWalletUser && user.walletAddress) {
-          setWalletAddress(user.walletAddress);
-          setWalletType(authMethod);
-          setIsPayConfirmOpen(true);
-          setWalletBalance('...');
-
-          setupLoggedInWallet(user.walletAddress, authMethod).catch(error => {
-            console.error('Failed to setup wallet:', error);
-            setWalletBalance('0.00');
-          });
-        } else {
-          setIsWalletSignInOpen(true);
-        }
       } else {
-        showToast('Payment information not available', 'error');
+        console.error('❌ Unexpected payment response format:', data);
+        showToast('Failed to get payment information', 'error');
+        return;
+      }
+
+      const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase' || authMethod === 'okx';
+
+      if (user && isWalletUser && user.walletAddress) {
+        setWalletAddress(user.walletAddress);
+        setWalletType(authMethod);
+        setSelectedNetwork(effectiveNetwork as NetworkType); // Sync network state
+        setIsPayConfirmOpen(true);
+        setWalletBalance('...');
+
+        setupLoggedInWallet(user.walletAddress, authMethod).catch(error => {
+          console.error('Failed to setup wallet:', error);
+          setWalletBalance('0.00');
+        });
+      } else {
+        setIsWalletSignInOpen(true);
       }
     } catch (error) {
       console.error('Failed to fetch x402 payment info:', error);
@@ -622,6 +706,7 @@ export const Content = (): JSX.Element => {
 
       console.log(`🔗 Setting up ${network} network...`);
       await switchToNetwork(provider, network);
+      console.log(`✅ Successfully switched to ${network} network`);
 
       console.log(`💰 Fetching balance for ${network}...`);
       const balance = await fetchTokenBalance(provider, walletAddress, network, selectedCurrency);
@@ -705,22 +790,53 @@ export const Content = (): JSX.Element => {
       const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
       showToast(`Please sign the payment authorization in ${walletName}...`, 'info');
 
-      const nonce = generateNonce();
-      const now = Math.floor(Date.now() / 1000);
-      const validAfter = now;
-      const validBefore = now + 3600;
+      let signedAuth;
 
-      // Get network configuration for correct signing
-      const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+      if (selectedNetwork === 'xlayer' && okxEip712Data) {
+        // Use OKX EIP-712 data for direct signing (X Layer)
+        console.log('🔑 Using OKX EIP-712 data for signing:', okxEip712Data);
 
-      const signedAuth = await signTransferWithAuthorization({
-        from: walletAddress,
-        to: x402PaymentInfo.payTo,
-        value: x402PaymentInfo.amount,
-        validAfter,
-        validBefore,
-        nonce
-      }, walletProvider, parseInt(paymentNetworkConfig.chainId, 16), paymentContractAddress || undefined);
+        // Sign using eth_signTypedData_v4 with the exact structure from backend
+        const signature = await walletProvider.request({
+          method: 'eth_signTypedData_v4',
+          params: [walletAddress, JSON.stringify(okxEip712Data)]
+        });
+
+        // Parse signature into v, r, s components
+        const r = signature.slice(0, 66);
+        const s = '0x' + signature.slice(66, 130);
+        const v = parseInt(signature.slice(130, 132), 16);
+
+        signedAuth = {
+          from: okxEip712Data.message.from,
+          to: okxEip712Data.message.to,
+          value: okxEip712Data.message.value,
+          validAfter: parseInt(okxEip712Data.message.validAfter),
+          validBefore: parseInt(okxEip712Data.message.validBefore),
+          nonce: okxEip712Data.message.nonce,
+          v,
+          r,
+          s
+        };
+      } else {
+        // Use standard x402Utils signing (Base Sepolia)
+        const nonce = generateNonce();
+        const now = Math.floor(Date.now() / 1000);
+        const validAfter = now;
+        const validBefore = now + 3600;
+
+        // Get network configuration for correct signing
+        const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+
+        signedAuth = await signTransferWithAuthorization({
+          from: walletAddress,
+          to: x402PaymentInfo.payTo,
+          value: x402PaymentInfo.amount,
+          validAfter,
+          validBefore,
+          nonce
+        }, walletProvider, parseInt(paymentNetworkConfig.chainId, 16), paymentContractAddress || undefined);
+      }
 
       // Create X-PAYMENT header with signed authorization
       const paymentHeader = createX402PaymentHeader(

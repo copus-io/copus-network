@@ -147,6 +147,13 @@ const NETWORK_EIP712_DOMAINS: Record<number, any> = {
     version: '2',
     chainId: 196,
     verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
+  },
+  // X Layer testnet (1952)
+  1952: {
+    name: 'USD Coin',
+    version: '2',
+    chainId: 1952,
+    verifyingContract: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d'
   }
 };
 
