@@ -267,6 +267,8 @@ export const Content = (): JSX.Element => {
 
   // Helper: Fetch token balance based on network and currency
   const fetchTokenBalance = async (provider: any, address: string, network: NetworkType, currency: TokenType = 'usdc'): Promise<string> => {
+    console.log(`💰 Fetching ${currency} balance for address ${address} on ${network}...`);
+
     const contractAddress = getTokenContract(network, currency);
 
     if (!contractAddress) {
@@ -274,19 +276,32 @@ export const Content = (): JSX.Element => {
       return '0.00';
     }
 
+    console.log(`📍 Using contract address: ${contractAddress}`);
+
     const networkConfig = getNetworkConfig(network);
     const data = '0x70a08231' + address.slice(2).padStart(64, '0');
 
-    const balance = await provider.request({
-      method: 'eth_call',
-      params: [{
-        to: contractAddress,
-        data: data
-      }, 'latest']
-    });
+    try {
+      const balance = await provider.request({
+        method: 'eth_call',
+        params: [{
+          to: contractAddress,
+          data: data
+        }, 'latest']
+      });
 
-    const balanceInSmallestUnit = parseInt(balance, 16);
-    return (balanceInSmallestUnit / Math.pow(10, networkConfig.tokenDecimals)).toFixed(2);
+      console.log(`🔢 Raw balance response: ${balance}`);
+
+      const balanceInSmallestUnit = parseInt(balance, 16);
+      const formattedBalance = (balanceInSmallestUnit / Math.pow(10, networkConfig.tokenDecimals)).toFixed(2);
+
+      console.log(`✅ Formatted balance: ${formattedBalance} ${currency.toUpperCase()}`);
+
+      return formattedBalance;
+    } catch (error) {
+      console.error(`❌ Balance query failed:`, error);
+      return '0.00';
+    }
   };
 
   // Helper: Switch to network based on selection
@@ -584,13 +599,18 @@ export const Content = (): JSX.Element => {
   const setupLoggedInWallet = async (walletAddress: string, authMethod: string) => {
     try {
       console.log('🔧 Setting up wallet for logged-in user...');
+      console.log(`👤 Wallet address: ${walletAddress}`);
+      console.log(`🌐 Auth method: ${authMethod}`);
 
       const provider = detectWalletProvider(authMethod as 'metamask' | 'coinbase' | 'okx');
 
       if (!provider) {
+        console.warn(`⚠️ No provider found for ${authMethod}`);
         setIsWalletSignInOpen(true);
         return;
       }
+
+      console.log(`✅ Provider detected for ${authMethod}`);
 
       setWalletAddress(walletAddress);
       setWalletProvider(provider);
@@ -600,7 +620,10 @@ export const Content = (): JSX.Element => {
       const network = authMethod === 'okx' ? 'xlayer' : 'base-sepolia';
       setSelectedNetwork(network);
 
+      console.log(`🔗 Setting up ${network} network...`);
       await switchToNetwork(provider, network);
+
+      console.log(`💰 Fetching balance for ${network}...`);
       const balance = await fetchTokenBalance(provider, walletAddress, network, selectedCurrency);
       setWalletBalance(balance);
     } catch (error: any) {
