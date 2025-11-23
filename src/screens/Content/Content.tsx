@@ -22,6 +22,8 @@ import {
   signTransferWithAuthorization,
   createX402PaymentHeader
 } from "../../utils/x402Utils";
+import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils';
+import { getNetworkConfig, getTokenContract, NetworkType, TokenType } from '../../config/contracts';
 
 
 // Image URL validation and fallback function
@@ -74,6 +76,8 @@ export const Content = (): JSX.Element => {
   const [walletBalance, setWalletBalance] = useState<string>('0');      // USDC balance (e.g., "1.50")
   const [walletProvider, setWalletProvider] = useState<any>(null);      // EIP-1193 provider (MetaMask, Coinbase Wallet, etc.)
   const [walletType, setWalletType] = useState<string>('');             // Wallet type: 'metamask' or 'coinbase'
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>('base-sepolia');
+  const [selectedCurrency, setSelectedCurrency] = useState<TokenType>('usdc');
 
   // Payment details from 402 API response
   // Contains: payTo (recipient), asset (USDC contract), amount, network, resource (unlock URL)
@@ -229,21 +233,69 @@ export const Content = (): JSX.Element => {
     }
   };
 
-  // Helper: Fetch USDC balance on Base Sepolia
-  const fetchUSDCBalance = async (provider: any, address: string): Promise<string> => {
-    const usdcContractAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+  // Helper: Switch to X Layer network
+  const switchToXLayer = async (provider: any): Promise<void> => {
+    const xlayerChainId = '0xc4'; // 196 in hex
+
+    try {
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: xlayerChainId }],
+      });
+    } catch (switchError: any) {
+      if (switchError.code === 4902) {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: xlayerChainId,
+            chainName: 'X Layer',
+            nativeCurrency: {
+              name: 'OKB',
+              symbol: 'OKB',
+              decimals: 18
+            },
+            rpcUrls: ['https://rpc.xlayer.tech'],
+            blockExplorerUrls: ['https://okx.com/explorer/xlayer']
+          }],
+        });
+      } else {
+        throw switchError;
+      }
+    }
+  };
+
+
+  // Helper: Fetch token balance based on network and currency
+  const fetchTokenBalance = async (provider: any, address: string, network: NetworkType, currency: TokenType = 'usdc'): Promise<string> => {
+    const contractAddress = getTokenContract(network, currency);
+
+    if (!contractAddress) {
+      console.warn(`Token ${currency} not supported on network ${network}`);
+      return '0.00';
+    }
+
+    const networkConfig = getNetworkConfig(network);
     const data = '0x70a08231' + address.slice(2).padStart(64, '0');
 
     const balance = await provider.request({
       method: 'eth_call',
       params: [{
-        to: usdcContractAddress,
+        to: contractAddress,
         data: data
       }, 'latest']
     });
 
     const balanceInSmallestUnit = parseInt(balance, 16);
-    return (balanceInSmallestUnit / 1000000).toFixed(2);
+    return (balanceInSmallestUnit / Math.pow(10, networkConfig.tokenDecimals)).toFixed(2);
+  };
+
+  // Helper: Switch to network based on selection
+  const switchToNetwork = async (provider: any, network: NetworkType): Promise<void> => {
+    if (network === 'xlayer') {
+      await switchToXLayer(provider);
+    } else {
+      await switchToBaseSepolia(provider);
+    }
   };
 
   // Helper: Handle wallet connection logic (shared between MetaMask, Coinbase, and OKX)
@@ -272,11 +324,15 @@ export const Content = (): JSX.Element => {
     }
 
     try {
-      await switchToBaseSepolia(provider);
-      const balance = await fetchUSDCBalance(provider, address);
+      // Determine network based on wallet type
+      const network = walletType === 'okx' ? 'xlayer' : 'base-sepolia';
+      setSelectedNetwork(network);
+
+      await switchToNetwork(provider, network);
+      const balance = await fetchTokenBalance(provider, address, network, selectedCurrency);
       setWalletBalance(balance);
     } catch (balanceError) {
-      console.error('Failed to fetch USDC balance:', balanceError);
+      console.error('Failed to fetch token balance:', balanceError);
       setWalletBalance('0.00');
     }
   };
@@ -462,15 +518,24 @@ export const Content = (): JSX.Element => {
     }
 
     try {
-      const x402Url = `https://api-test.copus.network/client/payment/getTargetUrl?uuid=${article.uuid}`;
-      const response = await fetch(x402Url);
+      const { apiBaseUrl } = getCurrentEnvironment();
+      const x402Url = `${apiBaseUrl}/client/payment/getTargetUrl?uuid=${article.uuid}`;
+
+      // Add user authentication token
+      const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(x402Url, { headers });
       const data = await response.json();
 
       if (data.accepts && data.accepts.length > 0) {
         const paymentOption = data.accepts[0];
         console.log('📥 Received 402 payment option:', paymentOption);
 
-        const resourceUrl = `https://api-test.copus.network/client/payment/getTargetUrl?uuid=${article.uuid}`;
+        const resourceUrl = `${apiBaseUrl}/client/payment/getTargetUrl?uuid=${article.uuid}`;
         const paymentInfo = {
           payTo: paymentOption.payTo,
           asset: paymentOption.asset,
@@ -522,8 +587,12 @@ export const Content = (): JSX.Element => {
       setWalletProvider(provider);
       setWalletType(authMethod);
 
-      await switchToBaseSepolia(provider);
-      const balance = await fetchUSDCBalance(provider, walletAddress);
+      // Use selected network for balance check
+      const network = authMethod === 'okx' ? 'xlayer' : 'base-sepolia';
+      setSelectedNetwork(network);
+
+      await switchToNetwork(provider, network);
+      const balance = await fetchTokenBalance(provider, walletAddress, network, selectedCurrency);
       setWalletBalance(balance);
     } catch (error: any) {
       console.error('Failed to set up logged-in wallet:', error);
@@ -592,12 +661,12 @@ export const Content = (): JSX.Element => {
     }
 
     try {
-      // Ensure user is on Base Sepolia network
+      // Ensure user is on the correct network for payment
+      const paymentNetworkConfig = getNetworkConfig(selectedNetwork);
       const chainId = await walletProvider.request({ method: 'eth_chainId' });
-      const baseSepoliaChainId = '0x14a34';
 
-      if (chainId !== baseSepoliaChainId) {
-        await switchToBaseSepolia(walletProvider);
+      if (chainId !== paymentNetworkConfig.chainId) {
+        await switchToNetwork(walletProvider, selectedNetwork);
       }
 
       // Create ERC-3009 TransferWithAuthorization signature
@@ -609,6 +678,9 @@ export const Content = (): JSX.Element => {
       const validAfter = now;
       const validBefore = now + 3600;
 
+      // Get network configuration for correct signing
+      const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+
       const signedAuth = await signTransferWithAuthorization({
         from: walletAddress,
         to: x402PaymentInfo.payTo,
@@ -616,7 +688,7 @@ export const Content = (): JSX.Element => {
         validAfter,
         validBefore,
         nonce
-      }, walletProvider);
+      }, walletProvider, parseInt(paymentNetworkConfig.chainId, 16), paymentContractAddress || undefined);
 
       // Create X-PAYMENT header with signed authorization
       const paymentHeader = createX402PaymentHeader(
@@ -627,19 +699,22 @@ export const Content = (): JSX.Element => {
 
       showToast('Payment authorization signed! Unlocking content...', 'success');
 
+      // Add user authentication token to payment request
+      const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
+      const paymentHeaders: Record<string, string> = {
+        'X-PAYMENT': paymentHeader
+      };
+      if (token) {
+        paymentHeaders.Authorization = `Bearer ${token}`;
+      }
+
       const unlockResponse = await fetch(x402PaymentInfo.resource, {
-        headers: {
-          'X-PAYMENT': paymentHeader
-        }
+        headers: paymentHeaders
       });
 
       if (!unlockResponse.ok) {
         const errorText = await unlockResponse.text();
-        console.error('x402 unlock error:', {
-          status: unlockResponse.status,
-          errorText: errorText
-        });
-        throw new Error(`Payment failed: ${unlockResponse.status}`);
+        throw new Error(`Payment failed: ${unlockResponse.status} - ${errorText}`);
       }
 
       const unlockData = await unlockResponse.json();
@@ -913,10 +988,30 @@ export const Content = (): JSX.Element => {
           walletAddress={walletAddress || 'Not connected'}
           availableBalance={walletBalance}
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
-          network="Base Sepolia"
-          faucetLink="https://faucet.circle.com/"
+          network={getNetworkConfig(selectedNetwork).name}
+          faucetLink={selectedNetwork === 'xlayer' && walletType === 'okx' ? 'https://www.okx.com/dex' : 'https://faucet.circle.com/'}
           isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
           walletType={walletType}
+          selectedNetwork={selectedNetwork}
+          selectedCurrency={selectedCurrency}
+          onNetworkChange={(network) => {
+            setSelectedNetwork(network as NetworkType);
+            // Refresh balance when network changes
+            if (walletProvider && walletAddress) {
+              fetchTokenBalance(walletProvider, walletAddress, network as NetworkType, selectedCurrency)
+                .then(balance => setWalletBalance(balance))
+                .catch(() => setWalletBalance('0.00'));
+            }
+          }}
+          onCurrencyChange={(currency) => {
+            setSelectedCurrency(currency as TokenType);
+            // Refresh balance when currency changes
+            if (walletProvider && walletAddress && selectedNetwork === 'xlayer') {
+              fetchTokenBalance(walletProvider, walletAddress, selectedNetwork, currency as TokenType)
+                .then(balance => setWalletBalance(balance))
+                .catch(() => setWalletBalance('0.00'));
+            }
+          }}
         />
       </div>
     </div>

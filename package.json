@@ -6,11 +6,18 @@
   "description": "copus-human Internet - A decentralized social content platform",
   "scripts": {
     "dev": "vite --mode development",
+    "dev:test": "vite --mode test",
     "dev:staging": "vite --mode staging",
     "dev:prod": "vite --mode production",
     "build": "vite build --mode production",
     "build:staging": "vite build --mode staging",
-    "build:development": "vite build --mode development"
+    "build:test": "vite build --mode test",
+    "build:development": "vite build --mode development",
+    "env": "./scripts/switch-env.sh",
+    "env:dev": "./scripts/switch-env.sh development",
+    "env:test": "./scripts/switch-env.sh test",
+    "env:staging": "./scripts/switch-env.sh staging",
+    "env:prod": "./scripts/switch-env.sh production"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.1",

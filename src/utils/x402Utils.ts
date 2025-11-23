@@ -111,12 +111,47 @@ export interface SignedAuthorization {
  *
  * @see https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
  */
-const EIP712_DOMAIN = {
-  name: 'USDC', // IMPORTANT: Must match backend's EIP-712 domain name (from x402 error: "USDC")
-  version: '2',
-  chainId: 8453, // Base mainnet
-  verifyingContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' // USDC on Base mainnet
+/**
+ * Get EIP-712 Domain for specific network and contract
+ */
+const getEIP712Domain = (chainId: number, contractAddress: string) => {
+  return {
+    name: 'USD Coin', // Standard USDC EIP-712 name
+    version: '2',
+    chainId: chainId,
+    verifyingContract: contractAddress
+  };
 };
+
+/**
+ * Network-specific EIP-712 domain configurations
+ */
+const NETWORK_EIP712_DOMAINS: Record<number, any> = {
+  // Base mainnet
+  8453: {
+    name: 'USD Coin',
+    version: '2',
+    chainId: 8453,
+    verifyingContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+  },
+  // Base Sepolia testnet - 使用正确的后端期望配置
+  84532: {
+    name: 'USDC',      // x402后端期望的配置
+    version: '2',
+    chainId: 84532,
+    verifyingContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+  },
+  // X Layer mainnet
+  196: {
+    name: 'USD Coin',
+    version: '2',
+    chainId: 196,
+    verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
+  }
+};
+
+// Legacy export for backward compatibility
+const EIP712_DOMAIN = NETWORK_EIP712_DOMAINS[84532]; // Default to Base Sepolia config
 
 /**
  * EIP-712 Type definition for TransferWithAuthorization.
@@ -209,10 +244,27 @@ export function generateNonce(): string {
  */
 export async function signTransferWithAuthorization(
   params: TransferWithAuthorizationParams,
-  signer: any
+  signer: any,
+  chainId?: number,
+  contractAddress?: string
 ): Promise<SignedAuthorization> {
-  // Debug: Log the domain being used for signing
-  console.log('🔐 EIP-712 Domain being used for signature:', EIP712_DOMAIN);
+  // Get current chain ID if not provided
+  let currentChainId = chainId;
+  if (!currentChainId) {
+    const chainIdHex = await signer.request({ method: 'eth_chainId' });
+    currentChainId = parseInt(chainIdHex, 16);
+  }
+
+  // Determine EIP-712 domain
+  let domain;
+  if (contractAddress) {
+    // Use network-specific domain but override the contract address
+    const networkDomain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532];
+    domain = { ...networkDomain, verifyingContract: contractAddress };
+  } else {
+    domain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532]; // fallback to Base Sepolia
+  }
+
 
   // Construct EIP-712 typed data
   const typedData = {
@@ -226,7 +278,7 @@ export async function signTransferWithAuthorization(
       ...TRANSFER_WITH_AUTHORIZATION_TYPE
     },
     primaryType: 'TransferWithAuthorization',
-    domain: EIP712_DOMAIN,
+    domain: domain,
     message: {
       from: params.from,
       to: params.to,
@@ -237,8 +289,6 @@ export async function signTransferWithAuthorization(
     }
   };
 
-  // Debug: Log the complete typed data structure
-  console.log('📝 Complete EIP-712 typed data:', JSON.stringify(typedData, null, 2));
 
   // Sign using eth_signTypedData_v4
   const signature = await signer.request({
@@ -349,6 +399,7 @@ export function createX402PaymentHeader(
   const jsonString = JSON.stringify(paymentPayload);
   return btoa(jsonString);
 }
+
 
 /**
  * Check if wallet provider supports ERC-3009 TransferWithAuthorization.

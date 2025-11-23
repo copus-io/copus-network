@@ -16,6 +16,10 @@ interface PayConfirmModalProps {
   faucetLink?: string;
   isInsufficientBalance?: boolean;
   walletType?: string;
+  selectedNetwork?: 'xlayer' | 'base-sepolia';
+  selectedCurrency?: 'usdc' | 'usdt';
+  onNetworkChange?: (network: string) => void;
+  onCurrencyChange?: (currency: string) => void;
 }
 
 const networkOptions = [
@@ -39,19 +43,34 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
   faucetLink = "https://app.metamask.io/buy/build-quote",
   isInsufficientBalance = false,
   walletType = "metamask",
+  selectedNetwork: propSelectedNetwork,
+  selectedCurrency: propSelectedCurrency,
+  onNetworkChange,
+  onCurrencyChange,
 }) => {
   const [showCopied, setShowCopied] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState(
-    walletType === 'okx' ? 'xlayer' : 'base-sepolia'
+    propSelectedNetwork || (walletType === 'okx' ? 'xlayer' : 'base-sepolia')
   );
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
-  const [selectedCurrency, setSelectedCurrency] = useState('usdc');
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    propSelectedCurrency || 'usdc'
+  );
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
 
-  // Update network when walletType changes
+  // Update network when props change
   React.useEffect(() => {
-    setSelectedNetwork(walletType === 'okx' ? 'xlayer' : 'base-sepolia');
-  }, [walletType]);
+    if (propSelectedNetwork) {
+      setSelectedNetwork(propSelectedNetwork);
+    }
+  }, [propSelectedNetwork]);
+
+  // Update currency when props change
+  React.useEffect(() => {
+    if (propSelectedCurrency) {
+      setSelectedCurrency(propSelectedCurrency);
+    }
+  }, [propSelectedCurrency]);
 
   // Get display currency based on network
   const displayCurrency = selectedNetwork === 'xlayer'
@@ -182,6 +201,7 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
                           onClick={() => {
                             setSelectedNetwork(option.value);
                             setIsNetworkDropdownOpen(false);
+                            onNetworkChange?.(option.value);
                           }}
                           className={`w-full text-left px-3 py-2 hover:bg-gray-100 [font-family:'Lato',Helvetica] text-sm first:rounded-t-lg last:rounded-b-lg ${
                             selectedNetwork === option.value ? 'bg-gray-50 font-medium' : ''
@@ -230,6 +250,7 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
                               onClick={() => {
                                 setSelectedCurrency(option.value);
                                 setIsCurrencyDropdownOpen(false);
+                                onCurrencyChange?.(option.value);
                               }}
                               className={`w-full text-left px-3 py-2 hover:bg-gray-100 [font-family:'Lato',Helvetica] text-sm first:rounded-t-lg last:rounded-b-lg ${
                                 selectedCurrency === option.value ? 'bg-gray-50 font-medium' : ''
