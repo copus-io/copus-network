@@ -519,7 +519,16 @@ export const Content = (): JSX.Element => {
 
     try {
       const { apiBaseUrl } = getCurrentEnvironment();
-      const x402Url = `${apiBaseUrl}/client/payment/getTargetUrl?uuid=${article.uuid}`;
+
+      // Use different API endpoints based on network
+      const getPaymentEndpoint = (network: NetworkType) => {
+        return network === 'xlayer'
+          ? '/client/payment/okx/getTargetUrl'
+          : '/client/payment/getTargetUrl';
+      };
+
+      const paymentEndpoint = getPaymentEndpoint(selectedNetwork);
+      const x402Url = `${apiBaseUrl}${paymentEndpoint}?uuid=${article.uuid}`;
 
       // Add user authentication token
       const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
@@ -535,7 +544,7 @@ export const Content = (): JSX.Element => {
         const paymentOption = data.accepts[0];
         console.log('📥 Received 402 payment option:', paymentOption);
 
-        const resourceUrl = `${apiBaseUrl}/client/payment/getTargetUrl?uuid=${article.uuid}`;
+        const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?uuid=${article.uuid}`;
         const paymentInfo = {
           payTo: paymentOption.payTo,
           asset: paymentOption.asset,
