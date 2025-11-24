@@ -121,7 +121,10 @@ export const Content = (): JSX.Element => {
   const detectWalletProvider = (walletType: 'metamask' | 'coinbase' | 'okx'): any => {
     // OKX Wallet uses its own injection point
     if (walletType === 'okx') {
-      return (window as any).okxwallet || null;
+      // Try multiple possible injection points for OKX wallet
+      return (window as any).okxwallet ||
+             (window as any).okx?.ethereum ||
+             (window as any).ethereum?.isOkxWallet ? (window as any).ethereum : null;
     }
 
     if (!window.ethereum) {
@@ -168,7 +171,11 @@ export const Content = (): JSX.Element => {
   const handleWalletLogin = async (address: string, provider: any, walletType: string) => {
     showToast('Connecting wallet...', 'info');
 
-    const signatureDataResponse = await AuthService.getMetamaskSignatureData(address);
+    // Use appropriate service method based on wallet type
+    const signatureDataResponse = walletType === 'okx'
+      ? await AuthService.okxWalletSignature(address)
+      : await AuthService.getMetamaskSignatureData(address);
+
     const signatureData = extractSignatureData(signatureDataResponse);
 
     if (typeof signatureData !== 'string' || !signatureData) {
@@ -180,7 +187,10 @@ export const Content = (): JSX.Element => {
       params: [signatureData, address],
     });
 
-    const response = await AuthService.metamaskLogin(address, signature, false);
+    // Use appropriate login method based on wallet type
+    const response = walletType === 'okx'
+      ? await AuthService.okxWalletLogin(address, signature, false)
+      : await AuthService.metamaskLogin(address, signature, false);
     const token = response?.data?.token || response?.token;
     const namespace = response?.data?.namespace || response?.namespace;
 
@@ -353,13 +363,28 @@ export const Content = (): JSX.Element => {
 
   // Helper: Handle wallet connection logic (shared between MetaMask, Coinbase, and OKX)
   const handleWalletConnection = async (walletType: 'metamask' | 'coinbase' | 'okx') => {
+    console.log(`🔍 Attempting to connect to ${walletType} wallet...`);
+
+    // Debug OKX wallet detection
+    if (walletType === 'okx') {
+      console.log('🔍 OKX wallet detection debug:', {
+        okxwallet: !!(window as any).okxwallet,
+        okxEthereum: !!(window as any).okx?.ethereum,
+        ethereumIsOkx: !!(window as any).ethereum?.isOkxWallet,
+        windowEthereum: !!window.ethereum
+      });
+    }
+
     const provider = detectWalletProvider(walletType);
 
     if (!provider) {
       const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
+      console.error(`❌ ${walletName} provider not found`);
       showToast(`${walletName} not found. Please install ${walletName} extension.`, 'error');
       return;
     }
+
+    console.log(`✅ ${walletType} provider found:`, provider);
 
     const address = await connectToWallet(provider);
 
@@ -592,8 +617,15 @@ export const Content = (): JSX.Element => {
       const urlParams = new URLSearchParams({ uuid: article.uuid });
 
       // Add from parameter for OKX payment endpoint (user's wallet address)
-      if (effectiveNetwork === 'xlayer' && walletAddress) {
-        urlParams.append('from', walletAddress);
+      if (effectiveNetwork === 'xlayer') {
+        // Try to get wallet address from current state or user context
+        const fromAddress = walletAddress || user?.walletAddress || '';
+        if (fromAddress) {
+          urlParams.append('from', fromAddress);
+          console.log(`📍 Adding from parameter: ${fromAddress}`);
+        } else {
+          console.warn('⚠️ No wallet address available for OKX payment');
+        }
       }
 
       const x402Url = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
@@ -615,11 +647,14 @@ export const Content = (): JSX.Element => {
         console.log('📥 Received OKX EIP-712 structure:', data);
 
         // Fill in the from field with user's wallet address
+        const fromAddress = walletAddress || user?.walletAddress || '';
+        console.log(`📍 Setting from address in EIP-712 data: ${fromAddress}`);
+
         const eip712Data = {
           ...data,
           message: {
             ...data.message,
-            from: walletAddress
+            from: fromAddress
           }
         };
 
@@ -753,10 +788,20 @@ export const Content = (): JSX.Element => {
         }
       }
     } else if (walletId === 'okx') {
-      // For OKX wallet, skip connection and go directly to payment modal
-      setWalletType('okx');
-      setIsWalletSignInOpen(false);
-      setIsPayConfirmOpen(true);
+      try {
+        await handleWalletConnection('okx');
+      } catch (error) {
+        console.error('OKX Wallet connection error:', error);
+        if (error instanceof Error) {
+          if (error.message.includes('User rejected')) {
+            showToast('OKX Wallet connection cancelled', 'info');
+          } else {
+            showToast(`OKX Wallet connection failed: ${error.message}`, 'error');
+          }
+        } else {
+          showToast('OKX Wallet connection failed. Please try again.', 'error');
+        }
+      }
     } else {
       showToast(`${walletId} wallet integration coming soon`, 'info');
       setIsWalletSignInOpen(false);
