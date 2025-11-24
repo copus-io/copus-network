@@ -965,10 +965,10 @@ export const Create = (): JSX.Element => {
                     </div>
                   </div>
 
-                  {/* Amount input with currency dropdown for X Layer */}
+                  {/* Price input with currency dropdown for X Layer */}
                   <div className="flex flex-col items-start gap-2.5 w-full">
                     <label className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-4">
-                      Amount
+                      Price
                     </label>
                     <div className="flex items-center gap-2.5 w-full">
                       <input
@@ -1028,9 +1028,26 @@ export const Create = (): JSX.Element => {
                   {/* Estimated income */}
                   <div className="flex flex-col items-start w-full">
                     <div className="flex items-center gap-2.5 w-full">
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
-                        Estimated income:
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[23px]">
+                          Estimated income:
+                        </span>
+                        <div className="relative group">
+                          <svg
+                            className="w-3.5 h-3.5 text-[#686868] cursor-help"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                          </svg>
+                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-off-black text-white text-xs rounded-lg shadow-lg z-10 [font-family:'Lato',Helvetica]">
+                            <div className="relative">
+                              Estimated income is 45% of the price. The remaining 55% goes to the original creator (45%) and the Copus community vault (10%).
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-off-black"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                       <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
                         {(parseFloat(paymentAmount || "0") * 0.04).toFixed(4)} {displayCurrency} per unlock
                       </span>
