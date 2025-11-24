@@ -15,7 +15,6 @@ import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
-import { WalletSignInModal } from "../../components/WalletSignInModal/WalletSignInModal";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
 import {
   generateNonce,
@@ -68,8 +67,8 @@ export const Content = (): JSX.Element => {
   // Users sign a message (no gas) and the server executes the transfer on their behalf.
 
   // Payment modal visibility states
-  const [isWalletSignInOpen, setIsWalletSignInOpen] = useState(false);  // Wallet selection modal
   const [isPayConfirmOpen, setIsPayConfirmOpen] = useState(false);      // Payment confirmation modal
+  const [isWalletConnected, setIsWalletConnected] = useState(false);    // Wallet connection status
 
   // Connected wallet state
   const [walletAddress, setWalletAddress] = useState<string>('');       // User's wallet address (0x...)
@@ -208,11 +207,10 @@ export const Content = (): JSX.Element => {
       console.warn('Failed to fetch user info after wallet login:', userInfoError);
     }
 
-    setIsWalletSignInOpen(false);
-    setIsPayConfirmOpen(true);
+    setIsWalletConnected(true);
     setWalletBalance('...');
     const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX' : 'Coinbase';
-    showToast(`${walletName} wallet connected successfully! 🎉`, 'success');
+    showToast(`${walletName} wallet connected successfully!`, 'success');
   };
 
   // Helper: Switch to Base Sepolia network
@@ -395,8 +393,7 @@ export const Content = (): JSX.Element => {
     if (!user) {
       await handleWalletLogin(address, provider, walletType);
     } else {
-      setIsWalletSignInOpen(false);
-      setIsPayConfirmOpen(true);
+      setIsWalletConnected(true);
       setWalletBalance('...');
       showToast('Loading wallet balance...', 'info');
     }
@@ -694,11 +691,14 @@ export const Content = (): JSX.Element => {
 
       const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase' || authMethod === 'okx';
 
+      // Always open PayConfirmModal - wallet selection is now integrated inside it
+      setIsPayConfirmOpen(true);
+
       if (user && isWalletUser && user.walletAddress) {
         setWalletAddress(user.walletAddress);
         setWalletType(authMethod);
         setSelectedNetwork(effectiveNetwork as NetworkType); // Sync network state
-        setIsPayConfirmOpen(true);
+        setIsWalletConnected(true);
         setWalletBalance('...');
 
         setupLoggedInWallet(user.walletAddress, authMethod).catch(error => {
@@ -706,7 +706,10 @@ export const Content = (): JSX.Element => {
           setWalletBalance('0.00');
         });
       } else {
-        setIsWalletSignInOpen(true);
+        // Reset wallet state for new connection
+        setIsWalletConnected(false);
+        setWalletAddress('');
+        setWalletBalance('0');
       }
     } catch (error) {
       console.error('Failed to fetch x402 payment info:', error);
@@ -725,7 +728,7 @@ export const Content = (): JSX.Element => {
 
       if (!provider) {
         console.warn(`⚠️ No provider found for ${authMethod}`);
-        setIsWalletSignInOpen(true);
+        setIsWalletConnected(false);
         return;
       }
 
@@ -749,7 +752,7 @@ export const Content = (): JSX.Element => {
     } catch (error: any) {
       console.error('Failed to set up logged-in wallet:', error);
       showToast('Failed to connect to your wallet. Please try again.', 'error');
-      setIsWalletSignInOpen(true);
+      setIsWalletConnected(false);
     }
   };
 
@@ -804,7 +807,6 @@ export const Content = (): JSX.Element => {
       }
     } else {
       showToast(`${walletId} wallet integration coming soon`, 'info');
-      setIsWalletSignInOpen(false);
     }
   };
 
@@ -1167,18 +1169,13 @@ export const Content = (): JSX.Element => {
           </div>
         </div>
 
-        {/* x402 Payment Modals */}
-        <WalletSignInModal
-          isOpen={isWalletSignInOpen}
-          onClose={() => setIsWalletSignInOpen(false)}
-          onWalletSelect={handleWalletSelect}
-        />
-
+        {/* x402 Payment Modal with integrated wallet selection */}
         <PayConfirmModal
           isOpen={isPayConfirmOpen}
           onClose={() => setIsPayConfirmOpen(false)}
           onPayNow={handlePayNow}
-          walletAddress={walletAddress || 'Not connected'}
+          onWalletSelect={handleWalletSelect}
+          walletAddress={walletAddress}
           availableBalance={walletBalance}
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
           network={getNetworkConfig(selectedNetwork).name}
@@ -1187,6 +1184,14 @@ export const Content = (): JSX.Element => {
           walletType={walletType}
           selectedNetwork={selectedNetwork}
           selectedCurrency={selectedCurrency}
+          isWalletConnected={isWalletConnected}
+          onDisconnectWallet={() => {
+            setIsWalletConnected(false);
+            setWalletAddress('');
+            setWalletBalance('0');
+            setWalletProvider(null);
+            setWalletType('');
+          }}
           onNetworkChange={(network) => {
             setSelectedNetwork(network as NetworkType);
             // Refresh balance when network changes
