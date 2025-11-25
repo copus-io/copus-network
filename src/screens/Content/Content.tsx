@@ -449,19 +449,17 @@ export const Content = (): JSX.Element => {
     } else {
       setIsWalletConnected(true);
       setWalletBalance('...');
-      showToast('Loading wallet balance...', 'info');
     }
 
-    try {
-      // Don't force network switching, let user decide
-
-      // Use user-selected network to get balance
-      const balance = await fetchTokenBalance(provider, address, selectedNetwork, selectedCurrency);
-      setWalletBalance(balance);
-    } catch (balanceError) {
-      console.error('Failed to fetch token balance:', balanceError);
-      setWalletBalance('0.00');
-    }
+    // Fetch balance in background (non-blocking) so modal shows immediately
+    fetchTokenBalance(provider, address, selectedNetwork, selectedCurrency)
+      .then(balance => {
+        setWalletBalance(balance);
+      })
+      .catch(balanceError => {
+        console.error('Failed to fetch token balance:', balanceError);
+        setWalletBalance('0.00');
+      });
   };
 
   // ========================================
@@ -843,12 +841,16 @@ export const Content = (): JSX.Element => {
       }
 
 
-      // Don't force network switching, use current wallet network to get balance
-      const balance = await fetchTokenBalance(provider, walletAddress, selectedNetwork || 'base-mainnet', selectedCurrency);
-      setWalletBalance(balance);
+      // Fetch balance in background (non-blocking)
+      const networkToUse = selectedNetwork || 'base-mainnet';
+      fetchTokenBalance(provider, walletAddress, networkToUse, selectedCurrency)
+        .then(balance => setWalletBalance(balance))
+        .catch(error => {
+          console.error('Failed to fetch balance:', error);
+          setWalletBalance('0.00');
+        });
 
       // Proactively fetch payment info to optimize user experience
-      const networkToUse = selectedNetwork || 'base-mainnet';
       fetchPaymentInfo(networkToUse)
         .catch(error => console.warn('Failed to preload payment info:', error));
     } catch (error: any) {
