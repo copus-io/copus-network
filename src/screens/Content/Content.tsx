@@ -158,26 +158,17 @@ export const Content = (): JSX.Element => {
       }
     } else {
       if (walletType === 'metamask') {
-        // IMPORTANT: If OKX is installed and there's no providers array,
-        // it means MetaMask is NOT actually installed (OKX hijacked window.ethereum)
-        if ((window as any).okxwallet) {
-          return null;
-        }
-
         const eth = window.ethereum as any;
 
-        // Check for OKX-specific properties (must be explicitly true, not just present)
-        const hasOkxProps = (eth.isOkxWallet === true) || (eth.isOKExWallet === true);
-
-        // If it has MetaMask properties and NOT explicitly OKX, use it
-        if (eth.isMetaMask && !eth.isCoinbaseWallet && !hasOkxProps) {
+        // Just return window.ethereum if it has MetaMask properties
+        // Let the wallet popup handle which account to use
+        if (eth.isMetaMask) {
           return window.ethereum;
         }
 
         // Check legacy web3.currentProvider for real MetaMask
         const web3Provider = (window as any).web3?.currentProvider;
-        if (web3Provider?.isMetaMask && !web3Provider?.isCoinbaseWallet &&
-            !(web3Provider?.isOkxWallet === true) && !(web3Provider?.isOKExWallet === true)) {
+        if (web3Provider?.isMetaMask) {
           return web3Provider;
         }
 
