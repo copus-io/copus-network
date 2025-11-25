@@ -5,7 +5,7 @@
 
 import { getCurrentEnvironment } from '../utils/envUtils';
 
-export type NetworkType = 'xlayer' | 'base-sepolia';
+export type NetworkType = 'xlayer' | 'base-sepolia' | 'base-mainnet';
 export type TokenType = 'usdc' | 'usdt';
 
 /**
@@ -19,8 +19,19 @@ const contractAddresses = {
       usdt: '0x1E4a5963aBFD975d8c9021ce480b42188849D41d',
     },
     test: {
-      usdc: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d', // X Layer testnet USDC合约
-      usdt: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d', // X Layer testnet USDT合约
+      usdc: '0x74b7F16337b8972027F6196A17a631aC6dE26d22', // X Layer mainnet USDC合约 (强制使用主网)
+      usdt: '0x1E4a5963aBFD975d8c9021ce480b42188849D41d', // X Layer mainnet USDT合约 (强制使用主网)
+    },
+  },
+  // Base Mainnet 网络 (主网)
+  'base-mainnet': {
+    production: {
+      usdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // Base mainnet USDC合约
+      usdt: null, // Base mainnet 没有标准USDT
+    },
+    test: {
+      usdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // Base mainnet USDC合约 (强制使用主网)
+      usdt: null, // Base mainnet 没有标准USDT
     },
   },
   // Base Sepolia 网络 (测试网)
@@ -41,13 +52,25 @@ const contractAddresses = {
  */
 export const networkConfigs = {
   xlayer: {
-    chainId: '0x7a0', // 1952 in hex (X Layer testnet)
-    name: 'X Layer Testnet',
-    rpcUrls: ['https://testrpc.xlayer.tech', 'https://xlayertestrpc.okx.com'],
-    blockExplorerUrls: ['https://www.oklink.com/x-layer-testnet'],
+    chainId: '0xc4', // 196 in hex (X Layer mainnet)
+    name: 'X Layer Mainnet',
+    rpcUrls: ['https://rpc.xlayer.tech', 'https://xlayerrpc.okx.com'],
+    blockExplorerUrls: ['https://www.oklink.com/xlayer'],
     nativeCurrency: {
       name: 'OKB',
       symbol: 'OKB',
+      decimals: 18,
+    },
+    tokenDecimals: 6,
+  },
+  'base-mainnet': {
+    chainId: '0x2105', // 8453 in hex (Base mainnet)
+    name: 'Base Mainnet',
+    rpcUrls: ['https://mainnet.base.org', 'https://developer-access-mainnet.base.org'],
+    blockExplorerUrls: ['https://basescan.org'],
+    nativeCurrency: {
+      name: 'Ethereum',
+      symbol: 'ETH',
       decimals: 18,
     },
     tokenDecimals: 6,

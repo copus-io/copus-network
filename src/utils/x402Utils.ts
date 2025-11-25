@@ -377,7 +377,7 @@ export async function signTransferWithAuthorization(
 export function createX402PaymentHeader(
   signedAuth: SignedAuthorization,
   network: string = 'base',
-  asset: string = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+  asset: string = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
 ): string {
   // Combine signature components (v, r, s) into a single hex string
   // The official x402 spec expects a single signature string, not separate components

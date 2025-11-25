@@ -75,7 +75,7 @@ export const Content = (): JSX.Element => {
   const [walletBalance, setWalletBalance] = useState<string>('0');      // USDC balance (e.g., "1.50")
   const [walletProvider, setWalletProvider] = useState<any>(null);      // EIP-1193 provider (MetaMask, Coinbase Wallet, etc.)
   const [walletType, setWalletType] = useState<string>('');             // Wallet type: 'metamask' or 'coinbase'
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>('base-sepolia');
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>('base-mainnet');
   const [selectedCurrency, setSelectedCurrency] = useState<TokenType>('usdc');
 
   // Payment details from 402 API response
@@ -87,6 +87,9 @@ export const Content = (): JSX.Element => {
 
   // Unlocked content URL after successful payment
   const [unlockedUrl, setUnlockedUrl] = useState<string | null>(null);
+
+  // Payment progress state to prevent duplicate submissions
+  const [isPaymentInProgress, setIsPaymentInProgress] = useState(false);
 
   // Use new article detail API hook
   const { article, loading, error } = useArticleDetail(id || '');
@@ -118,9 +121,9 @@ export const Content = (): JSX.Element => {
 
   // Helper: Detect wallet provider from providers array or single provider
   const detectWalletProvider = (walletType: 'metamask' | 'coinbase' | 'okx'): any => {
+
     // OKX Wallet uses its own injection point
     if (walletType === 'okx') {
-      // Try multiple possible injection points for OKX wallet
       return (window as any).okxwallet ||
              (window as any).okx?.ethereum ||
              (window as any).ethereum?.isOkxWallet ? (window as any).ethereum : null;
@@ -134,13 +137,40 @@ export const Content = (): JSX.Element => {
       const providers = (window.ethereum as any).providers;
 
       if (walletType === 'metamask') {
-        return providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
+
+        return providers.find((p: any) => {
+          const hasOkxProps = ('isOkxWallet' in p && p.isOkxWallet) ||
+                             ('isOKExWallet' in p && p.isOKExWallet) ||
+                             Object.prototype.hasOwnProperty.call(p, 'isOkxWallet') ||
+                             Object.prototype.hasOwnProperty.call(p, 'isOKExWallet');
+
+          return p.isMetaMask && !p.isCoinbaseWallet && !hasOkxProps;
+        });
       } else if (walletType === 'coinbase') {
         return providers.find((p: any) => p.isCoinbaseWallet);
       }
     } else {
       if (walletType === 'metamask') {
-        return window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet ? window.ethereum : null;
+        const eth = window.ethereum as any;
+
+        // Check if this is truly MetaMask or OKX pretending to be MetaMask
+        const isRealMetaMask = eth.isMetaMask && eth._metamask;
+        const isOkxPretendingMetaMask = eth.isMetaMask && !eth._metamask;
+
+        // Check legacy web3.currentProvider for real MetaMask
+        const web3Provider = (window as any).web3?.currentProvider;
+        const isRealMetaMaskInWeb3 = web3Provider?.isMetaMask && web3Provider?._metamask &&
+                                   !web3Provider?.isOkxWallet && !web3Provider?.isOKExWallet;
+
+        if (isRealMetaMask) {
+          return window.ethereum;
+        } else if (isRealMetaMaskInWeb3) {
+          return web3Provider;
+        } else if (isOkxPretendingMetaMask && (window as any).okxwallet) {
+          return null; // Force user to use OKX button instead
+        } else {
+          return null;
+        }
       } else if (walletType === 'coinbase') {
         return window.ethereum.isCoinbaseWallet ? window.ethereum : (window as any).coinbaseWalletExtension;
       }
@@ -249,16 +279,13 @@ export const Content = (): JSX.Element => {
     const xlayerChainId = '0x7a0'; // 1952 in hex (X Layer testnet)
 
     try {
-      console.log(`🔄 Attempting to switch to X Layer testnet (chainId: ${xlayerChainId})`);
       await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: xlayerChainId }],
       });
-      console.log(`✅ Successfully switched to X Layer testnet`);
     } catch (switchError: any) {
-      console.log(`⚠️ Network switch failed, attempting to add network. Error:`, switchError);
+      console.warn('Network switch failed, attempting to add network. Error:', switchError);
       if (switchError.code === 4902) {
-        console.log(`➕ Adding X Layer testnet to wallet...`);
         await provider.request({
           method: 'wallet_addEthereumChain',
           params: [{
@@ -273,9 +300,8 @@ export const Content = (): JSX.Element => {
             blockExplorerUrls: ['https://www.oklink.com/x-layer-testnet']
           }],
         });
-        console.log(`✅ Successfully added and switched to X Layer testnet`);
       } else {
-        console.error(`❌ Failed to switch to X Layer:`, switchError);
+        console.error('Failed to switch to X Layer:', switchError);
         throw switchError;
       }
     }
@@ -284,14 +310,49 @@ export const Content = (): JSX.Element => {
 
   // Helper: Fetch token balance based on network and currency
   const fetchTokenBalance = async (provider: any, address: string, network: NetworkType, currency: TokenType = 'usdc'): Promise<string> => {
-    console.log(`💰 Fetching ${currency} balance for address ${address} on ${network}...`);
 
     // Check current network
     try {
       const currentChainId = await provider.request({ method: 'eth_chainId' });
-      console.log(`🌐 Current wallet network: ${currentChainId}`);
+      const networkConfig = getNetworkConfig(network);
+      const expectedChainId = networkConfig.chainId;
+
+      if (currentChainId !== expectedChainId) {
+        console.warn(`Network mismatch! Expected ${expectedChainId} but wallet is on ${currentChainId}`);
+
+        try {
+          // Try to switch network
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: expectedChainId }],
+          });
+        } catch (switchError: any) {
+          console.warn('Failed to switch network:', switchError);
+
+          // If network doesn't exist in wallet, try to add it
+          if (switchError.code === 4902) {
+            try {
+              await provider.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: networkConfig.chainId,
+                  chainName: networkConfig.name,
+                  rpcUrls: networkConfig.rpcUrls,
+                  blockExplorerUrls: networkConfig.blockExplorerUrls,
+                  nativeCurrency: networkConfig.nativeCurrency,
+                }],
+              });
+            } catch (addError) {
+              console.error('Failed to add network:', addError);
+              throw new Error(`Please manually switch to ${networkConfig.name} network`);
+            }
+          } else {
+            throw new Error(`Please manually switch to ${networkConfig.name} network`);
+          }
+        }
+      }
     } catch (error) {
-      console.warn(`⚠️ Could not determine current network:`, error);
+      console.warn('Could not determine current network:', error);
     }
 
     const contractAddress = getTokenContract(network, currency);
@@ -300,8 +361,6 @@ export const Content = (): JSX.Element => {
       console.warn(`Token ${currency} contract not configured for network ${network}. Check official faucet for correct address.`);
       return '0.00';
     }
-
-    console.log(`📍 Using contract address: ${contractAddress}`);
 
     const networkConfig = getNetworkConfig(network);
     const data = '0x70a08231' + address.slice(2).padStart(64, '0');
@@ -315,11 +374,10 @@ export const Content = (): JSX.Element => {
         }, 'latest']
       });
 
-      console.log(`🔢 Raw balance response: ${balance}`);
 
       // Handle empty or invalid response
       if (!balance || balance === '0x' || balance === '0x0') {
-        console.warn(`⚠️ Empty balance response, returning 0.00`);
+        console.warn('Empty balance response, returning 0.00');
         return '0.00';
       }
 
@@ -327,25 +385,15 @@ export const Content = (): JSX.Element => {
 
       // Handle NaN case
       if (isNaN(balanceInSmallestUnit)) {
-        console.warn(`⚠️ Invalid balance response: ${balance}, returning 0.00`);
+        console.warn(`Invalid balance response: ${balance}, returning 0.00`);
         return '0.00';
       }
 
       const formattedBalance = (balanceInSmallestUnit / Math.pow(10, networkConfig.tokenDecimals)).toFixed(2);
 
-      console.log(`✅ Formatted balance: ${formattedBalance} ${currency.toUpperCase()}`);
-
       return formattedBalance;
     } catch (error: any) {
-      console.error(`❌ Balance query failed for ${network} ${currency}:`, error);
-      console.error(`🔍 Error details:`, {
-        message: error?.message,
-        code: error?.code,
-        data: error?.data,
-        contractAddress,
-        network,
-        address
-      });
+      console.error(`Balance query failed for ${network} ${currency}:`, error);
       return '0.00';
     }
   };
@@ -361,28 +409,18 @@ export const Content = (): JSX.Element => {
 
   // Helper: Handle wallet connection logic (shared between MetaMask, Coinbase, and OKX)
   const handleWalletConnection = async (walletType: 'metamask' | 'coinbase' | 'okx') => {
-    console.log(`🔍 Attempting to connect to ${walletType} wallet...`);
-
-    // Debug OKX wallet detection
-    if (walletType === 'okx') {
-      console.log('🔍 OKX wallet detection debug:', {
-        okxwallet: !!(window as any).okxwallet,
-        okxEthereum: !!(window as any).okx?.ethereum,
-        ethereumIsOkx: !!(window as any).ethereum?.isOkxWallet,
-        windowEthereum: !!window.ethereum
-      });
-    }
 
     const provider = detectWalletProvider(walletType);
 
     if (!provider) {
-      const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
-      console.error(`❌ ${walletName} provider not found`);
-      showToast(`${walletName} not found. Please install ${walletName} extension.`, 'error');
+      if (walletType === 'metamask' && (window as any).okxwallet) {
+        showToast('MetaMask not detected. OKX wallet is installed - please use the OKX button, or install genuine MetaMask.', 'warning');
+      } else {
+        const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
+        showToast(`${walletName} not found. Please install ${walletName} extension.`, 'error');
+      }
       return;
     }
-
-    console.log(`✅ ${walletType} provider found:`, provider);
 
     const address = await connectToWallet(provider);
 
@@ -399,12 +437,10 @@ export const Content = (): JSX.Element => {
     }
 
     try {
-      // Determine network based on wallet type
-      const network = walletType === 'okx' ? 'xlayer' : 'base-sepolia';
-      setSelectedNetwork(network);
+      // Don't force network switching, let user decide
 
-      await switchToNetwork(provider, network);
-      const balance = await fetchTokenBalance(provider, address, network, selectedCurrency);
+      // Use user-selected network to get balance
+      const balance = await fetchTokenBalance(provider, address, selectedNetwork, selectedCurrency);
       setWalletBalance(balance);
     } catch (balanceError) {
       console.error('Failed to fetch token balance:', balanceError);
@@ -423,12 +459,12 @@ export const Content = (): JSX.Element => {
 
   // Debug: Log article data to check arChainId and payment info
   useEffect(() => {
-    if (article) {
-      console.log('📄 Article data:', article);
-      console.log('🔗 arChainId:', article.arChainId);
-      console.log('💰 Payment info:', {
+    if (article && process.env.NODE_ENV === 'development') {
+      console.log('Article loaded:', {
+        uuid: article.uuid,
         targetUrlIsLocked: article.targetUrlIsLocked,
-        priceInfo: article.priceInfo
+        hasArChainId: !!article.arChainId,
+        hasPriceInfo: !!article.priceInfo
       });
     }
   }, [article]);
@@ -474,12 +510,10 @@ export const Content = (): JSX.Element => {
     return <ContentPageSkeleton />;
   }
 
-  // 检查是否是文章被删除的情况
+  // Check if the article has been deleted
   const isArticleDeleted = error && (
     error.includes('not found') ||
-    error.includes('不存在') ||
     error.includes('deleted') ||
-    error.includes('删除') ||
     error.includes('404')
   );
 
@@ -555,7 +589,7 @@ export const Content = (): JSX.Element => {
 
       // Call API
       await AuthService.likeArticle(article.uuid);
-      showToast(newIsLiked ? 'Treasured 💖' : 'Untreasured', 'success');
+      showToast(newIsLiked ? 'Treasured' : 'Untreasured', 'success');
 
     } catch (error) {
       // Rollback state on API failure
@@ -586,47 +620,46 @@ export const Content = (): JSX.Element => {
   // ========================================
   // Step 1: Fetch x402 Payment Information
   // ========================================
-  const handleUnlock = async () => {
+  // ========================================
+  // Fetch x402 Payment Information (triggered by network selection)
+  // ========================================
+  const fetchPaymentInfo = async (network: NetworkType): Promise<{eip712Data?: any, paymentInfo?: any}> => {
     if (!article?.uuid) {
       showToast('Article information not available', 'error');
-      return;
+      return { };
     }
 
     try {
       const { apiBaseUrl } = getCurrentEnvironment();
 
-      // Determine network based on current auth method (dynamic detection)
-      const authMethod = localStorage.getItem('copus_auth_method');
-      const effectiveNetwork = authMethod === 'okx' ? 'xlayer' : 'base-sepolia';
 
-      console.log(`🌐 Auth method: ${authMethod}, Using network: ${effectiveNetwork}`);
-
-      // Use different API endpoints based on network
-      const getPaymentEndpoint = (network: NetworkType) => {
-        return network === 'xlayer'
+      // Use different API endpoints based on selected network
+      const getPaymentEndpoint = (networkType: NetworkType) => {
+        return networkType === 'xlayer'
           ? '/client/payment/okx/getTargetUrl'
           : '/client/payment/getTargetUrl';
       };
 
-      const paymentEndpoint = getPaymentEndpoint(effectiveNetwork as NetworkType);
+      const paymentEndpoint = getPaymentEndpoint(network);
 
       // Build URL with uuid and from parameters
       const urlParams = new URLSearchParams({ uuid: article.uuid });
 
-      // Add from parameter for OKX payment endpoint (user's wallet address)
-      if (effectiveNetwork === 'xlayer') {
-        // Try to get wallet address from current state or user context
-        const fromAddress = walletAddress || user?.walletAddress || '';
-        if (fromAddress) {
-          urlParams.append('from', fromAddress);
-          console.log(`📍 Adding from parameter: ${fromAddress}`);
+      // Add from parameter for XLayer payment endpoint (user's wallet address)
+      if (network === 'xlayer') {
+        // Use connected address since stored address may have 0 USDC on XLayer
+        const testConnectedAddress = walletAddress;
+        const testStoredAddress = user?.walletAddress;
+        const addressToUse = testConnectedAddress || testStoredAddress;
+
+        if (addressToUse) {
+          urlParams.append('from', addressToUse);
         } else {
-          console.warn('⚠️ No wallet address available for OKX payment');
+          console.warn('No wallet address available for XLayer payment');
         }
       }
 
       const x402Url = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
-      console.log(`🌍 Making payment request to: ${x402Url}`);
 
       // Add user authentication token
       const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
@@ -636,22 +669,49 @@ export const Content = (): JSX.Element => {
       }
 
       const response = await fetch(x402Url, { headers });
+
+      if (!response.ok && response.status !== 402) {
+        // 402 is the expected "Payment Required" status for payment APIs
+        console.error(`❌ Payment API returned ${response.status} ${response.statusText}`);
+        if (response.status === 500) {
+          throw new Error('Server error - payment API is experiencing issues');
+        } else {
+          throw new Error(`Payment API error: ${response.status} ${response.statusText}`);
+        }
+      }
+
       const data = await response.json();
 
       // Handle different response formats based on endpoint
-      if (effectiveNetwork === 'xlayer' && data.domain && data.message) {
-        // OKX endpoint returns EIP-712 structure directly
-        console.log('📥 Received OKX EIP-712 structure:', data);
+      if (network === 'xlayer' && data.domain && data.message) {
+        // XLayer endpoint returns EIP-712 structure directly
+        const testConnectedAddress = walletAddress;
+        const testStoredAddress = user?.walletAddress;
 
-        // Fill in the from field with user's wallet address
-        const fromAddress = walletAddress || user?.walletAddress || '';
-        console.log(`📍 Setting from address in EIP-712 data: ${fromAddress}`);
+        // Check actual MetaMask account
+        let actualMetaMaskAddress = null;
+        try {
+          const provider = window.ethereum;
+          if (provider) {
+            const accounts = await provider.request({ method: 'eth_accounts' });
+            actualMetaMaskAddress = accounts[0] || null;
+          }
+        } catch (error) {
+          console.warn('Could not get MetaMask account:', error);
+        }
+
+        // Use actual connected address if available
+        const addressToUse = actualMetaMaskAddress || testConnectedAddress || testStoredAddress;
+        if (!addressToUse) {
+          console.warn('No wallet address available for EIP-712 data');
+          throw new Error('Please connect your wallet first');
+        }
 
         const eip712Data = {
           ...data,
           message: {
             ...data.message,
-            from: fromAddress
+            from: addressToUse
           }
         };
 
@@ -663,92 +723,118 @@ export const Content = (): JSX.Element => {
           payTo: data.message.to,
           asset: data.domain.verifyingContract,
           amount: data.message.value,
-          network: effectiveNetwork,
+          network: network,
           resource: resourceUrl
         };
 
         setX402PaymentInfo(paymentInfo);
+
+        // Return the data immediately for use in the calling function
+        return { eip712Data, paymentInfo };
       } else if (data.accepts && data.accepts.length > 0) {
-        // Standard x402 response format
+        // Standard x402 response format (Base network)
         const paymentOption = data.accepts[0];
-        console.log('📥 Received 402 payment option:', paymentOption);
 
         const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
         const paymentInfo = {
           payTo: paymentOption.payTo,
           asset: paymentOption.asset,
           amount: paymentOption.maxAmountRequired,
-          network: paymentOption.network,
+          network: network,
           resource: resourceUrl
         };
 
         setX402PaymentInfo(paymentInfo);
+
+        // Return the data immediately for Base network
+        return { paymentInfo };
       } else {
         console.error('❌ Unexpected payment response format:', data);
         showToast('Failed to get payment information', 'error');
-        return;
+        return { };
       }
 
-      const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase' || authMethod === 'okx';
+      console.log(`✅ Payment info fetched successfully for ${network}`);
+      return { }; // fallback return
 
-      // Always open PayConfirmModal - wallet selection is now integrated inside it
-      setIsPayConfirmOpen(true);
-
-      if (user && isWalletUser && user.walletAddress) {
-        setWalletAddress(user.walletAddress);
-        setWalletType(authMethod);
-        setSelectedNetwork(effectiveNetwork as NetworkType); // Sync network state
-        setIsWalletConnected(true);
-        setWalletBalance('...');
-
-        setupLoggedInWallet(user.walletAddress, authMethod).catch(error => {
-          console.error('Failed to setup wallet:', error);
-          setWalletBalance('0.00');
-        });
-      } else {
-        // Reset wallet state for new connection
-        setIsWalletConnected(false);
-        setWalletAddress('');
-        setWalletBalance('0');
-      }
     } catch (error) {
-      console.error('Failed to fetch x402 payment info:', error);
-      showToast('Failed to load payment information. Please try again.', 'error');
+      console.error('❌ Error fetching payment info:', error);
+      showToast((error as Error).message || 'Failed to load payment information', 'error');
+      // Re-throw the error to prevent further execution
+      throw error;
+    }
+  };
+
+  const handleUnlock = async () => {
+    if (!article?.uuid) {
+      showToast('Article information not available', 'error');
+      return;
+    }
+
+    // Just open the payment modal, don't fetch payment info yet
+    setIsPayConfirmOpen(true);
+
+    // Get suggested network based on user's auth method
+    const authMethod = localStorage.getItem('copus_auth_method');
+    const suggestedNetwork = authMethod === 'okx' ? 'xlayer' : 'base-mainnet';
+    setSelectedNetwork(suggestedNetwork);
+
+    const isWalletUser = authMethod === 'metamask' || authMethod === 'coinbase' || authMethod === 'okx';
+
+    if (user && isWalletUser && user.walletAddress) {
+      // Only use stored wallet address if no wallet is currently connected
+      if (!walletAddress) {
+        setWalletAddress(user.walletAddress);
+      }
+      setWalletType(authMethod);
+      setIsWalletConnected(true);
+      setWalletBalance('...');
+
+      const addressToUse = walletAddress || user.walletAddress;
+      setupLoggedInWallet(addressToUse, authMethod).catch(error => {
+        console.error('Failed to setup wallet:', error);
+        setWalletBalance('0.00');
+      });
+    } else {
+      // Reset wallet state for new connection
+      setIsWalletConnected(false);
+      setWalletAddress('');
+      setWalletBalance('0');
     }
   };
 
   // Helper function to set up wallet connection for already logged-in wallet users
   const setupLoggedInWallet = async (walletAddress: string, authMethod: string) => {
     try {
-      console.log('🔧 Setting up wallet for logged-in user...');
-      console.log(`👤 Wallet address: ${walletAddress}`);
-      console.log(`🌐 Auth method: ${authMethod}`);
-
       const provider = detectWalletProvider(authMethod as 'metamask' | 'coinbase' | 'okx');
 
       if (!provider) {
-        console.warn(`⚠️ No provider found for ${authMethod}`);
+        console.warn(`No provider found for ${authMethod}`);
         setIsWalletConnected(false);
         return;
       }
 
-      console.log(`✅ Provider detected for ${authMethod}`);
-
-      setWalletAddress(walletAddress);
+      // Don't overwrite already connected wallet address from fresh connection
+      // The walletAddress parameter here is the stored user address,
+      // but we want to keep any freshly connected wallet address instead
       setWalletProvider(provider);
       setWalletType(authMethod);
 
-      // Use selected network for balance check
-      const network = authMethod === 'okx' ? 'xlayer' : 'base-sepolia';
-      setSelectedNetwork(network);
+      // No longer force network based on wallet type, use default base-mainnet or user-selected network
+      // If no network selected, default to base-mainnet
+      if (!selectedNetwork) {
+        setSelectedNetwork('base-mainnet');
+      }
 
-      console.log(`🔗 Setting up ${network} network...`);
-      await switchToNetwork(provider, network);
-      console.log(`✅ Successfully switched to ${network} network`);
 
-      console.log(`💰 Fetching balance for ${network}...`);
-      const balance = await fetchTokenBalance(provider, walletAddress, network, selectedCurrency);
+      // Don't force network switching, use current wallet network to get balance
+      const balance = await fetchTokenBalance(provider, walletAddress, selectedNetwork || 'base-mainnet', selectedCurrency);
       setWalletBalance(balance);
+
+      // Proactively fetch payment info to optimize user experience
+      const networkToUse = selectedNetwork || 'base-mainnet';
+      fetchPaymentInfo(networkToUse)
+        .catch(error => console.warn('Failed to preload payment info:', error));
     } catch (error: any) {
       console.error('Failed to set up logged-in wallet:', error);
       showToast('Failed to connect to your wallet. Please try again.', 'error');
@@ -812,10 +898,11 @@ export const Content = (): JSX.Element => {
 
   // ========================================
   // Step 3: Execute Payment using x402 + ERC-3009
-  // ========================================
+
   const handlePayNow = async () => {
-    if (!x402PaymentInfo) {
-      showToast('Payment information not available', 'error');
+    // Prevent duplicate submissions
+    if (isPaymentInProgress) {
+      showToast('Payment is in progress, please wait...', 'warning');
       return;
     }
 
@@ -824,12 +911,53 @@ export const Content = (): JSX.Element => {
       return;
     }
 
+    // Start payment, set state
+    setIsPaymentInProgress(true);
+
+    // Local variables to store fresh data for immediate use
+    let currentEip712Data = okxEip712Data;
+    let currentPaymentInfo = x402PaymentInfo;
+
+    // Determine the final address to use consistently throughout the payment process
+    let finalPaymentAddress = walletAddress;
     try {
+      const accounts = await walletProvider.request({ method: 'eth_accounts' });
+      finalPaymentAddress = accounts[0] || walletAddress;
+    } catch (error) {
+      console.warn('Could not get MetaMask account, using wallet address:', error);
+    }
+
+    try {
+      // Check if payment info is available (should be preloaded)
+      if (!x402PaymentInfo ||
+          (selectedNetwork === 'xlayer' && (!currentEip712Data || x402PaymentInfo.network !== 'xlayer')) ||
+          (selectedNetwork === 'base-mainnet' && x402PaymentInfo.network !== 'base-mainnet')) {
+        showToast(`Preparing payment for ${selectedNetwork}...`, 'info');
+        const fetchedData = await fetchPaymentInfo(selectedNetwork);
+
+        // Use the fetched data directly
+        if (selectedNetwork === 'xlayer' && !fetchedData.eip712Data) {
+          throw new Error(`Failed to get EIP-712 data for ${selectedNetwork}`);
+        } else if (selectedNetwork === 'base-mainnet' && !fetchedData.paymentInfo) {
+          throw new Error(`Failed to get payment info for ${selectedNetwork}`);
+        }
+
+        // Store the fresh data for immediate use
+        if (fetchedData.eip712Data) {
+          currentEip712Data = fetchedData.eip712Data;
+        }
+        // Store payment info for both XLayer and Base networks
+        if (fetchedData.paymentInfo) {
+          currentPaymentInfo = fetchedData.paymentInfo;
+        }
+      }
+
       // Ensure user is on the correct network for payment
       const paymentNetworkConfig = getNetworkConfig(selectedNetwork);
       const chainId = await walletProvider.request({ method: 'eth_chainId' });
 
       if (chainId !== paymentNetworkConfig.chainId) {
+        showToast(`Switching to ${selectedNetwork} network for payment...`, 'info');
         await switchToNetwork(walletProvider, selectedNetwork);
       }
 
@@ -839,34 +967,54 @@ export const Content = (): JSX.Element => {
 
       let signedAuth;
 
-      if (selectedNetwork === 'xlayer' && okxEip712Data) {
+      if (selectedNetwork === 'xlayer' && currentEip712Data) {
         // Use OKX EIP-712 data for direct signing (X Layer)
-        console.log('🔑 Using OKX EIP-712 data for signing:', okxEip712Data);
+        // Check current network before signing
+        try {
+          const currentChainId = await walletProvider.request({ method: 'eth_chainId' });
+          if (currentChainId !== '0xc4') {
+            console.warn(`Network mismatch for XLayer signing! Expected 0xc4, got ${currentChainId}`);
+          }
+        } catch (e) {
+          console.warn('Could not check current network for XLayer signing:', e);
+        }
 
-        // Sign using eth_signTypedData_v4 with the exact structure from backend
+        // Ensure the EIP-712 data uses the final payment address
+        const correctedEip712Data = {
+          ...currentEip712Data,
+          message: {
+            ...currentEip712Data.message,
+            from: finalPaymentAddress
+          }
+        };
+
+        // Sign using eth_signTypedData_v4 with the corrected structure
         const signature = await walletProvider.request({
           method: 'eth_signTypedData_v4',
-          params: [walletAddress, JSON.stringify(okxEip712Data)]
+          params: [finalPaymentAddress, JSON.stringify(correctedEip712Data)]
         });
 
         // Parse signature into v, r, s components
         const r = signature.slice(0, 66);
         const s = '0x' + signature.slice(66, 130);
-        const v = parseInt(signature.slice(130, 132), 16);
+        const vHex = signature.slice(130, 132);
+        const v = parseInt(vHex, 16);
 
         signedAuth = {
-          from: okxEip712Data.message.from,
-          to: okxEip712Data.message.to,
-          value: okxEip712Data.message.value,
-          validAfter: parseInt(okxEip712Data.message.validAfter),
-          validBefore: parseInt(okxEip712Data.message.validBefore),
-          nonce: okxEip712Data.message.nonce,
+          from: finalPaymentAddress, // Use the actual connected wallet address
+          to: correctedEip712Data.message.to,
+          value: correctedEip712Data.message.value,
+          validAfter: parseInt(correctedEip712Data.message.validAfter),
+          validBefore: parseInt(correctedEip712Data.message.validBefore),
+          nonce: correctedEip712Data.message.nonce,
           v,
           r,
           s
         };
+
       } else {
-        // Use standard x402Utils signing (Base Sepolia)
+        // Use standard x402Utils signing (Base networks)
+
         const nonce = generateNonce();
         const now = Math.floor(Date.now() / 1000);
         const validAfter = now;
@@ -875,22 +1023,45 @@ export const Content = (): JSX.Element => {
         // Get network configuration for correct signing
         const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
 
+
         signedAuth = await signTransferWithAuthorization({
-          from: walletAddress,
-          to: x402PaymentInfo.payTo,
-          value: x402PaymentInfo.amount,
+          from: finalPaymentAddress,
+          to: currentPaymentInfo.payTo,
+          value: currentPaymentInfo.amount,
           validAfter,
           validBefore,
           nonce
         }, walletProvider, parseInt(paymentNetworkConfig.chainId, 16), paymentContractAddress || undefined);
       }
 
+      // Map network name for x402 protocol
+      // x402 protocol uses 'base' for Base mainnet, not 'base-mainnet'
+      const x402NetworkName = selectedNetwork === 'base-mainnet' ? 'base' :
+                             selectedNetwork === 'xlayer' ? 'xlayer' :
+                             currentPaymentInfo.network;
+
+
       // Create X-PAYMENT header with signed authorization
       const paymentHeader = createX402PaymentHeader(
         signedAuth,
-        x402PaymentInfo.network,
-        x402PaymentInfo.asset
+        x402NetworkName,
+        currentPaymentInfo.asset
       );
+
+      // Debug output for development
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          const decodedHeader = JSON.parse(atob(paymentHeader));
+          console.log('Payment header created for network:', x402NetworkName);
+          console.log('Signature verification details:', {
+            fromMatches: decodedHeader.payload?.authorization?.from === finalPaymentAddress,
+            toMatches: decodedHeader.payload?.authorization?.to === currentPaymentInfo.payTo,
+            valueMatches: decodedHeader.payload?.authorization?.value === currentPaymentInfo.amount?.toString()
+          });
+        } catch (e) {
+          console.error('Failed to decode payment header for debug:', e);
+        }
+      }
 
       showToast('Payment authorization signed! Unlocking content...', 'success');
 
@@ -903,23 +1074,48 @@ export const Content = (): JSX.Element => {
         paymentHeaders.Authorization = `Bearer ${token}`;
       }
 
-      const unlockResponse = await fetch(x402PaymentInfo.resource, {
+      // Ensure payment URL uses the same address as EIP-712 data
+      let paymentUrl = currentPaymentInfo.resource;
+
+      if (selectedNetwork === 'xlayer' && paymentUrl.includes('from=')) {
+        // Replace the 'from' parameter with the final payment address
+        const url = new URL(paymentUrl);
+        url.searchParams.set('from', finalPaymentAddress);
+        paymentUrl = url.toString();
+      }
+
+
+      const unlockResponse = await fetch(paymentUrl, {
         headers: paymentHeaders
       });
 
+
       if (!unlockResponse.ok) {
         const errorText = await unlockResponse.text();
-        throw new Error(`Payment failed: ${unlockResponse.status} - ${errorText}`);
+        console.error('Payment verification failed:', {
+          status: unlockResponse.status,
+          statusText: unlockResponse.statusText,
+          error: errorText,
+          network: currentPaymentInfo.network
+        });
+
+        throw new Error(`failed to verify payment: ${unlockResponse.status} ${unlockResponse.statusText}`);
       }
 
       const unlockData = await unlockResponse.json();
+
       const targetUrl = unlockData.data || unlockData.targetUrl;
 
       if (targetUrl) {
         setUnlockedUrl(targetUrl);
-        showToast('Payment successful! Content unlocked 🎉', 'success');
+        showToast('Payment successful! Content unlocked', 'success');
         setIsPayConfirmOpen(false);
-        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+
+        // Open target URL in new tab
+        const newWindow = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+            showToast('Content unlocked! Please check if popup was blocked.', 'info');
+        }
       } else {
         showToast('Payment completed but no URL returned. Please contact support.', 'error');
       }
@@ -931,6 +1127,9 @@ export const Content = (): JSX.Element => {
       } else {
         showToast(`Payment failed: ${error.message || 'Unknown error'}`, 'error');
       }
+    } finally {
+      // Reset payment state, allow next payment
+      setIsPaymentInProgress(false);
     }
   };
 
@@ -1064,16 +1263,10 @@ export const Content = (): JSX.Element => {
                   title={article?.arChainId ? "View on Arweave" : "Arweave storage not available"}
                   onClick={(e) => {
                     e.preventDefault();
-                    console.log('🔍 Arweave icon clicked');
-                    console.log('📦 Article object:', article);
-                    console.log('🔗 arChainId value:', article?.arChainId);
-
                     if (!article?.arChainId) {
-                      console.warn('⚠️ No arChainId available for this article - cannot redirect to Arweave');
-                      console.log('💡 Full article data:', JSON.stringify(article, null, 2));
+                      console.warn('No arChainId available for this article');
                     } else {
                       const arweaveUrl = `https://arseed.web3infra.dev/${article.arChainId}`;
-                      console.log('✅ Opening Arweave URL in new tab:', arweaveUrl);
                       window.open(arweaveUrl, '_blank', 'noopener,noreferrer');
                     }
                   }}
@@ -1194,11 +1387,16 @@ export const Content = (): JSX.Element => {
           }}
           onNetworkChange={(network) => {
             setSelectedNetwork(network as NetworkType);
-            // Refresh balance when network changes
+            // Refresh balance and fetch payment info when network changes
             if (walletProvider && walletAddress) {
+              // Fetch balance
               fetchTokenBalance(walletProvider, walletAddress, network as NetworkType, selectedCurrency)
                 .then(balance => setWalletBalance(balance))
                 .catch(() => setWalletBalance('0.00'));
+
+              // Fetch payment info proactively for better UX
+              fetchPaymentInfo(network as NetworkType)
+                .catch(error => console.warn('Failed to preload payment info:', error));
             }
           }}
           onCurrencyChange={(currency) => {

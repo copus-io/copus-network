@@ -670,11 +670,18 @@ export const Login = (): JSX.Element => {
       // When multiple wallets are installed, they inject into window.ethereum.providers array
       // Check providers array first to find the correct wallet
       if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
-        console.log('Multiple wallet providers detected, searching for MetaMask...');
+        // console.log('Multiple wallet providers detected, searching for MetaMask...');
         const providers = (window.ethereum as any).providers;
 
-        // Find MetaMask provider (must have isMetaMask and NOT be Coinbase)
-        metamaskProvider = providers.find((p: any) => p.isMetaMask && !p.isCoinbaseWallet);
+        // Find MetaMask provider (must have isMetaMask and NOT be Coinbase or OKX)
+        metamaskProvider = providers.find((p: any) => {
+          const hasOkxProps = ('isOkxWallet' in p && p.isOkxWallet) ||
+                             ('isOKExWallet' in p && p.isOKExWallet) ||
+                             Object.prototype.hasOwnProperty.call(p, 'isOkxWallet') ||
+                             Object.prototype.hasOwnProperty.call(p, 'isOKExWallet');
+
+          return p.isMetaMask && !p.isCoinbaseWallet && !hasOkxProps;
+        });
 
         if (!metamaskProvider) {
           showToast('MetaMask not found. Please ensure MetaMask is installed.', 'error');
@@ -683,10 +690,28 @@ export const Login = (): JSX.Element => {
         }
         console.log('Found MetaMask provider in providers array');
       } else {
-        // Single wallet installed - check if it's MetaMask
-        if (window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet) {
+        // Single wallet installed - check if it's truly MetaMask
+        const eth = window.ethereum as any;
+
+        // Check if this is truly MetaMask or OKX pretending to be MetaMask
+        const isRealMetaMask = eth.isMetaMask && eth._metamask;
+        const isOkxPretendingMetaMask = eth.isMetaMask && !eth._metamask;
+
+        // Check legacy web3.currentProvider for real MetaMask
+        const web3Provider = (window as any).web3?.currentProvider;
+        const isRealMetaMaskInWeb3 = web3Provider?.isMetaMask && web3Provider?._metamask &&
+                                   !web3Provider?.isOkxWallet && !web3Provider?.isOKExWallet;
+
+        if (isRealMetaMask) {
           metamaskProvider = window.ethereum;
-          console.log('Using window.ethereum as MetaMask provider');
+          console.log('Using real MetaMask provider');
+        } else if (isRealMetaMaskInWeb3) {
+          metamaskProvider = web3Provider;
+          console.log('Using real MetaMask from web3.currentProvider');
+        } else if (isOkxPretendingMetaMask && (window as any).okxwallet) {
+          showToast('MetaMask not detected. OKX wallet is installed - please use the OKX login option, or install genuine MetaMask.', 'warning');
+          setIsLoginLoading(false);
+          return;
         } else {
           showToast('MetaMask not found. Please install MetaMask extension.', 'error');
           setIsLoginLoading(false);
@@ -771,7 +796,17 @@ export const Login = (): JSX.Element => {
         showToast('Login successful! Welcome back 🎉', 'success');
         navigate('/');
       } else {
-        showToast(`Metamask login failed: ${response.msg || 'Please try again'}`, 'error');
+        // Handle wallet address not registered case
+        if (response.msg && (
+          response.msg.includes('用户不存在') ||
+          response.msg.includes('user not found') ||
+          response.msg.includes('wallet not registered') ||
+          response.msg.includes('address not found')
+        )) {
+          showToast('This wallet address is not registered yet. Please register an account first, then you can associate this wallet.', 'warning');
+        } else {
+          showToast(`Metamask login failed: ${response.msg || 'Please try again'}`, 'error');
+        }
       }
     } catch (error) {
       showToast(`Metamask login failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
@@ -799,7 +834,7 @@ export const Login = (): JSX.Element => {
       // When multiple wallets are installed, they inject into window.ethereum.providers array
       // Check providers array first to find the correct wallet
       if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
-        console.log('Multiple wallet providers detected, searching for Coinbase Wallet...');
+        // console.log('Multiple wallet providers detected, searching for Coinbase Wallet...');
         const providers = (window.ethereum as any).providers;
 
         // Find Coinbase Wallet provider
@@ -896,7 +931,17 @@ export const Login = (): JSX.Element => {
         showToast('Login successful! Welcome back 🎉', 'success');
         navigate('/');
       } else {
-        showToast(`Coinbase Wallet login failed: ${response.msg || 'Please try again'}`, 'error');
+        // Handle wallet address not registered case
+        if (response.msg && (
+          response.msg.includes('用户不存在') ||
+          response.msg.includes('user not found') ||
+          response.msg.includes('wallet not registered') ||
+          response.msg.includes('address not found')
+        )) {
+          showToast('This wallet address is not registered yet. Please register an account first, then you can associate this wallet.', 'warning');
+        } else {
+          showToast(`Coinbase Wallet login failed: ${response.msg || 'Please try again'}`, 'error');
+        }
       }
     } catch (error) {
       showToast(`Coinbase Wallet login failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
@@ -924,7 +969,7 @@ export const Login = (): JSX.Element => {
       // When multiple wallets are installed, they inject into window.ethereum.providers array
       // Check providers array first to find the correct wallet
       if ((window.ethereum as any)?.providers && Array.isArray((window.ethereum as any).providers)) {
-        console.log('Multiple wallet providers detected, searching for OKX Wallet...');
+        // console.log('Multiple wallet providers detected, searching for OKX Wallet...');
         const providers = (window.ethereum as any).providers;
 
         // Find OKX Wallet provider
@@ -935,15 +980,15 @@ export const Login = (): JSX.Element => {
           setIsLoginLoading(false);
           return;
         }
-        console.log('Found OKX Wallet provider in providers array');
+        // console.log('Found OKX Wallet provider in providers array');
       } else {
         // Single wallet installed - check if it's OKX Wallet
         if (window.ethereum.isOkxWallet) {
           okxProvider = window.ethereum;
-          console.log('Using window.ethereum as OKX Wallet provider');
+          // console.log('Using window.ethereum as OKX Wallet provider');
         } else if ((window as any).okxwallet) {
           okxProvider = (window as any).okxwallet;
-          console.log('Using window.okxwallet as provider');
+          // console.log('Using window.okxwallet as provider');
         } else {
           showToast('OKX Wallet not found. Please install OKX Wallet extension.', 'error');
           setIsLoginLoading(false);
@@ -1026,7 +1071,17 @@ export const Login = (): JSX.Element => {
         showToast('Login successful! Welcome back 🎉', 'success');
         navigate('/');
       } else {
-        showToast(`OKX Wallet login failed: ${response.msg || 'Please try again'}`, 'error');
+        // Handle wallet address not registered case
+        if (response.msg && (
+          response.msg.includes('用户不存在') ||
+          response.msg.includes('user not found') ||
+          response.msg.includes('wallet not registered') ||
+          response.msg.includes('address not found')
+        )) {
+          showToast('This wallet address is not registered yet. Please register an account first, then you can associate this wallet.', 'warning');
+        } else {
+          showToast(`OKX Wallet login failed: ${response.msg || 'Please try again'}`, 'error');
+        }
       }
     } catch (error) {
       showToast(`OKX Wallet login failed: ${error instanceof Error ? error.message : 'Please try again'}`, 'error');
@@ -1452,6 +1507,14 @@ export const Login = (): JSX.Element => {
                       </span>
                     </Button>
                   ))}
+                </div>
+
+                {/* Wallet registration info */}
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 text-center">
+                    <strong>📄 Note:</strong> New to Copus? You can still browse and purchase content with your wallet.
+                    Register an account to access your purchase history and manage your profile.
+                  </p>
                 </div>
               </div>
             </CardContent>
