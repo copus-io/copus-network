@@ -683,6 +683,11 @@ export const Login = (): JSX.Element => {
           return p.isMetaMask && !p.isCoinbaseWallet && !hasOkxProps;
         });
 
+        // Fallback: check if any provider has the _metamask property (unique to real MetaMask)
+        if (!metamaskProvider) {
+          metamaskProvider = providers.find((p: any) => p._metamask && p.isMetaMask);
+        }
+
         if (!metamaskProvider) {
           showToast('MetaMask not found. Please ensure MetaMask is installed.', 'error');
           setIsLoginLoading(false);

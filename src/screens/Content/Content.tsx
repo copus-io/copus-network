@@ -138,15 +138,23 @@ export const Content = (): JSX.Element => {
       const providers = (window.ethereum as any).providers;
 
       if (walletType === 'metamask') {
-
-        return providers.find((p: any) => {
+        // First try to find a provider that explicitly identifies as MetaMask and not OKX
+        const metamaskProvider = providers.find((p: any) => {
           const hasOkxProps = ('isOkxWallet' in p && p.isOkxWallet) ||
                              ('isOKExWallet' in p && p.isOKExWallet) ||
                              Object.prototype.hasOwnProperty.call(p, 'isOkxWallet') ||
                              Object.prototype.hasOwnProperty.call(p, 'isOKExWallet');
 
+          // MetaMask provider should have isMetaMask, not be Coinbase, and not have OKX properties
           return p.isMetaMask && !p.isCoinbaseWallet && !hasOkxProps;
         });
+
+        if (metamaskProvider) {
+          return metamaskProvider;
+        }
+
+        // Fallback: check if any provider has the _metamask property (unique to real MetaMask)
+        return providers.find((p: any) => p._metamask && p.isMetaMask);
       } else if (walletType === 'coinbase') {
         return providers.find((p: any) => p.isCoinbaseWallet);
       }
