@@ -122,7 +122,6 @@ export const Content = (): JSX.Element => {
 
   // Helper: Detect wallet provider from providers array or single provider
   const detectWalletProvider = (walletType: 'metamask' | 'coinbase' | 'okx'): any => {
-
     // OKX Wallet uses its own injection point
     if (walletType === 'okx') {
       return (window as any).okxwallet ||
@@ -131,6 +130,10 @@ export const Content = (): JSX.Element => {
     }
 
     if (!window.ethereum) {
+      // Try window.metamask directly if ethereum is missing
+      if ((window as any).metamask?.isMetaMask) {
+        return (window as any).metamask;
+      }
       return null;
     }
 
@@ -158,6 +161,8 @@ export const Content = (): JSX.Element => {
       }
     } else {
       if (walletType === 'metamask') {
+        const eth = window.ethereum as any;
+
         // If OKX is installed but no providers array, OKX has hijacked window.ethereum
         // Check if MetaMask is accessible via window.metamask
         if ((window as any).okxwallet) {
@@ -165,11 +170,13 @@ export const Content = (): JSX.Element => {
           if (metamaskDirect?.isMetaMask) {
             return metamaskDirect;
           }
-          // MetaMask not found, OKX is hijacking
+          // MetaMask not accessible via window.metamask
+          // Return window.ethereum anyway - it may open OKX but at least user can connect
+          if (eth.isMetaMask) {
+            return window.ethereum;
+          }
           return null;
         }
-
-        const eth = window.ethereum as any;
 
         // No OKX installed, safe to use window.ethereum if it's MetaMask
         if (eth.isMetaMask) {
@@ -1452,7 +1459,12 @@ export const Content = (): JSX.Element => {
           amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
           network={getNetworkConfig(selectedNetwork).name}
           faucetLink={selectedNetwork === 'xlayer' && walletType === 'okx' ? 'https://www.okx.com/dex' : 'https://faucet.circle.com/'}
-          isInsufficientBalance={x402PaymentInfo ? parseFloat(walletBalance) < (parseInt(x402PaymentInfo.amount) / 1000000) : false}
+          isInsufficientBalance={(() => {
+            if (!x402PaymentInfo || !walletBalance || walletBalance === '...') return false;
+            const balance = parseFloat(walletBalance);
+            const required = parseInt(x402PaymentInfo.amount) / 1000000;
+            return !isNaN(balance) && balance < required;
+          })()}
           walletType={walletType}
           selectedNetwork={selectedNetwork}
           selectedCurrency={selectedCurrency}
