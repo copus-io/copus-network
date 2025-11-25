@@ -154,24 +154,30 @@ export const Content = (): JSX.Element => {
       if (walletType === 'metamask') {
         const eth = window.ethereum as any;
 
-        // Check if this is truly MetaMask or OKX pretending to be MetaMask
-        const isRealMetaMask = eth.isMetaMask && eth._metamask;
-        const isOkxPretendingMetaMask = eth.isMetaMask && !eth._metamask;
+        // Check for OKX-specific properties
+        const hasOkxProps = ('isOkxWallet' in eth && eth.isOkxWallet) ||
+                           ('isOKExWallet' in eth && eth.isOKExWallet) ||
+                           Object.prototype.hasOwnProperty.call(eth, 'isOkxWallet') ||
+                           Object.prototype.hasOwnProperty.call(eth, 'isOKExWallet');
+
+        // If it's MetaMask and NOT OKX, return it
+        if (eth.isMetaMask && !eth.isCoinbaseWallet && !hasOkxProps) {
+          return window.ethereum;
+        }
 
         // Check legacy web3.currentProvider for real MetaMask
         const web3Provider = (window as any).web3?.currentProvider;
-        const isRealMetaMaskInWeb3 = web3Provider?.isMetaMask && web3Provider?._metamask &&
-                                   !web3Provider?.isOkxWallet && !web3Provider?.isOKExWallet;
-
-        if (isRealMetaMask) {
-          return window.ethereum;
-        } else if (isRealMetaMaskInWeb3) {
+        if (web3Provider?.isMetaMask && !web3Provider?.isCoinbaseWallet &&
+            !web3Provider?.isOkxWallet && !web3Provider?.isOKExWallet) {
           return web3Provider;
-        } else if (isOkxPretendingMetaMask && (window as any).okxwallet) {
-          return null; // Force user to use OKX button instead
-        } else {
-          return null;
         }
+
+        // If we detected OKX properties, return null to show the warning
+        if (hasOkxProps && (window as any).okxwallet) {
+          return null; // Force user to use OKX button instead
+        }
+
+        return null;
       } else if (walletType === 'coinbase') {
         return window.ethereum.isCoinbaseWallet ? window.ethereum : (window as any).coinbaseWalletExtension;
       }
