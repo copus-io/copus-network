@@ -1509,13 +1509,6 @@ export const Login = (): JSX.Element => {
                   ))}
                 </div>
 
-                {/* Wallet registration info */}
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 text-center">
-                    <strong>📄 Note:</strong> New to Copus? You can still browse and purchase content with your wallet.
-                    Register an account to access your purchase history and manage your profile.
-                  </p>
-                </div>
               </div>
             </CardContent>
           </Card>
