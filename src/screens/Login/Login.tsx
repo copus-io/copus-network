@@ -693,6 +693,14 @@ export const Login = (): JSX.Element => {
         }
       } else {
         // Single wallet installed - check if it's truly MetaMask
+        // IMPORTANT: If OKX is installed and there's no providers array,
+        // it means MetaMask is NOT actually installed (OKX hijacked window.ethereum)
+        if ((window as any).okxwallet) {
+          showToast('MetaMask not found. Please install MetaMask extension.', 'error');
+          setIsLoginLoading(false);
+          return;
+        }
+
         const eth = window.ethereum as any;
 
         // Check for OKX-specific properties (must be explicitly true, not just present)

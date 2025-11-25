@@ -158,6 +158,12 @@ export const Content = (): JSX.Element => {
       }
     } else {
       if (walletType === 'metamask') {
+        // IMPORTANT: If OKX is installed and there's no providers array,
+        // it means MetaMask is NOT actually installed (OKX hijacked window.ethereum)
+        if ((window as any).okxwallet) {
+          return null;
+        }
+
         const eth = window.ethereum as any;
 
         // Check for OKX-specific properties (must be explicitly true, not just present)
