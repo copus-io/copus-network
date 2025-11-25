@@ -11,7 +11,7 @@ export const useVerificationCode = (props?: UseVerificationCodeProps) => {
   const [countdown, setCountdown] = useState(0);
   const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null);
 
-  // 清理定时器
+  // Clear timer
   const clearTimer = useCallback(() => {
     if (timerId) {
       clearInterval(timerId);
@@ -19,17 +19,17 @@ export const useVerificationCode = (props?: UseVerificationCodeProps) => {
     }
   }, [timerId]);
 
-  // 发送验证码
+  // Send verification code
   const sendCode = useCallback(
     async (email: string, codeType: number) => {
-      // 如果正在倒计时或正在发送，则不处理
+      // If countdown is active or sending is in progress, don't process
       if (countdown > 0 || isSending) {
         return false;
       }
 
-      // 基本邮箱验证
+      // Basic email validation
       if (!email || !email.includes('@')) {
-        props?.onSendError?.('请输入有效的邮箱地址');
+        props?.onSendError?.('Please enter a valid email address');
         return false;
       }
 
@@ -42,7 +42,7 @@ export const useVerificationCode = (props?: UseVerificationCodeProps) => {
         });
 
         if (success) {
-          // 开始倒计时 (60秒)
+          // Start countdown (60 seconds)
           setCountdown(60);
           const newTimerId = setInterval(() => {
             setCountdown(prev => {
@@ -58,12 +58,12 @@ export const useVerificationCode = (props?: UseVerificationCodeProps) => {
           props?.onSendSuccess?.();
           return true;
         } else {
-          props?.onSendError?.('验证码发送失败，请稍后重试');
+          props?.onSendError?.('Verification code sending failed, please try again later');
           return false;
         }
       } catch (error) {
-        console.error('发送验证码失败:', error);
-        props?.onSendError?.('网络错误，请检查网络连接后重试');
+        console.error('Failed to send verification code:', error);
+        props?.onSendError?.('Network error, please check your network connection and try again');
         return false;
       } finally {
         setIsSending(false);
@@ -72,14 +72,14 @@ export const useVerificationCode = (props?: UseVerificationCodeProps) => {
     [countdown, isSending, props, clearTimer]
   );
 
-  // 重置状态
+  // Reset state
   const reset = useCallback(() => {
     clearTimer();
     setCountdown(0);
     setIsSending(false);
   }, [clearTimer]);
 
-  // 组件卸载时清理
+  // Cleanup on component unmount
   const cleanup = useCallback(() => {
     clearTimer();
   }, [clearTimer]);

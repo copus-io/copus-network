@@ -256,7 +256,7 @@ export const getMyUnlockedArticles = async (params: MyUnlockedArticleParams): Pr
 
 // Publish article (supports creation and editing)
 export const publishArticle = async (articleData: {
-  uuid?: string; // 编辑模式时传递
+  uuid?: string; // Pass in edit mode
   title: string;
   content: string;
   coverUrl: string;

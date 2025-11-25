@@ -29,7 +29,7 @@ export const useCategories = () => {
 
       if (error instanceof Error) {
         if (error.message.includes('系统内部错误')) {
-          errorMessage = '后端服务暂时不可用，请联系技术团队检查服务状态';
+          errorMessage = 'Backend service temporarily unavailable, please contact the technical team to check service status';
         } else {
           errorMessage = error.message;
         }

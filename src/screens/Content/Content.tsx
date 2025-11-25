@@ -1096,12 +1096,29 @@ export const Content = (): JSX.Element => {
 
       // Add user authentication token to payment request
       const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
+      console.log('🔐 Authentication token status:', {
+        tokenFound: !!token,
+        tokenLength: token?.length || 0,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token found'
+      });
+
       const paymentHeaders: Record<string, string> = {
-        'X-PAYMENT': paymentHeader
+        'X-PAYMENT': paymentHeader,
+        'Content-Type': 'application/json'
       };
+
       if (token) {
         paymentHeaders.Authorization = `Bearer ${token}`;
+        console.log('✅ Added Authorization header to payment request');
+      } else {
+        console.warn('⚠️ No authentication token found! Payment may fail');
       }
+
+      console.log('📤 Payment request headers:', {
+        'X-PAYMENT': `${paymentHeader.substring(0, 50)}...`,
+        'Authorization': token ? 'Bearer [TOKEN]' : 'Not provided',
+        'Content-Type': paymentHeaders['Content-Type']
+      });
 
       // Ensure payment URL uses the same address as EIP-712 data
       let paymentUrl = currentPaymentInfo.resource;
@@ -1132,21 +1149,46 @@ export const Content = (): JSX.Element => {
       }
 
       const unlockData = await unlockResponse.json();
+      console.log('🎉 Payment success response:', unlockData);
 
-      const targetUrl = unlockData.data || unlockData.targetUrl;
+      // Handle different response structures for different networks
+      let targetUrl = unlockData.data || unlockData.targetUrl;
+
+      // XLayer specific response handling
+      if (selectedNetwork === 'xlayer') {
+        console.log('🔗 XLayer payment response structure:', {
+          data: unlockData.data,
+          targetUrl: unlockData.targetUrl,
+          url: unlockData.url,
+          fullResponse: unlockData
+        });
+
+        // Try different possible field names for XLayer
+        targetUrl = unlockData.data || unlockData.targetUrl || unlockData.url;
+      }
 
       if (targetUrl) {
         setUnlockedUrl(targetUrl);
-        showToast('Payment successful! Content unlocked', 'success');
+        showToast(`Payment successful! Opening ${selectedNetwork === 'xlayer' ? 'XLayer' : 'Base'} content...`, 'success');
         setIsPayConfirmOpen(false);
 
-        // Open target URL in new tab
-        const newWindow = window.open(targetUrl, '_blank', 'noopener,noreferrer');
-        if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
-            showToast('Content unlocked! Please check if popup was blocked.', 'info');
+        console.log(`🚀 Auto-redirecting to: ${targetUrl}`);
+
+        // Open target URL in new tab with enhanced popup handling
+        try {
+          const newWindow = window.open(targetUrl, '_blank', 'noopener,noreferrer');
+          if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+            showToast('Content unlocked! Please check if popup was blocked and manually click the link.', 'info');
+          } else {
+            console.log('✅ Successfully opened target URL in new tab');
+          }
+        } catch (popupError) {
+          console.warn('Popup blocked or failed:', popupError);
+          showToast('Content unlocked! Please manually click the link to access content.', 'info');
         }
       } else {
-        showToast('Payment completed but no URL returned. Please contact support.', 'error');
+        console.error('❌ No target URL found in response:', unlockData);
+        showToast(`${selectedNetwork === 'xlayer' ? 'XLayer' : 'Base'} payment completed but no URL returned. Please contact support.`, 'error');
       }
 
     } catch (error: any) {

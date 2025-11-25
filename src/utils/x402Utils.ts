@@ -137,9 +137,9 @@ const NETWORK_EIP712_DOMAINS: Record<number, any> = {
     chainId: 8453,
     verifyingContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
   },
-  // Base Sepolia testnet - 使用正确的后端期望配置
+  // Base Sepolia testnet - using correct backend expected configuration
   84532: {
-    name: 'USDC',      // x402后端期望的配置
+    name: 'USDC',      // x402 backend expected configuration
     version: '2',
     chainId: 84532,
     verifyingContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'

@@ -3,19 +3,19 @@ import { getMyCreatedArticles } from '../../services/articleService';
 import { queryKeys, cacheConfig } from '../../lib/queryClient';
 import { MyCreatedArticleParams } from '../../types/article';
 
-// 我创建的文章查询
+// My created articles query
 export const useMyCreatedArticlesQuery = (params: MyCreatedArticleParams = {}) => {
   return useQuery({
     queryKey: [...queryKeys.user, 'createdArticles', params],
     queryFn: () => getMyCreatedArticles(params),
-    ...cacheConfig.user, // 用户相关数据缓存策略
-    staleTime: 10 * 60 * 1000, // 10分钟
+    ...cacheConfig.user, // User-related data cache strategy
+    staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
-    refetchOnWindowFocus: true, // 用户数据在窗口聚焦时重新获取
+    refetchOnWindowFocus: true, // User data refetched on window focus
   });
 };
 
-// 兼容现有API的我创建的文章查询 hook
+// My created articles query hook compatible with existing API
 export const useMyCreatedArticles = (params: MyCreatedArticleParams = {}) => {
   const query = useMyCreatedArticlesQuery(params);
 

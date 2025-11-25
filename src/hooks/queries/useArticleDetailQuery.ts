@@ -2,19 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { getArticleDetail } from '../../services/articleService';
 import { queryKeys, cacheConfig } from '../../lib/queryClient';
 
-// 文章详情查询
+// Article detail query
 export const useArticleDetailQuery = (uuid: string) => {
   return useQuery({
     queryKey: ['article', 'detail', uuid],
     queryFn: () => getArticleDetail(uuid),
-    enabled: !!uuid, // 只有在 uuid 存在时才执行查询
+    enabled: !!uuid, // Only execute query when uuid exists
     ...cacheConfig.content,
-    staleTime: 10 * 60 * 1000, // 10分钟
+    staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
   });
 };
 
-// 兼容现有API的文章详情查询 hook
+// Article detail query hook compatible with existing API
 export const useArticleDetail = (uuid: string) => {
   const query = useArticleDetailQuery(uuid);
 

@@ -180,12 +180,12 @@ const GlobalEventHandler: React.FC = () => {
   const { logout } = useUser();
   const { showToast } = useToast();
   
-  // 使用一个标志来防止重复的 toast 提示
+  // Use a flag to prevent duplicate toast notifications
   const isProcessing = React.useRef(false);
 
   useEffect(() => {
     const handleUnauthorizedAccess = async (event: CustomEvent) => {
-      // 防止重复处理
+      // Prevent duplicate processing
       if (isProcessing.current) {
         return;
       }
@@ -198,7 +198,7 @@ const GlobalEventHandler: React.FC = () => {
         // Only redirect to login page if user is on a protected page
         // For public pages like home, just update the user state without redirecting
       } finally {
-        // 确保在下一个事件循环中重置标志
+        // Reset flag in next event loop
         setTimeout(() => {
           isProcessing.current = false;
         }, 0);

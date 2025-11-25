@@ -1317,7 +1317,7 @@ export const Login = (): JSX.Element => {
     }
   };
 
-  // 使用统一的验证码hook
+  // Use unified verification code hook
   const { sendCode, isSending, countdown } = useVerificationCode({
     onSendSuccess: () => {
       showToast('Verification code sent! Please check your email', 'success');

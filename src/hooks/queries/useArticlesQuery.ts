@@ -3,19 +3,19 @@ import { getPageArticles } from '../../services/articleService';
 import { queryKeys, cacheConfig } from '../../lib/queryClient';
 import { PageArticleParams } from '../../types/article';
 
-// 基础文章列表查询
+// Basic articles list query
 export const useArticlesQuery = (params: PageArticleParams = {}) => {
   return useQuery({
     queryKey: queryKeys.articlesList(params),
     queryFn: () => getPageArticles(params),
     ...cacheConfig.content,
-    staleTime: 5 * 60 * 1000, // 5分钟
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
     refetchOnWindowFocus: false,
   });
 };
 
-// 无限滚动文章列表查询
+// Infinite scroll articles list query
 export const useInfiniteArticlesQuery = (params: PageArticleParams = {}) => {
   return useInfiniteQuery({
     queryKey: queryKeys.articlesInfinite(params),
@@ -24,13 +24,13 @@ export const useInfiniteArticlesQuery = (params: PageArticleParams = {}) => {
       return lastPage.hasMore ? lastPage.page + 1 : undefined;
     },
     ...cacheConfig.content,
-    staleTime: 5 * 60 * 1000, // 5分钟
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
     refetchOnWindowFocus: false,
   });
 };
 
-// 带有便捷方法的文章查询 hook（兼容现有API）
+// Articles query hook with convenience methods (compatible with existing API)
 export const useArticles = (initialParams: PageArticleParams = {}) => {
   const query = useArticlesQuery(initialParams);
 
@@ -43,11 +43,11 @@ export const useArticles = (initialParams: PageArticleParams = {}) => {
     total: query.data?.total || 0,
     refresh: query.refetch,
     fetchArticles: (params: PageArticleParams = {}) => {
-      // 手动触发重新获取，这会更新查询键
+      // Manually trigger refetch, this will update the query key
       return query.refetch();
     },
     loadMore: () => {
-      // 对于分页，建议使用 useInfiniteArticlesQuery
+      // For pagination, recommend using useInfiniteArticlesQuery
       console.warn('loadMore functionality should use useInfiniteArticlesQuery');
     },
   };

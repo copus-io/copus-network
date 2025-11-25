@@ -18,7 +18,7 @@ export const ChangePassword = (): JSX.Element => {
   
   const { sendCode, isSending, countdown } = useVerificationCode({
     onSendSuccess: () => {
-      showToast("验证码已发送到您的邮箱", "success");
+      showToast("Verification code has been sent to your email", "success");
     },
     onSendError: (error) => {
       showToast(error, "error");
@@ -27,7 +27,7 @@ export const ChangePassword = (): JSX.Element => {
 
   const handleSendCode = async () => {
     if (!user?.email) {
-      showToast("用户邮箱信息不可用", "error");
+      showToast("User email information is not available", "error");
       return;
     }
 
@@ -36,24 +36,24 @@ export const ChangePassword = (): JSX.Element => {
 
   const handleVerifyCode = async () => {
     if (!verificationCode.trim()) {
-      showToast("请输入验证码", "error");
+      showToast("Please enter verification code", "error");
       return;
     }
 
     setIsVerifying(true);
     try {
-      // 验证验证码
+      // Verify verification code
       const isValid = await AuthService.verifyCode(user?.email || "", verificationCode);
       if (isValid) {
-        showToast("验证成功！", "success");
-        // 跳转到新密码设置页面
+        showToast("Verification successful!", "success");
+        // Navigate to new password setup page
         navigate("/new-password");
       } else {
-        showToast("验证码错误，请重新输入", "error");
+        showToast("Verification code is incorrect, please try again", "error");
       }
     } catch (error) {
-      console.error("验证码验证失败:", error);
-      showToast("验证失败，请重试", "error");
+      console.error("Verification code validation failed:", error);
+      showToast("Verification failed, please try again", "error");
     } finally {
       setIsVerifying(false);
     }

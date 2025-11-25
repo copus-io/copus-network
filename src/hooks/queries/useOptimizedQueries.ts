@@ -2,27 +2,27 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { publishArticle } from '../../services/articleService';
 import { queryKeys, cacheConfig } from '../../lib/queryClient';
 
-// 文章发布 mutation 带有缓存优化
+// Article publish mutation with cache optimization
 export const usePublishArticleMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: publishArticle,
     onSuccess: (data) => {
-      // 发布成功后，使相关查询失效并重新获取
+      // After successful publish, invalidate related queries and refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.articles });
       queryClient.invalidateQueries({ queryKey: [...queryKeys.user, 'createdArticles'] });
 
-      // 预填充新文章的详情查询
+      // Prefill new article detail query
       queryClient.setQueryData(['article', 'detail', data.uuid], data);
     },
     onError: (error) => {
-      console.error('发布文章失败:', error);
+      console.error('Failed to publish article:', error);
     },
   });
 };
 
-// 预加载文章详情的优化hook
+// Optimized hook for prefetching article details
 export const usePrefetchArticleDetail = () => {
   const queryClient = useQueryClient();
 
@@ -33,12 +33,12 @@ export const usePrefetchArticleDetail = () => {
         const { getArticleDetail } = await import('../../services/articleService');
         return getArticleDetail(uuid);
       },
-      staleTime: 10 * 60 * 1000, // 10分钟
+      staleTime: 10 * 60 * 1000, // 10 minutes
     });
   };
 };
 
-// 批量预加载文章详情
+// Batch prefetch article details
 export const useBatchPrefetchArticles = () => {
   const queryClient = useQueryClient();
 
@@ -50,23 +50,23 @@ export const useBatchPrefetchArticles = () => {
           const { getArticleDetail } = await import('../../services/articleService');
           return getArticleDetail(uuid);
         },
-        staleTime: 10 * 60 * 1000, // 10分钟
+        staleTime: 10 * 60 * 1000, // 10 minutes
       });
     });
   };
 };
 
-// 优化的用户数据查询，结合社交链接
+// Optimized user data query, combined with social links
 export const useUserProfileWithLinks = (userId?: string) => {
   return useQuery({
     queryKey: queryKeys.userProfile(userId),
     queryFn: async () => {
-      // 这里可以组合多个API调用
+      // Here we can combine multiple API calls
       const [userProfile, socialLinks] = await Promise.all([
-        // 假设有获取用户资料的API
-        Promise.resolve(null), // 占位符
-        // 获取社交链接
-        Promise.resolve([]), // 占位符
+        // Assume we have user profile API
+        Promise.resolve(null), // Placeholder
+        // Get social links
+        Promise.resolve([]), // Placeholder
       ]);
 
       return {
@@ -79,12 +79,12 @@ export const useUserProfileWithLinks = (userId?: string) => {
   });
 };
 
-// 缓存清理工具
+// Cache management tools
 export const useCacheManager = () => {
   const queryClient = useQueryClient();
 
   return {
-    // 清除所有过期缓存
+    // Clear all stale cache
     clearStaleCache: () => {
       queryClient.getQueryCache().getAll().forEach((query) => {
         if (query.isStale()) {
@@ -93,9 +93,9 @@ export const useCacheManager = () => {
       });
     },
 
-    // 预热核心数据
+    // Warm up core data
     warmupCache: () => {
-      // 预加载分类列表
+      // Preload category list
       queryClient.prefetchQuery({
         queryKey: queryKeys.categoriesList(),
         queryFn: async () => {
@@ -106,12 +106,12 @@ export const useCacheManager = () => {
       });
     },
 
-    // 强制刷新所有查询
+    // Force refresh all queries
     refreshAll: () => {
       queryClient.invalidateQueries();
     },
 
-    // 清除用户相关缓存（用于登出）
+    // Clear user-related cache (for logout)
     clearUserCache: () => {
       queryClient.removeQueries({ queryKey: queryKeys.user });
       queryClient.removeQueries({ queryKey: queryKeys.notifications });

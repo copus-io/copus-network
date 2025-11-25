@@ -1,6 +1,6 @@
 import React from 'react';
 
-// 宝石闪烁动画 - 用于按钮加载
+// Gem sparkle animation - for button loading
 export const GemSpinner: React.FC<{ className?: string; size?: 'sm' | 'md' | 'lg' }> = ({
   className = '',
   size = 'md'
@@ -13,14 +13,14 @@ export const GemSpinner: React.FC<{ className?: string; size?: 'sm' | 'md' | 'lg
 
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
-      {/* 主宝石 */}
+      {/* Main gem */}
       <div className={`${sizeClasses[size]} relative`}>
         <div className="absolute inset-0 bg-gradient-to-br from-red-400 via-red-500 to-red-600 rounded-lg transform rotate-45 animate-pulse">
           <div className="absolute top-1 left-1 w-1 h-1 bg-white rounded-full opacity-80 animate-ping"></div>
         </div>
       </div>
 
-      {/* 围绕的小星星 */}
+      {/* Surrounding small stars */}
       <div className="absolute inset-0 animate-spin">
         <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
           <div className="w-1 h-1 bg-yellow-300 rounded-full animate-ping"></div>
@@ -39,18 +39,18 @@ export const GemSpinner: React.FC<{ className?: string; size?: 'sm' | 'md' | 'lg
   );
 };
 
-// 书本翻页动画 - 用于发送验证码等文档相关操作
+// Book flip animation - for sending verification codes and other document-related operations
 export const BookFlip: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
       <div className="relative w-6 h-6">
-        {/* 书本底座 */}
+        {/* Book base */}
         <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-amber-700 rounded-sm"></div>
 
-        {/* 翻页效果 */}
+        {/* Page flip effect */}
         <div className="absolute inset-0 bg-gradient-to-r from-white to-gray-100 rounded-sm transform-gpu origin-left animate-flip">
           <div className="w-full h-full bg-gradient-to-r from-gray-50 to-white rounded-sm">
-            {/* 页面上的小线条 */}
+            {/* Small lines on the page */}
             <div className="pt-1 px-1 space-y-0.5">
               <div className="w-3 h-0.5 bg-gray-300 rounded"></div>
               <div className="w-4 h-0.5 bg-gray-300 rounded"></div>
@@ -63,17 +63,17 @@ export const BookFlip: React.FC<{ className?: string }> = ({ className = '' }) =
   );
 };
 
-// 纸飞机飞行动画 - 用于发布文章
+// Paper plane flying animation - for publishing articles
 export const PaperPlane: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
       <div className="relative w-8 h-8">
-        {/* 飞行轨迹 */}
+        {/* Flight trail */}
         <div className="absolute inset-0 opacity-30">
           <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-blue-300 to-transparent absolute top-4 animate-fly-trail"></div>
         </div>
 
-        {/* 纸飞机 */}
+        {/* Paper plane */}
         <div className="absolute w-6 h-6 animate-fly-plane">
           <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-blue-500">
             <path
@@ -87,12 +87,12 @@ export const PaperPlane: React.FC<{ className?: string }> = ({ className = '' })
   );
 };
 
-// 爱心跳动动画 - 用于点赞操作
+// Heartbeat animation - for like operations
 export const HeartBeat: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
       <div className="relative">
-        {/* 主爱心 */}
+        {/* Main heart */}
         <svg viewBox="0 0 24 24" className="w-5 h-5 text-red-500 animate-heartbeat">
           <path
             fill="currentColor"
@@ -100,7 +100,7 @@ export const HeartBeat: React.FC<{ className?: string }> = ({ className = '' }) 
           />
         </svg>
 
-        {/* 小爱心飘散 */}
+        {/* Small hearts floating away */}
         <div className="absolute -top-1 -right-1">
           <svg viewBox="0 0 24 24" className="w-2 h-2 text-pink-400 animate-float-up">
             <path
@@ -114,7 +114,7 @@ export const HeartBeat: React.FC<{ className?: string }> = ({ className = '' }) 
   );
 };
 
-// 宝箱开启动画 - 用于收藏/取消收藏
+// Treasure box opening animation - for favorite/unfavorite
 export const TreasureBox: React.FC<{ isOpen?: boolean; className?: string }> = ({
   isOpen = false,
   className = ''
@@ -122,18 +122,18 @@ export const TreasureBox: React.FC<{ isOpen?: boolean; className?: string }> = (
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
       <div className="relative w-6 h-6">
-        {/* 宝箱底部 */}
+        {/* Treasure box bottom */}
         <div className="absolute bottom-0 w-6 h-4 bg-gradient-to-r from-amber-600 to-amber-700 rounded-sm"></div>
 
-        {/* 宝箱盖子 */}
+        {/* Treasure box lid */}
         <div className={`absolute top-0 w-6 h-3 bg-gradient-to-r from-amber-700 to-amber-800 rounded-t-sm transition-transform duration-300 transform-gpu origin-bottom ${
           isOpen ? '-rotate-45 translate-y-1' : ''
         }`}>
-          {/* 锁扣 */}
+          {/* Lock clasp */}
           <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-yellow-400 rounded-full"></div>
         </div>
 
-        {/* 宝箱打开时的光芒 */}
+        {/* Glow when treasure box opens */}
         {isOpen && (
           <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
             <div className="w-4 h-2 bg-gradient-to-t from-yellow-200 to-transparent opacity-70 animate-pulse"></div>

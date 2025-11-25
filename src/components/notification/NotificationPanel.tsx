@@ -13,14 +13,14 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   const panelRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, isLoading, fetchNotifications, markAsRead, markAllAsRead, clearAllNotifications } = useNotification();
 
-  // 面板打开时加载通知列表
+  // Load notification list when panel opens
   useEffect(() => {
     if (isOpen) {
       fetchNotifications();
     }
   }, [isOpen, fetchNotifications]);
 
-  // 点击外部关闭面板
+  // Close panel when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
@@ -37,7 +37,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     };
   }, [isOpen, onClose]);
 
-  // 格式化时间
+  // Format time
   const formatTime = (timestamp: number): string => {
     const now = Date.now();
     const diff = now - timestamp;
@@ -45,12 +45,12 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
-    if (hours < 24) return `${hours}小时前`;
-    if (days < 7) return `${days}天前`;
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
 
-    // 超过7天显示具体日期
+    // Show specific date for over 7 days
     const date = new Date(timestamp);
     return date.toLocaleDateString('zh-CN', {
       month: 'short',
@@ -58,7 +58,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     });
   };
 
-  // 获取通知类型图标
+  // Get notification type icon
   const getNotificationIcon = (type: string): JSX.Element => {
     switch (type) {
       case 'like':
@@ -104,14 +104,14 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     }
   };
 
-  // 处理通知点击
+  // Handle notification click
   const handleNotificationClick = async (notification: Notification) => {
-    // 标记为已读
+    // Mark as read
     if (!notification.isRead) {
       await markAsRead(notification.id);
     }
 
-    // 导航到相关页面
+    // Navigate to related page
     if (notification.actionUrl) {
       navigate(notification.actionUrl);
     }
@@ -119,14 +119,14 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     onClose();
   };
 
-  // 处理标记全部已读
+  // Handle mark all as read
   const handleMarkAllAsRead = async () => {
     await markAllAsRead();
   };
 
-  // 处理清空所有通知
+  // Handle clear all notifications
   const handleClearAll = async () => {
-    if (window.confirm('确定要清空所有通知吗？')) {
+    if (window.confirm('Are you sure you want to clear all notifications?')) {
       await clearAllNotifications();
     }
   };
@@ -135,10 +135,10 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
 
   return (
     <div className="absolute top-full right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border z-50" ref={panelRef}>
-      {/* 头部 */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <h3 className="text-lg font-semibold text-gray-900">
-          通知 {unreadCount > 0 && <span className="text-red-500">({unreadCount})</span>}
+          Notifications {unreadCount > 0 && <span className="text-red-500">({unreadCount})</span>}
         </h3>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
@@ -146,7 +146,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
               onClick={handleMarkAllAsRead}
               className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
             >
-              全部已读
+              Mark all read
             </button>
           )}
           {notifications.length > 0 && (
@@ -154,13 +154,13 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
               onClick={handleClearAll}
               className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
             >
-              清空
+              Clear
             </button>
           )}
         </div>
       </div>
 
-      {/* 通知列表 */}
+      {/* Notification list */}
       <div className="max-h-96 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -171,7 +171,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
             <svg className="w-12 h-12 mx-auto mb-2 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 2C11.1046 2 12 2.89543 12 4C12 4.08183 11.9973 4.16302 11.9921 4.24346C14.3833 5.64453 16 8.13261 16 11V14.3052C16 14.6613 16.1442 14.9999 16.4 15.2386L17.0627 15.8481C17.6421 16.3923 17.2561 17.3 16.4721 17.3H12.9381C12.9748 17.4591 13 17.6284 13 17.8C13 19.4569 11.6569 20.8 10 20.8C8.3431 20.8 7 19.4569 7 17.8C7 17.6284 7.02521 17.4591 7.06189 17.3H3.52786C2.74388 17.3 2.35794 16.3923 2.9373 15.8481L3.6 15.2386C3.85584 14.9999 4 14.6613 4 14.3052V11C4 8.13261 5.61665 5.64453 8.00792 4.24346C8.00272 4.16302 8 4.08183 8 4C8 2.89543 8.89543 2 10 2Z" />
             </svg>
-            <p>暂无通知</p>
+            <p>No notifications</p>
           </div>
         ) : (
           notifications.map((notification) => (
@@ -182,7 +182,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                 notification.isRead ? 'border-transparent' : 'border-blue-500 bg-blue-50'
               }`}
             >
-              {/* 图标或头像 */}
+              {/* Icon or avatar */}
               {notification.avatar ? (
                 <img
                   src={notification.avatar}
@@ -193,7 +193,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                 getNotificationIcon(notification.type)
               )}
 
-              {/* 内容 */}
+              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -213,7 +213,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
         )}
       </div>
 
-      {/* 底部 */}
+      {/* Footer */}
       {notifications.length > 0 && (
         <div className="px-4 py-3 border-t bg-gray-50">
           <button
@@ -223,7 +223,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
             }}
             className="w-full text-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
-            查看所有通知
+            View all notifications
           </button>
         </div>
       )}
