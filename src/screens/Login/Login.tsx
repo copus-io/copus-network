@@ -693,6 +693,8 @@ export const Login = (): JSX.Element => {
         }
       } else {
         // Single wallet installed - check if it's truly MetaMask
+        const eth = window.ethereum as any;
+
         // If OKX is installed but no providers array, OKX has hijacked window.ethereum
         // Check if MetaMask is accessible via window.metamask
         if ((window as any).okxwallet) {
@@ -700,14 +702,17 @@ export const Login = (): JSX.Element => {
           if (metamaskDirect?.isMetaMask) {
             metamaskProvider = metamaskDirect;
           } else {
-            // MetaMask not found, OKX is hijacking
-            showToast('MetaMask not found. Please install MetaMask extension.', 'error');
-            setIsLoginLoading(false);
-            return;
+            // MetaMask not accessible via window.metamask
+            // Use window.ethereum anyway - it may open OKX but at least user can connect
+            if (eth.isMetaMask) {
+              metamaskProvider = window.ethereum;
+            } else {
+              showToast('MetaMask not found. Please install MetaMask extension.', 'error');
+              setIsLoginLoading(false);
+              return;
+            }
           }
         } else {
-          const eth = window.ethereum as any;
-
           // No OKX installed, safe to use window.ethereum if it's MetaMask
           if (eth.isMetaMask) {
             metamaskProvider = window.ethereum;
