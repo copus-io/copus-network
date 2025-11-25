@@ -158,10 +158,20 @@ export const Content = (): JSX.Element => {
       }
     } else {
       if (walletType === 'metamask') {
+        // If OKX is installed but no providers array, OKX has hijacked window.ethereum
+        // Check if MetaMask is accessible via window.metamask
+        if ((window as any).okxwallet) {
+          const metamaskDirect = (window as any).metamask;
+          if (metamaskDirect?.isMetaMask) {
+            return metamaskDirect;
+          }
+          // MetaMask not found, OKX is hijacking
+          return null;
+        }
+
         const eth = window.ethereum as any;
 
-        // Just return window.ethereum if it has MetaMask properties
-        // Let the wallet popup handle which account to use
+        // No OKX installed, safe to use window.ethereum if it's MetaMask
         if (eth.isMetaMask) {
           return window.ethereum;
         }
