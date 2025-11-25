@@ -19,6 +19,7 @@ import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModa
 import {
   generateNonce,
   signTransferWithAuthorization,
+  signTransferWithAuthorizationOKXBrowser,
   createX402PaymentHeader
 } from "../../utils/x402Utils";
 import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils';
@@ -968,7 +969,7 @@ export const Content = (): JSX.Element => {
       let signedAuth;
 
       if (selectedNetwork === 'xlayer' && currentEip712Data) {
-        // Use OKX EIP-712 data for direct signing (X Layer)
+        // Use OKX-specific signing method for XLayer (trying new approach)
         // Check current network before signing
         try {
           const currentChainId = await walletProvider.request({ method: 'eth_chainId' });
@@ -979,38 +980,66 @@ export const Content = (): JSX.Element => {
           console.warn('Could not check current network for XLayer signing:', e);
         }
 
-        // Ensure the EIP-712 data uses the final payment address
-        const correctedEip712Data = {
-          ...currentEip712Data,
-          message: {
-            ...currentEip712Data.message,
-            from: finalPaymentAddress
-          }
-        };
+        // Try OKX signing method first, fallback to standard method
+        try {
+          // Get payment contract address for XLayer
+          const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+          const chainId = parseInt('0xc4', 16); // XLayer chain ID
 
-        // Sign using eth_signTypedData_v4 with the corrected structure
-        const signature = await walletProvider.request({
-          method: 'eth_signTypedData_v4',
-          params: [finalPaymentAddress, JSON.stringify(correctedEip712Data)]
-        });
+          // Extract parameters from EIP-712 data for OKX method
+          const transferParams = {
+            from: finalPaymentAddress,
+            to: currentEip712Data.message.to,
+            value: currentEip712Data.message.value,
+            validAfter: parseInt(currentEip712Data.message.validAfter),
+            validBefore: parseInt(currentEip712Data.message.validBefore),
+            nonce: currentEip712Data.message.nonce
+          };
 
-        // Parse signature into v, r, s components
-        const r = signature.slice(0, 66);
-        const s = '0x' + signature.slice(66, 130);
-        const vHex = signature.slice(130, 132);
-        const v = parseInt(vHex, 16);
+          console.log('Attempting OKX browser signature method for XLayer...');
+          signedAuth = await signTransferWithAuthorizationOKXBrowser(
+            transferParams,
+            walletProvider,
+            chainId,
+            paymentContractAddress || ''
+          );
 
-        signedAuth = {
-          from: finalPaymentAddress, // Use the actual connected wallet address
-          to: correctedEip712Data.message.to,
-          value: correctedEip712Data.message.value,
-          validAfter: parseInt(correctedEip712Data.message.validAfter),
-          validBefore: parseInt(correctedEip712Data.message.validBefore),
-          nonce: correctedEip712Data.message.nonce,
-          v,
-          r,
-          s
-        };
+        } catch (okxError) {
+          console.warn('OKX signature method failed, falling back to standard method:', okxError);
+
+          // Fallback: Use standard EIP-712 signing
+          const correctedEip712Data = {
+            ...currentEip712Data,
+            message: {
+              ...currentEip712Data.message,
+              from: finalPaymentAddress
+            }
+          };
+
+          // Sign using eth_signTypedData_v4 with the corrected structure
+          const signature = await walletProvider.request({
+            method: 'eth_signTypedData_v4',
+            params: [finalPaymentAddress, JSON.stringify(correctedEip712Data)]
+          });
+
+          // Parse signature into v, r, s components
+          const r = signature.slice(0, 66);
+          const s = '0x' + signature.slice(66, 130);
+          const vHex = signature.slice(130, 132);
+          const v = parseInt(vHex, 16);
+
+          signedAuth = {
+            from: finalPaymentAddress,
+            to: correctedEip712Data.message.to,
+            value: correctedEip712Data.message.value,
+            validAfter: parseInt(correctedEip712Data.message.validAfter),
+            validBefore: parseInt(correctedEip712Data.message.validBefore),
+            nonce: correctedEip712Data.message.nonce,
+            v,
+            r,
+            s
+          };
+        }
 
       } else {
         // Use standard x402Utils signing (Base networks)

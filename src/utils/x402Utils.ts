@@ -20,6 +20,9 @@
  * @module x402Utils
  */
 
+// Import OKX library dynamically to avoid early Buffer issues
+// import { EthWallet, MessageTypes } from '@okxweb3/coin-ethereum';
+
 /**
  * Parameters for creating a TransferWithAuthorization signature.
  *
@@ -385,7 +388,7 @@ export function createX402PaymentHeader(
 
   // Create payment payload following the official x402 specification
   // Structure from: https://github.com/coinbase/x402/tree/main/examples/typescript
-  const paymentPayload = {
+  const paymentPayload: any = {
     x402Version: 1,
     scheme: 'exact',
     network,
@@ -402,8 +405,15 @@ export function createX402PaymentHeader(
     }
   };
 
+  // Add chainIndex for XLayer network (as string)
+  if (network === 'xlayer') {
+    paymentPayload.payload.chainIndex = "196"; // XLayer chain ID as string
+    console.log('🔗 Added chainIndex for XLayer:', paymentPayload.payload.chainIndex);
+  }
+
   // Encode as base64
   const jsonString = JSON.stringify(paymentPayload);
+  console.log('💰 Payment payload for', network, ':', JSON.parse(jsonString));
   return btoa(jsonString);
 }
 
@@ -439,4 +449,129 @@ export async function supportsTransferWithAuthorization(provider: any): Promise<
   } catch {
     return false;
   }
+}
+
+/**
+ * OKX-specific signature generation method for x402 payments (DISABLED for now).
+ *
+ * This function would use the @okxweb3/coin-ethereum library but is currently
+ * disabled due to Buffer compatibility issues in browser environment.
+ */
+export async function signTransferWithAuthorizationOKX(
+  params: TransferWithAuthorizationParams,
+  privateKey: string,
+  chainId: number,
+  contractAddress: string
+): Promise<SignedAuthorization> {
+  throw new Error('OKX library signature method temporarily disabled due to Buffer compatibility issues');
+}
+
+/**
+ * Browser-compatible OKX signing method that works with wallet providers.
+ *
+ * Uses the exact EIP-712 format from OKX documentation PDF but works with
+ * browser wallet providers instead of requiring private keys.
+ */
+export async function signTransferWithAuthorizationOKXBrowser(
+  params: TransferWithAuthorizationParams,
+  provider: any,
+  chainId: number,
+  contractAddress: string
+): Promise<SignedAuthorization> {
+  console.log('🔄 Using OKX-compatible EIP-712 format for signing...');
+
+  // Construct message parameters exactly as shown in OKX PDF documentation
+  const msgParams = {
+    "domain": {
+      "chainId": chainId.toString(), // Important: chainId as string like in PDF
+      "name": "USD Coin",
+      "version": "2",
+      "verifyingContract": contractAddress.toLowerCase() // Ensure lowercase
+    },
+    "message": {
+      "from": params.from.toLowerCase(),
+      "to": params.to.toLowerCase(),
+      "value": params.value.toString(), // Ensure string format
+      "validAfter": params.validAfter.toString(),
+      "validBefore": params.validBefore.toString(),
+      "nonce": params.nonce
+    },
+    "primaryType": "TransferWithAuthorization",
+    "types": {
+      "EIP712Domain": [
+        { "name": "name", "type": "string" },
+        { "name": "version", "type": "string" },
+        { "name": "chainId", "type": "uint256" },
+        { "name": "verifyingContract", "type": "address" }
+      ],
+      "TransferWithAuthorization": [
+        { "name": "from", "type": "address" },
+        { "name": "to", "type": "address" },
+        { "name": "value", "type": "uint256" },
+        { "name": "validAfter", "type": "uint256" },
+        { "name": "validBefore", "type": "uint256" },
+        { "name": "nonce", "type": "bytes32" }
+      ]
+    }
+  };
+
+  // Create the exact data structure from PDF documentation
+  const messageString = JSON.stringify(msgParams);
+  const data = {
+    type: "TYPE_DATA_V4", // Simulating MessageTypes.TYPE_DATA_V4
+    message: messageString,
+  };
+
+  console.log('📋 OKX-format data structure:', {
+    type: data.type,
+    messagePreview: {
+      domain: msgParams.domain,
+      from: msgParams.message.from,
+      to: msgParams.message.to,
+      value: msgParams.message.value
+    }
+  });
+
+  // Try OKX-style signing first (if available)
+  let signature;
+  try {
+    // Check if wallet supports OKX-style message signing
+    if (provider.isOKXWallet) {
+      console.log('🔄 Attempting OKX wallet-specific signing...');
+      // Some OKX wallets might support this format
+      signature = await provider.request({
+        method: 'okx_signTypedData', // OKX-specific method if it exists
+        params: [params.from, data]
+      });
+    }
+  } catch (okxError) {
+    console.log('⚠️ OKX-specific method failed, using standard EIP-712:', okxError);
+  }
+
+  // Fallback to standard EIP-712 signing with OKX-formatted data
+  if (!signature) {
+    signature = await provider.request({
+      method: 'eth_signTypedData_v4',
+      params: [params.from, messageString]
+    });
+  }
+
+  console.log('✅ OKX-format signature generated:', signature);
+
+  // Parse signature into v, r, s components
+  const r = signature.slice(0, 66);
+  const s = '0x' + signature.slice(66, 130);
+  const v = parseInt(signature.slice(130, 132), 16);
+
+  return {
+    from: params.from,
+    to: params.to,
+    value: params.value,
+    validAfter: params.validAfter,
+    validBefore: params.validBefore,
+    nonce: params.nonce,
+    v,
+    r,
+    s
+  };
 }
