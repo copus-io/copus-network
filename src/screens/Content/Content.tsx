@@ -1462,6 +1462,8 @@ export const Content = (): JSX.Element => {
           network={getNetworkConfig(selectedNetwork).name}
           faucetLink={selectedNetwork === 'xlayer' && walletType === 'okx' ? 'https://www.okx.com/dex' : 'https://faucet.circle.com/'}
           isInsufficientBalance={(() => {
+            // Don't show insufficient balance if wallet is not connected
+            if (!isWalletConnected) return false;
             if (!x402PaymentInfo || !walletBalance || walletBalance === '...') return false;
             const balance = parseFloat(walletBalance);
             const required = parseInt(x402PaymentInfo.amount) / 1000000;
