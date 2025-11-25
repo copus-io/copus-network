@@ -61,6 +61,7 @@ const menuItems = [
 ];
 
 const footerLinks = [
+  { label: "About", href: "https://www.copus.io/work/daeb797b047e45fba5e6690a618de52f", isExternal: true },
   { label: "Contact us", href: "#", isContact: true },
   { label: "Terms & Privacy", href: "https://www.copus.io/work/565b548277674c3bae3ccc016c7f58a2", isExternal: true }
 ];
