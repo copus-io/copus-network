@@ -1,53 +1,76 @@
 /**
- * 智能合约地址配置
- * 根据环境和网络返回正确的合约地址
+ * Smart contract address configuration
+ * Returns correct contract addresses based on environment and network
  */
 
 import { getCurrentEnvironment } from '../utils/envUtils';
 
-export type NetworkType = 'xlayer' | 'base-sepolia';
+export type NetworkType = 'xlayer' | 'base-sepolia' | 'base-mainnet';
 export type TokenType = 'usdc' | 'usdt';
 
 /**
- * 合约地址配置映射
+ * Contract address configuration mapping
  */
 const contractAddresses = {
-  // X Layer 网络
+  // X Layer Network
   xlayer: {
     production: {
       usdc: '0x74b7F16337b8972027F6196A17a631aC6dE26d22',
       usdt: '0x1E4a5963aBFD975d8c9021ce480b42188849D41d',
     },
     test: {
-      usdc: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d', // X Layer testnet USDC合约
-      usdt: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d', // X Layer testnet USDT合约
+      usdc: '0x74b7F16337b8972027F6196A17a631aC6dE26d22', // X Layer mainnet USDC contract (forced mainnet)
+      usdt: '0x1E4a5963aBFD975d8c9021ce480b42188849D41d', // X Layer mainnet USDT contract (forced mainnet)
     },
   },
-  // Base Sepolia 网络 (测试网)
-  'base-sepolia': {
+  // Base Mainnet Network
+  'base-mainnet': {
     production: {
-      usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Base Sepolia始终是测试网
-      usdt: null, // Base Sepolia 没有USDT
+      usdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // Base mainnet USDC contract
+      usdt: null, // Base mainnet has no standard USDT
     },
     test: {
-      usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Base Sepolia始终是测试网
-      usdt: null, // Base Sepolia 没有USDT
+      usdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // Base mainnet USDC contract (forced mainnet)
+      usdt: null, // Base mainnet has no standard USDT
+    },
+  },
+  // Base Sepolia Network (testnet)
+  'base-sepolia': {
+    production: {
+      usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Base Sepolia is always testnet
+      usdt: null, // Base Sepolia has no USDT
+    },
+    test: {
+      usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Base Sepolia is always testnet
+      usdt: null, // Base Sepolia has no USDT
     },
   },
 };
 
 /**
- * 网络配置
+ * Network configuration
  */
 export const networkConfigs = {
   xlayer: {
-    chainId: '0x7a0', // 1952 in hex (X Layer testnet)
-    name: 'X Layer Testnet',
-    rpcUrls: ['https://testrpc.xlayer.tech', 'https://xlayertestrpc.okx.com'],
-    blockExplorerUrls: ['https://www.oklink.com/x-layer-testnet'],
+    chainId: '0xc4', // 196 in hex (X Layer mainnet)
+    name: 'X Layer Mainnet',
+    rpcUrls: ['https://rpc.xlayer.tech', 'https://xlayerrpc.okx.com'],
+    blockExplorerUrls: ['https://www.oklink.com/xlayer'],
     nativeCurrency: {
       name: 'OKB',
       symbol: 'OKB',
+      decimals: 18,
+    },
+    tokenDecimals: 6,
+  },
+  'base-mainnet': {
+    chainId: '0x2105', // 8453 in hex (Base mainnet)
+    name: 'Base Mainnet',
+    rpcUrls: ['https://mainnet.base.org', 'https://developer-access-mainnet.base.org'],
+    blockExplorerUrls: ['https://basescan.org'],
+    nativeCurrency: {
+      name: 'Ethereum',
+      symbol: 'ETH',
       decimals: 18,
     },
     tokenDecimals: 6,
@@ -67,7 +90,7 @@ export const networkConfigs = {
 };
 
 /**
- * 获取代币合约地址
+ * Get token contract address
  */
 export const getTokenContract = (
   network: NetworkType,
@@ -80,7 +103,7 @@ export const getTokenContract = (
 };
 
 /**
- * 获取网络配置
+ * Get network configuration
  */
 export const getNetworkConfig = (network: NetworkType) => {
   const config = networkConfigs[network];
@@ -96,7 +119,7 @@ export const getNetworkConfig = (network: NetworkType) => {
 };
 
 /**
- * 获取支持的代币列表
+ * Get supported token list
  */
 export const getSupportedTokens = (network: NetworkType): TokenType[] => {
   const { isProduction } = getCurrentEnvironment();
@@ -112,7 +135,7 @@ export const getSupportedTokens = (network: NetworkType): TokenType[] => {
 };
 
 /**
- * 验证网络和代币组合是否支持
+ * Validate if network and token combination is supported
  */
 export const isTokenSupported = (
   network: NetworkType,

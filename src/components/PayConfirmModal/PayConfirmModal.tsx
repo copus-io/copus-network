@@ -24,7 +24,7 @@ interface PayConfirmModalProps {
   faucetLink?: string;
   isInsufficientBalance?: boolean;
   walletType?: string;
-  selectedNetwork?: 'xlayer' | 'base-sepolia';
+  selectedNetwork?: 'xlayer' | 'base-sepolia' | 'base-mainnet';
   selectedCurrency?: 'usdc' | 'usdt';
   onNetworkChange?: (network: string) => void;
   onCurrencyChange?: (currency: string) => void;
@@ -52,7 +52,7 @@ const walletOptions: WalletOption[] = [
 
 const networkOptions = [
   { value: 'xlayer', label: 'X Layer' },
-  { value: 'base-sepolia', label: 'Base Sepolia' },
+  { value: 'base-mainnet', label: 'Base Mainnet' },
 ];
 
 const xlayerCurrencyOptions = [
@@ -81,7 +81,7 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
 }) => {
   const [showCopied, setShowCopied] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState(
-    propSelectedNetwork || 'base-sepolia'
+    propSelectedNetwork || 'base-mainnet'
   );
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState(

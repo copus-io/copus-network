@@ -20,9 +20,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
       className={`relative p-2 rounded-lg transition-all duration-200 hover:bg-gray-100 ${
         isOpen ? 'bg-gray-100' : ''
       } ${className}`}
-      title={`通知 ${unreadCount > 0 ? `(${unreadCount} 条未读)` : ''}`}
+      title={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
     >
-      {/* 铃铛图标 */}
+      {/* Bell icon */}
       <svg
         width="24"
         height="24"
@@ -39,14 +39,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
         />
       </svg>
 
-      {/* 未读消息数量徽章 */}
+      {/* Unread message count badge */}
       {unreadCount > 0 && (
         <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium leading-none">
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}
 
-      {/* 响铃动画效果（当有新通知时） */}
+      {/* Ring animation effect (when there are new notifications) */}
       {unreadCount > 0 && (
         <span className="absolute inset-0 rounded-lg animate-ping bg-blue-400 opacity-20"></span>
       )}

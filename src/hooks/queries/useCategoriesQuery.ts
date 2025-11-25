@@ -2,18 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { getCategoryList } from '../../services/categoryService';
 import { queryKeys, cacheConfig } from '../../lib/queryClient';
 
-// 分类列表查询
+// Categories list query
 export const useCategoriesQuery = () => {
   return useQuery({
     queryKey: queryKeys.categoriesList(),
     queryFn: getCategoryList,
-    ...cacheConfig.static, // 分类数据变化较少，使用静态缓存策略
-    staleTime: 30 * 60 * 1000, // 30分钟
+    ...cacheConfig.static, // Category data changes infrequently, use static cache strategy
+    staleTime: 30 * 60 * 1000, // 30 minutes
     retry: 2,
   });
 };
 
-// 兼容现有API的分类查询 hook
+// Categories query hook compatible with existing API
 export const useCategories = () => {
   const query = useCategoriesQuery();
 

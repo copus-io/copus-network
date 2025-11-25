@@ -17,7 +17,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
   className = '',
   disabled = false
 }) => {
-  // 根据尺寸设置样式
+  // Set styles based on size
   const sizeStyles = {
     small: {
       container: 'gap-1 p-1',
@@ -41,7 +41,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
 
   const currentSize = sizeStyles[size];
 
-  // 格式化数字显示
+  // Format number display
   const formatCount = (count: number | undefined): string => {
     const safeCount = count || 0;
     if (safeCount >= 1000000) {
@@ -70,7 +70,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       title={isLiked ? 'Remove from your treasury' : 'Add to your treasury'}
     >
       <div className="relative">
-        {/* 宝石图标 - different styles for different sizes */}
+        {/* Gem icon - different styles for different sizes */}
         <img
           className={`
             transition-all duration-200 relative z-10
@@ -122,7 +122,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
         )}
       </div>
 
-      {/* 点赞数量文字 */}
+      {/* Like count text */}
       <span
         className={`
           [font-family:'Lato',Helvetica] font-normal text-center tracking-[0] leading-[20.8px]
@@ -141,7 +141,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
   );
 };
 
-// 导出默认配置的常用尺寸组件
+// Export commonly used size components with default configuration
 export const SmallTreasureButton: React.FC<Omit<TreasureButtonProps, 'size'>> = (props) => (
   <TreasureButton {...props} size="small" />
 );

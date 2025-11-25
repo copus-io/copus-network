@@ -1,14 +1,14 @@
 /**
- * 环境检测和配置工具
- * 根据API URL自动检测当前运行环境
+ * Environment detection and configuration utilities
+ * Auto-detect current runtime environment based on API URL
  */
 
 export type Environment = 'development' | 'test' | 'staging' | 'production';
 
 /**
- * 根据API URL自动检测环境
- * - api-test.copus.network -> 测试环境
- * - api-prod.copus.network -> 生产环境
+ * Auto-detect environment based on API URL
+ * - api-test.copus.network -> test environment
+ * - api-prod.copus.network -> production environment
  */
 export const detectEnvironmentFromAPI = (): Environment => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
@@ -21,13 +21,13 @@ export const detectEnvironmentFromAPI = (): Environment => {
     return 'production';
   }
 
-  // 默认根据 VITE_APP_ENV 判断
+  // Default to VITE_APP_ENV
   const appEnv = import.meta.env.VITE_APP_ENV as Environment;
   return appEnv || 'development';
 };
 
 /**
- * 获取当前环境信息
+ * Get current environment information
  */
 export const getCurrentEnvironment = () => {
   const env = detectEnvironmentFromAPI();
@@ -45,29 +45,29 @@ export const getCurrentEnvironment = () => {
 };
 
 /**
- * 环境配置映射
+ * Environment configuration mapping
  */
 export const environmentConfigs = {
   development: {
-    name: '开发环境',
+    name: 'Development Environment',
     apiBaseUrl: 'https://api-test.copus.network/copusV2',
     appUrl: 'http://localhost:5177',
     debug: true,
   },
   test: {
-    name: '测试环境',
+    name: 'Test Environment',
     apiBaseUrl: 'https://api-test.copus.network/copusV2',
     appUrl: 'https://test.copus.network',
     debug: true,
   },
   staging: {
-    name: '预发布环境',
+    name: 'Staging Environment',
     apiBaseUrl: 'https://api-test.copus.network/copusV2',
     appUrl: 'https://test.copus.network',
     debug: false,
   },
   production: {
-    name: '生产环境',
+    name: 'Production Environment',
     apiBaseUrl: 'https://api-prod.copus.network/copusV2',
     appUrl: 'https://copus.network',
     debug: false,
@@ -75,7 +75,7 @@ export const environmentConfigs = {
 };
 
 /**
- * 获取当前环境的配置
+ * Get current environment configuration
  */
 export const getEnvironmentConfig = () => {
   const env = detectEnvironmentFromAPI();
@@ -83,7 +83,7 @@ export const getEnvironmentConfig = () => {
 };
 
 /**
- * 控制台输出当前环境信息
+ * Log current environment information to console
  */
 export const logEnvironmentInfo = () => {
   const envInfo = getCurrentEnvironment();
