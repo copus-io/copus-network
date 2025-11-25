@@ -140,10 +140,8 @@ export const Content = (): JSX.Element => {
       if (walletType === 'metamask') {
         // First try to find a provider that explicitly identifies as MetaMask and not OKX
         const metamaskProvider = providers.find((p: any) => {
-          const hasOkxProps = ('isOkxWallet' in p && p.isOkxWallet) ||
-                             ('isOKExWallet' in p && p.isOKExWallet) ||
-                             Object.prototype.hasOwnProperty.call(p, 'isOkxWallet') ||
-                             Object.prototype.hasOwnProperty.call(p, 'isOKExWallet');
+          // Check for OKX-specific properties (must be explicitly true, not just present)
+          const hasOkxProps = (p.isOkxWallet === true) || (p.isOKExWallet === true);
 
           // MetaMask provider should have isMetaMask, not be Coinbase, and not have OKX properties
           return p.isMetaMask && !p.isCoinbaseWallet && !hasOkxProps;
@@ -162,11 +160,14 @@ export const Content = (): JSX.Element => {
       if (walletType === 'metamask') {
         const eth = window.ethereum as any;
 
-        // Check for OKX-specific properties
-        const hasOkxProps = ('isOkxWallet' in eth && eth.isOkxWallet) ||
-                           ('isOKExWallet' in eth && eth.isOKExWallet) ||
-                           Object.prototype.hasOwnProperty.call(eth, 'isOkxWallet') ||
-                           Object.prototype.hasOwnProperty.call(eth, 'isOKExWallet');
+        // Check for OKX-specific properties (must be explicitly true, not just present)
+        const hasOkxProps = (eth.isOkxWallet === true) || (eth.isOKExWallet === true);
+
+        // CRITICAL: If window.okxwallet exists but window.ethereum.providers doesn't exist,
+        // it means OKX has hijacked window.ethereum. In this case, we cannot reliably access MetaMask.
+        if ((window as any).okxwallet && eth.isMetaMask) {
+          return null; // Will show warning to user
+        }
 
         // If it's MetaMask and NOT OKX, return it
         if (eth.isMetaMask && !eth.isCoinbaseWallet && !hasOkxProps) {
@@ -199,6 +200,7 @@ export const Content = (): JSX.Element => {
     await provider.request({ method: 'eth_requestAccounts' });
 
     let address = provider.selectedAddress;
+
     if (!address) {
       const accounts = await provider.request({ method: 'eth_accounts' });
       address = accounts[0];
@@ -429,7 +431,7 @@ export const Content = (): JSX.Element => {
 
     if (!provider) {
       if (walletType === 'metamask' && (window as any).okxwallet) {
-        showToast('MetaMask not detected. OKX wallet is installed - please use the OKX button, or install genuine MetaMask.', 'warning');
+        showToast('OKX Wallet has taken control of MetaMask. Please use the OKX button, or temporarily disable the OKX extension to use MetaMask.', 'warning');
       } else {
         const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
         showToast(`${walletName} not found. Please install ${walletName} extension.`, 'error');
