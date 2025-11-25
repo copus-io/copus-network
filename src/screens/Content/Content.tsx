@@ -163,13 +163,7 @@ export const Content = (): JSX.Element => {
         // Check for OKX-specific properties (must be explicitly true, not just present)
         const hasOkxProps = (eth.isOkxWallet === true) || (eth.isOKExWallet === true);
 
-        // CRITICAL: If window.okxwallet exists but window.ethereum.providers doesn't exist,
-        // it means OKX has hijacked window.ethereum. In this case, we cannot reliably access MetaMask.
-        if ((window as any).okxwallet && eth.isMetaMask) {
-          return null; // Will show warning to user
-        }
-
-        // If it's MetaMask and NOT OKX, return it
+        // If it has MetaMask properties and NOT explicitly OKX, use it
         if (eth.isMetaMask && !eth.isCoinbaseWallet && !hasOkxProps) {
           return window.ethereum;
         }
@@ -177,13 +171,8 @@ export const Content = (): JSX.Element => {
         // Check legacy web3.currentProvider for real MetaMask
         const web3Provider = (window as any).web3?.currentProvider;
         if (web3Provider?.isMetaMask && !web3Provider?.isCoinbaseWallet &&
-            !web3Provider?.isOkxWallet && !web3Provider?.isOKExWallet) {
+            !(web3Provider?.isOkxWallet === true) && !(web3Provider?.isOKExWallet === true)) {
           return web3Provider;
-        }
-
-        // If we detected OKX properties, return null to show the warning
-        if (hasOkxProps && (window as any).okxwallet) {
-          return null; // Force user to use OKX button instead
         }
 
         return null;
@@ -430,12 +419,8 @@ export const Content = (): JSX.Element => {
     const provider = detectWalletProvider(walletType);
 
     if (!provider) {
-      if (walletType === 'metamask' && (window as any).okxwallet) {
-        showToast('OKX Wallet has taken control of MetaMask. Please use the OKX button, or temporarily disable the OKX extension to use MetaMask.', 'warning');
-      } else {
-        const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
-        showToast(`${walletName} not found. Please install ${walletName} extension.`, 'error');
-      }
+      const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
+      showToast(`${walletName} not found. Please install ${walletName} extension.`, 'error');
       return;
     }
 

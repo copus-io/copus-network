@@ -698,27 +698,15 @@ export const Login = (): JSX.Element => {
         // Check for OKX-specific properties (must be explicitly true, not just present)
         const hasOkxProps = (eth.isOkxWallet === true) || (eth.isOKExWallet === true);
 
-        // CRITICAL: If window.okxwallet exists but window.ethereum.providers doesn't exist,
-        // it means OKX has hijacked window.ethereum. In this case, we cannot reliably access MetaMask.
-        if ((window as any).okxwallet && eth.isMetaMask) {
-          showToast('OKX Wallet has taken control of MetaMask. Please use the OKX login option, or temporarily disable the OKX extension to use MetaMask.', 'warning');
-          setIsLoginLoading(false);
-          return;
-        }
-
-        // If it's MetaMask and NOT OKX, use it
+        // If it's MetaMask and NOT explicitly OKX, use it
         if (eth.isMetaMask && !eth.isCoinbaseWallet && !hasOkxProps) {
           metamaskProvider = window.ethereum;
         } else {
           // Check legacy web3.currentProvider for real MetaMask
           const web3Provider = (window as any).web3?.currentProvider;
           if (web3Provider?.isMetaMask && !web3Provider?.isCoinbaseWallet &&
-              !web3Provider?.isOkxWallet && !web3Provider?.isOKExWallet) {
+              !(web3Provider?.isOkxWallet === true) && !(web3Provider?.isOKExWallet === true)) {
             metamaskProvider = web3Provider;
-          } else if (hasOkxProps && (window as any).okxwallet) {
-            showToast('MetaMask not detected. OKX wallet is installed - please use the OKX login option, or install genuine MetaMask.', 'warning');
-            setIsLoginLoading(false);
-            return;
           } else {
             showToast('MetaMask not found. Please install MetaMask extension.', 'error');
             setIsLoginLoading(false);
