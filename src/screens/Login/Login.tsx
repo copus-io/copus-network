@@ -36,7 +36,7 @@ const socialProviders = [
     icon: "https://c.animaapp.com/mftc49qfOGKRUh/img/frame-1.svg",
   },
   {
-    name: "Coinbase Wallet",
+    name: "Coinbase",
     icon: "data:image/svg+xml,%3Csvg width='1024' height='1024' viewBox='0 0 1024 1024' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1024' height='1024' fill='%230052FF'/%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M152 512C152 710.823 313.177 872 512 872C710.823 872 872 710.823 872 512C872 313.177 710.823 152 512 152C313.177 152 152 313.177 152 512ZM420 396C406.745 396 396 406.745 396 420V604C396 617.255 406.745 628 420 628H604C617.255 628 628 617.255 628 604V420C628 406.745 617.255 396 604 396H420Z' fill='white'/%3E%3C/svg%3E",
   },
   {
@@ -1047,7 +1047,7 @@ export const Login = (): JSX.Element => {
       case 'Metamask':
         await handleMetamaskLogin();
         break;
-      case 'Coinbase Wallet':
+      case 'Coinbase':
         await handleCoinbaseWalletLogin();
         break;
       case 'OKX Wallet':
@@ -1439,7 +1439,9 @@ export const Login = (): JSX.Element => {
                     >
                       <div className="flex items-center justify-center w-6 sm:w-[30px] h-6 sm:h-[30px] flex-shrink-0">
                         <img
-                          className="w-6 sm:w-[30px] h-6 sm:h-[30px] object-contain"
+                          className={`w-6 sm:w-[30px] h-6 sm:h-[30px] object-contain ${
+                            provider.name === 'Coinbase' ? 'rounded-md' : ''
+                          }`}
                           alt={`${provider.name} icon`}
                           src={provider.icon}
                         />
