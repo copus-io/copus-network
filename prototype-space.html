@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copus Network - 空间功能原型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'copus-blue': '#3b82f6',
+                        'copus-green': '#10b981',
+                        'copus-orange': '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        .mobile-sidebar {
+            transform: translateX(-100%);
+        }
+        .mobile-sidebar.open {
+            transform: translateX(0);
+        }
+        .space-card {
+            transition: all 0.3s ease;
+        }
+        .space-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 fixed top-0 w-full z-40">
+        <div class="px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <button id="mobile-menu-btn" class="lg:hidden text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-copus-blue rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cube text-white text-sm"></i>
+                    </div>
+                    <span class="font-bold text-xl text-gray-900">Copus</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-2 bg-gray-100 rounded-lg px-3 py-2">
+                    <i class="fas fa-search text-gray-400"></i>
+                    <input type="text" placeholder="搜索空间..." class="bg-transparent text-sm text-gray-600 placeholder-gray-400 focus:outline-none w-48">
+                </div>
+
+                <button class="relative p-2 text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-bell text-lg"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                </button>
+
+                <div class="flex items-center space-x-2">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                         alt="User Avatar" class="w-8 h-8 rounded-full">
+                    <span class="hidden md:block text-sm font-medium text-gray-700">张三</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-16 h-full w-80 bg-white border-r border-gray-200 z-30 sidebar mobile-sidebar lg:transform-none">
+        <div class="p-6">
+            <nav class="space-y-2">
+                <a href="#" onclick="showSection('discovery')" class="nav-item flex items-center space-x-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 group">
+                    <i class="fas fa-compass text-lg group-hover:text-copus-blue"></i>
+                    <span class="font-medium">发现空间</span>
+                </a>
+
+                <a href="#" onclick="showSection('followed')" class="nav-item flex items-center space-x-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 group">
+                    <i class="fas fa-heart text-lg group-hover:text-copus-green"></i>
+                    <span class="font-medium">关注的空间</span>
+                    <span class="ml-auto bg-copus-green text-white text-xs px-2 py-1 rounded-full">12</span>
+                </a>
+
+                <a href="#" onclick="showSection('my-spaces')" class="nav-item flex items-center space-x-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 group">
+                    <i class="fas fa-layer-group text-lg group-hover:text-copus-orange"></i>
+                    <span class="font-medium">我的空间</span>
+                    <span class="ml-auto bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">5</span>
+                </a>
+
+                <div class="pt-4 border-t border-gray-200">
+                    <button onclick="showCreateModal()" class="w-full flex items-center space-x-3 px-4 py-3 bg-copus-blue text-white rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-plus text-lg"></i>
+                        <span class="font-medium">创建空间</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-80 pt-16 min-h-screen">
+        <!-- Space Discovery Section -->
+        <section id="discovery-section" class="section p-6">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">发现空间</h1>
+                <p class="text-gray-600">探索由社区策展的优质内容空间</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="mb-6 flex flex-wrap gap-4 items-center">
+                <div class="flex items-center space-x-2">
+                    <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-copus-blue focus:border-transparent">
+                        <option>所有分类</option>
+                        <option>科技</option>
+                        <option>艺术</option>
+                        <option>商业</option>
+                        <option>生活</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-copus-blue focus:border-transparent">
+                        <option>按热度排序</option>
+                        <option>按时间排序</option>
+                        <option>按文章数排序</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center space-x-2 bg-white border border-gray-300 rounded-lg px-3 py-2">
+                    <i class="fas fa-search text-gray-400"></i>
+                    <input type="text" placeholder="搜索空间名称..." class="text-sm text-gray-600 placeholder-gray-400 focus:outline-none flex-1">
+                </div>
+            </div>
+
+            <!-- Space Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Space Card 1 -->
+                <div class="space-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-pointer" onclick="showSpaceDetail('ai-frontier')">
+                    <div class="h-48 bg-gradient-to-br from-blue-400 to-purple-600 relative">
+                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <h3 class="text-white font-bold text-lg">AI前沿探索</h3>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <p class="text-gray-600 text-sm mb-3 line-clamp-2">收集和分享最新的AI技术动态、研究论文和应用案例，帮助开发者紧跟AI发展趋势。</p>
+
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=24&h=24&fit=crop&crop=face"
+                                     alt="Creator" class="w-6 h-6 rounded-full">
+                                <span class="text-sm text-gray-700">李明</span>
+                            </div>
+
+                            <button onclick="event.stopPropagation(); toggleFollow('ai-frontier')"
+                                    class="follow-btn px-3 py-1 rounded-full text-sm font-medium transition-colors bg-copus-blue text-white hover:bg-blue-600">
+                                关注
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span>156 篇文章</span>
+                            <span>1.2k 关注者</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Space Card 2 -->
+                <div class="space-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-pointer" onclick="showSpaceDetail('design-inspiration')">
+                    <div class="h-48 bg-gradient-to-br from-pink-400 to-red-600 relative">
+                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <h3 class="text-white font-bold text-lg">设计灵感库</h3>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <p class="text-gray-600 text-sm mb-3 line-clamp-2">精选优质设计作品、创意灵感和设计趋势分析，为设计师提供源源不断的创作灵感。</p>
+
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <img src="https://images.unsplash.com/photo-1494790108755-2616b612b5b8?w=24&h=24&fit=crop&crop=face"
+                                     alt="Creator" class="w-6 h-6 rounded-full">
+                                <span class="text-sm text-gray-700">王小美</span>
+                            </div>
+
+                            <button onclick="event.stopPropagation(); toggleFollow('design-inspiration')"
+                                    class="follow-btn px-3 py-1 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-copus-blue hover:text-white">
+                                关注
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span>89 篇文章</span>
+                            <span>890 关注者</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Space Card 3 -->
+                <div class="space-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-pointer" onclick="showSpaceDetail('startup-stories')">
+                    <div class="h-48 bg-gradient-to-br from-green-400 to-teal-600 relative">
+                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <h3 class="text-white font-bold text-lg">创业故事集</h3>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <p class="text-gray-600 text-sm mb-3 line-clamp-2">真实的创业经历分享、失败教训总结和成功经验传授，为创业者提供实用指导。</p>
+
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=24&h=24&fit=crop&crop=face"
+                                     alt="Creator" class="w-6 h-6 rounded-full">
+                                <span class="text-sm text-gray-700">陈创业</span>
+                            </div>
+
+                            <button onclick="event.stopPropagation(); toggleFollow('startup-stories')"
+                                    class="follow-btn px-3 py-1 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-copus-blue hover:text-white">
+                                关注
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span>67 篇文章</span>
+                            <span>654 关注者</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Space Card 4 -->
+                <div class="space-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden cursor-pointer" onclick="showSpaceDetail('tech-reviews')">
+                    <div class="h-48 bg-gradient-to-br from-orange-400 to-yellow-600 relative">
+                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                        <div class="absolute bottom-4 left-4">
+                            <h3 class="text-white font-bold text-lg">科技产品评测</h3>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <p class="text-gray-600 text-sm mb-3 line-clamp-2">深度测评最新科技产品，从用户角度分析产品优缺点，为购买决策提供参考。</p>
+
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=24&h=24&fit=crop&crop=face"
+                                     alt="Creator" class="w-6 h-6 rounded-full">
+                                <span class="text-sm text-gray-700">极客张</span>
+                            </div>
+
+                            <button onclick="event.stopPropagation(); toggleFollow('tech-reviews')"
+                                    class="follow-btn px-3 py-1 rounded-full text-sm font-medium transition-colors bg-copus-green text-white hover:bg-green-600">
+                                已关注
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span>123 篇文章</span>
+                            <span>2.1k 关注者</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Followed Spaces Section -->
+        <section id="followed-section" class="section p-6 hidden">
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">关注的空间</h1>
+                <p class="text-gray-600">您关注的空间最新动态</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-yellow-600 rounded-lg"></div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">科技产品评测</h3>
+                            <p class="text-sm text-gray-500">2小时前更新</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-3">添加了3篇新文章关于iPhone 15 Pro的深度评测</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500">123 篇文章</span>
+                        <button class="text-copus-blue text-sm hover:underline">查看详情</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Spaces Section -->
+        <section id="my-spaces-section" class="section p-6 hidden">
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">我的空间</h1>
+                    <p class="text-gray-600">管理您创建的内容空间</p>
+                </div>
+                <button onclick="showCreateModal()" class="bg-copus-blue text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>创建新空间
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-900">个人技术笔记</h3>
+                        <div class="flex items-center space-x-2">
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="text-gray-400 hover:text-red-500">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-3">记录学习过程中的技术要点和经验总结</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-500">23 篇文章 · 45 关注者</span>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">公开</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Space Detail Section -->
+        <section id="space-detail-section" class="section p-6 hidden">
+            <div class="mb-8">
+                <button onclick="showSection('discovery')" class="flex items-center text-copus-blue hover:text-blue-600 mb-4">
+                    <i class="fas fa-arrow-left mr-2"></i>返回发现页
+                </button>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="h-64 bg-gradient-to-br from-blue-400 to-purple-600 relative">
+                        <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+                        <div class="absolute bottom-6 left-6 text-white">
+                            <h1 class="text-4xl font-bold mb-2">AI前沿探索</h1>
+                            <p class="text-lg opacity-90">收集和分享最新的AI技术动态、研究论文和应用案例</p>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-4">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=48&h=48&fit=crop&crop=face"
+                                     alt="Creator" class="w-12 h-12 rounded-full">
+                                <div>
+                                    <h3 class="font-semibold text-gray-900">李明</h3>
+                                    <p class="text-sm text-gray-500">AI研究工程师</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center space-x-6 text-sm text-gray-500">
+                                    <span><i class="fas fa-file-alt mr-1"></i>156 篇文章</span>
+                                    <span><i class="fas fa-heart mr-1"></i>1.2k 关注者</span>
+                                    <span><i class="fas fa-eye mr-1"></i>45k 浏览</span>
+                                </div>
+
+                                <button class="bg-copus-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                                    <i class="fas fa-heart mr-2"></i>关注
+                                </button>
+
+                                <button class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                                    <i class="fas fa-share mr-2"></i>分享
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Section Tabs -->
+                        <div class="border-b border-gray-200 mb-6">
+                            <nav class="-mb-px flex space-x-8">
+                                <button onclick="showSpaceSection('all')" class="space-tab-btn border-b-2 border-copus-blue text-copus-blue py-2 px-1 text-sm font-medium">
+                                    全部文章 (156)
+                                </button>
+                                <button onclick="showSpaceSection('featured')" class="space-tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium">
+                                    精选 (25)
+                                </button>
+                                <button onclick="showSpaceSection('recent')" class="space-tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium">
+                                    最新 (12)
+                                </button>
+                                <button onclick="showSpaceSection('popular')" class="space-tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium">
+                                    热门 (18)
+                                </button>
+                            </nav>
+                        </div>
+
+                        <!-- Article Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Article Card 1 -->
+                            <div class="article-card bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=200&fit=crop"
+                                     alt="Article" class="w-full h-40 object-cover">
+                                <div class="p-4">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">精选</span>
+                                        <span class="text-xs text-gray-500">优先级: 95</span>
+                                    </div>
+                                    <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">GPT-4的技术突破与应用前景深度分析</h3>
+                                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">这篇文章深入分析了GPT-4的技术创新点，包括多模态能力、推理性能提升等关键特性，值得深入阅读和思考。</p>
+
+                                    <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                        <span>AI研究员 · 2天前</span>
+                                        <span>256 👍 · 89 💬</span>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-1">
+                                        <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">GPT-4</span>
+                                        <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded">大语言模型</span>
+                                        <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded">技术分析</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Article Card 2 -->
+                            <div class="article-card bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=400&h=200&fit=crop"
+                                     alt="Article" class="w-full h-40 object-cover">
+                                <div class="p-4">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">最新</span>
+                                        <span class="text-xs text-gray-500">优先级: 80</span>
+                                    </div>
+                                    <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">机器学习模型部署的最佳实践指南</h3>
+                                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">从开发到生产环境的完整部署流程，包括模型优化、监控和维护等关键环节的实践经验分享。</p>
+
+                                    <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                        <span>技术专家 · 1天前</span>
+                                        <span>189 👍 · 67 💬</span>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-1">
+                                        <span class="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded">MLOps</span>
+                                        <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded">部署</span>
+                                        <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">实践</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Article Card 3 -->
+                            <div class="article-card bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400&h=200&fit=crop"
+                                     alt="Article" class="w-full h-40 object-cover">
+                                <div class="p-4">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">热门</span>
+                                        <span class="text-xs text-gray-500">优先级: 85</span>
+                                    </div>
+                                    <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">深度学习在计算机视觉中的新进展</h3>
+                                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">介绍最新的计算机视觉算法和应用案例，探讨深度学习技术在图像识别领域的发展趋势。</p>
+
+                                    <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+                                        <span>视觉算法师 · 3天前</span>
+                                        <span>342 👍 · 128 💬</span>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-1">
+                                        <span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded">计算机视觉</span>
+                                        <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">深度学习</span>
+                                        <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded">算法</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Create Space Modal -->
+    <div id="create-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900">创建新空间</h2>
+                    <button onclick="hideCreateModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="space-y-6">
+                    <!-- Step 1: Basic Info -->
+                    <div class="create-step" id="step-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">基本信息</h3>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">空间名称 *</label>
+                                <input type="text" placeholder="请输入空间名称（2-50字符）"
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-copus-blue focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">空间描述 *</label>
+                                <textarea placeholder="请描述您的空间主题和内容方向（10-500字符）" rows="3"
+                                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-copus-blue focus:border-transparent"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">封面图片</label>
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-copus-blue transition-colors cursor-pointer">
+                                    <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-500">点击上传或拖拽图片文件</p>
+                                    <p class="text-xs text-gray-400 mt-1">支持 JPG、PNG 格式，建议尺寸 1200x600</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">主分类</label>
+                                <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-copus-blue focus:border-transparent">
+                                    <option>请选择主分类</option>
+                                    <option>科技</option>
+                                    <option>艺术</option>
+                                    <option>商业</option>
+                                    <option>生活</option>
+                                    <option>教育</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">标签 (最多10个)</label>
+                                <div class="flex flex-wrap gap-2 mb-2" id="tags-container">
+                                    <!-- Tags will be added here -->
+                                </div>
+                                <input type="text" placeholder="输入标签后按回车添加"
+                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-copus-blue focus:border-transparent"
+                                       onkeypress="handleTagInput(event)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Sections -->
+                    <div class="create-step hidden" id="step-2">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">分组设置</h3>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">预设分组</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" checked class="rounded">
+                                        <span class="text-sm">精选</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" checked class="rounded">
+                                        <span class="text-sm">最新</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" class="rounded">
+                                        <span class="text-sm">入门</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" class="rounded">
+                                        <span class="text-sm">进阶</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">自定义分组</label>
+                                <div class="space-y-2" id="custom-sections">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="text" placeholder="分组名称" class="flex-1 border border-gray-300 rounded px-3 py-2">
+                                        <button class="text-red-500 hover:text-red-700">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button onclick="addCustomSection()" class="mt-2 text-copus-blue hover:text-blue-600 text-sm">
+                                    <i class="fas fa-plus mr-1"></i>添加分组
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Privacy Settings -->
+                    <div class="create-step hidden" id="step-3">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">隐私和权限</h3>
+
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">空间可见性</label>
+                                <div class="space-y-3">
+                                    <label class="flex items-start space-x-3">
+                                        <input type="radio" name="privacy" value="public" checked class="mt-1">
+                                        <div>
+                                            <div class="font-medium">公开空间</div>
+                                            <div class="text-sm text-gray-500">任何人都可以发现和浏览此空间</div>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-start space-x-3">
+                                        <input type="radio" name="privacy" value="private" class="mt-1">
+                                        <div>
+                                            <div class="font-medium">私有空间</div>
+                                            <div class="text-sm text-gray-500">只有您和被邀请的用户可以访问</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">投稿权限</label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" class="rounded">
+                                    <div>
+                                        <div class="font-medium">允许他人投稿</div>
+                                        <div class="text-sm text-gray-500">其他用户可以向此空间推荐文章</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+                    <button id="prev-btn" onclick="prevStep()" class="px-4 py-2 text-gray-600 hover:text-gray-800 hidden">
+                        <i class="fas fa-arrow-left mr-2"></i>上一步
+                    </button>
+
+                    <div class="flex items-center space-x-2">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-copus-blue rounded-full step-indicator active"></div>
+                            <div class="w-2 h-2 bg-gray-200 rounded-full step-indicator"></div>
+                            <div class="w-2 h-2 bg-gray-200 rounded-full step-indicator"></div>
+                        </div>
+                    </div>
+
+                    <button id="next-btn" onclick="nextStep()" class="bg-copus-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                        下一步<i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add to Space Modal -->
+    <div id="add-to-space-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-lg w-full">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-900">添加到空间</h2>
+                    <button onclick="hideAddToSpaceModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选择空间</label>
+                        <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-copus-blue focus:border-transparent">
+                            <option>个人技术笔记</option>
+                            <option>AI学习资源</option>
+                            <option>设计收藏</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">分组</label>
+                        <select class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-copus-blue focus:border-transparent">
+                            <option>默认</option>
+                            <option>精选</option>
+                            <option>最新</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">策展点评</label>
+                        <textarea placeholder="添加您对这篇文章的点评和推荐理由..." rows="3"
+                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-copus-blue focus:border-transparent"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">自定义标签</label>
+                        <input type="text" placeholder="用空格分隔多个标签"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-copus-blue focus:border-transparent">
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="recommend" class="rounded">
+                        <label for="recommend" class="text-sm text-gray-700">标记为推荐文章</label>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+                    <button onclick="hideAddToSpaceModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        取消
+                    </button>
+                    <button onclick="addToSpace()" class="bg-copus-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                        添加到空间
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Add Button (for mobile) -->
+    <button onclick="showCreateModal()" class="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-copus-blue text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors z-40">
+        <i class="fas fa-plus text-xl"></i>
+    </button>
+
+    <!-- JavaScript -->
+    <script>
+        // Global state
+        let currentStep = 1;
+        const maxSteps = 3;
+        const tags = [];
+
+        // Navigation functions
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            // Show selected section
+            document.getElementById(sectionName + '-section').classList.remove('hidden');
+
+            // Update nav active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('bg-copus-blue', 'text-white');
+                item.classList.add('text-gray-700');
+            });
+
+            // Add active class to current nav item
+            event.target.closest('.nav-item').classList.add('bg-copus-blue', 'text-white');
+            event.target.closest('.nav-item').classList.remove('text-gray-700');
+        }
+
+        function showSpaceDetail(spaceId) {
+            showSection('space-detail');
+        }
+
+        function showSpaceSection(sectionName) {
+            // Update tab active state
+            document.querySelectorAll('.space-tab-btn').forEach(btn => {
+                btn.classList.remove('border-copus-blue', 'text-copus-blue');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            event.target.classList.add('border-copus-blue', 'text-copus-blue');
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+        }
+
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const menuBtn = document.getElementById('mobile-menu-btn');
+
+            if (!sidebar.contains(event.target) && !menuBtn.contains(event.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // Follow functionality
+        function toggleFollow(spaceId) {
+            const btn = event.target;
+            const isFollowing = btn.textContent.trim() === '已关注';
+
+            if (isFollowing) {
+                btn.textContent = '关注';
+                btn.className = 'follow-btn px-3 py-1 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-copus-blue hover:text-white';
+            } else {
+                btn.textContent = '已关注';
+                btn.className = 'follow-btn px-3 py-1 rounded-full text-sm font-medium transition-colors bg-copus-green text-white hover:bg-green-600';
+            }
+        }
+
+        // Create Space Modal
+        function showCreateModal() {
+            document.getElementById('create-modal').classList.remove('hidden');
+            document.getElementById('create-modal').classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideCreateModal() {
+            document.getElementById('create-modal').classList.add('hidden');
+            document.getElementById('create-modal').classList.remove('flex');
+            document.body.style.overflow = 'auto';
+            resetCreateForm();
+        }
+
+        function resetCreateForm() {
+            currentStep = 1;
+            showStep(1);
+            // Reset form fields here
+        }
+
+        function nextStep() {
+            if (currentStep < maxSteps) {
+                currentStep++;
+                showStep(currentStep);
+            } else {
+                // Create space
+                createSpace();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.create-step').forEach(stepEl => {
+                stepEl.classList.add('hidden');
+            });
+
+            // Show current step
+            document.getElementById('step-' + step).classList.remove('hidden');
+
+            // Update indicators
+            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                if (index < step) {
+                    indicator.classList.add('bg-copus-blue');
+                    indicator.classList.remove('bg-gray-200');
+                } else {
+                    indicator.classList.remove('bg-copus-blue');
+                    indicator.classList.add('bg-gray-200');
+                }
+            });
+
+            // Update buttons
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            if (step === 1) {
+                prevBtn.classList.add('hidden');
+            } else {
+                prevBtn.classList.remove('hidden');
+            }
+
+            if (step === maxSteps) {
+                nextBtn.innerHTML = '<i class="fas fa-check mr-2"></i>创建空间';
+            } else {
+                nextBtn.innerHTML = '下一步<i class="fas fa-arrow-right ml-2"></i>';
+            }
+        }
+
+        function createSpace() {
+            // Simulate space creation
+            setTimeout(() => {
+                hideCreateModal();
+                showSuccessMessage('空间创建成功！');
+                showSection('my-spaces');
+            }, 1000);
+        }
+
+        // Tag input handling
+        function handleTagInput(event) {
+            if (event.key === 'Enter' && event.target.value.trim()) {
+                const tag = event.target.value.trim();
+                if (tags.length < 10 && !tags.includes(tag)) {
+                    tags.push(tag);
+                    renderTags();
+                }
+                event.target.value = '';
+            }
+        }
+
+        function renderTags() {
+            const container = document.getElementById('tags-container');
+            container.innerHTML = tags.map(tag => `
+                <span class="bg-copus-blue text-white px-3 py-1 rounded-full text-sm flex items-center space-x-1">
+                    <span>${tag}</span>
+                    <button onclick="removeTag('${tag}')" class="hover:text-red-200">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </span>
+            `).join('');
+        }
+
+        function removeTag(tag) {
+            const index = tags.indexOf(tag);
+            if (index > -1) {
+                tags.splice(index, 1);
+                renderTags();
+            }
+        }
+
+        function addCustomSection() {
+            const container = document.getElementById('custom-sections');
+            const newSection = document.createElement('div');
+            newSection.className = 'flex items-center space-x-2';
+            newSection.innerHTML = `
+                <input type="text" placeholder="分组名称" class="flex-1 border border-gray-300 rounded px-3 py-2">
+                <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            container.appendChild(newSection);
+        }
+
+        // Add to Space Modal
+        function showAddToSpaceModal() {
+            document.getElementById('add-to-space-modal').classList.remove('hidden');
+            document.getElementById('add-to-space-modal').classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideAddToSpaceModal() {
+            document.getElementById('add-to-space-modal').classList.add('hidden');
+            document.getElementById('add-to-space-modal').classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        function addToSpace() {
+            hideAddToSpaceModal();
+            showSuccessMessage('文章已添加到空间！');
+        }
+
+        // Success message
+        function showSuccessMessage(message) {
+            // Create toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in';
+            toast.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-check"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showSection('discovery');
+        });
+
+        // Add sample article click handlers
+        document.addEventListener('click', function(event) {
+            // Only trigger for article cards with specific class
+            const articleCard = event.target.closest('.article-card');
+
+            // Check if we're in the space detail section and the section is visible
+            const spaceDetailSection = document.getElementById('space-detail-section');
+            const isInSpaceDetail = spaceDetailSection && !spaceDetailSection.classList.contains('hidden');
+
+            if (articleCard && isInSpaceDetail) {
+                event.preventDefault();
+                event.stopPropagation();
+                showAddToSpaceModal();
+            }
+        });
+
+        // Modal background click to close
+        document.addEventListener('click', function(event) {
+            // Close create modal when clicking background
+            if (event.target.id === 'create-modal') {
+                hideCreateModal();
+            }
+
+            // Close add-to-space modal when clicking background
+            if (event.target.id === 'add-to-space-modal') {
+                hideAddToSpaceModal();
+            }
+        });
+
+        // Prevent modal content clicks from closing modal
+        document.addEventListener('click', function(event) {
+            if (event.target.closest('.bg-white.rounded-xl')) {
+                event.stopPropagation();
+            }
+        });
+
+        // ESC key to close modals
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                hideCreateModal();
+                hideAddToSpaceModal();
+            }
+        });
+    </script>
+</body>
+</html>
