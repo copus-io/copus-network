@@ -81,7 +81,15 @@ export const Content = (): JSX.Element => {
   const [walletBalance, setWalletBalance] = useState<string>('0');      // USDC balance (e.g., "1.50")
   const [walletProvider, setWalletProvider] = useState<any>(null);      // EIP-1193 provider (MetaMask, Coinbase Wallet, etc.)
   const [walletType, setWalletType] = useState<string>('');             // Wallet type: 'metamask' or 'coinbase'
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>('base-mainnet');
+  // Set default network based on auth method
+  const getDefaultNetwork = (): NetworkType => {
+    const authMethod = localStorage.getItem('copus_auth_method');
+    const defaultNetwork = authMethod === 'okx' ? 'xlayer' : 'base-mainnet';
+    console.log('🔧 Default network selection:', { authMethod, defaultNetwork });
+    return defaultNetwork;
+  };
+
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>(getDefaultNetwork());
   const [selectedCurrency, setSelectedCurrency] = useState<TokenType>('usdc');
 
   // Payment details from 402 API response
@@ -660,6 +668,7 @@ export const Content = (): JSX.Element => {
       };
 
       const paymentEndpoint = getPaymentEndpoint(network);
+      console.log('🌐 Payment API selection:', { network, paymentEndpoint });
 
       // Build URL with uuid parameter (new OKX API only requires uuid)
       const urlParams = new URLSearchParams({ uuid: article.uuid });
