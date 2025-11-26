@@ -1160,14 +1160,15 @@ export const Content = (): JSX.Element => {
         'Content-Type': 'application/json'
       };
 
-      // Add X-PAYMENT-ASSET header with contract address (required by both OKX and Base APIs)
-      const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
-      if (contractAddress) {
-        paymentHeaders['X-PAYMENT-ASSET'] = contractAddress;
-        console.log('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
-      } else {
-        console.warn('⚠️ No contract address found for', selectedNetwork, selectedCurrency);
-      }
+      // TODO: Add X-PAYMENT-ASSET header once backend CORS allows it
+      // const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+      // if (contractAddress) {
+      //   paymentHeaders['X-PAYMENT-ASSET'] = contractAddress;
+      //   console.log('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
+      // } else {
+      //   console.warn('⚠️ No contract address found for', selectedNetwork, selectedCurrency);
+      // }
+      console.log('⚠️ X-PAYMENT-ASSET header disabled due to CORS restrictions');
 
       if (token) {
         paymentHeaders.Authorization = `Bearer ${token}`;
