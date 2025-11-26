@@ -15,6 +15,7 @@ import { useToast } from "../../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 import { useMyUnlockedArticles } from "../../../../hooks/useMyUnlockedArticles";
 import { getMyUnlockedArticles } from "../../../../services/articleService";
+import { EarningsOverview, EarningsData } from "../../../../components/EarningsOverview/EarningsOverview";
 
 
 const collectionItems = [
@@ -147,6 +148,15 @@ export const MainContentSection = (): JSX.Element => {
     likedArticleCount: 0,
     articleCount: 0,
     myArticleLikedCount: 0
+  });
+
+  // 收益相关状态 - USDC计价
+  const [earningsData, setEarningsData] = useState<EarningsData>({
+    totalEarnings: 125.75,
+    availableBalance: 89.25,
+    pendingAmount: 28.50,
+    withdrawnAmount: 65.00,
+    lastWithdrawDate: '2024-11-15'
   });
 
   // Track if account is enabled
@@ -576,6 +586,27 @@ export const MainContentSection = (): JSX.Element => {
     }
   };
 
+  // 生成模拟收益数据
+  const generateArticleEarnings = (articleId: string) => {
+    // 基于文章ID生成一致的随机收益
+    const seed = articleId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const random = (seed * 9301 + 49297) % 233280 / 233280; // 简单的伪随机数生成器
+    const earnings = Math.round((random * 50 + 5) * 100) / 100; // 5-55 USDC范围
+    return earnings;
+  };
+
+  // 处理提现
+  const handleWithdraw = (amount: number, address: string) => {
+    console.log('提现申请:', { amount, address, currency: 'USDC' });
+    // 这里可以添加实际的提现逻辑
+    // 模拟提现成功后更新余额
+    setEarningsData(prev => ({
+      ...prev,
+      availableBalance: prev.availableBalance - amount,
+      withdrawnAmount: prev.withdrawnAmount + amount
+    }));
+  };
+
   // 将API数据转换为收藏卡片格式
   const transformLikedApiToCard = (article: any): ArticleData => {
     return {
@@ -857,16 +888,35 @@ export const MainContentSection = (): JSX.Element => {
     }
   };
 
+  // 生成模拟收益数据
+  const generateEarningsData = (articleId: string, treasureCount: number | string) => {
+    const count = typeof treasureCount === 'string' ? parseInt(treasureCount) || 0 : treasureCount;
+    // 基于文章ID和点赞数生成伪随机但一致的收益数据
+    const seed = articleId.charCodeAt(0) + count;
+    const baseMonthly = Math.max(1.2, (count * 0.05) + (seed % 20) * 0.3);
+    const baseTotal = Math.max(5.8, baseMonthly * (3 + (seed % 8)) + (seed % 50) * 0.8);
+
+    return {
+      monthlyEarnings: parseFloat(baseMonthly.toFixed(2)),
+      totalEarnings: parseFloat(baseTotal.toFixed(2)),
+      isEarningsPreview: true
+    };
+  };
+
   // 专门用于My Share标签的卡片渲染函数，支持悬浮编辑和删除
   const renderMyShareCard = (card: ArticleData) => {
     // Use exact like state from backend API response - no frontend assumptions
     const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
-    // 更新文章的点赞状态
+    // 生成收益数据
+    const earningsData = generateEarningsData(card.id, articleLikeState.likeCount);
+
+    // 更新文章的点赞状态和收益数据
     const articleData = {
       ...card,
       isLiked: articleLikeState.isLiked,
-      treasureCount: articleLikeState.likeCount
+      treasureCount: articleLikeState.likeCount,
+      ...earningsData
     };
 
     return (
@@ -878,7 +928,8 @@ export const MainContentSection = (): JSX.Element => {
           showTreasure: true, // Always show treasure button for unified style
           showVisits: true,
           showEdit: !isViewingOtherUser, // 只有查看自己的页面才显示编辑
-          showDelete: !isViewingOtherUser // 只有查看自己的页面才显示删除
+          showDelete: !isViewingOtherUser, // 只有查看自己的页面才显示删除
+          showEarningsPreview: true // 启用收益预览
         }}
         isHovered={hoveredCard === card.id}
         onLike={handleLike} // Always provide like callback
@@ -1108,6 +1159,19 @@ export const MainContentSection = (): JSX.Element => {
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
               </TabsTrigger>
             )}
+
+            {/* Only show Earnings tab for own treasury, not when viewing other users */}
+            {!isViewingOtherUser && (
+              <TabsTrigger
+                value="earnings"
+                className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
+              >
+                <span className="relative z-10">
+                  💰 收益管理
+                </span>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="collection" className="mt-[30px]">
@@ -1245,6 +1309,14 @@ export const MainContentSection = (): JSX.Element => {
                 </Button>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="earnings" className="mt-[30px]">
+            <EarningsOverview
+              earnings={earningsData}
+              walletAddress="0x742d35Cc6635...B2329"
+              onWithdraw={handleWithdraw}
+            />
           </TabsContent>
         </Tabs>
       </section>
