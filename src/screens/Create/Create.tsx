@@ -1049,7 +1049,7 @@ export const Create = (): JSX.Element => {
                         </div>
                       </div>
                       <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
-                        {(parseFloat(paymentAmount || "0") * 0.04).toFixed(4)} {displayCurrency} per unlock
+                        {(parseFloat(paymentAmount || "0") * 0.45).toFixed(4)} {displayCurrency} per unlock
                       </span>
                     </div>
                   </div>
