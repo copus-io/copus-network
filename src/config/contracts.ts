@@ -16,11 +16,11 @@ const contractAddresses = {
   xlayer: {
     production: {
       usdc: '0x74b7F16337b8972027F6196A17a631aC6dE26d22',
-      usdt: '0x1E4a5963aBFD975d8c9021ce480b42188849D41d',
+      usdt: '0x779ded0c9e1022225f8e0630b35a9b54be713736',
     },
     test: {
       usdc: '0x74b7F16337b8972027F6196A17a631aC6dE26d22', // X Layer mainnet USDC contract (forced mainnet)
-      usdt: '0x1E4a5963aBFD975d8c9021ce480b42188849D41d', // X Layer mainnet USDT contract (forced mainnet)
+      usdt: '0x779ded0c9e1022225f8e0630b35a9b54be713736', // X Layer mainnet USDT contract (forced mainnet)
     },
   },
   // Base Mainnet Network
