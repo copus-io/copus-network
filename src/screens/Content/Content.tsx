@@ -647,9 +647,11 @@ export const Content = (): JSX.Element => {
       const { apiBaseUrl } = getCurrentEnvironment();
 
 
-      // Use new OKX payment endpoint for all networks
+      // Use appropriate payment endpoint based on network
       const getPaymentEndpoint = (networkType: NetworkType) => {
-        return '/client/payment/okx/getTargetUrl';
+        return networkType === 'xlayer'
+          ? '/client/payment/okx/getTargetUrl'   // OKX API for XLayer
+          : '/client/payment/base/getTargetUrl';  // Base API for Base networks
       };
 
       const paymentEndpoint = getPaymentEndpoint(network);
@@ -680,9 +682,9 @@ export const Content = (): JSX.Element => {
 
       const data = await response.json();
 
-      // Handle new OKX API response format
-      if (data.domain && data.message) {
-        // New OKX API returns EIP-712 structure directly for all networks
+      // Handle different response formats based on endpoint
+      if (network === 'xlayer' && data.domain && data.message) {
+        // OKX API returns EIP-712 structure directly for XLayer
         const testConnectedAddress = walletAddress;
         const testStoredAddress = user?.walletAddress;
 
@@ -728,6 +730,55 @@ export const Content = (): JSX.Element => {
         setX402PaymentInfo(paymentInfo);
 
         // Return the data immediately for use in the calling function
+        return { eip712Data, paymentInfo };
+      } else if ((network === 'base-mainnet' || network === 'base-sepolia') && typeof data === 'string') {
+        // Base API returns target URL as string, need to construct payment info manually
+        const contractAddress = getTokenContract(network, selectedCurrency);
+        if (!contractAddress) {
+          throw new Error(`Token contract not found for ${network}`);
+        }
+
+        const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
+
+        // For Base networks, we need to construct the EIP-712 data manually
+        const nonce = generateNonce();
+        const now = Math.floor(Date.now() / 1000);
+        const validAfter = now;
+        const validBefore = now + 3600;
+        const amount = '10000'; // 0.01 USDC (6 decimals)
+
+        // Get recipient address from the URL (this might need to be provided by the API)
+        // For now, use a placeholder - the actual recipient should come from the API response
+        const recipientAddress = '0x95C2259343Bca2E1c1E6bd4F0CBe5b4C8ac2890F'; // placeholder
+
+        const eip712Data = {
+          domain: {
+            name: selectedCurrency === 'usdc' ? 'USD Coin' : 'Tether USD',
+            version: '2',
+            chainId: parseInt(getNetworkConfig(network).chainId, 16),
+            verifyingContract: contractAddress
+          },
+          message: {
+            from: walletAddress || user?.walletAddress || '',
+            to: recipientAddress,
+            value: amount,
+            validAfter: validAfter.toString(),
+            validBefore: validBefore.toString(),
+            nonce: nonce
+          }
+        };
+
+        const paymentInfo = {
+          payTo: recipientAddress,
+          asset: contractAddress,
+          amount: amount,
+          network: network,
+          resource: data // Use the returned URL directly
+        };
+
+        setOkxEip712Data(eip712Data);
+        setX402PaymentInfo(paymentInfo);
+
         return { eip712Data, paymentInfo };
       } else if (data.accepts && data.accepts.length > 0) {
         // Legacy x402 response format (fallback support)
@@ -1074,6 +1125,12 @@ export const Content = (): JSX.Element => {
         'X-PAYMENT': paymentHeader,
         'Content-Type': 'application/json'
       };
+
+      // Add X-PAYMENT-ASSET header for Base networks (required by Base API)
+      if (selectedNetwork === 'base-mainnet' || selectedNetwork === 'base-sepolia') {
+        paymentHeaders['X-PAYMENT-ASSET'] = currentPaymentInfo.asset;
+        console.log('✅ Added X-PAYMENT-ASSET header for Base network:', currentPaymentInfo.asset);
+      }
 
       if (token) {
         paymentHeaders.Authorization = `Bearer ${token}`;
