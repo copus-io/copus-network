@@ -684,24 +684,25 @@ export const Content = (): JSX.Element => {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      // Prepare POST body with token information based on selected currency
+      // For now, use GET request with query parameters (Backend might need POST implementation)
       const tokenInfo = getSupportedTokens(network).includes(selectedCurrency)
         ? getTokenInfo(selectedCurrency)
         : getTokenInfo('usdc'); // fallback to usdc
 
-      const requestBody = {
+      // Add token info to URL parameters
+      const extendedParams = new URLSearchParams({
         uuid: article.uuid,
         name: tokenInfo.name,
         verifyingContract: tokenInfo.verifyingContract
-      };
-
-      console.log('📤 Payment info request for', network, ':', requestBody);
-
-      const response = await fetch(x402Url.split('?')[0], {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody)
       });
+
+      const fullUrl = `${apiBaseUrl}${paymentEndpoint}?${extendedParams.toString()}`;
+      console.log('📤 Payment info request for', network, ':', {
+        url: fullUrl,
+        params: Object.fromEntries(extendedParams)
+      });
+
+      const response = await fetch(fullUrl, { headers });
 
       if (!response.ok && response.status !== 402) {
         // 402 is the expected "Payment Required" status for payment APIs
