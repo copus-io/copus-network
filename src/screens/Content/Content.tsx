@@ -23,8 +23,13 @@ import {
   createX402PaymentHeader
 } from "../../utils/x402Utils";
 import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils';
-import { getNetworkConfig, getTokenContract, NetworkType, TokenType } from '../../config/contracts';
+import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
+import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 
+// Helper function to get token information for payment requests
+const getTokenInfo = (tokenType: TokenType): TokenInfo => {
+  return SUPPORTED_TOKENS[tokenType];
+};
 
 // Image URL validation and fallback function
 const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
@@ -661,14 +666,33 @@ export const Content = (): JSX.Element => {
 
       const x402Url = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
 
-      // Add user authentication token
+      // Add user authentication token and prepare request
       const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(x402Url, { headers });
+      // Prepare POST body with token information based on selected currency
+      const tokenInfo = getSupportedTokens(network).includes(selectedCurrency)
+        ? getTokenInfo(selectedCurrency)
+        : getTokenInfo('usdc'); // fallback to usdc
+
+      const requestBody = {
+        uuid: article.uuid,
+        name: tokenInfo.name,
+        verifyingContract: tokenInfo.verifyingContract
+      };
+
+      console.log('📤 Payment info request for', network, ':', requestBody);
+
+      const response = await fetch(x402Url.split('?')[0], {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
 
       if (!response.ok && response.status !== 402) {
         // 402 is the expected "Payment Required" status for payment APIs
