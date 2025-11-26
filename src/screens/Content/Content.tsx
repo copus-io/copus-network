@@ -1160,15 +1160,14 @@ export const Content = (): JSX.Element => {
         'Content-Type': 'application/json'
       };
 
-      // TODO: Add X-PAYMENT-ASSET header once backend CORS allows it
-      // const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
-      // if (contractAddress) {
-      //   paymentHeaders['X-PAYMENT-ASSET'] = contractAddress;
-      //   console.log('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
-      // } else {
-      //   console.warn('⚠️ No contract address found for', selectedNetwork, selectedCurrency);
-      // }
-      console.log('⚠️ X-PAYMENT-ASSET header disabled due to CORS restrictions');
+      // Add X-PAYMENT-ASSET header for payment verification (not for info request)
+      const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+      if (contractAddress) {
+        paymentHeaders['X-PAYMENT-ASSET'] = contractAddress;
+        console.log('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
+      } else {
+        console.warn('⚠️ No contract address found for', selectedNetwork, selectedCurrency);
+      }
 
       if (token) {
         paymentHeaders.Authorization = `Bearer ${token}`;
