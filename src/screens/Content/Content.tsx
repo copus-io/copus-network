@@ -1126,9 +1126,11 @@ export const Content = (): JSX.Element => {
         'Content-Type': 'application/json'
       };
 
-      // Add X-PAYMENT-ASSET header for all payment APIs (required by both OKX and Base APIs)
-      paymentHeaders['X-PAYMENT-ASSET'] = currentPaymentInfo.asset;
-      console.log('✅ Added X-PAYMENT-ASSET header:', currentPaymentInfo.asset);
+      // TODO: Add X-PAYMENT-ASSET header once backend CORS allows it
+      // const assetType = currentPaymentInfo.asset || selectedCurrency;
+      // paymentHeaders['X-PAYMENT-ASSET'] = assetType;
+      // console.log('✅ Added X-PAYMENT-ASSET header:', assetType);
+      console.log('⚠️ X-PAYMENT-ASSET header temporarily disabled due to CORS restrictions');
 
       if (token) {
         paymentHeaders.Authorization = `Bearer ${token}`;
