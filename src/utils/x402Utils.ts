@@ -164,7 +164,7 @@ const NETWORK_EIP712_DOMAINS: Record<number, Record<TokenType, any>> = {
       verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
     },
     usdt: {
-      name: 'USDT',
+      name: 'Tether USD',
       version: '2',
       chainId: 196,
       verifyingContract: '0x779ded0c9e1022225f8e0630b35a9b54be713736'
