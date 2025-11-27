@@ -166,6 +166,7 @@ export const EarningsOverview: React.FC<EarningsOverviewProps> = ({
           onWalletSelect={handleWalletSelect}
           onDisconnectWallet={handleDisconnectWallet}
           isWalletConnected={!!walletAddress}
+          userEmail="user@example.com"
         />
       )}
     </div>

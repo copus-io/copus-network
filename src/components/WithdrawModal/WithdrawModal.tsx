@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "../ui/button";
+import { EmailVerification } from "../EmailVerification/EmailVerification";
+import { emailVerificationService } from "../../services/emailVerificationService";
 
 interface WithdrawModalProps {
   isOpen: boolean;
@@ -10,6 +12,7 @@ interface WithdrawModalProps {
   onWalletSelect: (walletId: string) => void;
   onDisconnectWallet: () => void;
   isWalletConnected: boolean;
+  userEmail?: string; // 用户邮箱，用于验证
 }
 
 const networkOptions = [
@@ -31,6 +34,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   onWalletSelect,
   onDisconnectWallet,
   isWalletConnected,
+  userEmail = "user@example.com", // 默认邮箱，实际应从用户状态获取
 }) => {
   const [amount, setAmount] = useState("");
   const [withdrawAddress, setWithdrawAddress] = useState(walletAddress || "");
@@ -41,6 +45,16 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
   const [amountError, setAmountError] = useState<string>('');
   const [addressError, setAddressError] = useState<string>('');
+
+  // 邮箱验证相关状态
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [emailVerificationLoading, setEmailVerificationLoading] = useState(false);
+  const [pendingWithdrawData, setPendingWithdrawData] = useState<{
+    amount: number;
+    address: string;
+    network: string;
+    currency: string;
+  } | null>(null);
 
   // 每日提现限制相关状态
   const [lastWithdrawDate, setLastWithdrawDate] = useState<string>('');
@@ -136,6 +150,98 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     setAmount(availableBalance.toString());
   };
 
+  // 发送邮箱验证码
+  const handleSendEmailCode = async (): Promise<boolean> => {
+    try {
+      const result = await emailVerificationService.sendVerificationCode(userEmail);
+      if (result.success) {
+        console.log('验证码发送成功:', result.message);
+        return true;
+      } else {
+        console.error('验证码发送失败:', result.message);
+        return false;
+      }
+    } catch (error) {
+      console.error('发送邮箱验证码失败:', error);
+      return false;
+    }
+  };
+
+  // 验证邮箱验证码
+  const handleVerifyEmailCode = async (code: string): Promise<boolean> => {
+    try {
+      setEmailVerificationLoading(true);
+      const result = await emailVerificationService.verifyCode(userEmail, code);
+
+      if (result.success) {
+        console.log('邮箱验证成功');
+        // 验证成功后执行实际提现
+        await executeWithdrawal();
+        return true;
+      } else {
+        console.error('邮箱验证失败:', result.message);
+        return false;
+      }
+    } catch (error) {
+      console.error('邮箱验证出错:', error);
+      return false;
+    } finally {
+      setEmailVerificationLoading(false);
+    }
+  };
+
+  // 执行实际的提现操作
+  const executeWithdrawal = async () => {
+    if (!pendingWithdrawData) return;
+
+    try {
+      // 模拟提现处理延迟
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      onConfirm(
+        pendingWithdrawData.amount,
+        pendingWithdrawData.address,
+        pendingWithdrawData.network,
+        pendingWithdrawData.currency
+      );
+
+      // 记录今日已提现
+      const today = new Date().toDateString();
+      localStorage.setItem('lastWithdrawDate', today);
+      setCanWithdrawToday(false);
+      setLastWithdrawDate(today);
+
+      // 计算下次可提现时间
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      setNextWithdrawTime(tomorrow.toLocaleString('zh-CN'));
+
+      // 显示成功状态
+      setWithdrawSuccess(true);
+      setShowEmailVerification(false);
+
+      // 3秒后自动关闭
+      setTimeout(() => {
+        setWithdrawSuccess(false);
+        setAmount('');
+        setWithdrawAddress('');
+        setPendingWithdrawData(null);
+        onClose();
+      }, 3000);
+
+    } catch (error) {
+      console.error('Withdrawal failed:', error);
+    }
+  };
+
+  // 取消邮箱验证
+  const handleCancelEmailVerification = () => {
+    setShowEmailVerification(false);
+    setPendingWithdrawData(null);
+    setIsSubmitting(false);
+  };
+
 
 
 
@@ -161,44 +267,27 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
     if (!canProcessWithdraw) return;
 
+    // 保存提现数据，等待邮箱验证通过后执行
+    setPendingWithdrawData({
+      amount: parseFloat(amount),
+      address: withdrawAddress,
+      network: selectedNetwork,
+      currency: selectedCurrency
+    });
+
     setIsSubmitting(true);
 
+    // 发送邮箱验证码
     try {
-      // 模拟提现处理延迟
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      onConfirm(
-        parseFloat(amount),
-        withdrawAddress,
-        selectedNetwork,
-        selectedCurrency
-      );
-
-      // 记录今日已提现
-      const today = new Date().toDateString();
-      localStorage.setItem('lastWithdrawDate', today);
-      setCanWithdrawToday(false);
-      setLastWithdrawDate(today);
-
-      // 计算下次可提现时间
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      setNextWithdrawTime(tomorrow.toLocaleString('zh-CN'));
-
-      // 显示成功状态
-      setWithdrawSuccess(true);
-
-      // 3秒后自动关闭
-      setTimeout(() => {
-        setWithdrawSuccess(false);
-        setAmount('');
-        setWithdrawAddress('');
-        onClose();
-      }, 3000);
-
+      const emailSent = await handleSendEmailCode();
+      if (emailSent) {
+        setShowEmailVerification(true);
+      } else {
+        alert('发送验证码失败，请稍后重试');
+      }
     } catch (error) {
-      console.error('Withdrawal failed:', error);
+      console.error('发送验证码错误:', error);
+      alert('发送验证码失败');
     } finally {
       setIsSubmitting(false);
     }
@@ -234,10 +323,23 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               id="withdraw-title"
               className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-gray-900 text-2xl tracking-[0] leading-9 whitespace-nowrap"
             >
-              💸 提现申请
+              {showEmailVerification ? "📧 邮箱验证" : "💸 提现申请"}
             </h1>
           </header>
 
+          {/* 邮箱验证界面 */}
+          {showEmailVerification && (
+            <EmailVerification
+              email={userEmail}
+              onVerify={handleVerifyEmailCode}
+              onResend={handleSendEmailCode}
+              onCancel={handleCancelEmailVerification}
+              isVerifying={emailVerificationLoading}
+            />
+          )}
+
+          {/* 提现表单界面 */}
+          {!showEmailVerification && (
           <dl className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
             <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
 
@@ -514,6 +616,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                  `🚀 快速提现 ${amount} ${displayCurrency}`}
               </span>
             </button>
+          )}
           )}
         </div>
       </div>
