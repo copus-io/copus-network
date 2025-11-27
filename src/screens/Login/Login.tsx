@@ -461,142 +461,105 @@ export const Login = (): JSX.Element => {
         try {
           let response;
 
-          // CRITICAL: Clear tokens AGAIN in callback
-          // The extension or page reload may have restored old tokens after our initial clear
-          // We need to clear RIGHT BEFORE calling the OAuth API to ensure hasExistingToken=false
+          // CRITICAL: Clear any stale tokens before OAuth callback
+          // The browser extension may have restored old/expired tokens after redirect
+          // We need to clear tokens to ensure backend receives hasExistingToken=false
           localStorage.removeItem('copus_token');
           localStorage.removeItem('copus_user');
           sessionStorage.removeItem('copus_token');
           sessionStorage.removeItem('copus_user');
 
-          // Now check if there's a token (should be none after clearing)
-          const savedToken = localStorage.getItem('copus_token');
-          const hasExistingToken = false; // Always false for login page OAuth
+          // Always treat OAuth on login page as new login (not account binding)
+          const hasExistingToken = false;
 
           // Call different login methods based on provider type
           if (provider === 'google') {
             response = await AuthService.googleLogin(code, state, hasExistingToken);
-            const tokenToUse = response.token || savedToken;
 
-            // Determine if this is truly account binding or third-party login
-            // isBinding should ONLY be true if:
-            // 1. Backend says isBinding=true AND
-            // 2. We have a valid savedToken (user was already logged in)
-            // If backend says isBinding but we have no savedToken, it's actually a login attempt
-            const isTrueBinding = response.isBinding && savedToken && hasExistingToken;
-
-            if (isTrueBinding) {
-              // Account binding mode - user was already logged in and is connecting Google
-              if (!tokenToUse) {
-                throw new Error('Account binding failed: No authentication token available. Please try logging in again.');
-              }
-              showToast('Google account successfully bound! 🎉', 'success');
-              await fetchUserInfo(tokenToUse);
-              navigate('/setting', { replace: true });
-            } else {
-              // Third-party login mode (even if backend returned isBinding, treat as login if no savedToken)
-
-              if (!tokenToUse) {
-                throw new Error('No authentication token received from server. The account may need to be registered first.');
-              }
-
-              // Mark that user logged in via Google OAuth
-              localStorage.setItem('copus_auth_method', 'google');
-
-              // Set remember me preference - OAuth logins default to remember me for cross-tab consistency
-              storage.setRememberMePreference(true);
-              storage.migrateToLocalStorage();
-
-              // Fetch user info first to establish session
-              await fetchUserInfo(tokenToUse);
-
-              showToast('Google login successful! Welcome back 🎉', 'success');
-
-              // Sync Google profile data to Copus profile (after session is established)
-              // This is done in the background and won't block navigation
-              if (response.googleProfile) {
-                // Use setTimeout to ensure this happens after navigation
-                setTimeout(async () => {
-                  try {
-                    const updateData: any = {};
-                    if (response.googleProfile.username) {
-                      updateData.userName = response.googleProfile.username;
-                    }
-                    if (response.googleProfile.faceUrl) {
-                      updateData.faceUrl = response.googleProfile.faceUrl;
-                    }
-
-                    if (Object.keys(updateData).length > 0) {
-                      await AuthService.updateUserInfo(updateData);
-                      console.log('✅ Google profile synced successfully');
-                    }
-                  } catch (profileError) {
-                    console.warn('⚠️ Google profile sync failed (non-critical):', profileError);
-                    // Don't block login if profile sync fails
-                  }
-                }, 1000);
-              }
-
-              navigate('/', { replace: true });
+            if (!response.token) {
+              throw new Error('No authentication token received from server. The account may need to be registered first.');
             }
-          } else if (provider === 'x') {
-            // X (Twitter) login handling
-            response = await AuthService.xLogin(code, state, hasExistingToken);
-            const tokenToUse = response.token || savedToken;
 
-            // Determine if this is truly account binding or third-party login
-            const isTrueBinding = response.isBinding && savedToken && hasExistingToken;
+            // Mark that user logged in via Google OAuth
+            localStorage.setItem('copus_auth_method', 'google');
 
-            if (isTrueBinding) {
-              // Account binding mode - user was already logged in and is connecting X
-              if (!tokenToUse) {
-                throw new Error('Account binding failed: No authentication token available. Please try logging in again.');
-              }
-              showToast('X account successfully bound! 🎉', 'success');
-              await fetchUserInfo(tokenToUse);
-              navigate('/setting', { replace: true });
-            } else {
-              // Third-party login mode (even if backend returned isBinding, treat as login if no savedToken)
+            // Set remember me preference - OAuth logins default to remember me for cross-tab consistency
+            storage.setRememberMePreference(true);
+            storage.migrateToLocalStorage();
 
-              if (!tokenToUse) {
-                throw new Error('No authentication token received');
-              }
+            // Fetch user info first to establish session
+            await fetchUserInfo(response.token);
 
-              showToast('X login successful! Welcome back 🎉', 'success');
+            showToast('Google login successful! Welcome back 🎉', 'success');
 
-              // Mark that user logged in via X (Twitter)
-              localStorage.setItem('copus_auth_method', 'x');
-
-              // Set remember me preference - OAuth logins default to remember me for cross-tab consistency
-              storage.setRememberMePreference(true);
-              storage.migrateToLocalStorage();
-
-              // Sync X profile data to Copus profile
-              if (response.xProfile) {
+            // Sync Google profile data to Copus profile (after session is established)
+            // This is done in the background and won't block navigation
+            if (response.googleProfile) {
+              // Use setTimeout to ensure this happens after navigation
+              setTimeout(async () => {
                 try {
                   const updateData: any = {};
-                  if (response.xProfile.username) {
-                    updateData.userName = response.xProfile.username;
+                  if (response.googleProfile.username) {
+                    updateData.userName = response.googleProfile.username;
                   }
-                  if (response.xProfile.faceUrl) {
-                    updateData.faceUrl = response.xProfile.faceUrl;
-                  }
-                  if (response.xProfile.bio) {
-                    updateData.bio = response.xProfile.bio;
+                  if (response.googleProfile.faceUrl) {
+                    updateData.faceUrl = response.googleProfile.faceUrl;
                   }
 
                   if (Object.keys(updateData).length > 0) {
                     await AuthService.updateUserInfo(updateData);
+                    console.log('✅ Google profile synced successfully');
                   }
                 } catch (profileError) {
+                  console.warn('⚠️ Google profile sync failed (non-critical):', profileError);
                   // Don't block login if profile sync fails
                 }
-              }
-
-              await fetchUserInfo(tokenToUse);
-              
-              navigate('/', { replace: true });
+              }, 1000);
             }
+
+            navigate('/', { replace: true });
+          } else if (provider === 'x') {
+            // X (Twitter) login handling
+            response = await AuthService.xLogin(code, state, hasExistingToken);
+
+            if (!response.token) {
+              throw new Error('No authentication token received');
+            }
+
+            showToast('X login successful! Welcome back 🎉', 'success');
+
+            // Mark that user logged in via X (Twitter)
+            localStorage.setItem('copus_auth_method', 'x');
+
+            // Set remember me preference - OAuth logins default to remember me for cross-tab consistency
+            storage.setRememberMePreference(true);
+            storage.migrateToLocalStorage();
+
+            // Sync X profile data to Copus profile
+            if (response.xProfile) {
+              try {
+                const updateData: any = {};
+                if (response.xProfile.username) {
+                  updateData.userName = response.xProfile.username;
+                }
+                if (response.xProfile.faceUrl) {
+                  updateData.faceUrl = response.xProfile.faceUrl;
+                }
+                if (response.xProfile.bio) {
+                  updateData.bio = response.xProfile.bio;
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                  await AuthService.updateUserInfo(updateData);
+                }
+              } catch (profileError) {
+                // Don't block login if profile sync fails
+              }
+            }
+
+            await fetchUserInfo(response.token);
+
+            navigate('/', { replace: true });
           } else {
             // Default fallback (for backward compatibility)
             response = await AuthService.xLogin(code, state, hasExistingToken);
