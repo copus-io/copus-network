@@ -116,21 +116,8 @@ export const EarningsOverview: React.FC<EarningsOverviewProps> = ({
 
       </div>
 
-      {/* 钱包信息和提现按钮 */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">🔗</span>
-            <span className="text-sm text-gray-700">钱包地址</span>
-          </div>
-          <div className="text-sm text-gray-900 font-mono bg-white px-3 py-1 rounded border">
-            {walletAddress ?
-              `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` :
-              '未绑定钱包'
-            }
-          </div>
-        </div>
-
+      {/* 提现按钮 */}
+      <div className="flex items-center justify-center gap-4 p-4 bg-gray-50 rounded-lg">
         <div className="flex items-center gap-3">
           <div className="text-right">
             <div className="text-sm text-gray-600">可提现金额</div>
