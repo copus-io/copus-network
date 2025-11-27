@@ -72,20 +72,60 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [amountError, setAmountError] = useState<string>('');
   const [addressError, setAddressError] = useState<string>('');
 
+  // 每日提现限制相关状态
+  const [lastWithdrawDate, setLastWithdrawDate] = useState<string>('');
+  const [canWithdrawToday, setCanWithdrawToday] = useState(true);
+  const [nextWithdrawTime, setNextWithdrawTime] = useState<string>('');
+
   React.useEffect(() => {
     if (walletAddress) {
       setWithdrawAddress(walletAddress);
     }
   }, [walletAddress]);
 
+  // 检查每日提现限制
+  React.useEffect(() => {
+    const checkDailyWithdrawLimit = () => {
+      // 模拟从localStorage获取上次提现日期
+      const lastWithdraw = localStorage.getItem('lastWithdrawDate');
+      const today = new Date().toDateString();
+
+      if (lastWithdraw === today) {
+        setCanWithdrawToday(false);
+        setLastWithdrawDate(lastWithdraw);
+
+        // 计算下次可提现时间（明天凌晨）
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        setNextWithdrawTime(tomorrow.toLocaleString('zh-CN'));
+      } else {
+        setCanWithdrawToday(true);
+        setLastWithdrawDate('');
+        setNextWithdrawTime('');
+      }
+    };
+
+    checkDailyWithdrawLimit();
+  }, [isOpen]);
+
   // Get display currency based on network
   const displayCurrency = selectedNetwork === 'xlayer'
     ? xlayerCurrencyOptions.find(c => c.value === selectedCurrency)?.label || 'USDC'
     : 'USDC';
 
+  // 提现费用配置
+  const WITHDRAWAL_FEE = 1; // 固定手续费 1 USD
+  const MIN_WITHDRAWAL_AMOUNT = 10; // 最低提现金额 10 USD
+
+  // 计算实际到账金额 (用户输入金额 - 手续费)
+  const actualReceiveAmount = amount ? Math.max(0, parseFloat(amount) - WITHDRAWAL_FEE) : 0;
+
+  // 验证逻辑
   const isValidAmount = amount && parseFloat(amount) > 0 && parseFloat(amount) <= availableBalance;
   const isValidAddress = withdrawAddress && withdrawAddress.length > 0;
-  const isMinimumAmount = amount && parseFloat(amount) >= 5;
+  const isMinimumAmount = amount && parseFloat(amount) >= MIN_WITHDRAWAL_AMOUNT;
+  const canProcessWithdraw = canWithdrawToday && isValidAmount && isValidAddress && isMinimumAmount;
 
   // Close dropdown when clicking outside or pressing Escape
   React.useEffect(() => {
@@ -121,6 +161,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   if (!isOpen) return null;
 
   const handleMaxClick = () => {
+    // 设置最大可提现金额（包含手续费）
+    // 用户最多能提现全部余额，但需要支付1 USD手续费
     setAmount(availableBalance.toString());
   };
 
@@ -157,7 +199,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   };
 
   const handleConfirm = async () => {
-    if (!isValidAmount || !isValidAddress || !isMinimumAmount) return;
+    if (!canProcessWithdraw) return;
 
     setIsSubmitting(true);
     setAmountError('');
@@ -173,6 +215,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
         selectedNetwork,
         selectedCurrency
       );
+
+      // 记录今日已提现
+      const today = new Date().toDateString();
+      localStorage.setItem('lastWithdrawDate', today);
+      setCanWithdrawToday(false);
+      setLastWithdrawDate(today);
+
+      // 计算下次可提现时间
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      setNextWithdrawTime(tomorrow.toLocaleString('zh-CN'));
 
       // 显示成功状态
       setWithdrawSuccess(true);
@@ -220,7 +274,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           <header className="flex flex-col items-center justify-center relative self-stretch w-full flex-[0_0_auto]">
             <h1
               id="withdraw-title"
-              className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-9 whitespace-nowrap"
+              className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-gray-900 text-2xl tracking-[0] leading-9 whitespace-nowrap"
             >
               💸 提现申请
             </h1>
@@ -243,7 +297,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
               {/* Network selection */}
               <div className="flex items-center justify-between px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey">
-                <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+                <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-gray-700 text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
                   网络:
                 </dt>
                 <dd className="inline-flex items-center gap-2">
@@ -272,7 +326,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               {/* Withdraw address - Primary input method */}
               <div className="flex flex-col px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey">
                 <div className="flex items-center justify-between mb-3">
-                  <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+                  <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-gray-700 text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
                     提现地址:
                   </dt>
                   <div className="flex items-center gap-2">
@@ -282,7 +336,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setWithdrawAddress(walletAddress)}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors border border-blue-700"
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+                          style={{
+                            backgroundColor: '#2563eb',
+                            color: 'white',
+                            border: '1px solid #1d4ed8'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#1d4ed8';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = '#2563eb';
+                          }}
                           title="填入当前钱包地址"
                         >
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -293,7 +358,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                         <button
                           type="button"
                           onClick={onDisconnectWallet}
-                          className="p-1 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors border border-gray-700"
+                          className="p-1 rounded transition-colors"
+                          style={{
+                            backgroundColor: '#4b5563',
+                            color: 'white',
+                            border: '1px solid #374151'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#374151';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = '#4b5563';
+                          }}
                           title="切换钱包"
                           aria-label="Disconnect wallet"
                         >
@@ -365,7 +441,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     {isWalletConnected && walletAddress && walletAddress !== withdrawAddress && (
                       <button
                         onClick={() => setWithdrawAddress(walletAddress)}
-                        className="absolute right-2 top-2 px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors border border-blue-700"
+                        className="absolute right-2 top-2 px-3 py-1 text-xs rounded font-medium transition-colors"
+                        style={{
+                          backgroundColor: '#2563eb',
+                          color: 'white',
+                          border: '1px solid #1d4ed8'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#1d4ed8';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#2563eb';
+                        }}
                       >
                         使用钱包地址
                       </button>
@@ -396,11 +483,11 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               {/* Available balance with currency dropdown for X Layer - only show when wallet connected */}
               {isWalletConnected && walletAddress && (
                 <div className="flex items-center justify-between px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-light-grey">
-                  <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+                  <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-gray-700 text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
                     余额:
                   </dt>
                   <dd className="inline-flex items-center gap-2 relative">
-                    <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
+                    <span className="[font-family:'Lato',Helvetica] font-medium text-gray-800 text-base tracking-[0] leading-[23px] whitespace-nowrap">
                       {availableBalance.toFixed(2)}
                     </span>
                     {selectedNetwork === 'xlayer' ? (
@@ -441,7 +528,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                         )}
                       </div>
                     ) : (
-                      <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base">
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-gray-800 text-base">
                         USDC
                       </span>
                     )}
@@ -452,8 +539,13 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
               {/* Withdraw amount */}
               <div className="flex items-center justify-between px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto]">
-                <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
-                  金额:
+                <dt className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-gray-700 text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+                  <div className="flex flex-col">
+                    <span>金额:</span>
+                    <span className="text-xs text-gray-500 font-normal mt-1">
+                      最低 {MIN_WITHDRAWAL_AMOUNT} USD, 手续费 {WITHDRAWAL_FEE} USD
+                    </span>
+                  </div>
                 </dt>
                 <dd className="flex-1 ml-4">
                   <div className="relative">
@@ -467,18 +559,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           // 实时验证
           if (value && parseFloat(value) > availableBalance) {
             setAmountError('金额超过可用余额');
-          } else if (value && parseFloat(value) < 5 && parseFloat(value) > 0) {
-            setAmountError(`最低提现 5 ${displayCurrency}`);
+          } else if (value && parseFloat(value) < MIN_WITHDRAWAL_AMOUNT && parseFloat(value) > 0) {
+            setAmountError(`最低提现 ${MIN_WITHDRAWAL_AMOUNT} ${displayCurrency}`);
           } else {
             setAmountError('');
           }
         }}
-                      placeholder="0.00"
-                      min="5"
+                      placeholder="10.00"
+                      min={MIN_WITHDRAWAL_AMOUNT.toString()}
                       max={availableBalance}
                       step="0.01"
-                      className={`w-full px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 [font-family:'Lato',Helvetica] pr-16 ${
-                        amountError ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:shadow-lg'
+                      className={`w-full px-3 py-1.5 text-sm border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 [font-family:'Lato',Helvetica] pr-16 text-gray-900 ${
+                        amountError ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white focus:shadow-lg hover:border-gray-400'
                       }`}
                       autoComplete="off"
                       onFocus={() => setAmountError('')}
@@ -494,7 +586,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
                       <button
                         onClick={handleMaxClick}
-                        className="px-2 py-0.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded font-medium transition-colors border border-green-700"
+                        className="px-2 py-0.5 text-xs rounded font-medium transition-colors"
+                        style={{
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          border: '1px solid #15803d'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#15803d';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#16a34a';
+                        }}
                       >
                         全部
                       </button>
@@ -504,7 +607,26 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                   {amountError && (
                     <p className="text-red-500 text-xs mt-1 animate-pulse">{amountError}</p>
                   )}
-                  {!amountError && amount && parseFloat(amount) >= 5 && parseFloat(amount) <= availableBalance && (
+
+                  {/* 手续费明细显示 */}
+                  {amount && parseFloat(amount) >= MIN_WITHDRAWAL_AMOUNT && parseFloat(amount) <= availableBalance && (
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex justify-between items-center text-sm mb-1">
+                        <span className="text-gray-600">提现金额:</span>
+                        <span className="text-gray-900 font-medium">{parseFloat(amount).toFixed(2)} {displayCurrency}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mb-1">
+                        <span className="text-gray-600">手续费:</span>
+                        <span className="text-red-600 font-medium">-{WITHDRAWAL_FEE.toFixed(2)} {displayCurrency}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-blue-300">
+                        <span className="text-blue-700">实际到账:</span>
+                        <span className="text-blue-800">{actualReceiveAmount.toFixed(2)} {displayCurrency}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!amountError && amount && parseFloat(amount) >= MIN_WITHDRAWAL_AMOUNT && parseFloat(amount) <= availableBalance && (
                     <p className="text-green-600 text-xs mt-1">✓ 金额有效</p>
                   )}
                 </dd>
@@ -512,15 +634,31 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
             </div>
           </dl>
 
+          {/* 每日限制提示 */}
+          {!canWithdrawToday && (
+            <div className="flex items-start gap-2 p-3 relative self-stretch w-full rounded-lg bg-amber-50 border border-amber-200 mb-3">
+              <span className="text-amber-600 mt-0.5">⏰</span>
+              <div className="text-xs text-amber-800 [font-family:'Lato',Helvetica]">
+                <div className="font-medium mb-1">今日已提现</div>
+                <div className="space-y-0.5">
+                  <div>• 每日可提现一次，比传统平台快30倍</div>
+                  <div>• 下次可提现: {nextWithdrawTime}</div>
+                  <div>• 收益持续累积，明日可继续提现</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Information notice */}
           <div className="flex items-start gap-2 p-3 relative self-stretch w-full rounded-lg bg-blue-50 border border-blue-200">
-            <span className="text-blue-600 mt-0.5">ℹ️</span>
+            <span className="text-blue-600 mt-0.5">🚀</span>
             <div className="text-xs text-blue-800 [font-family:'Lato',Helvetica]">
-              <div className="font-medium mb-1">提现说明</div>
+              <div className="font-medium mb-1">快速提现优势</div>
               <div className="space-y-0.5">
-                <div>• 免手续费提现，1-3分钟到账</div>
-                <div>• 请确认地址正确，错误地址将导致资产丢失</div>
+                <div>• 每日快速提现，免手续费，1-3分钟到账</div>
+                <div>• 比YouTube快30倍，比微信公众号快7倍</div>
                 <div>• 最低提现: 5 {displayCurrency}，当日最高: 10,000 {displayCurrency}</div>
+                <div>• 请确认地址正确，错误地址将导致资产丢失</div>
               </div>
             </div>
           </div>
@@ -533,17 +671,18 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                 </svg>
               </div>
               <div className="text-center">
-                <h3 className="text-lg font-bold text-green-800">🎉 提现申请成功！</h3>
+                <h3 className="text-lg font-bold text-green-800">🚀 快速提现成功！</h3>
                 <p className="text-sm text-green-600 mt-1">{amount} {displayCurrency} 将在1-3分钟内到账</p>
+                <p className="text-xs text-green-600 mt-1">比传统平台快30倍，明日可继续提现</p>
                 <p className="text-xs text-gray-500 mt-2">窗口将在3秒后自动关闭</p>
               </div>
             </div>
           ) : (
             <button
               onClick={handleConfirm}
-              disabled={!isValidAmount || !isValidAddress || !isMinimumAmount || isSubmitting || !!amountError || !!addressError}
+              disabled={!canProcessWithdraw || isSubmitting || !!amountError || !!addressError}
               className={`all-[unset] box-border inline-flex h-[46px] items-center gap-2.5 px-[30px] py-2 relative rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] transition-all border-2 ${
-                !isValidAmount || !isValidAddress || !isMinimumAmount || isSubmitting || !!amountError || !!addressError
+                !canProcessWithdraw || isSubmitting || !!amountError || !!addressError
                   ? 'bg-gray-200 border-gray-300 cursor-not-allowed opacity-60'
                   : 'bg-gradient-to-r from-red to-red/90 hover:from-red/90 hover:to-red border-red cursor-pointer active:scale-95 transform hover:scale-105 shadow-lg hover:shadow-xl'
               }`}
@@ -553,14 +692,15 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               )}
               <span className={`relative w-fit [font-family:'Lato',Helvetica] font-bold text-lg tracking-[0] leading-5 whitespace-nowrap ${
-                !isValidAmount || !isValidAddress || !isMinimumAmount || isSubmitting || !!amountError || !!addressError ? 'text-gray-500' : 'text-[#ffffff]'
+                !canProcessWithdraw || isSubmitting || !!amountError || !!addressError ? 'text-gray-700' : 'text-[#ffffff]'
               }`}>
                 {isSubmitting ? "处理中..." :
+                 !canWithdrawToday ? "今日已提现" :
                  !isValidAmount ? "请输入有效金额" :
                  !isValidAddress ? "请输入提现地址" :
                  !isMinimumAmount ? `最低提现 5 ${displayCurrency}` :
                  amountError || addressError ? "请检查输入" :
-                 `确认提现 ${amount} ${displayCurrency}`}
+                 `🚀 快速提现 ${amount} ${displayCurrency}`}
               </span>
             </button>
           )}
