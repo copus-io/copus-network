@@ -114,54 +114,100 @@ export interface SignedAuthorization {
  *
  * @see https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
  */
-/**
- * Get EIP-712 Domain for specific network and contract
- */
-const getEIP712Domain = (chainId: number, contractAddress: string) => {
-  return {
-    name: 'USD Coin', // Standard USDC EIP-712 name
-    version: '2',
-    chainId: chainId,
-    verifyingContract: contractAddress
-  };
-};
 
 /**
  * Network-specific EIP-712 domain configurations
  */
-const NETWORK_EIP712_DOMAINS: Record<number, any> = {
+// Import TokenType for type safety
+type TokenType = 'usdc' | 'usdt';
+
+/**
+ * EIP-712 domain configuration for different networks and tokens
+ */
+const NETWORK_EIP712_DOMAINS: Record<number, Record<TokenType, any>> = {
   // Base mainnet
   8453: {
-    name: 'USD Coin',
-    version: '2',
-    chainId: 8453,
-    verifyingContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+    usdc: {
+      name: 'USD Coin',
+      version: '2',
+      chainId: 8453,
+      verifyingContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+    },
+    usdt: {
+      name: 'USDT',
+      version: '2',
+      chainId: 8453,
+      verifyingContract: null // Base mainnet has no standard USDT
+    }
   },
   // Base Sepolia testnet - using correct backend expected configuration
   84532: {
-    name: 'USDC',      // x402 backend expected configuration
-    version: '2',
-    chainId: 84532,
-    verifyingContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+    usdc: {
+      name: 'USDC',      // x402 backend expected configuration
+      version: '2',
+      chainId: 84532,
+      verifyingContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+    },
+    usdt: {
+      name: 'USDT',
+      version: '2',
+      chainId: 84532,
+      verifyingContract: null // Base Sepolia has no USDT
+    }
   },
   // X Layer mainnet
   196: {
-    name: 'USD Coin',
-    version: '2',
-    chainId: 196,
-    verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
+    usdc: {
+      name: 'USD Coin',
+      version: '2',
+      chainId: 196,
+      verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
+    },
+    usdt: {
+      name: 'USDT',
+      version: '2',
+      chainId: 196,
+      verifyingContract: '0x779ded0c9e1022225f8e0630b35a9b54be713736'
+    }
   },
   // X Layer testnet (1952)
   1952: {
-    name: 'USD Coin',
-    version: '2',
-    chainId: 1952,
-    verifyingContract: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d'
+    usdc: {
+      name: 'USD Coin',
+      version: '2',
+      chainId: 1952,
+      verifyingContract: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d'
+    },
+    usdt: {
+      name: 'USDT',
+      version: '2',
+      chainId: 1952,
+      verifyingContract: null // X Layer testnet USDT contract not available
+    }
   }
 };
 
+/**
+ * Get EIP-712 domain configuration for specific network and token
+ */
+function getEIP712Domain(chainId: number, tokenType: TokenType = 'usdc') {
+  const networkConfig = NETWORK_EIP712_DOMAINS[chainId];
+  if (!networkConfig) {
+    // Fallback to Base Sepolia USDC config
+    return NETWORK_EIP712_DOMAINS[84532].usdc;
+  }
+
+  const tokenConfig = networkConfig[tokenType];
+  if (!tokenConfig || !tokenConfig.verifyingContract) {
+    // Fallback to USDC config for the same network
+    return networkConfig.usdc || NETWORK_EIP712_DOMAINS[84532].usdc;
+  }
+
+  return tokenConfig;
+}
+
 // Legacy export for backward compatibility
-const EIP712_DOMAIN = NETWORK_EIP712_DOMAINS[84532]; // Default to Base Sepolia config
+const EIP712_DOMAIN = NETWORK_EIP712_DOMAINS[84532].usdc; // Default to Base Sepolia USDC config
 
 /**
  * EIP-712 Type definition for TransferWithAuthorization.
@@ -256,7 +302,8 @@ export async function signTransferWithAuthorization(
   params: TransferWithAuthorizationParams,
   signer: any,
   chainId?: number,
-  contractAddress?: string
+  contractAddress?: string,
+  tokenType?: TokenType
 ): Promise<SignedAuthorization> {
   // Get current chain ID if not provided
   let currentChainId = chainId;
@@ -265,15 +312,9 @@ export async function signTransferWithAuthorization(
     currentChainId = parseInt(chainIdHex, 16);
   }
 
-  // Determine EIP-712 domain
-  let domain;
-  if (contractAddress) {
-    // Use network-specific domain but override the contract address
-    const networkDomain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532];
-    domain = { ...networkDomain, verifyingContract: contractAddress };
-  } else {
-    domain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532]; // fallback to Base Sepolia
-  }
+  // Determine EIP-712 domain based on network and token type
+  const domain = getEIP712Domain(currentChainId, tokenType || 'usdc');
+  console.log(`🔧 Using ${(tokenType || 'usdc').toUpperCase()} domain configuration for chain ${currentChainId}:`, domain);
 
 
   // Construct EIP-712 typed data
@@ -476,17 +517,22 @@ export async function signTransferWithAuthorizationOKXBrowser(
   params: TransferWithAuthorizationParams,
   provider: any,
   chainId: number,
-  contractAddress: string
+  contractAddress: string,
+  tokenType?: TokenType
 ): Promise<SignedAuthorization> {
   console.log('🔄 Using OKX-compatible EIP-712 format for signing...');
+
+  // Get token-specific domain configuration
+  const domainConfig = getEIP712Domain(chainId, tokenType || 'usdc');
+  console.log(`🔧 OKX using ${(tokenType || 'usdc').toUpperCase()} domain configuration:`, domainConfig);
 
   // Construct message parameters exactly as shown in OKX PDF documentation
   const msgParams = {
     "domain": {
       "chainId": chainId.toString(), // Important: chainId as string like in PDF
-      "name": "USD Coin",
-      "version": "2",
-      "verifyingContract": contractAddress.toLowerCase() // Ensure lowercase
+      "name": domainConfig.name,
+      "version": domainConfig.version,
+      "verifyingContract": domainConfig.verifyingContract.toLowerCase() // Use token-specific contract
     },
     "message": {
       "from": params.from.toLowerCase(),
