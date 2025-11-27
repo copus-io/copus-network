@@ -51,24 +51,6 @@ export const Create = (): JSX.Element => {
   // x402 pay-to-unlock states
   const [payToUnlock, setPayToUnlock] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("0.01");
-  const [selectedNetwork, setSelectedNetwork] = useState("base-mainnet");
-  const [selectedCurrency, setSelectedCurrency] = useState("usdc");
-  const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
-  const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
-
-  const networkOptions = [
-    { value: 'xlayer', label: 'X Layer' },
-    { value: 'base-mainnet', label: 'Base' },
-  ];
-
-  const xlayerCurrencyOptions = [
-    { value: 'usdc', label: 'USDC' },
-    { value: 'usdt', label: 'USDT' },
-  ];
-
-  const displayCurrency = selectedNetwork === 'xlayer'
-    ? xlayerCurrencyOptions.find(c => c.value === selectedCurrency)?.label || 'USDC'
-    : 'USDC';
 
   const [characterCount, setCharacterCount] = useState(0);
   const [titleCharacterCount, setTitleCharacterCount] = useState(0);
@@ -920,55 +902,10 @@ export const Create = (): JSX.Element => {
               {/* Payment details (shown when toggle is on) */}
               {payToUnlock && (
                 <div className="flex flex-col items-start gap-5 w-full">
-                  {/* Network dropdown */}
+                  {/* Price input in USD */}
                   <div className="flex flex-col items-start gap-2.5 w-full">
                     <label className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-4">
-                      Network
-                    </label>
-                    <div className="relative w-1/2">
-                      <button
-                        type="button"
-                        onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
-                        className="w-full h-[46px] px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] flex items-center justify-between"
-                      >
-                        {networkOptions.find(n => n.value === selectedNetwork)?.label}
-                        <svg
-                          className={`w-4 h-4 transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      {isNetworkDropdownOpen && (
-                        <div className="absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                          {networkOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => {
-                                setSelectedNetwork(option.value);
-                                setIsNetworkDropdownOpen(false);
-                                // Reset currency to USDC when switching networks
-                                setSelectedCurrency('usdc');
-                              }}
-                              className={`w-full text-left px-4 py-2.5 hover:bg-gray-100 [font-family:'Lato',Helvetica] text-base first:rounded-t-lg last:rounded-b-lg ${
-                                selectedNetwork === option.value ? 'bg-gray-50 font-medium' : ''
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Price input with currency dropdown for X Layer */}
-                  <div className="flex flex-col items-start gap-2.5 w-full">
-                    <label className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-base tracking-[0] leading-4">
-                      Price
+                      Price (USD)
                     </label>
                     <div className="flex items-center gap-2.5 w-full">
                       <input
@@ -980,48 +917,9 @@ export const Create = (): JSX.Element => {
                         className="w-1/2 h-[46px] px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]"
                         placeholder="0.01"
                       />
-                      {selectedNetwork === 'xlayer' ? (
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors [font-family:'Lato',Helvetica] font-medium text-off-black text-base"
-                          >
-                            {displayCurrency}
-                            <svg
-                              className={`w-4 h-4 transition-transform ${isCurrencyDropdownOpen ? 'rotate-180' : ''}`}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                          {isCurrencyDropdownOpen && (
-                            <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[100px]">
-                              {xlayerCurrencyOptions.map((option) => (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedCurrency(option.value);
-                                    setIsCurrencyDropdownOpen(false);
-                                  }}
-                                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 [font-family:'Lato',Helvetica] text-base first:rounded-t-lg last:rounded-b-lg ${
-                                    selectedCurrency === option.value ? 'bg-gray-50 font-medium' : ''
-                                  }`}
-                                >
-                                  {option.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
-                          USDC
-                        </div>
-                      )}
+                      <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[23px] whitespace-nowrap">
+                        USD
+                      </div>
                     </div>
                   </div>
 
@@ -1049,7 +947,7 @@ export const Create = (): JSX.Element => {
                         </div>
                       </div>
                       <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm tracking-[0] leading-[23px]">
-                        {(parseFloat(paymentAmount || "0") * 0.45).toFixed(4)} {displayCurrency} per unlock
+                        {(parseFloat(paymentAmount || "0") * 0.45).toFixed(4)} USD per unlock
                       </span>
                     </div>
                   </div>
