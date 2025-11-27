@@ -482,8 +482,6 @@ export const Login = (): JSX.Element => {
                 throw new Error('No authentication token received from server. The account may need to be registered first.');
               }
 
-              showToast('Google login successful! Welcome back 🎉', 'success');
-
               // Mark that user logged in via Google OAuth
               localStorage.setItem('copus_auth_method', 'google');
 
@@ -491,27 +489,36 @@ export const Login = (): JSX.Element => {
               storage.setRememberMePreference(true);
               storage.migrateToLocalStorage();
 
-              // Sync Google profile data to Copus profile
-              if (response.googleProfile) {
-                try {
-                  const updateData: any = {};
-                  if (response.googleProfile.username) {
-                    updateData.userName = response.googleProfile.username;
-                  }
-                  if (response.googleProfile.faceUrl) {
-                    updateData.faceUrl = response.googleProfile.faceUrl;
-                  }
+              // Fetch user info first to establish session
+              await fetchUserInfo(tokenToUse);
 
-                  if (Object.keys(updateData).length > 0) {
-                    await AuthService.updateUserInfo(updateData);
+              showToast('Google login successful! Welcome back 🎉', 'success');
+
+              // Sync Google profile data to Copus profile (after session is established)
+              // This is done in the background and won't block navigation
+              if (response.googleProfile) {
+                // Use setTimeout to ensure this happens after navigation
+                setTimeout(async () => {
+                  try {
+                    const updateData: any = {};
+                    if (response.googleProfile.username) {
+                      updateData.userName = response.googleProfile.username;
+                    }
+                    if (response.googleProfile.faceUrl) {
+                      updateData.faceUrl = response.googleProfile.faceUrl;
+                    }
+
+                    if (Object.keys(updateData).length > 0) {
+                      await AuthService.updateUserInfo(updateData);
+                      console.log('✅ Google profile synced successfully');
+                    }
+                  } catch (profileError) {
+                    console.warn('⚠️ Google profile sync failed (non-critical):', profileError);
+                    // Don't block login if profile sync fails
                   }
-                } catch (profileError) {
-                  // Don't block login if profile sync fails
-                }
+                }, 1000);
               }
 
-              await fetchUserInfo(tokenToUse);
-              
               navigate('/', { replace: true });
             }
           } else if (provider === 'x') {
