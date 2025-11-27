@@ -1160,16 +1160,14 @@ export const Content = (): JSX.Element => {
         'Content-Type': 'application/json'
       };
 
-      // TODO: Add X-PAYMENT-ASSET header once backend CORS is fixed
-      // Backend needs to add 'x-payment-asset' to Access-Control-Allow-Headers
-      // const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
-      // if (contractAddress) {
-      //   paymentHeaders['X-PAYMENT-ASSET'] = contractAddress;
-      //   console.log('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
-      // } else {
-      //   console.warn('⚠️ No contract address found for', selectedNetwork, selectedCurrency);
-      // }
-      console.log('⚠️ X-PAYMENT-ASSET header disabled - CORS policy blocks this header');
+      // Add X-PAYMENT-ASSET header with contract address for USDT support
+      const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+      if (contractAddress) {
+        paymentHeaders['X-PAYMENT-ASSET'] = contractAddress;
+        console.log('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
+      } else {
+        console.warn('⚠️ No contract address found for', selectedNetwork, selectedCurrency);
+      }
 
       if (token) {
         paymentHeaders.Authorization = `Bearer ${token}`;
@@ -1180,6 +1178,7 @@ export const Content = (): JSX.Element => {
 
       console.log('📤 Payment request headers:', {
         'X-PAYMENT': `${paymentHeader.substring(0, 50)}...`,
+        'X-PAYMENT-ASSET': paymentHeaders['X-PAYMENT-ASSET'] || 'Not provided',
         'Authorization': token ? 'Bearer [TOKEN]' : 'Not provided',
         'Content-Type': paymentHeaders['Content-Type']
       });
