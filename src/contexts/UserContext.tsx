@@ -198,6 +198,18 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearFromStorage(localStorage);
       clearFromStorage(sessionStorage);
 
+      // Notify browser extension to clear its stored tokens
+      // This prevents the extension from re-syncing old tokens after logout
+      try {
+        window.postMessage({
+          type: 'COPUS_LOGOUT',
+          source: 'copus-website'
+        }, '*');
+        console.log('📤 Sent logout message to extension');
+      } catch (error) {
+        console.log('Could not notify extension of logout:', error);
+      }
+
       console.log('✅ Wallet fully disconnected - user will need to reconnect and select account on next login');
 
       // Redirect to Discovery page if on a protected page
