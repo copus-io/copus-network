@@ -1313,7 +1313,7 @@ export const MainContentSection = (): JSX.Element => {
           <TabsContent value="earnings" className="mt-[30px]">
             <EarningsOverview
               earnings={earningsData}
-              walletAddress="0x742d35Cc6635...B2329"
+              walletAddress="0x742d35Cc663522CfB5A29B6eb5F0473925B2329"
               onWithdraw={handleWithdraw}
             />
           </TabsContent>

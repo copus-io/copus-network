@@ -136,37 +136,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     setAmount(availableBalance.toString());
   };
 
-  const handleWalletConnect = async (walletId: string) => {
-    setIsConnecting(true);
-    setConnectingWalletId(walletId);
 
-    try {
-      // 模拟真实钱包连接延迟
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
-      await onWalletSelect(walletId);
-    } catch (error) {
-      console.error('Wallet connection failed:', error);
-    } finally {
-      setIsConnecting(false);
-      setConnectingWalletId(null);
-    }
-  };
 
-  const handleCopyAddress = async () => {
-    if (!walletAddress) return;
-    try {
-      await navigator.clipboard.writeText(walletAddress);
-      setShowCopied(true);
-      setTimeout(() => setShowCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy address:', err);
-    }
-  };
-
-  const formatWalletAddress = (address: string) => {
-    if (!address || address.length < 10) return address;
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   const handleConfirm = async () => {
     setAmountError('');
