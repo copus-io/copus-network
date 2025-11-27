@@ -239,7 +239,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="flex flex-col w-[440px] items-center gap-5 p-[30px] relative bg-white rounded-[15px]"
+        className="flex flex-col w-[520px] items-center gap-5 p-[30px] relative bg-white rounded-[15px]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-labelledby="withdraw-title"
@@ -257,7 +257,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           />
         </button>
 
-        <div className="flex flex-col w-[438px] items-center gap-[25px] px-10 py-0 relative flex-[0_0_auto] ml-[-29.00px] mr-[-29.00px]">
+        <div className="flex flex-col w-[518px] items-center gap-[25px] px-8 py-0 relative flex-[0_0_auto] ml-[-29.00px] mr-[-29.00px]">
           <header className="flex flex-col items-center justify-center relative self-stretch w-full flex-[0_0_auto]">
             <h1
               id="withdraw-title"
@@ -332,11 +332,11 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                           setAddressError('');
                         }
                       }}
-                      placeholder="请输入完整钱包地址，如：\n0x1234567890123456789012345678901234567890"
-                      className={`w-full text-sm border-2 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 font-mono min-h-[80px] ${
+                      placeholder="请输入完整的钱包地址\n例如: 0x1234567890123456789012345678901234567890"
+                      className={`w-full text-sm border-2 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 font-mono min-h-[100px] overflow-auto ${
                         addressError ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-200' : 'border-gray-300 bg-white focus:shadow-lg'
                       }`}
-                      rows={3}
+                      rows={4}
                       autoComplete="off"
                       spellCheck={false}
                       onFocus={() => setAddressError('')}
@@ -344,10 +344,14 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                         wordBreak: 'break-all',
                         lineHeight: '1.6',
                         wordWrap: 'break-word',
-                        letterSpacing: '1px',
-                        fontSize: '14px',
-                        fontFamily: 'Monaco, "Courier New", monospace',
-                        padding: '12px 16px'
+                        letterSpacing: '0.5px',
+                        fontSize: '12px',
+                        fontFamily: 'Monaco, "SF Mono", "Consolas", "Courier New", monospace',
+                        padding: '16px',
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'anywhere',
+                        textAlign: 'left',
+                        direction: 'ltr'
                       }}
                       title={withdrawAddress ? `完整地址: ${withdrawAddress}` : '请输入完整的钱包地址'}
                     />
