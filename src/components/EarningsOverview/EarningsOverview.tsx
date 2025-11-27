@@ -124,7 +124,7 @@ export const EarningsOverview: React.FC<EarningsOverviewProps> = ({
             <div className="text-lg font-semibold text-green-600 transition-all duration-200">
               {formatCurrency(earnings.availableBalance)}
             </div>
-            <div className="text-xs text-green-500">免手续费提现 🎉</div>
+            <div className="text-xs text-blue-600">最低10 USD，手续费1 USD</div>
           </div>
 
           <Button
@@ -147,7 +147,9 @@ export const EarningsOverview: React.FC<EarningsOverviewProps> = ({
               <div>• 创作者收益：45%（您的创作收入）</div>
               <div>• 策展人收益：45%（平台代管分配）</div>
               <div>• 平台服务费：10%（维护运营成本）</div>
-              <div className="pt-1 border-t border-blue-200 text-green-700">• 提现免手续费 🎉</div>
+              <div className="pt-1 border-t border-blue-200 text-orange-700">
+                • 提现规则：最低 10 USD，收取 1 USD 手续费 💰
+              </div>
             </div>
           </div>
         </div>
