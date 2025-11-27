@@ -470,7 +470,14 @@ export const Login = (): JSX.Element => {
             response = await AuthService.googleLogin(code, state, hasExistingToken);
             const tokenToUse = response.token || savedToken;
 
-            if (response.isBinding) {
+            // Determine if this is truly account binding or third-party login
+            // isBinding should ONLY be true if:
+            // 1. Backend says isBinding=true AND
+            // 2. We have a valid savedToken (user was already logged in)
+            // If backend says isBinding but we have no savedToken, it's actually a login attempt
+            const isTrueBinding = response.isBinding && savedToken && hasExistingToken;
+
+            if (isTrueBinding) {
               // Account binding mode - user was already logged in and is connecting Google
               if (!tokenToUse) {
                 throw new Error('Account binding failed: No authentication token available. Please try logging in again.');
@@ -479,7 +486,7 @@ export const Login = (): JSX.Element => {
               await fetchUserInfo(tokenToUse);
               navigate('/setting', { replace: true });
             } else {
-              // Third-party login mode
+              // Third-party login mode (even if backend returned isBinding, treat as login if no savedToken)
 
               if (!tokenToUse) {
                 throw new Error('No authentication token received from server. The account may need to be registered first.');
@@ -529,7 +536,10 @@ export const Login = (): JSX.Element => {
             response = await AuthService.xLogin(code, state, hasExistingToken);
             const tokenToUse = response.token || savedToken;
 
-            if (response.isBinding) {
+            // Determine if this is truly account binding or third-party login
+            const isTrueBinding = response.isBinding && savedToken && hasExistingToken;
+
+            if (isTrueBinding) {
               // Account binding mode - user was already logged in and is connecting X
               if (!tokenToUse) {
                 throw new Error('Account binding failed: No authentication token available. Please try logging in again.');
@@ -538,12 +548,13 @@ export const Login = (): JSX.Element => {
               await fetchUserInfo(tokenToUse);
               navigate('/setting', { replace: true });
             } else {
-              // Third-party login mode
-              showToast('X login successful! Welcome back 🎉', 'success');
+              // Third-party login mode (even if backend returned isBinding, treat as login if no savedToken)
 
               if (!tokenToUse) {
                 throw new Error('No authentication token received');
               }
+
+              showToast('X login successful! Welcome back 🎉', 'success');
 
               // Mark that user logged in via X (Twitter)
               localStorage.setItem('copus_auth_method', 'x');
@@ -625,9 +636,15 @@ export const Login = (): JSX.Element => {
   // Handle X (Twitter) login
   const handleXLogin = async () => {
     try {
-      // Don't clear tokens - let backend determine login vs binding based on hasExistingToken
-      // If user has valid token → backend knows it's account binding
-      // If user has no token → backend knows it's third-party login
+      // IMPORTANT: Clear tokens when initiating OAuth from LOGIN page
+      // User is trying to LOG IN (not bind accounts)
+      // Any token in storage at this point is likely expired/stale
+      // Account binding should only happen from Settings page when user is actively logged in
+      localStorage.removeItem('copus_token');
+      localStorage.removeItem('copus_user');
+      sessionStorage.removeItem('copus_token');
+      sessionStorage.removeItem('copus_user');
+
       localStorage.setItem('oauth_provider', 'x');
       const oauthUrl = await AuthService.getXOAuthUrl();
       const urlWithProvider = oauthUrl.includes('?')
@@ -642,9 +659,15 @@ export const Login = (): JSX.Element => {
   // Handle Google login
   const handleGoogleLogin = async () => {
     try {
-      // Don't clear tokens - let backend determine login vs binding based on hasExistingToken
-      // If user has valid token → backend knows it's account binding
-      // If user has no token → backend knows it's third-party login
+      // IMPORTANT: Clear tokens when initiating OAuth from LOGIN page
+      // User is trying to LOG IN (not bind accounts)
+      // Any token in storage at this point is likely expired/stale
+      // Account binding should only happen from Settings page when user is actively logged in
+      localStorage.removeItem('copus_token');
+      localStorage.removeItem('copus_user');
+      sessionStorage.removeItem('copus_token');
+      sessionStorage.removeItem('copus_user');
+
       localStorage.setItem('oauth_provider', 'google');
       const oauthUrl = await AuthService.getGoogleOAuthUrl();
       const urlWithProvider = oauthUrl.includes('?')
