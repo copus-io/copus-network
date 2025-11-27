@@ -199,11 +199,28 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   };
 
   const handleConfirm = async () => {
+    setAmountError('');
+    setAddressError('');
+
+    // 提交时验证
+    if (!amount || parseFloat(amount) < MIN_WITHDRAWAL_AMOUNT) {
+      setAmountError(`最低提现 ${MIN_WITHDRAWAL_AMOUNT} ${displayCurrency}`);
+      return;
+    }
+
+    if (parseFloat(amount) > availableBalance) {
+      setAmountError('金额超过可用余额');
+      return;
+    }
+
+    if (!withdrawAddress) {
+      setAddressError('请输入提现地址');
+      return;
+    }
+
     if (!canProcessWithdraw) return;
 
     setIsSubmitting(true);
-    setAmountError('');
-    setAddressError('');
 
     try {
       // 模拟提现处理延迟
@@ -555,15 +572,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                       onChange={(e) => {
           const value = e.target.value;
           setAmount(value);
-
-          // 实时验证
-          if (value && parseFloat(value) > availableBalance) {
-            setAmountError('金额超过可用余额');
-          } else if (value && parseFloat(value) < MIN_WITHDRAWAL_AMOUNT && parseFloat(value) > 0) {
-            setAmountError(`最低提现 ${MIN_WITHDRAWAL_AMOUNT} ${displayCurrency}`);
-          } else {
-            setAmountError('');
-          }
+          setAmountError(''); // 清除之前的错误信息
         }}
                       placeholder="10.00"
                       min={MIN_WITHDRAWAL_AMOUNT.toString()}
@@ -608,27 +617,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
                     <p className="text-red-500 text-xs mt-1 animate-pulse">{amountError}</p>
                   )}
 
-                  {/* 手续费明细显示 */}
-                  {amount && parseFloat(amount) >= MIN_WITHDRAWAL_AMOUNT && parseFloat(amount) <= availableBalance && (
-                    <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex justify-between items-center text-sm mb-1">
-                        <span className="text-gray-600">提现金额:</span>
-                        <span className="text-gray-900 font-medium">{parseFloat(amount).toFixed(2)} {displayCurrency}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm mb-1">
-                        <span className="text-gray-600">手续费:</span>
-                        <span className="text-red-600 font-medium">-{WITHDRAWAL_FEE.toFixed(2)} {displayCurrency}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm font-semibold pt-1 border-t border-blue-300">
-                        <span className="text-blue-700">实际到账:</span>
-                        <span className="text-blue-800">{actualReceiveAmount.toFixed(2)} {displayCurrency}</span>
-                      </div>
-                    </div>
-                  )}
 
-                  {!amountError && amount && parseFloat(amount) >= MIN_WITHDRAWAL_AMOUNT && parseFloat(amount) <= availableBalance && (
-                    <p className="text-green-600 text-xs mt-1">✓ 金额有效</p>
-                  )}
                 </dd>
               </div>
             </div>
