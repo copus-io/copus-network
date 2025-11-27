@@ -51,14 +51,14 @@ export const Create = (): JSX.Element => {
   // x402 pay-to-unlock states
   const [payToUnlock, setPayToUnlock] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("0.01");
-  const [selectedNetwork, setSelectedNetwork] = useState("base-sepolia");
+  const [selectedNetwork, setSelectedNetwork] = useState("base-mainnet");
   const [selectedCurrency, setSelectedCurrency] = useState("usdc");
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
 
   const networkOptions = [
     { value: 'xlayer', label: 'X Layer' },
-    { value: 'base-sepolia', label: 'Base Sepolia' },
+    { value: 'base-mainnet', label: 'Base' },
   ];
 
   const xlayerCurrencyOptions = [
