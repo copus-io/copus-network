@@ -461,9 +461,17 @@ export const Login = (): JSX.Element => {
         try {
           let response;
 
-          // Cache token check to avoid multiple localStorage reads
+          // CRITICAL: Clear tokens AGAIN in callback
+          // The extension or page reload may have restored old tokens after our initial clear
+          // We need to clear RIGHT BEFORE calling the OAuth API to ensure hasExistingToken=false
+          localStorage.removeItem('copus_token');
+          localStorage.removeItem('copus_user');
+          sessionStorage.removeItem('copus_token');
+          sessionStorage.removeItem('copus_user');
+
+          // Now check if there's a token (should be none after clearing)
           const savedToken = localStorage.getItem('copus_token');
-          const hasExistingToken = !!savedToken;
+          const hasExistingToken = false; // Always false for login page OAuth
 
           // Call different login methods based on provider type
           if (provider === 'google') {
