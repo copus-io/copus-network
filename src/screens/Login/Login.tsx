@@ -471,7 +471,10 @@ export const Login = (): JSX.Element => {
             const tokenToUse = response.token || savedToken;
 
             if (response.isBinding) {
-              // Account binding mode
+              // Account binding mode - user was already logged in and is connecting Google
+              if (!tokenToUse) {
+                throw new Error('Account binding failed: No authentication token available. Please try logging in again.');
+              }
               showToast('Google account successfully bound! 🎉', 'success');
               await fetchUserInfo(tokenToUse);
               navigate('/setting', { replace: true });
@@ -527,7 +530,10 @@ export const Login = (): JSX.Element => {
             const tokenToUse = response.token || savedToken;
 
             if (response.isBinding) {
-              // Account binding mode
+              // Account binding mode - user was already logged in and is connecting X
+              if (!tokenToUse) {
+                throw new Error('Account binding failed: No authentication token available. Please try logging in again.');
+              }
               showToast('X account successfully bound! 🎉', 'success');
               await fetchUserInfo(tokenToUse);
               navigate('/setting', { replace: true });
@@ -619,13 +625,9 @@ export const Login = (): JSX.Element => {
   // Handle X (Twitter) login
   const handleXLogin = async () => {
     try {
-      // Clear any existing user data before starting OAuth flow
-      // This ensures we don't confuse the new login with account binding
-      localStorage.removeItem('copus_token');
-      localStorage.removeItem('copus_user');
-      sessionStorage.removeItem('copus_token');
-      sessionStorage.removeItem('copus_user');
-
+      // Don't clear tokens - let backend determine login vs binding based on hasExistingToken
+      // If user has valid token → backend knows it's account binding
+      // If user has no token → backend knows it's third-party login
       localStorage.setItem('oauth_provider', 'x');
       const oauthUrl = await AuthService.getXOAuthUrl();
       const urlWithProvider = oauthUrl.includes('?')
@@ -640,13 +642,9 @@ export const Login = (): JSX.Element => {
   // Handle Google login
   const handleGoogleLogin = async () => {
     try {
-      // Clear any existing user data before starting OAuth flow
-      // This ensures we don't confuse the new login with account binding
-      localStorage.removeItem('copus_token');
-      localStorage.removeItem('copus_user');
-      sessionStorage.removeItem('copus_token');
-      sessionStorage.removeItem('copus_user');
-
+      // Don't clear tokens - let backend determine login vs binding based on hasExistingToken
+      // If user has valid token → backend knows it's account binding
+      // If user has no token → backend knows it's third-party login
       localStorage.setItem('oauth_provider', 'google');
       const oauthUrl = await AuthService.getGoogleOAuthUrl();
       const urlWithProvider = oauthUrl.includes('?')
