@@ -5,7 +5,6 @@ import { WithdrawModal } from "../WithdrawModal/WithdrawModal";
 export interface EarningsData {
   totalEarnings: number;
   availableBalance: number;
-  pendingAmount: number;
   withdrawnAmount: number;
   lastWithdrawDate?: string;
 }
@@ -24,8 +23,7 @@ export const EarningsOverview: React.FC<EarningsOverviewProps> = ({
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [animatedEarnings, setAnimatedEarnings] = useState({
     totalEarnings: 0,
-    availableBalance: 0,
-    pendingAmount: 0
+    availableBalance: 0
   });
 
   // 数字动画效果
@@ -42,8 +40,7 @@ export const EarningsOverview: React.FC<EarningsOverviewProps> = ({
 
       setAnimatedEarnings({
         totalEarnings: earnings.totalEarnings * easeOut,
-        availableBalance: earnings.availableBalance * easeOut,
-        pendingAmount: earnings.pendingAmount * easeOut
+        availableBalance: earnings.availableBalance * easeOut
       });
 
       if (progress < 1) {
@@ -117,17 +114,6 @@ export const EarningsOverview: React.FC<EarningsOverviewProps> = ({
           <div className="text-xs text-green-600">可立即提现</div>
         </div>
 
-        {/* 待结算金额 */}
-        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 group">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-yellow-600 group-hover:animate-spin">⏳</span>
-            <span className="text-sm text-yellow-700 font-medium">待结算</span>
-          </div>
-          <div className="text-2xl font-bold text-yellow-900 mb-1">
-            {formatCurrency(animatedEarnings.pendingAmount)}
-          </div>
-          <div className="text-xs text-yellow-600">7天后可提现</div>
-        </div>
       </div>
 
       {/* 钱包信息和提现按钮 */}

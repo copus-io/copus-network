@@ -153,8 +153,7 @@ export const MainContentSection = (): JSX.Element => {
   // 收益相关状态 - USDC计价
   const [earningsData, setEarningsData] = useState<EarningsData>({
     totalEarnings: 125.75,
-    availableBalance: 89.25,
-    pendingAmount: 28.50,
+    availableBalance: 117.75, // 原来的89.25 + 28.50待结算金额
     withdrawnAmount: 65.00,
     lastWithdrawDate: '2024-11-15'
   });
