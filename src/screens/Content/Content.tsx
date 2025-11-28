@@ -1392,7 +1392,17 @@ export const Content = (): JSX.Element => {
 
             <div className="flex items-center gap-5">
               {/* Edit button - only visible to author */}
-              {user?.id === article?.authorInfo?.id && (
+              {(() => {
+                const isAuthor = user?.id === article?.authorInfo?.id;
+                console.log('Edit button check:', {
+                  userId: user?.id,
+                  authorId: article?.authorInfo?.id,
+                  isAuthor,
+                  userType: typeof user?.id,
+                  authorType: typeof article?.authorInfo?.id
+                });
+                return isAuthor;
+              })() && (
                 <button
                   onClick={() => navigate(`/create?edit=${article.uuid}`)}
                   className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0 hover:bg-gray-100"
