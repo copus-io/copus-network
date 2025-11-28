@@ -4,16 +4,6 @@ import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
-  // Debug: Log raw backend article payment data
-  if (backendArticle.targetUrlIsLocked || backendArticle.priceInfo) {
-    console.log('🔍 Backend article with payment data:', {
-      title: backendArticle.title.substring(0, 30),
-      targetUrlIsLocked: backendArticle.targetUrlIsLocked,
-      priceInfo: backendArticle.priceInfo,
-      priceType: typeof backendArticle.priceInfo?.price
-    });
-  }
-
   // Extract domain from URL as website
   const getWebsiteFromUrl = (url: string): string => {
     try {
@@ -90,17 +80,6 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     isPaymentRequired: backendArticle.targetUrlIsLocked || false,
     paymentPrice: backendArticle.priceInfo?.price?.toString() || undefined,
   };
-
-  // Debug: Log transformed article to verify payment fields are included
-  if (transformedArticle.isPaymentRequired || transformedArticle.paymentPrice) {
-    console.log('✅ Transformed article WITH payment data:', {
-      title: transformedArticle.title.substring(0, 30),
-      isPaymentRequired: transformedArticle.isPaymentRequired,
-      paymentPrice: transformedArticle.paymentPrice,
-      originalPrice: backendArticle.priceInfo?.price,
-      originalPriceType: typeof backendArticle.priceInfo?.price
-    });
-  }
 
   return transformedArticle;
 };
@@ -198,15 +177,6 @@ export const getArticleDetail = async (uuid: string, bustCache: boolean = false)
     if (response.status !== 1) {
       throw new Error(response.msg || 'API request failed');
     }
-
-    // Debug: Log what the backend returns
-    console.log('🔍 Backend article detail response:', {
-      uuid: response.data.uuid,
-      title: response.data.title?.substring(0, 30),
-      hasTargetUrl: !!response.data.targetUrl,
-      targetUrl: response.data.targetUrl,
-      targetUrlIsLocked: response.data.targetUrlIsLocked
-    });
 
     return response.data;
   } catch (error) {

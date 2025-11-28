@@ -15,11 +15,6 @@ export const DiscoveryContentSection = (): JSX.Element => {
   const [localArticles, setLocalArticles] = React.useState<Article[]>([]);
   const navigate = useNavigate();
 
-  // Set test token to ensure API authentication - temporarily disable expired token
-  // React.useEffect(() => {
-  //   const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYjE1MzM2NDUtYzZjOC00MmJkLTgwOTQtM2QzYjI4N2VkOWNkIiwidXNlcl90eXBlIjoidXNlciIsInVzZXJfbmFtZSI6IjE2MTEwMTEwNjE1IiwiYWNjb3VudF90eXBlIjoidGVzdCIsImV4cCI6MTcyNzY4MTc5OSwidXNlcl9yb2xlIjoidXNlciIsImlhdCI6MTcyNzU5NTM5OSwidWlkIjoiYjE1MzM2NDUtYzZjOC00MmJkLTgwOTQtM2QzYjI4N2VkOWNkIn0.QkqDnbMaXFgaZhKc0CIFNZNLfqLnGqO2XZyNKiEtXOU';
-  //   localStorage.setItem('copus_token', testToken);
-  //     // }, []);
 
   // Welcome guide display state management
   const [showWelcomeGuide, setShowWelcomeGuide] = React.useState(false);
