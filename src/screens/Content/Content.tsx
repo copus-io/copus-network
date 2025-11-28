@@ -1474,14 +1474,7 @@ export const Content = (): JSX.Element => {
                   </span>
                 </span>
               </button>
-            ) : (
-              // No targetUrl available and not locked - show disabled state
-              <div className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-gray-400 rounded-[100px] border border-solid border-gray-400 opacity-50 cursor-not-allowed">
-                <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
-                  No Link Available
-                </span>
-              </div>
-            )}
+            ) : null}
             </div>
           </div>
         </div>

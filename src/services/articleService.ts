@@ -199,6 +199,15 @@ export const getArticleDetail = async (uuid: string, bustCache: boolean = false)
       throw new Error(response.msg || 'API request failed');
     }
 
+    // Debug: Log what the backend returns
+    console.log('🔍 Backend article detail response:', {
+      uuid: response.data.uuid,
+      title: response.data.title?.substring(0, 30),
+      hasTargetUrl: !!response.data.targetUrl,
+      targetUrl: response.data.targetUrl,
+      targetUrlIsLocked: response.data.targetUrlIsLocked
+    });
+
     return response.data;
   } catch (error) {
     console.error('❌ Failed to fetch article detail:', error);
