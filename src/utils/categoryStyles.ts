@@ -13,7 +13,6 @@ const colorNameToHex: Record<string, string> = {
 
 // Category color mapping
 const categoryStyleMap: Record<string, { bg: string; text: string; border: string }> = {
-  // English categories
   Art: {
     bg: "bg-[linear-gradient(0deg,rgba(43,134,73,0.2)_0%,rgba(43,134,73,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]",
     text: "text-green-600",
@@ -30,27 +29,6 @@ const categoryStyleMap: Record<string, { bg: string; text: string; border: strin
     border: "border-[#e19e1d]"
   },
   Life: {
-    bg: "bg-[linear-gradient(0deg,rgba(234,125,183,0.2)_0%,rgba(234,125,183,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]",
-    text: "text-pink-600",
-    border: "border-[#ea7db7]"
-  },
-  // Chinese categories
-  "Technology": {
-    bg: "bg-[linear-gradient(0deg,rgba(201,139,20,0.2)_0%,rgba(201,139,20,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]",
-    text: "text-yellow-600",
-    border: "border-[#e19e1d]"
-  },
-  "Art": {
-    bg: "bg-[linear-gradient(0deg,rgba(43,134,73,0.2)_0%,rgba(43,134,73,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]",
-    text: "text-green-600",
-    border: "border-[#2b8649]"
-  },
-  "Sports": {
-    bg: "bg-[linear-gradient(0deg,rgba(33,145,251,0.2)_0%,rgba(33,145,251,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]",
-    text: "text-blue-600",
-    border: "border-[#2191fb]"
-  },
-  "Life": {
     bg: "bg-[linear-gradient(0deg,rgba(234,125,183,0.2)_0%,rgba(234,125,183,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]",
     text: "text-pink-600",
     border: "border-[#ea7db7]"

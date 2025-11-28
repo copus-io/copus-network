@@ -25,6 +25,7 @@ import {
 import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils';
 import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
+import { getIconUrl, getIconStyle } from '../../config/icons';
 
 // Helper function to get token information for payment requests
 const getTokenInfo = (tokenType: TokenType): TokenInfo => {
@@ -1310,13 +1311,13 @@ export const Content = (): JSX.Element => {
                       )}
 
                       <h1
-                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-all overflow-hidden"
+                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
                         style={{
                           display: '-webkit-box',
                           WebkitBoxOrient: 'vertical',
                           WebkitLineClamp: 2,
                           overflow: 'hidden',
-                          wordBreak: 'break-all',
+                          wordBreak: 'break-word',
                           overflowWrap: 'break-word'
                         }}
                       >
@@ -1435,6 +1436,40 @@ export const Content = (): JSX.Element => {
               />
             </div>
 
+            <div className="flex items-center gap-5">
+              {/* Edit button - only visible to author */}
+              {(() => {
+                // Use namespace for comparison (more reliable) with id as fallback
+                const isAuthor = (user && article?.authorInfo) && (
+                  (user.namespace && user.namespace === article.authorInfo.namespace) ||
+                  (user.id && user.id === article.authorInfo.id)
+                );
+
+                console.log('Edit button check:', {
+                  userId: user?.id,
+                  userNamespace: user?.namespace,
+                  authorId: article?.authorInfo?.id,
+                  authorNamespace: article?.authorInfo?.namespace,
+                  isAuthor
+                });
+
+                return isAuthor;
+              })() && (
+                <button
+                  onClick={() => navigate(`/create?edit=${article.uuid}`)}
+                  className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0 hover:bg-gray-100"
+                  aria-label="Edit"
+                  title="Edit"
+                >
+                  <img
+                    className="w-[22px] h-[22px]"
+                    alt="Edit"
+                    src={getIconUrl('EDIT')}
+                    style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                  />
+                </button>
+              )}
+
 {/* Conditional button - "Visit" for unlocked/targetUrl content, "Unlock now" for locked content without targetUrl */}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
@@ -1485,14 +1520,8 @@ export const Content = (): JSX.Element => {
                   </span>
                 </span>
               </button>
-            ) : (
-              // No targetUrl available and not locked - show disabled state
-              <div className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-gray-400 rounded-[100px] border border-solid border-gray-400 opacity-50 cursor-not-allowed">
-                <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
-                  No Link Available
-                </span>
-              </div>
-            )}
+            ) : null}
+            </div>
           </div>
         </div>
 

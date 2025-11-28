@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
@@ -63,7 +63,7 @@ export interface ArticleCardProps {
   className?: string;
 }
 
-export const ArticleCard: React.FC<ArticleCardProps> = ({
+const ArticleCardComponent: React.FC<ArticleCardProps> = ({
   article,
   layout = 'discovery',
   actions = {
@@ -100,7 +100,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const [previewImageAlt, setPreviewImageAlt] = useState("");
 
   // Handle like action
-  const handleLikeClick = async (e: React.MouseEvent) => {
+  const handleLikeClick = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -113,51 +113,51 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       ? parseInt(article.treasureCount) || 0
       : article.treasureCount;
     await onLike(article.uuid || article.id, article.isLiked || false, currentCount);
-  };
+  }, [onLike, article.uuid, article.id, article.isLiked, article.treasureCount]);
 
   // Handle user click
-  const handleUserClick = (e: React.MouseEvent) => {
+  const handleUserClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (onUserClick) {
       // Prefer namespace, fall back to userNamespace if not available
       onUserClick(article.userId, article.namespace || article.userNamespace);
     }
-  };
+  }, [onUserClick, article.userId, article.namespace, article.userNamespace]);
 
   // Handle edit
-  const handleEdit = (e: React.MouseEvent) => {
+  const handleEdit = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (onEdit) {
       onEdit(article.uuid || article.id);
     }
-  };
+  }, [onEdit, article.uuid, article.id]);
 
   // Handle delete
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (onDelete) {
       onDelete(article.uuid || article.id);
     }
-  };
+  }, [onDelete, article.uuid, article.id]);
 
   // Handle image preview
-  const handleImagePreview = (imageUrl: string, alt: string) => (e: React.MouseEvent) => {
+  const handleImagePreview = useCallback((imageUrl: string, alt: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setPreviewImageUrl(imageUrl);
     setPreviewImageAlt(alt);
     setIsImagePreviewOpen(true);
-  };
+  }, []);
 
   // Close image preview
-  const handleCloseImagePreview = () => {
+  const handleCloseImagePreview = useCallback(() => {
     setIsImagePreviewOpen(false);
     setPreviewImageUrl("");
     setPreviewImageAlt("");
-  };
+  }, []);
 
   // Render different card content based on layout mode
   const renderCardContent = () => {
@@ -681,3 +681,15 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     </div>
   );
 };
+
+// Memoized export for performance optimization
+export const ArticleCard = React.memo(ArticleCardComponent, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return (
+    prevProps.article.id === nextProps.article.id &&
+    prevProps.article.isLiked === nextProps.article.isLiked &&
+    prevProps.article.treasureCount === nextProps.article.treasureCount &&
+    prevProps.layout === nextProps.layout &&
+    prevProps.isHovered === nextProps.isHovered
+  );
+});

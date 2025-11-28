@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { Alert, AlertDescription } from "../../../../components/ui/alert";
 import { HeaderSection } from "../../../components/shared/HeaderSection/HeaderSection";
 import { SideMenuSection } from "../../../components/shared/SideMenuSection/SideMenuSection";
 import { MainContentSection } from "./sections/MainContentSection";
