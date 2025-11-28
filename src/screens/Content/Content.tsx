@@ -1395,11 +1395,14 @@ export const Content = (): JSX.Element => {
               {(() => {
                 const isAuthor = user?.id === article?.authorInfo?.id;
                 console.log('Edit button check:', {
+                  user: user,
                   userId: user?.id,
                   authorId: article?.authorInfo?.id,
                   isAuthor,
                   userType: typeof user?.id,
-                  authorType: typeof article?.authorInfo?.id
+                  authorType: typeof article?.authorInfo?.id,
+                  hasUser: !!user,
+                  hasArticle: !!article
                 });
                 return isAuthor;
               })() && (
