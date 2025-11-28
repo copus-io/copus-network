@@ -56,7 +56,7 @@ export const Content = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading, getArticleLikeState, updateArticleLikeState, login, fetchUserInfo } = useUser();
+  const { user, getArticleLikeState, updateArticleLikeState, login, fetchUserInfo } = useUser();
   const { showToast } = useToast();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
@@ -1400,7 +1400,6 @@ export const Content = (): JSX.Element => {
                 );
 
                 console.log('Edit button check:', {
-                  loading,
                   userId: user?.id,
                   userNamespace: user?.namespace,
                   authorId: article?.authorInfo?.id,
