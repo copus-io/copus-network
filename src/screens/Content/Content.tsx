@@ -56,7 +56,7 @@ export const Content = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, getArticleLikeState, updateArticleLikeState, login, fetchUserInfo } = useUser();
+  const { user, loading, getArticleLikeState, updateArticleLikeState, login, fetchUserInfo } = useUser();
   const { showToast } = useToast();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
@@ -1393,16 +1393,26 @@ export const Content = (): JSX.Element => {
             <div className="flex items-center gap-5">
               {/* Edit button - only visible to author */}
               {(() => {
+                // Check what's in localStorage
+                const storedUser = localStorage.getItem('copus_user');
+                let parsedStoredUser = null;
+                try {
+                  parsedStoredUser = storedUser ? JSON.parse(storedUser) : null;
+                } catch (e) {
+                  console.error('Failed to parse stored user:', e);
+                }
+
                 const isAuthor = user?.id === article?.authorInfo?.id;
                 console.log('Edit button check:', {
+                  loading,
                   user: user,
                   userId: user?.id,
                   authorId: article?.authorInfo?.id,
+                  storedUser: parsedStoredUser,
+                  storedUserId: parsedStoredUser?.id,
                   isAuthor,
                   userType: typeof user?.id,
-                  authorType: typeof article?.authorInfo?.id,
-                  hasUser: !!user,
-                  hasArticle: !!article
+                  authorType: typeof article?.authorInfo?.id
                 });
                 return isAuthor;
               })() && (
