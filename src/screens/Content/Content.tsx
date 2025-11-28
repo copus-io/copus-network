@@ -24,6 +24,7 @@ import {
 } from "../../utils/x402Utils";
 import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils';
 import { getNetworkConfig, getTokenContract, NetworkType, TokenType } from '../../config/contracts';
+import { getIconUrl, getIconStyle } from '../../config/icons';
 
 
 // Image URL validation and fallback function
@@ -1389,6 +1390,24 @@ export const Content = (): JSX.Element => {
               />
             </div>
 
+            <div className="flex items-center gap-5">
+              {/* Edit button - only visible to author */}
+              {user?.id === article?.authorInfo?.id && (
+                <button
+                  onClick={() => navigate(`/create?edit=${article.uuid}`)}
+                  className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0 hover:bg-gray-100"
+                  aria-label="Edit"
+                  title="Edit"
+                >
+                  <img
+                    className="w-[22px] h-[22px]"
+                    alt="Edit"
+                    src={getIconUrl('EDIT')}
+                    style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                  />
+                </button>
+              )}
+
 {/* Conditional button - "Visit" for unlocked/targetUrl content, "Unlock now" for locked content without targetUrl */}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
@@ -1447,6 +1466,7 @@ export const Content = (): JSX.Element => {
                 </span>
               </div>
             )}
+            </div>
           </div>
         </div>
 
