@@ -24,6 +24,39 @@ export const DiscoveryContentSection = (): JSX.Element => {
   // Welcome guide display state management
   const [showWelcomeGuide, setShowWelcomeGuide] = React.useState(false);
 
+  // Extension detection state
+  const [isExtensionInstalled, setIsExtensionInstalled] = React.useState(false);
+
+  // Check if browser extension is installed
+  React.useEffect(() => {
+    // Check for the data attribute injected by the extension's content script
+    const checkExtension = () => {
+      const hasExtension = document.documentElement.getAttribute('data-copus-extension-installed') === 'true';
+      if (hasExtension && !isExtensionInstalled) {
+        setIsExtensionInstalled(true);
+      }
+      return hasExtension;
+    };
+
+    // Check immediately
+    if (checkExtension()) return;
+
+    // Check multiple times with increasing delays to catch the extension marker
+    const timeouts: NodeJS.Timeout[] = [];
+
+    // Check after 100ms, 300ms, 600ms, and 1000ms
+    [100, 300, 600, 1000].forEach((delay) => {
+      const timeoutId = setTimeout(() => {
+        if (checkExtension()) {
+          timeouts.forEach(clearTimeout);
+        }
+      }, delay);
+      timeouts.push(timeoutId);
+    });
+
+    return () => timeouts.forEach(clearTimeout);
+  }, [isExtensionInstalled]);
+
   // Check if this is the first visit today (based on login status)
   React.useEffect(() => {
     const today = new Date().toDateString();
@@ -113,6 +146,21 @@ export const DiscoveryContentSection = (): JSX.Element => {
                 Click "Curate" (top-right) to share your finds.
               </span>
             </p>
+            {!isExtensionInstalled && (
+              <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
+                  <a
+                    href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb?authuser=5&hl=en"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#2191FB] hover:underline cursor-pointer font-normal"
+                  >
+                    Install our browser extension
+                  </a>{' '}
+                  to easily save and share content while browsing.
+                </span>
+              </p>
+            )}
           </div>
         </>
       );
