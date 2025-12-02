@@ -400,18 +400,35 @@ export const MainContentSection = (): JSX.Element => {
           try {
             const curatedResponse = await AuthService.getMyCreatedArticles(1, 100, userId);
             console.log('Curated articles response:', curatedResponse);
+            console.log('Curated articles response type:', typeof curatedResponse);
+            console.log('Curated articles response keys:', curatedResponse ? Object.keys(curatedResponse) : 'null');
 
             let curatedArray: any[] = [];
             // Handle different response structures
             if (curatedResponse?.data?.data && Array.isArray(curatedResponse.data.data)) {
+              console.log('Using curatedResponse.data.data');
               curatedArray = curatedResponse.data.data;
             } else if (curatedResponse?.data && Array.isArray(curatedResponse.data)) {
+              console.log('Using curatedResponse.data');
               curatedArray = curatedResponse.data;
             } else if (Array.isArray(curatedResponse)) {
+              console.log('Using curatedResponse directly');
               curatedArray = curatedResponse;
+            } else if (curatedResponse && typeof curatedResponse === 'object') {
+              // Try to find the data array in the response
+              console.log('Response is object, looking for data array');
+              if ('data' in curatedResponse) {
+                const dataField = (curatedResponse as any).data;
+                if (Array.isArray(dataField)) {
+                  curatedArray = dataField;
+                } else if (dataField && typeof dataField === 'object' && 'data' in dataField) {
+                  curatedArray = dataField.data;
+                }
+              }
             }
 
             console.log('Curated articles array:', curatedArray);
+            console.log('Curated articles count:', curatedArray.length);
             setCuratedArticles(curatedArray);
           } catch (curatedErr) {
             console.error('Failed to fetch curated articles:', curatedErr);

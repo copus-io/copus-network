@@ -170,16 +170,34 @@ export const SpaceContentSection = (): JSX.Element => {
 
           if (isCurationsSpace) {
             // Fetch created/curated articles for curations space
+            console.log('Fetching curated articles for user:', userId);
             const curatedResponse = await AuthService.getMyCreatedArticles(1, 100, userId);
+            console.log('Space page curated response:', curatedResponse);
+            console.log('Space page curated response keys:', curatedResponse ? Object.keys(curatedResponse) : 'null');
 
             if (curatedResponse?.data?.data && Array.isArray(curatedResponse.data.data)) {
+              console.log('Using curatedResponse.data.data');
               articlesArray = curatedResponse.data.data;
             } else if (curatedResponse?.data && Array.isArray(curatedResponse.data)) {
+              console.log('Using curatedResponse.data');
               articlesArray = curatedResponse.data;
             } else if (Array.isArray(curatedResponse)) {
+              console.log('Using curatedResponse directly');
               articlesArray = curatedResponse;
+            } else if (curatedResponse && typeof curatedResponse === 'object') {
+              // Try to find the data array in the response
+              console.log('Response is object, looking for data array');
+              if ('data' in curatedResponse) {
+                const dataField = (curatedResponse as any).data;
+                if (Array.isArray(dataField)) {
+                  articlesArray = dataField;
+                } else if (dataField && typeof dataField === 'object' && 'data' in dataField) {
+                  articlesArray = dataField.data;
+                }
+              }
             }
 
+            console.log('Curated articles count:', articlesArray.length);
             // No filtering needed - show all curated articles
             setArticles(articlesArray);
           } else if (isTreasurySpace) {
