@@ -1,16 +1,16 @@
 import { EyeIcon } from "lucide-react";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../../../../components/ui/button";
-import { Card, CardContent } from "../../../../components/ui/card";
-import { Checkbox } from "../../../../components/ui/checkbox";
-import { Input } from "../../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
+import { Checkbox } from "../../../components/ui/checkbox";
+import { Input } from "../../../components/ui/input";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../../../components/ui/tabs";
+} from "../../../components/ui/tabs";
 
 export const SignUp = (): JSX.Element => {
   const [showPassword, setShowPassword] = useState(false);

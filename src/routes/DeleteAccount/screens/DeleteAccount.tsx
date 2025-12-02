@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Button } from "../../../../components/ui/button";
-import { Checkbox } from "../../../../components/ui/checkbox";
-import { Input } from "../../../../components/ui/input";
-import { Card, CardContent } from "../../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Checkbox } from "../../../components/ui/checkbox";
+import { Input } from "../../../components/ui/input";
+import { Card, CardContent } from "../../../components/ui/card";
 import { AuthService, CODE_TYPES } from "../../../services/authService";
 import { useUser } from "../../../contexts/UserContext";
 import { HeaderSection } from "../../../components/shared/HeaderSection/HeaderSection";
 import { useVerificationCode } from "../../../hooks/useVerificationCode";
-import { useToast } from "../../../../components/ui/toast";
+import { useToast } from "../../../components/ui/toast";
 import {
   signDeleteAccountMessage,
   getWalletSignatureData,

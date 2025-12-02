@@ -1,13 +1,13 @@
 import { XIcon } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../../../../components/ui/button";
+import { Button } from "../../../components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../../../../components/ui/dialog";
+} from "../../../components/ui/dialog";
 
 export const Screen = (): JSX.Element => {
   return (

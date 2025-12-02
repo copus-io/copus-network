@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
-import { useToast } from "../../../../components/ui/toast";
+import { useToast } from "../../../components/ui/toast";
 import { AuthService } from "../../../services/authService";
-import { Avatar, AvatarFallback, AvatarImage } from "../../../../components/ui/avatar";
-import { Badge } from "../../../../components/ui/badge";
-import { Button } from "../../../../components/ui/button";
-import { Card, CardContent } from "../../../../components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent } from "../../../components/ui/card";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../../utils/categoryStyles";
 
 export const LinkPreview = (): JSX.Element => {

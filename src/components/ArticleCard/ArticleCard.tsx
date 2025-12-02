@@ -167,7 +167,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
           <CardContent className="flex flex-col items-start gap-[15px] p-5 w-full">
             <div className="flex flex-col items-start justify-center gap-[15px] w-full min-w-0 max-w-full">
               <div
-                className="flex flex-col items-start p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
+                className="flex flex-col items-end justify-end p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
                 style={{
                   backgroundImage: article.coverImage
                     ? `url(${article.coverImage})`
@@ -188,31 +188,12 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                   </div>
                 )}
 
-                <Badge
-                  variant="outline"
-                  className={`inline-flex items-center gap-[3px] px-2 py-1 rounded-[50px] border w-fit ${
-                    article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
-                  }`}
-                  style={article.categoryColor ? categoryInlineStyle : undefined}
-                >
-                  <span
-                    className={`[font-family:'Lato',Helvetica] font-semibold text-xs tracking-[0] leading-[12px] ${
-                      article.categoryColor ? '' : categoryStyle.text
-                    }`}
-                    style={article.categoryColor ? { color: categoryInlineStyle.color } : undefined}
-                  >
-                    {article.category}
-                  </span>
-                </Badge>
-
                 {/* Hide website link for paid/locked content */}
                 {!article.isPaymentRequired && (
-                  <div className="absolute bottom-2.5 right-2.5">
-                    <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
-                        {article.website || 'Visit content'}
-                      </span>
-                    </div>
+                  <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
+                      {article.website || 'Visit content'}
+                    </span>
                   </div>
                 )}
               </div>
@@ -279,31 +260,13 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
           <CardContent className="flex flex-col gap-[20px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
               <div
-                className="flex flex-col w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
+                className="flex flex-col w-full justify-end p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
                 style={{
                   backgroundImage: `url(${article.coverImage})`,
                   aspectRatio: '16 / 9'
                 }}
                 title="Click to view content details"
               >
-                {/* Category badge */}
-                <Badge
-                  variant="outline"
-                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit ${
-                    article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
-                  }`}
-                  style={article.categoryColor ? categoryInlineStyle : undefined}
-                >
-                  <span
-                    className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
-                      article.categoryColor ? '' : categoryStyle.text
-                    }`}
-                    style={article.categoryColor ? { color: categoryInlineStyle.color } : undefined}
-                  >
-                    {article.category}
-                  </span>
-                </Badge>
-
                 {/* Website link - hide for paid content */}
                 <div className="flex justify-end">
                   {actions.showWebsite && article.website && !article.isPaymentRequired && (
@@ -471,7 +434,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
           <CardContent className="flex flex-col gap-[20px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
               <div
-                className="flex flex-col w-full justify-between p-[15px] rounded-lg bg-cover bg-center bg-no-repeat"
+                className="flex flex-col w-full justify-end p-[15px] rounded-lg bg-cover bg-center bg-no-repeat"
                 style={{
                   backgroundImage: article.coverImage
                     ? `url(${article.coverImage})`
@@ -479,24 +442,6 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                   aspectRatio: '16 / 9'
                 }}
               >
-                {/* Category badge */}
-                <Badge
-                  variant="outline"
-                  className={`inline-flex items-center gap-[5px] px-2.5 py-2 rounded-[50px] border w-fit ${
-                    article.categoryColor ? '' : `${categoryStyle.border} ${categoryStyle.bg}`
-                  }`}
-                  style={article.categoryColor ? categoryInlineStyle : undefined}
-                >
-                  <span
-                    className={`[font-family:'Lato',Helvetica] font-semibold text-sm tracking-[0] leading-[14px] ${
-                      article.categoryColor ? '' : categoryStyle.text
-                    }`}
-                    style={article.categoryColor ? { color: categoryInlineStyle.color } : undefined}
-                  >
-                    {article.category}
-                  </span>
-                </Badge>
-
                 {/* Website link - hide for paid content */}
                 <div className="flex justify-end">
                   {article.website && !article.isPaymentRequired && (

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useArticles } from "../../../../hooks/useArticles";
 import { Article } from "../../../../types/article";
@@ -6,6 +6,7 @@ import { ArticleListSkeleton } from "../../../../components/ui/skeleton";
 import { useToast } from "../../../../components/ui/toast";
 import { useUser } from "../../../../contexts/UserContext";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
+import { CollectTreasureModal } from "../../../../components/CollectTreasureModal";
 import { getCategoryStyle, getCategoryInlineStyle, formatDate, formatCount } from "../../../../utils/categoryStyles";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
@@ -15,6 +16,9 @@ export const DiscoveryContentSection = (): JSX.Element => {
   const [localArticles, setLocalArticles] = React.useState<Article[]>([]);
   const navigate = useNavigate();
 
+  // Collect Treasure Modal state
+  const [collectModalOpen, setCollectModalOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<{ id: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
   // Welcome guide display state management
   const [showWelcomeGuide, setShowWelcomeGuide] = React.useState(false);
@@ -244,7 +248,43 @@ export const DiscoveryContentSection = (): JSX.Element => {
       return;
     }
 
-    await toggleLike(articleId, currentIsLiked, currentLikeCount);
+    // Always show the collect modal (whether liked or not)
+    // User can uncollect from within the modal
+    const article = localArticles.find(a => a.id === articleId);
+    if (article) {
+      setSelectedArticle({
+        id: articleId,
+        title: article.title,
+        isLiked: currentIsLiked,
+        likeCount: currentLikeCount
+      });
+      setCollectModalOpen(true);
+    }
+  };
+
+  // Handle collect from modal
+  const handleCollect = async (articleId: string, spaceCategory: string, isNewSpace: boolean) => {
+    if (!selectedArticle) return;
+
+    // Perform the like action (this adds to treasury)
+    await toggleLike(articleId, selectedArticle.isLiked, selectedArticle.likeCount);
+
+    // Update selectedArticle state to reflect the change
+    setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: prev.likeCount + 1 } : null);
+
+    // Note: In a real implementation, you might want to also save the space/category association
+    // For now, the like action adds to the user's general treasury
+  };
+
+  // Handle uncollect from modal
+  const handleUncollect = async (articleId: string) => {
+    if (!selectedArticle) return;
+
+    // Perform the unlike action (this removes from treasury)
+    await toggleLike(articleId, true, selectedArticle.likeCount);
+
+    // Update selectedArticle state to reflect the change
+    setSelectedArticle(prev => prev ? { ...prev, isLiked: false, likeCount: Math.max(0, prev.likeCount - 1) } : null);
   };
 
   // Handle user click
@@ -290,7 +330,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             showTreasure: true,
             showVisits: true
           }}
-          onLike={user ? handleLike : undefined} // Only pass onLike for logged-in users
+          onLike={handleLike}
           onUserClick={handleUserClick}
         />
       </div>
@@ -373,7 +413,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
           </div>
         </section>
       ) : (
-        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:px-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
           {localArticles.map((post, index) => renderPostCard(post, index))}
         </section>
       )}
@@ -390,6 +430,22 @@ export const DiscoveryContentSection = (): JSX.Element => {
         <div className="flex justify-center items-center py-8">
           <div className="text-gray-500">You've reached the bottom! No more content to load.</div>
         </div>
+      )}
+
+      {/* Collect Treasure Modal */}
+      {selectedArticle && (
+        <CollectTreasureModal
+          isOpen={collectModalOpen}
+          onClose={() => {
+            setCollectModalOpen(false);
+            setSelectedArticle(null);
+          }}
+          articleId={selectedArticle.id}
+          articleTitle={selectedArticle.title}
+          isAlreadyCollected={selectedArticle.isLiked}
+          onCollect={handleCollect}
+          onUncollect={handleUncollect}
+        />
       )}
     </main>
   );

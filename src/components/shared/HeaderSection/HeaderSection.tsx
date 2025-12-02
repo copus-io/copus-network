@@ -110,30 +110,16 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             className="flex items-center gap-[15px] px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
             asChild
           >
-            {/* Conditional rendering: Show "Re-edit" for author, "Curate" for others */}
-            {articleAuthorId && user?.id === articleAuthorId ? (
-              <Link to="/create">
-                <img
-                  className="w-5 h-5"
-                  alt="Vector"
-                  src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
-                />
-                <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red">
-                  Re-edit
-                </span>
-              </Link>
-            ) : (
-              <Link to="/create">
-                <img
-                  className="w-5 h-5"
-                  alt="Vector"
-                  src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
-                />
-                <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red">
-                  Curate
-                </span>
-              </Link>
-            )}
+            <Link to="/create">
+              <img
+                className="w-5 h-5"
+                alt="Vector"
+                src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+              />
+              <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red">
+                Curate
+              </span>
+            </Link>
           </Button>
         )}
 

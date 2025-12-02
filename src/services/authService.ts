@@ -1058,6 +1058,8 @@ export class AuthService {
   /**
    * Get other user's treasury information (public data) - by namespace
    * Get other user's treasury information (public data) - by namespace
+   * NOTE: We explicitly exclude the Authorization header to ensure we get
+   * the target user's data, not the logged-in user's data.
    */
   static async getOtherUserTreasuryInfoByNamespace(namespace: string): Promise<{
     bio: string;
@@ -1080,12 +1082,25 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    const response = await apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
+    // Make a direct fetch call without the Authorization header
+    // This ensures we get the target user's data, not the logged-in user's
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network';
+    const url = `${API_BASE_URL}/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`;
+
+    const response = await fetch(url, {
       method: 'GET',
-      requiresAuth: false,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
     // User information is in response.data
-    return response.data;
+    return data.data;
   }
 
   /**
@@ -1661,10 +1676,19 @@ export class AuthService {
       params.append('targetUserId', targetUserId.toString());
     }
 
-    return apiRequest(`/client/userHome/pageMyCreatedArticle?${params.toString()}`, {
-      method: 'GET',
-      requiresAuth: false,
-    });
+    // Check if user has token for authenticated request
+    const token = localStorage.getItem('copus_token');
+    if (token) {
+      return apiRequest(`/client/userHome/pageMyCreatedArticle?${params.toString()}`, {
+        method: 'GET',
+        requiresAuth: true,
+      });
+    } else {
+      return apiRequest(`/client/userHome/pageMyCreatedArticle?${params.toString()}`, {
+        method: 'GET',
+        requiresAuth: false,
+      });
+    }
   }
 
 }

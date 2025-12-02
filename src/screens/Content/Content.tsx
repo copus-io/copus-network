@@ -13,6 +13,7 @@ import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categorySt
 import { AuthService } from "../../services/authService";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
+import { CollectTreasureModal } from "../../components/CollectTreasureModal";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
@@ -26,6 +27,138 @@ import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils'
 import { getNetworkConfig, getTokenContract, NetworkType, TokenType } from '../../config/contracts';
 import { getIconUrl, getIconStyle } from '../../config/icons';
 
+// Collection Card Component for "Collected in" section
+interface CollectionItem {
+  id: string;
+  title: string;
+  url: string;
+  coverImage: string;
+}
+
+const CollectionCard = ({
+  title,
+  treasureCount,
+  items,
+  onClick,
+}: {
+  title: string;
+  treasureCount: number;
+  items: CollectionItem[];
+  onClick?: () => void;
+}): JSX.Element => {
+  if (items.length === 0) {
+    return (
+      <section className="relative w-full h-fit flex flex-col items-start gap-[15px]">
+        <div className="flex h-[300px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+          <p className="text-gray-500">No items in this collection</p>
+        </div>
+        <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
+          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-7 whitespace-nowrap">
+            {title}
+          </h2>
+          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
+            {treasureCount} treasures
+          </p>
+        </header>
+      </section>
+    );
+  }
+
+  const [mainItem, ...sideItems] = items.slice(0, 3);
+
+  return (
+    <section
+      className="relative w-full h-fit flex flex-col items-start gap-[15px] cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="flex h-[300px] items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow">
+        {/* Main item on the left */}
+        <article className="inline-flex flex-col items-start justify-center gap-[5px] px-[15px] py-0 relative self-stretch flex-[0_0_auto] rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+          <div
+            className="flex flex-col w-[320px] h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
+            style={{ backgroundImage: `url(${mainItem.coverImage})` }}
+          >
+            <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
+              <a
+                href={mainItem.url.startsWith('http') ? mainItem.url : `https://${mainItem.url}`}
+                className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-[#ffffffcc] rounded-[15px] overflow-hidden"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
+                  {mainItem.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]}
+                </span>
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto]">
+            <h3 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 line-clamp-1">
+              {mainItem.title}
+            </h3>
+          </div>
+        </article>
+
+        {/* Side items on the right */}
+        {sideItems.length > 0 && (
+          <div className="flex flex-col items-start justify-center gap-1 relative flex-1 self-stretch grow rounded-[0px_15px_15px_0px]">
+            {sideItems.map((item, index) => (
+              <article
+                key={item.id}
+                className={`${
+                  index === 0 ? "h-[153px]" : "flex-1 grow"
+                } pl-0 pr-[15px] ${index === 0 ? "py-[15px]" : "py-0"} ${
+                  index === 0
+                    ? "rounded-[0px_15px_0px_0px]"
+                    : "rounded-[0px_0px_15px_0px]"
+                } flex flex-col items-start gap-[5px] relative self-stretch w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
+              >
+                <div
+                  className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
+                  style={{ backgroundImage: `url(${item.coverImage})` }}
+                >
+                  <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
+                    <a
+                      href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
+                      className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
+                        {item.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]}
+                      </span>
+                    </a>
+                  </div>
+                </div>
+
+                <div
+                  className={`flex flex-col items-start gap-[15px] ${
+                    index === 0 ? "mb-[-4.00px]" : ""
+                  } relative self-stretch w-full flex-[0_0_auto]`}
+                >
+                  <h3 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 line-clamp-1">
+                    {item.title}
+                  </h3>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
+        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-7 whitespace-nowrap">
+          {title}
+        </h2>
+        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
+          {treasureCount} treasures
+        </p>
+      </header>
+    </section>
+  );
+};
 
 // Image URL validation and fallback function
 const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
@@ -61,6 +194,9 @@ export const Content = (): JSX.Element => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
+  // Collect Treasure Modal state
+  const [collectModalOpen, setCollectModalOpen] = useState(false);
+
   // ========================================
   // x402 Payment Protocol State Management
   // ========================================
@@ -95,6 +231,9 @@ export const Content = (): JSX.Element => {
 
   // Use new article detail API hook
   const { article, loading, error } = useArticleDetail(id || '');
+
+  // State for "Collected in" section
+  const [collectedInData, setCollectedInData] = useState<{category: string; items: CollectionItem[]}[]>([]);
 
   // ========================================
   // Helper Functions (extracted for code reuse)
@@ -517,6 +656,70 @@ export const Content = (): JSX.Element => {
     }
   }, [content, article, getArticleLikeState]);
 
+  // Fetch "Collected in" data - use the current article's category to create a collection
+  useEffect(() => {
+    const fetchCollectedInData = async () => {
+      if (!article) {
+        return;
+      }
+
+      try {
+        // Create a collection from the current article's category
+        const category = article.categoryInfo?.name || 'General';
+
+        // Create a collection item from the current article
+        const currentArticleItem: CollectionItem = {
+          id: article.uuid,
+          title: article.title,
+          url: article.targetUrl || 'copus.network',
+          coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
+        };
+
+        // If the user is logged in, try to fetch their liked articles in this category
+        if (user?.id) {
+          try {
+            const likedResponse = await AuthService.getMyLikedArticlesCorrect(1, 100, user.id);
+
+            let articlesArray: any[] = [];
+            if (likedResponse?.data?.data && Array.isArray(likedResponse.data.data)) {
+              articlesArray = likedResponse.data.data;
+            } else if (likedResponse?.data && Array.isArray(likedResponse.data)) {
+              articlesArray = likedResponse.data;
+            } else if (Array.isArray(likedResponse)) {
+              articlesArray = likedResponse;
+            }
+
+            // Filter articles by the current article's category
+            const categoryArticles = articlesArray.filter(
+              (art: any) => (art.categoryInfo?.name || 'General') === category
+            );
+
+            if (categoryArticles.length > 0) {
+              const items = categoryArticles.map((art: any): CollectionItem => ({
+                id: art.uuid,
+                title: art.title,
+                url: art.targetUrl || 'copus.network',
+                coverImage: art.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
+              }));
+
+              setCollectedInData([{ category, items }]);
+              return;
+            }
+          } catch (err) {
+            console.warn('Could not fetch user liked articles:', err);
+          }
+        }
+
+        // Fallback: just show the current article in its category
+        setCollectedInData([{ category, items: [currentArticleItem] }]);
+      } catch (err) {
+        console.error('Failed to fetch collected in data:', err);
+      }
+    };
+
+    fetchCollectedInData();
+  }, [article, user?.id]);
+
   // ========================================
   // Event Handlers
   // ========================================
@@ -591,32 +794,65 @@ export const Content = (): JSX.Element => {
       return;
     }
 
+    // Always show the collect modal (whether liked or not)
+    // User can uncollect from within the modal
+    setCollectModalOpen(true);
+  };
+
+  // Handle collect from modal
+  const handleCollect = async (articleId: string, spaceCategory: string, isNewSpace: boolean) => {
+    if (!article) return;
+
     try {
-      const newIsLiked = !isLiked;
-      const newLikesCount = newIsLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+      const newLikesCount = likesCount + 1;
 
       // Update local state immediately
-      setIsLiked(newIsLiked);
+      setIsLiked(true);
       setLikesCount(newLikesCount);
 
       // Update global state simultaneously
-      updateArticleLikeState(article.uuid, newIsLiked, newLikesCount);
+      updateArticleLikeState(article.uuid, true, newLikesCount);
 
       // Call API
       await AuthService.likeArticle(article.uuid);
-      showToast(newIsLiked ? 'Treasured' : 'Untreasured', 'success');
+
+      // Note: In a real implementation, you might also save the space/category association
+    } catch (error) {
+      // Rollback state on API failure
+      setIsLiked(false);
+      setLikesCount(likesCount);
+      updateArticleLikeState(article.uuid, false, likesCount);
+
+      console.error('Collect operation failed:', error);
+      throw error; // Re-throw to let the modal handle the error
+    }
+  };
+
+  // Handle uncollect from modal
+  const handleUncollect = async (articleId: string) => {
+    if (!article) return;
+
+    try {
+      const newLikesCount = Math.max(0, likesCount - 1);
+
+      // Update local state immediately
+      setIsLiked(false);
+      setLikesCount(newLikesCount);
+
+      // Update global state simultaneously
+      updateArticleLikeState(article.uuid, false, newLikesCount);
+
+      // Call API
+      await AuthService.likeArticle(article.uuid);
 
     } catch (error) {
       // Rollback state on API failure
-      const originalIsLiked = !isLiked;
-      const originalLikesCount = originalIsLiked ? likesCount - 1 : likesCount + 1;
+      setIsLiked(true);
+      setLikesCount(likesCount);
+      updateArticleLikeState(article.uuid, true, likesCount);
 
-      setIsLiked(originalIsLiked);
-      setLikesCount(originalLikesCount);
-      updateArticleLikeState(article.uuid, originalIsLiked, originalLikesCount);
-
-      console.error('Like operation failed:', error);
-      showToast('Operation failed, please try again', 'error');
+      console.error('Uncollect operation failed:', error);
+      throw error; // Re-throw to let the modal handle the error
     }
   };
 
@@ -1238,15 +1474,6 @@ export const Content = (): JSX.Element => {
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
-                  <span
-                    className={`relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-medium text-sm text-center tracking-[0.5px] leading-4 whitespace-nowrap capitalize ${
-                      content.categoryApiColor ? '' : content.categoryStyle.text
-                    }`}
-                    style={content.categoryApiColor ? { color: content.categoryInlineStyle.color } : undefined}
-                  >
-                    {content.category}
-                  </span>
-
                   {/* Title with x402 payment badge inline */}
                   <div className="flex flex-col gap-2 w-full">
                     <div className="flex items-center gap-2 w-full">
@@ -1369,6 +1596,26 @@ export const Content = (): JSX.Element => {
               </div>
             </div>
           </article>
+
+          {/* Collected in Section */}
+          {collectedInData.length > 0 && (
+            <section className="flex flex-col items-start gap-[30px] w-full pt-[30px]">
+              <h2 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9">
+                Collected in
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full">
+                {collectedInData.map((collection) => (
+                  <CollectionCard
+                    key={collection.category}
+                    title={collection.category}
+                    treasureCount={collection.items.length}
+                    items={collection.items}
+                    onClick={() => navigate(`/space/${encodeURIComponent(collection.category)}`)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </main>
 
         {/* Sticky bottom button bar */}
@@ -1533,6 +1780,19 @@ export const Content = (): JSX.Element => {
             }
           }}
         />
+
+        {/* Collect Treasure Modal */}
+        {article && (
+          <CollectTreasureModal
+            isOpen={collectModalOpen}
+            onClose={() => setCollectModalOpen(false)}
+            articleId={article.uuid}
+            articleTitle={article.title}
+            isAlreadyCollected={isLiked}
+            onCollect={handleCollect}
+            onUncollect={handleUncollect}
+          />
+        )}
       </div>
     </div>
   );

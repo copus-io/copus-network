@@ -1,14 +1,15 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
-import { UserProvider, useUser } from "./contexts/UserContext";
+import { UserProvider } from "./contexts/UserContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ImagePreviewProvider } from "./contexts/ImagePreviewContext";
-import { ToastProvider, useToast } from "./components/ui/toast";
+import { ToastProvider } from "./components/ui/toast";
 import { GlobalImagePreview } from "./components/ui/GlobalImagePreview";
 import { Discovery } from "./screens/Discovery/Discovery";
+import { Following } from "./screens/Following/Following";
 import { MainFrame } from "./screens/MainFrame/MainFrame";
 import { Notification } from "./screens/Notification/Notification";
 import { Setting } from "./screens/Setting/Setting";
@@ -34,6 +35,7 @@ import { UserProfile } from "./screens/UserProfile/UserProfile";
 import { NotFoundPage } from "./components/pages/NotFoundPage";
 import OAuthRedirect from "./components/OAuthRedirect";
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
+import { Space } from "./screens/Space/Space";
 
 const router = createBrowserRouter([
   {
@@ -47,6 +49,14 @@ const router = createBrowserRouter([
   {
     path: "/copus",
     element: <Discovery />,
+  },
+  {
+    path: "/following",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Following />
+      </AuthGuard>
+    ),
   },
   {
     path: "/treasury",
@@ -103,6 +113,14 @@ const router = createBrowserRouter([
   {
     path: "/user/:namespace/treasury",
     element: <MyTreasury />,
+  },
+  {
+    path: "/space/:category",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Space />
+      </AuthGuard>
+    ),
   },
   {
     path: "/u/:namespace",
@@ -175,47 +193,6 @@ const router = createBrowserRouter([
   },
 ]);
 
-// Create a component that handles global events
-const GlobalEventHandler: React.FC = () => {
-  const { logout } = useUser();
-  const { showToast } = useToast();
-  
-  // Use a flag to prevent duplicate toast notifications
-  const isProcessing = React.useRef(false);
-
-  useEffect(() => {
-    const handleUnauthorizedAccess = async (event: CustomEvent) => {
-      // Prevent duplicate processing
-      if (isProcessing.current) {
-        return;
-      }
-      
-      isProcessing.current = true;
-      
-      try {
-        await logout();
-        showToast('Session expired, please log in again', 'error');
-        // Only redirect to login page if user is on a protected page
-        // For public pages like home, just update the user state without redirecting
-      } finally {
-        // Reset flag in next event loop
-        setTimeout(() => {
-          isProcessing.current = false;
-        }, 0);
-      }
-    };
-
-    // Add event listener for unauthorized access
-    window.addEventListener('unauthorized-access', handleUnauthorizedAccess as EventListener);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('unauthorized-access', handleUnauthorizedAccess as EventListener);
-    };
-  }, [logout, showToast]);
-
-  return null;
-};
 
 export const App = () => {
   return (
@@ -225,7 +202,6 @@ export const App = () => {
           <NotificationProvider>
             <ImagePreviewProvider>
               <ToastProvider>
-                <GlobalEventHandler />
                 <RouterProvider router={router} />
                 <GlobalImagePreview />
               </ToastProvider>

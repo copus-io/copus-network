@@ -67,10 +67,82 @@ export const Create = (): JSX.Element => {
   // Extension detection state
   const [isExtensionInstalled, setIsExtensionInstalled] = useState(false);
 
+  // User's spaces/treasuries state
+  const [userSpaces, setUserSpaces] = useState<{ id: string; name: string }[]>([]);
+  const [spacesLoading, setSpacesLoading] = useState(true);
+
+  // New treasury modal state
+  const [showNewTreasuryModal, setShowNewTreasuryModal] = useState(false);
+  const [newTreasuryName, setNewTreasuryName] = useState("");
+  const [isCreatingTreasury, setIsCreatingTreasury] = useState(false);
+
   // Sort categories to show recently used ones first
   const sortedCategories = useMemo(() => {
     return sortCategoriesByRecent(categories);
   }, [categories]);
+
+  // Fetch user's spaces (from their created articles' categories)
+  useEffect(() => {
+    const fetchUserSpaces = async () => {
+      if (!user?.id) {
+        setSpacesLoading(false);
+        return;
+      }
+
+      try {
+        setSpacesLoading(true);
+        const response = await AuthService.getMyCreatedArticles(1, 100, user.id);
+
+        let articlesArray: any[] = [];
+        if (response?.data?.data && Array.isArray(response.data.data)) {
+          articlesArray = response.data.data;
+        } else if (response?.data && Array.isArray(response.data)) {
+          articlesArray = response.data;
+        } else if (Array.isArray(response)) {
+          articlesArray = response;
+        }
+
+        // Extract unique categories as spaces
+        const categoryMap = new Map<string, string>();
+        articlesArray.forEach((article: any) => {
+          const categoryName = article.categoryInfo?.name;
+          const categoryId = article.categoryInfo?.id;
+          if (categoryName && categoryId && !categoryMap.has(categoryName)) {
+            categoryMap.set(categoryName, categoryId.toString());
+          }
+        });
+
+        // Add user's default treasury
+        const spaces: { id: string; name: string }[] = [
+          { id: 'treasury', name: `${user.username || 'My'}'s treasury` }
+        ];
+
+        // Add category-based spaces
+        Array.from(categoryMap.entries()).forEach(([name, id]) => {
+          spaces.push({ id, name });
+        });
+
+        setUserSpaces(spaces);
+
+        // Set default selection to first space if available
+        if (spaces.length > 0 && !formData.selectedTopic) {
+          setFormData(prev => ({
+            ...prev,
+            selectedTopic: spaces[0].name,
+            selectedTopicId: spaces[0].id === 'treasury' ? 1 : parseInt(spaces[0].id)
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch user spaces:', err);
+        // Fallback to default treasury
+        setUserSpaces([{ id: 'treasury', name: `${user?.username || 'My'}'s treasury` }]);
+      } finally {
+        setSpacesLoading(false);
+      }
+    };
+
+    fetchUserSpaces();
+  }, [user?.id, user?.username]);
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -310,6 +382,39 @@ export const Create = (): JSX.Element => {
     setFormData(prev => ({ ...prev, selectedTopic: topicName, selectedTopicId: topicId }));
     // Track this category as recently used
     addRecentCategory(topicId, topicName);
+  };
+
+  // Handle creating a new treasury
+  const handleCreateNewTreasury = () => {
+    if (!newTreasuryName.trim()) {
+      showToast('Please enter a treasury name', 'error');
+      return;
+    }
+
+    setIsCreatingTreasury(true);
+
+    // For now, add the new treasury to the local list
+    // In the future, this should call an API to create a real treasury/space
+    const newSpace = {
+      id: `new-${Date.now()}`,
+      name: newTreasuryName.trim()
+    };
+
+    setUserSpaces(prev => [...prev, newSpace]);
+
+    // Select the new treasury
+    setFormData(prev => ({
+      ...prev,
+      selectedTopic: newSpace.name,
+      selectedTopicId: 1 // Default category ID for now
+    }));
+
+    showToast(`Treasury "${newTreasuryName.trim()}" created`, 'success');
+
+    // Reset and close modal
+    setNewTreasuryName("");
+    setShowNewTreasuryModal(false);
+    setIsCreatingTreasury(false);
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -840,16 +945,16 @@ export const Create = (): JSX.Element => {
 
             <div className="flex flex-col items-start gap-2.5 w-full">
               <div className="relative w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-[#686868] text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                Choose a topic {categoriesLoading && <span className="text-medium-grey">(Loading...)</span>}
+                Save to treasury {spacesLoading && <span className="text-medium-grey">(Loading...)</span>}
               </div>
 
               <div className="relative w-full">
                 <select
-                  value={formData.selectedTopicId}
+                  value={formData.selectedTopic}
                   onChange={(e) => {
-                    const selectedCategory = sortedCategories.find(cat => cat.id === parseInt(e.target.value));
-                    if (selectedCategory) {
-                      handleTopicSelect(selectedCategory.name, selectedCategory.id);
+                    const selectedSpace = userSpaces.find(space => space.name === e.target.value);
+                    if (selectedSpace) {
+                      handleTopicSelect(selectedSpace.name, selectedSpace.id === 'treasury' ? 1 : parseInt(selectedSpace.id));
                     }
                   }}
                   className="w-full px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] appearance-none cursor-pointer"
@@ -860,13 +965,31 @@ export const Create = (): JSX.Element => {
                     paddingRight: '40px'
                   }}
                 >
-                  {sortedCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
+                  {userSpaces.map((space) => (
+                    <option key={space.id} value={space.name}>
+                      {space.name}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {/* New Treasury Button */}
+              <button
+                className="flex items-center gap-2.5 cursor-pointer hover:opacity-70 transition-opacity mt-1"
+                type="button"
+                onClick={() => setShowNewTreasuryModal(true)}
+                aria-label="Create new treasury"
+              >
+                <img
+                  className="relative w-6 h-6"
+                  alt="Add"
+                  src="https://c.animaapp.com/eANMvAF7/img/plus.svg"
+                  aria-hidden="true"
+                />
+                <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22px] whitespace-nowrap">
+                  New treasury
+                </span>
+              </button>
             </div>
 
             {/* x402 Pay-to-unlock section */}
@@ -1007,6 +1130,109 @@ export const Create = (): JSX.Element => {
           onCrop={handleImageCrop}
           onCancel={handleCancelImageCrop}
         />
+      )}
+
+      {/* New Treasury Modal */}
+      {showNewTreasuryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setShowNewTreasuryModal(false);
+              setNewTreasuryName("");
+            }}
+          />
+
+          {/* Modal */}
+          <div
+            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="new-treasury-title"
+            aria-modal="true"
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowNewTreasuryModal(false);
+                setNewTreasuryName("");
+              }}
+              className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
+              aria-label="Close dialog"
+              type="button"
+            >
+              <img
+                className="w-full"
+                alt=""
+                src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
+              />
+            </button>
+
+            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
+              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
+                <h2
+                  id="new-treasury-title"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+                >
+                  New treasury
+                </h2>
+
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="treasury-name-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Name
+                  </label>
+
+                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                    <input
+                      id="treasury-name-input"
+                      type="text"
+                      value={newTreasuryName}
+                      onChange={(e) => setNewTreasuryName(e.target.value)}
+                      placeholder="Like &quot;Place to go&quot;"
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
+                      aria-required="true"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleCreateNewTreasury();
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                <button
+                  className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    setShowNewTreasuryModal(false);
+                    setNewTreasuryName("");
+                  }}
+                  type="button"
+                >
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    Cancel
+                  </span>
+                </button>
+
+                <button
+                  className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
+                  onClick={handleCreateNewTreasury}
+                  disabled={!newTreasuryName.trim() || isCreatingTreasury}
+                  type="button"
+                >
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    {isCreatingTreasury ? 'Creating...' : 'Create'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
