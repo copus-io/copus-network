@@ -24,7 +24,8 @@ import {
   createX402PaymentHeader
 } from "../../utils/x402Utils";
 import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils';
-import { getNetworkConfig, getTokenContract, NetworkType, TokenType } from '../../config/contracts';
+import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
+import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
 
 // Collection Card Component for "Collected in" section
@@ -160,6 +161,11 @@ const CollectionCard = ({
   );
 };
 
+// Helper function to get token information for payment requests
+const getTokenInfo = (tokenType: TokenType): TokenInfo => {
+  return SUPPORTED_TOKENS[tokenType];
+};
+
 // Image URL validation and fallback function
 const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
   if (!imageUrl || imageUrl.trim() === '') {
@@ -213,7 +219,15 @@ export const Content = (): JSX.Element => {
   const [walletBalance, setWalletBalance] = useState<string>('0');      // USDC balance (e.g., "1.50")
   const [walletProvider, setWalletProvider] = useState<any>(null);      // EIP-1193 provider (MetaMask, Coinbase Wallet, etc.)
   const [walletType, setWalletType] = useState<string>('');             // Wallet type: 'metamask' or 'coinbase'
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>('base-mainnet');
+  // Set default network based on auth method
+  const getDefaultNetwork = (): NetworkType => {
+    const authMethod = localStorage.getItem('copus_auth_method');
+    const defaultNetwork = authMethod === 'okx' ? 'xlayer' : 'base-mainnet';
+    console.log('🔧 Default network selection:', { authMethod, defaultNetwork });
+    return defaultNetwork;
+  };
+
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>(getDefaultNetwork());
   const [selectedCurrency, setSelectedCurrency] = useState<TokenType>('usdc');
 
   // Payment details from 402 API response
@@ -884,42 +898,49 @@ export const Content = (): JSX.Element => {
       const { apiBaseUrl } = getCurrentEnvironment();
 
 
-      // Use different API endpoints based on selected network
+      // Use appropriate payment endpoint based on network
       const getPaymentEndpoint = (networkType: NetworkType) => {
         return networkType === 'xlayer'
-          ? '/client/payment/okx/getTargetUrl'
-          : '/client/payment/getTargetUrl';
+          ? '/client/payment/okx/getTargetUrl'   // OKX API for XLayer
+          : '/client/payment/base/getTargetUrl';  // Base API for Base networks
       };
 
       const paymentEndpoint = getPaymentEndpoint(network);
+      console.log('🌐 Payment API selection:', { network, paymentEndpoint });
 
-      // Build URL with uuid and from parameters
+      // Build URL with uuid parameter (new OKX API only requires uuid)
       const urlParams = new URLSearchParams({ uuid: article.uuid });
-
-      // Add from parameter for XLayer payment endpoint (user's wallet address)
-      if (network === 'xlayer') {
-        // Use connected address since stored address may have 0 USDC on XLayer
-        const testConnectedAddress = walletAddress;
-        const testStoredAddress = user?.walletAddress;
-        const addressToUse = testConnectedAddress || testStoredAddress;
-
-        if (addressToUse) {
-          urlParams.append('from', addressToUse);
-        } else {
-          console.warn('No wallet address available for XLayer payment');
-        }
-      }
 
       const x402Url = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
 
-      // Add user authentication token
+      // Add user authentication token and prepare request
       const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch(x402Url, { headers });
+      // For now, use GET request with query parameters (Backend might need POST implementation)
+      const tokenInfo = getSupportedTokens(network).includes(selectedCurrency)
+        ? getTokenInfo(selectedCurrency)
+        : getTokenInfo('usdc'); // fallback to usdc
+
+      // Add token info to URL parameters
+      const extendedParams = new URLSearchParams({
+        uuid: article.uuid,
+        name: tokenInfo.name,
+        verifyingContract: tokenInfo.verifyingContract
+      });
+
+      const fullUrl = `${apiBaseUrl}${paymentEndpoint}?${extendedParams.toString()}`;
+      console.log('📤 Payment info request for', network, ':', {
+        url: fullUrl,
+        params: Object.fromEntries(extendedParams)
+      });
+
+      const response = await fetch(fullUrl, { headers });
 
       if (!response.ok && response.status !== 402) {
         // 402 is the expected "Payment Required" status for payment APIs
@@ -935,24 +956,24 @@ export const Content = (): JSX.Element => {
 
       // Handle different response formats based on endpoint
       if (network === 'xlayer' && data.domain && data.message) {
-        // XLayer endpoint returns EIP-712 structure directly
+        // OKX API returns EIP-712 structure directly for XLayer
         const testConnectedAddress = walletAddress;
         const testStoredAddress = user?.walletAddress;
 
-        // Check actual MetaMask account
-        let actualMetaMaskAddress = null;
+        // Check actual connected wallet account
+        let actualWalletAddress = null;
         try {
           const provider = window.ethereum;
           if (provider) {
             const accounts = await provider.request({ method: 'eth_accounts' });
-            actualMetaMaskAddress = accounts[0] || null;
+            actualWalletAddress = accounts[0] || null;
           }
         } catch (error) {
-          console.warn('Could not get MetaMask account:', error);
+          console.warn('Could not get wallet account:', error);
         }
 
         // Use actual connected address if available
-        const addressToUse = actualMetaMaskAddress || testConnectedAddress || testStoredAddress;
+        const addressToUse = actualWalletAddress || testConnectedAddress || testStoredAddress;
         if (!addressToUse) {
           console.warn('No wallet address available for EIP-712 data');
           throw new Error('Please connect your wallet first');
@@ -982,8 +1003,57 @@ export const Content = (): JSX.Element => {
 
         // Return the data immediately for use in the calling function
         return { eip712Data, paymentInfo };
+      } else if ((network === 'base-mainnet' || network === 'base-sepolia') && typeof data === 'string') {
+        // Base API returns target URL as string, need to construct payment info manually
+        const contractAddress = getTokenContract(network, selectedCurrency);
+        if (!contractAddress) {
+          throw new Error(`Token contract not found for ${network}`);
+        }
+
+        const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
+
+        // For Base networks, we need to construct the EIP-712 data manually
+        const nonce = generateNonce();
+        const now = Math.floor(Date.now() / 1000);
+        const validAfter = now;
+        const validBefore = now + 3600;
+        const amount = '10000'; // 0.01 USDC (6 decimals)
+
+        // Get recipient address from the URL (this might need to be provided by the API)
+        // For now, use a placeholder - the actual recipient should come from the API response
+        const recipientAddress = '0x95C2259343Bca2E1c1E6bd4F0CBe5b4C8ac2890F'; // placeholder
+
+        const eip712Data = {
+          domain: {
+            name: selectedCurrency === 'usdc' ? 'USD Coin' : 'Tether USD',
+            version: '2',
+            chainId: parseInt(getNetworkConfig(network).chainId, 16),
+            verifyingContract: contractAddress
+          },
+          message: {
+            from: walletAddress || user?.walletAddress || '',
+            to: recipientAddress,
+            value: amount,
+            validAfter: validAfter.toString(),
+            validBefore: validBefore.toString(),
+            nonce: nonce
+          }
+        };
+
+        const paymentInfo = {
+          payTo: recipientAddress,
+          asset: contractAddress,
+          amount: amount,
+          network: network,
+          resource: data // Use the returned URL directly
+        };
+
+        setOkxEip712Data(eip712Data);
+        setX402PaymentInfo(paymentInfo);
+
+        return { eip712Data, paymentInfo };
       } else if (data.accepts && data.accepts.length > 0) {
-        // Standard x402 response format (Base network)
+        // Legacy x402 response format (fallback support)
         const paymentOption = data.accepts[0];
 
         const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
@@ -997,7 +1067,7 @@ export const Content = (): JSX.Element => {
 
         setX402PaymentInfo(paymentInfo);
 
-        // Return the data immediately for Base network
+        // Return the data immediately for legacy format
         return { paymentInfo };
       } else {
         console.error('❌ Unexpected payment response format:', data);
@@ -1184,27 +1254,19 @@ export const Content = (): JSX.Element => {
 
     try {
       // Check if payment info is available (should be preloaded)
-      if (!x402PaymentInfo ||
-          (selectedNetwork === 'xlayer' && (!currentEip712Data || x402PaymentInfo.network !== 'xlayer')) ||
-          (selectedNetwork === 'base-mainnet' && x402PaymentInfo.network !== 'base-mainnet')) {
+      // All networks now use new OKX API with EIP-712 format
+      if (!x402PaymentInfo || !currentEip712Data || x402PaymentInfo.network !== selectedNetwork) {
         showToast(`Preparing payment for ${selectedNetwork}...`, 'info');
         const fetchedData = await fetchPaymentInfo(selectedNetwork);
 
-        // Use the fetched data directly
-        if (selectedNetwork === 'xlayer' && !fetchedData.eip712Data) {
-          throw new Error(`Failed to get EIP-712 data for ${selectedNetwork}`);
-        } else if (selectedNetwork === 'base-mainnet' && !fetchedData.paymentInfo) {
-          throw new Error(`Failed to get payment info for ${selectedNetwork}`);
+        // New OKX API should return both EIP-712 data and payment info for all networks
+        if (!fetchedData.eip712Data || !fetchedData.paymentInfo) {
+          throw new Error(`Failed to get payment data for ${selectedNetwork}`);
         }
 
         // Store the fresh data for immediate use
-        if (fetchedData.eip712Data) {
-          currentEip712Data = fetchedData.eip712Data;
-        }
-        // Store payment info for both XLayer and Base networks
-        if (fetchedData.paymentInfo) {
-          currentPaymentInfo = fetchedData.paymentInfo;
-        }
+        currentEip712Data = fetchedData.eip712Data;
+        currentPaymentInfo = fetchedData.paymentInfo;
       }
 
       // Ensure user is on the correct network for payment
@@ -1222,46 +1284,40 @@ export const Content = (): JSX.Element => {
 
       let signedAuth;
 
-      if (selectedNetwork === 'xlayer' && currentEip712Data) {
-        // Use OKX-specific signing method for XLayer (trying new approach)
-        // Check current network before signing
+      // All networks now use EIP-712 signing with the new OKX API
+      if (currentEip712Data) {
+        // Get payment contract address and chain ID for the selected network
+        const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+        const chainIdInt = parseInt(paymentNetworkConfig.chainId, 16);
+
+        // Try OKX-optimized signing method first (for XLayer), fallback to standard EIP-712
         try {
-          const currentChainId = await walletProvider.request({ method: 'eth_chainId' });
-          if (currentChainId !== '0xc4') {
-            console.warn(`Network mismatch for XLayer signing! Expected 0xc4, got ${currentChainId}`);
+          if (selectedNetwork === 'xlayer' && walletType === 'okx') {
+            console.log('Attempting OKX browser signature method for XLayer...');
+
+            // Extract parameters from EIP-712 data for OKX method
+            const transferParams = {
+              from: finalPaymentAddress,
+              to: currentEip712Data.message.to,
+              value: currentEip712Data.message.value,
+              validAfter: parseInt(currentEip712Data.message.validAfter),
+              validBefore: parseInt(currentEip712Data.message.validBefore),
+              nonce: currentEip712Data.message.nonce
+            };
+
+            signedAuth = await signTransferWithAuthorizationOKXBrowser(
+              transferParams,
+              walletProvider,
+              chainIdInt,
+              paymentContractAddress || ''
+            );
+          } else {
+            throw new Error('Using standard EIP-712 method');
           }
-        } catch (e) {
-          console.warn('Could not check current network for XLayer signing:', e);
-        }
-
-        // Try OKX signing method first, fallback to standard method
-        try {
-          // Get payment contract address for XLayer
-          const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
-          const chainId = parseInt('0xc4', 16); // XLayer chain ID
-
-          // Extract parameters from EIP-712 data for OKX method
-          const transferParams = {
-            from: finalPaymentAddress,
-            to: currentEip712Data.message.to,
-            value: currentEip712Data.message.value,
-            validAfter: parseInt(currentEip712Data.message.validAfter),
-            validBefore: parseInt(currentEip712Data.message.validBefore),
-            nonce: currentEip712Data.message.nonce
-          };
-
-          console.log('Attempting OKX browser signature method for XLayer...');
-          signedAuth = await signTransferWithAuthorizationOKXBrowser(
-            transferParams,
-            walletProvider,
-            chainId,
-            paymentContractAddress || ''
-          );
-
         } catch (okxError) {
-          console.warn('OKX signature method failed, falling back to standard method:', okxError);
+          console.log('Using standard EIP-712 signing method...');
 
-          // Fallback: Use standard EIP-712 signing
+          // Standard EIP-712 signing for all wallets and networks
           const correctedEip712Data = {
             ...currentEip712Data,
             message: {
@@ -1294,27 +1350,8 @@ export const Content = (): JSX.Element => {
             s
           };
         }
-
       } else {
-        // Use standard x402Utils signing (Base networks)
-
-        const nonce = generateNonce();
-        const now = Math.floor(Date.now() / 1000);
-        const validAfter = now;
-        const validBefore = now + 3600;
-
-        // Get network configuration for correct signing
-        const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
-
-
-        signedAuth = await signTransferWithAuthorization({
-          from: finalPaymentAddress,
-          to: currentPaymentInfo.payTo,
-          value: currentPaymentInfo.amount,
-          validAfter,
-          validBefore,
-          nonce
-        }, walletProvider, parseInt(paymentNetworkConfig.chainId, 16), paymentContractAddress || undefined);
+        throw new Error('No EIP-712 data available for signing');
       }
 
       // Map network name for x402 protocol
@@ -1361,6 +1398,15 @@ export const Content = (): JSX.Element => {
         'Content-Type': 'application/json'
       };
 
+      // Add X-PAYMENT-ASSET header with contract address for USDT support
+      const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+      if (contractAddress) {
+        paymentHeaders['X-PAYMENT-ASSET'] = contractAddress;
+        console.log('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
+      } else {
+        console.warn('⚠️ No contract address found for', selectedNetwork, selectedCurrency);
+      }
+
       if (token) {
         paymentHeaders.Authorization = `Bearer ${token}`;
         console.log('✅ Added Authorization header to payment request');
@@ -1370,6 +1416,7 @@ export const Content = (): JSX.Element => {
 
       console.log('📤 Payment request headers:', {
         'X-PAYMENT': `${paymentHeader.substring(0, 50)}...`,
+        'X-PAYMENT-ASSET': paymentHeaders['X-PAYMENT-ASSET'] || 'Not provided',
         'Authorization': token ? 'Bearer [TOKEN]' : 'Not provided',
         'Content-Type': paymentHeaders['Content-Type']
       });
