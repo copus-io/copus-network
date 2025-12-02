@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 Copus 收益统计页面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .animate-pulse-slow {
+            animation: pulse-slow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #f23a00 0%, #ff6b35 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .success-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .warning-orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .info-blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .danger-red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    </style>
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">C</span>
+                    </div>
+                    <h1 class="text-2xl font-bold gradient-text">Copus 收益统计</h1>
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse-slow"></span>
+                    <span>实时更新</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- 概览卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- 总收益 -->
+            <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 success-green rounded-lg flex items-center justify-center">
+                        <span class="text-white text-xl">📈</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">总收益</p>
+                        <p class="text-xs text-green-600">累计收入</p>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-2" id="total-earnings">
+                    1,890.50 USDC
+                </div>
+                <div class="flex items-center text-sm">
+                    <span class="text-green-600 font-medium">↗ +12.5%</span>
+                    <span class="text-gray-500 ml-2">较上月</span>
+                </div>
+            </div>
+
+            <!-- 可提现金额 -->
+            <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 warning-orange rounded-lg flex items-center justify-center">
+                        <span class="text-white text-xl">💸</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">可提现</p>
+                        <p class="text-xs text-orange-600">立即可用</p>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-2" id="available-balance">
+                    234.80 USDC
+                </div>
+                <div class="flex items-center text-sm">
+                    <span class="text-green-600 font-medium">✓ 可提现</span>
+                </div>
+            </div>
+
+            <!-- 本月收益 -->
+            <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 info-blue rounded-lg flex items-center justify-center">
+                        <span class="text-white text-xl">📊</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">本月收益</p>
+                        <p class="text-xs text-blue-600">11月统计</p>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-2">
+                    567.30 USDC
+                </div>
+                <div class="flex items-center text-sm">
+                    <span class="text-green-600 font-medium">↗ +8.2%</span>
+                    <span class="text-gray-500 ml-2">较上月</span>
+                </div>
+            </div>
+
+            <!-- 已提现金额 -->
+            <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100 card-hover">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 danger-red rounded-lg flex items-center justify-center">
+                        <span class="text-white text-xl">🏦</span>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">已提现</p>
+                        <p class="text-xs text-red-600">历史总计</p>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-gray-900 mb-2">
+                    1,155.70 USDC
+                </div>
+                <div class="flex items-center text-sm">
+                    <span class="text-gray-600">5次提现</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收益分析区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- 收益来源 - 高收益作品排行 -->
+            <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">📝 收益来源</h3>
+                    <div class="flex items-center gap-2">
+                        <button class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg">本月</button>
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-lg">全部</button>
+                    </div>
+                </div>
+                <div class="space-y-3" id="top-earning-articles">
+                    <!-- 高收益作品列表将通过 JavaScript 动态生成 -->
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-100 text-center">
+                    <button onclick="showFullArticleRanking()" class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors hover:underline">
+                        查看完整作品排行 →
+                    </button>
+                </div>
+            </div>
+
+            <!-- 收益分析 - 分类收益分析 -->
+            <div class="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">📊 收益分析</h3>
+                    <div class="flex items-center gap-2">
+                        <button class="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-lg">分类</button>
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-lg">趋势</button>
+                    </div>
+                </div>
+                <div class="space-y-4" id="category-earnings">
+                    <!-- 分类收益分析将通过 JavaScript 动态生成 -->
+                </div>
+                <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="text-green-600 text-lg">💡</span>
+                        <div>
+                            <h4 class="text-sm font-medium text-green-900 mb-1">分类策展建议</h4>
+                            <p class="text-sm text-green-800">• Technology 类收益最高，建议重点策展</p>
+                            <p class="text-sm text-green-800">• Life 类内容增长迅速，具有潜力</p>
+                            <p class="text-sm text-green-800">• Art 类内容质量高但数量较少</p>
+                            <p class="text-sm text-green-800 font-medium mt-1 text-blue-700">🎯 多样化策展可提高整体收益</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最近交易记录 -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <h3 class="text-xl font-bold text-gray-900">💳 最近交易记录</h3>
+
+                    <!-- 筛选按钮组 -->
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
+                            <button
+                                id="filter-all"
+                                onclick="filterTransactions('all')"
+                                class="filter-btn active px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 bg-white text-gray-900 shadow-sm"
+                            >
+                                📋 全部
+                            </button>
+                            <button
+                                id="filter-income"
+                                onclick="filterTransactions('income')"
+                                class="filter-btn px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 text-gray-600 hover:text-gray-800"
+                            >
+                                📈 收益
+                            </button>
+                            <button
+                                id="filter-expense"
+                                onclick="filterTransactions('expense')"
+                                class="filter-btn px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 text-gray-600 hover:text-gray-800"
+                            >
+                                💸 支出
+                            </button>
+                        </div>
+                        <button class="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                            查看全部
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">金额</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">时间</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="transaction-table">
+                        <!-- 交易记录将通过 JavaScript 动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 筛选结果统计 -->
+            <div class="px-6 py-4 bg-gray-50 border-t">
+                <div class="flex items-center justify-between text-sm">
+                    <span id="filter-stats" class="text-gray-600">
+                        显示全部 10 条记录
+                    </span>
+                    <div class="flex items-center gap-4 text-xs text-gray-500">
+                        <div class="flex items-center gap-1">
+                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                            <span>收益记录</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                            <span>支出记录</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速操作按钮 -->
+        <div class="mt-8 flex justify-center gap-4">
+            <button onclick="simulateWithdraw()" class="px-8 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105 shadow-lg">
+                💸 立即提现
+            </button>
+            <button onclick="refreshData()" class="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">
+                🔄 刷新数据
+            </button>
+            <button onclick="exportData()" class="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105 shadow-lg">
+                📥 导出报表
+            </button>
+        </div>
+
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center text-gray-600">
+                <p>© 2024 Copus Network. 收益统计页面演示版本</p>
+                <p class="text-sm mt-2">🎯 这是"查看记录和收益详情"功能的完整展示页面</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 完整的交易数据（收益 + 支出）
+        const allTransactions = [
+            { type: '策展收益', amount: '+89.50', status: '已完成', time: '2024-11-28 14:23', icon: '🎯', color: 'text-green-600', category: 'income' },
+            { type: '策展收益', amount: '+73.20', status: '已完成', time: '2024-11-28 11:45', icon: '🎯', color: 'text-green-600', category: 'income' },
+            { type: '提现', amount: '-156.50', status: '已完成', time: '2024-11-27 16:20', icon: '🏦', color: 'text-red-600', category: 'expense' },
+            { type: '手续费', amount: '-1.00', status: '已完成', time: '2024-11-27 16:20', icon: '💸', color: 'text-red-600', category: 'expense' },
+            { type: '策展收益', amount: '+67.80', status: '已完成', time: '2024-11-26 15:30', icon: '🎯', color: 'text-green-600', category: 'income' },
+            { type: '策展收益', amount: '+78.90', status: '已完成', time: '2024-11-25 09:15', icon: '🎯', color: 'text-green-600', category: 'income' },
+            { type: '提现', amount: '-89.00', status: '已完成', time: '2024-11-24 18:45', icon: '🏦', color: 'text-red-600', category: 'expense' },
+            { type: '手续费', amount: '-1.00', status: '已完成', time: '2024-11-24 18:45', icon: '💸', color: 'text-red-600', category: 'expense' },
+            { type: '策展收益', amount: '+54.60', status: '已完成', time: '2024-11-24 12:30', icon: '🎯', color: 'text-green-600', category: 'income' },
+            { type: '平台服务费', amount: '-2.50', status: '已完成', time: '2024-11-23 15:20', icon: '⚙️', color: 'text-red-600', category: 'expense' },
+        ];
+
+        // 当前筛选的数据
+        let transactions = [...allTransactions];
+
+        // 高收益作品数据（按策展收益排序）
+        const topEarningArticles = [
+            {
+                title: "《AI时代的创作者经济：如何在算法中保持人文关怀》",
+                author: "张艺文",
+                category: "Technology",
+                categoryColor: "#3b82f6",
+                earnings: 89.50,
+                views: "2.3k",
+                date: "2024-11-28",
+                description: "深度分析AI对创作者经济的影响..."
+            },
+            {
+                title: "《Web3社交平台的未来：去中心化还是重新中心化？》",
+                author: "李思远",
+                category: "Blockchain",
+                categoryColor: "#8b5cf6",
+                earnings: 78.90,
+                views: "1.8k",
+                date: "2024-11-25",
+                description: "探讨Web3社交平台的发展趋势..."
+            },
+            {
+                title: "《数字游民的工作哲学：在流动中寻找平衡》",
+                author: "王小雨",
+                category: "Life",
+                categoryColor: "#f59e0b",
+                earnings: 73.20,
+                views: "1.9k",
+                date: "2024-11-28",
+                description: "分享数字游民的生活方式..."
+            },
+            {
+                title: "《从ChatGPT到Claude：AI助手进化史》",
+                author: "陈建华",
+                category: "Technology",
+                categoryColor: "#3b82f6",
+                earnings: 67.80,
+                views: "1.5k",
+                date: "2024-11-26",
+                description: "回顾AI助手的发展历程..."
+            },
+            {
+                title: "《策展的艺术：如何在信息噪音中发现价值》",
+                author: "赵美丽",
+                category: "Art",
+                categoryColor: "#10b981",
+                earnings: 54.60,
+                views: "1.2k",
+                date: "2024-11-24",
+                description: "探讨内容策展的核心价值..."
+            }
+        ];
+
+        // 分类收益数据（按分类总收益排序）
+        const categoryEarnings = [
+            {
+                name: "Technology",
+                icon: "💻",
+                color: "#3b82f6",
+                totalEarnings: 246.70,
+                articlesCount: 3,
+                avgEarnings: 82.23,
+                growthRate: "+15.8%",
+                authors: ["张艺文", "陈建华"]
+            },
+            {
+                name: "Blockchain",
+                icon: "⛓️",
+                color: "#8b5cf6",
+                totalEarnings: 134.50,
+                articlesCount: 2,
+                avgEarnings: 67.25,
+                growthRate: "+12.4%",
+                authors: ["李思远"]
+            },
+            {
+                name: "Life",
+                icon: "🌱",
+                color: "#f59e0b",
+                totalEarnings: 108.90,
+                articlesCount: 2,
+                avgEarnings: 54.45,
+                growthRate: "+23.1%",
+                authors: ["王小雨"]
+            },
+            {
+                name: "Art",
+                icon: "🎨",
+                color: "#10b981",
+                totalEarnings: 54.60,
+                articlesCount: 1,
+                avgEarnings: 54.60,
+                growthRate: "+8.9%",
+                authors: ["赵美丽"]
+            }
+        ];
+
+        // 渲染高收益作品列表
+        function renderTopEarningArticles() {
+            const container = document.getElementById('top-earning-articles');
+            container.innerHTML = topEarningArticles.map((article, index) => `
+                <div class="flex items-center gap-4 p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all duration-200 cursor-pointer">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                        ${index + 1}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-medium text-gray-900 text-sm leading-tight mb-1 truncate">${article.title}</h4>
+                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <span class="px-2 py-0.5 rounded-full" style="background-color: ${article.categoryColor}20; color: ${article.categoryColor};">
+                                ${article.category}
+                            </span>
+                            <span>by ${article.author}</span>
+                            <span>•</span>
+                            <span>${article.views} 浏览</span>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="font-bold text-green-600 text-sm">
+                            +${article.earnings.toFixed(2)} USDC
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            ${article.date.substr(5)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 渲染分类收益分析
+        function renderCategoryEarnings() {
+            const container = document.getElementById('category-earnings');
+            container.innerHTML = categoryEarnings.map((category, index) => `
+                <div class="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all duration-200">
+                    <div class="flex items-center gap-4">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-sm">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xl" style="background-color: ${category.color}20; color: ${category.color};">
+                            ${category.icon}
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-900 text-sm mb-1">${category.name}</h4>
+                            <div class="flex items-center gap-3 text-xs text-gray-500">
+                                <span>${category.articlesCount} 篇文章</span>
+                                <span>•</span>
+                                <span>平均 ${category.avgEarnings.toFixed(1)} USDC</span>
+                                <span class="font-medium text-green-600">${category.growthRate}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-green-600 text-lg">
+                            ${category.totalEarnings.toFixed(2)} USDC
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            ${category.authors.join(', ')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 渲染交易记录
+        function renderTransactions() {
+            const tbody = document.getElementById('transaction-table');
+            tbody.innerHTML = transactions.map(tx => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            <span class="text-lg">${tx.icon}</span>
+                            <span class="font-medium text-gray-900">${tx.type}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="font-bold ${tx.color}">${tx.amount} USDC</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-3 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                            ${tx.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${tx.time}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 模拟提现操作
+        function simulateWithdraw() {
+            alert('🎯 跳转到提现页面！\n\n这里演示了从收益统计页面跳转到提现功能的交互流程。\n\n在完整版本中，会打开提现弹窗或跳转到提现页面。');
+        }
+
+        // 刷新数据
+        function refreshData() {
+            // 模拟数据更新动画
+            const cards = document.querySelectorAll('.card-hover');
+            cards.forEach(card => {
+                card.style.opacity = '0.7';
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                }, 500);
+            });
+
+            setTimeout(() => {
+                alert('✅ 数据已刷新！\n\n收益统计信息已更新到最新状态。');
+            }, 600);
+        }
+
+        // 导出报表
+        function exportData() {
+            alert('📥 导出功能演示！\n\n在完整版本中，这里会导出：\n• 收益明细 CSV 文件\n• 月度报表 PDF\n• 税务申报表\n• 交易流水记录');
+        }
+
+        // 显示完整作品排行榜
+        function showFullArticleRanking() {
+            const articleRankingInfo = topEarningArticles.map((article, index) =>
+                `${index + 1}. ${article.title} - ${article.earnings.toFixed(2)} USDC`
+            ).join('\n');
+
+            alert(`📝 完整作品收益排行榜\n\n按策展收益从高到低排序：\n\n${articleRankingInfo}\n\n💡 在完整版本中，这里会打开详细的作品排行榜页面，包含更多作品信息和筛选功能。`);
+        }
+
+        // 筛选交易记录
+        function filterTransactions(filterType) {
+            console.log('筛选类型:', filterType);
+
+            // 更新按钮状态
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-white', 'text-gray-900', 'shadow-sm');
+                btn.classList.add('text-gray-600', 'hover:text-gray-800');
+            });
+
+            const activeBtn = document.getElementById(`filter-${filterType}`);
+            activeBtn.classList.add('active', 'bg-white', 'text-gray-900', 'shadow-sm');
+            activeBtn.classList.remove('text-gray-600', 'hover:text-gray-800');
+
+            // 筛选数据
+            if (filterType === 'all') {
+                transactions = [...allTransactions];
+            } else if (filterType === 'income') {
+                transactions = allTransactions.filter(t => t.category === 'income');
+            } else if (filterType === 'expense') {
+                transactions = allTransactions.filter(t => t.category === 'expense');
+            }
+
+            // 重新渲染
+            renderTransactions();
+
+            // 更新筛选结果统计
+            const filterStatsElement = document.getElementById('filter-stats');
+            const filterStats = {
+                all: `显示全部 ${allTransactions.length} 条记录`,
+                income: `显示 ${transactions.length} 条收益记录 📈`,
+                expense: `显示 ${transactions.length} 条支出记录 💸`
+            };
+
+            filterStatsElement.textContent = filterStats[filterType] || `筛选完成，共 ${transactions.length} 条记录`;
+            console.log('筛选结果:', filterStats[filterType]);
+        }
+
+        // 数字动画效果
+        function animateNumbers() {
+            const numberElements = [
+                { id: 'total-earnings', target: 1890.50 },
+                { id: 'available-balance', target: 234.80 }
+            ];
+
+            numberElements.forEach(({ id, target }) => {
+                const element = document.getElementById(id);
+                let current = 0;
+                const increment = target / 100;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(timer);
+                    }
+                    element.textContent = `${current.toFixed(2)} USDC`;
+                }, 20);
+            });
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTransactions();
+            renderTopEarningArticles();
+            renderCategoryEarnings();
+            setTimeout(animateNumbers, 500);
+
+            console.log('🎯 Copus 收益统计页面加载完成！');
+            console.log('💡 这是从"查看记录和收益详情"跳转过来的目标页面');
+            console.log('📝 已加载高收益作品排行榜');
+            console.log('📊 已加载分类收益分析');
+        });
+    </script>
+</body>
+</html>

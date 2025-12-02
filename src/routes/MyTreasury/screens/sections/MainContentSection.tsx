@@ -892,11 +892,9 @@ export const MainContentSection = (): JSX.Element => {
     const count = typeof treasureCount === 'string' ? parseInt(treasureCount) || 0 : treasureCount;
     // 基于文章ID和点赞数生成伪随机但一致的收益数据
     const seed = articleId.charCodeAt(0) + count;
-    const baseMonthly = Math.max(1.2, (count * 0.05) + (seed % 20) * 0.3);
-    const baseTotal = Math.max(5.8, baseMonthly * (3 + (seed % 8)) + (seed % 50) * 0.8);
+    const baseTotal = Math.max(5.8, (count * 0.1) + (seed % 30) * 0.6 + (seed % 50) * 0.4);
 
     return {
-      monthlyEarnings: parseFloat(baseMonthly.toFixed(2)),
       totalEarnings: parseFloat(baseTotal.toFixed(2)),
       isEarningsPreview: true
     };

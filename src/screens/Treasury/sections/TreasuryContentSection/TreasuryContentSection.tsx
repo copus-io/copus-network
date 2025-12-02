@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
 import { AuthService } from "../../../../services/authService";
@@ -6,6 +6,8 @@ import { useUser } from "../../../../contexts/UserContext";
 import { useToast } from "../../../../components/ui/toast";
 import { formatDate } from "../../../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
+import { EarningsOverview, EarningsData } from "../../../../components/EarningsOverview/EarningsOverview";
+import { FinancialRecords } from "../../../../components/FinancialRecords/FinancialRecords";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
 interface TreasuryArticle extends ArticleData {
@@ -23,6 +25,15 @@ export const TreasuryContentSection = (): JSX.Element => {
     likedArticleCount: 0,
     articleCount: 0,
     myArticleLikedCount: 0
+  });
+
+  // 添加提现功能状态
+  const [activeTab, setActiveTab] = useState<'treasury' | 'earnings'>('earnings');
+  const [earningsData, setEarningsData] = useState<EarningsData>({
+    totalEarnings: 1890.50,
+    availableBalance: 234.80,
+    withdrawnAmount: 500.00,
+    lastWithdrawDate: '2024-11-25'
   });
 
 
@@ -326,6 +337,59 @@ export const TreasuryContentSection = (): JSX.Element => {
     );
   }
 
+  // 处理提现确认 - 使用 useCallback 稳定函数引用
+  const handleWithdraw = useCallback((amount: number, walletAddress: string) => {
+    // 模拟提现成功，更新余额
+    setEarningsData(prev => ({
+      ...prev,
+      availableBalance: prev.availableBalance - amount,
+      withdrawnAmount: prev.withdrawnAmount + amount,
+      lastWithdrawDate: new Date().toLocaleDateString()
+    }));
+
+    showToast(`提现成功！${amount} USDC 将在1-3分钟内到账`, 'success');
+  }, [showToast]);
+
+  // 处理查看记录 - 使用 useCallback 稳定函数引用
+  const handleViewRecords = useCallback(() => {
+    console.log('🔍 点击查看记录按钮，切换到收益标签页');
+    console.log('🔍 当前activeTab:', activeTab);
+
+    // 如果当前已经在earnings标签，直接滚动
+    if (activeTab === 'earnings') {
+      console.log('📊 已在earnings标签，直接滚动到财务记录');
+      const recordsElement = document.querySelector('[data-financial-records]');
+      if (recordsElement) {
+        console.log('✅ 找到财务记录元素，执行滚动');
+        recordsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        console.log('❌ 财务记录元素未找到，可能还未渲染');
+      }
+      return;
+    }
+
+    // 切换到earnings标签页
+    console.log('🔄 切换到earnings标签页');
+    setActiveTab('earnings');
+
+    // 使用递归重试的方式确保元素渲染完成
+    const scrollToRecords = (retries = 5) => {
+      const recordsElement = document.querySelector('[data-financial-records]');
+      if (recordsElement) {
+        console.log('📊 找到财务记录元素，执行滚动');
+        recordsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (retries > 0) {
+        console.log(`⏳ 财务记录元素未找到，${retries} 次重试剩余`);
+        setTimeout(() => scrollToRecords(retries - 1), 200);
+      } else {
+        console.warn('❌ 无法找到财务记录元素');
+      }
+    };
+
+    // 先等待一个短暂延迟让React更新DOM
+    setTimeout(scrollToRecords, 100);
+  }, [activeTab]);
+
   return (
     <div className="flex flex-col items-start gap-[30px] pb-5 min-h-screen">
       <header className="flex items-start justify-between w-full">
@@ -365,9 +429,11 @@ export const TreasuryContentSection = (): JSX.Element => {
           )}
 
           <p className="text-gray-600 text-base">
-            {treasuryStats.likedArticleCount > 0
-              ? `共收藏了 ${treasuryStats.likedArticleCount} 篇文章`
-              : '还没有收藏任何文章'
+            {activeTab === 'treasury'
+              ? (treasuryStats.likedArticleCount > 0
+                  ? `共收藏了 ${treasuryStats.likedArticleCount} 篇文章`
+                  : '还没有收藏任何文章')
+              : '管理你的收益和提现记录'
             }
           </p>
         </div>
@@ -375,32 +441,91 @@ export const TreasuryContentSection = (): JSX.Element => {
         <Button
           variant="outline"
           className="h-10 gap-3 px-5 py-[15px] rounded-[100px] border-[#686868] font-p font-[number:var(--p-font-weight)] text-dark-grey text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] [font-style:var(--p-font-style)] hover:bg-gray-50 transition-colors"
-          onClick={() => showToast('收藏管理功能开发中', 'info')}
+          onClick={() => showToast(`${activeTab === 'treasury' ? '收藏管理' : '收益管理'}功能开发中`, 'info')}
         >
-          管理收藏
+          {activeTab === 'treasury' ? '管理收藏' : '查看明细'}
         </Button>
       </header>
 
-      {likedArticles.length === 0 ? (
-        <div className="flex flex-col items-center justify-center w-full h-64 text-center">
-          <img
-            className="w-16 h-16 mb-4 opacity-50"
-            alt="Empty treasure"
-            src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
+      {/* 标签页切换 */}
+      <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('earnings')}
+          className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
+            activeTab === 'earnings'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          💰 收益管理
+        </button>
+        <button
+          onClick={() => setActiveTab('treasury')}
+          className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
+            activeTab === 'treasury'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          📚 我的收藏
+        </button>
+      </div>
+
+      {/* 根据活动标签显示内容 */}
+      {console.log('🔧 当前 activeTab:', activeTab)}
+      {activeTab === 'earnings' ? (
+        <div className="w-full">
+          {console.log('🔧 渲染 earnings 内容')}
+          {console.log('🔧 传递 handleViewRecords:', handleViewRecords)}
+          <EarningsOverview
+            earnings={earningsData}
+            walletAddress="0x742d35Cc6cF8C3c4D34C"
+            onWithdraw={handleWithdraw}
+            onViewRecords={handleViewRecords}
           />
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">宝藏空空如也</h3>
-          <p className="text-gray-500 mb-4">点赞喜欢的文章，它们就会出现在这里</p>
-          <Link
-            to="/"
-            className="px-4 py-2 bg-yellow text-white rounded-lg hover:bg-yellow/90 transition-colors"
+
+          {/* 财务记录区域 */}
+          <div className="mt-8">
+            {console.log('🔧 渲染 FinancialRecords 组件')}
+            <FinancialRecords
+              onExport={() => {
+                showToast('记录导出功能开发中，即将支持CSV/Excel格式', 'info');
+              }}
+            />
+          </div>
+
+          {/* 临时测试元素 - 确保有跳转目标 */}
+          <div
+            data-financial-records-test
+            className="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg"
           >
-            去发现好内容
-          </Link>
+            <h3 className="text-lg font-bold text-yellow-800 mb-2">🧪 测试跳转目标</h3>
+            <p className="text-yellow-700">如果滚动到这里，说明跳转功能正常工作！</p>
+          </div>
         </div>
       ) : (
-        <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8 px-0 lg:px-5">
-          {likedArticles.map((article) => renderArticleCard(article))}
-        </div>
+        // 宝藏收藏内容
+        likedArticles.length === 0 ? (
+          <div className="flex flex-col items-center justify-center w-full h-64 text-center">
+            <img
+              className="w-16 h-16 mb-4 opacity-50"
+              alt="Empty treasure"
+              src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
+            />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">宝藏空空如也</h3>
+            <p className="text-gray-500 mb-4">点赞喜欢的文章，它们就会出现在这里</p>
+            <Link
+              to="/"
+              className="px-4 py-2 bg-yellow text-white rounded-lg hover:bg-yellow/90 transition-colors"
+            >
+              去发现好内容
+            </Link>
+          </div>
+        ) : (
+          <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-8 px-0 lg:px-5">
+            {likedArticles.map((article) => renderArticleCard(article))}
+          </div>
+        )
       )}
     </div>
   );

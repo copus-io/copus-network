@@ -8,6 +8,7 @@ interface User {
   id: number;
   username: string;
   email: string;
+  emailVerified: boolean;
   bio: string;
   coverUrl: string;
   faceUrl: string;
