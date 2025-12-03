@@ -52,23 +52,23 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
 
   // Determine the user avatar: only use faceUrl if it's a real uploaded image, otherwise use default
   const getUserAvatar = (): string => {
-    const faceUrl = backendArticle.authorInfo.faceUrl;
+    const faceUrl = backendArticle.authorInfo?.faceUrl;
     if (isGeneratedAvatar(faceUrl)) {
       return profileDefaultAvatar;
     }
-    return faceUrl!;
+    return faceUrl || profileDefaultAvatar;
   };
 
   const transformedArticle = {
     id: backendArticle.uuid,
     title: backendArticle.title,
     description: backendArticle.content,
-    category: backendArticle.categoryInfo.name,
-    categoryColor: backendArticle.categoryInfo.color, // Save category color returned from backend
+    category: backendArticle.categoryInfo?.name || '',
+    categoryColor: backendArticle.categoryInfo?.color, // Save category color returned from backend
     coverImage: processImageUrl(backendArticle.coverUrl),
-    userName: backendArticle.authorInfo.username,
-    userId: backendArticle.authorInfo.id,
-    namespace: backendArticle.authorInfo.namespace, // Add namespace field
+    userName: backendArticle.authorInfo?.username || 'Unknown',
+    userId: backendArticle.authorInfo?.id,
+    namespace: backendArticle.authorInfo?.namespace, // Add namespace field
     userAvatar: getUserAvatar(), // Two states only: user's real uploaded image or default image - no generated avatars
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
