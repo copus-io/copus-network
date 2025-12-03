@@ -241,16 +241,25 @@ export const publishArticle = async (articleData: {
   coverUrl: string;
   targetUrl: string;
   categoryId: number;
+  spaceIds?: number[]; // Optional: array of space IDs to save the article to
+  targetUrlIsLocked?: boolean;
+  priceInfo?: {
+    chainId: string;
+    currency: string;
+    price: number;
+  };
 }): Promise<{ uuid: string }> => {
 
   const endpoint = '/client/author/article/edit';
 
   try {
+    console.log('📤 Calling publishArticle API with data:', articleData);
     const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),
     });
 
+    console.log('📥 publishArticle API response:', response);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'Failed to publish article');
