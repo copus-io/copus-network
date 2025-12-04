@@ -24,6 +24,7 @@ import { addRecentCategory, sortCategoriesByRecent } from "../../utils/recentCat
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import { queryClient } from "../../lib/queryClient";
 import { getSpaceDisplayName } from "../../components/ui/TreasuryCard";
+import { ChooseTreasuriesModal, SelectedSpace } from "../../components/ChooseTreasuriesModal/ChooseTreasuriesModal";
 
 
 export const Create = (): JSX.Element => {
@@ -76,6 +77,10 @@ export const Create = (): JSX.Element => {
   const [showNewTreasuryModal, setShowNewTreasuryModal] = useState(false);
   const [newTreasuryName, setNewTreasuryName] = useState("");
   const [isCreatingTreasury, setIsCreatingTreasury] = useState(false);
+
+  // Choose treasuries modal state
+  const [showChooseTreasuriesModal, setShowChooseTreasuriesModal] = useState(false);
+  const [selectedTreasuries, setSelectedTreasuries] = useState<SelectedSpace[]>([]);
 
   // Sort categories to show recently used ones first
   const sortedCategories = useMemo(() => {
@@ -957,51 +962,42 @@ export const Create = (): JSX.Element => {
 
             <div className="flex flex-col items-start gap-2.5 w-full">
               <div className="relative w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-[#686868] text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                Save to treasury {spacesLoading && <span className="text-medium-grey">(Loading...)</span>}
+                Save to treasury
               </div>
 
-              <div className="relative w-full">
-                <select
-                  value={formData.selectedTopic}
-                  onChange={(e) => {
-                    const selectedSpace = userSpaces.find(space => space.name === e.target.value);
-                    if (selectedSpace) {
-                      handleTopicSelect(selectedSpace.name, parseInt(selectedSpace.id));
-                    }
-                  }}
-                  className="w-full px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] appearance-none cursor-pointer"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23686868' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 15px center',
-                    paddingRight: '40px'
-                  }}
-                >
-                  {userSpaces.map((space) => (
-                    <option key={space.id} value={space.name}>
-                      {space.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* New Treasury Button */}
+              {/* Choose Treasuries Button - styled like Upload button */}
               <button
-                className="flex items-center gap-2.5 cursor-pointer hover:opacity-70 transition-opacity mt-1"
                 type="button"
-                onClick={() => setShowNewTreasuryModal(true)}
-                aria-label="Create new treasury"
+                onClick={() => setShowChooseTreasuriesModal(true)}
+                className="flex items-center justify-center px-5 py-2.5 bg-white rounded-[15px] border border-solid border-light-grey hover:border-red hover:shadow-sm transition-all cursor-pointer"
               >
-                <img
-                  className="relative w-6 h-6"
-                  alt="Add"
-                  src="https://c.animaapp.com/eANMvAF7/img/plus.svg"
-                  aria-hidden="true"
-                />
-                <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22px] whitespace-nowrap">
-                  New treasury
+                <svg className="w-5 h-5 text-medium-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span className="ml-2 [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">
+                  Choose treasuries
                 </span>
               </button>
+
+              {/* Display selected treasuries */}
+              {selectedTreasuries.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selectedTreasuries.map((treasury) => (
+                    <span
+                      key={treasury.id}
+                      className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm text-dark-grey"
+                    >
+                      {treasury.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {selectedTreasuries.length === 0 && (
+                <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm">
+                  No treasury selected
+                </span>
+              )}
             </div>
 
             {/* x402 Pay-to-unlock section */}
@@ -1246,6 +1242,24 @@ export const Create = (): JSX.Element => {
           </div>
         </div>
       )}
+
+      {/* Choose Treasuries Modal */}
+      <ChooseTreasuriesModal
+        isOpen={showChooseTreasuriesModal}
+        onClose={() => setShowChooseTreasuriesModal(false)}
+        onSave={(selected) => {
+          setSelectedTreasuries(selected);
+          // Update formData with first selected treasury for the publish API
+          if (selected.length > 0) {
+            setFormData(prev => ({
+              ...prev,
+              selectedTopic: selected[0].name,
+              selectedTopicId: selected[0].id
+            }));
+          }
+        }}
+        initialSelectedIds={selectedTreasuries.map(t => t.id)}
+      />
     </div>
   );
 };
