@@ -146,26 +146,38 @@ export const MainContentSection = (): JSX.Element => {
         // Fetch user info
         let processedInfo;
         console.log('Fetching user info for:', { isViewingOtherUser, targetNamespace, namespace, userNamespace: user?.namespace });
-        if (isViewingOtherUser && targetNamespace) {
-          console.log('Calling getOtherUserTreasuryInfoByNamespace with namespace:', targetNamespace);
-          processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(targetNamespace);
-          console.log('Raw API response for other user:', processedInfo);
-        } else if (user?.namespace) {
-          const userInfo = await AuthService.getUserHomeInfo(user.namespace);
-          processedInfo = userInfo.data || userInfo;
-        } else {
-          const userInfo = await AuthService.getUserTreasuryInfo();
-          processedInfo = userInfo.data || userInfo;
+
+        try {
+          if (isViewingOtherUser && targetNamespace) {
+            console.log('Calling getOtherUserTreasuryInfoByNamespace with namespace:', targetNamespace);
+            processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(targetNamespace);
+            console.log('Raw API response for other user:', processedInfo);
+          } else if (user?.namespace) {
+            const userInfo = await AuthService.getUserHomeInfo(user.namespace);
+            processedInfo = userInfo.data || userInfo;
+          } else {
+            const userInfo = await AuthService.getUserTreasuryInfo();
+            processedInfo = userInfo.data || userInfo;
+          }
+        } catch (userInfoErr) {
+          console.warn('Failed to fetch user info, using logged-in user data:', userInfoErr);
+          // Fall back to logged-in user's info if available
+          if (user) {
+            processedInfo = user;
+          }
         }
 
         console.log('Processed user info:', processedInfo);
         setTreasuryUserInfo(processedInfo);
 
         // Get target user ID for pageMySpaces API
+        // Try multiple sources for the user ID
         const targetUserId = processedInfo?.id || processedInfo?.userId || user?.id;
         if (!targetUserId) {
-          console.error('No target user ID available');
-          setError('Failed to load treasury data - user ID not found');
+          console.warn('No target user ID available, showing empty state');
+          // Don't show error, just show empty treasury
+          setSpaces([]);
+          setLoading(false);
           return;
         }
 
