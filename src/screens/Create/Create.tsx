@@ -23,6 +23,7 @@ import { validateImageFile, compressImage, createImagePreview, revokeImagePrevie
 import { addRecentCategory, sortCategoriesByRecent } from "../../utils/recentCategories";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import { queryClient } from "../../lib/queryClient";
+import { getSpaceDisplayName } from "../../components/ui/TreasuryCard";
 
 
 export const Create = (): JSX.Element => {
@@ -81,7 +82,7 @@ export const Create = (): JSX.Element => {
     return sortCategoriesByRecent(categories);
   }, [categories]);
 
-  // Fetch user's spaces (from their created articles' categories)
+  // Fetch user's spaces using bindableSpaces API
   useEffect(() => {
     const fetchUserSpaces = async () => {
       if (!user?.id) {
@@ -91,35 +92,30 @@ export const Create = (): JSX.Element => {
 
       try {
         setSpacesLoading(true);
-        const response = await AuthService.getMyCreatedArticles(1, 100, user.id);
+        // Use the new bindableSpaces API
+        const response = await AuthService.getBindableSpaces();
+        console.log('Bindable spaces response (Create page):', response);
 
-        let articlesArray: any[] = [];
-        if (response?.data?.data && Array.isArray(response.data.data)) {
-          articlesArray = response.data.data;
-        } else if (response?.data && Array.isArray(response.data)) {
-          articlesArray = response.data;
+        // Parse the response - handle different possible formats
+        let spacesArray: any[] = [];
+        if (response?.data && Array.isArray(response.data)) {
+          spacesArray = response.data;
         } else if (Array.isArray(response)) {
-          articlesArray = response;
+          spacesArray = response;
         }
 
-        // Extract unique categories as spaces
-        const categoryMap = new Map<string, string>();
-        articlesArray.forEach((article: any) => {
-          const categoryName = article.categoryInfo?.name;
-          const categoryId = article.categoryInfo?.id;
-          if (categoryName && categoryId && !categoryMap.has(categoryName)) {
-            categoryMap.set(categoryName, categoryId.toString());
-          }
-        });
+        // Transform spaces to the format expected by the dropdown
+        const spaces: { id: string; name: string }[] = spacesArray.map((space: any) => {
+          // Get display name using the same logic as TreasuryCard
+          const displayName = getSpaceDisplayName({
+            ...space,
+            ownerInfo: { username: user.username || 'User' },
+          });
 
-        // Add user's default treasury
-        const spaces: { id: string; name: string }[] = [
-          { id: 'treasury', name: `${user.username || 'My'}'s treasury` }
-        ];
-
-        // Add category-based spaces
-        Array.from(categoryMap.entries()).forEach(([name, id]) => {
-          spaces.push({ id, name });
+          return {
+            id: space.id.toString(),
+            name: displayName,
+          };
         });
 
         setUserSpaces(spaces);
@@ -129,13 +125,13 @@ export const Create = (): JSX.Element => {
           setFormData(prev => ({
             ...prev,
             selectedTopic: spaces[0].name,
-            selectedTopicId: spaces[0].id === 'treasury' ? 1 : parseInt(spaces[0].id)
+            selectedTopicId: parseInt(spaces[0].id)
           }));
         }
       } catch (err) {
         console.error('Failed to fetch user spaces:', err);
-        // Fallback to default treasury
-        setUserSpaces([{ id: 'treasury', name: `${user?.username || 'My'}'s treasury` }]);
+        // Fallback to empty array - user can still create new treasury
+        setUserSpaces([]);
       } finally {
         setSpacesLoading(false);
       }
@@ -385,7 +381,7 @@ export const Create = (): JSX.Element => {
   };
 
   // Handle creating a new treasury
-  const handleCreateNewTreasury = () => {
+  const handleCreateNewTreasury = async () => {
     if (!newTreasuryName.trim()) {
       showToast('Please enter a treasury name', 'error');
       return;
@@ -393,28 +389,44 @@ export const Create = (): JSX.Element => {
 
     setIsCreatingTreasury(true);
 
-    // For now, add the new treasury to the local list
-    // In the future, this should call an API to create a real treasury/space
-    const newSpace = {
-      id: `new-${Date.now()}`,
-      name: newTreasuryName.trim()
-    };
+    try {
+      // Call the createSpace API to create a new treasury
+      const createResponse = await AuthService.createSpace(newTreasuryName.trim());
+      console.log('Create space response:', createResponse);
 
-    setUserSpaces(prev => [...prev, newSpace]);
+      // Extract the created space from response
+      const createdSpace = createResponse?.data || createResponse;
 
-    // Select the new treasury
-    setFormData(prev => ({
-      ...prev,
-      selectedTopic: newSpace.name,
-      selectedTopicId: 1 // Default category ID for now
-    }));
+      if (!createdSpace?.id) {
+        throw new Error('Failed to create treasury - no ID returned');
+      }
 
-    showToast(`Treasury "${newTreasuryName.trim()}" created`, 'success');
+      // Add the new treasury to the spaces list with real data from API
+      const newSpace = {
+        id: createdSpace.id.toString(),
+        name: createdSpace.name || newTreasuryName.trim()
+      };
 
-    // Reset and close modal
-    setNewTreasuryName("");
-    setShowNewTreasuryModal(false);
-    setIsCreatingTreasury(false);
+      setUserSpaces(prev => [...prev, newSpace]);
+
+      // Select the new treasury
+      setFormData(prev => ({
+        ...prev,
+        selectedTopic: newSpace.name,
+        selectedTopicId: parseInt(newSpace.id)
+      }));
+
+      showToast(`Treasury "${newTreasuryName.trim()}" created`, 'success');
+
+      // Reset and close modal
+      setNewTreasuryName("");
+      setShowNewTreasuryModal(false);
+    } catch (err) {
+      console.error('Failed to create treasury:', err);
+      showToast('Failed to create treasury', 'error');
+    } finally {
+      setIsCreatingTreasury(false);
+    }
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -954,7 +966,7 @@ export const Create = (): JSX.Element => {
                   onChange={(e) => {
                     const selectedSpace = userSpaces.find(space => space.name === e.target.value);
                     if (selectedSpace) {
-                      handleTopicSelect(selectedSpace.name, selectedSpace.id === 'treasury' ? 1 : parseInt(selectedSpace.id));
+                      handleTopicSelect(selectedSpace.name, parseInt(selectedSpace.id));
                     }
                   }}
                   className="w-full px-[15px] py-2.5 bg-white rounded-[15px] border border-solid border-light-grey focus:border-red focus:outline-none [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] appearance-none cursor-pointer"

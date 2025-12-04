@@ -189,19 +189,32 @@ export const MainContentSection = (): JSX.Element => {
             processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(namespace);
             targetUserId = processedInfo?.id;
             console.log('User info:', processedInfo, 'userId:', targetUserId);
+
+            if (!targetUserId) {
+              console.warn('User not found for namespace:', namespace);
+              setError('User not found. Please check the URL or log in to view your treasury.');
+              setLoading(false);
+              return;
+            }
           } catch (err) {
             console.warn('Failed to fetch user info:', err);
-            setError('User not found');
+            setError('User not found. Please check the URL or log in to view your treasury.');
             setLoading(false);
             return;
           }
+        } else {
+          // Not logged in and no namespace - show login prompt
+          console.warn('Not logged in and no namespace provided');
+          setError('Please log in to view your treasury.');
+          setLoading(false);
+          return;
         }
 
         setTreasuryUserInfo(processedInfo);
 
         if (!targetUserId) {
-          console.warn('No target user ID available, showing empty state');
-          setSpaces([]);
+          console.warn('No target user ID available');
+          setError('Unable to load treasury. Please try logging in.');
           setLoading(false);
           return;
         }

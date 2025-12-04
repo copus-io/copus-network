@@ -16,6 +16,7 @@ const SpaceInfoSection = ({
   authorNamespace,
   isFollowing,
   isOwner,
+  spaceType,
   onFollow,
   onShare,
   onAuthorClick,
@@ -28,11 +29,14 @@ const SpaceInfoSection = ({
   authorNamespace?: string;
   isFollowing: boolean;
   isOwner: boolean;
+  spaceType?: number;
   onFollow: () => void;
   onShare: () => void;
   onAuthorClick: () => void;
   onEdit?: () => void;
 }): JSX.Element => {
+  // Hide edit button for default treasuries (spaceType 1 = Collections, 2 = Curations)
+  const canEdit = isOwner && spaceType !== 1 && spaceType !== 2;
   return (
     <section className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto] px-4 lg:px-0">
       <header className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
@@ -68,8 +72,8 @@ const SpaceInfoSection = ({
       </div>
 
       <div className="inline-flex items-center gap-5 pt-2.5 pb-0 px-0 relative flex-[0_0_auto]">
-        {isOwner ? (
-          // Edit button for owner
+        {canEdit ? (
+          // Edit button for owner (hidden for default Collections/Curations spaces)
           <button
             className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-medium-grey cursor-pointer hover:bg-gray-50 transition-colors"
             aria-label="Edit space"
@@ -84,7 +88,7 @@ const SpaceInfoSection = ({
               Edit
             </span>
           </button>
-        ) : (
+        ) : !isOwner && (
           // Follow button for non-owner
           <button
             className="relative flex-[0_0_auto] h-[38px] cursor-pointer hover:opacity-80 transition-opacity"
@@ -461,6 +465,7 @@ export const SpaceContentSection = (): JSX.Element => {
         authorNamespace={spaceInfo?.authorNamespace}
         isFollowing={isFollowing}
         isOwner={isOwner}
+        spaceType={spaceInfo?.spaceType}
         onFollow={handleFollow}
         onShare={handleShare}
         onAuthorClick={handleAuthorClick}
