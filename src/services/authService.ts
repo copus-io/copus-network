@@ -1735,6 +1735,55 @@ export class AuthService {
     });
   }
 
+  /**
+   * Get spaces that contain a specific article
+   * @param articleId - The article ID (from article.id field)
+   */
+  static async getSpacesByArticleId(articleId: number): Promise<any> {
+    return apiRequest(`/client/article/bind/spacesByArticleId/${articleId}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get user's bindable spaces for collecting an article
+   * Returns spaces with isBind flag indicating if article is already bound
+   * @param articleId - Optional article ID to check binding status for each space
+   * @returns Array of spaces with articleCount, data, id, isBind, name, namespace, spaceType, userId
+   */
+  static async getBindableSpaces(articleId?: number): Promise<any> {
+    const url = articleId
+      ? `/client/article/bind/bindableSpaces?articleId=${articleId}`
+      : `/client/article/bind/bindableSpaces`;
+    return apiRequest(url, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Create a new space/treasury
+   * @param name - The name of the new space
+   * @returns The created space object with id, name, namespace, spaceType, userId, etc.
+   */
+  static async createSpace(name: string): Promise<any> {
+    return apiRequest(`/client/article/space/create`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  /**
+   * Bind an article to one or more spaces/treasuries
+   * @param articleId - The article ID (numeric ID from article.id field)
+   * @param spaceIds - Array of space IDs to bind the article to
+   */
+  static async bindArticles(articleId: number, spaceIds: number[]): Promise<any> {
+    return apiRequest(`/client/article/bind/bindArticles`, {
+      method: 'POST',
+      body: JSON.stringify({ articleId, spaceIds }),
+    });
+  }
+
 }
 
 // Verification code type constants

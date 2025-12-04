@@ -143,6 +143,7 @@ export interface PageArticleParams {
 
 // Article detail API response data structure
 export interface ArticleDetailResponse {
+  id: number; // Numeric article ID (for API calls like bindArticles)
   authorInfo: {
     faceUrl: string;
     id: number;

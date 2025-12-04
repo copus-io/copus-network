@@ -18,7 +18,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState<{ id: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
   // Welcome guide display state management
   const [showWelcomeGuide, setShowWelcomeGuide] = React.useState(false);
@@ -253,7 +253,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     const article = localArticles.find(a => a.id === articleId);
     if (article) {
       setSelectedArticle({
-        id: articleId,
+        uuid: articleId, // This is actually the UUID
         title: article.title,
         isLiked: currentIsLiked,
         likeCount: currentLikeCount
@@ -262,29 +262,16 @@ export const DiscoveryContentSection = (): JSX.Element => {
     }
   };
 
-  // Handle collect from modal
-  const handleCollect = async (articleId: string, spaceCategory: string, isNewSpace: boolean) => {
+  // Handle successful collection - update local state
+  const handleCollectSuccess = () => {
     if (!selectedArticle) return;
 
-    // Perform the like action (this adds to treasury)
-    await toggleLike(articleId, selectedArticle.isLiked, selectedArticle.likeCount);
+    // Update like state locally
+    const newLikeCount = selectedArticle.likeCount + 1;
+    updateArticleLikeState(selectedArticle.uuid, true, newLikeCount);
 
     // Update selectedArticle state to reflect the change
-    setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: prev.likeCount + 1 } : null);
-
-    // Note: In a real implementation, you might want to also save the space/category association
-    // For now, the like action adds to the user's general treasury
-  };
-
-  // Handle uncollect from modal
-  const handleUncollect = async (articleId: string) => {
-    if (!selectedArticle) return;
-
-    // Perform the unlike action (this removes from treasury)
-    await toggleLike(articleId, true, selectedArticle.likeCount);
-
-    // Update selectedArticle state to reflect the change
-    setSelectedArticle(prev => prev ? { ...prev, isLiked: false, likeCount: Math.max(0, prev.likeCount - 1) } : null);
+    setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
   };
 
   // Handle user click
@@ -440,11 +427,10 @@ export const DiscoveryContentSection = (): JSX.Element => {
             setCollectModalOpen(false);
             setSelectedArticle(null);
           }}
-          articleId={selectedArticle.id}
+          articleId={selectedArticle.uuid}
           articleTitle={selectedArticle.title}
           isAlreadyCollected={selectedArticle.isLiked}
-          onCollect={handleCollect}
-          onUncollect={handleUncollect}
+          onCollectSuccess={handleCollectSuccess}
         />
       )}
     </main>
