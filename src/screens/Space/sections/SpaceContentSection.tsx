@@ -93,16 +93,14 @@ const SpaceInfoSection = ({
           <button
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid cursor-pointer hover:opacity-80 transition-all ${
               isFollowing
-                ? 'bg-white border-medium-grey'
-                : 'bg-red border-red'
+                ? 'bg-transparent border-green'
+                : 'bg-transparent border-green'
             }`}
             aria-label={isFollowing ? "Unfollow space" : "Follow space"}
             type="button"
             onClick={onFollow}
           >
-            <span className={`[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap ${
-              isFollowing ? 'text-dark-grey' : 'text-white'
-            }`}>
+            <span className="[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
               {isFollowing ? 'Following' : 'Follow'}
             </span>
           </button>
