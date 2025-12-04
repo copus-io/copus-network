@@ -121,7 +121,16 @@ export const formatCount = (count: number): string => {
 
 // Format date
 export const formatDate = (dateString: string): string => {
+  if (!dateString) return '';
+
   const date = new Date(dateString);
+
+  // Check for invalid date
+  if (isNaN(date.getTime())) return '';
+
+  // Check for epoch date (Jan 1, 1970) which indicates missing timestamp
+  if (date.getTime() === 0) return '';
+
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - date.getTime());
 

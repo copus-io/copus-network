@@ -16,6 +16,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
 
   // Convert timestamp to date string
   const formatTimestamp = (timestamp: number): string => {
+    if (!timestamp || timestamp === 0) return '';
     return new Date(timestamp * 1000).toISOString();
   };
 
