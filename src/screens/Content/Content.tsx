@@ -1455,8 +1455,8 @@ export const Content = (): JSX.Element => {
 
           {/* Collected in Section */}
           {collectedInData.length > 0 && (
-            <section className="flex flex-col items-start gap-[30px] w-full pt-[30px]">
-              <h2 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9">
+            <section className="flex flex-col items-start gap-[15px] w-full pt-[15px]">
+              <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px]">
                 Collected in
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full">
