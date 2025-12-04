@@ -150,26 +150,51 @@ export const MainContentSection = (): JSX.Element => {
         let targetUserId: number | undefined;
         let processedInfo: any = null;
 
-        console.log('Fetching treasury for:', { isViewingOtherUser, targetNamespace, namespace, userId: user?.id });
+        console.log('Fetching treasury for:', { isViewingOtherUser, targetNamespace, namespace, userId: user?.id, userNamespace: user?.namespace });
 
-        if (isViewingOtherUser && namespace) {
-          // Viewing another user's treasury - fetch their info by namespace
+        // Priority: If user is logged in, always use their ID first
+        // Only fetch other user info if explicitly viewing another user AND we don't have a logged-in user
+        if (user?.id) {
+          // User is logged in - check if viewing own treasury or another's
+          if (isViewingOtherUser && namespace) {
+            // Viewing another user's treasury - fetch their info by namespace
+            try {
+              console.log('Fetching other user info by namespace:', namespace);
+              processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(namespace);
+              targetUserId = processedInfo?.id;
+              console.log('Other user info:', processedInfo, 'userId:', targetUserId);
+
+              // If we couldn't get other user's ID, fall back to logged-in user
+              if (!targetUserId) {
+                console.warn('Could not get other user ID, falling back to logged-in user');
+                processedInfo = user;
+                targetUserId = user.id;
+              }
+            } catch (err) {
+              console.warn('Failed to fetch other user info, falling back to logged-in user:', err);
+              // Fall back to logged-in user instead of showing error
+              processedInfo = user;
+              targetUserId = user.id;
+            }
+          } else {
+            // Viewing own treasury - use logged-in user's info
+            processedInfo = user;
+            targetUserId = user.id;
+            console.log('Using logged-in user info, userId:', targetUserId);
+          }
+        } else if (namespace) {
+          // Not logged in but have namespace - fetch that user's info
           try {
-            console.log('Fetching other user info by namespace:', namespace);
+            console.log('Not logged in, fetching user info by namespace:', namespace);
             processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(namespace);
             targetUserId = processedInfo?.id;
-            console.log('Other user info:', processedInfo, 'userId:', targetUserId);
+            console.log('User info:', processedInfo, 'userId:', targetUserId);
           } catch (err) {
-            console.warn('Failed to fetch other user info:', err);
+            console.warn('Failed to fetch user info:', err);
             setError('User not found');
             setLoading(false);
             return;
           }
-        } else {
-          // Viewing own treasury - use logged-in user's info
-          processedInfo = user;
-          targetUserId = user?.id;
-          console.log('Using logged-in user info, userId:', targetUserId);
         }
 
         setTreasuryUserInfo(processedInfo);
