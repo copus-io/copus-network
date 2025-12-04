@@ -1752,11 +1752,9 @@ export class AuthService {
    * @returns Array of spaces with articleCount, data, id, isBind, name, namespace, spaceType, userId
    */
   static async getBindableSpaces(articleId?: number): Promise<any> {
-    const url = articleId
-      ? `/client/article/bind/bindableSpaces?articleId=${articleId}`
-      : `/client/article/bind/bindableSpaces`;
-    return apiRequest(url, {
-      method: 'GET',
+    return apiRequest(`/client/article/bind/bindableSpaces`, {
+      method: 'POST',
+      body: JSON.stringify(articleId ? { articleId } : {}),
     });
   }
 
