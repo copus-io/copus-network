@@ -1797,6 +1797,18 @@ export class AuthService {
     });
   }
 
+  /**
+   * Follow a space/treasury
+   * API: POST /client/article/space/follow
+   * @param id - The space ID to follow
+   */
+  static async followSpace(id: number): Promise<any> {
+    return apiRequest(`/client/article/space/follow`, {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    });
+  }
+
 }
 
 // Verification code type constants

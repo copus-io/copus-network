@@ -336,13 +336,23 @@ export const SpaceContentSection = (): JSX.Element => {
   };
 
   // Handle follow
-  const handleFollow = () => {
+  const handleFollow = async () => {
     if (!user) {
       showToast('Please login to follow', 'error');
       return;
     }
-    setIsFollowing(!isFollowing);
-    showToast(isFollowing ? 'Unfollowed space' : 'Following space', 'success');
+    if (!spaceId) {
+      showToast('Space ID not available', 'error');
+      return;
+    }
+    try {
+      await AuthService.followSpace(spaceId);
+      setIsFollowing(!isFollowing);
+      showToast(isFollowing ? 'Unfollowed space' : 'Following space', 'success');
+    } catch (err) {
+      console.error('Failed to follow space:', err);
+      showToast('Failed to follow space', 'error');
+    }
   };
 
   // Handle share
