@@ -649,6 +649,10 @@ export const Create = (): JSX.Element => {
         coverUrl: finalCoverUrl.substring(0, 500), // Ensure max 500 chars
         targetUrl: finalUrl.substring(0, 255), // Ensure max 255 chars
         title: formData.title.substring(0, 75), // Ensure max 75 chars
+        // Send all selected space IDs to backend
+        ...(selectedTreasuries.length > 0 ? {
+          spaceIds: selectedTreasuries.map(t => t.id)
+        } : {}),
         // x402 payment fields
         ...(payToUnlock ? {
           targetUrlIsLocked: true,
