@@ -117,16 +117,27 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           };
         });
 
-        // Sort collections: already bound (checked) ones first, then by name
+        // Sort collections: spaceType 1 (Collections) first, then already bound, then by name
         const sortedCollections = collectionOptions.sort((a, b) => {
-          // Already bound items come first
+          // spaceType 1 (Collections) comes first
+          if (a.spaceType === 1 && b.spaceType !== 1) return -1;
+          if (a.spaceType !== 1 && b.spaceType === 1) return 1;
+          // Already bound items come second
           if (a.wasOriginallyBound && !b.wasOriginallyBound) return -1;
           if (!a.wasOriginallyBound && b.wasOriginallyBound) return 1;
           // Then sort alphabetically by name
           return a.name.localeCompare(b.name);
         });
 
-        setCollections(sortedCollections);
+        // Auto-select the Collections space (spaceType 1) by default if not already bound
+        const collectionsWithDefault = sortedCollections.map(c => {
+          if (c.spaceType === 1 && !c.wasOriginallyBound) {
+            return { ...c, isSelected: true };
+          }
+          return c;
+        });
+
+        setCollections(collectionsWithDefault);
       } catch (err) {
         console.error('Failed to fetch bindable spaces:', err);
       } finally {
@@ -264,7 +275,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10 max-h-[80vh]"
+        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 max-h-[80vh]"
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
@@ -272,15 +283,22 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         {/* Close button */}
         <button
           onClick={handleCancel}
-          className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
+          className="absolute top-[30px] right-[30px] cursor-pointer hover:opacity-70 transition-opacity"
           aria-label="Close dialog"
           type="button"
         >
-          <img
-            className="w-full"
-            alt=""
-            src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
-          />
+          <svg
+            className="w-[15px] h-[15px]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#686868"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
 
         {showCreateNew ? (
@@ -342,14 +360,34 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           </div>
         ) : (
           // Collection List View
-          <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0">
+          <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-5">
             <div className="flex flex-col items-start justify-center gap-5 relative self-stretch w-full flex-[0_0_auto]">
-              <h2
-                id="collect-dialog-title"
-                className="relative w-fit mt-2 [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-              >
-                Collect treasures
-              </h2>
+              {/* Title and New Treasury on same line */}
+              <div className="flex items-center justify-between w-full">
+                <h2
+                  id="collect-dialog-title"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+                >
+                  Collect treasures
+                </h2>
+
+                <button
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity"
+                  type="button"
+                  onClick={() => setShowCreateNew(true)}
+                  aria-label="Create new treasury"
+                >
+                  <img
+                    className="relative w-6 h-6"
+                    alt="Add"
+                    src="https://c.animaapp.com/eANMvAF7/img/plus.svg"
+                    aria-hidden="true"
+                  />
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    New treasury
+                  </span>
+                </button>
+              </div>
 
               {/* Search Input */}
               <div className="flex h-12 items-center gap-2.5 px-5 py-2.5 relative self-stretch w-full rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
@@ -370,8 +408,13 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               </div>
             </div>
 
-            {/* Collections List */}
-            <div className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 max-h-[280px] overflow-y-auto">
+            {/* Collections List - scrollbar hidden until hover */}
+            <div
+              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 max-h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
+              onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
+            >
               {loading ? (
                 <div className="flex items-center justify-center w-full py-8">
                   <div className="text-gray-500">Loading collections...</div>
@@ -387,13 +430,13 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                   {filteredCollections.map((collection) => (
                     <li
                       key={collection.id}
-                      className="flex items-center justify-between px-0 py-4 self-stretch w-full bg-white border-b [border-bottom-style:solid] border-light-grey cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between px-0 py-4 self-stretch w-full bg-white border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
                       onClick={() => handleToggleSelection(collection.id)}
                     >
                       <div className="inline-flex items-center gap-4 relative flex-[0_0_auto]">
-                        {/* Checkbox on the left */}
+                        {/* Round Checkbox on the left */}
                         <div
-                          className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                             collection.isSelected
                               ? 'bg-red border-red'
                               : 'bg-white border-gray-300 hover:border-gray-400'
@@ -401,7 +444,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                         >
                           {collection.isSelected && (
                             <svg
-                              className="w-4 h-4 text-white"
+                              className="w-3 h-3 text-white"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -433,30 +476,8 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               )}
             </div>
 
-            {/* New Treasury Button */}
-            <div className="flex w-full items-center gap-4 py-3 bg-white border-t border-light-grey">
-              <button
-                className="flex items-center gap-4 cursor-pointer hover:opacity-70 transition-opacity"
-                type="button"
-                onClick={() => setShowCreateNew(true)}
-                aria-label="Create new treasury"
-              >
-                <img
-                  className="relative w-9 h-9"
-                  alt="Add"
-                  src="https://c.animaapp.com/eANMvAF7/img/plus.svg"
-                  aria-hidden="true"
-                />
-                <div className="inline-flex flex-col items-start justify-center relative flex-[0_0_auto]">
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
-                    New treasury
-                  </span>
-                </div>
-              </button>
-            </div>
-
             {/* Save and Cancel Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-light-grey self-stretch w-full">
+            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" style={{ marginLeft: '-30px', marginRight: '-30px', paddingLeft: '30px', paddingRight: '30px', width: 'calc(100% + 60px)' }}>
               <button
                 className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={handleCancel}
