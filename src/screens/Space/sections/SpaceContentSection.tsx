@@ -140,6 +140,8 @@ export const SpaceContentSection = (): JSX.Element => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSpaceName, setEditSpaceName] = useState("");
   const [displaySpaceName, setDisplaySpaceName] = useState("");
+  const [spaceId, setSpaceId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch space data
   useEffect(() => {
@@ -191,8 +193,14 @@ export const SpaceContentSection = (): JSX.Element => {
             spaceType: spaceData?.spaceType,
           });
 
+          // Store spaceId for later use (edit functionality)
+          const spaceIdFromResponse = spaceData?.id;
+          if (spaceIdFromResponse) {
+            setSpaceId(spaceIdFromResponse);
+          }
+
           // Fetch articles using spaceId from the space info
-          const spaceId = spaceData?.id;
+          const spaceId = spaceIdFromResponse;
           if (spaceId) {
             console.log('Fetching articles for spaceId:', spaceId);
             const articlesResponse = await AuthService.getSpaceArticles(spaceId);
@@ -359,17 +367,33 @@ export const SpaceContentSection = (): JSX.Element => {
   };
 
   // Handle save space name
-  const handleSaveSpaceName = () => {
+  const handleSaveSpaceName = async () => {
     if (!editSpaceName.trim()) {
       showToast('Please enter a space name', 'error');
       return;
     }
 
-    setDisplaySpaceName(editSpaceName.trim());
-    // TODO: Call API to update space name when available
-    showToast(`Space renamed to "${editSpaceName.trim()}"`, 'success');
-    setShowEditModal(false);
-    setEditSpaceName("");
+    if (!spaceId) {
+      showToast('Space ID not available', 'error');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Call API to update space name
+      await AuthService.updateSpace(spaceId, editSpaceName.trim());
+
+      setDisplaySpaceName(editSpaceName.trim());
+      showToast(`Space renamed to "${editSpaceName.trim()}"`, 'success');
+      setShowEditModal(false);
+      setEditSpaceName("");
+    } catch (err) {
+      console.error('Failed to update space name:', err);
+      showToast('Failed to update space name', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Handle delete space
@@ -607,11 +631,11 @@ export const SpaceContentSection = (): JSX.Element => {
                   <button
                     className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
                     onClick={handleSaveSpaceName}
-                    disabled={!editSpaceName.trim()}
+                    disabled={!editSpaceName.trim() || isSaving}
                     type="button"
                   >
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      Save
+                      {isSaving ? 'Saving...' : 'Save'}
                     </span>
                   </button>
                 </div>

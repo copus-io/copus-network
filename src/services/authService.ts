@@ -1773,6 +1773,19 @@ export class AuthService {
   }
 
   /**
+   * Update a space/treasury name
+   * API: POST /client/article/space/update
+   * @param id - The space ID
+   * @param name - The new name for the space
+   */
+  static async updateSpace(id: number, name: string): Promise<any> {
+    return apiRequest(`/client/article/space/update`, {
+      method: 'POST',
+      body: JSON.stringify({ id, name }),
+    });
+  }
+
+  /**
    * Bind an article to one or more spaces/treasuries
    * @param articleId - The article ID (numeric ID from article.id field)
    * @param spaceIds - Array of space IDs to bind the article to
