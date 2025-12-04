@@ -283,7 +283,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         {/* Close button */}
         <button
           onClick={handleCancel}
-          className="absolute top-[30px] right-[30px] cursor-pointer hover:opacity-70 transition-opacity"
+          className="absolute top-[20px] right-[20px] p-2.5 cursor-pointer hover:opacity-70 transition-opacity z-20"
           aria-label="Close dialog"
           type="button"
         >
