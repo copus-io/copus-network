@@ -41,6 +41,7 @@ interface Collection {
   isSelected: boolean;
   spaceType?: number;
   namespace?: string;
+  firstLetter: string; // First letter of space name for avatar fallback
 }
 
 export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
@@ -86,9 +87,12 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             ownerInfo: { username: user.username || 'User' },
           });
 
-          const coverImage = space.data?.[0]?.coverUrl
-            || user.faceUrl
-            || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png';
+          // Only use actual cover image from space, not user avatar
+          const coverImage = space.data?.[0]?.coverUrl || '';
+
+          // Get first letter of space name (not display name which may have username)
+          const spaceName = space.name || displayName;
+          const firstLetter = spaceName.charAt(0).toUpperCase();
 
           return {
             id: space.id.toString(),
@@ -98,6 +102,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             isSelected: initialSelectedIds.includes(space.id), // Pre-select based on initialSelectedIds
             spaceType: space.spaceType,
             namespace: space.namespace,
+            firstLetter,
           };
         });
 
@@ -179,14 +184,16 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
       showToast(`Created "${newTreasuryName.trim()}"`, 'success');
 
       // Add the new treasury to collections list and select it
+      const treasuryName = createdSpace.name || newTreasuryName.trim();
       setCollections(prev => [...prev, {
         id: createdSpace.id.toString(),
         numericId: createdSpace.id,
-        name: createdSpace.name || newTreasuryName.trim(),
-        image: user?.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png',
+        name: treasuryName,
+        image: '', // No cover image for new treasury
         isSelected: true, // Auto-select the newly created treasury
         spaceType: createdSpace.spaceType || 0,
         namespace: createdSpace.namespace,
+        firstLetter: treasuryName.charAt(0).toUpperCase(),
       }]);
 
       setShowCreateNew(false);
@@ -352,9 +359,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
               </div>
             </div>
 
-            {/* Collections List */}
+            {/* Collections List - Fixed height */}
             <div
-              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 max-h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex flex-col items-start gap-0 relative self-stretch w-full h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
               onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
@@ -403,11 +410,19 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
                           )}
                         </div>
 
-                        <img
-                          className="relative w-12 h-12 object-cover rounded-full"
-                          alt={collection.name}
-                          src={collection.image}
-                        />
+                        {collection.image ? (
+                          <img
+                            className="relative w-12 h-12 object-cover rounded-full"
+                            alt={collection.name}
+                            src={collection.image}
+                          />
+                        ) : (
+                          <div className="relative w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-lg font-medium text-gray-600">
+                              {collection.firstLetter}
+                            </span>
+                          </div>
+                        )}
                         <div className="inline-flex flex-col items-start justify-center gap-1 relative flex-[0_0_auto]">
                           <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
                             {collection.name}
