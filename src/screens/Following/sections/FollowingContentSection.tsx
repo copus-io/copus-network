@@ -13,59 +13,15 @@ interface FollowedSpace {
   namespace: string;
 }
 
-// Placeholder data for demonstration
-const placeholderArticles: ArticleData[] = [
-  {
-    id: "1",
-    uuid: "placeholder-1",
-    title: "Welcome to Following",
-    description: "This page will show content from spaces you follow. Start following spaces to see their content here!",
-    coverImage: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800",
-    category: "Technology",
-    userName: "Copus Team",
-    userAvatar: profileDefaultAvatar,
-    date: new Date().toISOString(),
-    treasureCount: 42,
-    visitCount: "128",
-    isLiked: false,
-  },
-  {
-    id: "2",
-    uuid: "placeholder-2",
-    title: "Discover Amazing Spaces",
-    description: "Explore the Discovery page to find interesting spaces and creators to follow.",
-    coverImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800",
-    category: "Art",
-    userName: "Explorer",
-    userAvatar: profileDefaultAvatar,
-    date: new Date().toISOString(),
-    treasureCount: 36,
-    visitCount: "95",
-    isLiked: false,
-  },
-  {
-    id: "3",
-    uuid: "placeholder-3",
-    title: "Build Your Feed",
-    description: "Follow your favorite creators and spaces to curate a personalized content feed.",
-    coverImage: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800",
-    category: "Life",
-    userName: "Community",
-    userAvatar: profileDefaultAvatar,
-    date: new Date().toISOString(),
-    treasureCount: 28,
-    visitCount: "67",
-    isLiked: false,
-  },
-];
-
 export const FollowingContentSection = (): JSX.Element => {
   const { showToast } = useToast();
-  const { user } = useUser();
+  const { user, getArticleLikeState, toggleLike } = useUser();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState("all");
   const [followedSpaces, setFollowedSpaces] = useState<FollowedSpace[]>([]);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loadingArticles, setLoadingArticles] = useState(true);
 
   // Fetch followed spaces
   useEffect(() => {
@@ -99,6 +55,65 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedSpaces();
   }, [user]);
 
+  // Fetch articles from followed spaces
+  useEffect(() => {
+    const fetchFollowedArticles = async () => {
+      if (!user) {
+        setLoadingArticles(false);
+        return;
+      }
+
+      try {
+        setLoadingArticles(true);
+        const response = await AuthService.getFollowedArticles(1, 50);
+        console.log('Followed articles response:', response);
+
+        // Parse the response
+        let articlesArray: any[] = [];
+        if (response?.data?.data && Array.isArray(response.data.data)) {
+          articlesArray = response.data.data;
+        } else if (response?.data && Array.isArray(response.data)) {
+          articlesArray = response.data;
+        } else if (Array.isArray(response)) {
+          articlesArray = response;
+        }
+
+        setArticles(articlesArray);
+      } catch (err) {
+        console.error('Failed to fetch followed articles:', err);
+      } finally {
+        setLoadingArticles(false);
+      }
+    };
+
+    fetchFollowedArticles();
+  }, [user]);
+
+  // Transform article to card format
+  const transformArticleToCard = (article: any): ArticleData => {
+    return {
+      id: article.uuid,
+      uuid: article.uuid,
+      title: article.title,
+      description: article.content,
+      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      category: article.categoryInfo?.name || 'General',
+      categoryColor: article.categoryInfo?.color || '#666666',
+      userName: article.authorInfo?.username || 'Anonymous',
+      userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
+      userId: article.authorInfo?.id,
+      userNamespace: article.authorInfo?.namespace,
+      date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
+      treasureCount: article.likeCount || 0,
+      visitCount: article.viewCount || 0,
+      isLiked: article.isLiked || false,
+      targetUrl: article.targetUrl,
+      website: article.targetUrl ? (() => { try { return new URL(article.targetUrl).hostname; } catch { return undefined; } })() : undefined,
+      isPaymentRequired: article.targetUrlIsLocked,
+      paymentPrice: article.priceInfo?.price?.toString()
+    };
+  };
+
   // Handle like action
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
     if (!user) {
@@ -111,13 +126,16 @@ export const FollowingContentSection = (): JSX.Element => {
       return;
     }
 
-    // Placeholder - actual implementation would call API
-    showToast('This is placeholder content', 'info');
+    await toggleLike(articleId, currentIsLiked, currentLikeCount);
   };
 
   // Handle user click
   const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
-    // Placeholder - would navigate to user profile
+    if (userNamespace) {
+      navigate(`/u/${userNamespace}`);
+    } else if (userId) {
+      navigate(`/user/${userId}/treasury`);
+    }
   };
 
   // If user is not logged in, show login prompt
@@ -190,21 +208,51 @@ export const FollowingContentSection = (): JSX.Element => {
       </section>
 
       {/* Content Cards Section */}
-      <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
-        {placeholderArticles.map((article) => (
-          <div key={article.id}>
-            <ArticleCard
-              article={article}
-              layout="discovery"
-              actions={{
-                showTreasure: true,
-                showVisits: true
-              }}
-              onLike={handleLike}
-              onUserClick={handleUserClick}
-            />
+      <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
+        {loadingArticles ? (
+          <div className="flex items-center justify-center w-full py-20">
+            <div className="text-gray-500">Loading articles...</div>
           </div>
-        ))}
+        ) : articles.length === 0 ? (
+          <div className="flex flex-col items-center justify-center w-full py-20 text-center">
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
+            <p className="text-gray-500 mb-4">Follow spaces to see their articles here</p>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
+            >
+              Discover Spaces
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
+            {articles.map((article) => {
+              const card = transformArticleToCard(article);
+              const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+
+              const articleData = {
+                ...card,
+                isLiked: articleLikeState.isLiked,
+                treasureCount: articleLikeState.likeCount
+              };
+
+              return (
+                <div key={article.uuid}>
+                  <ArticleCard
+                    article={articleData}
+                    layout="discovery"
+                    actions={{
+                      showTreasure: true,
+                      showVisits: true
+                    }}
+                    onLike={handleLike}
+                    onUserClick={handleUserClick}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </main>
   );

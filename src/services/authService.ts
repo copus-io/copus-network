@@ -1848,6 +1848,18 @@ export class AuthService {
     });
   }
 
+  /**
+   * Get articles from followed spaces (paginated)
+   * API: GET /client/article/space/pageMyFollowedArticle
+   * @param page - Page number (default 1)
+   * @param size - Page size (default 20)
+   */
+  static async getFollowedArticles(page: number = 1, size: number = 20): Promise<any> {
+    return apiRequest(`/client/article/space/pageMyFollowedArticle?page=${page}&size=${size}`, {
+      method: 'GET',
+    });
+  }
+
 }
 
 // Verification code type constants
