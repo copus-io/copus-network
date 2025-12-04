@@ -6,6 +6,7 @@ import { Button } from "../../../components/ui/button";
 import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
+import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 
 // Space Info Section Component
 const SpaceInfoSection = ({
@@ -144,6 +145,10 @@ export const SpaceContentSection = (): JSX.Element => {
   const [displaySpaceName, setDisplaySpaceName] = useState("");
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Collect Treasure Modal state
+  const [collectModalOpen, setCollectModalOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
   // Fetch space data
   useEffect(() => {
@@ -319,13 +324,41 @@ export const SpaceContentSection = (): JSX.Element => {
     };
   };
 
-  // Handle like/unlike
+  // Handle like/unlike - opens the collect modal
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
     if (!user) {
-      showToast('Please login first', 'error');
+      showToast('Please log in to treasure this content', 'error', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/login')
+        }
+      });
       return;
     }
-    await toggleLike(articleId, currentIsLiked, currentLikeCount);
+
+    // Find the article and open the collect modal
+    const article = articles.find(a => a.uuid === articleId);
+    if (article) {
+      setSelectedArticle({
+        uuid: articleId,
+        title: article.title,
+        isLiked: currentIsLiked,
+        likeCount: currentLikeCount
+      });
+      setCollectModalOpen(true);
+    }
+  };
+
+  // Handle successful collection - update local state
+  const handleCollectSuccess = () => {
+    if (!selectedArticle) return;
+
+    // Update like state locally
+    const newLikeCount = selectedArticle.likeCount + 1;
+    toggleLike(selectedArticle.uuid, false, selectedArticle.likeCount);
+
+    // Update selectedArticle state to reflect the change
+    setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
   };
 
   // Handle user click
@@ -655,6 +688,21 @@ export const SpaceContentSection = (): JSX.Element => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Collect Treasure Modal */}
+      {selectedArticle && (
+        <CollectTreasureModal
+          isOpen={collectModalOpen}
+          onClose={() => {
+            setCollectModalOpen(false);
+            setSelectedArticle(null);
+          }}
+          articleId={selectedArticle.uuid}
+          articleTitle={selectedArticle.title}
+          isAlreadyCollected={selectedArticle.isLiked}
+          onCollectSuccess={handleCollectSuccess}
+        />
       )}
     </main>
   );
