@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { AuthService } from "../../../../services/authService";
 import { Button } from "../../../../components/ui/button";
-import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import { useToast } from "../../../../components/ui/toast";
 
@@ -14,12 +13,6 @@ interface CollectionItem {
   title: string;
   url: string;
   coverImage: string;
-}
-
-interface Collection {
-  category: string;
-  originalCategory?: string; // Original category name for editing
-  items: CollectionItem[];
 }
 
 interface SocialLink {
@@ -330,40 +323,34 @@ export const MainContentSection = (): JSX.Element => {
   const { user, socialLinks: socialLinksData } = useUser();
   const { showToast } = useToast();
 
-  const [likedArticles, setLikedArticles] = useState<any[]>([]);
-  const [curatedArticles, setCuratedArticles] = useState<any[]>([]);
+  const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
 
-  // Edit treasury modal state
-  const [showEditTreasuryModal, setShowEditTreasuryModal] = useState(false);
-  const [editingTreasury, setEditingTreasury] = useState<{ id: string; name: string } | null>(null);
-  const [editTreasuryName, setEditTreasuryName] = useState("");
-
-  // Track renamed categories (maps original category name to new name)
-  const [renamedCategories, setRenamedCategories] = useState<Map<string, string>>(new Map());
+  // Edit treasury modal state - removed as we're now using spaces
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
   const targetNamespace = namespace || user?.namespace;
 
-  // Fetch user info and liked articles
+  // Fetch user info and spaces using pageMySpaces API
   useEffect(() => {
     const fetchData = async () => {
+      if (!targetNamespace) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
-        // Reset data when fetching for a new user
-        setLikedArticles([]);
-        setCuratedArticles([]);
+        setSpaces([]);
 
         // Fetch user info
         let processedInfo;
         console.log('Fetching user info for:', { isViewingOtherUser, targetNamespace, namespace, userNamespace: user?.namespace });
         if (isViewingOtherUser && targetNamespace) {
-          // Use getOtherUserTreasuryInfoByNamespace for viewing other users
-          // This method is proven to work correctly in UserProfileContent.tsx
           console.log('Calling getOtherUserTreasuryInfoByNamespace with namespace:', targetNamespace);
           processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(targetNamespace);
           console.log('Raw API response for other user:', processedInfo);
@@ -378,63 +365,31 @@ export const MainContentSection = (): JSX.Element => {
         console.log('Processed user info:', processedInfo);
         setTreasuryUserInfo(processedInfo);
 
-        // Fetch liked articles - use the viewed user's ID, not the logged-in user
-        const userId = processedInfo.id;
-        console.log('Using userId for fetch:', userId, 'isViewingOtherUser:', isViewingOtherUser);
-        if (userId) {
-          const likedResponse = await AuthService.getMyLikedArticlesCorrect(1, 100, userId);
-
-          let articlesArray = [];
-          if (likedResponse?.data?.data && Array.isArray(likedResponse.data.data)) {
-            articlesArray = likedResponse.data.data;
-          } else if (likedResponse?.data && Array.isArray(likedResponse.data)) {
-            articlesArray = likedResponse.data;
-          } else if (Array.isArray(likedResponse)) {
-            articlesArray = likedResponse;
-          }
-
-          console.log('Liked articles for user', userId, ':', articlesArray.length, articlesArray);
-          setLikedArticles(articlesArray);
-
-          // Fetch curated (created) articles
-          try {
-            const curatedResponse = await AuthService.getMyCreatedArticles(1, 100, userId);
-            console.log('Curated articles response:', curatedResponse);
-            console.log('Curated articles response type:', typeof curatedResponse);
-            console.log('Curated articles response keys:', curatedResponse ? Object.keys(curatedResponse) : 'null');
-
-            let curatedArray: any[] = [];
-            // Handle different response structures
-            if (curatedResponse?.data?.data && Array.isArray(curatedResponse.data.data)) {
-              console.log('Using curatedResponse.data.data');
-              curatedArray = curatedResponse.data.data;
-            } else if (curatedResponse?.data && Array.isArray(curatedResponse.data)) {
-              console.log('Using curatedResponse.data');
-              curatedArray = curatedResponse.data;
-            } else if (Array.isArray(curatedResponse)) {
-              console.log('Using curatedResponse directly');
-              curatedArray = curatedResponse;
-            } else if (curatedResponse && typeof curatedResponse === 'object') {
-              // Try to find the data array in the response
-              console.log('Response is object, looking for data array');
-              if ('data' in curatedResponse) {
-                const dataField = (curatedResponse as any).data;
-                if (Array.isArray(dataField)) {
-                  curatedArray = dataField;
-                } else if (dataField && typeof dataField === 'object' && 'data' in dataField) {
-                  curatedArray = dataField.data;
-                }
-              }
-            }
-
-            console.log('Curated articles array:', curatedArray);
-            console.log('Curated articles count:', curatedArray.length);
-            setCuratedArticles(curatedArray);
-          } catch (curatedErr) {
-            console.error('Failed to fetch curated articles:', curatedErr);
-            setCuratedArticles([]);
-          }
+        // Get target user ID for pageMySpaces API
+        const targetUserId = processedInfo?.id || processedInfo?.userId || user?.id;
+        if (!targetUserId) {
+          console.error('No target user ID available');
+          setError('Failed to load treasury data - user ID not found');
+          return;
         }
+
+        // Fetch spaces using pageMySpaces API (paginated)
+        console.log('Fetching spaces for targetUserId:', targetUserId);
+        const spacesResponse = await AuthService.getMySpaces(targetUserId);
+        console.log('Spaces API response:', spacesResponse);
+
+        // Handle paginated response - data array is at response.data.data
+        let spacesArray: any[] = [];
+        if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
+          spacesArray = spacesResponse.data.data;
+        } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
+          spacesArray = spacesResponse.data;
+        } else if (Array.isArray(spacesResponse)) {
+          spacesArray = spacesResponse;
+        }
+
+        console.log('Spaces array length:', spacesArray.length);
+        setSpaces(spacesArray);
 
       } catch (err) {
         console.error('Failed to fetch treasury data:', err);
@@ -448,66 +403,11 @@ export const MainContentSection = (): JSX.Element => {
     fetchData();
   }, [user, namespace, isViewingOtherUser, targetNamespace]);
 
-  // Handle opening edit treasury modal
-  const handleEditTreasury = (treasuryId: string, treasuryName: string) => {
-    setEditingTreasury({ id: treasuryId, name: treasuryName });
-    setEditTreasuryName(treasuryName);
-    setShowEditTreasuryModal(true);
-  };
-
-  // Handle saving treasury name
-  const handleSaveTreasuryName = () => {
-    if (!editTreasuryName.trim()) {
-      showToast('Please enter a treasury name', 'error');
-      return;
+  // Navigate to a specific space/treasury
+  const handleSpaceClick = (space: any) => {
+    if (space.namespace) {
+      navigate(`/treasury/${space.namespace}`);
     }
-
-    if (!editingTreasury) {
-      showToast('No treasury selected', 'error');
-      return;
-    }
-
-    // Update the renamed categories map
-    const newRenamedCategories = new Map(renamedCategories);
-    newRenamedCategories.set(editingTreasury.id, editTreasuryName.trim());
-    setRenamedCategories(newRenamedCategories);
-
-    // TODO: Call API to update treasury name when available
-    showToast(`Treasury renamed to "${editTreasuryName.trim()}"`, 'success');
-
-    // Close modal
-    setShowEditTreasuryModal(false);
-    setEditingTreasury(null);
-    setEditTreasuryName("");
-  };
-
-  // Group articles by category
-  const getCollectionsByCategory = (): Collection[] => {
-    const categoryMap = new Map<string, { originalCategory: string; items: CollectionItem[] }>();
-
-    likedArticles.forEach(article => {
-      const originalCategory = article.categoryInfo?.name || 'General';
-      if (!categoryMap.has(originalCategory)) {
-        categoryMap.set(originalCategory, { originalCategory, items: [] });
-      }
-      categoryMap.get(originalCategory)!.items.push({
-        id: article.uuid,
-        uuid: article.uuid,
-        title: article.title,
-        url: article.targetUrl || 'copus.network',
-        coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
-      });
-    });
-
-    return Array.from(categoryMap.entries()).map(([originalCategory, data]) => {
-      // Use renamed category if available, otherwise use original
-      const displayName = renamedCategories.get(originalCategory) || originalCategory;
-      return {
-        category: displayName,
-        originalCategory: originalCategory, // Keep track of original for editing
-        items: data.items,
-      };
-    });
   };
 
   // Handle share
@@ -520,36 +420,41 @@ export const MainContentSection = (): JSX.Element => {
     }
   };
 
-  // Transform curated article to ArticleCard format
-  const transformCuratedArticle = (article: any): ArticleData => {
-    return {
-      id: article.uuid,
-      uuid: article.uuid,
-      title: article.title,
-      description: article.content,
-      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
-      category: article.categoryInfo?.name || 'General',
-      categoryColor: article.categoryInfo?.color || '#666666',
-      userName: article.authorInfo?.username || 'Anonymous',
-      userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
-      userId: article.authorInfo?.id,
-      userNamespace: article.authorInfo?.namespace,
-      date: new Date((article.createAt || article.publishAt) * 1000).toISOString(),
-      treasureCount: article.likeCount || 0,
-      visitCount: (article.viewCount || 0).toString(),
-      isLiked: article.isLiked || false,
-      targetUrl: article.targetUrl,
-      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
-    };
+  // Get display name for space based on spaceType
+  const getSpaceDisplayName = (space: any, username: string): string => {
+    // spaceType 1 = Collections, spaceType 2 = Curations
+    if (space.spaceType === 1) {
+      return `${username}'s Collections`;
+    }
+    if (space.spaceType === 2) {
+      return `${username}'s Curations`;
+    }
+    return space.name || space.title || 'Untitled Treasury';
   };
 
-  // Handle user click
-  const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
-    if (userNamespace) {
-      navigate(`/u/${userNamespace}`);
-    } else if (userId) {
-      navigate(`/user/${userId}/treasury`);
+  // Transform space to collection items format for CollectionCard
+  const transformSpaceToCollectionItems = (space: any): CollectionItem[] => {
+    // If space has data array (articles), transform them to collection items
+    if (space.data && Array.isArray(space.data)) {
+      return space.data.slice(0, 3).map((article: any, index: number) => ({
+        id: article.uuid || article.id?.toString() || `${space.id}-${index}`,
+        uuid: article.uuid || article.id?.toString() || `${space.id}-${index}`,
+        title: article.title || 'Untitled',
+        url: article.targetUrl || 'copus.network',
+        coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
+      }));
     }
+    // If space has coverUrl, use it as the first item
+    if (space.coverUrl) {
+      return [{
+        id: space.id?.toString() || space.namespace,
+        uuid: space.id?.toString() || space.namespace,
+        title: space.name || 'Untitled',
+        url: 'copus.network',
+        coverImage: space.coverUrl,
+      }];
+    }
+    return [];
   };
 
   if (loading) {
@@ -578,7 +483,6 @@ export const MainContentSection = (): JSX.Element => {
     );
   }
 
-  const collections = getCollectionsByCategory();
   const displayUser = isViewingOtherUser ? treasuryUserInfo : user;
   const displaySocialLinks = isViewingOtherUser ? (treasuryUserInfo?.socialLinks || []) : (socialLinksData || []);
 
@@ -594,191 +498,32 @@ export const MainContentSection = (): JSX.Element => {
         onShare={handleShare}
       />
 
-      {/* Collections Grid */}
+      {/* Spaces Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full pt-[10px]">
-        {/* Default Treasury Space Card */}
-        <CollectionCard
-          title={`${displayUser?.username || 'User'}'s treasury`}
-          treasureCount={likedArticles.length}
-          items={likedArticles.slice(0, 3).map(article => ({
-            id: article.uuid,
-            uuid: article.uuid,
-            title: article.title,
-            url: article.targetUrl || 'copus.network',
-            coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
-          }))}
-          onClick={() => navigate(`/space/${encodeURIComponent(`${displayUser?.username || 'User'}'s treasury`)}`)}
-          emptyAction={{
-            label: 'Discover',
-            href: '/',
-          }}
-        />
-
-        {/* Default Curations Space Card */}
-        <CollectionCard
-          title={`${displayUser?.username || 'User'}'s curations`}
-          treasureCount={curatedArticles.length}
-          items={curatedArticles.slice(0, 3).map(article => ({
-            id: article.uuid,
-            uuid: article.uuid,
-            title: article.title,
-            url: article.targetUrl || 'copus.network',
-            coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
-          }))}
-          onClick={() => navigate(`/space/${encodeURIComponent(`${displayUser?.username || 'User'}'s curations`)}`)}
-          emptyAction={{
-            label: 'Curate',
-            href: '/create',
-            icon: 'https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg',
-          }}
-        />
-
-        {/* Category-based Collection Cards */}
-        {collections.map((collection) => (
+        {spaces.length === 0 ? (
+          /* Empty state - show create treasury prompt */
           <CollectionCard
-            key={collection.originalCategory || collection.category}
-            title={collection.category}
-            treasureCount={collection.items.length}
-            items={collection.items}
-            onClick={() => navigate(`/space/${encodeURIComponent(collection.originalCategory || collection.category)}`)}
-            isEditable={!isViewingOtherUser}
-            onEdit={() => handleEditTreasury(collection.originalCategory || collection.category, collection.category)}
-          />
-        ))}
-      </div>
-
-      {/* Edit Treasury Modal */}
-      {showEditTreasuryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => {
-              setShowEditTreasuryModal(false);
-              setEditingTreasury(null);
-              setEditTreasuryName("");
+            title="Create your first treasury"
+            treasureCount={0}
+            items={[]}
+            emptyAction={{
+              label: 'Discover',
+              href: '/',
             }}
           />
-
-          {/* Modal */}
-          <div
-            className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
-            role="dialog"
-            aria-labelledby="edit-treasury-title"
-            aria-modal="true"
-          >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setShowEditTreasuryModal(false);
-                setEditingTreasury(null);
-                setEditTreasuryName("");
-              }}
-              className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
-              aria-label="Close dialog"
-              type="button"
-            >
-              <img
-                className="w-full"
-                alt=""
-                src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
-              />
-            </button>
-
-            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                <h2
-                  id="edit-treasury-title"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-                >
-                  Edit treasury
-                </h2>
-
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="edit-treasury-name-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Name
-                  </label>
-
-                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                    <input
-                      id="edit-treasury-name-input"
-                      type="text"
-                      value={editTreasuryName}
-                      onChange={(e) => setEditTreasuryName(e.target.value)}
-                      placeholder="Enter treasury name"
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
-                      aria-required="true"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSaveTreasuryName();
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between relative self-stretch w-full flex-[0_0_auto]">
-                {/* Delete button on the left */}
-                <button
-                  className="inline-flex items-center gap-2 px-3 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-red/10 transition-colors"
-                  onClick={() => {
-                    // TODO: Implement delete treasury API call
-                    showToast(`Treasury "${editingTreasury?.name}" deleted`, 'success');
-                    setShowEditTreasuryModal(false);
-                    setEditingTreasury(null);
-                    setEditTreasuryName("");
-                  }}
-                  type="button"
-                  aria-label="Delete treasury"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 6H5H21" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M10 11V17" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M14 11V17" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-red text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    Delete
-                  </span>
-                </button>
-
-                {/* Cancel and Save buttons on the right */}
-                <div className="flex items-center gap-2.5">
-                  <button
-                    className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => {
-                      setShowEditTreasuryModal(false);
-                      setEditingTreasury(null);
-                      setEditTreasuryName("");
-                    }}
-                    type="button"
-                  >
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      Cancel
-                    </span>
-                  </button>
-
-                  <button
-                    className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                    onClick={handleSaveTreasuryName}
-                    disabled={!editTreasuryName.trim()}
-                    type="button"
-                  >
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      Save
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        ) : (
+          /* Render all spaces from pageMySpaces API */
+          spaces.map((space) => (
+            <CollectionCard
+              key={space.id || space.namespace}
+              title={getSpaceDisplayName(space, displayUser?.username || 'User')}
+              treasureCount={space.articleCount || space.treasureCount || 0}
+              items={transformSpaceToCollectionItems(space)}
+              onClick={() => handleSpaceClick(space)}
+            />
+          ))
+        )}
+      </div>
     </main>
   );
 };

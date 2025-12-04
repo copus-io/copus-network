@@ -120,7 +120,9 @@ const SpaceInfoSection = ({
 // Main Space Content Section
 export const SpaceContentSection = (): JSX.Element => {
   const navigate = useNavigate();
-  const { category } = useParams<{ category: string }>();
+  const { category, namespace } = useParams<{ category?: string; namespace?: string }>();
+  // Support both /space/:category and /treasury/:namespace routes
+  const spaceIdentifier = namespace || category;
   const { user, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
 
@@ -138,7 +140,7 @@ export const SpaceContentSection = (): JSX.Element => {
   // Fetch space data
   useEffect(() => {
     const fetchSpaceData = async () => {
-      if (!category) {
+      if (!spaceIdentifier) {
         setError('Invalid space');
         setLoading(false);
         return;
@@ -148,90 +150,121 @@ export const SpaceContentSection = (): JSX.Element => {
         setLoading(true);
         setError(null);
 
-        const decodedCategory = decodeURIComponent(category);
+        const decodedIdentifier = decodeURIComponent(spaceIdentifier);
 
-        // For now, we'll use the category as the space name
-        // In a real implementation, you'd fetch space details from an API
-        setSpaceInfo({
-          name: decodedCategory,
-          authorName: user?.username || 'Anonymous',
-          authorAvatar: user?.faceUrl || profileDefaultAvatar,
-          authorNamespace: user?.namespace,
-        });
+        // Check if this is a namespace route (from /treasury/:namespace)
+        const isNamespaceRoute = !!namespace;
 
-        // Fetch articles for this category/space
-        const userId = user?.id;
-        if (userId) {
-          // Check if this is a special space (treasury or curations)
-          const isTreasurySpace = decodedCategory.endsWith("'s treasury");
-          const isCurationsSpace = decodedCategory.endsWith("'s curations");
+        let articlesArray: any[] = [];
 
-          let articlesArray: any[] = [];
+        if (isNamespaceRoute) {
+          // Fetch space info by namespace using getSpaceInfo API
+          console.log('Fetching space info by namespace:', decodedIdentifier);
+          const spaceInfoResponse = await AuthService.getSpaceInfo(decodedIdentifier);
+          console.log('Space info API response:', spaceInfoResponse);
 
-          if (isCurationsSpace) {
-            // Fetch created/curated articles for curations space
-            console.log('Fetching curated articles for user:', userId);
-            const curatedResponse = await AuthService.getMyCreatedArticles(1, 100, userId);
-            console.log('Space page curated response:', curatedResponse);
-            console.log('Space page curated response keys:', curatedResponse ? Object.keys(curatedResponse) : 'null');
+          // Extract space info from response.data
+          const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
 
-            if (curatedResponse?.data?.data && Array.isArray(curatedResponse.data.data)) {
-              console.log('Using curatedResponse.data.data');
-              articlesArray = curatedResponse.data.data;
-            } else if (curatedResponse?.data && Array.isArray(curatedResponse.data)) {
-              console.log('Using curatedResponse.data');
-              articlesArray = curatedResponse.data;
-            } else if (Array.isArray(curatedResponse)) {
-              console.log('Using curatedResponse directly');
-              articlesArray = curatedResponse;
-            } else if (curatedResponse && typeof curatedResponse === 'object') {
-              // Try to find the data array in the response
-              console.log('Response is object, looking for data array');
-              if ('data' in curatedResponse) {
-                const dataField = (curatedResponse as any).data;
-                if (Array.isArray(dataField)) {
-                  articlesArray = dataField;
-                } else if (dataField && typeof dataField === 'object' && 'data' in dataField) {
-                  articlesArray = dataField.data;
-                }
+          // Get author username for display name
+          const authorUsername = spaceData?.userInfo?.username || user?.username || 'User';
+
+          // Determine display name based on spaceType (same logic as Treasury list)
+          // spaceType 1 = Collections, spaceType 2 = Curations
+          let displayName = spaceData?.name || decodedIdentifier;
+          if (spaceData?.spaceType === 1) {
+            displayName = `${authorUsername}'s Collections`;
+          } else if (spaceData?.spaceType === 2) {
+            displayName = `${authorUsername}'s Curations`;
+          }
+
+          // Set space info from API response
+          setSpaceInfo({
+            name: displayName,
+            authorName: authorUsername,
+            authorAvatar: spaceData?.userInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
+            authorNamespace: spaceData?.userInfo?.namespace || user?.namespace,
+            spaceType: spaceData?.spaceType,
+          });
+
+          // Fetch articles using spaceId from the space info
+          const spaceId = spaceData?.id;
+          if (spaceId) {
+            console.log('Fetching articles for spaceId:', spaceId);
+            const articlesResponse = await AuthService.getSpaceArticles(spaceId);
+            console.log('Space articles API response:', articlesResponse);
+
+            // Extract articles from paginated response
+            if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
+              articlesArray = articlesResponse.data;
+            } else if (articlesResponse?.data?.data && Array.isArray(articlesResponse.data.data)) {
+              articlesArray = articlesResponse.data.data;
+            }
+          }
+
+          setArticles(articlesArray);
+        } else {
+          // Old category-based route (for backwards compatibility)
+          setSpaceInfo({
+            name: decodedIdentifier,
+            authorName: user?.username || 'Anonymous',
+            authorAvatar: user?.faceUrl || profileDefaultAvatar,
+            authorNamespace: user?.namespace,
+          });
+
+          // Fetch articles for this category/space
+          const userId = user?.id;
+          if (userId) {
+            // Check if this is a special space (treasury or curations)
+            const isTreasurySpace = decodedIdentifier.endsWith("'s treasury");
+            const isCurationsSpace = decodedIdentifier.endsWith("'s curations");
+
+            if (isCurationsSpace) {
+              // Fetch created/curated articles for curations space
+              console.log('Fetching curated articles for user:', userId);
+              const curatedResponse = await AuthService.getMyCreatedArticles(1, 100, userId);
+
+              if (curatedResponse?.data?.data && Array.isArray(curatedResponse.data.data)) {
+                articlesArray = curatedResponse.data.data;
+              } else if (curatedResponse?.data && Array.isArray(curatedResponse.data)) {
+                articlesArray = curatedResponse.data;
+              } else if (Array.isArray(curatedResponse)) {
+                articlesArray = curatedResponse;
               }
+
+              setArticles(articlesArray);
+            } else if (isTreasurySpace) {
+              // Fetch liked/treasured articles for treasury space
+              const likedResponse = await AuthService.getMyLikedArticlesCorrect(1, 100, userId);
+
+              if (likedResponse?.data?.data && Array.isArray(likedResponse.data.data)) {
+                articlesArray = likedResponse.data.data;
+              } else if (likedResponse?.data && Array.isArray(likedResponse.data)) {
+                articlesArray = likedResponse.data;
+              } else if (Array.isArray(likedResponse)) {
+                articlesArray = likedResponse;
+              }
+
+              setArticles(articlesArray);
+            } else {
+              // Regular category-based space - fetch liked articles and filter
+              const likedResponse = await AuthService.getMyLikedArticlesCorrect(1, 100, userId);
+
+              if (likedResponse?.data?.data && Array.isArray(likedResponse.data.data)) {
+                articlesArray = likedResponse.data.data;
+              } else if (likedResponse?.data && Array.isArray(likedResponse.data)) {
+                articlesArray = likedResponse.data;
+              } else if (Array.isArray(likedResponse)) {
+                articlesArray = likedResponse;
+              }
+
+              // Filter articles by category
+              const filteredArticles = articlesArray.filter(
+                (article: any) => article.categoryInfo?.name === decodedIdentifier
+              );
+
+              setArticles(filteredArticles);
             }
-
-            console.log('Curated articles count:', articlesArray.length);
-            // No filtering needed - show all curated articles
-            setArticles(articlesArray);
-          } else if (isTreasurySpace) {
-            // Fetch liked/treasured articles for treasury space
-            const likedResponse = await AuthService.getMyLikedArticlesCorrect(1, 100, userId);
-
-            if (likedResponse?.data?.data && Array.isArray(likedResponse.data.data)) {
-              articlesArray = likedResponse.data.data;
-            } else if (likedResponse?.data && Array.isArray(likedResponse.data)) {
-              articlesArray = likedResponse.data;
-            } else if (Array.isArray(likedResponse)) {
-              articlesArray = likedResponse;
-            }
-
-            // No filtering needed - show all treasured articles
-            setArticles(articlesArray);
-          } else {
-            // Regular category-based space - fetch liked articles and filter
-            const likedResponse = await AuthService.getMyLikedArticlesCorrect(1, 100, userId);
-
-            if (likedResponse?.data?.data && Array.isArray(likedResponse.data.data)) {
-              articlesArray = likedResponse.data.data;
-            } else if (likedResponse?.data && Array.isArray(likedResponse.data)) {
-              articlesArray = likedResponse.data;
-            } else if (Array.isArray(likedResponse)) {
-              articlesArray = likedResponse;
-            }
-
-            // Filter articles by category
-            const filteredArticles = articlesArray.filter(
-              (article: any) => article.categoryInfo?.name === decodedCategory
-            );
-
-            setArticles(filteredArticles);
           }
         }
 
@@ -245,7 +278,7 @@ export const SpaceContentSection = (): JSX.Element => {
     };
 
     fetchSpaceData();
-  }, [category, user]);
+  }, [spaceIdentifier, namespace, user]);
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData => {

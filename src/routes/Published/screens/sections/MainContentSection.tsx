@@ -197,7 +197,7 @@ export const MainContentSection = (): JSX.Element => {
             >
               <div className="flex justify-center px-[15px] py-2.5 w-full items-center">
                 <span className="[font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  My treasury collection
+                  Treasury collection
                 </span>
               </div>
             </TabsTrigger>

@@ -18,7 +18,7 @@ const menuItems = [
   },
   {
     icon: WalletIcon,
-    label: "My treasury",
+    label: "Treasury",
     href: "/treasury",
     isActive: false,
   },

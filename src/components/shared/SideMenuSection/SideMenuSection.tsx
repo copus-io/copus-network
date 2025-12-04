@@ -56,7 +56,7 @@ const menuItems = [
   },
   {
     icon: TreasuryIcon,
-    label: "My treasury",
+    label: "Treasury",
     href: "/my-treasury",
     key: "treasury",
   },

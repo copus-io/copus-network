@@ -1691,6 +1691,50 @@ export class AuthService {
     }
   }
 
+  /**
+   * Get user's spaces (treasuries) using pageMySpaces API
+   * @param targetUserId - Required target user ID
+   * @param pageIndex - Optional page number (default: 1)
+   * @param pageSize - Optional page size (default: 20)
+   */
+  static async getMySpaces(targetUserId: number, pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    const params = new URLSearchParams({
+      targetUserId: targetUserId.toString(),
+      pageIndex: pageIndex.toString(),
+      pageSize: pageSize.toString(),
+    });
+    return apiRequest(`/client/userHome/pageMySpaces?${params.toString()}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get space info by namespace
+   * @param namespace - Space namespace identifier
+   */
+  static async getSpaceInfo(namespace: string): Promise<any> {
+    return apiRequest(`/client/article/space/info/${namespace}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get space articles by spaceId (paginated)
+   * @param spaceId - Required space ID
+   * @param pageIndex - Optional page number (default: 1)
+   * @param pageSize - Optional page size (default: 20)
+   */
+  static async getSpaceArticles(spaceId: number, pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    const params = new URLSearchParams({
+      spaceId: spaceId.toString(),
+      pageIndex: pageIndex.toString(),
+      pageSize: pageSize.toString(),
+    });
+    return apiRequest(`/client/article/space/pageArticles?${params.toString()}`, {
+      method: 'GET',
+    });
+  }
+
 }
 
 // Verification code type constants
