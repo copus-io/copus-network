@@ -1,17 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
+import { AuthService } from "../../../services/authService";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 
-// Placeholder treasury tabs (spaces the user follows)
-const placeholderTabs = [
-  { id: "all", label: "All" },
-  { id: "tech", label: "Tech" },
-  { id: "education", label: "Education" },
-  { id: "food", label: "Food" },
-];
+// Interface for followed space
+interface FollowedSpace {
+  id: number;
+  name: string;
+  namespace: string;
+}
 
 // Placeholder data for demonstration
 const placeholderArticles: ArticleData[] = [
@@ -64,6 +64,40 @@ export const FollowingContentSection = (): JSX.Element => {
   const { user } = useUser();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState("all");
+  const [followedSpaces, setFollowedSpaces] = useState<FollowedSpace[]>([]);
+  const [loadingSpaces, setLoadingSpaces] = useState(true);
+
+  // Fetch followed spaces
+  useEffect(() => {
+    const fetchFollowedSpaces = async () => {
+      if (!user) {
+        setLoadingSpaces(false);
+        return;
+      }
+
+      try {
+        setLoadingSpaces(true);
+        const response = await AuthService.getFollowedSpaces();
+        console.log('Followed spaces response:', response);
+
+        // Parse the response
+        let spacesArray: FollowedSpace[] = [];
+        if (response?.data && Array.isArray(response.data)) {
+          spacesArray = response.data;
+        } else if (Array.isArray(response)) {
+          spacesArray = response;
+        }
+
+        setFollowedSpaces(spacesArray);
+      } catch (err) {
+        console.error('Failed to fetch followed spaces:', err);
+      } finally {
+        setLoadingSpaces(false);
+      }
+    };
+
+    fetchFollowedSpaces();
+  }, [user]);
 
   // Handle like action
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -110,22 +144,48 @@ export const FollowingContentSection = (): JSX.Element => {
 
   return (
     <main className="flex flex-col items-start gap-6 py-0 relative flex-1">
-      {/* Treasury Tabs Section */}
+      {/* Followed Spaces Bubbles Section */}
       <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
         <div className="flex items-center gap-3 flex-wrap">
-          {placeholderTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSelectedTab(tab.id)}
-              className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
-                selectedTab === tab.id
-                  ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
-                  : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {/* All button */}
+          <button
+            onClick={() => setSelectedTab("all")}
+            className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
+              selectedTab === "all"
+                ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
+                : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
+            }`}
+          >
+            All
+          </button>
+
+          {/* Followed spaces bubbles */}
+          {loadingSpaces ? (
+            <span className="text-gray-400 text-sm">Loading...</span>
+          ) : (
+            followedSpaces.map((space) => (
+              <button
+                key={space.id}
+                onClick={() => {
+                  setSelectedTab(space.id.toString());
+                  // Navigate to the space page
+                  navigate(`/treasury/${space.namespace}`);
+                }}
+                className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
+                  selectedTab === space.id.toString()
+                    ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
+                    : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
+                }`}
+              >
+                {space.name}
+              </button>
+            ))
+          )}
+
+          {/* Show message if no followed spaces */}
+          {!loadingSpaces && followedSpaces.length === 0 && (
+            <span className="text-gray-400 text-sm ml-2">No spaces followed yet</span>
+          )}
         </div>
       </section>
 

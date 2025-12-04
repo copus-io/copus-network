@@ -1809,6 +1809,16 @@ export class AuthService {
     });
   }
 
+  /**
+   * Get list of followed spaces
+   * API: GET /client/article/space/followList
+   */
+  static async getFollowedSpaces(): Promise<any> {
+    return apiRequest(`/client/article/space/followList`, {
+      method: 'GET',
+    });
+  }
+
 }
 
 // Verification code type constants

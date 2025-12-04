@@ -91,16 +91,20 @@ const SpaceInfoSection = ({
         ) : !isOwner && (
           // Follow button for non-owner
           <button
-            className="relative flex-[0_0_auto] h-[38px] cursor-pointer hover:opacity-80 transition-opacity"
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid cursor-pointer hover:opacity-80 transition-all ${
+              isFollowing
+                ? 'bg-white border-medium-grey'
+                : 'bg-red border-red'
+            }`}
             aria-label={isFollowing ? "Unfollow space" : "Follow space"}
             type="button"
             onClick={onFollow}
           >
-            <img
-              className="h-full"
-              alt={isFollowing ? "Following" : "Follow"}
-              src="https://c.animaapp.com/iU3q4Rrw/img/share@4x.png"
-            />
+            <span className={`[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap ${
+              isFollowing ? 'text-dark-grey' : 'text-white'
+            }`}>
+              {isFollowing ? 'Following' : 'Follow'}
+            </span>
           </button>
         )}
 
