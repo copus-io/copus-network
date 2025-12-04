@@ -989,7 +989,7 @@ export const Create = (): JSX.Element => {
                   {selectedTreasuries.map((treasury) => (
                     <span
                       key={treasury.id}
-                      className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm text-dark-grey"
+                      className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm text-dark-grey border border-dark-grey"
                     >
                       {treasury.name}
                     </span>

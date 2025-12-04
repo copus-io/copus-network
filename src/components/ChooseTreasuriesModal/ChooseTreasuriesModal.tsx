@@ -80,6 +80,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           spacesArray = bindableResponse;
         }
 
+        console.log('Spaces array:', spacesArray);
+        console.log('Space types:', spacesArray.map(s => ({ name: s.name, spaceType: s.spaceType, id: s.id })));
+
         // Transform spaces to collection format
         const collectionOptions: Collection[] = spacesArray.map((space) => {
           const displayName = getSpaceDisplayName({
@@ -106,14 +109,17 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           };
         });
 
-        // Sort: spaceType 1 (Collections) first, then spaceType 2 (Curations), then others
+        // Sort: spaceType 1 (Collections) first, then spaceType 2 (Curations), then by ID descending (newest first)
         const sortedCollections = collectionOptions.sort((a, b) => {
           if (a.spaceType === 1 && b.spaceType !== 1) return -1;
           if (a.spaceType !== 1 && b.spaceType === 1) return 1;
           if (a.spaceType === 2 && b.spaceType !== 2) return -1;
           if (a.spaceType !== 2 && b.spaceType === 2) return 1;
-          return a.name.localeCompare(b.name);
+          // Then sort by numeric ID descending (higher ID = more recently created)
+          return b.numericId - a.numericId;
         });
+
+        console.log('Sorted collections order:', sortedCollections.map(c => ({ name: c.name, spaceType: c.spaceType, id: c.numericId })));
 
         // Note: No auto-select for this modal (unlike CollectTreasureModal)
         setCollections(sortedCollections);

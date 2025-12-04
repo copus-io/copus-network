@@ -117,16 +117,13 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           };
         });
 
-        // Sort collections: spaceType 1 (Collections) first, then already bound, then by name
+        // Sort collections: spaceType 1 (Collections) first, then by ID descending (newest first)
         const sortedCollections = collectionOptions.sort((a, b) => {
-          // spaceType 1 (Collections) comes first
+          // spaceType 1 (Collections) comes first - this is the user's default treasury
           if (a.spaceType === 1 && b.spaceType !== 1) return -1;
           if (a.spaceType !== 1 && b.spaceType === 1) return 1;
-          // Already bound items come second
-          if (a.wasOriginallyBound && !b.wasOriginallyBound) return -1;
-          if (!a.wasOriginallyBound && b.wasOriginallyBound) return 1;
-          // Then sort alphabetically by name
-          return a.name.localeCompare(b.name);
+          // Then sort by numeric ID descending (higher ID = more recently created)
+          return b.numericId - a.numericId;
         });
 
         // Auto-select the Collections space (spaceType 1) by default if not already bound
