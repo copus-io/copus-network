@@ -1753,7 +1753,7 @@ export class AuthService {
    */
   static async getBindableSpaces(articleId?: number): Promise<any> {
     return apiRequest(`/client/article/bind/bindableSpaces`, {
-      method: 'POST',
+      method: 'GET',
       body: JSON.stringify(articleId ? { id: articleId } : {}),
     });
   }
