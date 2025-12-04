@@ -1752,9 +1752,40 @@ export class AuthService {
    * @returns Array of spaces with articleCount, data, id, isBind, name, namespace, spaceType, userId
    */
   static async getBindableSpaces(articleId?: number): Promise<any> {
-    return apiRequest(`/client/article/bind/bindableSpaces`, {
-      method: 'POST',
-      body: JSON.stringify(articleId ? { id: articleId } : {}),
+    // Use XMLHttpRequest to support GET with JSON body (fetch doesn't support this)
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network';
+    const url = `${API_BASE_URL}/client/article/bind/bindableSpaces`;
+    const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } catch (e) {
+              reject(new Error('Failed to parse response'));
+            }
+          } else {
+            reject(new Error(`HTTP error! status: ${xhr.status}`));
+          }
+        }
+      };
+
+      xhr.onerror = function() {
+        reject(new Error('Network error'));
+      };
+
+      // Send GET request with JSON body
+      xhr.send(JSON.stringify(articleId ? { id: articleId } : {}));
     });
   }
 
