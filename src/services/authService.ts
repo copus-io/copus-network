@@ -1691,6 +1691,99 @@ export class AuthService {
     }
   }
 
+  /**
+   * Get user's spaces (treasuries) using pageMySpaces API
+   * @param targetUserId - Required target user ID
+   * @param pageIndex - Optional page number (default: 1)
+   * @param pageSize - Optional page size (default: 20)
+   */
+  static async getMySpaces(targetUserId: number, pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    const params = new URLSearchParams({
+      targetUserId: targetUserId.toString(),
+      pageIndex: pageIndex.toString(),
+      pageSize: pageSize.toString(),
+    });
+    return apiRequest(`/client/userHome/pageMySpaces?${params.toString()}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get space info by namespace
+   * @param namespace - Space namespace identifier
+   */
+  static async getSpaceInfo(namespace: string): Promise<any> {
+    return apiRequest(`/client/article/space/info/${namespace}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get space articles by spaceId (paginated)
+   * @param spaceId - Required space ID
+   * @param pageIndex - Optional page number (default: 1)
+   * @param pageSize - Optional page size (default: 20)
+   */
+  static async getSpaceArticles(spaceId: number, pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    const params = new URLSearchParams({
+      spaceId: spaceId.toString(),
+      pageIndex: pageIndex.toString(),
+      pageSize: pageSize.toString(),
+    });
+    return apiRequest(`/client/article/space/pageArticles?${params.toString()}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get spaces that contain a specific article
+   * @param articleId - The article ID (from article.id field)
+   */
+  static async getSpacesByArticleId(articleId: number): Promise<any> {
+    return apiRequest(`/client/article/bind/spacesByArticleId/${articleId}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get user's bindable spaces for collecting an article
+   * Returns spaces with isBind flag indicating if article is already bound
+   * @param articleId - Optional article ID to check binding status for each space
+   * @returns Array of spaces with articleCount, data, id, isBind, name, namespace, spaceType, userId
+   */
+  static async getBindableSpaces(articleId?: number): Promise<any> {
+    const url = articleId
+      ? `/client/article/bind/bindableSpaces?articleId=${articleId}`
+      : `/client/article/bind/bindableSpaces`;
+    return apiRequest(url, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Create a new space/treasury
+   * @param name - The name of the new space
+   * @returns The created space object with id, name, namespace, spaceType, userId, etc.
+   */
+  static async createSpace(name: string): Promise<any> {
+    return apiRequest(`/client/article/space/create`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  /**
+   * Bind an article to one or more spaces/treasuries
+   * @param articleId - The article ID (numeric ID from article.id field)
+   * @param spaceIds - Array of space IDs to bind the article to
+   */
+  static async bindArticles(articleId: number, spaceIds: number[]): Promise<any> {
+    return apiRequest(`/client/article/bind/bindArticles`, {
+      method: 'POST',
+      body: JSON.stringify({ articleId, spaceIds }),
+    });
+  }
+
 }
 
 // Verification code type constants

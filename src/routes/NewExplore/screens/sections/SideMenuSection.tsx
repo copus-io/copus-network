@@ -13,7 +13,7 @@ export const SideMenuSection = (): JSX.Element => {
     },
     {
       id: "treasury",
-      label: "My treasury",
+      label: "Treasury",
       icon: "https://c.animaapp.com/mfta56k9y0NEnT/img/icon-wrap.svg",
       isActive: false,
       link: null,

@@ -110,7 +110,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             className="flex items-center gap-[15px] px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
             asChild
           >
-            <Link to="/create">
+            <Link to="/curate">
               <img
                 className="w-5 h-5"
                 alt="Vector"

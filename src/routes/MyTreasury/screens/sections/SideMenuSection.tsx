@@ -11,7 +11,7 @@ const menuItems = [
   },
   {
     id: "treasury",
-    label: "My treasury",
+    label: "Treasury",
     icon: "https://c.animaapp.com/mfw5a2xo4LOvv6/img/treasure-icon.svg",
     isActive: true,
     fontWeight: "font-bold",

@@ -115,6 +115,15 @@ const router = createBrowserRouter([
     element: <MyTreasury />,
   },
   {
+    path: "/treasury/:namespace",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Space />
+      </AuthGuard>
+    ),
+  },
+  {
+    // Keep old /space route for backwards compatibility
     path: "/space/:category",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
@@ -127,7 +136,7 @@ const router = createBrowserRouter([
     element: <ShortLinkHandler />, // Short link format: /u/namespace
   },
   {
-    path: "/create",
+    path: "/curate",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
         <Create />
