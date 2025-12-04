@@ -216,8 +216,8 @@ export const TreasuryCard = ({
             </div>
           </div>
 
-          <div className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto]">
-            <h3 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 line-clamp-1">
+          <div className="flex flex-col items-start gap-[15px] relative w-[320px] flex-[0_0_auto]">
+            <h3 className="relative w-[320px] mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
               {mainItem.title}
             </h3>
           </div>
@@ -225,7 +225,7 @@ export const TreasuryCard = ({
 
         {/* Side items on the right */}
         {sideItems.length > 0 && (
-          <div className="flex flex-col items-start justify-center gap-1 relative flex-1 self-stretch grow rounded-[0px_15px_15px_0px]">
+          <div className="flex flex-col items-start justify-center gap-1 relative flex-1 self-stretch grow rounded-[0px_15px_15px_0px] overflow-hidden">
             {sideItems.map((item, index) => (
               <article
                 key={item.id}
@@ -235,7 +235,7 @@ export const TreasuryCard = ({
                   index === 0
                     ? "rounded-[0px_15px_0px_0px]"
                     : "rounded-[0px_0px_15px_0px]"
-                } flex flex-col items-start gap-[5px] relative self-stretch w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
+                } flex flex-col items-start gap-[5px] relative self-stretch w-full min-w-0 bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
               >
                 <div
                   className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
@@ -259,9 +259,9 @@ export const TreasuryCard = ({
                 <div
                   className={`flex flex-col items-start gap-[15px] ${
                     index === 0 ? "mb-[-4.00px]" : ""
-                  } relative self-stretch w-full flex-[0_0_auto]`}
+                  } relative self-stretch w-full flex-[0_0_auto] min-w-0 overflow-hidden`}
                 >
-                  <h3 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 line-clamp-1">
+                  <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
                     {item.title}
                   </h3>
                 </div>
