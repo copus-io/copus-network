@@ -112,7 +112,7 @@ const SpaceInfoSection = ({
                   Following
                 </span>
                 {/* Down arrow */}
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
+                <svg width="16" height="16" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
                   <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
@@ -140,9 +140,10 @@ const SpaceInfoSection = ({
               )}
             </div>
           ) : (
-            // Follow button - transparent green background
+            // Follow button - #2b8649 10% over white background
             <button
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-green/10"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all"
+              style={{ background: 'linear-gradient(0deg, rgba(43, 134, 73, 0.1) 0%, rgba(43, 134, 73, 0.1) 100%), #FFFFFF' }}
               aria-label="Follow space"
               type="button"
               onClick={onFollow}
