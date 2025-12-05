@@ -121,11 +121,11 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           }
 
           // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
-          // For other spaces, use the first article's cover image (empty string triggers firstLetter fallback)
+          // For custom spaces (spaceType 0 or other), always use empty string to trigger firstLetter fallback
           const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
           const coverImage = isDefaultSpace
             ? (user.faceUrl || '')
-            : (space.data?.[0]?.coverUrl || '');
+            : ''; // Custom spaces always use firstLetter avatar
 
           // Get first letter of space name for avatar fallback
           const spaceName = space.name || displayName;
@@ -260,7 +260,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       // Add the new treasury to collections list and select it
       // Use empty string for image to trigger firstLetter fallback (custom treasuries don't use profile image)
       const treasuryName = createdSpace.name || newTreasuryName.trim();
-      const newCollection = {
+      setCollections(prev => [...prev, {
         id: createdSpace.id.toString(),
         numericId: createdSpace.id,
         name: treasuryName,
@@ -270,9 +270,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         spaceType: createdSpace.spaceType || 0,
         namespace: createdSpace.namespace,
         firstLetter: treasuryName.charAt(0).toUpperCase(),
-      };
-      console.log('Adding new treasury to collections:', newCollection);
-      setCollections(prev => [...prev, newCollection]);
+      }]);
 
       setShowCreateNew(false);
       setNewTreasuryName("");
@@ -488,22 +486,19 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                           )}
                         </div>
 
-                        {(() => {
-                          console.log(`Rendering collection "${collection.name}": image="${collection.image}", firstLetter="${collection.firstLetter}", spaceType=${collection.spaceType}`);
-                          return collection.image ? (
-                            <img
-                              className="relative w-12 h-12 object-cover rounded-full"
-                              alt={collection.name}
-                              src={collection.image}
-                            />
-                          ) : (
-                            <div className="relative w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                              <span className="text-lg font-medium text-gray-600">
-                                {collection.firstLetter}
-                              </span>
-                            </div>
-                          );
-                        })()}
+                        {collection.image ? (
+                          <img
+                            className="relative w-12 h-12 object-cover rounded-full"
+                            alt={collection.name}
+                            src={collection.image}
+                          />
+                        ) : (
+                          <div className="relative w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-lg font-medium text-gray-600">
+                              {collection.firstLetter}
+                            </span>
+                          </div>
+                        )}
                         <div className="inline-flex flex-col items-start justify-center gap-1 relative flex-[0_0_auto]">
                           <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
                             {collection.name}
