@@ -208,6 +208,12 @@ export const FollowingContentSection = (): JSX.Element => {
         if (articles.indexOf(article) === 0) {
           console.log('Filter debug - selectedSpace:', selectedSpace);
           console.log('Filter debug - first article full:', article);
+          console.log('Filter debug - article keys:', Object.keys(article));
+          console.log('Filter debug - article spaceId:', article.spaceId);
+          console.log('Filter debug - article spaceInfo:', article.spaceInfo);
+          console.log('Filter debug - article fromSpaceId:', article.fromSpaceId);
+          console.log('Filter debug - article likerInfo:', article.likerInfo);
+          console.log('Filter debug - article collectorInfo:', article.collectorInfo);
         }
 
         // Try to match by spaceId first (works for regular spaces and treasuries)
