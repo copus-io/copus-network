@@ -94,15 +94,19 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
         // Transform spaces to collection format
         const collectionOptions: Collection[] = spacesArray.map((space) => {
+          // Convert spaceType to number if it's a string
+          const spaceTypeNum = typeof space.spaceType === 'string' ? parseInt(space.spaceType, 10) : space.spaceType;
+
           // Get display name using the same logic as TreasuryCard
           const displayName = getSpaceDisplayName({
             ...space,
+            spaceType: spaceTypeNum,
             ownerInfo: { username: user.username || 'User' },
           });
 
           // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
           // For other spaces, use the first article's cover image or fallback
-          const isDefaultSpace = space.spaceType === 1 || space.spaceType === 2;
+          const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
           const coverImage = isDefaultSpace
             ? (user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png')
             : (space.data?.[0]?.coverUrl || user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png');
@@ -114,7 +118,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             image: coverImage,
             isSelected: space.isBind, // Initially selected if already bound
             wasOriginallyBound: space.isBind,
-            spaceType: space.spaceType,
+            spaceType: spaceTypeNum,
             namespace: space.namespace,
           };
         });

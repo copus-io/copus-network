@@ -81,18 +81,25 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         }
 
         console.log('Spaces array (full):', JSON.stringify(spacesArray, null, 2));
-        console.log('Space types:', spacesArray.map(s => ({ name: s.name, spaceType: s.spaceType, id: s.id })));
+        console.log('Space types:', spacesArray.map(s => ({ name: s.name, spaceType: s.spaceType, spaceTypeType: typeof s.spaceType, id: s.id })));
+        console.log('User info for display name:', { username: user.username, userId: user.id });
 
         // Transform spaces to collection format
         const collectionOptions: Collection[] = spacesArray.map((space) => {
+          // Convert spaceType to number if it's a string
+          const spaceTypeNum = typeof space.spaceType === 'string' ? parseInt(space.spaceType, 10) : space.spaceType;
+
           const displayName = getSpaceDisplayName({
             ...space,
+            spaceType: spaceTypeNum,
             ownerInfo: { username: user.username || 'User' },
           });
 
+          console.log('Space display name for', space.name, ':', displayName, 'spaceType:', spaceTypeNum);
+
           // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
           // For other spaces, use the first article's cover image
-          const isDefaultSpace = space.spaceType === 1 || space.spaceType === 2;
+          const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
           const coverImage = isDefaultSpace
             ? (user.faceUrl || '')
             : (space.data?.[0]?.coverUrl || '');
@@ -104,7 +111,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           // Auto-select spaceType 1 (Treasury) by default, or use initialSelectedIds
           const shouldBeSelected = initialSelectedIds.length > 0
             ? initialSelectedIds.includes(space.id)
-            : space.spaceType === 1; // Default select Treasury (spaceType 1)
+            : spaceTypeNum === 1; // Default select Treasury (spaceType 1)
 
           return {
             id: space.id.toString(),
@@ -112,7 +119,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             name: displayName,
             image: coverImage,
             isSelected: shouldBeSelected,
-            spaceType: space.spaceType,
+            spaceType: spaceTypeNum,
             namespace: space.namespace,
             firstLetter,
           };
