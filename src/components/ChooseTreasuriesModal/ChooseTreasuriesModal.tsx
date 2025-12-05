@@ -80,7 +80,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           spacesArray = bindableResponse;
         }
 
-        console.log('Spaces array:', spacesArray);
+        console.log('Spaces array (full):', JSON.stringify(spacesArray, null, 2));
         console.log('Space types:', spacesArray.map(s => ({ name: s.name, spaceType: s.spaceType, id: s.id })));
 
         // Transform spaces to collection format

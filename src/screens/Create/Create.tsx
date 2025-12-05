@@ -351,6 +351,14 @@ export const Create = (): JSX.Element => {
     paymentPrice: payToUnlock ? paymentAmount : undefined
   };
 
+  // Debug: Log preview data
+  console.log('Preview article data:', {
+    title: previewArticleData.title,
+    description: previewArticleData.description,
+    coverImage: previewArticleData.coverImage ? 'set' : 'empty',
+    website: previewArticleData.website
+  });
+
   const handleInputChange = (field: string, value: string) => {
     if (field === "title") {
       // Limit title to 75 characters
