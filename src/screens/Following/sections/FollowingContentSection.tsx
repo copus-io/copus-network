@@ -12,6 +12,11 @@ interface FollowedSpace {
   id: number;
   name: string;
   namespace: string;
+  spaceType?: number; // 1 = Collections, 2 = Curations (default spaces)
+  authorInfo?: {
+    id?: number;
+    username?: string;
+  };
 }
 
 export const FollowingContentSection = (): JSX.Element => {
@@ -219,19 +224,26 @@ export const FollowingContentSection = (): JSX.Element => {
           {loadingSpaces ? (
             <span className="text-gray-400 text-sm">Loading...</span>
           ) : (
-            followedSpaces.map((space) => (
-              <button
-                key={space.id}
-                onClick={() => setSelectedTab(space.id.toString())}
-                className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
-                  selectedTab === space.id.toString()
-                    ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
-                    : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
-                }`}
-              >
-                {space.name}
-              </button>
-            ))
+            followedSpaces.map((space) => {
+              // For default spaces (spaceType 2 = Curations), show author's username instead of "Default curation space"
+              const displayName = (space.spaceType === 2 && space.authorInfo?.username)
+                ? space.authorInfo.username
+                : space.name;
+
+              return (
+                <button
+                  key={space.id}
+                  onClick={() => setSelectedTab(space.id.toString())}
+                  className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
+                    selectedTab === space.id.toString()
+                      ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
+                      : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
+                  }`}
+                >
+                  {displayName}
+                </button>
+              );
+            })
           )}
 
           {/* Show message if no followed spaces */}
