@@ -1482,7 +1482,7 @@ export const Content = (): JSX.Element => {
                 return isAuthor;
               })() && (
                 <button
-                  onClick={() => navigate(`/create?edit=${article.uuid}`)}
+                  onClick={() => navigate(`/curate?edit=${article.uuid}`)}
                   className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0 hover:bg-gray-100"
                   aria-label="Edit"
                   title="Edit"
