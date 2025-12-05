@@ -13,10 +13,16 @@ interface FollowedSpace {
   name: string;
   namespace: string;
   spaceType?: number; // 1 = Collections, 2 = Curations (default spaces)
+  userId?: number;
   authorInfo?: {
     id?: number;
     username?: string;
   };
+}
+
+// Interface for space with resolved username
+interface FollowedSpaceWithUsername extends FollowedSpace {
+  resolvedUsername?: string;
 }
 
 export const FollowingContentSection = (): JSX.Element => {
@@ -24,7 +30,7 @@ export const FollowingContentSection = (): JSX.Element => {
   const { user, getArticleLikeState, toggleLike } = useUser();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState("all");
-  const [followedSpaces, setFollowedSpaces] = useState<FollowedSpace[]>([]);
+  const [followedSpaces, setFollowedSpaces] = useState<FollowedSpaceWithUsername[]>([]);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
   const [articles, setArticles] = useState<any[]>([]);
   const [loadingArticles, setLoadingArticles] = useState(true);
@@ -56,11 +62,9 @@ export const FollowingContentSection = (): JSX.Element => {
           spacesArray = response;
         }
 
-        // Log the first space to see all available fields
-        if (spacesArray.length > 0) {
-          console.log('First space structure:', JSON.stringify(spacesArray[0], null, 2));
-        }
-        setFollowedSpaces(spacesArray);
+        // Store spaces without username resolution for now
+        // Username will be resolved after articles are loaded
+        setFollowedSpaces(spacesArray.map(space => ({ ...space })));
       } catch (err) {
         console.error('Failed to fetch followed spaces:', err);
       } finally {
@@ -105,6 +109,84 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedArticles();
   }, [user]);
 
+  // Resolve usernames for default spaces from articles data
+  useEffect(() => {
+    if (articles.length === 0 || followedSpaces.length === 0) return;
+
+    // Debug: log first article structure
+    if (articles.length > 0) {
+      console.log('First article structure:', JSON.stringify(articles[0], null, 2));
+    }
+    console.log('Followed spaces:', followedSpaces.map(s => ({ id: s.id, name: s.name, userId: s.userId })));
+
+    // Build a map of spaceId -> username from articles
+    const spaceUserMap = new Map<number, string>();
+
+    // Also try to map by userId
+    const userIdToUsername = new Map<number, string>();
+
+    articles.forEach(article => {
+      const spaceId = article.spaceId || article.spaceInfo?.id;
+      const username = article.authorInfo?.username;
+      const authorId = article.authorInfo?.id;
+
+      if (spaceId && username && !spaceUserMap.has(spaceId)) {
+        spaceUserMap.set(spaceId, username);
+      }
+
+      // Also map authorId to username for fallback
+      if (authorId && username && !userIdToUsername.has(authorId)) {
+        userIdToUsername.set(authorId, username);
+      }
+    });
+
+    console.log('Space to username map:', Object.fromEntries(spaceUserMap));
+    console.log('UserId to username map:', Object.fromEntries(userIdToUsername));
+
+    // Update followedSpaces with resolved usernames
+    const updatedSpaces = followedSpaces.map(space => {
+      const isDefaultSpace =
+        space.name?.toLowerCase().includes('default curation') ||
+        space.name?.toLowerCase().includes('default collection') ||
+        space.name?.toLowerCase().includes('default treasury') ||
+        space.name?.toLowerCase().includes('default');
+
+      if (isDefaultSpace) {
+        // Try to get username from spaceId first, then fall back to userId
+        let username = spaceUserMap.get(space.id);
+        if (!username && space.userId) {
+          username = userIdToUsername.get(space.userId);
+        }
+        if (username) {
+          // Format as "Username's Collections" or "Username's Curations" based on space type/name
+          let displayName = username;
+          if (space.name?.toLowerCase().includes('curation') || space.spaceType === 2) {
+            displayName = `${username}'s Curations`;
+          } else if (space.name?.toLowerCase().includes('collection') || space.spaceType === 1) {
+            displayName = `${username}'s Collections`;
+          } else {
+            // Default to Treasury for type 0 or unknown
+            displayName = `${username}'s Treasury`;
+          }
+          return {
+            ...space,
+            resolvedUsername: displayName
+          };
+        }
+      }
+      return space;
+    });
+
+    // Only update if there are changes
+    const hasChanges = updatedSpaces.some((space, index) =>
+      space.resolvedUsername !== followedSpaces[index].resolvedUsername
+    );
+
+    if (hasChanges) {
+      setFollowedSpaces(updatedSpaces);
+    }
+  }, [articles]);
+
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
     return {
@@ -135,8 +217,29 @@ export const FollowingContentSection = (): JSX.Element => {
   const filteredArticles = selectedTab === "all"
     ? articles
     : articles.filter(article => {
-        const spaceId = article.spaceId || article.spaceInfo?.id;
-        return spaceId?.toString() === selectedTab;
+        // Find the selected space
+        const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
+        if (!selectedSpace) return false;
+
+        // Try to match by spaceId first
+        const articleSpaceId = article.spaceId || article.spaceInfo?.id;
+        if (articleSpaceId?.toString() === selectedTab) {
+          return true;
+        }
+
+        // For default spaces, match by userId (author)
+        const isDefaultSpace =
+          selectedSpace.name?.toLowerCase().includes('default curation') ||
+          selectedSpace.name?.toLowerCase().includes('default collection') ||
+          selectedSpace.name?.toLowerCase().includes('default treasury') ||
+          selectedSpace.name?.toLowerCase().includes('default');
+
+        if (isDefaultSpace && selectedSpace.userId) {
+          const authorId = article.authorInfo?.id;
+          return authorId === selectedSpace.userId;
+        }
+
+        return false;
       });
 
   // Handle like action - opens the collect modal
@@ -229,23 +332,16 @@ export const FollowingContentSection = (): JSX.Element => {
             <span className="text-gray-400 text-sm">Loading...</span>
           ) : (
             followedSpaces.map((space) => {
-              // For default curation spaces, show author's username instead of "Default curation space"
-              // Check by spaceType or name pattern
-              const isDefaultCurationSpace =
-                space.spaceType === 2 ||
+              // Check for default spaces - any space with "default" in the name
+              const isDefaultSpace =
                 space.name?.toLowerCase().includes('default curation') ||
-                space.name?.toLowerCase().includes('default collection');
+                space.name?.toLowerCase().includes('default collection') ||
+                space.name?.toLowerCase().includes('default treasury') ||
+                space.name?.toLowerCase().includes('default');
 
-              // Try to get author name from authorInfo, or extract from namespace
-              // Namespace format is usually like "username" or contains the username
-              const authorName = space.authorInfo?.username ||
-                (space as any).userName ||
-                (space as any).username ||
-                (space as any).ownerName ||
-                (space as any).author;
-
-              const displayName = (isDefaultCurationSpace && authorName)
-                ? authorName
+              // Use resolvedUsername for default spaces, otherwise use space name
+              const displayName = (isDefaultSpace && space.resolvedUsername)
+                ? space.resolvedUsername
                 : space.name;
 
               return (
