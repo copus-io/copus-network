@@ -131,12 +131,24 @@ export const TreasuryContentSection = (): JSX.Element => {
 
     return Array.from(categoryMap.entries()).map(([category, articles]) => ({
       title: category,
-      items: articles.map(article => ({
-        id: article.id,
-        title: article.title,
-        url: article.targetUrl || 'copus.network',
-        coverImage: article.coverImage,
-      })),
+      items: articles.map(article => {
+        // Extract hostname from targetUrl if available
+        let website = '';
+        if (article.targetUrl) {
+          try {
+            website = new URL(article.targetUrl).hostname.replace('www.', '');
+          } catch {
+            website = '';
+          }
+        }
+        return {
+          id: article.id,
+          title: article.title,
+          url: article.targetUrl || '',
+          website, // Extracted hostname for display
+          coverImage: article.coverImage,
+        };
+      }),
     }));
   };
 

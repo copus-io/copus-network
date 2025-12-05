@@ -369,7 +369,7 @@ export const SpaceContentSection = (): JSX.Element => {
     let website = article.website;
     if (!website && article.targetUrl) {
       try {
-        website = new URL(article.targetUrl).hostname;
+        website = new URL(article.targetUrl).hostname.replace('www.', '');
       } catch {
         // Invalid URL, leave website undefined
       }

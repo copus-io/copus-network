@@ -4,6 +4,7 @@ export interface CollectionItem {
   id: string;
   title: string;
   url: string;
+  website?: string; // Extracted hostname for display
   coverImage: string;
 }
 
@@ -43,18 +44,21 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
             className="flex flex-col w-[259px] h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
             style={{ backgroundImage: `url(${mainItem.coverImage})` }}
           >
+            {mainItem.website && (
             <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
               <a
                 href={mainItem.url.startsWith('http') ? mainItem.url : `https://${mainItem.url}`}
                 className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-white/80 rounded-[15px] overflow-hidden hover:bg-white transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                  {mainItem.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                  {mainItem.website}
                 </span>
               </a>
             </div>
+          )}
           </div>
 
           <div className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto]">
@@ -82,18 +86,21 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
                   className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
                   style={{ backgroundImage: `url(${item.coverImage})` }}
                 >
-                  <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-                    <a
-                      href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                      className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white/80 rounded-[15px] overflow-hidden relative flex-[0_0_auto] hover:bg-white transition-colors"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                        {item.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
-                      </span>
-                    </a>
-                  </div>
+                    {item.website && (
+                    <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
+                      <a
+                        href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
+                        className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white/80 rounded-[15px] overflow-hidden relative flex-[0_0_auto] hover:bg-white transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
+                          {item.website}
+                        </span>
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 <div
