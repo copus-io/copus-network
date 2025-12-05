@@ -192,6 +192,12 @@ export const SpaceContentSection = (): JSX.Element => {
   const [spaceInfo, setSpaceInfo] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalArticleCount, setTotalArticleCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 20;
+
   // Edit space modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSpaceName, setEditSpaceName] = useState("");
@@ -259,11 +265,15 @@ export const SpaceContentSection = (): JSX.Element => {
             setSpaceId(spaceIdFromResponse);
           }
 
+          // Store the total article count from space info
+          const totalCount = spaceData?.articleCount || 0;
+          setTotalArticleCount(totalCount);
+
           // Fetch articles using spaceId from the space info
           const spaceId = spaceIdFromResponse;
           if (spaceId) {
-            console.log('Fetching articles for spaceId:', spaceId);
-            const articlesResponse = await AuthService.getSpaceArticles(spaceId);
+            console.log('Fetching articles for spaceId:', spaceId, 'page:', 1, 'pageSize:', PAGE_SIZE);
+            const articlesResponse = await AuthService.getSpaceArticles(spaceId, 1, PAGE_SIZE);
             console.log('Space articles API response:', articlesResponse);
 
             // Extract articles from paginated response
@@ -275,6 +285,7 @@ export const SpaceContentSection = (): JSX.Element => {
           }
 
           setArticles(articlesArray);
+          setCurrentPage(1);
         } else {
           // Old category-based route (for backwards compatibility)
           setSpaceInfo({
@@ -470,6 +481,40 @@ export const SpaceContentSection = (): JSX.Element => {
     showToast('Link copied to clipboard', 'success');
   };
 
+  // Handle load more articles
+  const handleLoadMore = async () => {
+    if (!spaceId || loadingMore) return;
+
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+      console.log('Loading more articles, page:', nextPage);
+
+      const articlesResponse = await AuthService.getSpaceArticles(spaceId, nextPage, PAGE_SIZE);
+      console.log('Load more response:', articlesResponse);
+
+      let newArticles: any[] = [];
+      if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
+        newArticles = articlesResponse.data;
+      } else if (articlesResponse?.data?.data && Array.isArray(articlesResponse.data.data)) {
+        newArticles = articlesResponse.data.data;
+      }
+
+      if (newArticles.length > 0) {
+        setArticles(prev => [...prev, ...newArticles]);
+        setCurrentPage(nextPage);
+      }
+    } catch (err) {
+      console.error('Failed to load more articles:', err);
+      showToast('Failed to load more articles', 'error');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Check if there are more articles to load
+  const hasMoreArticles = articles.length < totalArticleCount;
+
   // Handle author click
   const handleAuthorClick = () => {
     if (spaceInfo?.authorNamespace) {
@@ -601,7 +646,7 @@ export const SpaceContentSection = (): JSX.Element => {
       {/* Space Info Section */}
       <SpaceInfoSection
         spaceName={displaySpaceName || spaceInfo?.name || category || 'Space'}
-        treasureCount={articles.length}
+        treasureCount={totalArticleCount || articles.length}
         authorName={spaceInfo?.authorName || 'Anonymous'}
         authorAvatar={spaceInfo?.authorAvatar}
         authorNamespace={spaceInfo?.authorNamespace}
@@ -634,9 +679,24 @@ export const SpaceContentSection = (): JSX.Element => {
             </Button>
           </div>
         ) : (
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {articles.map((article) => renderCard(article))}
-          </div>
+          <>
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {articles.map((article) => renderCard(article))}
+            </div>
+
+            {/* Load More Button */}
+            {hasMoreArticles && (
+              <div className="flex justify-center mt-8">
+                <Button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-6 py-2 bg-white border border-gray-300 text-dark-grey rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  {loadingMore ? 'Loading...' : `Load More (${articles.length}/${totalArticleCount})`}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
