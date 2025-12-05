@@ -204,6 +204,12 @@ export const FollowingContentSection = (): JSX.Element => {
         const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
         if (!selectedSpace) return false;
 
+        // Debug: log first article's full structure
+        if (articles.indexOf(article) === 0) {
+          console.log('Filter debug - selectedSpace:', selectedSpace);
+          console.log('Filter debug - first article full:', article);
+        }
+
         // Try to match by spaceId first (works for regular spaces and treasuries)
         const articleSpaceId = article.spaceId || article.spaceInfo?.id;
         if (articleSpaceId?.toString() === selectedTab) {
@@ -223,8 +229,9 @@ export const FollowingContentSection = (): JSX.Element => {
             return true;
           }
 
-          // For Curations (type 2), match by author ID (articles they created)
-          // For Treasury (type 1), match by owner ID (articles in their treasury)
+          // For Treasury (type 1), articles are LIKED by the treasury owner
+          // The article may have any author, but it's in the treasury owner's liked articles
+          // Check if this article came from that treasury (via likedByUserId or similar)
           const ownerId = selectedSpace.ownerInfo?.id || selectedSpace.userId;
           if (ownerId) {
             // Check if article's space owner matches
@@ -233,7 +240,20 @@ export const FollowingContentSection = (): JSX.Element => {
               return true;
             }
 
-            // For Curations, also check author
+            // Check if this article was liked by the treasury owner (for Treasury type 1)
+            // Articles in getFollowedArticles might have a likerInfo or fromSpaceId
+            if (selectedSpace.spaceType === 1) {
+              // Check if article has fromSpaceId matching the treasury
+              if (article.fromSpaceId?.toString() === selectedTab) {
+                return true;
+              }
+              // Check if article has likerInfo matching the owner
+              if (article.likerInfo?.id === ownerId || article.collectorInfo?.id === ownerId) {
+                return true;
+              }
+            }
+
+            // For Curations (type 2), also check author
             if (selectedSpace.spaceType === 2) {
               const authorId = article.authorInfo?.id;
               if (authorId === ownerId) {
