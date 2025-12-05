@@ -515,6 +515,26 @@ export const SpaceContentSection = (): JSX.Element => {
   // Check if there are more articles to load
   const hasMoreArticles = articles.length < totalArticleCount;
 
+  // Auto-load more on scroll (same as Discovery page)
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if scrolled near the bottom of the page
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
+
+      if (scrolledToBottom && hasMoreArticles && !loadingMore && spaceId) {
+        handleLoadMore();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMoreArticles, loadingMore, spaceId, currentPage]);
+
   // Handle author click
   const handleAuthorClick = () => {
     if (spaceInfo?.authorNamespace) {
@@ -684,16 +704,10 @@ export const SpaceContentSection = (): JSX.Element => {
               {articles.map((article) => renderCard(article))}
             </div>
 
-            {/* Load More Button */}
-            {hasMoreArticles && (
+            {/* Loading indicator for infinite scroll */}
+            {loadingMore && (
               <div className="flex justify-center mt-8">
-                <Button
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  className="px-6 py-2 bg-white border border-gray-300 text-dark-grey rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  {loadingMore ? 'Loading...' : `Load More (${articles.length}/${totalArticleCount})`}
-                </Button>
+                <div className="text-gray-500">Loading more...</div>
               </div>
             )}
           </>
