@@ -123,10 +123,8 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           const spaceName = space.name || displayName;
           const firstLetter = spaceName.charAt(0).toUpperCase();
 
-          // Auto-select spaceType 1 (Treasury) by default, or use initialSelectedIds
-          const shouldBeSelected = initialSelectedIds.length > 0
-            ? initialSelectedIds.includes(space.id)
-            : spaceTypeNum === 1; // Default select Treasury (spaceType 1)
+          // Only pre-select if initialSelectedIds contains this space
+          const shouldBeSelected = initialSelectedIds.includes(space.id);
 
           return {
             id: space.id.toString(),
