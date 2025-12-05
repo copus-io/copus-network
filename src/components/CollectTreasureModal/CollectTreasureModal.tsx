@@ -258,15 +258,18 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       showToast(`Created "${newTreasuryName.trim()}"`, 'success');
 
       // Add the new treasury to collections list and select it
+      // Use empty string for image to trigger firstLetter fallback (custom treasuries don't use profile image)
+      const treasuryName = createdSpace.name || newTreasuryName.trim();
       setCollections(prev => [...prev, {
         id: createdSpace.id.toString(),
         numericId: createdSpace.id,
-        name: createdSpace.name || newTreasuryName.trim(),
-        image: user?.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png',
+        name: treasuryName,
+        image: '', // Empty to trigger firstLetter fallback
         isSelected: true, // Auto-select the newly created treasury
         wasOriginallyBound: false,
         spaceType: createdSpace.spaceType || 0,
         namespace: createdSpace.namespace,
+        firstLetter: treasuryName.charAt(0).toUpperCase(),
       }]);
 
       setShowCreateNew(false);
