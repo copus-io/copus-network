@@ -37,7 +37,8 @@ export const FollowingContentSection = (): JSX.Element => {
   const [selectedTab, setSelectedTab] = useState("all");
   const [followedSpaces, setFollowedSpaces] = useState<FollowedSpaceWithUsername[]>([]);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
-  const [articles, setArticles] = useState<any[]>([]);
+  const [allArticles, setAllArticles] = useState<any[]>([]); // All followed articles
+  const [spaceArticles, setSpaceArticles] = useState<any[]>([]); // Articles for selected space
   const [loadingArticles, setLoadingArticles] = useState(true);
 
   // Collect Treasure Modal state
@@ -136,7 +137,7 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedSpaces();
   }, [user]);
 
-  // Fetch articles from followed spaces
+  // Fetch all articles from followed spaces (for "All" tab)
   useEffect(() => {
     const fetchFollowedArticles = async () => {
       if (!user) {
@@ -159,7 +160,7 @@ export const FollowingContentSection = (): JSX.Element => {
           articlesArray = response;
         }
 
-        setArticles(articlesArray);
+        setAllArticles(articlesArray);
       } catch (err) {
         console.error('Failed to fetch followed articles:', err);
       } finally {
@@ -169,6 +170,49 @@ export const FollowingContentSection = (): JSX.Element => {
 
     fetchFollowedArticles();
   }, [user]);
+
+  // Fetch articles for selected space when tab changes
+  useEffect(() => {
+    const fetchSpaceArticles = async () => {
+      // If "all" tab selected, use allArticles
+      if (selectedTab === "all") {
+        setSpaceArticles([]);
+        return;
+      }
+
+      // Find the selected space
+      const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
+      if (!selectedSpace) {
+        setSpaceArticles([]);
+        return;
+      }
+
+      try {
+        setLoadingArticles(true);
+        const response = await AuthService.getSpaceArticles(selectedSpace.id, 1, 50);
+        console.log('Space articles response:', response);
+
+        // Parse the response
+        let articlesArray: any[] = [];
+        if (response?.data?.data && Array.isArray(response.data.data)) {
+          articlesArray = response.data.data;
+        } else if (response?.data && Array.isArray(response.data)) {
+          articlesArray = response.data;
+        } else if (Array.isArray(response)) {
+          articlesArray = response;
+        }
+
+        setSpaceArticles(articlesArray);
+      } catch (err) {
+        console.error('Failed to fetch space articles:', err);
+        setSpaceArticles([]);
+      } finally {
+        setLoadingArticles(false);
+      }
+    };
+
+    fetchSpaceArticles();
+  }, [selectedTab, followedSpaces]);
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
@@ -196,81 +240,9 @@ export const FollowingContentSection = (): JSX.Element => {
     };
   };
 
-  // Filter articles based on selected tab
-  const filteredArticles = selectedTab === "all"
-    ? articles
-    : articles.filter(article => {
-        // Find the selected space
-        const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
-        if (!selectedSpace) return false;
-
-        // Debug: log first article's full structure
-        if (articles.indexOf(article) === 0) {
-          console.log('Filter debug - selectedSpace:', selectedSpace);
-          console.log('Filter debug - first article full:', article);
-          console.log('Filter debug - article keys:', Object.keys(article));
-          console.log('Filter debug - article spaceId:', article.spaceId);
-          console.log('Filter debug - article spaceInfo:', article.spaceInfo);
-          console.log('Filter debug - article fromSpaceId:', article.fromSpaceId);
-          console.log('Filter debug - article likerInfo:', article.likerInfo);
-          console.log('Filter debug - article collectorInfo:', article.collectorInfo);
-        }
-
-        // Try to match by spaceId first (works for regular spaces and treasuries)
-        const articleSpaceId = article.spaceId || article.spaceInfo?.id;
-        if (articleSpaceId?.toString() === selectedTab) {
-          return true;
-        }
-
-        // For default spaces, also try matching by namespace
-        const isDefaultSpace =
-          selectedSpace.spaceType === 1 ||
-          selectedSpace.spaceType === 2 ||
-          selectedSpace.name?.toLowerCase().includes('default');
-
-        if (isDefaultSpace) {
-          // Match by space namespace
-          const articleSpaceNamespace = article.spaceInfo?.namespace;
-          if (articleSpaceNamespace && articleSpaceNamespace === selectedSpace.namespace) {
-            return true;
-          }
-
-          // For Treasury (type 1), articles are LIKED by the treasury owner
-          // The article may have any author, but it's in the treasury owner's liked articles
-          // Check if this article came from that treasury (via likedByUserId or similar)
-          const ownerId = selectedSpace.ownerInfo?.id || selectedSpace.userId;
-          if (ownerId) {
-            // Check if article's space owner matches
-            const articleSpaceOwnerId = article.spaceInfo?.ownerInfo?.id || article.spaceInfo?.userId;
-            if (articleSpaceOwnerId === ownerId) {
-              return true;
-            }
-
-            // Check if this article was liked by the treasury owner (for Treasury type 1)
-            // Articles in getFollowedArticles might have a likerInfo or fromSpaceId
-            if (selectedSpace.spaceType === 1) {
-              // Check if article has fromSpaceId matching the treasury
-              if (article.fromSpaceId?.toString() === selectedTab) {
-                return true;
-              }
-              // Check if article has likerInfo matching the owner
-              if (article.likerInfo?.id === ownerId || article.collectorInfo?.id === ownerId) {
-                return true;
-              }
-            }
-
-            // For Curations (type 2), also check author
-            if (selectedSpace.spaceType === 2) {
-              const authorId = article.authorInfo?.id;
-              if (authorId === ownerId) {
-                return true;
-              }
-            }
-          }
-        }
-
-        return false;
-      });
+  // Get articles to display based on selected tab
+  // For "all" tab, use allArticles; for specific space, use spaceArticles (fetched per space)
+  const displayedArticles = selectedTab === "all" ? allArticles : spaceArticles;
 
   // Handle like action - opens the collect modal
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -285,7 +257,7 @@ export const FollowingContentSection = (): JSX.Element => {
     }
 
     // Find the article and open the collect modal
-    const article = articles.find(a => a.uuid === articleId);
+    const article = displayedArticles.find(a => a.uuid === articleId);
     if (article) {
       setSelectedArticle({
         uuid: articleId,
@@ -402,7 +374,7 @@ export const FollowingContentSection = (): JSX.Element => {
           <div className="flex items-center justify-center w-full py-20">
             <div className="text-gray-500">Loading articles...</div>
           </div>
-        ) : filteredArticles.length === 0 ? (
+        ) : displayedArticles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
             <p className="text-gray-500 mb-4">{selectedTab === "all" ? "Follow spaces to see their articles here" : "No articles from this space yet"}</p>
@@ -417,7 +389,7 @@ export const FollowingContentSection = (): JSX.Element => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
-            {filteredArticles.map((article) => {
+            {displayedArticles.map((article) => {
               const card = transformArticleToCard(article);
               const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
