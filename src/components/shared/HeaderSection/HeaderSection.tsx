@@ -164,13 +164,6 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     </div>
                   )}
                   <Link
-                    to="/my-treasury"
-                    className="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 whitespace-nowrap"
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    My Treasury
-                  </Link>
-                  <Link
                     to="/setting"
                     className="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 whitespace-nowrap"
                     onClick={() => setShowUserMenu(false)}
