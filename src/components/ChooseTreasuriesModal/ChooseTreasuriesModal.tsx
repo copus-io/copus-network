@@ -90,26 +90,35 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             ownerInfo: { username: user.username || 'User' },
           });
 
-          // Only use actual cover image from space, not user avatar
-          const coverImage = space.data?.[0]?.coverUrl || '';
+          // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
+          // For other spaces, use the first article's cover image
+          const isDefaultSpace = space.spaceType === 1 || space.spaceType === 2;
+          const coverImage = isDefaultSpace
+            ? (user.faceUrl || '')
+            : (space.data?.[0]?.coverUrl || '');
 
           // Get first letter of space name (not display name which may have username)
           const spaceName = space.name || displayName;
           const firstLetter = spaceName.charAt(0).toUpperCase();
+
+          // Auto-select spaceType 1 (Treasury) by default, or use initialSelectedIds
+          const shouldBeSelected = initialSelectedIds.length > 0
+            ? initialSelectedIds.includes(space.id)
+            : space.spaceType === 1; // Default select Treasury (spaceType 1)
 
           return {
             id: space.id.toString(),
             numericId: space.id,
             name: displayName,
             image: coverImage,
-            isSelected: initialSelectedIds.includes(space.id), // Pre-select based on initialSelectedIds
+            isSelected: shouldBeSelected,
             spaceType: space.spaceType,
             namespace: space.namespace,
             firstLetter,
           };
         });
 
-        // Sort: spaceType 1 (Collections) first, then spaceType 2 (Curations), then by ID descending (newest first)
+        // Sort: spaceType 1 (Treasury) first, then spaceType 2 (Curations), then by ID descending (newest first)
         const sortedCollections = collectionOptions.sort((a, b) => {
           if (a.spaceType === 1 && b.spaceType !== 1) return -1;
           if (a.spaceType !== 1 && b.spaceType === 1) return 1;

@@ -100,10 +100,12 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             ownerInfo: { username: user.username || 'User' },
           });
 
-          // Get cover image from first article in space data, or use default
-          const coverImage = space.data?.[0]?.coverUrl
-            || user.faceUrl
-            || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png';
+          // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
+          // For other spaces, use the first article's cover image or fallback
+          const isDefaultSpace = space.spaceType === 1 || space.spaceType === 2;
+          const coverImage = isDefaultSpace
+            ? (user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png')
+            : (space.data?.[0]?.coverUrl || user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png');
 
           return {
             id: space.id.toString(),
@@ -117,16 +119,16 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           };
         });
 
-        // Sort collections: spaceType 1 (Collections) first, then by ID descending (newest first)
+        // Sort collections: spaceType 1 (Treasury) first, then by ID descending (newest first)
         const sortedCollections = collectionOptions.sort((a, b) => {
-          // spaceType 1 (Collections) comes first - this is the user's default treasury
+          // spaceType 1 (Treasury) comes first - this is the user's default treasury
           if (a.spaceType === 1 && b.spaceType !== 1) return -1;
           if (a.spaceType !== 1 && b.spaceType === 1) return 1;
           // Then sort by numeric ID descending (higher ID = more recently created)
           return b.numericId - a.numericId;
         });
 
-        // Auto-select the Collections space (spaceType 1) by default if not already bound
+        // Auto-select the Treasury space (spaceType 1) by default if not already bound
         const collectionsWithDefault = sortedCollections.map(c => {
           if (c.spaceType === 1 && !c.wasOriginallyBound) {
             return { ...c, isSelected: true };

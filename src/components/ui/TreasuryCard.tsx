@@ -59,7 +59,7 @@ export interface TreasuryCardProps {
 
 /**
  * Get display name for a space/treasury based on spaceType
- * spaceType 1 = Collections, spaceType 2 = Curations
+ * spaceType 1 = Treasury (default), spaceType 2 = Curations
  */
 export const getSpaceDisplayName = (space: SpaceData): string => {
   // Get username from various possible fields in API response
@@ -73,11 +73,9 @@ export const getSpaceDisplayName = (space: SpaceData): string => {
     || space.username
     || 'User';
 
-  console.log('TreasuryCard getSpaceDisplayName:', JSON.stringify(space, null, 2), 'username:', username);
-
-  // spaceType 1 = Collections, spaceType 2 = Curations
+  // spaceType 1 = Treasury (default), spaceType 2 = Curations
   if (space.spaceType === 1) {
-    return `${username}'s Collections`;
+    return `${username}'s Treasury`;
   }
   if (space.spaceType === 2) {
     return `${username}'s Curations`;
