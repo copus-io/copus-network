@@ -560,37 +560,8 @@ export const Content = (): JSX.Element => {
           spacesArray = spacesResponse;
         }
 
-        // For spaces with spaceType 1 or 2, fetch owner info using getSpaceInfo
-        // This is needed because spacesByArticleId API doesn't return owner username
-        const spacesWithOwnerInfo = await Promise.all(
-          spacesArray.map(async (space) => {
-            // Only fetch owner info for default treasuries (spaceType 1 or 2)
-            if ((space.spaceType === 1 || space.spaceType === 2) && space.namespace) {
-              try {
-                const spaceInfo = await AuthService.getSpaceInfo(space.namespace);
-                console.log('Space info for', space.namespace, ':', spaceInfo);
-                // getSpaceInfo API returns userInfo.username for the space owner
-                const spaceData = spaceInfo?.data || spaceInfo;
-                const ownerUsername = spaceData?.userInfo?.username
-                  || spaceData?.ownerInfo?.username
-                  || spaceData?.username;
-                console.log('Extracted owner username:', ownerUsername);
-                if (ownerUsername) {
-                  return {
-                    ...space,
-                    ownerInfo: { username: ownerUsername },
-                  };
-                }
-              } catch (err) {
-                console.error('Failed to fetch space info for', space.namespace, err);
-              }
-            }
-            return space;
-          })
-        );
-
-        // Store spaces with owner info - TreasuryCard handles naming logic
-        setCollectedInData(spacesWithOwnerInfo);
+        // Store spaces directly - TreasuryCard handles naming logic with fallback
+        setCollectedInData(spacesArray);
       } catch (err) {
         console.error('Failed to fetch collected in data:', err);
         setCollectedInData([]);
