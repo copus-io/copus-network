@@ -560,8 +560,29 @@ export const Content = (): JSX.Element => {
           spacesArray = spacesResponse;
         }
 
-        // Store spaces directly - TreasuryCard handles naming logic with fallback
-        setCollectedInData(spacesArray);
+        // Fetch detailed space info for each space to get userInfo with username
+        const spacesWithUserInfo = await Promise.all(
+          spacesArray.map(async (space) => {
+            if (space.namespace) {
+              try {
+                const spaceInfoResponse = await AuthService.getSpaceInfo(space.namespace);
+                const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
+                // Merge the detailed info with the original space data
+                return {
+                  ...space,
+                  userInfo: spaceData?.userInfo,
+                  ownerInfo: spaceData?.userInfo, // Also set ownerInfo for compatibility
+                };
+              } catch (err) {
+                console.error('Failed to fetch space info for:', space.namespace, err);
+                return space;
+              }
+            }
+            return space;
+          })
+        );
+
+        setCollectedInData(spacesWithUserInfo);
       } catch (err) {
         console.error('Failed to fetch collected in data:', err);
         setCollectedInData([]);
