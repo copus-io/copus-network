@@ -629,7 +629,12 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
 
 // Memoized export for performance optimization
 export const ArticleCard = React.memo(ArticleCardComponent, (prevProps, nextProps) => {
-  // Custom comparison function to prevent unnecessary re-renders
+  // For preview layout, always re-render to show live updates
+  if (prevProps.layout === 'preview' || nextProps.layout === 'preview') {
+    return false; // false means "re-render"
+  }
+
+  // Custom comparison function to prevent unnecessary re-renders for other layouts
   return (
     prevProps.article.id === nextProps.article.id &&
     prevProps.article.isLiked === nextProps.article.isLiked &&
