@@ -128,15 +128,17 @@ export const TreasuryCard = ({
   if (items.length === 0) {
     return (
       <section
-        className="relative w-full h-fit flex flex-col items-start gap-[15px]"
+        className={`relative w-full h-fit flex flex-col items-start gap-[15px] ${onClick ? 'cursor-pointer' : ''}`}
+        onClick={onClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex h-[300px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+        <div className={`flex h-[300px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`}>
           {emptyAction ? (
             <Link
               to={emptyAction.href}
               className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors"
+              onClick={(e) => e.stopPropagation()}
             >
               {emptyAction.icon && (
                 <img
@@ -151,7 +153,7 @@ export const TreasuryCard = ({
               </span>
             </Link>
           ) : (
-            <p className="text-gray-500">No items in this collection</p>
+            <p className="text-gray-500">No treasures yet</p>
           )}
         </div>
         <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
