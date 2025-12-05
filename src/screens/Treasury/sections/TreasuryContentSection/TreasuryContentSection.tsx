@@ -43,6 +43,8 @@ export const TreasuryContentSection = (): JSX.Element => {
           AuthService.getUserTreasuryInfo(),
           AuthService.getUserLikedArticles(1, 20),
         ]);
+        console.log('Treasury - treasuryInfoResponse:', treasuryInfoResponse);
+        console.log('Treasury - likedArticlesResponse:', likedArticlesResponse);
 
         // Process stats
         const treasuryInfo = treasuryInfoResponse.data || treasuryInfoResponse;
@@ -50,8 +52,17 @@ export const TreasuryContentSection = (): JSX.Element => {
           setTreasuryStats(treasuryInfo.statistics);
         }
 
-        // Process articles list
-        const articlesData = likedArticlesResponse.data || likedArticlesResponse;
+        // Process articles list - handle null response (no token case)
+        if (!likedArticlesResponse) {
+          console.log('Treasury - likedArticlesResponse is null (no token?)');
+          setLikedArticles([]);
+          setLoading(false);
+          return;
+        }
+
+        const articlesData = likedArticlesResponse?.data || likedArticlesResponse;
+        console.log('Treasury - Raw likedArticlesResponse:', likedArticlesResponse);
+        console.log('Treasury - articlesData:', articlesData);
 
         let articlesArray = [];
         if (articlesData && Array.isArray(articlesData.data)) {
@@ -59,9 +70,17 @@ export const TreasuryContentSection = (): JSX.Element => {
         } else if (Array.isArray(articlesData)) {
           articlesArray = articlesData;
         }
+        console.log('Treasury - articlesArray length:', articlesArray.length);
+        console.log('Treasury - current user id:', user?.id);
 
         const articles = articlesArray
-          .filter((article: any) => !user || article.authorInfo?.id !== user?.id)
+          .filter((article: any) => {
+            const keep = !user || article.authorInfo?.id !== user?.id;
+            if (!keep) {
+              console.log('Treasury - Filtering out article (author is current user):', article.title, article.authorInfo?.id);
+            }
+            return keep;
+          })
           .sort((a: any, b: any) => (b.createAt || 0) - (a.createAt || 0))
           .map((article: any): TreasuryArticle => ({
             id: article.uuid,

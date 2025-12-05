@@ -751,7 +751,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       {/* Social Links Management Popup */}
       {showSocialLinksPopup && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
-          <div className="flex flex-col w-[600px] max-h-[90vh] items-center justify-center gap-5 p-[30px] bg-white rounded-[15px] shadow-lg overflow-y-auto">
+          <div className="flex flex-col w-[600px] max-h-[90vh] items-center justify-center gap-5 pt-0 pb-[30px] px-0 bg-white rounded-[15px] shadow-lg overflow-y-auto">
             <SocialLinksManager onClose={() => setShowSocialLinksPopup(false)} />
           </div>
         </div>
