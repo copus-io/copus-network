@@ -300,14 +300,10 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
   }
 
   return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Social Links Management</h3>
-          <p className="text-sm text-gray-500 mt-1">Connect your digital world, let more people find you</p>
-        </div>
-        {onClose && (
+    <div className="space-y-5">
+      {/* Close button on its own row */}
+      {onClose && (
+        <div className="flex justify-end">
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
@@ -317,7 +313,13 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-        )}
+        </div>
+      )}
+
+      {/* Title - 20px below close button */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">Social Links Management</h3>
+        <p className="text-sm text-gray-500 mt-1">Connect your digital world, let more people find you</p>
       </div>
 
       {/* Loading state */}

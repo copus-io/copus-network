@@ -109,15 +109,22 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedArticles();
   }, [user]);
 
+  // Track if usernames have been resolved to prevent re-running
+  const [usernamesResolved, setUsernamesResolved] = useState(false);
+
   // Resolve usernames for default spaces from articles data
   useEffect(() => {
-    if (articles.length === 0 || followedSpaces.length === 0) return;
+    // Skip if already resolved, or if no data yet
+    if (usernamesResolved || articles.length === 0 || followedSpaces.length === 0) return;
 
-    // Debug: log first article structure
-    if (articles.length > 0) {
-      console.log('First article structure:', JSON.stringify(articles[0], null, 2));
+    // Skip if spaces already have resolved usernames (prevents re-running)
+    const alreadyHasUsernames = followedSpaces.some(s => s.resolvedUsername);
+    if (alreadyHasUsernames) {
+      setUsernamesResolved(true);
+      return;
     }
-    console.log('Followed spaces:', followedSpaces.map(s => ({ id: s.id, name: s.name, userId: s.userId })));
+
+    console.log('Resolving usernames for spaces...');
 
     // Build a map of spaceId -> username from articles
     const spaceUserMap = new Map<number, string>();
@@ -142,6 +149,7 @@ export const FollowingContentSection = (): JSX.Element => {
 
     console.log('Space to username map:', Object.fromEntries(spaceUserMap));
     console.log('UserId to username map:', Object.fromEntries(userIdToUsername));
+    console.log('Followed spaces:', followedSpaces.map(s => ({ id: s.id, name: s.name, userId: s.userId })));
 
     // Update followedSpaces with resolved usernames
     const updatedSpaces = followedSpaces.map(space => {
@@ -168,6 +176,7 @@ export const FollowingContentSection = (): JSX.Element => {
             // Default to Treasury for type 0 or unknown
             displayName = `${username}'s Treasury`;
           }
+          console.log(`Resolved space ${space.id} "${space.name}" -> "${displayName}"`);
           return {
             ...space,
             resolvedUsername: displayName
@@ -177,15 +186,9 @@ export const FollowingContentSection = (): JSX.Element => {
       return space;
     });
 
-    // Only update if there are changes
-    const hasChanges = updatedSpaces.some((space, index) =>
-      space.resolvedUsername !== followedSpaces[index].resolvedUsername
-    );
-
-    if (hasChanges) {
-      setFollowedSpaces(updatedSpaces);
-    }
-  }, [articles]);
+    setFollowedSpaces(updatedSpaces);
+    setUsernamesResolved(true);
+  }, [articles, followedSpaces, usernamesResolved]);
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {

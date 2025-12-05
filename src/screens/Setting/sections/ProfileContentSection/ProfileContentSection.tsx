@@ -501,32 +501,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
 
   return (
-    <main className="flex flex-col items-start gap-[30px] px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
+    <main className="flex flex-col items-start gap-[30px] px-4 lg:pl-[60px] lg:pr-10 pt-5 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
       <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
-        <div
-          className="relative self-stretch w-full h-40 rounded-lg overflow-hidden bg-gradient-to-r from-blue-100 to-purple-100 group cursor-pointer"
-          onClick={handleCoverClick}
-        >
-          <img
-            src={user?.coverUrl || 'https://c.animaapp.com/w7obk4mX/img/banner.png'}
-            alt="Profile banner"
-            className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
-          />
-          {/* 编辑提示覆盖层 */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-            <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
-              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="gap-4 lg:gap-10 px-4 lg:pl-5 lg:pr-10 py-0 mt-[-46px] flex flex-col lg:flex-row items-start relative self-stretch w-full flex-[0_0_auto]">
+        {/* Profile section - avatar on left, info on right */}
+        <div className="gap-4 lg:gap-6 flex flex-row items-start relative self-stretch w-full flex-[0_0_auto]">
+          {/* Avatar on the left */}
           <button
             onClick={handleAvatarClick}
-            className="w-[80px] h-[80px] lg:w-[100px] lg:h-[100px] rounded-[60px] border-2 border-solid border-white relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100"
+            className="w-[80px] h-[80px] lg:w-[100px] lg:h-[100px] rounded-full border-2 border-solid border-light-grey relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100 flex-shrink-0"
             title="Click to change avatar"
             aria-label="Click to change avatar"
           >
@@ -536,13 +518,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               alt="Profile avatar"
               className="w-full h-full object-cover"
               onError={(e) => {
-                console.log('🔥 Avatar image failed to load, using default');
+                console.log('Avatar image failed to load, using default');
                 e.currentTarget.src = profileDefaultAvatar;
               }}
             />
 
             {/* Show upload icon on hover */}
-            <div className="absolute inset-0 bg-black/50 rounded-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
               <svg
                 className="w-8 h-8 text-white"
                 fill="none"
@@ -560,104 +542,96 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </div>
           </button>
 
-          <div className="flex flex-col items-start gap-5 pt-0 lg:pt-[60px] pb-0 px-0 relative flex-1 grow w-full">
-            <div className="flex items-start justify-between w-full">
-              <header className="h-[60px] inline-flex flex-col items-start justify-center relative">
-                <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] mt-[-3.50px]">
-                  <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
-                    {formData.name || (!user ? "Loading..." : "Anonymous")}
-                  </h1>
+          {/* User info on the right */}
+          <div className="flex flex-col items-start gap-3 relative flex-1">
+            {/* Username at the top */}
+            <div className="flex items-center gap-2.5">
+              <h1 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl lg:text-3xl tracking-[0] leading-[1.4]">
+                {formData.name || (!user ? "Loading..." : "Anonymous")}
+              </h1>
 
-                  {/* Edit button next to username */}
-                  <button
-                    className="relative w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                    aria-label="Edit personal information"
-                    onClick={() => setShowPersonalInfoPopup(true)}
-                    title="Edit username, bio and other personal information"
-                  >
-                    <img
-                      className="w-4 h-4"
-                      alt="Edit"
-                      src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                    />
-                  </button>
-                </div>
-
-                <div className="relative w-fit mb-[-2.50px] [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {formData.username || (!user ? "Loading..." : "@unknown")}
-                </div>
-              </header>
+              {/* Edit button next to username */}
+              <button
+                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                aria-label="Edit personal information"
+                onClick={() => setShowPersonalInfoPopup(true)}
+                title="Edit username, bio and other personal information"
+              >
+                <img
+                  className="w-4 h-4"
+                  alt="Edit"
+                  src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                />
+              </button>
             </div>
 
-            <div className="flex-col gap-2.5 flex items-start relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex items-center gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                <p className="relative w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-off-black text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                  {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
-                </p>
-              </div>
+            {/* Handle/namespace */}
+            <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[1.4]">
+              {formData.username || (!user ? "Loading..." : "@unknown")}
+            </div>
 
-              <div className="flex flex-col gap-3 relative self-stretch w-full flex-[0_0_auto]">
-                {/* 显示已填写的社交链接 */}
-                <div className="flex items-start gap-[25px] relative self-stretch w-full flex-wrap">
-                  {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).map((link) => {
-                    // Update old YouTube icons to new one
-                    const NEW_YOUTUBE_ICON = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNMTkuNjE1IDcuNjU0Yy0uMTg4LS43MDYtLjczNi0xLjI2Mi0xLjQzOC0xLjQ1MkMxNi45MDYgNiAxMiA2IDEyIDZzLTQuOTA2IDAtNi4xNzcuMzQ4Yy0uNzAyLjE5LTEuMjUuNzQ2LTEuNDM4IDEuNDUyQzQgOC45MjggNCA5LjI5OCA0IDEyYzAgMi43MDIgMCAzLjA3Mi4zODUgNC4zNDYuMTg4LjcwNi43MzYgMS4yNjIgMS40MzggMS40NTJDNy4wOTQgMTggMTIgMTggMTIgMThzNC45MDYgMCA2LjE3Ny0uMzQ4Yy43MDItLjE5IDEuMjUtLjc0NiAxLjQzOC0xLjQ1MkMyMCAxNS4wNzIgMjAgMTQuNzAyIDIwIDEyYzAtMi43MDIgMC0zLjA3Mi0uMzg1LTQuMzQ2eiIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNOS45ODUgMTQuOTY1VjkuMDM1TDE1LjIxMyAxMmwtNS4yMjggMi45NjV6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=';
-                    const displayIconUrl = (link.title === 'YouTube' && link.iconUrl?.includes('M19.293'))
-                      ? NEW_YOUTUBE_ICON
-                      : link.iconUrl;
+            {/* Bio */}
+            <p className="font-p-l font-[number:var(--p-l-font-weight)] text-off-black text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)]">
+              {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
+            </p>
 
-                    return (
-                      <button
-                        key={link.id}
-                        className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] pr-3 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                        onClick={() => setShowSocialLinksPopup(true)}
-                        title={`Edit ${link.title}`}
-                      >
-                        <img
-                          className="relative w-6 h-6 flex-[0_0_auto]"
-                          alt={`${link.title} logo`}
-                          src={displayIconUrl || 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg'}
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg';
-                          }}
-                        />
+            {/* Social links */}
+            <div className="flex items-start gap-4 flex-wrap mt-1">
+              {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).map((link) => {
+                // Update old YouTube icons to new one
+                const NEW_YOUTUBE_ICON = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNMTkuNjE1IDcuNjU0Yy0uMTg4LS43MDYtLjczNi0xLjI2Mi0xLjQzOC0xLjQ1MkMxNi45MDYgNiAxMiA2IDEyIDZzLTQuOTA2IDAtNi4xNzcuMzQ4Yy0uNzAyLjE5LTEuMjUuNzQ2LTEuNDM4IDEuNDUyQzQgOC45MjggNCA5LjI5OCA0IDEyYzAgMi43MDIgMCAzLjA3Mi4zODUgNC4zNDYuMTg4LjcwNi43MzYgMS4yNjIgMS40MzggMS40NTJDNy4wOTQgMTggMTIgMTggMTIgMThzNC45MDYgMCA2LjE3Ny0uMzQ4Yy43MDItLjE5IDEuMjUtLjc0NiAxLjQzOC0xLjQ1MkMyMCAxNS4wNzIgMjAgMTQuNzAyIDIwIDEyYzAtMi43MDIgMC0zLjA3Mi0uMzg1LTQuMzQ2eiIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNOS45ODUgMTQuOTY1VjkuMDM1TDE1LjIxMyAxMmwtNS4yMjggMi45NjV6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=';
+                const displayIconUrl = (link.title === 'YouTube' && link.iconUrl?.includes('M19.293'))
+                  ? NEW_YOUTUBE_ICON
+                  : link.iconUrl;
 
-                      <div className="relative w-fit font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)] max-w-[120px] overflow-hidden text-ellipsis">
-                        {link.title}
-                      </div>
-                    </button>
-                    );
-                  })}
-
-                  {/* Edit social links button */}
+                return (
                   <button
-                    className="inline-flex items-center gap-2 px-3 py-2 relative flex-[0_0_auto] rounded-lg border border-dashed border-medium-grey hover:border-dark-grey hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                    key={link.id}
+                    className="inline-flex items-center gap-2 relative flex-[0_0_auto] py-1 rounded-lg hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
                     onClick={() => setShowSocialLinksPopup(true)}
-                    title="Manage social links"
+                    title={`Edit ${link.title}`}
                   >
-                    <svg
-                      className="w-5 h-5 text-medium-dark-grey"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
-                    <span className="text-sm text-medium-dark-grey">
-                      {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).length > 0 ? 'Edit Links' : 'Add Links'}
+                    <img
+                      className="w-5 h-5"
+                      alt={`${link.title} logo`}
+                      src={displayIconUrl || 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg'}
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg';
+                      }}
+                    />
+                    <span className="text-sm text-medium-dark-grey max-w-[100px] overflow-hidden text-ellipsis">
+                      {link.title}
                     </span>
                   </button>
-                </div>
-              </div>
+                );
+              })}
+
+              {/* Edit social links button */}
+              <button
+                className="inline-flex items-center gap-1.5 px-2 py-1 relative flex-[0_0_auto] rounded-lg border border-dashed border-medium-grey hover:border-dark-grey hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                onClick={() => setShowSocialLinksPopup(true)}
+                title="Manage social links"
+              >
+                <svg
+                  className="w-4 h-4 text-medium-dark-grey"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                <span className="text-sm text-medium-dark-grey">
+                  {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).length > 0 ? 'Edit' : 'Add Links'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
-
       </section>
 
       <section className="flex flex-col items-start gap-5 pt-5 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
