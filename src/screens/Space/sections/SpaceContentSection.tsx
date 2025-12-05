@@ -209,6 +209,11 @@ export const SpaceContentSection = (): JSX.Element => {
   const [collectModalOpen, setCollectModalOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Fetch space data
   useEffect(() => {
     const fetchSpaceData = async () => {
@@ -621,7 +626,34 @@ export const SpaceContentSection = (): JSX.Element => {
 
   // Handle edit article
   const handleEditArticle = (articleId: string) => {
-    navigate(`/create?edit=${articleId}`);
+    navigate(`/curate?edit=${articleId}`);
+  };
+
+  // Handle delete article - shows confirmation modal
+  const handleDeleteArticle = (articleId: string) => {
+    setArticleToDelete(articleId);
+    setDeleteConfirmOpen(true);
+  };
+
+  // Confirm delete article
+  const confirmDeleteArticle = async () => {
+    if (!articleToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await AuthService.deleteArticle(articleToDelete);
+      // Remove the article from local state
+      setArticles(prev => prev.filter(a => a.uuid !== articleToDelete));
+      setTotalArticleCount(prev => Math.max(0, prev - 1));
+      showToast('Article deleted successfully', 'success');
+      setDeleteConfirmOpen(false);
+      setArticleToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete article:', err);
+      showToast('Failed to delete article', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Render article card
@@ -635,8 +667,12 @@ export const SpaceContentSection = (): JSX.Element => {
       treasureCount: articleLikeState.likeCount
     };
 
-    // Show edit button for owner's curated content
-    const canEdit = isOwner && isCurationsSpace;
+    // Check if current user is the author of this article
+    const isArticleAuthor = !!user && (article.authorInfo?.id === user.id || article.authorInfo?.namespace === user.namespace);
+
+    // Show edit/delete buttons for articles created by the current user
+    const canEditArticle = isArticleAuthor;
+    const canDeleteArticle = isArticleAuthor;
 
     return (
       <ArticleCard
@@ -646,12 +682,14 @@ export const SpaceContentSection = (): JSX.Element => {
         actions={{
           showTreasure: true,
           showVisits: true,
-          showEdit: canEdit
+          showEdit: canEditArticle,
+          showDelete: canDeleteArticle
         }}
         isHovered={hoveredCardId === card.id}
         onLike={handleLike}
         onUserClick={handleUserClick}
-        onEdit={canEdit ? handleEditArticle : undefined}
+        onEdit={canEditArticle ? handleEditArticle : undefined}
+        onDelete={canDeleteArticle ? handleDeleteArticle : undefined}
         onMouseEnter={() => setHoveredCardId(card.id)}
         onMouseLeave={() => setHoveredCardId(null)}
       />
@@ -874,6 +912,77 @@ export const SpaceContentSection = (): JSX.Element => {
           isAlreadyCollected={selectedArticle.isLiked}
           onCollectSuccess={handleCollectSuccess}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              if (!isDeleting) {
+                setDeleteConfirmOpen(false);
+                setArticleToDelete(null);
+              }
+            }}
+          />
+
+          {/* Modal */}
+          <div
+            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="delete-confirm-title"
+            aria-modal="true"
+          >
+            {/* Warning icon */}
+            <div className="w-12 h-12 rounded-full bg-red/10 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6H5H21" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 text-center">
+              <h2
+                id="delete-confirm-title"
+                className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
+              >
+                Delete Article
+              </h2>
+              <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+                Are you sure you want to delete this article? This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 w-full">
+              <button
+                className="flex-1 px-5 py-2.5 rounded-[15px] border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setArticleToDelete(null);
+                }}
+                disabled={isDeleting}
+                type="button"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[22.4px]">
+                  Cancel
+                </span>
+              </button>
+
+              <button
+                className="flex-1 px-5 py-2.5 rounded-[15px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={confirmDeleteArticle}
+                disabled={isDeleting}
+                type="button"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

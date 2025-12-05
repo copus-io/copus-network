@@ -379,7 +379,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
               {/* Right side: Edit/Delete buttons and Branch It */}
               <div className="flex items-center gap-2">
                 {/* Edit and delete buttons area */}
-                {isHovered && (actions.showEdit || actions.showDelete) && (
+                {(actions.showEdit || actions.showDelete) && (
                   <div className="flex items-center gap-2 min-h-[24px]">
                     {actions.showEdit && (
                       <Button
@@ -550,7 +550,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
 
               {/* Right side: Edit/Delete buttons */}
               <div className="flex items-center gap-4">
-                {isHovered && (actions.showEdit || actions.showDelete) && (
+                {(actions.showEdit || actions.showDelete) && (
                   <div className="flex items-center gap-2">
                     {actions.showEdit && (
                       <Button
