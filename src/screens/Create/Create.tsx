@@ -133,6 +133,19 @@ export const Create = (): JSX.Element => {
             selectedTopicId: parseInt(spaces[0].id)
           }));
         }
+
+        // Auto-select the default Treasury (spaceType 1) for selectedTreasuries
+        // Find the "Default Collections Space" and add it to selectedTreasuries
+        const defaultTreasury = spacesArray.find((space: any) => space.name === 'Default Collections Space');
+        if (defaultTreasury && selectedTreasuries.length === 0) {
+          const treasuryDisplayName = `${user.username || 'User'}'s Treasury`;
+          setSelectedTreasuries([{
+            id: defaultTreasury.id,
+            name: treasuryDisplayName,
+            namespace: defaultTreasury.namespace,
+            spaceType: 1,
+          }]);
+        }
       } catch (err) {
         console.error('Failed to fetch user spaces:', err);
         // Fallback to empty array - user can still create new treasury
