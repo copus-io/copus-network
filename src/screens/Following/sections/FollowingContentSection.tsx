@@ -95,7 +95,7 @@ export const FollowingContentSection = (): JSX.Element => {
   }, [user]);
 
   // Transform article to card format
-  const transformArticleToCard = (article: any): ArticleData => {
+  const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
     return {
       id: article.uuid,
       uuid: article.uuid,
@@ -115,9 +115,18 @@ export const FollowingContentSection = (): JSX.Element => {
       targetUrl: article.targetUrl,
       website: article.targetUrl ? (() => { try { return new URL(article.targetUrl).hostname; } catch { return undefined; } })() : undefined,
       isPaymentRequired: article.targetUrlIsLocked,
-      paymentPrice: article.priceInfo?.price?.toString()
+      paymentPrice: article.priceInfo?.price?.toString(),
+      spaceId: article.spaceId || article.spaceInfo?.id
     };
   };
+
+  // Filter articles based on selected tab
+  const filteredArticles = selectedTab === "all"
+    ? articles
+    : articles.filter(article => {
+        const spaceId = article.spaceId || article.spaceInfo?.id;
+        return spaceId?.toString() === selectedTab;
+      });
 
   // Handle like action - opens the collect modal
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -211,11 +220,7 @@ export const FollowingContentSection = (): JSX.Element => {
             followedSpaces.map((space) => (
               <button
                 key={space.id}
-                onClick={() => {
-                  setSelectedTab(space.id.toString());
-                  // Navigate to the space page
-                  navigate(`/treasury/${space.namespace}`);
-                }}
+                onClick={() => setSelectedTab(space.id.toString())}
                 className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
                   selectedTab === space.id.toString()
                     ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
@@ -240,20 +245,22 @@ export const FollowingContentSection = (): JSX.Element => {
           <div className="flex items-center justify-center w-full py-20">
             <div className="text-gray-500">Loading articles...</div>
           </div>
-        ) : articles.length === 0 ? (
+        ) : filteredArticles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
-            <p className="text-gray-500 mb-4">Follow spaces to see their articles here</p>
-            <button
-              onClick={() => navigate('/')}
-              className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
-            >
-              Discover Spaces
-            </button>
+            <p className="text-gray-500 mb-4">{selectedTab === "all" ? "Follow spaces to see their articles here" : "No articles from this space yet"}</p>
+            {selectedTab === "all" && (
+              <button
+                onClick={() => navigate('/')}
+                className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
+              >
+                Discover Spaces
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
-            {articles.map((article) => {
+            {filteredArticles.map((article) => {
               const card = transformArticleToCard(article);
               const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
