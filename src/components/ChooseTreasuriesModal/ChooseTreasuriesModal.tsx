@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { AuthService } from "../../services/authService";
 import { useToast } from "../ui/toast";
-import { getSpaceDisplayName } from "../ui/TreasuryCard";
 
 interface ChooseTreasuriesModalProps {
   isOpen: boolean;
@@ -81,19 +80,35 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         }
 
         console.log('Spaces array (full):', JSON.stringify(spacesArray, null, 2));
-        console.log('Space types:', spacesArray.map(s => ({ name: s.name, spaceType: s.spaceType, spaceTypeType: typeof s.spaceType, id: s.id })));
         console.log('User info for display name:', { username: user.username, userId: user.id });
 
         // Transform spaces to collection format
         const collectionOptions: Collection[] = spacesArray.map((space) => {
-          // Convert spaceType to number if it's a string
-          const spaceTypeNum = typeof space.spaceType === 'string' ? parseInt(space.spaceType, 10) : space.spaceType;
+          // The bindableSpaces API doesn't return spaceType, so we need to detect it by name
+          // "Default Collections Space" = Treasury (spaceType 1)
+          // "Default Curations Space" = Curations (spaceType 2)
+          let spaceTypeNum = space.spaceType;
+          if (spaceTypeNum === undefined || spaceTypeNum === null) {
+            if (space.name === 'Default Collections Space') {
+              spaceTypeNum = 1;
+            } else if (space.name === 'Default Curations Space') {
+              spaceTypeNum = 2;
+            } else {
+              spaceTypeNum = 0; // Custom space
+            }
+          } else if (typeof spaceTypeNum === 'string') {
+            spaceTypeNum = parseInt(spaceTypeNum, 10);
+          }
 
-          const displayName = getSpaceDisplayName({
-            ...space,
-            spaceType: spaceTypeNum,
-            ownerInfo: { username: user.username || 'User' },
-          });
+          // For default spaces, show "Username's Treasury" or "Username's Curations"
+          let displayName: string;
+          if (spaceTypeNum === 1) {
+            displayName = `${user.username || 'User'}'s Treasury`;
+          } else if (spaceTypeNum === 2) {
+            displayName = `${user.username || 'User'}'s Curations`;
+          } else {
+            displayName = space.name || 'Untitled Treasury';
+          }
 
           console.log('Space display name for', space.name, ':', displayName, 'spaceType:', spaceTypeNum);
 

@@ -3,7 +3,6 @@ import { useUser } from "../../contexts/UserContext";
 import { AuthService } from "../../services/authService";
 import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
-import { getSpaceDisplayName } from "../ui/TreasuryCard";
 
 interface CollectTreasureModalProps {
   isOpen: boolean;
@@ -94,15 +93,31 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
         // Transform spaces to collection format
         const collectionOptions: Collection[] = spacesArray.map((space) => {
-          // Convert spaceType to number if it's a string
-          const spaceTypeNum = typeof space.spaceType === 'string' ? parseInt(space.spaceType, 10) : space.spaceType;
+          // The bindableSpaces API doesn't return spaceType, so we need to detect it by name
+          // "Default Collections Space" = Treasury (spaceType 1)
+          // "Default Curations Space" = Curations (spaceType 2)
+          let spaceTypeNum = space.spaceType;
+          if (spaceTypeNum === undefined || spaceTypeNum === null) {
+            if (space.name === 'Default Collections Space') {
+              spaceTypeNum = 1;
+            } else if (space.name === 'Default Curations Space') {
+              spaceTypeNum = 2;
+            } else {
+              spaceTypeNum = 0; // Custom space
+            }
+          } else if (typeof spaceTypeNum === 'string') {
+            spaceTypeNum = parseInt(spaceTypeNum, 10);
+          }
 
-          // Get display name using the same logic as TreasuryCard
-          const displayName = getSpaceDisplayName({
-            ...space,
-            spaceType: spaceTypeNum,
-            ownerInfo: { username: user.username || 'User' },
-          });
+          // For default spaces, show "Username's Treasury" or "Username's Curations"
+          let displayName: string;
+          if (spaceTypeNum === 1) {
+            displayName = `${user.username || 'User'}'s Treasury`;
+          } else if (spaceTypeNum === 2) {
+            displayName = `${user.username || 'User'}'s Curations`;
+          } else {
+            displayName = space.name || 'Untitled Treasury';
+          }
 
           // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
           // For other spaces, use the first article's cover image or fallback
