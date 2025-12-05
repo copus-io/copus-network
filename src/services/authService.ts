@@ -1789,6 +1789,18 @@ export class AuthService {
   }
 
   /**
+   * Delete a space/treasury
+   * API: POST /client/article/space/delete
+   * @param id - The space ID to delete
+   */
+  static async deleteSpace(id: number): Promise<any> {
+    return apiRequest(`/client/article/space/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  /**
    * Bind an article to one or more spaces/treasuries
    * @param articleId - The article ID (numeric ID from article.id field)
    * @param spaceIds - Array of space IDs to bind the article to

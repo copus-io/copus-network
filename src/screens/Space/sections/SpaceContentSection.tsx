@@ -580,11 +580,24 @@ export const SpaceContentSection = (): JSX.Element => {
   };
 
   // Handle delete space
-  const handleDeleteSpace = () => {
-    // TODO: Call API to delete space when available
-    showToast('Space deleted', 'success');
-    setShowEditModal(false);
-    navigate('/my-treasury');
+  const handleDeleteSpace = async () => {
+    if (!spaceId) {
+      showToast('Space ID not available', 'error');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await AuthService.deleteSpace(spaceId);
+      showToast('Treasury deleted', 'success');
+      setShowEditModal(false);
+      navigate('/my-treasury');
+    } catch (err) {
+      console.error('Failed to delete space:', err);
+      showToast('Failed to delete treasury', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Check if current user is the owner of this space
