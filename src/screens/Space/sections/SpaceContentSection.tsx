@@ -365,6 +365,16 @@ export const SpaceContentSection = (): JSX.Element => {
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData => {
+    // Extract website hostname from targetUrl if not already provided
+    let website = article.website;
+    if (!website && article.targetUrl) {
+      try {
+        website = new URL(article.targetUrl).hostname;
+      } catch {
+        // Invalid URL, leave website undefined
+      }
+    }
+
     return {
       id: article.uuid,
       uuid: article.uuid,
@@ -382,7 +392,7 @@ export const SpaceContentSection = (): JSX.Element => {
       visitCount: article.viewCount || 0,
       isLiked: article.isLiked || false,
       targetUrl: article.targetUrl,
-      website: article.targetUrl ? new URL(article.targetUrl).hostname : undefined,
+      website,
       isPaymentRequired: article.targetUrlIsLocked,
       paymentPrice: article.priceInfo?.price?.toString()
     };

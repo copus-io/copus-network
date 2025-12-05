@@ -7,6 +7,7 @@ export interface TreasuryItem {
   uuid?: string;
   title: string;
   url: string;
+  website?: string; // Extracted hostname for display
   coverImage: string;
 }
 
@@ -82,17 +83,35 @@ export const getSpaceDisplayName = (space: SpaceData): string => {
 };
 
 /**
+ * Extract hostname from URL safely
+ */
+const getHostname = (url: string | undefined): string => {
+  if (!url) return '';
+  try {
+    return new URL(url).hostname;
+  } catch {
+    // Invalid URL, try to extract domain manually
+    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] || '';
+  }
+};
+
+/**
  * Transform space data to treasury items for display
  */
 export const transformSpaceToItems = (space: SpaceData): TreasuryItem[] => {
   const articles = space.data || space.articles || [];
-  return articles.slice(0, 3).map((article: any, index: number) => ({
-    id: article.uuid || article.id?.toString() || `item-${index}`,
-    uuid: article.uuid,
-    title: article.title || 'Untitled',
-    url: article.targetUrl || '', // Empty string if no targetUrl - badge won't be shown
-    coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
-  }));
+  return articles.slice(0, 3).map((article: any, index: number) => {
+    // Use website field from API if available, otherwise extract from targetUrl
+    const website = article.website || getHostname(article.targetUrl);
+    return {
+      id: article.uuid || article.id?.toString() || `item-${index}`,
+      uuid: article.uuid,
+      title: article.title || 'Untitled',
+      url: article.targetUrl || '',
+      website, // Extracted hostname for display
+      coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
+    };
+  });
 };
 
 /**
@@ -171,7 +190,7 @@ export const TreasuryCard = ({
             className="flex flex-col w-[320px] h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
             style={{ backgroundImage: `url(${mainItem.coverImage})` }}
           >
-            {mainItem.url && (
+            {mainItem.website && (
               <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
                 <a
                   href={mainItem.url.startsWith('http') ? mainItem.url : `https://${mainItem.url}`}
@@ -181,7 +200,7 @@ export const TreasuryCard = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                    {mainItem.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]}
+                    {mainItem.website}
                   </span>
                 </a>
               </div>
@@ -213,7 +232,7 @@ export const TreasuryCard = ({
                   className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
                   style={{ backgroundImage: `url(${item.coverImage})` }}
                 >
-                  {item.url && (
+                  {item.website && (
                     <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
                       <a
                         href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
@@ -223,7 +242,7 @@ export const TreasuryCard = ({
                         onClick={(e) => e.stopPropagation()}
                       >
                         <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                          {item.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]}
+                          {item.website}
                         </span>
                       </a>
                     </div>
