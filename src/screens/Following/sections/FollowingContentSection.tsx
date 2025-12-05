@@ -56,6 +56,10 @@ export const FollowingContentSection = (): JSX.Element => {
           spacesArray = response;
         }
 
+        // Log the first space to see all available fields
+        if (spacesArray.length > 0) {
+          console.log('First space structure:', JSON.stringify(spacesArray[0], null, 2));
+        }
         setFollowedSpaces(spacesArray);
       } catch (err) {
         console.error('Failed to fetch followed spaces:', err);
@@ -225,9 +229,23 @@ export const FollowingContentSection = (): JSX.Element => {
             <span className="text-gray-400 text-sm">Loading...</span>
           ) : (
             followedSpaces.map((space) => {
-              // For default spaces (spaceType 2 = Curations), show author's username instead of "Default curation space"
-              const displayName = (space.spaceType === 2 && space.authorInfo?.username)
-                ? space.authorInfo.username
+              // For default curation spaces, show author's username instead of "Default curation space"
+              // Check by spaceType or name pattern
+              const isDefaultCurationSpace =
+                space.spaceType === 2 ||
+                space.name?.toLowerCase().includes('default curation') ||
+                space.name?.toLowerCase().includes('default collection');
+
+              // Try to get author name from authorInfo, or extract from namespace
+              // Namespace format is usually like "username" or contains the username
+              const authorName = space.authorInfo?.username ||
+                (space as any).userName ||
+                (space as any).username ||
+                (space as any).ownerName ||
+                (space as any).author;
+
+              const displayName = (isDefaultCurationSpace && authorName)
+                ? authorName
                 : space.name;
 
               return (
