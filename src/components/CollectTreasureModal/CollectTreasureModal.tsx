@@ -38,6 +38,7 @@ interface Collection {
   wasOriginallyBound: boolean; // Was bound when modal opened
   spaceType?: number;
   namespace?: string;
+  firstLetter: string; // First letter of space name for avatar fallback
 }
 
 export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
@@ -120,11 +121,15 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           }
 
           // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
-          // For other spaces, use the first article's cover image or fallback
+          // For other spaces, use the first article's cover image (empty string triggers firstLetter fallback)
           const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
           const coverImage = isDefaultSpace
-            ? (user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png')
-            : (space.data?.[0]?.coverUrl || user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png');
+            ? (user.faceUrl || '')
+            : (space.data?.[0]?.coverUrl || '');
+
+          // Get first letter of space name for avatar fallback
+          const spaceName = space.name || displayName;
+          const firstLetter = spaceName.charAt(0).toUpperCase();
 
           return {
             id: space.id.toString(),
@@ -135,6 +140,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             wasOriginallyBound: space.isBind,
             spaceType: spaceTypeNum,
             namespace: space.namespace,
+            firstLetter,
           };
         });
 
@@ -477,11 +483,19 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                           )}
                         </div>
 
-                        <img
-                          className="relative w-12 h-12 object-cover rounded-full"
-                          alt={collection.name}
-                          src={collection.image}
-                        />
+                        {collection.image ? (
+                          <img
+                            className="relative w-12 h-12 object-cover rounded-full"
+                            alt={collection.name}
+                            src={collection.image}
+                          />
+                        ) : (
+                          <div className="relative w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-lg font-medium text-gray-600">
+                              {collection.firstLetter}
+                            </span>
+                          </div>
+                        )}
                         <div className="inline-flex flex-col items-start justify-center gap-1 relative flex-[0_0_auto]">
                           <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
                             {collection.name}
