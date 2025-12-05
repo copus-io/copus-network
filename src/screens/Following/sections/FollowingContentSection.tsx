@@ -19,6 +19,8 @@ export const FollowingContentSection = (): JSX.Element => {
   const { user, getArticleLikeState, toggleLike } = useUser();
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState("all");
+  const [followedSpaces, setFollowedSpaces] = useState<FollowedSpace[]>([]);
+  const [loadingSpaces, setLoadingSpaces] = useState(true);
   const [articles, setArticles] = useState<any[]>([]);
   const [loadingArticles, setLoadingArticles] = useState(true);
 
@@ -26,21 +28,39 @@ export const FollowingContentSection = (): JSX.Element => {
   const [collectModalOpen, setCollectModalOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
-  // Extract unique spaces from articles
-  const spacesFromArticles: FollowedSpace[] = React.useMemo(() => {
-    const spaceMap = new Map<number, FollowedSpace>();
-    articles.forEach(article => {
-      const spaceInfo = article.spaceInfo;
-      if (spaceInfo && spaceInfo.id && !spaceMap.has(spaceInfo.id)) {
-        spaceMap.set(spaceInfo.id, {
-          id: spaceInfo.id,
-          name: spaceInfo.name || 'Unknown Space',
-          namespace: spaceInfo.namespace || ''
-        });
+  // Fetch followed spaces from API
+  useEffect(() => {
+    const fetchFollowedSpaces = async () => {
+      if (!user) {
+        setLoadingSpaces(false);
+        return;
       }
-    });
-    return Array.from(spaceMap.values());
-  }, [articles]);
+
+      try {
+        setLoadingSpaces(true);
+        const response = await AuthService.getFollowedSpaces();
+        console.log('Followed spaces response:', response);
+
+        // Parse the response - handle different response formats
+        let spacesArray: FollowedSpace[] = [];
+        if (response?.data?.data && Array.isArray(response.data.data)) {
+          spacesArray = response.data.data;
+        } else if (response?.data && Array.isArray(response.data)) {
+          spacesArray = response.data;
+        } else if (Array.isArray(response)) {
+          spacesArray = response;
+        }
+
+        setFollowedSpaces(spacesArray);
+      } catch (err) {
+        console.error('Failed to fetch followed spaces:', err);
+      } finally {
+        setLoadingSpaces(false);
+      }
+    };
+
+    fetchFollowedSpaces();
+  }, [user]);
 
   // Fetch articles from followed spaces
   useEffect(() => {
@@ -195,11 +215,11 @@ export const FollowingContentSection = (): JSX.Element => {
             All
           </button>
 
-          {/* Followed spaces bubbles - extracted from articles */}
-          {loadingArticles ? (
+          {/* Followed spaces bubbles from API */}
+          {loadingSpaces ? (
             <span className="text-gray-400 text-sm">Loading...</span>
           ) : (
-            spacesFromArticles.map((space) => (
+            followedSpaces.map((space) => (
               <button
                 key={space.id}
                 onClick={() => setSelectedTab(space.id.toString())}
@@ -215,7 +235,7 @@ export const FollowingContentSection = (): JSX.Element => {
           )}
 
           {/* Show message if no followed spaces */}
-          {!loadingArticles && spacesFromArticles.length === 0 && (
+          {!loadingSpaces && followedSpaces.length === 0 && (
             <span className="text-gray-400 text-sm ml-2">No spaces followed yet</span>
           )}
         </div>
