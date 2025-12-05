@@ -204,21 +204,43 @@ export const FollowingContentSection = (): JSX.Element => {
         const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
         if (!selectedSpace) return false;
 
-        // Try to match by spaceId first
+        // Try to match by spaceId first (works for regular spaces and treasuries)
         const articleSpaceId = article.spaceId || article.spaceInfo?.id;
         if (articleSpaceId?.toString() === selectedTab) {
           return true;
         }
 
-        // For default spaces (type 1 or 2), match by userId (author)
+        // For default spaces, also try matching by namespace
         const isDefaultSpace =
           selectedSpace.spaceType === 1 ||
           selectedSpace.spaceType === 2 ||
           selectedSpace.name?.toLowerCase().includes('default');
 
-        if (isDefaultSpace && selectedSpace.userId) {
-          const authorId = article.authorInfo?.id;
-          return authorId === selectedSpace.userId;
+        if (isDefaultSpace) {
+          // Match by space namespace
+          const articleSpaceNamespace = article.spaceInfo?.namespace;
+          if (articleSpaceNamespace && articleSpaceNamespace === selectedSpace.namespace) {
+            return true;
+          }
+
+          // For Curations (type 2), match by author ID (articles they created)
+          // For Treasury (type 1), match by owner ID (articles in their treasury)
+          const ownerId = selectedSpace.ownerInfo?.id || selectedSpace.userId;
+          if (ownerId) {
+            // Check if article's space owner matches
+            const articleSpaceOwnerId = article.spaceInfo?.ownerInfo?.id || article.spaceInfo?.userId;
+            if (articleSpaceOwnerId === ownerId) {
+              return true;
+            }
+
+            // For Curations, also check author
+            if (selectedSpace.spaceType === 2) {
+              const authorId = article.authorInfo?.id;
+              if (authorId === ownerId) {
+                return true;
+              }
+            }
+          }
         }
 
         return false;
