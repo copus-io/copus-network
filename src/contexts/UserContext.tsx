@@ -445,14 +445,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Automatically fetch social links when user logs in
+  // Social links are no longer fetched automatically on login
+  // They will only be fetched when needed (e.g., when user visits Settings page)
+  // Clear social links when user logs out
   useEffect(() => {
-    if (user) {
-      fetchSocialLinks();
-    } else {
+    if (!user) {
       setSocialLinks([]);
     }
-  }, [user, fetchSocialLinks]);
+  }, [user]);
 
   return (
     <UserContext.Provider

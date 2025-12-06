@@ -44,7 +44,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   });
 
   // 使用 UserContext 中的社交链接数据
-  const { socialLinks: socialLinksData, socialLinksLoading } = useUser();
+  const { socialLinks: socialLinksData, socialLinksLoading, fetchSocialLinks } = useUser();
+
+  // Fetch social links when page loads (since we don't fetch them globally anymore)
+  React.useEffect(() => {
+    if (user) {
+      fetchSocialLinks();
+    }
+  }, [user, fetchSocialLinks]);
 
   // 初始化图片状态和表单数据
   React.useEffect(() => {

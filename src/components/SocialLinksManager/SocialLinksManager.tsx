@@ -40,9 +40,16 @@ interface SocialLinksManagerProps {
 }
 
 export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose }) => {
-  const { user, socialLinks, socialLinksLoading, addSocialLink, updateSocialLink, deleteSocialLink } = useUser();
+  const { user, socialLinks, socialLinksLoading, addSocialLink, updateSocialLink, deleteSocialLink, fetchSocialLinks } = useUser();
   const { showToast } = useToast();
   const [showAddPopup, setShowAddPopup] = useState(false);
+
+  // Fetch social links when manager opens (since we don't fetch them globally anymore)
+  React.useEffect(() => {
+    if (user) {
+      fetchSocialLinks();
+    }
+  }, [user, fetchSocialLinks]);
   const [editingLink, setEditingLink] = useState<any>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string>('');
   const [linkUrl, setLinkUrl] = useState('');

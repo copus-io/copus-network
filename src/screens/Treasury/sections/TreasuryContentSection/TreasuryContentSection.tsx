@@ -19,10 +19,17 @@ interface TreasuryArticle {
 }
 
 export const TreasuryContentSection = (): JSX.Element => {
-  const { user, socialLinks } = useUser();
+  const { user, socialLinks, fetchSocialLinks } = useUser();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"collections" | "curations">("collections");
+
+  // Fetch social links when page loads (since we don't fetch them globally anymore)
+  useEffect(() => {
+    if (user) {
+      fetchSocialLinks();
+    }
+  }, [user, fetchSocialLinks]);
   const [likedArticles, setLikedArticles] = useState<TreasuryArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

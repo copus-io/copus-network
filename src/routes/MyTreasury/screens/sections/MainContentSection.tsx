@@ -122,8 +122,18 @@ const TreasuryHeaderSection = ({
 export const MainContentSection = (): JSX.Element => {
   const navigate = useNavigate();
   const { namespace } = useParams<{ namespace?: string }>();
-  const { user, socialLinks: socialLinksData } = useUser();
+  const { user, socialLinks: socialLinksData, fetchSocialLinks } = useUser();
   const { showToast } = useToast();
+
+  // Determine if viewing other user early
+  const isViewingOtherUserCheck = !!namespace && namespace !== user?.namespace;
+
+  // Fetch social links when viewing own treasury (since we don't fetch them globally anymore)
+  useEffect(() => {
+    if (user && !isViewingOtherUserCheck) {
+      fetchSocialLinks();
+    }
+  }, [user, isViewingOtherUserCheck, fetchSocialLinks]);
 
   const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
