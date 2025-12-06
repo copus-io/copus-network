@@ -1451,13 +1451,14 @@ export const Content = (): JSX.Element => {
               <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px]">
                 Collected in
               </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-[30px] w-full">
                 {collectedInData.map((space) => (
-                  <TreasuryCard
-                    key={space.namespace || space.id?.toString()}
-                    space={space}
-                    onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
-                  />
+                  <div key={space.namespace || space.id?.toString()} className="max-w-[380px]">
+                    <TreasuryCard
+                      space={space}
+                      onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
+                    />
+                  </div>
                 ))}
               </div>
             </section>
