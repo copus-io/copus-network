@@ -82,37 +82,10 @@ export const DiscoveryContentSection = (): JSX.Element => {
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
 
 
-  // Ensure data refresh each time page regains focus (but not on initial mount)
-  React.useEffect(() => {
-    // Skip initial mount - useArticles hook already fetches on mount
-    let isMounted = false;
-    const mountTimeout = setTimeout(() => {
-      isMounted = true;
-    }, 1000); // Wait 1 second before enabling refresh on focus
-
-    const handleFocus = () => {
-      if (isMounted) {
-        refresh();
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (isMounted && !document.hidden) {
-        refresh();
-      }
-    };
-
-    // Listen to window focus event
-    window.addEventListener('focus', handleFocus);
-    // Listen to page visibility change
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearTimeout(mountTimeout);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [refresh]);
+  // Note: Removed auto-refresh on focus/visibility change to prevent
+  // unwanted API calls when navigating between pages. The useArticles hook
+  // already fetches data on initial mount, and users can manually refresh
+  // by scrolling to load more or reloading the page.
 
   // Scroll to load more logic
   React.useEffect(() => {

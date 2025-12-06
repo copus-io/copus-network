@@ -116,11 +116,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/treasury/:namespace",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Space />
-      </AuthGuard>
-    ),
+    element: <Space />,
   },
   {
     // Keep old /space route for backwards compatibility
