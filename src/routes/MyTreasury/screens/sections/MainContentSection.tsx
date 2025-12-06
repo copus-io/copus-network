@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { AuthService } from "../../../../services/authService";
@@ -6,6 +6,12 @@ import { Button } from "../../../../components/ui/button";
 import { TreasuryCard } from "../../../../components/ui/TreasuryCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import { useToast } from "../../../../components/ui/toast";
+
+// Module-level cache to prevent duplicate fetches across StrictMode remounts
+// Key: fetchKey (e.g., "user:123" or "namespace:username")
+// Value: { timestamp: number, promise?: Promise } - timestamp for cache expiry
+const fetchCache: Map<string, { timestamp: number; inProgress: boolean }> = new Map();
+const CACHE_TTL = 2000; // 2 seconds - prevents duplicate fetches during mount cycles
 
 interface SocialLink {
   id: number;
@@ -124,9 +130,6 @@ export const MainContentSection = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
 
-  // Track the last fetched target to prevent duplicate fetches
-  const lastFetchedRef = useRef<string | null>(null);
-
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
   const targetNamespace = namespace || user?.namespace;
@@ -145,14 +148,16 @@ export const MainContentSection = (): JSX.Element => {
       // Create a unique key for this fetch target to prevent duplicates
       const fetchKey = namespace ? `namespace:${namespace}` : `user:${user?.id}`;
 
-      // Skip if we've already fetched for this exact target
-      if (lastFetchedRef.current === fetchKey) {
-        console.log('Skipping duplicate fetch for:', fetchKey);
+      // Check module-level cache to prevent duplicate fetches (survives StrictMode remounts)
+      const now = Date.now();
+      const cached = fetchCache.get(fetchKey);
+      if (cached && (now - cached.timestamp < CACHE_TTL || cached.inProgress)) {
+        console.log('Skipping duplicate fetch for:', fetchKey, cached.inProgress ? '(in progress)' : '(recently fetched)');
         return;
       }
 
-      // Mark as fetched immediately to prevent race conditions
-      lastFetchedRef.current = fetchKey;
+      // Mark as in progress immediately to prevent race conditions
+      fetchCache.set(fetchKey, { timestamp: now, inProgress: true });
 
       try {
         setLoading(true);
@@ -295,8 +300,15 @@ export const MainContentSection = (): JSX.Element => {
         console.error('Failed to fetch treasury data:', err);
         setError('Failed to load treasury data');
         showToast('Failed to fetch treasury data, please try again', 'error');
+        // Clear cache on error so user can retry
+        fetchCache.delete(fetchKey);
       } finally {
         setLoading(false);
+        // Mark as no longer in progress (keep timestamp for TTL)
+        const existing = fetchCache.get(fetchKey);
+        if (existing) {
+          fetchCache.set(fetchKey, { ...existing, inProgress: false });
+        }
       }
     };
 
