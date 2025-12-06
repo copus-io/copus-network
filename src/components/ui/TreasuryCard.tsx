@@ -100,15 +100,12 @@ const getHostname = (url: string | undefined): string => {
 
 /**
  * Transform space data to treasury items for display
+ * NOTE: The backend API (spacesByArticleId) currently returns only 2 preview articles
+ * in the `data` array. To show 3 previews, the backend needs to be updated.
  */
 export const transformSpaceToItems = (space: SpaceData): TreasuryItem[] => {
-  // Try multiple possible field names for article previews from different APIs
-  const articles = space.data || space.articles || (space as any).articleList || (space as any).list || (space as any).items || [];
-
-  // Debug log to help identify API response structure
-  if (process.env.NODE_ENV === 'development' && articles.length === 0) {
-    console.log('TreasuryCard: No articles found in space, available keys:', Object.keys(space));
-  }
+  // The API returns preview articles in the `data` field
+  const articles = space.data || space.articles || [];
 
   return articles.slice(0, 3).map((article: any, index: number) => {
     // Use website field from API if available, otherwise extract from targetUrl
