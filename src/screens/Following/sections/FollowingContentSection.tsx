@@ -68,62 +68,30 @@ export const FollowingContentSection = (): JSX.Element => {
           spacesArray = response;
         }
 
-        // For default spaces (type 1 or 2) without ownerInfo, fetch space details to get owner
-        // Only fetch if namespace is valid and we actually need owner info
-        const spacesWithOwners = await Promise.all(
-          spacesArray.map(async (space) => {
-            const isDefaultSpace =
-              space.spaceType === 1 ||
-              space.spaceType === 2 ||
-              space.name?.toLowerCase().includes('default');
-
-            // If it's a default space and we don't have owner username, fetch space details
-            // Only if namespace is a non-empty string
-            if (isDefaultSpace && !space.ownerInfo?.username && space.namespace && typeof space.namespace === 'string' && space.namespace.trim() !== '') {
-              try {
-                const spaceInfo = await AuthService.getSpaceInfo(space.namespace);
-                const spaceData = spaceInfo?.data || spaceInfo;
-
-                // Try multiple possible owner fields from the API
-                const ownerInfo = spaceData?.ownerInfo
-                  || spaceData?.authorInfo
-                  || spaceData?.userInfo
-                  || spaceData?.user
-                  || (spaceData?.ownerName ? { username: spaceData.ownerName } : null)
-                  || (spaceData?.userName ? { username: spaceData.userName } : null)
-                  || space.ownerInfo;
-
-                return {
-                  ...space,
-                  ownerInfo,
-                  userId: spaceData?.ownerInfo?.id || spaceData?.authorInfo?.id || spaceData?.userId || space.userId,
-                  spaceType: spaceData?.spaceType ?? space.spaceType
-                };
-              } catch (err) {
-                console.warn(`Failed to fetch space info for ${space.namespace}:`, err);
-                return space;
-              }
-            }
-            return space;
-          })
-        );
-
-        // Resolve display names for default spaces immediately
-        const spacesWithDisplayNames = spacesWithOwners.map(space => {
+        // Resolve display names for default spaces using existing data (no extra API calls)
+        const spacesWithDisplayNames = spacesArray.map(space => {
           const isDefaultSpace =
             space.spaceType === 1 ||
             space.spaceType === 2 ||
             space.name?.toLowerCase().includes('default');
 
-          if (isDefaultSpace && space.ownerInfo?.username) {
-            const username = space.ownerInfo.username;
-            let displayName: string;
-            if (space.spaceType === 2 || space.name?.toLowerCase().includes('curation')) {
-              displayName = `${username}'s Curations`;
-            } else {
-              displayName = `${username}'s Treasury`;
+          if (isDefaultSpace) {
+            // Try to get username from various possible fields in the response
+            const username = space.ownerInfo?.username
+              || space.authorInfo?.username
+              || (space as any).userInfo?.username
+              || (space as any).userName
+              || (space as any).ownerName;
+
+            if (username) {
+              let displayName: string;
+              if (space.spaceType === 2 || space.name?.toLowerCase().includes('curation')) {
+                displayName = `${username}'s Curations`;
+              } else {
+                displayName = `${username}'s Collections`;
+              }
+              return { ...space, resolvedUsername: displayName };
             }
-            return { ...space, resolvedUsername: displayName };
           }
           return space;
         });
