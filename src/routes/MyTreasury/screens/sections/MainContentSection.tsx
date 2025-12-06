@@ -133,7 +133,8 @@ export const MainContentSection = (): JSX.Element => {
     if (user && !isViewingOtherUserCheck) {
       fetchSocialLinks();
     }
-  }, [user, isViewingOtherUserCheck, fetchSocialLinks]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, namespace]);
 
   const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
