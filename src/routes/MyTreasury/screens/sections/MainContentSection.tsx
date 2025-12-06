@@ -256,39 +256,10 @@ export const MainContentSection = (): JSX.Element => {
 
           console.log('Spaces array length:', spacesArray.length);
 
-          // Fetch articles for each space (pageMySpaces doesn't include article data)
-          // We need to call getSpaceArticles for each space to get the article previews
-          const spacesWithArticles = await Promise.all(
-            spacesArray.map(async (space) => {
-              if (!space.id) return space;
-
-              try {
-                const articlesResponse = await AuthService.getSpaceArticles(space.id, 1, 3);
-                console.log(`Articles for space ${space.id}:`, articlesResponse);
-
-                // Parse articles response
-                let articlesData: any[] = [];
-                if (articlesResponse?.data?.data && Array.isArray(articlesResponse.data.data)) {
-                  articlesData = articlesResponse.data.data;
-                } else if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
-                  articlesData = articlesResponse.data;
-                } else if (Array.isArray(articlesResponse)) {
-                  articlesData = articlesResponse;
-                }
-
-                return {
-                  ...space,
-                  data: articlesData,
-                  articles: articlesData,
-                };
-              } catch (err) {
-                console.warn(`Failed to fetch articles for space ${space.id}:`, err);
-                return space;
-              }
-            })
-          );
-
-          setSpaces(spacesWithArticles);
+          // Use spaces directly from pageMySpaces API
+          // The API may include article previews in the response (check for data/articles fields)
+          // If not, TreasuryCard will display based on articleCount
+          setSpaces(spacesArray);
         } catch (spacesErr: any) {
           // If pageMySpaces API returns 404, it means the API doesn't exist yet
           // Show empty state instead of error
