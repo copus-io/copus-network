@@ -745,6 +745,7 @@ export const SpaceContentSection = (): JSX.Element => {
       <div className="w-full mt-5">
         {articles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
+            <h3 className="text-xl font-semibold text-gray-600 mb-4">This space is empty</h3>
             <button
               onClick={() => navigate('/')}
               className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors [font-family:'Lato',Helvetica] font-bold text-lg leading-5"
