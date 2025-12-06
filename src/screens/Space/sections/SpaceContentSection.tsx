@@ -698,7 +698,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
   if (loading) {
     return (
-      <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+      <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex items-center justify-center w-full h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -708,7 +708,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
   if (error) {
     return (
-      <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+      <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
           <div className="text-red-500">{error}</div>
           <Button
@@ -723,7 +723,7 @@ export const SpaceContentSection = (): JSX.Element => {
   }
 
   return (
-    <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+    <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
       {/* Space Info Section */}
       <SpaceInfoSection
         spaceName={displaySpaceName || spaceInfo?.name || category || 'Space'}
