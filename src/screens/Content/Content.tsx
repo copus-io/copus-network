@@ -560,44 +560,10 @@ export const Content = (): JSX.Element => {
           spacesArray = spacesResponse;
         }
 
-        // Fetch detailed space info and articles for each space
-        const spacesWithUserInfo = await Promise.all(
-          spacesArray.map(async (space) => {
-            if (space.namespace) {
-              try {
-                // Fetch space info for userInfo
-                const spaceInfoResponse = await AuthService.getSpaceInfo(space.namespace);
-                const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
-
-                // Also fetch articles (first 3) for preview images
-                let articlesData: any[] = [];
-                if (space.id) {
-                  try {
-                    const articlesResponse = await AuthService.getSpaceArticles(space.id, 1, 3);
-                    const articlesResult = articlesResponse?.data?.data || articlesResponse?.data || [];
-                    articlesData = Array.isArray(articlesResult) ? articlesResult : [];
-                  } catch (articlesErr) {
-                    console.error('Failed to fetch articles for space:', space.id, articlesErr);
-                  }
-                }
-
-                // Merge the detailed info with the original space data
-                return {
-                  ...space,
-                  userInfo: spaceData?.userInfo,
-                  ownerInfo: spaceData?.userInfo, // Also set ownerInfo for compatibility
-                  data: articlesData, // Add articles for TreasuryCard preview
-                };
-              } catch (err) {
-                console.error('Failed to fetch space info for:', space.namespace, err);
-                return space;
-              }
-            }
-            return space;
-          })
-        );
-
-        setCollectedInData(spacesWithUserInfo);
+        // Use spaces directly from spacesByArticleId API
+        // The API response should include userInfo/ownerInfo and articleCount
+        // TreasuryCard can display properly using this data
+        setCollectedInData(spacesArray);
       } catch (err) {
         console.error('Failed to fetch collected in data:', err);
         setCollectedInData([]);
