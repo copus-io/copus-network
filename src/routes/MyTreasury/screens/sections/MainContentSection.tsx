@@ -348,7 +348,7 @@ export const MainContentSection = (): JSX.Element => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-[30px] w-full pt-[10px]">
         {spaces.length === 0 ? (
           /* Empty state - show create treasury prompt */
-          <div className="max-w-[380px]">
+          <div className="max-w-[400px]">
             <TreasuryCard
               space={{
                 name: 'Create your first treasury',
