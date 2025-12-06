@@ -550,10 +550,10 @@ export const SpaceContentSection = (): JSX.Element => {
     };
   }, [hasMoreArticles, loadingMore, spaceId, currentPage]);
 
-  // Handle author click
+  // Handle author click - navigate to treasury page
   const handleAuthorClick = () => {
     if (spaceInfo?.authorNamespace) {
-      navigate(`/u/${spaceInfo.authorNamespace}`);
+      navigate(`/user/${spaceInfo.authorNamespace}/treasury`);
     }
   };
 
