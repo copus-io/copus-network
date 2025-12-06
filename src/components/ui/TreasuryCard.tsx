@@ -224,61 +224,49 @@ export const TreasuryCard = ({
         {/* Side items on the right - takes ~35% width */}
         {sideItems.length > 0 && (
           <div className="flex flex-col items-start justify-center gap-1 relative w-[35%] self-stretch rounded-[0px_15px_15px_0px] overflow-hidden">
-            {sideItems.map((item, index) => {
-              // When there's only 1 side item, give it more height
-              const isSingleSideItem = sideItems.length === 1;
-              const imageHeight = isSingleSideItem ? "h-[200px]" : "h-[98px]";
-
-              return (
-                <article
-                  key={item.id}
-                  className={`${
-                    isSingleSideItem
-                      ? "flex-1"
-                      : index === 0
-                      ? "h-[153px]"
-                      : "flex-1 grow"
-                  } pl-0 pr-[15px] ${index === 0 || isSingleSideItem ? "py-[15px]" : "py-0"} ${
-                    isSingleSideItem
-                      ? "rounded-[0px_15px_15px_0px]"
-                      : index === 0
-                      ? "rounded-[0px_15px_0px_0px]"
-                      : "rounded-[0px_0px_15px_0px]"
-                  } flex flex-col items-start gap-[5px] relative self-stretch w-full min-w-0 bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
+            {sideItems.map((item, index) => (
+              <article
+                key={item.id}
+                className={`${
+                  index === 0 ? "h-[153px]" : "flex-1 grow"
+                } pl-0 pr-[15px] ${index === 0 ? "py-[15px]" : "py-0"} ${
+                  index === 0
+                    ? "rounded-[0px_15px_0px_0px]"
+                    : "rounded-[0px_0px_15px_0px]"
+                } flex flex-col items-start gap-[5px] relative self-stretch w-full min-w-0 bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
+              >
+                <div
+                  className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
+                  style={{ backgroundImage: `url(${item.coverImage})` }}
                 >
-                  <div
-                    className={`${imageHeight} p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg`}
-                    style={{ backgroundImage: `url(${item.coverImage})` }}
-                  >
-                    {item.website && (
-                      <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-                        <a
-                          href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                          className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                            {item.website}
-                          </span>
-                        </a>
-                      </div>
-                    )}
-                  </div>
+                  {item.website && (
+                    <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
+                      <a
+                        href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
+                        className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
+                          {item.website}
+                        </span>
+                      </a>
+                    </div>
+                  )}
+                </div>
 
-                  <div
-                    className={`flex flex-col items-start gap-[15px] ${
-                      index === 0 && !isSingleSideItem ? "mb-[-4.00px]" : ""
-                    } relative self-stretch w-full flex-[0_0_auto] min-w-0 overflow-hidden`}
-                  >
-                    <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
-                      {item.title}
-                    </h3>
-                  </div>
-                </article>
-              );
-            })}
+                <div
+                  className={`flex flex-col items-start gap-[15px] ${
+                    index === 0 ? "mb-[-4.00px]" : ""
+                  } relative self-stretch w-full flex-[0_0_auto] min-w-0 overflow-hidden`}
+                >
+                  <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
+                    {item.title}
+                  </h3>
+                </div>
+              </article>
+            ))}
           </div>
         )}
       </div>
