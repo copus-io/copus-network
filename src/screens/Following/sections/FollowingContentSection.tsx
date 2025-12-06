@@ -390,7 +390,7 @@ export const FollowingContentSection = (): JSX.Element => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-4 lg:gap-8">
             {displayedArticles.map((article) => {
               const card = transformArticleToCard(article);
               const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
