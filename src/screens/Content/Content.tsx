@@ -560,33 +560,10 @@ export const Content = (): JSX.Element => {
           spacesArray = spacesResponse;
         }
 
-        // For default spaces (type 1 or 2), we need owner info for display name
-        // Only fetch if userInfo/ownerInfo is missing
-        const spacesWithOwnerInfo = await Promise.all(
-          spacesArray.map(async (space: any) => {
-            const isDefaultSpace = space.spaceType === 1 || space.spaceType === 2;
-            const hasOwnerInfo = space.userInfo?.username || space.ownerInfo?.username;
-
-            // Only fetch owner info for default spaces without owner username
-            if (isDefaultSpace && !hasOwnerInfo && space.namespace) {
-              try {
-                const spaceInfoResponse = await AuthService.getSpaceInfo(space.namespace);
-                const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
-                return {
-                  ...space,
-                  userInfo: spaceData?.userInfo,
-                  ownerInfo: spaceData?.userInfo || spaceData?.ownerInfo,
-                };
-              } catch (err) {
-                console.warn('Failed to fetch owner info for space:', space.namespace);
-                return space;
-              }
-            }
-            return space;
-          })
-        );
-
-        setCollectedInData(spacesWithOwnerInfo);
+        // Use space data directly from API response
+        // The spacesByArticleId API should return all necessary data
+        // No need for additional getSpaceInfo calls - use namespace for display if username is missing
+        setCollectedInData(spacesArray);
       } catch (err) {
         console.error('Failed to fetch collected in data:', err);
         setCollectedInData([]);
