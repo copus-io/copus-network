@@ -8,10 +8,14 @@ import profileDefaultAvatar from "../../../../assets/images/profile-default.svg"
 import { useToast } from "../../../../components/ui/toast";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
-// Key: fetchKey (e.g., "user:123" or "namespace:username")
-// Value: { timestamp: number, promise?: Promise } - timestamp for cache expiry
+// Key: fetchKey (e.g., "user:123")
+// Value: { timestamp: number, inProgress: boolean } - timestamp for cache expiry
 const fetchCache: Map<string, { timestamp: number; inProgress: boolean }> = new Map();
-const CACHE_TTL = 2000; // 2 seconds - prevents duplicate fetches during mount cycles
+const CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles and redirects
+
+// Separate cache for social links fetch
+let socialLinksFetchCache: { timestamp: number; inProgress: boolean; userId?: number } = { timestamp: 0, inProgress: false };
+const SOCIAL_LINKS_CACHE_TTL = 5000; // 5 seconds
 
 interface SocialLink {
   id: number;
@@ -131,7 +135,23 @@ export const MainContentSection = (): JSX.Element => {
   // Fetch social links when viewing own treasury (since we don't fetch them globally anymore)
   useEffect(() => {
     if (user && !isViewingOtherUserCheck) {
-      fetchSocialLinks();
+      // Check cache to prevent duplicate fetches
+      const now = Date.now();
+      const isSameUser = socialLinksFetchCache.userId === user.id;
+      const isCacheValid = (now - socialLinksFetchCache.timestamp) < SOCIAL_LINKS_CACHE_TTL;
+
+      if (isSameUser && (isCacheValid || socialLinksFetchCache.inProgress)) {
+        console.log('Skipping duplicate social links fetch for user:', user.id);
+        return;
+      }
+
+      // Mark as in progress
+      socialLinksFetchCache = { timestamp: now, inProgress: true, userId: user.id };
+
+      fetchSocialLinks().finally(() => {
+        // Mark as complete
+        socialLinksFetchCache = { ...socialLinksFetchCache, inProgress: false };
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, namespace]);
@@ -157,7 +177,10 @@ export const MainContentSection = (): JSX.Element => {
       }
 
       // Create a unique key for this fetch target to prevent duplicates
-      const fetchKey = namespace ? `namespace:${namespace}` : `user:${user?.id}`;
+      // Important: Use user.id as key when viewing own treasury (whether via /my-treasury or /u/:namespace)
+      // This prevents duplicate fetches during redirect from /my-treasury to /u/:namespace
+      const isOwnTreasury = !namespace || namespace === user?.namespace;
+      const fetchKey = isOwnTreasury && user?.id ? `user:${user.id}` : `namespace:${namespace}`;
 
       // Check module-level cache to prevent duplicate fetches (survives StrictMode remounts)
       const now = Date.now();
