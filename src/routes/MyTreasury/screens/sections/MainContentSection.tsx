@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { AuthService } from "../../../../services/authService";
@@ -124,7 +124,8 @@ export const MainContentSection = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
 
-  // Edit treasury modal state - removed as we're now using spaces
+  // Track the last fetched target to prevent duplicate fetches
+  const lastFetchedRef = useRef<string | null>(null);
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -140,6 +141,18 @@ export const MainContentSection = (): JSX.Element => {
         setLoading(false);
         return;
       }
+
+      // Create a unique key for this fetch target to prevent duplicates
+      const fetchKey = namespace ? `namespace:${namespace}` : `user:${user?.id}`;
+
+      // Skip if we've already fetched for this exact target
+      if (lastFetchedRef.current === fetchKey) {
+        console.log('Skipping duplicate fetch for:', fetchKey);
+        return;
+      }
+
+      // Mark as fetched immediately to prevent race conditions
+      lastFetchedRef.current = fetchKey;
 
       try {
         setLoading(true);
