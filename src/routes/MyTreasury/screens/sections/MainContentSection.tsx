@@ -294,7 +294,8 @@ export const MainContentSection = (): JSX.Element => {
     };
 
     fetchData();
-  }, [user, namespace, isViewingOtherUser, targetNamespace]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.namespace, namespace]);
 
   // Navigate to a specific space/treasury
   const handleSpaceClick = (space: any) => {
