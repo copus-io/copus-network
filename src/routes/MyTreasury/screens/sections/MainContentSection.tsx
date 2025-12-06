@@ -345,38 +345,41 @@ export const MainContentSection = (): JSX.Element => {
       />
 
       {/* Spaces Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full pt-[10px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-[30px] w-full pt-[10px]">
         {spaces.length === 0 ? (
           /* Empty state - show create treasury prompt */
-          <TreasuryCard
-            space={{
-              name: 'Create your first treasury',
-              articleCount: 0,
-            }}
-            emptyAction={{
-              label: 'Discover',
-              href: '/',
-            }}
-          />
+          <div className="max-w-[380px]">
+            <TreasuryCard
+              space={{
+                name: 'Create your first treasury',
+                articleCount: 0,
+              }}
+              emptyAction={{
+                label: 'Discover',
+                href: '/',
+              }}
+            />
+          </div>
         ) : (
           /* Render all spaces from pageMySpaces API */
           spaces.map((space) => (
-            <TreasuryCard
-              key={space.id || space.namespace}
-              space={{
-                ...space,
-                // Add owner username for display name generation
-                ownerInfo: space.ownerInfo || { username: displayUser?.username || 'User' },
-              }}
-              onClick={() => handleSpaceClick(space)}
-              isEditable={!isViewingOtherUser}
-              onEdit={() => {
-                // Navigate to edit page or open edit modal for custom spaces (spaceType 0)
-                if (space.namespace) {
-                  navigate(`/treasury/${space.namespace}`);
-                }
-              }}
-            />
+            <div key={space.id || space.namespace} className="max-w-[380px]">
+              <TreasuryCard
+                space={{
+                  ...space,
+                  // Add owner username for display name generation
+                  ownerInfo: space.ownerInfo || { username: displayUser?.username || 'User' },
+                }}
+                onClick={() => handleSpaceClick(space)}
+                isEditable={!isViewingOtherUser}
+                onEdit={() => {
+                  // Navigate to edit page or open edit modal for custom spaces (spaceType 0)
+                  if (space.namespace) {
+                    navigate(`/treasury/${space.namespace}`);
+                  }
+                }}
+              />
+            </div>
           ))
         )}
       </div>

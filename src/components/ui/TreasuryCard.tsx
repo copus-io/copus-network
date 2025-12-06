@@ -187,7 +187,7 @@ export const TreasuryCard = ({
         {/* Main item on the left */}
         <article className="inline-flex flex-col items-start justify-center gap-[5px] px-[15px] py-0 relative self-stretch flex-[0_0_auto] rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <div
-            className="flex flex-col w-[320px] h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
+            className="flex flex-col w-[200px] sm:w-[260px] md:w-[320px] h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
             style={{ backgroundImage: `url(${mainItem.coverImage})` }}
           >
             {mainItem.website && (
@@ -207,8 +207,8 @@ export const TreasuryCard = ({
             )}
           </div>
 
-          <div className="flex flex-col items-start gap-[15px] relative w-[320px] flex-[0_0_auto]">
-            <h3 className="relative w-[320px] mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
+          <div className="flex flex-col items-start gap-[15px] relative w-[200px] sm:w-[260px] md:w-[320px] flex-[0_0_auto]">
+            <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
               {mainItem.title}
             </h3>
           </div>
