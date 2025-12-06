@@ -745,19 +745,12 @@ export const SpaceContentSection = (): JSX.Element => {
       <div className="w-full mt-5">
         {articles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
-            <img
-              className="w-16 h-16 mb-4 opacity-50"
-              alt="Empty space"
-              src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
-            />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">This space is empty</h3>
-            <p className="text-gray-500 mb-4">No articles in this category yet</p>
-            <Button
+            <button
               onClick={() => navigate('/')}
-              className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red/90 transition-colors"
+              className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors [font-family:'Lato',Helvetica] font-bold text-lg leading-5"
             >
-              Discover Content
-            </Button>
+              Discover
+            </button>
           </div>
         ) : (
           <>
