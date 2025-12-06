@@ -9,8 +9,13 @@ import { useToast } from "../../../../components/ui/toast";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
-// Value: { timestamp: number, inProgress: boolean } - timestamp for cache expiry
-const fetchCache: Map<string, { timestamp: number; inProgress: boolean }> = new Map();
+// Value: { timestamp, inProgress, data } - stores actual fetch results
+interface FetchCacheEntry {
+  timestamp: number;
+  inProgress: boolean;
+  data?: { userInfo: any; spaces: any[] };
+}
+const fetchCache: Map<string, FetchCacheEntry> = new Map();
 const CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles and redirects
 
 // Separate cache for social links fetch
@@ -185,8 +190,37 @@ export const MainContentSection = (): JSX.Element => {
       // Check module-level cache to prevent duplicate fetches (survives StrictMode remounts)
       const now = Date.now();
       const cached = fetchCache.get(fetchKey);
-      if (cached && (now - cached.timestamp < CACHE_TTL || cached.inProgress)) {
-        console.log('Skipping duplicate fetch for:', fetchKey, cached.inProgress ? '(in progress)' : '(recently fetched)');
+
+      // If we have cached data, use it immediately
+      if (cached && cached.data && (now - cached.timestamp < CACHE_TTL)) {
+        console.log('Using cached data for:', fetchKey);
+        setTreasuryUserInfo(cached.data.userInfo);
+        setSpaces(cached.data.spaces);
+        setLoading(false);
+        return;
+      }
+
+      // If fetch is in progress, wait a bit and try again (the first fetch will update the cache)
+      if (cached && cached.inProgress) {
+        console.log('Fetch in progress for:', fetchKey, '- waiting for cache update');
+        // Wait for the in-progress fetch to complete, then use its result
+        const waitForCache = async () => {
+          for (let i = 0; i < 50; i++) { // Wait up to 5 seconds
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const updated = fetchCache.get(fetchKey);
+            if (updated && updated.data && !updated.inProgress) {
+              console.log('Cache updated, using cached data for:', fetchKey);
+              setTreasuryUserInfo(updated.data.userInfo);
+              setSpaces(updated.data.spaces);
+              setLoading(false);
+              return;
+            }
+          }
+          // Timeout - fetch failed or took too long, clear loading state
+          console.log('Cache wait timeout for:', fetchKey);
+          setLoading(false);
+        };
+        waitForCache();
         return;
       }
 
@@ -294,11 +328,25 @@ export const MainContentSection = (): JSX.Element => {
           // The API may include article previews in the response (check for data/articles fields)
           // If not, TreasuryCard will display based on articleCount
           setSpaces(spacesArray);
+
+          // Store in cache for reuse during redirects
+          fetchCache.set(fetchKey, {
+            timestamp: Date.now(),
+            inProgress: false,
+            data: { userInfo: processedInfo, spaces: spacesArray }
+          });
         } catch (spacesErr: any) {
           // If pageMySpaces API returns 404, it means the API doesn't exist yet
           // Show empty state instead of error
           console.warn('pageMySpaces API not available, showing empty state:', spacesErr.message);
           setSpaces([]);
+
+          // Store empty result in cache
+          fetchCache.set(fetchKey, {
+            timestamp: Date.now(),
+            inProgress: false,
+            data: { userInfo: processedInfo, spaces: [] }
+          });
         }
 
       } catch (err) {
@@ -309,11 +357,6 @@ export const MainContentSection = (): JSX.Element => {
         fetchCache.delete(fetchKey);
       } finally {
         setLoading(false);
-        // Mark as no longer in progress (keep timestamp for TTL)
-        const existing = fetchCache.get(fetchKey);
-        if (existing) {
-          fetchCache.set(fetchKey, { ...existing, inProgress: false });
-        }
       }
     };
 
