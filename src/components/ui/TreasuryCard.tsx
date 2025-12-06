@@ -183,11 +183,11 @@ export const TreasuryCard = ({
       className="relative w-full h-fit flex flex-col items-start gap-[15px] cursor-pointer"
       onClick={onClick}
     >
-      <div className="flex h-[280px] items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden">
+      <div className="flex h-[300px] items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden">
         {/* Main item on the left - takes ~65% width */}
-        <article className="flex flex-col items-start justify-center gap-[5px] px-3 py-0 relative self-stretch w-[65%] flex-shrink-0 rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+        <article className="flex flex-col items-start justify-center gap-[5px] px-[15px] py-0 relative self-stretch w-[65%] flex-shrink-0 rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <div
-            className="flex flex-col w-full h-[220px] items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
+            className="flex flex-col w-full h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
             style={{ backgroundImage: `url(${mainItem.coverImage})` }}
           >
             {mainItem.website && (
@@ -208,7 +208,7 @@ export const TreasuryCard = ({
           </div>
 
           <div className="flex flex-col items-start gap-[15px] relative w-full flex-[0_0_auto]">
-            <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-5 truncate">
+            <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
               {mainItem.title}
             </h3>
           </div>
@@ -221,27 +221,27 @@ export const TreasuryCard = ({
               <article
                 key={item.id}
                 className={`${
-                  index === 0 ? "h-[143px]" : "flex-1 grow"
-                } pl-0 pr-3 ${index === 0 ? "py-3" : "py-0"} ${
+                  index === 0 ? "h-[153px]" : "flex-1 grow"
+                } pl-0 pr-[15px] ${index === 0 ? "py-[15px]" : "py-0"} ${
                   index === 0
                     ? "rounded-[0px_15px_0px_0px]"
                     : "rounded-[0px_0px_15px_0px]"
                 } flex flex-col items-start gap-[5px] relative self-stretch w-full min-w-0 bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
               >
                 <div
-                  className="h-[90px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
+                  className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
                   style={{ backgroundImage: `url(${item.coverImage})` }}
                 >
                   {item.website && (
                     <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
                       <a
                         href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                        className="inline-flex items-start gap-[5px] px-2 py-1 bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]"
+                        className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]"
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-bold text-blue text-[9px] text-right tracking-[0] leading-[12px] whitespace-nowrap">
+                        <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
                           {item.website}
                         </span>
                       </a>
@@ -254,7 +254,7 @@ export const TreasuryCard = ({
                     index === 0 ? "mb-[-4.00px]" : ""
                   } relative self-stretch w-full flex-[0_0_auto] min-w-0 overflow-hidden`}
                 >
-                  <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-5 truncate">
+                  <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
                     {item.title}
                   </h3>
                 </div>

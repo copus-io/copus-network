@@ -344,11 +344,11 @@ export const MainContentSection = (): JSX.Element => {
         onShare={handleShare}
       />
 
-      {/* Spaces Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-[30px] w-full pt-[10px]">
+      {/* Spaces Grid - on xl+ screens, apply max-width to add more columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-[30px] w-full pt-[10px]">
         {spaces.length === 0 ? (
           /* Empty state - show create treasury prompt */
-          <div className="max-w-[400px]">
+          <div className="xl:max-w-[400px]">
             <TreasuryCard
               space={{
                 name: 'Create your first treasury',
@@ -363,7 +363,7 @@ export const MainContentSection = (): JSX.Element => {
         ) : (
           /* Render all spaces from pageMySpaces API */
           spaces.map((space) => (
-            <div key={space.id || space.namespace} className="max-w-[380px]">
+            <div key={space.id || space.namespace} className="xl:max-w-[400px]">
               <TreasuryCard
                 space={{
                   ...space,
