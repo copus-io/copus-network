@@ -641,13 +641,21 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
           })()} aspect ratio</div>}
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onCancel}>
+        <div className="flex justify-end gap-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-[50px] hover:bg-gray-100 transition-colors cursor-pointer [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base"
+          >
             Cancel
-          </Button>
-          <Button onClick={handleCrop}>
+          </button>
+          <button
+            type="button"
+            onClick={handleCrop}
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-red rounded-[50px] hover:bg-red/90 transition-colors cursor-pointer [font-family:'Lato',Helvetica] font-semibold text-white text-base"
+          >
             Confirm Crop
-          </Button>
+          </button>
         </div>
       </div>
     </div>

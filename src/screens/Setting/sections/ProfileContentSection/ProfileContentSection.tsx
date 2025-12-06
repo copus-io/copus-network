@@ -769,10 +769,12 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               <button
                 type="button"
                 aria-label="Close dialog"
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="hover:opacity-70 transition-opacity"
                 onClick={handleCancelPersonalInfo}
               >
-                <XIcon className="w-6 h-6 text-gray-400" />
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
+                  <path d="M3 3L15 15M3 15L15 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
             </div>
 
@@ -781,13 +783,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
                   <label
                     htmlFor="username-input"
-                    className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-lg tracking-[0] leading-[23px] whitespace-nowrap"
+                    className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-[450] text-off-black text-[18px] tracking-[0] leading-[23px] whitespace-nowrap"
                   >
                     User name
                   </label>
                 </div>
 
-                <div className="flex items-center px-2.5 py-[15px] relative self-stretch w-full flex-[0_0_auto] bg-monowhite rounded-lg overflow-hidden border-2 border-solid border-light-grey shadow-inputs">
+                <div className="flex items-center px-2.5 py-[15px] relative self-stretch w-full flex-[0_0_auto] bg-monowhite rounded-lg overflow-hidden border border-solid border-gray-300 shadow-inputs">
                   <input
                     id="username-input"
                     type="text"
@@ -803,13 +805,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
                   <label
                     htmlFor="bio-textarea"
-                    className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-lg tracking-[0] leading-[23px] whitespace-nowrap"
+                    className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-[450] text-off-black text-[18px] tracking-[0] leading-[23px] whitespace-nowrap"
                   >
                     Bio
                   </label>
                 </div>
 
-                <div className="flex flex-col h-[120px] items-start justify-between px-2.5 py-[15px] relative self-stretch w-full bg-monowhite rounded-lg overflow-hidden border-2 border-solid border-light-grey shadow-inputs">
+                <div className="flex flex-col h-[120px] items-start justify-between px-2.5 py-[15px] relative self-stretch w-full bg-monowhite rounded-lg overflow-hidden border border-solid border-gray-300 shadow-inputs">
                   <textarea
                     id="bio-textarea"
                     value={formBio}
@@ -825,7 +827,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                     className="relative self-stretch [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm text-right tracking-[0] leading-[normal]"
                     aria-live="polite"
                   >
-                    {formData.bio.length}/140
+                    {formBio.length}/140
                   </div>
                 </div>
               </div>
@@ -834,13 +836,6 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 type="avatar"
                 currentImage={profileImage}
                 onImageUploaded={handleProfileImageLocalUpdate}
-                onError={handleImageUploadError}
-              />
-
-              <ImageUploader
-                type="banner"
-                currentImage={bannerImage}
-                onImageUploaded={handleBannerImageLocalUpdate}
                 onError={handleImageUploadError}
               />
 
