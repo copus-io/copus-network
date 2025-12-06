@@ -102,7 +102,14 @@ const getHostname = (url: string | undefined): string => {
  * Transform space data to treasury items for display
  */
 export const transformSpaceToItems = (space: SpaceData): TreasuryItem[] => {
-  const articles = space.data || space.articles || [];
+  // Try multiple possible field names for article previews from different APIs
+  const articles = space.data || space.articles || (space as any).articleList || (space as any).list || (space as any).items || [];
+
+  // Debug log to help identify API response structure
+  if (process.env.NODE_ENV === 'development' && articles.length === 0) {
+    console.log('TreasuryCard: No articles found in space, available keys:', Object.keys(space));
+  }
+
   return articles.slice(0, 3).map((article: any, index: number) => {
     // Use website field from API if available, otherwise extract from targetUrl
     const website = article.website || getHostname(article.targetUrl);

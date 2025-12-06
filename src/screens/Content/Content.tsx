@@ -563,6 +563,18 @@ export const Content = (): JSX.Element => {
         // Use space data directly from API response
         // The spacesByArticleId API should return all necessary data
         // No need for additional getSpaceInfo calls - use namespace for display if username is missing
+
+        // Debug: Log full structure to identify article preview field name
+        if (spacesArray.length > 0) {
+          console.log('Space data structure example:', {
+            keys: Object.keys(spacesArray[0]),
+            firstSpace: spacesArray[0],
+            articleCount: spacesArray[0].articleCount,
+            dataField: spacesArray[0].data,
+            articlesField: spacesArray[0].articles,
+          });
+        }
+
         setCollectedInData(spacesArray);
       } catch (err) {
         console.error('Failed to fetch collected in data:', err);
