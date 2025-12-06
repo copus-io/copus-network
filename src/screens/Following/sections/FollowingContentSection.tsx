@@ -69,6 +69,7 @@ export const FollowingContentSection = (): JSX.Element => {
         }
 
         // For default spaces (type 1 or 2) without ownerInfo, fetch space details to get owner
+        // Only fetch if namespace is valid and we actually need owner info
         const spacesWithOwners = await Promise.all(
           spacesArray.map(async (space) => {
             const isDefaultSpace =
@@ -77,7 +78,8 @@ export const FollowingContentSection = (): JSX.Element => {
               space.name?.toLowerCase().includes('default');
 
             // If it's a default space and we don't have owner username, fetch space details
-            if (isDefaultSpace && !space.ownerInfo?.username && space.namespace) {
+            // Only if namespace is a non-empty string
+            if (isDefaultSpace && !space.ownerInfo?.username && space.namespace && typeof space.namespace === 'string' && space.namespace.trim() !== '') {
               try {
                 const spaceInfo = await AuthService.getSpaceInfo(space.namespace);
                 const spaceData = spaceInfo?.data || spaceInfo;
