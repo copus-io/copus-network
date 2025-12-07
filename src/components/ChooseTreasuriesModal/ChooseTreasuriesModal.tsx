@@ -112,12 +112,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
 
           console.log('Space display name for', space.name, ':', displayName, 'spaceType:', spaceTypeNum);
 
-          // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
-          // For other spaces, use the first article's cover image
-          const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
-          const coverImage = isDefaultSpace
-            ? (user.faceUrl || '')
-            : (space.data?.[0]?.coverUrl || '');
+          // All user's treasuries should show the user's profile image
+          // This includes default spaces (Treasury/Curations) and custom spaces
+          const coverImage = user.faceUrl || '';
 
           // Get first letter of space name (not display name which may have username)
           const spaceName = space.name || displayName;
