@@ -383,7 +383,7 @@ export const MainContentSection = (): JSX.Element => {
 
   if (loading) {
     return (
-      <main className="flex flex-col items-start gap-5 px-4 lg:pl-[40px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+      <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex items-center justify-center w-full h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -393,7 +393,7 @@ export const MainContentSection = (): JSX.Element => {
 
   if (error) {
     return (
-      <main className="flex flex-col items-start gap-5 px-4 lg:pl-[40px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+      <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
           <div className="text-red-500">{error}</div>
           <Button
@@ -411,7 +411,7 @@ export const MainContentSection = (): JSX.Element => {
   const displaySocialLinks = isViewingOtherUser ? (treasuryUserInfo?.socialLinks || []) : (socialLinksData || []);
 
   return (
-    <main className="flex flex-col items-start gap-5 px-4 lg:pl-[40px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+    <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
       {/* Header Section */}
       <TreasuryHeaderSection
         username={displayUser?.username || 'Anonymous'}
@@ -422,8 +422,8 @@ export const MainContentSection = (): JSX.Element => {
         onShare={handleShare}
       />
 
-      {/* Spaces Grid - auto-fill columns with min 300px, max 500px */}
-      <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(300px,500px))] gap-[30px] w-full pt-[10px]">
+      {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
+      <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8 w-full pt-[10px]">
         {spaces.length === 0 ? (
           /* Empty state - show create treasury prompt */
           <TreasuryCard

@@ -206,7 +206,7 @@ export const TreasuryContentSection = (): JSX.Element => {
   const collections = getCollectionsByCategory();
 
   return (
-    <main className="flex flex-col items-start gap-5 px-0 lg:pl-[60px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+    <main className="flex flex-col items-start gap-5 px-0 pt-0 pb-[30px] relative min-h-screen">
       {/* Header Section */}
       <TreasuryHeaderSection
         username={user?.username || 'Anonymous'}
@@ -244,7 +244,7 @@ export const TreasuryContentSection = (): JSX.Element => {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 w-full">
                 {collections.map((collection, index) => (
                   <CollectionSection
                     key={collection.title}

@@ -315,7 +315,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           type="button"
         >
           <svg
-            className="w-[15px] h-[15px]"
+            className="w-3 h-3"
             viewBox="0 0 24 24"
             fill="none"
             stroke="#686868"

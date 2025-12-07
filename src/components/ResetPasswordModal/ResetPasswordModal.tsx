@@ -165,7 +165,7 @@ export const ResetPasswordModal = ({ isOpen, onClose, onSuccess }: ResetPassword
               Reset Password
             </h2>
             <button onClick={handleClose} className="hover:bg-gray-100 p-1 rounded-full transition-colors">
-              <XIcon className="w-6 h-6 text-gray-400 hover:text-gray-600" />
+              <XIcon className="w-3 h-3 text-gray-400 hover:text-gray-600" />
             </button>
           </div>
 
