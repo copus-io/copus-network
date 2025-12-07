@@ -46,6 +46,12 @@ const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5VcGxvYWRlZCBJbWFnZTwvdGV4dD48L3N2Zz4=';
   }
 
+  // Fix malformed extensions like '.svg+xml' -> '.svg'
+  // This can happen when MIME type 'image/svg+xml' is incorrectly used as extension
+  if (imageUrl.endsWith('+xml')) {
+    imageUrl = imageUrl.replace(/\+xml$/, '');
+  }
+
   // Check if it's a valid HTTP/HTTPS URL
   try {
     const url = new URL(imageUrl);
