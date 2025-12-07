@@ -89,6 +89,23 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(false);
   }, []);
 
+  // Listen for auth-error events from API layer (401/403 responses)
+  useEffect(() => {
+    const handleAuthError = (event: CustomEvent) => {
+      console.log('🔒 Auth error detected, logging out user:', event.detail);
+      // Clear user state immediately
+      setUser(null);
+      setToken(null);
+      // Storage is already cleared by api.ts, but ensure state is cleared
+    };
+
+    window.addEventListener('auth-error', handleAuthError as EventListener);
+
+    return () => {
+      window.removeEventListener('auth-error', handleAuthError as EventListener);
+    };
+  }, []);
+
   // Sync token and user to storage whenever they change in state
   useEffect(() => {
     if (user && token) {
