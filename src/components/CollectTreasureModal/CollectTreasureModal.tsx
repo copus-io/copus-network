@@ -302,7 +302,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 max-h-[80vh]"
+        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 h-[500px]"
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
@@ -437,7 +437,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
             {/* Collections List - scrollbar hidden until hover */}
             <div
-              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 max-h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
               onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
