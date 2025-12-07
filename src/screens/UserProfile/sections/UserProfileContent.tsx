@@ -7,6 +7,7 @@ import { AuthService } from "../../../services/authService";
 import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
+import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 
 interface UserProfileContentProps {
@@ -15,7 +16,7 @@ interface UserProfileContentProps {
 
 export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespace }) => {
   const navigate = useNavigate();
-  const { user, toggleLike, updateUser, getArticleLikeState } = useUser();
+  const { user, toggleLike, updateUser, getArticleLikeState, updateArticleLikeState } = useUser();
   const { openPreview } = useImagePreview();
   const { showToast } = useToast();
 
@@ -27,6 +28,10 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [articlesLoading, setArticlesLoading] = useState(false);
   const [hasMoreArticles, setHasMoreArticles] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Collect Treasure Modal state
+  const [collectModalOpen, setCollectModalOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
   // Fetch user info and articles list
   useEffect(() => {
@@ -251,7 +256,30 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       return;
     }
 
-    await toggleLike(articleId, currentIsLiked, currentLikeCount);
+    // Always show the collect modal (whether liked or not)
+    // User can uncollect from within the modal
+    const article = articles.find(a => a.id === articleId);
+    if (article) {
+      setSelectedArticle({
+        uuid: articleId,
+        title: article.title,
+        isLiked: currentIsLiked,
+        likeCount: currentLikeCount
+      });
+      setCollectModalOpen(true);
+    }
+  };
+
+  // Handle successful collection - update local state
+  const handleCollectSuccess = () => {
+    if (!selectedArticle) return;
+
+    // Update like state locally
+    const newLikeCount = selectedArticle.likeCount + 1;
+    updateArticleLikeState(selectedArticle.uuid, true, newLikeCount);
+
+    // Update selectedArticle state to reflect the change
+    setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
   };
 
   // Handle user click (view other users)
@@ -521,6 +549,21 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             </button>
           </div>
         </div>
+      )}
+
+      {/* Collect Treasure Modal */}
+      {selectedArticle && (
+        <CollectTreasureModal
+          isOpen={collectModalOpen}
+          onClose={() => {
+            setCollectModalOpen(false);
+            setSelectedArticle(null);
+          }}
+          articleId={selectedArticle.uuid}
+          articleTitle={selectedArticle.title}
+          isAlreadyCollected={selectedArticle.isLiked}
+          onCollectSuccess={handleCollectSuccess}
+        />
       )}
     </main>
   );

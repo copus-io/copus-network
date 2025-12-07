@@ -651,7 +651,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         <div className="flex flex-col items-start gap-5 relative w-full">
           <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
             <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
+              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap" style={{ fontWeight: 450 }}>
                 {user?.walletAddress ? 'Wallet address' : 'Email address'}
               </h3>
             </div>
@@ -665,7 +665,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           {!isPasswordlessAuth && (
             <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
               <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
+                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap" style={{ fontWeight: 450 }}>
                   Password
                 </h3>
               </div>
