@@ -213,7 +213,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] break-words line-clamp-2 overflow-hidden">
+                  <h3 className="[font-family:'Lato',Helvetica] text-dark-grey text-[11px] tracking-[0] leading-[16px] break-words line-clamp-2 overflow-hidden" style={{ fontWeight: 450 }}>
                     {article.title || 'Enter a title...'}
                   </h3>
                 </div>
@@ -221,7 +221,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full max-w-[600px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                   <div className="h-[45px] overflow-hidden w-full min-w-0 max-w-full">
                     <p
-                      className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.5px] overflow-hidden"
+                      className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[16px] tracking-[0] leading-[22.5px] overflow-hidden"
                       style={{
                         display: '-webkit-box',
                         WebkitBoxOrient: 'vertical',
@@ -241,11 +241,11 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       <Avatar className="w-[18px] h-[18px] flex-shrink-0">
                         <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
                       </Avatar>
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] truncate">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[14px] tracking-[0] leading-[20px] truncate">
                         {article.userName}
                       </span>
                     </div>
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[14px] tracking-[0] leading-[20px]">
                       Preview
                     </span>
                   </div>
