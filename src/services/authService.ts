@@ -1837,11 +1837,11 @@ export class AuthService {
   /**
    * Get articles from followed spaces (paginated)
    * API: GET /client/article/space/pageMyFollowedArticle
-   * @param page - Page number (default 1)
-   * @param size - Page size (default 20)
+   * @param pageIndex - Page number (default 1)
+   * @param pageSize - Page size (default 20)
    */
-  static async getFollowedArticles(page: number = 1, size: number = 20): Promise<any> {
-    return apiRequest(`/client/article/space/pageMyFollowedArticle?page=${page}&size=${size}`, {
+  static async getFollowedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    return apiRequest(`/client/article/space/pageMyFollowedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
       method: 'GET',
     });
   }
