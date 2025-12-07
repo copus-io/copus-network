@@ -124,6 +124,11 @@ export const TreasuryContentSection = (): JSX.Element => {
     }
   };
 
+  // Handle edit - navigate to settings
+  const handleEdit = () => {
+    navigate('/setting');
+  };
+
   // Group articles by category for collections view
   const getCollectionsByCategory = (): { title: string; items: CollectionItem[] }[] => {
     const categoryMap = new Map<string, TreasuryArticle[]>();
@@ -210,6 +215,7 @@ export const TreasuryContentSection = (): JSX.Element => {
         avatarUrl={user?.faceUrl || profileDefaultAvatar}
         socialLinks={socialLinks}
         onShare={handleShare}
+        onEdit={handleEdit}
       />
 
       {/* Navigation Tabs and Content */}

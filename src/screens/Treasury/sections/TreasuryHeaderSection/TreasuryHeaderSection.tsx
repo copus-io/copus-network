@@ -15,6 +15,7 @@ interface TreasuryHeaderSectionProps {
   avatarUrl?: string;
   socialLinks: SocialLink[];
   onShare?: () => void;
+  onEdit?: () => void;
 }
 
 export const TreasuryHeaderSection = ({
@@ -24,6 +25,7 @@ export const TreasuryHeaderSection = ({
   avatarUrl,
   socialLinks,
   onShare,
+  onEdit,
 }: TreasuryHeaderSectionProps): JSX.Element => {
   return (
     <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
@@ -40,6 +42,19 @@ export const TreasuryHeaderSection = ({
               <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
                 {username}
               </h1>
+
+              {onEdit && (
+                <button
+                  type="button"
+                  aria-label="Edit profile"
+                  className="relative flex-[0_0_auto] hover:opacity-70 transition-opacity"
+                  onClick={onEdit}
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14.167 2.5A2.357 2.357 0 0 1 17.5 5.833L6.25 17.083l-4.583 1.25 1.25-4.583L14.167 2.5Z" stroke="#686868" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
 
               {onShare && (
                 <button
