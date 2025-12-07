@@ -423,7 +423,7 @@ export const MainContentSection = (): JSX.Element => {
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
-      <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8 w-full pt-[10px]">
+      <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8 w-full pt-[10px] px-2.5 lg:pl-2.5 lg:pr-0">
         {spaces.length === 0 ? (
           /* Empty state - show create treasury prompt */
           <TreasuryCard

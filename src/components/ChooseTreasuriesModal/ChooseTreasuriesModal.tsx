@@ -261,7 +261,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 max-h-[80vh]"
+        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] overflow-hidden z-10 ${showCreateNew ? '' : 'h-[500px]'}`}
         role="dialog"
         aria-labelledby="choose-dialog-title"
         aria-modal="true"
@@ -321,7 +321,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+            <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-b-[15px]">
               <button
                 className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={() => setShowCreateNew(false)}
@@ -394,9 +394,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
               </div>
             </div>
 
-            {/* Collections List - Fixed height */}
+            {/* Collections List - scrollbar hidden until hover */}
             <div
-              className="flex flex-col items-start gap-0 relative self-stretch w-full h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
               onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
@@ -471,7 +471,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             </div>
 
             {/* Save and Cancel Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" style={{ marginLeft: '-30px', marginRight: '-30px', paddingLeft: '30px', paddingRight: '30px', width: 'calc(100% + 60px)' }}>
+            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 self-stretch w-full">
               <button
                 className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={handleCancel}

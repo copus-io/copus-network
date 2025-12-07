@@ -1473,9 +1473,12 @@ export class AuthService {
   static async getUnreadMessageCount(): Promise<number> {
 
     try {
+      // Note: requiresAuth is false to prevent auth errors from logging the user out
+      // The NotificationContext already checks for token presence before calling this
+      // If token is expired, we just silently return 0 instead of triggering a logout
       const response = await apiRequest('/client/user/msg/countMsg', {
         method: 'GET',
-        requiresAuth: true,
+        requiresAuth: false, // Changed from true - auth errors should not log out the user for background polling
       });
 
 

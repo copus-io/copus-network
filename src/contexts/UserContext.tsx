@@ -106,6 +106,53 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
+  // Listen for token injection from browser extension
+  // This handles the case when the extension injects a token after the page loads
+  useEffect(() => {
+    const handleTokenInjection = (event: CustomEvent) => {
+      console.log('🔌 Extension injected token, re-initializing auth...');
+      const savedUser = storage.getItem('copus_user');
+      const savedToken = storage.getItem('copus_token');
+
+      if (savedUser && savedToken) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+          setToken(savedToken);
+          console.log('✅ Auth restored from extension-injected token');
+        } catch {
+          console.error('Failed to parse injected user data');
+        }
+      }
+    };
+
+    const handleStorageChange = (event: StorageEvent) => {
+      // Handle token being added via storage event
+      if (event.key === 'copus_token' && event.newValue && !token) {
+        console.log('📦 Token detected in storage event, re-initializing auth...');
+        const savedUser = storage.getItem('copus_user');
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+            setToken(event.newValue);
+            console.log('✅ Auth restored from storage event');
+          } catch {
+            console.error('Failed to parse user data from storage');
+          }
+        }
+      }
+    };
+
+    window.addEventListener('copus_token_injected', handleTokenInjection as EventListener);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('copus_token_injected', handleTokenInjection as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [token]);
+
   // Sync token and user to storage whenever they change in state
   useEffect(() => {
     if (user && token) {

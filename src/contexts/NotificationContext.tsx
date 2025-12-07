@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { Notification, NotificationContextType } from '../types/notification';
 import { notificationService } from '../services/notificationService';
 import { AuthService } from '../services/authService';
+import * as storage from '../utils/storage';
 
 interface NotificationState {
   notifications: Notification[];
@@ -184,7 +185,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const fetchUnreadCount = async (): Promise<void> => {
     // Skip if no token (no point in calling authenticated endpoint)
-    const token = localStorage.getItem('copus_token');
+    // Use storage utility to check both localStorage and sessionStorage
+    const token = storage.getItem('copus_token');
     if (!token || token.trim() === '') {
       // When no token exists, set unread count to 0 without error
       dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
