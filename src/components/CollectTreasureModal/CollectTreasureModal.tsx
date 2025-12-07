@@ -120,9 +120,12 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             displayName = space.name || 'Untitled Treasury';
           }
 
-          // Use the first article's cover image from this collection
-          // If no content yet, coverImage will be empty and we show firstLetter fallback
-          const coverImage = space.data?.[0]?.coverUrl || '';
+          // For default Treasury/Curations (spaceType 1 & 2), use user's profile image
+          // For custom spaces, use the first article's cover image from this collection
+          const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
+          const coverImage = isDefaultSpace
+            ? (user.faceUrl || '')
+            : (space.data?.[0]?.coverUrl || '');
 
           // Get first letter of space name for avatar fallback
           const spaceName = space.name || displayName;
