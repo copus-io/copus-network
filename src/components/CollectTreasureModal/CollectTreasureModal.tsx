@@ -302,7 +302,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 h-[500px]"
+        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 ${showCreateNew ? '' : 'h-[500px]'}`}
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
