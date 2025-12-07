@@ -213,7 +213,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] text-dark-grey text-[11px] tracking-[0] leading-[16px] break-words line-clamp-2 overflow-hidden" style={{ fontWeight: 450 }}>
+                  <h3 className="[font-family:'Lato',Helvetica] text-dark-grey text-[22px] tracking-[0] leading-[30px] break-words line-clamp-2 overflow-hidden" style={{ fontWeight: 450 }}>
                     {article.title || 'Enter a title...'}
                   </h3>
                 </div>
