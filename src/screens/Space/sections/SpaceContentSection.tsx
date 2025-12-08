@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { AuthService } from "../../../services/authService";
@@ -196,6 +196,8 @@ export const SpaceContentSection = (): JSX.Element => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalArticleCount, setTotalArticleCount] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [reachedEnd, setReachedEnd] = useState(false); // Track if we've loaded all articles
+  const isLoadingMoreRef = useRef(false); // Ref to prevent race conditions in scroll handler
   const PAGE_SIZE = 20;
 
   // Edit space modal state
@@ -291,6 +293,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
           setArticles(articlesArray);
           setCurrentPage(1);
+          setReachedEnd(false); // Reset reached end state for new space
         } else {
           // Old category-based route (for backwards compatibility)
           setSpaceInfo({
@@ -496,12 +499,17 @@ export const SpaceContentSection = (): JSX.Element => {
     showToast('Link copied to clipboard', 'success');
   };
 
-  // Handle load more articles
-  const handleLoadMore = async () => {
-    if (!spaceId || loadingMore) return;
+  // Check if there are more articles to load
+  const hasMoreArticles = !reachedEnd && articles.length < totalArticleCount;
 
+  // Handle load more articles
+  const handleLoadMore = useCallback(async () => {
+    // Use ref to prevent multiple simultaneous calls
+    if (!spaceId || isLoadingMoreRef.current || !hasMoreArticles) return;
+
+    isLoadingMoreRef.current = true;
+    setLoadingMore(true);
     try {
-      setLoadingMore(true);
       const nextPage = currentPage + 1;
       console.log('Loading more articles, page:', nextPage);
 
@@ -518,28 +526,39 @@ export const SpaceContentSection = (): JSX.Element => {
       if (newArticles.length > 0) {
         setArticles(prev => [...prev, ...newArticles]);
         setCurrentPage(nextPage);
+      } else {
+        // No more articles returned - mark as reached end
+        setReachedEnd(true);
+      }
+
+      // Also check if we got less than a full page
+      if (newArticles.length < PAGE_SIZE) {
+        setReachedEnd(true);
       }
     } catch (err) {
       console.error('Failed to load more articles:', err);
       showToast('Failed to load more articles', 'error');
     } finally {
       setLoadingMore(false);
+      isLoadingMoreRef.current = false;
     }
-  };
-
-  // Check if there are more articles to load
-  const hasMoreArticles = articles.length < totalArticleCount;
+  }, [spaceId, hasMoreArticles, currentPage, showToast]);
 
   // Auto-load more on scroll (same as Discovery page)
   useEffect(() => {
     const handleScroll = () => {
+      // Skip if no more articles or already loading
+      if (!hasMoreArticles || isLoadingMoreRef.current) {
+        return;
+      }
+
       // Check if scrolled near the bottom of the page
       const scrollTop = window.scrollY;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
 
-      if (scrolledToBottom && hasMoreArticles && !loadingMore && spaceId) {
+      if (scrolledToBottom && spaceId) {
         handleLoadMore();
       }
     };
@@ -548,7 +567,7 @@ export const SpaceContentSection = (): JSX.Element => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [hasMoreArticles, loadingMore, spaceId, currentPage]);
+  }, [hasMoreArticles, spaceId, handleLoadMore]);
 
   // Handle author click - navigate to treasury page
   const handleAuthorClick = () => {

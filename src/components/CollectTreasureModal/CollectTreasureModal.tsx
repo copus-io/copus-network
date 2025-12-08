@@ -60,6 +60,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   const [newTreasuryName, setNewTreasuryName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedArticleId, setResolvedArticleId] = useState<number | null>(null);
+  const [curationsSpaceId, setCurationsSpaceId] = useState<number | null>(null); // Store Curations space ID to always include in save
 
   // Fetch user's bindable spaces using the bindableSpaces API
   useEffect(() => {
@@ -82,7 +83,6 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
         // Use the bindableSpaces API with articleId to get binding status
         const bindableResponse = await AuthService.getBindableSpaces(numericId);
-        console.log('Bindable spaces response:', bindableResponse);
 
         // Parse the response - handle different possible formats
         let spacesArray: BindableSpace[] = [];
@@ -144,9 +144,22 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           };
         });
 
-        // Sort collections: spaceType 1 (Treasury) first, then by ID descending (newest first)
-        const sortedCollections = collectionOptions.sort((a, b) => {
-          // spaceType 1 (Treasury) comes first - this is the user's default treasury
+        // Find Curations space (spaceType 2) - backend now properly handles it
+        const curationsSpace = collectionOptions.find(c => c.spaceType === 2);
+        if (curationsSpace) {
+          setCurationsSpaceId(curationsSpace.numericId);
+        }
+
+        // Filter out Curations space (spaceType 2) from the UI - curations are managed separately
+        // and should not be toggled by the user in the collect modal
+        const filteredCollections = collectionOptions.filter(c => c.spaceType !== 2);
+
+        // Sort collections: bound spaces first, then spaceType 1 (Treasury), then by ID descending
+        const sortedCollections = filteredCollections.sort((a, b) => {
+          // Already bound spaces come first (these have the red check mark)
+          if (a.wasOriginallyBound && !b.wasOriginallyBound) return -1;
+          if (!a.wasOriginallyBound && b.wasOriginallyBound) return 1;
+          // Then spaceType 1 (Treasury) comes first - this is the user's default treasury
           if (a.spaceType === 1 && b.spaceType !== 1) return -1;
           if (a.spaceType !== 1 && b.spaceType === 1) return 1;
           // Then sort by numeric ID descending (higher ID = more recently created)
@@ -200,18 +213,24 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setIsSubmitting(true);
 
       // Get all selected space IDs
-      const selectedSpaceIds = collections
+      let selectedSpaceIds = collections
         .filter(c => c.isSelected)
         .map(c => c.numericId);
 
-      console.log('Saving article to spaces:', { resolvedArticleId, selectedSpaceIds });
+      // IMPORTANT: Always include Curations space if it exists
+      // This prevents removing articles from curations when saving to other treasuries
+      // The bindArticles API replaces all bindings, so we must preserve curations
+      if (curationsSpaceId && !selectedSpaceIds.includes(curationsSpaceId)) {
+        selectedSpaceIds = [curationsSpaceId, ...selectedSpaceIds];
+      }
 
       // Call bindArticles API with the resolved numeric article ID
       await AuthService.bindArticles(resolvedArticleId, selectedSpaceIds);
 
-      const selectedCount = selectedSpaceIds.length;
-      if (selectedCount > 0) {
-        showToast(`Saved to ${selectedCount} treasury${selectedCount > 1 ? 's' : ''}`, 'success');
+      // Count only user-selected spaces (excluding auto-included Curations)
+      const userSelectedCount = collections.filter(c => c.isSelected).length;
+      if (userSelectedCount > 0) {
+        showToast(`Saved to ${userSelectedCount} treasury${userSelectedCount > 1 ? 's' : ''}`, 'success');
       } else {
         showToast('Removed from all treasuries', 'success');
       }

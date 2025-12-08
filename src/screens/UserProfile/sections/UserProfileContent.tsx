@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useImagePreview } from "../../../contexts/ImagePreviewContext";
@@ -28,6 +28,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [articlesLoading, setArticlesLoading] = useState(false);
   const [hasMoreArticles, setHasMoreArticles] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const isLoadingMoreRef = useRef(false); // Ref to prevent race conditions in scroll handler
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
@@ -176,11 +177,13 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   }, [namespace, showToast]);
 
   // Load more articles function
-  const loadMoreArticles = async () => {
-    if (!userInfo || articlesLoading || !hasMoreArticles) {
+  const loadMoreArticles = useCallback(async () => {
+    // Use ref to prevent multiple simultaneous calls
+    if (!userInfo || isLoadingMoreRef.current || !hasMoreArticles) {
       return;
     }
 
+    isLoadingMoreRef.current = true;
     setArticlesLoading(true);
     try {
       const nextPage = currentPage + 1;
@@ -222,18 +225,24 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       showToast('Failed to load more content', 'error');
     } finally {
       setArticlesLoading(false);
+      isLoadingMoreRef.current = false;
     }
-  };
+  }, [userInfo, hasMoreArticles, currentPage, showToast]);
 
   // Infinite scroll effect
   useEffect(() => {
     const handleScroll = () => {
+      // Skip if no more articles or already loading
+      if (!hasMoreArticles || isLoadingMoreRef.current) {
+        return;
+      }
+
       const scrollTop = window.scrollY;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
 
-      if (scrolledToBottom && hasMoreArticles && !articlesLoading && userInfo) {
+      if (scrolledToBottom && userInfo) {
         loadMoreArticles();
       }
     };
@@ -242,7 +251,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [hasMoreArticles, articlesLoading, userInfo, currentPage]);
+  }, [hasMoreArticles, userInfo, loadMoreArticles]);
 
   // Handle like/treasure action
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
