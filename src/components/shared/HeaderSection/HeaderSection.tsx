@@ -71,9 +71,9 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
       <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[30px] lg:pb-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
         <div className="flex items-center gap-2.5 lg:gap-[15px]">
-          <Link to="/" className="flex w-[30px] h-[30px] lg:w-[45px] lg:h-[45px] items-center justify-center rounded-full bg-red">
+          <Link to="/" className="flex w-[25px] h-[25px] lg:w-[47px] lg:h-[47px] items-center justify-center rounded-full bg-red">
             <img
-              className="w-[18px] h-[18px] lg:w-7 lg:h-7"
+              className="w-[15px] h-[15px] lg:w-[29px] lg:h-[29px]"
               alt="Ic fractopus open"
               src="https://c.animaapp.com/mft9nppdGctUh1/img/ic-fractopus-open.svg"
             />
