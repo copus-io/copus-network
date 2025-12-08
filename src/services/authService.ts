@@ -1473,12 +1473,11 @@ export class AuthService {
   static async getUnreadMessageCount(): Promise<number> {
 
     try {
-      // Note: requiresAuth is false to prevent auth errors from logging the user out
+      // Note: requiresAuth is true so that 403 errors will clear the stale token and log out the user
       // The NotificationContext already checks for token presence before calling this
-      // If token is expired, we just silently return 0 instead of triggering a logout
       const response = await apiRequest('/client/user/msg/countMsg', {
         method: 'GET',
-        requiresAuth: false, // Changed from true - auth errors should not log out the user for background polling
+        requiresAuth: true,
       });
 
 
@@ -1834,6 +1833,7 @@ export class AuthService {
   static async getFollowedSpaces(): Promise<any> {
     return apiRequest(`/client/article/space/myFollowedSpaces`, {
       method: 'GET',
+      requiresAuth: true,
     });
   }
 
@@ -1846,6 +1846,7 @@ export class AuthService {
   static async getFollowedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<any> {
     return apiRequest(`/client/article/space/pageMyFollowedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
       method: 'GET',
+      requiresAuth: true,
     });
   }
 
