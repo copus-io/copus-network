@@ -155,19 +155,23 @@ export const DiscoveryContentSection = (): JSX.Element => {
           <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Today's Internet is noisy, meaning gets lost.
+                Today's internet is noisy. Finding what's truly worth your time is more valuable than ever.
               </span>
             </p>
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                We value human agency and power it with an x402-based economic engine that rewards quality sharing and creation.{' '}
+                We value human taste and power it with an x402-based economic engine that rewards quality sharing and creation.
+              </span>
+            </p>
+            <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
                 <button
                   onClick={() => navigate('/login')}
                   className="text-[#2191FB] hover:underline cursor-pointer font-normal"
                 >
                   Join us
                 </button>{' '}
-                to weave a new internet: our collective opus. :)
+                in weaving a new internet: our collective opus. :)
               </span>
             </p>
           </div>
