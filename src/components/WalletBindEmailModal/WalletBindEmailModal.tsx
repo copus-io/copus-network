@@ -37,18 +37,36 @@ export const WalletBindEmailModal = ({
 
     setIsLoading(true);
     try {
-      // Send verification code (using existing endpoint)
-      // Temporarily skip API call to show verification page
-      // await WithdrawalService.sendVerificationCode(email);
-
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      console.log('📧 Sending verification code to:', email);
+      // Send verification code for email binding
+      await WithdrawalService.sendBindingVerificationCode(email);
+      console.log('✅ Verification code sent successfully');
       showToast('Verification code sent to your email', 'success');
       setStep("verification");
-    } catch (error) {
-      console.error('Failed to send verification code:', error);
-      showToast('Failed to send verification code, please try again', 'error');
+    } catch (error: any) {
+      console.error('❌ Failed to send verification code:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        response: error.response,
+        stack: error.stack
+      });
+
+      // 提供更详细的错误信息给用户
+      let errorMessage = 'Failed to send verification code, please try again';
+      if (error.message) {
+        if (error.message.includes('CORS') || error.message.includes('network')) {
+          errorMessage = 'Network connection error, please check your internet connection';
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+          errorMessage = 'Authentication error, please login again';
+        } else if (error.message.includes('API error')) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+
+      showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -90,8 +108,10 @@ export const WalletBindEmailModal = ({
     setIsLoading(true);
     try {
       // Generate signature
+      console.log('🔐 Starting signature generation process');
       showToast('Please sign the message in your wallet...', 'info');
       const signature = await generateSignature();
+      console.log('✅ Signature generated successfully');
 
       // Prepare request data
       const bindRequest: WalletBindEmailRequest = {
@@ -100,18 +120,33 @@ export const WalletBindEmailModal = ({
         signature: signature
       };
 
+      console.log('📤 Sending wallet binding request:', {
+        email: bindRequest.email,
+        code: bindRequest.code,
+        signatureLength: bindRequest.signature.length
+      });
+
       // Call bind API
       const result = await WithdrawalService.bindWalletEmail(bindRequest);
+      console.log('📥 Wallet binding response:', result);
 
       if (result) {
+        console.log('✅ Email successfully bound to wallet');
         showToast('Email successfully bound to wallet!', 'success');
         onSuccess();
         handleClose();
       } else {
+        console.log('❌ Wallet binding returned false');
         showToast('Failed to bind email to wallet', 'error');
       }
     } catch (error: any) {
-      console.error('Email binding failed:', error);
+      console.error('❌ Email binding failed:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+        response: error.response
+      });
       if (error.code === 4001) {
         showToast('Signature cancelled by user', 'info');
       } else {

@@ -140,6 +140,17 @@ export const IncomeDetailsSection = (): JSX.Element => {
     },
   ];
 
+  // 检查用户是否已经绑定了邮箱
+  const hasEmail = accountInfo?.email && accountInfo.email.trim().length > 0;
+
+  // 添加调试日志
+  console.log('📧 Email check debug:', {
+    accountInfo,
+    email: accountInfo?.email,
+    hasEmail,
+    loading
+  });
+
   const handleWithdrawClick = async () => {
     try {
       // 首先获取钱包地址
@@ -150,14 +161,12 @@ export const IncomeDetailsSection = (): JSX.Element => {
       }
       setWalletAddress(address);
 
-      // TODO: 这里需要检查用户是否已经绑定了邮箱
-      // 目前我们假设需要绑定邮箱，实际使用时应该通过API检查
-      // 如果用户还没有绑定邮箱，显示绑定邮箱模态框
-      const needsEmailBinding = true; // 这里应该通过API检查
-
-      if (needsEmailBinding) {
+      // 检查用户是否已经绑定了邮箱
+      if (!hasEmail) {
+        // 如果用户还没有绑定邮箱，显示绑定邮箱模态框
         setShowWalletBindEmail(true);
       } else {
+        // 如果已经绑定了邮箱，直接显示提现模态框
         setShowWithdrawalModal(true);
       }
     } catch (error) {
@@ -166,9 +175,29 @@ export const IncomeDetailsSection = (): JSX.Element => {
     }
   };
 
-  const handleWalletEmailBound = () => {
+  const handleBindEmailClick = async () => {
+    try {
+      // 首先获取钱包地址
+      const address = await getWalletAddress();
+      if (!address) {
+        showToast('Please connect your wallet first', 'error');
+        return;
+      }
+      setWalletAddress(address);
+
+      // 显示绑定邮箱模态框
+      setShowWalletBindEmail(true);
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      showToast('Failed to connect wallet, please try again', 'error');
+    }
+  };
+
+  const handleWalletEmailBound = async () => {
     setShowWalletBindEmail(false);
-    // 邮箱绑定成功后，显示提现模态框
+    // 邮箱绑定成功后，刷新用户账户信息获取最新的邮箱数据
+    await refreshData();
+    // 然后显示提现模态框
     setShowWithdrawalModal(true);
   };
 
@@ -228,15 +257,27 @@ export const IncomeDetailsSection = (): JSX.Element => {
               </p>
             )}
 
-            <Button
-              onClick={handleWithdrawClick}
-              variant="outline"
-              size="sm"
-              className="bg-transparent border-blue-500 text-blue-500 hover:bg-blue-50"
-              disabled={loading}
-            >
-              Withdraw
-            </Button>
+            {hasEmail ? (
+              <Button
+                onClick={handleWithdrawClick}
+                variant="outline"
+                size="sm"
+                className="bg-transparent border-blue-500 text-blue-500 hover:bg-blue-50"
+                disabled={loading}
+              >
+                Withdraw
+              </Button>
+            ) : (
+              <Button
+                onClick={handleBindEmailClick}
+                variant="outline"
+                size="sm"
+                className="bg-transparent border-orange-500 text-orange-500 hover:bg-orange-50"
+                disabled={loading}
+              >
+                Bind Email
+              </Button>
+            )}
           </div>
         </div>
       </div>

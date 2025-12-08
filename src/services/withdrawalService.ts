@@ -17,6 +17,7 @@ export interface WithdrawalResponse {
 export interface UserAccountInfo {
   balance: string;
   createdAt: number;
+  email?: string;
   id: number;
   targetUserType: number;
   totalIncome: string;
@@ -84,13 +85,52 @@ export class WithdrawalService {
 
   /**
    * Send email verification code for withdrawal
+   * Uses the common verification code endpoint with codeType=5 for withdrawal
    */
   static async sendVerificationCode(email: string): Promise<{ message: string }> {
-    // This endpoint may need to be confirmed with backend
-    return await apiRequest<{ message: string }>('/client/user/withdrawal/send-code', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
+    console.log('📧 Sending verification code for withdrawal to email:', email);
+
+    const queryParams = new URLSearchParams({
+      codeType: '5', // 5 = 提现申请
+      email: email
     });
+
+    const url = `/client/common/getVerificationCode?${queryParams.toString()}`;
+
+    const response = await apiRequest<{ status: number; msg: string; data: string }>(url, {
+      method: 'GET',
+      requiresAuth: true // This endpoint requires authentication
+    });
+
+    // Convert API response to expected format
+    return {
+      message: response.msg || 'Verification code sent successfully'
+    };
+  }
+
+  /**
+   * Send email verification code for wallet email binding
+   * Uses the common verification code endpoint with codeType=4 for wallet binding
+   */
+  static async sendBindingVerificationCode(email: string): Promise<{ message: string }> {
+    console.log('📧 Sending verification code for wallet binding to email:', email);
+
+    const queryParams = new URLSearchParams({
+      codeType: '4', // 4 = 钱包绑定邮箱
+      email: email
+    });
+
+    const url = `/client/common/getVerificationCode?${queryParams.toString()}`;
+
+    const response = await apiRequest<{ status: number; msg: string; data: string }>(url, {
+      method: 'GET',
+      requiresAuth: true // This endpoint requires authentication
+    });
+
+    // Convert API response to expected format
+    return {
+      message: response.msg || 'Verification code sent successfully'
+    };
   }
 
   /**
