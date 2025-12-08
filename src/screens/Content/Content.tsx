@@ -1908,7 +1908,7 @@ export const Content = (): JSX.Element => {
           onWalletSelect={handleWalletSelect}
           walletAddress={walletAddress}
           availableBalance={walletBalance}
-          amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
+          amount={article?.priceInfo ? `${article.priceInfo.price} USD` : '0.01 USD'}
           network={getNetworkConfig(selectedNetwork).name}
           faucetLink={selectedNetwork === 'xlayer' && walletType === 'okx' ? 'https://www.okx.com/dex' : 'https://faucet.circle.com/'}
           isInsufficientBalance={(() => {
