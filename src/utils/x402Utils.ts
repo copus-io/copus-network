@@ -153,7 +153,7 @@ const NETWORK_EIP712_DOMAINS: Record<number, any> = {
       verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
     },
     usdt: {
-      name: 'USD₮',
+      name: 'USD₮0',
       version: '1',
       chainId: 196,
       verifyingContract: '0x779ded0c9e1022225f8e0630b35a9b54be713736'
@@ -272,19 +272,10 @@ export async function signTransferWithAuthorization(
   params: TransferWithAuthorizationParams,
   signer: any,
   chainId?: number,
-  contractAddress?: string
+  contractAddress?: string,
+  asset?: string
 ): Promise<SignedAuthorization> {
-  console.log('📝 ========== 开始签名流程 ==========');
-  console.log('🔍 输入参数:', {
-    from: params.from,
-    to: params.to,
-    value: params.value,
-    validAfter: params.validAfter,
-    validBefore: params.validBefore,
-    nonce: params.nonce,
-    tokenType: tokenType || 'usdc',
-    chainId: chainId || '自动检测'
-  });
+  console.log('📝 开始签名流程 -', asset?.toUpperCase() || 'USDC');
 
   // 获取当前链ID（如果未提供）
   let currentChainId = chainId;
@@ -296,22 +287,52 @@ export async function signTransferWithAuthorization(
     console.log('🔗 使用提供的链ID:', currentChainId);
   }
 
-<<<<<<< Updated upstream
   // Determine EIP-712 domain
   let domain;
   if (contractAddress) {
     // Use network-specific domain but override the contract address
-    const networkDomain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532];
+    let networkDomain;
+    if (currentChainId === 196 && asset) {
+      // X Layer mainnet with specific asset (USDC or USDT)
+      const xlayerDomains = NETWORK_EIP712_DOMAINS[196];
+      if (asset.toLowerCase() === 'usdt' && xlayerDomains.usdt) {
+        networkDomain = xlayerDomains.usdt;
+        console.log('🪙 使用X Layer USDT域配置');
+      } else if (asset.toLowerCase() === 'usdc' && xlayerDomains.usdc) {
+        networkDomain = xlayerDomains.usdc;
+        console.log('🪙 使用X Layer USDC域配置');
+      } else {
+        // Default to USDC if asset not specified or not found
+        networkDomain = xlayerDomains.usdc;
+        console.log('🪙 使用X Layer USDC域配置 (默认)');
+      }
+    } else {
+      networkDomain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532];
+      console.log('🪙 使用标准网络域配置 for chain:', currentChainId);
+    }
     domain = { ...networkDomain, verifyingContract: contractAddress };
+    console.log('🏗️ 使用提供的合约地址覆盖域配置:', contractAddress);
   } else {
-    domain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532]; // fallback to Base Sepolia
+    // No contract address provided, use default network domain
+    if (currentChainId === 196 && asset) {
+      // X Layer mainnet with specific asset
+      const xlayerDomains = NETWORK_EIP712_DOMAINS[196];
+      if (asset.toLowerCase() === 'usdt' && xlayerDomains.usdt) {
+        domain = xlayerDomains.usdt;
+        console.log('🪙 使用X Layer USDT域配置 (无自定义合约)');
+      } else if (asset.toLowerCase() === 'usdc' && xlayerDomains.usdc) {
+        domain = xlayerDomains.usdc;
+        console.log('🪙 使用X Layer USDC域配置 (无自定义合约)');
+      } else {
+        // Default to USDC if asset not specified or not found
+        domain = xlayerDomains.usdc;
+        console.log('🪙 使用X Layer USDC域配置 (默认，无自定义合约)');
+      }
+    } else {
+      domain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532]; // fallback to Base Sepolia
+      console.log('🪙 使用标准网络域配置 (无自定义合约) for chain:', currentChainId);
+    }
   }
-
-=======
-  // 根据网络和代币类型确定EIP-712域
-  const domain = getEIP712Domain(currentChainId, tokenType || 'usdc');
-  console.log(`🔧 使用 ${(tokenType || 'usdc').toUpperCase()} 在链 ${currentChainId} 的域配置:`, domain);
->>>>>>> Stashed changes
 
   // Construct EIP-712 typed data
   const typedData = {
@@ -336,19 +357,9 @@ export async function signTransferWithAuthorization(
     }
   };
 
-  console.log('🏗️ 完整的EIP-712类型化数据结构:');
-  console.log('📋 域信息:', typedData.domain);
-  console.log('📋 消息内容:', typedData.message);
-  console.log('📋 类型定义:', typedData.types);
-  console.log('📋 主要类型:', typedData.primaryType);
-  console.log('📋 完整类型化数据JSON:', JSON.stringify(typedData, null, 2));
+  console.log('🔐 准备签名 -', asset?.toUpperCase() || 'USDC', '域:', typedData.domain.name);
 
-  console.log('⏳ 正在向钱包请求签名...');
-  console.log('📤 签名请求参数:', {
-    方法: 'eth_signTypedData_v4',
-    发送者地址: params.from,
-    类型化数据长度: JSON.stringify(typedData).length
-  });
+  console.log('📤 向钱包发送签名请求...');
 
   // Sign using eth_signTypedData_v4
   const signature = await signer.request({
@@ -356,20 +367,13 @@ export async function signTransferWithAuthorization(
     params: [params.from, JSON.stringify(typedData)]
   });
 
-  console.log('✅ 收到原始签名:', signature);
-  console.log('📏 签名长度:', signature.length);
-
   // 解析签名为v, r, s组件
   const r = signature.slice(0, 66);
   const s = '0x' + signature.slice(66, 130);
   const vHex = signature.slice(130, 132);
   const v = parseInt(vHex, 16);
 
-  console.log('🔪 签名组件解析:');
-  console.log('  r组件:', r);
-  console.log('  s组件:', s);
-  console.log('  v组件(十六进制):', vHex);
-  console.log('  v组件(十进制):', v);
+  console.log('✅ 签名成功生成 -', asset?.toUpperCase() || 'USDC', 'on chain', currentChainId);
 
   const signedAuthorization = {
     from: params.from,
@@ -580,35 +584,46 @@ export async function signTransferWithAuthorizationOKXBrowser(
   params: TransferWithAuthorizationParams,
   provider: any,
   chainId: number,
-  contractAddress: string
+  contractAddress: string,
+  asset?: string
 ): Promise<SignedAuthorization> {
   console.log('🦊 ========== OKX SIGNING PROCESS START ==========');
   console.log('🦊 [OKX] Using OKX-compatible EIP-712 format for signing...');
-  console.log('🦊 [OKX] Input Parameters for OKX signing:', {
-    from: params.from,
-    to: params.to,
-    value: params.value,
-    validAfter: params.validAfter,
-    validBefore: params.validBefore,
-    nonce: params.nonce,
-    chainId: chainId,
-    contractAddress: contractAddress,
-    tokenType: tokenType || 'usdc'
-  });
+  console.log('🦊 [OKX] 开始OKX签名流程 -', asset?.toUpperCase() || 'USDC');
 
-<<<<<<< Updated upstream
-=======
-  // Get token-specific domain configuration
-  const domainConfig = getEIP712Domain(chainId, tokenType || 'usdc');
-  console.log(`🦊 [OKX] Using ${(tokenType || 'usdc').toUpperCase()} domain configuration for chain ${chainId}:`, domainConfig);
+  // Determine domain configuration based on asset and network
+  let domainConfig;
+  if (chainId === 196 && asset) {
+    // X Layer mainnet with specific asset (USDC or USDT)
+    const xlayerDomains = NETWORK_EIP712_DOMAINS[196];
+    if (asset.toLowerCase() === 'usdt' && xlayerDomains.usdt) {
+      domainConfig = xlayerDomains.usdt;
+      console.log('🦊 [OKX] 使用X Layer USDT域配置');
+    } else if (asset.toLowerCase() === 'usdc' && xlayerDomains.usdc) {
+      domainConfig = xlayerDomains.usdc;
+      console.log('🦊 [OKX] 使用X Layer USDC域配置');
+    } else {
+      // Default to USDC if asset not specified or not found
+      domainConfig = xlayerDomains.usdc;
+      console.log('🦊 [OKX] 使用X Layer USDC域配置 (默认)');
+    }
+  } else {
+    // Use default USDC configuration for other networks
+    domainConfig = {
+      name: "USD Coin",
+      version: "2",
+      chainId: chainId,
+      verifyingContract: contractAddress
+    };
+    console.log('🦊 [OKX] 使用标准USDC域配置 for chain:', chainId);
+  }
 
->>>>>>> Stashed changes
   // Construct message parameters exactly as shown in OKX PDF documentation
   const msgParams = {
     "domain": {
       "chainId": chainId.toString(), // Important: chainId as string like in PDF
-      "name": "USD Coin",
-      "version": "2",
+      "name": domainConfig.name,
+      "version": domainConfig.version,
       "verifyingContract": contractAddress.toLowerCase() // Ensure lowercase
     },
     "message": {
@@ -638,12 +653,7 @@ export async function signTransferWithAuthorizationOKXBrowser(
     }
   };
 
-  console.log('🦊 [OKX] Message Parameters constructed from OKX PDF documentation:');
-  console.log('🦊 [OKX] Domain:', msgParams.domain);
-  console.log('🦊 [OKX] Message:', msgParams.message);
-  console.log('🦊 [OKX] Primary Type:', msgParams.primaryType);
-  console.log('🦊 [OKX] Types:', msgParams.types);
-  console.log('🦊 [OKX] Complete msgParams object:', JSON.stringify(msgParams, null, 2));
+  console.log('🦊 [OKX] 准备签名 -', asset?.toUpperCase() || 'USDC', '域:', domainConfig.name);
 
   // Create the exact data structure from PDF documentation
   const messageString = JSON.stringify(msgParams);
@@ -715,21 +725,13 @@ export async function signTransferWithAuthorizationOKXBrowser(
     console.log('🦊 [OKX] Standard method succeeded with OKX format');
   }
 
-  console.log('🦊 [OKX] Raw signature received from OKX:', signature);
-  console.log('🦊 [OKX] Signature length:', signature.length);
-  console.log('🦊 [OKX] Signature type:', typeof signature);
-
   // Parse signature into v, r, s components
   const r = signature.slice(0, 66);
   const s = '0x' + signature.slice(66, 130);
   const vHex = signature.slice(130, 132);
   const v = parseInt(vHex, 16);
 
-  console.log('🦊 [OKX] OKX Signature parsing:');
-  console.log('🦊 [OKX] r component:', r);
-  console.log('🦊 [OKX] s component:', s);
-  console.log('🦊 [OKX] v component (hex):', vHex);
-  console.log('🦊 [OKX] v component (decimal):', v);
+  console.log('🦊 ✅ OKX签名成功生成 -', asset?.toUpperCase() || 'USDC', 'on chain', chainId);
 
   const finalResult = {
     from: params.from,

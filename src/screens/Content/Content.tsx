@@ -501,7 +501,7 @@ export const Content = (): JSX.Element => {
 
   // Debug: Log article data to check arChainId and payment info
   useEffect(() => {
-    if (article && process.env.NODE_ENV === 'development') {
+    if (article && import.meta.env.MODE === 'development') {
       console.log('Article loaded:', {
         uuid: article.uuid,
         targetUrlIsLocked: article.targetUrlIsLocked,
@@ -1034,8 +1034,8 @@ export const Content = (): JSX.Element => {
   const handlePayNow = async () => {
     console.log('💳 ========== 开始支付流程 ==========');
     console.log('🌐 环境和配置信息:');
-    console.log('  当前环境:', process.env.NODE_ENV);
-    console.log('  API基础URL:', process.env.VITE_API_BASE_URL);
+    console.log('  当前环境:', import.meta.env.MODE);
+    console.log('  API基础URL:', import.meta.env.VITE_API_BASE_URL);
     console.log('  当前域名:', window.location.origin);
 
     console.log('🔍 初始支付状态检查:');
@@ -1426,7 +1426,7 @@ export const Content = (): JSX.Element => {
       console.log('✅ X-PAYMENT header created successfully');
 
       // Debug output for development
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         try {
           const decodedHeader = JSON.parse(atob(paymentHeader));
           console.log('🔍 Payment header verification:');
