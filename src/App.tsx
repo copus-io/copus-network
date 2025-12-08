@@ -23,19 +23,14 @@ import { MyTreasury } from "./routes/MyTreasury/screens/MyTreasury";
 import { LinkPreview } from "./routes/LinkPreview/screens/LinkPreview";
 import { DeleteAccount } from "./routes/DeleteAccount/screens/DeleteAccount";
 import { Published } from "./routes/Published/screens/Published";
-import { Screen } from "./routes/Screen/screens/Screen";
-import { Screen as Screen24 } from "./routes/Screen24/screens/Screen";
-import { Screen as Screen25 } from "./routes/Screen25/screens/Screen";
-import { Screen as Screen26 } from "./routes/Screen26/screens/Screen";
-import { Screen as Screen27 } from "./routes/Screen27/screens/Screen";
 import { SignUp } from "./routes/SignUp/screens/SignUp";
 import { SwitchDemo } from "./components/demo/SwitchDemo";
 import { AuthGuard } from "./components/guards/AuthGuard";
 import { UserProfile } from "./screens/UserProfile/UserProfile";
+import { Withdrawal } from "./screens/Withdrawal/Withdrawal";
 import { NotFoundPage } from "./components/pages/NotFoundPage";
 import OAuthRedirect from "./components/OAuthRedirect";
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
-import { Space } from "./screens/Space/Space";
 
 const router = createBrowserRouter([
   {
@@ -83,6 +78,14 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/withdrawal",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Withdrawal />
+      </AuthGuard>
+    ),
+  },
+  {
     path: "/login",
     element: <Login />,
   },
@@ -113,23 +116,6 @@ const router = createBrowserRouter([
   {
     path: "/user/:namespace/treasury",
     element: <MyTreasury />,
-  },
-  {
-    path: "/treasury/:namespace",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Space />
-      </AuthGuard>
-    ),
-  },
-  {
-    // Keep old /space route for backwards compatibility
-    path: "/space/:category",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Space />
-      </AuthGuard>
-    ),
   },
   {
     path: "/u/:namespace",
@@ -166,26 +152,6 @@ const router = createBrowserRouter([
   {
     path: "/published",
     element: <Published />,
-  },
-  {
-    path: "/screen/default",
-    element: <Screen />,
-  },
-  {
-    path: "/screen/v24",
-    element: <Screen24 />,
-  },
-  {
-    path: "/screen/v25",
-    element: <Screen25 />,
-  },
-  {
-    path: "/screen/v26",
-    element: <Screen26 />,
-  },
-  {
-    path: "/screen/v27",
-    element: <Screen27 />,
   },
   {
     path: "/signup",

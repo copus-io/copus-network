@@ -1,0 +1,48 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ["./src/**/*.{html,js,ts,jsx,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        "audio-blue": "var(--audio-blue)",
+        blue: "var(--blue)",
+        "dark-grey": "var(--dark-grey)",
+        green: "var(--green)",
+        "light-grey": "var(--light-grey)",
+        "light-grey-transparent": "var(--light-grey-transparent)",
+        "medium-dark-grey": "var(--medium-dark-grey)",
+        "medium-grey": "var(--medium-grey)",
+        monowhite: "var(--monowhite)",
+        "off-black": "var(--off-black)",
+        pink: "var(--pink)",
+        red: "var(--red)",
+        white: "var(--white)",
+        yellow: "var(--yellow)",
+      },
+      fontFamily: {
+        "f-p": "var(--f-p-font-family)",
+        "h-2": "var(--h-2-font-family)",
+        "h-3": "var(--h-3-font-family)",
+        "h-4": "var(--h-4-font-family)",
+        h3: "var(--h3-font-family)",
+        "h3-s": "var(--h3-s-font-family)",
+        "home-subtitle": "var(--home-subtitle-font-family)",
+        p: "var(--p-font-family)",
+        "p-l": "var(--p-l-font-family)",
+        "p-l-link": "var(--p-l-link-font-family)",
+        "p-lato": "var(--p-lato-font-family)",
+        "p-link": "var(--p-link-font-family)",
+        "p-s": "var(--p-s-font-family)",
+        "p-s-link": "var(--p-s-link-font-family)",
+      },
+      boxShadow: {
+        button: "var(--button)",
+        "card-white": "var(--card-white)",
+        inputs: "var(--inputs)",
+        "mobile-dropdown-menu": "var(--mobile-dropdown-menu)",
+        "pop-up": "var(--pop-up)",
+      },
+    },
+  },
+  plugins: [],
+};

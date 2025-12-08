@@ -96,7 +96,7 @@ export const Content = (): JSX.Element => {
   };
 
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>(getDefaultNetwork());
-  const [selectedCurrency, setSelectedCurrency] = useState<TokenType>('usdc');
+  const [selectedCurrency, setSelectedCurrency] = useState<TokenType>('usdt');
 
   // Payment details from 402 API response
   // Contains: payTo (recipient), asset (USDC contract), amount, network, resource (unlock URL)
@@ -732,15 +732,33 @@ export const Content = (): JSX.Element => {
       }
 
       // For now, use GET request with query parameters (Backend might need POST implementation)
-      const tokenInfo = getSupportedTokens(network).includes(selectedCurrency)
+      const supportedTokens = getSupportedTokens(network);
+      console.log('🔍 Token selection debug:', {
+        network,
+        selectedCurrency,
+        supportedTokens,
+        isSupported: supportedTokens.includes(selectedCurrency)
+      });
+
+      const tokenInfo = supportedTokens.includes(selectedCurrency)
         ? getTokenInfo(selectedCurrency)
         : getTokenInfo('usdc'); // fallback to usdc
+
+      console.log('📋 Selected token info:', tokenInfo);
 
       // Add token info to URL parameters
       const extendedParams = new URLSearchParams({
         uuid: article.uuid,
         name: tokenInfo.name,
         verifyingContract: tokenInfo.verifyingContract
+      });
+
+      console.log('🔍 Payment request parameters:', {
+        uuid: article.uuid,
+        name: tokenInfo.name,
+        verifyingContract: tokenInfo.verifyingContract,
+        nameEmpty: !tokenInfo.name,
+        contractEmpty: !tokenInfo.verifyingContract
       });
 
       const fullUrl = `${apiBaseUrl}${paymentEndpoint}?${extendedParams.toString()}`;
@@ -834,7 +852,7 @@ export const Content = (): JSX.Element => {
 
         const eip712Data = {
           domain: {
-            name: selectedCurrency === 'usdc' ? 'USD Coin' : 'Tether USD',
+            name: selectedCurrency === 'usdc' ? 'USD Coin' : 'USD₮',
             version: '2',
             chainId: parseInt(getNetworkConfig(network).chainId, 16),
             verifyingContract: contractAddress
@@ -1230,15 +1248,27 @@ export const Content = (): JSX.Element => {
         'Content-Type': paymentHeaders['Content-Type']
       });
 
-      // Ensure payment URL uses the same address as EIP-712 data
+      // Ensure payment URL includes all necessary parameters
       let paymentUrl = currentPaymentInfo.resource;
+      const url = new URL(paymentUrl);
+
+      // Get token info for URL parameters
+      const supportedTokens = getSupportedTokens(selectedNetwork as NetworkType);
+      const currentTokenInfo = supportedTokens.includes(selectedCurrency)
+        ? getTokenInfo(selectedCurrency)
+        : getTokenInfo('usdc');
+
+      // Add token info parameters for verification
+      url.searchParams.set('name', currentTokenInfo.name);
+      url.searchParams.set('verifyingContract', currentTokenInfo.verifyingContract);
 
       if (selectedNetwork === 'xlayer' && paymentUrl.includes('from=')) {
         // Replace the 'from' parameter with the final payment address
-        const url = new URL(paymentUrl);
         url.searchParams.set('from', finalPaymentAddress);
-        paymentUrl = url.toString();
       }
+
+      paymentUrl = url.toString();
+      console.log('🔗 Final payment URL with all parameters:', paymentUrl);
 
 
       const unlockResponse = await fetch(paymentUrl, {

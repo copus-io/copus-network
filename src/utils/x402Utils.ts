@@ -144,12 +144,12 @@ const NETWORK_EIP712_DOMAINS: Record<number, any> = {
     chainId: 84532,
     verifyingContract: '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
   },
-  // X Layer mainnet
+  // X Layer mainnet - USDT configuration
   196: {
-    name: 'USD Coin',
-    version: '2',
+    name: 'USD₮',
+    version: '1',
     chainId: 196,
-    verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
+    verifyingContract: '0x779ded0c9e1022225f8e0630b35a9b54be713736'
   },
   // X Layer testnet (1952)
   1952: {
@@ -480,21 +480,38 @@ export async function signTransferWithAuthorizationOKXBrowser(
 ): Promise<SignedAuthorization> {
   console.log('🔄 Using OKX-compatible EIP-712 format for signing...');
 
+  // Get the correct domain name and version based on the contract address
+  const isUSDTContract = contractAddress.toLowerCase() === '0x779ded0c9e1022225f8e0630b35a9b54be713736';
+  const domainName = isUSDTContract ? 'USD₮' : 'USD Coin';
+
+  // Get correct version from network configuration
+  const networkConfig = NETWORK_EIP712_DOMAINS[chainId];
+  const domainVersion = networkConfig ? networkConfig.version : '2'; // fallback to '2'
+
+  console.log('🔍 Contract analysis:', {
+    contractAddress: contractAddress.toLowerCase(),
+    isUSDTContract,
+    domainName,
+    domainVersion,
+    chainId,
+    expectedUSDT: '0x779ded0c9e1022225f8e0630b35a9b54be713736'
+  });
+
   // Construct message parameters exactly as shown in OKX PDF documentation
   const msgParams = {
     "domain": {
-      "chainId": chainId.toString(), // Important: chainId as string like in PDF
-      "name": "USD Coin",
-      "version": "2",
+      "chainId": chainId, // Use number format to match uint256 type
+      "name": domainName,
+      "version": domainVersion,
       "verifyingContract": contractAddress.toLowerCase() // Ensure lowercase
     },
     "message": {
       "from": params.from.toLowerCase(),
       "to": params.to.toLowerCase(),
-      "value": params.value.toString(), // Ensure string format
-      "validAfter": params.validAfter.toString(),
-      "validBefore": params.validBefore.toString(),
-      "nonce": params.nonce
+      "value": params.value, // Use BigInt/number to match uint256 type
+      "validAfter": params.validAfter, // Use BigInt/number to match uint256 type
+      "validBefore": params.validBefore, // Use BigInt/number to match uint256 type
+      "nonce": params.nonce // Keep as hex string for bytes32
     },
     "primaryType": "TransferWithAuthorization",
     "types": {
@@ -524,13 +541,24 @@ export async function signTransferWithAuthorizationOKXBrowser(
 
   console.log('📋 OKX-format data structure:', {
     type: data.type,
-    messagePreview: {
-      domain: msgParams.domain,
+    fullData: data,
+    domainInfo: {
+      name: msgParams.domain.name,
+      version: msgParams.domain.version,
+      chainId: msgParams.domain.chainId,
+      verifyingContract: msgParams.domain.verifyingContract
+    },
+    messageInfo: {
       from: msgParams.message.from,
       to: msgParams.message.to,
-      value: msgParams.message.value
+      value: msgParams.message.value,
+      validAfter: msgParams.message.validAfter,
+      validBefore: msgParams.message.validBefore,
+      nonce: msgParams.message.nonce
     }
   });
+
+  console.log('🔍 Full EIP-712 structure as JSON:', JSON.stringify(msgParams, null, 2));
 
   // Try OKX-style signing first (if available)
   let signature;

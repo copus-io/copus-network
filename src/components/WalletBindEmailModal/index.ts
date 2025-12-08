@@ -1,0 +1,1 @@
+export { WalletBindEmailModal } from './WalletBindEmailModal';
