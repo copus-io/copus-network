@@ -65,6 +65,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         onClose={() => setIsMobileMenuOpen(false)}
         isLoggedIn={isLoggedIn}
         activeMenuItem={location.pathname === '/create' ? 'curate' : location.pathname.substring(1)}
+        userAvatar={user?.faceUrl || user?.avatar}
+        username={user?.username}
       />
 
       <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[30px] lg:pb-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
@@ -163,13 +165,6 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       <p className="text-base text-gray-500 truncate" title={user.email}>{user.email}</p>
                     </div>
                   )}
-                  <Link
-                    to="/my-treasury"
-                    className="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 whitespace-nowrap"
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    My Treasury
-                  </Link>
                   <Link
                     to="/setting"
                     className="block px-6 py-3 text-base text-gray-700 hover:bg-gray-100 whitespace-nowrap"

@@ -56,10 +56,8 @@ export const CategoryProvider: React.FC<{ children: ReactNode }> = ({ children }
     return categories.find(category => category.name === name);
   };
 
-  // Load categories on initialization
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  // Categories are no longer fetched automatically - feature removed
+  // Keep the context structure for backwards compatibility but don't make API calls
 
   return (
     <CategoryContext.Provider

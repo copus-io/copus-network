@@ -7,6 +7,21 @@ import { TreasuryCard } from "../../../../components/ui/TreasuryCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import { useToast } from "../../../../components/ui/toast";
 
+// Module-level cache to prevent duplicate fetches across StrictMode remounts
+// Key: fetchKey (e.g., "user:123")
+// Value: { timestamp, inProgress, data } - stores actual fetch results
+interface FetchCacheEntry {
+  timestamp: number;
+  inProgress: boolean;
+  data?: { userInfo: any; spaces: any[] };
+}
+const fetchCache: Map<string, FetchCacheEntry> = new Map();
+const CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles and redirects
+
+// Separate cache for social links fetch
+let socialLinksFetchCache: { timestamp: number; inProgress: boolean; userId?: number } = { timestamp: 0, inProgress: false };
+const SOCIAL_LINKS_CACHE_TTL = 5000; // 5 seconds
+
 interface SocialLink {
   id: number;
   title: string;
@@ -116,15 +131,40 @@ const TreasuryHeaderSection = ({
 export const MainContentSection = (): JSX.Element => {
   const navigate = useNavigate();
   const { namespace } = useParams<{ namespace?: string }>();
-  const { user, socialLinks: socialLinksData } = useUser();
+  const { user, socialLinks: socialLinksData, fetchSocialLinks } = useUser();
   const { showToast } = useToast();
+
+  // Determine if viewing other user early
+  const isViewingOtherUserCheck = !!namespace && namespace !== user?.namespace;
+
+  // Fetch social links when viewing own treasury (since we don't fetch them globally anymore)
+  useEffect(() => {
+    if (user && !isViewingOtherUserCheck) {
+      // Check cache to prevent duplicate fetches
+      const now = Date.now();
+      const isSameUser = socialLinksFetchCache.userId === user.id;
+      const isCacheValid = (now - socialLinksFetchCache.timestamp) < SOCIAL_LINKS_CACHE_TTL;
+
+      if (isSameUser && (isCacheValid || socialLinksFetchCache.inProgress)) {
+        console.log('Skipping duplicate social links fetch for user:', user.id);
+        return;
+      }
+
+      // Mark as in progress
+      socialLinksFetchCache = { timestamp: now, inProgress: true, userId: user.id };
+
+      fetchSocialLinks().finally(() => {
+        // Mark as complete
+        socialLinksFetchCache = { ...socialLinksFetchCache, inProgress: false };
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, namespace]);
 
   const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
-
-  // Edit treasury modal state - removed as we're now using spaces
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -140,6 +180,52 @@ export const MainContentSection = (): JSX.Element => {
         setLoading(false);
         return;
       }
+
+      // Create a unique key for this fetch target to prevent duplicates
+      // Important: Use user.id as key when viewing own treasury (whether via /my-treasury or /u/:namespace)
+      // This prevents duplicate fetches during redirect from /my-treasury to /u/:namespace
+      const isOwnTreasury = !namespace || namespace === user?.namespace;
+      const fetchKey = isOwnTreasury && user?.id ? `user:${user.id}` : `namespace:${namespace}`;
+
+      // Check module-level cache to prevent duplicate fetches (survives StrictMode remounts)
+      const now = Date.now();
+      const cached = fetchCache.get(fetchKey);
+
+      // If we have cached data, use it immediately
+      if (cached && cached.data && (now - cached.timestamp < CACHE_TTL)) {
+        console.log('Using cached data for:', fetchKey);
+        setTreasuryUserInfo(cached.data.userInfo);
+        setSpaces(cached.data.spaces);
+        setLoading(false);
+        return;
+      }
+
+      // If fetch is in progress, wait a bit and try again (the first fetch will update the cache)
+      if (cached && cached.inProgress) {
+        console.log('Fetch in progress for:', fetchKey, '- waiting for cache update');
+        // Wait for the in-progress fetch to complete, then use its result
+        const waitForCache = async () => {
+          for (let i = 0; i < 50; i++) { // Wait up to 5 seconds
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const updated = fetchCache.get(fetchKey);
+            if (updated && updated.data && !updated.inProgress) {
+              console.log('Cache updated, using cached data for:', fetchKey);
+              setTreasuryUserInfo(updated.data.userInfo);
+              setSpaces(updated.data.spaces);
+              setLoading(false);
+              return;
+            }
+          }
+          // Timeout - fetch failed or took too long, clear loading state
+          console.log('Cache wait timeout for:', fetchKey);
+          setLoading(false);
+        };
+        waitForCache();
+        return;
+      }
+
+      // Mark as in progress immediately to prevent race conditions
+      fetchCache.set(fetchKey, { timestamp: now, inProgress: true });
 
       try {
         setLoading(true);
@@ -238,57 +324,45 @@ export const MainContentSection = (): JSX.Element => {
 
           console.log('Spaces array length:', spacesArray.length);
 
-          // Fetch articles for each space (pageMySpaces doesn't include article data)
-          // We need to call getSpaceArticles for each space to get the article previews
-          const spacesWithArticles = await Promise.all(
-            spacesArray.map(async (space) => {
-              if (!space.id) return space;
+          // Use spaces directly from pageMySpaces API
+          // The API may include article previews in the response (check for data/articles fields)
+          // If not, TreasuryCard will display based on articleCount
+          setSpaces(spacesArray);
 
-              try {
-                const articlesResponse = await AuthService.getSpaceArticles(space.id, 1, 3);
-                console.log(`Articles for space ${space.id}:`, articlesResponse);
-
-                // Parse articles response
-                let articlesData: any[] = [];
-                if (articlesResponse?.data?.data && Array.isArray(articlesResponse.data.data)) {
-                  articlesData = articlesResponse.data.data;
-                } else if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
-                  articlesData = articlesResponse.data;
-                } else if (Array.isArray(articlesResponse)) {
-                  articlesData = articlesResponse;
-                }
-
-                return {
-                  ...space,
-                  data: articlesData,
-                  articles: articlesData,
-                };
-              } catch (err) {
-                console.warn(`Failed to fetch articles for space ${space.id}:`, err);
-                return space;
-              }
-            })
-          );
-
-          setSpaces(spacesWithArticles);
+          // Store in cache for reuse during redirects
+          fetchCache.set(fetchKey, {
+            timestamp: Date.now(),
+            inProgress: false,
+            data: { userInfo: processedInfo, spaces: spacesArray }
+          });
         } catch (spacesErr: any) {
           // If pageMySpaces API returns 404, it means the API doesn't exist yet
           // Show empty state instead of error
           console.warn('pageMySpaces API not available, showing empty state:', spacesErr.message);
           setSpaces([]);
+
+          // Store empty result in cache
+          fetchCache.set(fetchKey, {
+            timestamp: Date.now(),
+            inProgress: false,
+            data: { userInfo: processedInfo, spaces: [] }
+          });
         }
 
       } catch (err) {
         console.error('Failed to fetch treasury data:', err);
         setError('Failed to load treasury data');
         showToast('Failed to fetch treasury data, please try again', 'error');
+        // Clear cache on error so user can retry
+        fetchCache.delete(fetchKey);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [user, namespace, isViewingOtherUser, targetNamespace]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.namespace, namespace]);
 
   // Navigate to a specific space/treasury
   const handleSpaceClick = (space: any) => {
@@ -309,7 +383,7 @@ export const MainContentSection = (): JSX.Element => {
 
   if (loading) {
     return (
-      <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+      <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex items-center justify-center w-full h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -319,7 +393,7 @@ export const MainContentSection = (): JSX.Element => {
 
   if (error) {
     return (
-      <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+      <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
           <div className="text-red-500">{error}</div>
           <Button
@@ -337,7 +411,7 @@ export const MainContentSection = (): JSX.Element => {
   const displaySocialLinks = isViewingOtherUser ? (treasuryUserInfo?.socialLinks || []) : (socialLinksData || []);
 
   return (
-    <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+    <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
       {/* Header Section */}
       <TreasuryHeaderSection
         username={displayUser?.username || 'Anonymous'}
@@ -348,8 +422,8 @@ export const MainContentSection = (): JSX.Element => {
         onShare={handleShare}
       />
 
-      {/* Spaces Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full pt-[10px]">
+      {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
+      <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8 w-full pt-[10px] px-2.5 lg:pl-2.5 lg:pr-0">
         {spaces.length === 0 ? (
           /* Empty state - show create treasury prompt */
           <TreasuryCard

@@ -1473,6 +1473,8 @@ export class AuthService {
   static async getUnreadMessageCount(): Promise<number> {
 
     try {
+      // Note: requiresAuth is true so that 403 errors will clear the stale token and log out the user
+      // The NotificationContext already checks for token presence before calling this
       const response = await apiRequest('/client/user/msg/countMsg', {
         method: 'GET',
         requiresAuth: true,
@@ -1789,6 +1791,18 @@ export class AuthService {
   }
 
   /**
+   * Delete a space/treasury
+   * API: POST /client/article/space/delete
+   * @param id - The space ID to delete
+   */
+  static async deleteSpace(id: number): Promise<any> {
+    return apiRequest(`/client/article/space/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  /**
    * Bind an article to one or more spaces/treasuries
    * @param articleId - The article ID (numeric ID from article.id field)
    * @param spaceIds - Array of space IDs to bind the article to
@@ -1819,18 +1833,20 @@ export class AuthService {
   static async getFollowedSpaces(): Promise<any> {
     return apiRequest(`/client/article/space/myFollowedSpaces`, {
       method: 'GET',
+      requiresAuth: true,
     });
   }
 
   /**
    * Get articles from followed spaces (paginated)
    * API: GET /client/article/space/pageMyFollowedArticle
-   * @param page - Page number (default 1)
-   * @param size - Page size (default 20)
+   * @param pageIndex - Page number (default 1)
+   * @param pageSize - Page size (default 20)
    */
-  static async getFollowedArticles(page: number = 1, size: number = 20): Promise<any> {
-    return apiRequest(`/client/article/space/pageMyFollowedArticle?page=${page}&size=${size}`, {
+  static async getFollowedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    return apiRequest(`/client/article/space/pageMyFollowedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
       method: 'GET',
+      requiresAuth: true,
     });
   }
 

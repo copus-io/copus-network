@@ -29,6 +29,13 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     // Check if it's a valid URL
     try {
       new URL(coverUrl);
+
+      // Fix malformed extensions like '.svg+xml' -> '.svg'
+      // This can happen when MIME type 'image/svg+xml' is incorrectly used as extension
+      if (coverUrl.endsWith('+xml')) {
+        coverUrl = coverUrl.replace(/\+xml$/, '');
+      }
+
       return coverUrl;
     } catch (error) {
       return '';

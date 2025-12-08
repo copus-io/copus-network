@@ -57,9 +57,18 @@ export const apiRequest = async <T>(
 
       // Special handling for authentication-related errors
       if (response.status === 401 || response.status === 403) {
-        // Don't automatically clear tokens here - let the calling code decide
-        // This prevents temporary errors from logging users out
+        // Only clear tokens and dispatch auth-error for endpoints that require authentication
+        // This prevents public endpoints from accidentally logging users out due to stale tokens
         if (requiresAuth) {
+          // Clear tokens and log out user on auth errors
+          storage.removeItem('copus_token');
+          storage.removeItem('copus_user');
+          storage.removeItem('copus_auth_method');
+
+          // Dispatch a custom event to notify the app of the auth failure
+          window.dispatchEvent(new CustomEvent('auth-error', {
+            detail: { status: response.status, endpoint }
+          }));
           // Attempt to parse error information
           let errorMessage = 'Authentication failed';
           try {

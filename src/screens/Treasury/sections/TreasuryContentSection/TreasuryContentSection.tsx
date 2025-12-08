@@ -19,10 +19,17 @@ interface TreasuryArticle {
 }
 
 export const TreasuryContentSection = (): JSX.Element => {
-  const { user, socialLinks } = useUser();
+  const { user, socialLinks, fetchSocialLinks } = useUser();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"collections" | "curations">("collections");
+
+  // Fetch social links when page loads (since we don't fetch them globally anymore)
+  useEffect(() => {
+    if (user) {
+      fetchSocialLinks();
+    }
+  }, [user, fetchSocialLinks]);
   const [likedArticles, setLikedArticles] = useState<TreasuryArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +124,11 @@ export const TreasuryContentSection = (): JSX.Element => {
     }
   };
 
+  // Handle edit - navigate to settings
+  const handleEdit = () => {
+    navigate('/setting');
+  };
+
   // Group articles by category for collections view
   const getCollectionsByCategory = (): { title: string; items: CollectionItem[] }[] => {
     const categoryMap = new Map<string, TreasuryArticle[]>();
@@ -131,12 +143,24 @@ export const TreasuryContentSection = (): JSX.Element => {
 
     return Array.from(categoryMap.entries()).map(([category, articles]) => ({
       title: category,
-      items: articles.map(article => ({
-        id: article.id,
-        title: article.title,
-        url: article.targetUrl || 'copus.network',
-        coverImage: article.coverImage,
-      })),
+      items: articles.map(article => {
+        // Extract hostname from targetUrl if available
+        let website = '';
+        if (article.targetUrl) {
+          try {
+            website = new URL(article.targetUrl).hostname.replace('www.', '');
+          } catch {
+            website = '';
+          }
+        }
+        return {
+          id: article.id,
+          title: article.title,
+          url: article.targetUrl || '',
+          website, // Extracted hostname for display
+          coverImage: article.coverImage,
+        };
+      }),
     }));
   };
 
@@ -182,7 +206,7 @@ export const TreasuryContentSection = (): JSX.Element => {
   const collections = getCollectionsByCategory();
 
   return (
-    <main className="flex flex-col items-start gap-5 px-0 lg:pl-[60px] lg:pr-10 pt-0 pb-[30px] relative min-h-screen">
+    <main className="flex flex-col items-start gap-5 px-0 pt-0 pb-[30px] relative min-h-screen">
       {/* Header Section */}
       <TreasuryHeaderSection
         username={user?.username || 'Anonymous'}
@@ -191,6 +215,7 @@ export const TreasuryContentSection = (): JSX.Element => {
         avatarUrl={user?.faceUrl || profileDefaultAvatar}
         socialLinks={socialLinks}
         onShare={handleShare}
+        onEdit={handleEdit}
       />
 
       {/* Navigation Tabs and Content */}
@@ -219,7 +244,7 @@ export const TreasuryContentSection = (): JSX.Element => {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 w-full">
                 {collections.map((collection, index) => (
                   <CollectionSection
                     key={collection.title}

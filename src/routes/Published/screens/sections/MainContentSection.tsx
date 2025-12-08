@@ -219,7 +219,7 @@ export const MainContentSection = (): JSX.Element => {
               className="w-full"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
                 gap: '2rem'
               }}
             >
@@ -245,7 +245,7 @@ export const MainContentSection = (): JSX.Element => {
               className="w-full"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
                 gap: '2rem'
               }}
             >

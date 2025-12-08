@@ -46,6 +46,12 @@ const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5VcGxvYWRlZCBJbWFnZTwvdGV4dD48L3N2Zz4=';
   }
 
+  // Fix malformed extensions like '.svg+xml' -> '.svg'
+  // This can happen when MIME type 'image/svg+xml' is incorrectly used as extension
+  if (imageUrl.endsWith('+xml')) {
+    imageUrl = imageUrl.replace(/\+xml$/, '');
+  }
+
   // Check if it's a valid HTTP/HTTPS URL
   try {
     const url = new URL(imageUrl);
@@ -560,37 +566,11 @@ export const Content = (): JSX.Element => {
           spacesArray = spacesResponse;
         }
 
-        // For spaces with spaceType 1 or 2, fetch owner info using getSpaceInfo
-        // This is needed because spacesByArticleId API doesn't return owner username
-        const spacesWithOwnerInfo = await Promise.all(
-          spacesArray.map(async (space) => {
-            // Only fetch owner info for default treasuries (spaceType 1 or 2)
-            if ((space.spaceType === 1 || space.spaceType === 2) && space.namespace) {
-              try {
-                const spaceInfo = await AuthService.getSpaceInfo(space.namespace);
-                console.log('Space info for', space.namespace, ':', spaceInfo);
-                // getSpaceInfo API returns userInfo.username for the space owner
-                const spaceData = spaceInfo?.data || spaceInfo;
-                const ownerUsername = spaceData?.userInfo?.username
-                  || spaceData?.ownerInfo?.username
-                  || spaceData?.username;
-                console.log('Extracted owner username:', ownerUsername);
-                if (ownerUsername) {
-                  return {
-                    ...space,
-                    ownerInfo: { username: ownerUsername },
-                  };
-                }
-              } catch (err) {
-                console.error('Failed to fetch space info for', space.namespace, err);
-              }
-            }
-            return space;
-          })
-        );
-
-        // Store spaces with owner info - TreasuryCard handles naming logic
-        setCollectedInData(spacesWithOwnerInfo);
+        // Use space data directly from API response
+        // The spacesByArticleId API returns spaces with a `data` array containing preview articles
+        // NOTE: Backend currently returns only 2 preview articles per space - if 3 are needed,
+        // the backend API needs to be updated to return 3 preview articles
+        setCollectedInData(spacesArray);
       } catch (err) {
         console.error('Failed to fetch collected in data:', err);
         setCollectedInData([]);
@@ -1541,7 +1521,7 @@ export const Content = (): JSX.Element => {
                 return isAuthor;
               })() && (
                 <button
-                  onClick={() => navigate(`/create?edit=${article.uuid}`)}
+                  onClick={() => navigate(`/curate?edit=${article.uuid}`)}
                   className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0 hover:bg-gray-100"
                   aria-label="Edit"
                   title="Edit"

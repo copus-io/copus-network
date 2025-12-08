@@ -175,7 +175,7 @@ export const ArticleListSkeleton: React.FC = () => {
   ));
 
   return (
-    <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:px-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
+    <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:px-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8">
       {skeletonCards}
     </section>
   );

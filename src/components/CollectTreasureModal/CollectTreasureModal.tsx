@@ -3,7 +3,6 @@ import { useUser } from "../../contexts/UserContext";
 import { AuthService } from "../../services/authService";
 import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
-import { getSpaceDisplayName } from "../ui/TreasuryCard";
 
 interface CollectTreasureModalProps {
   isOpen: boolean;
@@ -39,6 +38,7 @@ interface Collection {
   wasOriginallyBound: boolean; // Was bound when modal opened
   spaceType?: number;
   namespace?: string;
+  firstLetter: string; // First letter of space name for avatar fallback
 }
 
 export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
@@ -94,18 +94,42 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
         // Transform spaces to collection format
         const collectionOptions: Collection[] = spacesArray.map((space) => {
-          // Get display name using the same logic as TreasuryCard
-          const displayName = getSpaceDisplayName({
-            ...space,
-            ownerInfo: { username: user.username || 'User' },
-          });
+          // The bindableSpaces API doesn't return spaceType, so we need to detect it by name
+          // "Default Collections Space" = Treasury (spaceType 1)
+          // "Default Curations Space" = Curations (spaceType 2)
+          let spaceTypeNum = space.spaceType;
+          if (spaceTypeNum === undefined || spaceTypeNum === null) {
+            if (space.name === 'Default Collections Space') {
+              spaceTypeNum = 1;
+            } else if (space.name === 'Default Curations Space') {
+              spaceTypeNum = 2;
+            } else {
+              spaceTypeNum = 0; // Custom space
+            }
+          } else if (typeof spaceTypeNum === 'string') {
+            spaceTypeNum = parseInt(spaceTypeNum, 10);
+          }
 
-          // For spaceType 1 (Treasury) and 2 (Curations), use user's profile image
-          // For other spaces, use the first article's cover image or fallback
-          const isDefaultSpace = space.spaceType === 1 || space.spaceType === 2;
+          // For default spaces, show "Username's Treasury" or "Username's Curations"
+          let displayName: string;
+          if (spaceTypeNum === 1) {
+            displayName = `${user.username || 'User'}'s Treasury`;
+          } else if (spaceTypeNum === 2) {
+            displayName = `${user.username || 'User'}'s Curations`;
+          } else {
+            displayName = space.name || 'Untitled Treasury';
+          }
+
+          // For default Treasury/Curations (spaceType 1 & 2), use user's profile image
+          // For custom spaces, use the first article's cover image from this collection
+          const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
           const coverImage = isDefaultSpace
-            ? (user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png')
-            : (space.data?.[0]?.coverUrl || user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png');
+            ? (user.faceUrl || '')
+            : (space.data?.[0]?.coverUrl || '');
+
+          // Get first letter of space name for avatar fallback
+          const spaceName = space.name || displayName;
+          const firstLetter = spaceName.charAt(0).toUpperCase();
 
           return {
             id: space.id.toString(),
@@ -114,8 +138,9 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             image: coverImage,
             isSelected: space.isBind, // Initially selected if already bound
             wasOriginallyBound: space.isBind,
-            spaceType: space.spaceType,
+            spaceType: spaceTypeNum,
             namespace: space.namespace,
+            firstLetter,
           };
         });
 
@@ -233,15 +258,18 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       showToast(`Created "${newTreasuryName.trim()}"`, 'success');
 
       // Add the new treasury to collections list and select it
+      // Use empty string for image to trigger firstLetter fallback (custom treasuries don't use profile image)
+      const treasuryName = createdSpace.name || newTreasuryName.trim();
       setCollections(prev => [...prev, {
         id: createdSpace.id.toString(),
         numericId: createdSpace.id,
-        name: createdSpace.name || newTreasuryName.trim(),
-        image: user?.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png',
+        name: treasuryName,
+        image: '', // Empty to trigger firstLetter fallback
         isSelected: true, // Auto-select the newly created treasury
         wasOriginallyBound: false,
         spaceType: createdSpace.spaceType || 0,
         namespace: createdSpace.namespace,
+        firstLetter: treasuryName.charAt(0).toUpperCase(),
       }]);
 
       setShowCreateNew(false);
@@ -274,7 +302,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 max-h-[80vh]"
+        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 ${showCreateNew ? '' : 'h-[500px]'}`}
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
@@ -287,7 +315,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           type="button"
         >
           <svg
-            className="w-[15px] h-[15px]"
+            className="w-3 h-3"
             viewBox="0 0 24 24"
             fill="none"
             stroke="#686868"
@@ -409,7 +437,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
             {/* Collections List - scrollbar hidden until hover */}
             <div
-              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 max-h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
               onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
@@ -458,11 +486,19 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                           )}
                         </div>
 
-                        <img
-                          className="relative w-12 h-12 object-cover rounded-full"
-                          alt={collection.name}
-                          src={collection.image}
-                        />
+                        {collection.image ? (
+                          <img
+                            className="relative w-12 h-12 object-cover rounded-full"
+                            alt={collection.name}
+                            src={collection.image}
+                          />
+                        ) : (
+                          <div className="relative w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-lg font-medium text-gray-600">
+                              {collection.firstLetter}
+                            </span>
+                          </div>
+                        )}
                         <div className="inline-flex flex-col items-start justify-center gap-1 relative flex-[0_0_auto]">
                           <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
                             {collection.name}

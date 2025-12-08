@@ -14,6 +14,11 @@ interface FollowedSpace {
   namespace: string;
   spaceType?: number; // 1 = Collections, 2 = Curations (default spaces)
   userId?: number;
+  ownerInfo?: {
+    id?: number;
+    username?: string;
+    namespace?: string;
+  };
   authorInfo?: {
     id?: number;
     username?: string;
@@ -32,7 +37,8 @@ export const FollowingContentSection = (): JSX.Element => {
   const [selectedTab, setSelectedTab] = useState("all");
   const [followedSpaces, setFollowedSpaces] = useState<FollowedSpaceWithUsername[]>([]);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
-  const [articles, setArticles] = useState<any[]>([]);
+  const [allArticles, setAllArticles] = useState<any[]>([]); // All followed articles
+  const [spaceArticles, setSpaceArticles] = useState<any[]>([]); // Articles for selected space
   const [loadingArticles, setLoadingArticles] = useState(true);
 
   // Collect Treasure Modal state
@@ -62,9 +68,35 @@ export const FollowingContentSection = (): JSX.Element => {
           spacesArray = response;
         }
 
-        // Store spaces without username resolution for now
-        // Username will be resolved after articles are loaded
-        setFollowedSpaces(spacesArray.map(space => ({ ...space })));
+        // Resolve display names for default spaces using existing data (no extra API calls)
+        const spacesWithDisplayNames = spacesArray.map(space => {
+          const isDefaultSpace =
+            space.spaceType === 1 ||
+            space.spaceType === 2 ||
+            space.name?.toLowerCase().includes('default');
+
+          if (isDefaultSpace) {
+            // Try to get username from various possible fields in the response
+            const username = space.ownerInfo?.username
+              || space.authorInfo?.username
+              || (space as any).userInfo?.username
+              || (space as any).userName
+              || (space as any).ownerName;
+
+            if (username) {
+              let displayName: string;
+              if (space.spaceType === 2 || space.name?.toLowerCase().includes('curation')) {
+                displayName = `${username}'s Curations`;
+              } else {
+                displayName = `${username}'s Collections`;
+              }
+              return { ...space, resolvedUsername: displayName };
+            }
+          }
+          return space;
+        });
+
+        setFollowedSpaces(spacesWithDisplayNames);
       } catch (err) {
         console.error('Failed to fetch followed spaces:', err);
       } finally {
@@ -75,7 +107,7 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedSpaces();
   }, [user]);
 
-  // Fetch articles from followed spaces
+  // Fetch all articles from followed spaces (for "All" tab)
   useEffect(() => {
     const fetchFollowedArticles = async () => {
       if (!user) {
@@ -98,7 +130,7 @@ export const FollowingContentSection = (): JSX.Element => {
           articlesArray = response;
         }
 
-        setArticles(articlesArray);
+        setAllArticles(articlesArray);
       } catch (err) {
         console.error('Failed to fetch followed articles:', err);
       } finally {
@@ -109,86 +141,48 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedArticles();
   }, [user]);
 
-  // Track if usernames have been resolved to prevent re-running
-  const [usernamesResolved, setUsernamesResolved] = useState(false);
-
-  // Resolve usernames for default spaces from articles data
+  // Fetch articles for selected space when tab changes
   useEffect(() => {
-    // Skip if already resolved, or if no data yet
-    if (usernamesResolved || articles.length === 0 || followedSpaces.length === 0) return;
-
-    // Skip if spaces already have resolved usernames (prevents re-running)
-    const alreadyHasUsernames = followedSpaces.some(s => s.resolvedUsername);
-    if (alreadyHasUsernames) {
-      setUsernamesResolved(true);
-      return;
-    }
-
-    console.log('Resolving usernames for spaces...');
-
-    // Build a map of spaceId -> username from articles
-    const spaceUserMap = new Map<number, string>();
-
-    // Also try to map by userId
-    const userIdToUsername = new Map<number, string>();
-
-    articles.forEach(article => {
-      const spaceId = article.spaceId || article.spaceInfo?.id;
-      const username = article.authorInfo?.username;
-      const authorId = article.authorInfo?.id;
-
-      if (spaceId && username && !spaceUserMap.has(spaceId)) {
-        spaceUserMap.set(spaceId, username);
+    const fetchSpaceArticles = async () => {
+      // If "all" tab selected, use allArticles
+      if (selectedTab === "all") {
+        setSpaceArticles([]);
+        return;
       }
 
-      // Also map authorId to username for fallback
-      if (authorId && username && !userIdToUsername.has(authorId)) {
-        userIdToUsername.set(authorId, username);
+      // Find the selected space
+      const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
+      if (!selectedSpace) {
+        setSpaceArticles([]);
+        return;
       }
-    });
 
-    console.log('Space to username map:', Object.fromEntries(spaceUserMap));
-    console.log('UserId to username map:', Object.fromEntries(userIdToUsername));
-    console.log('Followed spaces:', followedSpaces.map(s => ({ id: s.id, name: s.name, userId: s.userId })));
+      try {
+        setLoadingArticles(true);
+        const response = await AuthService.getSpaceArticles(selectedSpace.id, 1, 50);
+        console.log('Space articles response:', response);
 
-    // Update followedSpaces with resolved usernames
-    const updatedSpaces = followedSpaces.map(space => {
-      const isDefaultSpace =
-        space.name?.toLowerCase().includes('default curation') ||
-        space.name?.toLowerCase().includes('default collection') ||
-        space.name?.toLowerCase().includes('default treasury') ||
-        space.name?.toLowerCase().includes('default');
-
-      if (isDefaultSpace) {
-        // Try to get username from spaceId first, then fall back to userId
-        let username = spaceUserMap.get(space.id);
-        if (!username && space.userId) {
-          username = userIdToUsername.get(space.userId);
+        // Parse the response
+        let articlesArray: any[] = [];
+        if (response?.data?.data && Array.isArray(response.data.data)) {
+          articlesArray = response.data.data;
+        } else if (response?.data && Array.isArray(response.data)) {
+          articlesArray = response.data;
+        } else if (Array.isArray(response)) {
+          articlesArray = response;
         }
-        if (username) {
-          // Format as "Username's Collections" or "Username's Curations" based on space type/name
-          let displayName = username;
-          if (space.name?.toLowerCase().includes('curation') || space.spaceType === 2) {
-            displayName = `${username}'s Curations`;
-          } else if (space.name?.toLowerCase().includes('collection') || space.spaceType === 1) {
-            displayName = `${username}'s Collections`;
-          } else {
-            // Default to Treasury for type 0 or unknown
-            displayName = `${username}'s Treasury`;
-          }
-          console.log(`Resolved space ${space.id} "${space.name}" -> "${displayName}"`);
-          return {
-            ...space,
-            resolvedUsername: displayName
-          };
-        }
-      }
-      return space;
-    });
 
-    setFollowedSpaces(updatedSpaces);
-    setUsernamesResolved(true);
-  }, [articles, followedSpaces, usernamesResolved]);
+        setSpaceArticles(articlesArray);
+      } catch (err) {
+        console.error('Failed to fetch space articles:', err);
+        setSpaceArticles([]);
+      } finally {
+        setLoadingArticles(false);
+      }
+    };
+
+    fetchSpaceArticles();
+  }, [selectedTab, followedSpaces]);
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
@@ -216,34 +210,9 @@ export const FollowingContentSection = (): JSX.Element => {
     };
   };
 
-  // Filter articles based on selected tab
-  const filteredArticles = selectedTab === "all"
-    ? articles
-    : articles.filter(article => {
-        // Find the selected space
-        const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
-        if (!selectedSpace) return false;
-
-        // Try to match by spaceId first
-        const articleSpaceId = article.spaceId || article.spaceInfo?.id;
-        if (articleSpaceId?.toString() === selectedTab) {
-          return true;
-        }
-
-        // For default spaces, match by userId (author)
-        const isDefaultSpace =
-          selectedSpace.name?.toLowerCase().includes('default curation') ||
-          selectedSpace.name?.toLowerCase().includes('default collection') ||
-          selectedSpace.name?.toLowerCase().includes('default treasury') ||
-          selectedSpace.name?.toLowerCase().includes('default');
-
-        if (isDefaultSpace && selectedSpace.userId) {
-          const authorId = article.authorInfo?.id;
-          return authorId === selectedSpace.userId;
-        }
-
-        return false;
-      });
+  // Get articles to display based on selected tab
+  // For "all" tab, use allArticles; for specific space, use spaceArticles (fetched per space)
+  const displayedArticles = selectedTab === "all" ? allArticles : spaceArticles;
 
   // Handle like action - opens the collect modal
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -258,7 +227,7 @@ export const FollowingContentSection = (): JSX.Element => {
     }
 
     // Find the article and open the collect modal
-    const article = articles.find(a => a.uuid === articleId);
+    const article = displayedArticles.find(a => a.uuid === articleId);
     if (article) {
       setSelectedArticle({
         uuid: articleId,
@@ -335,11 +304,10 @@ export const FollowingContentSection = (): JSX.Element => {
             <span className="text-gray-400 text-sm">Loading...</span>
           ) : (
             followedSpaces.map((space) => {
-              // Check for default spaces - any space with "default" in the name
+              // Check for default spaces - by spaceType or name
               const isDefaultSpace =
-                space.name?.toLowerCase().includes('default curation') ||
-                space.name?.toLowerCase().includes('default collection') ||
-                space.name?.toLowerCase().includes('default treasury') ||
+                space.spaceType === 1 ||
+                space.spaceType === 2 ||
                 space.name?.toLowerCase().includes('default');
 
               // Use resolvedUsername for default spaces, otherwise use space name
@@ -376,7 +344,7 @@ export const FollowingContentSection = (): JSX.Element => {
           <div className="flex items-center justify-center w-full py-20">
             <div className="text-gray-500">Loading articles...</div>
           </div>
-        ) : filteredArticles.length === 0 ? (
+        ) : displayedArticles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
             <p className="text-gray-500 mb-4">{selectedTab === "all" ? "Follow spaces to see their articles here" : "No articles from this space yet"}</p>
@@ -390,8 +358,8 @@ export const FollowingContentSection = (): JSX.Element => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
-            {filteredArticles.map((article) => {
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8">
+            {displayedArticles.map((article) => {
               const card = transformArticleToCard(article);
               const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 

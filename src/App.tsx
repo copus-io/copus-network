@@ -28,6 +28,7 @@ import { SwitchDemo } from "./components/demo/SwitchDemo";
 import { AuthGuard } from "./components/guards/AuthGuard";
 import { UserProfile } from "./screens/UserProfile/UserProfile";
 import { Withdrawal } from "./screens/Withdrawal/Withdrawal";
+import { Space } from "./screens/Space/Space";
 import { NotFoundPage } from "./components/pages/NotFoundPage";
 import OAuthRedirect from "./components/OAuthRedirect";
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
@@ -116,6 +117,19 @@ const router = createBrowserRouter([
   {
     path: "/user/:namespace/treasury",
     element: <MyTreasury />,
+  },
+  {
+    path: "/treasury/:namespace",
+    element: <Space />,
+  },
+  {
+    // Keep old /space route for backwards compatibility
+    path: "/space/:category",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Space />
+      </AuthGuard>
+    ),
   },
   {
     path: "/u/:namespace",

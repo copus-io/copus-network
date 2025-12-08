@@ -82,28 +82,10 @@ export const DiscoveryContentSection = (): JSX.Element => {
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
 
 
-  // Ensure data refresh each time page is entered or regains focus
-  React.useEffect(() => {
-    const handleFocus = () => {
-      refresh();
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        refresh();
-      }
-    };
-
-    // Listen to window focus event
-    window.addEventListener('focus', handleFocus);
-    // Listen to page visibility change
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [refresh]); // Add refresh dependency, but remove refresh call on page load
+  // Note: Removed auto-refresh on focus/visibility change to prevent
+  // unwanted API calls when navigating between pages. The useArticles hook
+  // already fetches data on initial mount, and users can manually refresh
+  // by scrolling to load more or reloading the page.
 
   // Scroll to load more logic
   React.useEffect(() => {
@@ -400,7 +382,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
           </div>
         </section>
       ) : (
-        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8">
           {localArticles.map((post, index) => renderPostCard(post, index))}
         </section>
       )}
