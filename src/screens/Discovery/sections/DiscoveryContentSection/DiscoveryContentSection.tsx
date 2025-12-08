@@ -160,7 +160,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             </p>
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                We value human taste and power it with an x402-based economic engine that rewards quality sharing and creation.
+                We value human taste and power it with an economic engine that rewards quality sharing and creation.
               </span>
             </p>
             <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
