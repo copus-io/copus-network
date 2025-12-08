@@ -146,17 +146,33 @@ const NETWORK_EIP712_DOMAINS: Record<number, any> = {
   },
   // X Layer mainnet
   196: {
-    name: 'USD Coin',
-    version: '2',
-    chainId: 196,
-    verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
+    usdc: {
+      name: 'USD Coin',
+      version: '2',
+      chainId: 196,
+      verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
+    },
+    usdt: {
+      name: 'USD₮',
+      version: '1',
+      chainId: 196,
+      verifyingContract: '0x779ded0c9e1022225f8e0630b35a9b54be713736'
+    }
   },
   // X Layer testnet (1952)
   1952: {
-    name: 'USD Coin',
-    version: '2',
-    chainId: 1952,
-    verifyingContract: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d'
+    usdc: {
+      name: 'USD Coin',
+      version: '2',
+      chainId: 1952,
+      verifyingContract: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d'
+    },
+    usdt: {
+      name: 'USD₮',
+      version: '1',
+      chainId: 1952,
+      verifyingContract: null // X Layer testnet USDT contract not available
+    }
   }
 };
 
@@ -258,13 +274,29 @@ export async function signTransferWithAuthorization(
   chainId?: number,
   contractAddress?: string
 ): Promise<SignedAuthorization> {
-  // Get current chain ID if not provided
+  console.log('📝 ========== 开始签名流程 ==========');
+  console.log('🔍 输入参数:', {
+    from: params.from,
+    to: params.to,
+    value: params.value,
+    validAfter: params.validAfter,
+    validBefore: params.validBefore,
+    nonce: params.nonce,
+    tokenType: tokenType || 'usdc',
+    chainId: chainId || '自动检测'
+  });
+
+  // 获取当前链ID（如果未提供）
   let currentChainId = chainId;
   if (!currentChainId) {
     const chainIdHex = await signer.request({ method: 'eth_chainId' });
     currentChainId = parseInt(chainIdHex, 16);
+    console.log('🔗 自动检测到链ID:', { 十六进制: chainIdHex, 十进制: currentChainId });
+  } else {
+    console.log('🔗 使用提供的链ID:', currentChainId);
   }
 
+<<<<<<< Updated upstream
   // Determine EIP-712 domain
   let domain;
   if (contractAddress) {
@@ -275,6 +307,11 @@ export async function signTransferWithAuthorization(
     domain = NETWORK_EIP712_DOMAINS[currentChainId] || NETWORK_EIP712_DOMAINS[84532]; // fallback to Base Sepolia
   }
 
+=======
+  // 根据网络和代币类型确定EIP-712域
+  const domain = getEIP712Domain(currentChainId, tokenType || 'usdc');
+  console.log(`🔧 使用 ${(tokenType || 'usdc').toUpperCase()} 在链 ${currentChainId} 的域配置:`, domain);
+>>>>>>> Stashed changes
 
   // Construct EIP-712 typed data
   const typedData = {
@@ -299,6 +336,19 @@ export async function signTransferWithAuthorization(
     }
   };
 
+  console.log('🏗️ 完整的EIP-712类型化数据结构:');
+  console.log('📋 域信息:', typedData.domain);
+  console.log('📋 消息内容:', typedData.message);
+  console.log('📋 类型定义:', typedData.types);
+  console.log('📋 主要类型:', typedData.primaryType);
+  console.log('📋 完整类型化数据JSON:', JSON.stringify(typedData, null, 2));
+
+  console.log('⏳ 正在向钱包请求签名...');
+  console.log('📤 签名请求参数:', {
+    方法: 'eth_signTypedData_v4',
+    发送者地址: params.from,
+    类型化数据长度: JSON.stringify(typedData).length
+  });
 
   // Sign using eth_signTypedData_v4
   const signature = await signer.request({
@@ -306,12 +356,22 @@ export async function signTransferWithAuthorization(
     params: [params.from, JSON.stringify(typedData)]
   });
 
-  // Parse signature into v, r, s components
+  console.log('✅ 收到原始签名:', signature);
+  console.log('📏 签名长度:', signature.length);
+
+  // 解析签名为v, r, s组件
   const r = signature.slice(0, 66);
   const s = '0x' + signature.slice(66, 130);
-  const v = parseInt(signature.slice(130, 132), 16);
+  const vHex = signature.slice(130, 132);
+  const v = parseInt(vHex, 16);
 
-  return {
+  console.log('🔪 签名组件解析:');
+  console.log('  r组件:', r);
+  console.log('  s组件:', s);
+  console.log('  v组件(十六进制):', vHex);
+  console.log('  v组件(十进制):', v);
+
+  const signedAuthorization = {
     from: params.from,
     to: params.to,
     value: params.value,
@@ -322,6 +382,11 @@ export async function signTransferWithAuthorization(
     r,
     s
   };
+
+  console.log('✅ 最终签名授权:', signedAuthorization);
+  console.log('📝 ========== 签名流程结束 ==========');
+
+  return signedAuthorization;
 }
 
 /**
@@ -382,9 +447,23 @@ export function createX402PaymentHeader(
   network: string = 'base',
   asset: string = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
 ): string {
-  // Combine signature components (v, r, s) into a single hex string
-  // The official x402 spec expects a single signature string, not separate components
-  const signature = signedAuth.r + signedAuth.s.slice(2) + signedAuth.v.toString(16).padStart(2, '0');
+  console.log('💳 ========== 开始创建X402支付头 ==========');
+  console.log('🔍 X-PAYMENT头的输入参数:');
+  console.log('  📍 网络:', network);
+  console.log('  🪙 资产合约:', asset);
+  console.log('  ✍️ 签名授权:', signedAuth);
+
+  // 将签名组件(v, r, s)组合成单个十六进制字符串
+  // x402官方规范要求单个签名字符串，而不是分离的组件
+  const vHex = signedAuth.v.toString(16).padStart(2, '0');
+  const signature = signedAuth.r + signedAuth.s.slice(2) + vHex;
+
+  console.log('🔗 签名组合过程:');
+  console.log('  r组件:', signedAuth.r);
+  console.log('  s组件:', signedAuth.s, '(截取从位置2):', signedAuth.s.slice(2));
+  console.log('  v组件(十进制):', signedAuth.v);
+  console.log('  v组件(十六进制填充):', vHex);
+  console.log('  📝 组合后的签名:', signature);
 
   // Create payment payload following the official x402 specification
   // Structure from: https://github.com/coinbase/x402/tree/main/examples/typescript
@@ -405,16 +484,41 @@ export function createX402PaymentHeader(
     }
   };
 
-  // Add chainIndex for XLayer network (as string)
+  console.log('🏗️ 基础支付载荷结构:');
+  console.log('  x402版本:', paymentPayload.x402Version);
+  console.log('  方案类型:', paymentPayload.scheme);
+  console.log('  网络名称:', paymentPayload.network);
+  console.log('  载荷签名:', paymentPayload.payload.signature);
+  console.log('  载荷授权:', paymentPayload.payload.authorization);
+
+  // 为XLayer网络添加链索引（字符串格式）
   if (network === 'xlayer') {
-    paymentPayload.payload.chainIndex = "196"; // XLayer chain ID as string
-    console.log('🔗 Added chainIndex for XLayer:', paymentPayload.payload.chainIndex);
+    paymentPayload.payload.chainIndex = "196"; // XLayer链ID字符串格式
+    console.log('🔗 为XLayer添加了链索引:', paymentPayload.payload.chainIndex);
   }
 
-  // Encode as base64
+  // 编码为base64
   const jsonString = JSON.stringify(paymentPayload);
-  console.log('💰 Payment payload for', network, ':', JSON.parse(jsonString));
-  return btoa(jsonString);
+  console.log('📦 最终支付载荷(base64编码前):');
+  console.log('  💰 JSON字符串长度:', jsonString.length);
+  console.log('  💰 完整JSON载荷:', jsonString);
+  console.log('  💰 解析JSON验证:', JSON.parse(jsonString));
+
+  const base64Header = btoa(jsonString);
+  console.log('🔐 Base64编码的X-PAYMENT头:');
+  console.log('  📏 头部长度:', base64Header.length);
+  console.log('  📦 头部值:', base64Header);
+
+  // 解码并验证头部用于调试
+  try {
+    const decodedForVerification = JSON.parse(atob(base64Header));
+    console.log('✅ 头部解码验证成功:', decodedForVerification);
+  } catch (error) {
+    console.error('❌ 头部解码验证失败:', error);
+  }
+
+  console.log('💳 ========== X402支付头创建结束 ==========');
+  return base64Header;
 }
 
 
@@ -478,8 +582,27 @@ export async function signTransferWithAuthorizationOKXBrowser(
   chainId: number,
   contractAddress: string
 ): Promise<SignedAuthorization> {
-  console.log('🔄 Using OKX-compatible EIP-712 format for signing...');
+  console.log('🦊 ========== OKX SIGNING PROCESS START ==========');
+  console.log('🦊 [OKX] Using OKX-compatible EIP-712 format for signing...');
+  console.log('🦊 [OKX] Input Parameters for OKX signing:', {
+    from: params.from,
+    to: params.to,
+    value: params.value,
+    validAfter: params.validAfter,
+    validBefore: params.validBefore,
+    nonce: params.nonce,
+    chainId: chainId,
+    contractAddress: contractAddress,
+    tokenType: tokenType || 'usdc'
+  });
 
+<<<<<<< Updated upstream
+=======
+  // Get token-specific domain configuration
+  const domainConfig = getEIP712Domain(chainId, tokenType || 'usdc');
+  console.log(`🦊 [OKX] Using ${(tokenType || 'usdc').toUpperCase()} domain configuration for chain ${chainId}:`, domainConfig);
+
+>>>>>>> Stashed changes
   // Construct message parameters exactly as shown in OKX PDF documentation
   const msgParams = {
     "domain": {
@@ -515,6 +638,13 @@ export async function signTransferWithAuthorizationOKXBrowser(
     }
   };
 
+  console.log('🦊 [OKX] Message Parameters constructed from OKX PDF documentation:');
+  console.log('🦊 [OKX] Domain:', msgParams.domain);
+  console.log('🦊 [OKX] Message:', msgParams.message);
+  console.log('🦊 [OKX] Primary Type:', msgParams.primaryType);
+  console.log('🦊 [OKX] Types:', msgParams.types);
+  console.log('🦊 [OKX] Complete msgParams object:', JSON.stringify(msgParams, null, 2));
+
   // Create the exact data structure from PDF documentation
   const messageString = JSON.stringify(msgParams);
   const data = {
@@ -522,8 +652,13 @@ export async function signTransferWithAuthorizationOKXBrowser(
     message: messageString,
   };
 
-  console.log('📋 OKX-format data structure:', {
+  console.log('🦊 [OKX] Data structure created from OKX PDF format:');
+  console.log('🦊 [OKX] Data Type:', data.type);
+  console.log('🦊 [OKX] Message String Length:', messageString.length);
+  console.log('🦊 [OKX] Message String (first 200 chars):', messageString.substring(0, 200) + '...');
+  console.log('🦊 [OKX] Complete Data Object:', {
     type: data.type,
+    messageStringLength: messageString.length,
     messagePreview: {
       domain: msgParams.domain,
       from: msgParams.message.from,
@@ -531,39 +666,72 @@ export async function signTransferWithAuthorizationOKXBrowser(
       value: msgParams.message.value
     }
   });
+  console.log('🦊 [OKX] Full Message String for OKX:', messageString);
 
   // Try OKX-style signing first (if available)
   let signature;
   try {
     // Check if wallet supports OKX-style message signing
     if (provider.isOKXWallet) {
-      console.log('🔄 Attempting OKX wallet-specific signing...');
+      console.log('🦊 [OKX] Attempting OKX wallet-specific signing method...');
+      console.log('🦊 [OKX] OKX Signing Request:', {
+        method: 'okx_signTypedData',
+        from: params.from,
+        dataObject: data
+      });
+
       // Some OKX wallets might support this format
       signature = await provider.request({
         method: 'okx_signTypedData', // OKX-specific method if it exists
         params: [params.from, data]
       });
+
+      console.log('🦊 [OKX] OKX-specific method succeeded:', signature);
     }
   } catch (okxError) {
-    console.log('⚠️ OKX-specific method failed, using standard EIP-712:', okxError);
+    console.log('🦊 [OKX] OKX-specific method failed, using standard EIP-712:', okxError);
+    console.log('🦊 [OKX] Error details:', {
+      message: okxError.message,
+      code: okxError.code,
+      name: okxError.name
+    });
   }
 
   // Fallback to standard EIP-712 signing with OKX-formatted data
   if (!signature) {
+    console.log('🦊 [OKX] Using standard eth_signTypedData_v4 method with OKX format...');
+    console.log('🦊 [OKX] Standard Signing Request:', {
+      method: 'eth_signTypedData_v4',
+      from: params.from,
+      messageStringLength: messageString.length
+    });
+    console.log('🦊 [OKX] Sending to OKX wallet:', messageString);
+
     signature = await provider.request({
       method: 'eth_signTypedData_v4',
       params: [params.from, messageString]
     });
+
+    console.log('🦊 [OKX] Standard method succeeded with OKX format');
   }
 
-  console.log('✅ OKX-format signature generated:', signature);
+  console.log('🦊 [OKX] Raw signature received from OKX:', signature);
+  console.log('🦊 [OKX] Signature length:', signature.length);
+  console.log('🦊 [OKX] Signature type:', typeof signature);
 
   // Parse signature into v, r, s components
   const r = signature.slice(0, 66);
   const s = '0x' + signature.slice(66, 130);
-  const v = parseInt(signature.slice(130, 132), 16);
+  const vHex = signature.slice(130, 132);
+  const v = parseInt(vHex, 16);
 
-  return {
+  console.log('🦊 [OKX] OKX Signature parsing:');
+  console.log('🦊 [OKX] r component:', r);
+  console.log('🦊 [OKX] s component:', s);
+  console.log('🦊 [OKX] v component (hex):', vHex);
+  console.log('🦊 [OKX] v component (decimal):', v);
+
+  const finalResult = {
     from: params.from,
     to: params.to,
     value: params.value,
@@ -574,4 +742,9 @@ export async function signTransferWithAuthorizationOKXBrowser(
     r,
     s
   };
+
+  console.log('🦊 [OKX] Final OKX signed authorization:', finalResult);
+  console.log('🦊 ========== OKX SIGNING PROCESS END ==========');
+
+  return finalResult;
 }

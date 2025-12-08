@@ -214,7 +214,7 @@ track('space_follow', {
   space_id: string,
   space_name: string,
   author_id: number,
-  follow_source: 'discovery' | 'search' | 'recommendation'
+  follow_source: 'discovery' | 'search'
 });
 
 // 空间创建
