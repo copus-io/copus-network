@@ -1099,7 +1099,7 @@ export const Create = (): JSX.Element => {
             </div>
 
             <div className="flex flex-col items-start gap-10 w-full">
-              <div className="w-full lg:max-w-[250px] xl:max-w-[280px] 2xl:max-w-[320px]">
+              <div className="w-full lg:max-w-[350px] xl:max-w-[400px] 2xl:max-w-[450px]">
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
@@ -1108,7 +1108,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors lg:w-full lg:max-w-[250px] xl:max-w-[280px] 2xl:max-w-[320px]"
+                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors lg:w-full lg:max-w-[350px] xl:max-w-[400px] 2xl:max-w-[450px]"
                 onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
                 style={{
                     opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,

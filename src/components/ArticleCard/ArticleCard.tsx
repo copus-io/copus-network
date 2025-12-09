@@ -164,7 +164,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
     switch (layout) {
       case 'preview':
         return (
-          <CardContent className="flex flex-col items-start gap-[15px] p-5 w-full">
+          <CardContent className="flex flex-col items-start gap-[20px] py-5 px-[30px] w-full">
             <div className="flex flex-col items-start justify-center gap-[15px] w-full min-w-0 max-w-full">
               <div
                 className="flex flex-col items-end justify-end p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
@@ -198,54 +198,52 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 )}
               </div>
 
-              <div className="flex flex-col items-start gap-[10px] w-full min-w-0 max-w-full">
+              <div className="flex flex-col items-start gap-[15px] w-full min-w-0 max-w-full">
                 {/* Title with x402 payment badge - Same line */}
-                <div className="w-full min-h-[54px]">
+                <div className="w-full min-h-[72px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="float-left h-[24px] px-1.5 mr-2 mt-[1.5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[2px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[10px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="w-[16px] h-[15px] flex-shrink-0"
+                        className="w-[21px] h-5 flex-shrink-0"
                         alt="x402 payment"
                         src={getIconUrl('X402_PAYMENT')}
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-sm tracking-[0] leading-3 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] text-dark-grey text-[22px] tracking-[0] leading-[30px] break-words line-clamp-2 overflow-hidden" style={{ fontWeight: 450 }}>
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title || 'Enter a title...'}
                   </h3>
                 </div>
 
-                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full max-w-[600px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                  <div className="h-[45px] overflow-hidden w-full min-w-0 max-w-full">
-                    <p
-                      className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[16px] tracking-[0] leading-[22.5px] overflow-hidden"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitBoxOrient: 'vertical',
-                        WebkitLineClamp: 2,
-                        overflow: 'hidden',
-                        wordBreak: 'break-word',
-                        overflowWrap: 'break-word',
-                        whiteSpace: 'pre-wrap'
-                      }}
-                    >
-                      "{article.description || 'Write your recommendation...'}"
-                    </p>
-                  </div>
+                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                  <p
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden min-h-[54px]"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      whiteSpace: 'pre-wrap'
+                    }}
+                  >
+                    "{article.description || 'Write your recommendation...'}"
+                  </p>
 
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-2 min-w-0 max-w-[60%]">
                       <Avatar className="w-[18px] h-[18px] flex-shrink-0">
                         <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
                       </Avatar>
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[14px] tracking-[0] leading-[20px] truncate">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] truncate">
                         {article.userName}
                       </span>
                     </div>
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[14px] tracking-[0] leading-[20px]">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
                       Preview
                     </span>
                   </div>
