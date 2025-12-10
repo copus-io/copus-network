@@ -3,6 +3,7 @@ import { useUser } from "../../contexts/UserContext";
 import { AuthService } from "../../services/authService";
 import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
+import { logger } from "../../utils/logger";
 
 interface CollectTreasureModalProps {
   isOpen: boolean;
@@ -74,10 +75,10 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         let numericId = articleNumericId;
         if (!numericId || numericId <= 0) {
           // Fetch article detail to get the numeric ID
-          console.log('Fetching article detail to get numeric ID for:', articleId);
+          logger.log('Fetching article detail to get numeric ID for:', articleId);
           const articleDetail = await getArticleDetail(articleId);
           numericId = articleDetail.id;
-          console.log('Got numeric article ID:', numericId);
+          logger.log('Got numeric article ID:', numericId);
         }
         setResolvedArticleId(numericId);
 
@@ -176,7 +177,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
         setCollections(collectionsWithDefault);
       } catch (err) {
-        console.error('Failed to fetch bindable spaces:', err);
+        logger.error('Failed to fetch bindable spaces:', err);
       } finally {
         setLoading(false);
       }
@@ -242,7 +243,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       onClose();
     } catch (err) {
-      console.error('Failed to save:', err);
+      logger.error('Failed to save:', err);
       showToast('Failed to save', 'error');
     } finally {
       setIsSubmitting(false);
@@ -265,7 +266,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       // Call the createSpace API to create a new treasury
       const createResponse = await AuthService.createSpace(newTreasuryName.trim());
-      console.log('Create space response:', createResponse);
+      logger.log('Create space response:', createResponse);
 
       // Extract the created space from response
       const createdSpace = createResponse?.data || createResponse;
@@ -294,7 +295,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setShowCreateNew(false);
       setNewTreasuryName("");
     } catch (err) {
-      console.error('Failed to create treasury:', err);
+      logger.error('Failed to create treasury:', err);
       showToast('Failed to create treasury', 'error');
     } finally {
       setIsSubmitting(false);

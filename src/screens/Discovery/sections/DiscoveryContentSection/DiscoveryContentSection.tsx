@@ -18,7 +18,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; numericId: number; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
   // Welcome guide display state management
   const [showWelcomeGuide, setShowWelcomeGuide] = React.useState(false);
@@ -240,6 +240,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     if (article) {
       setSelectedArticle({
         uuid: articleId, // This is actually the UUID
+        numericId: article.numericId, // Numeric ID for bindArticles API
         title: article.title,
         isLiked: currentIsLiked,
         likeCount: currentLikeCount
@@ -414,6 +415,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             setSelectedArticle(null);
           }}
           articleId={selectedArticle.uuid}
+          articleNumericId={selectedArticle.numericId}
           articleTitle={selectedArticle.title}
           isAlreadyCollected={selectedArticle.isLiked}
           onCollectSuccess={handleCollectSuccess}
