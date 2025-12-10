@@ -6,9 +6,10 @@ import { EmailVerificationModal } from "../../../../components/EmailVerification
 import { WalletBindEmailModal } from "../../../../components/WalletBindEmailModal";
 import { useUserBalance } from "../../../../hooks/useUserBalance";
 
-interface HistoryItem {
+// Interface for displaying formatted transaction data
+interface DisplayTransaction {
   id: string;
-  title: string;
+  type: string;
   description?: string;
   amount: string;
   status: string;
@@ -55,7 +56,7 @@ export const IncomeDetailsSection = (): JSX.Element => {
   };
 
   // 转换交易数据格式用于显示
-  const formatTransactionForDisplay = (transaction: any) => {
+  const formatTransactionForDisplay = (transaction: any): DisplayTransaction => {
     // 根据交易类型判断是否为正值
     const isPositive = transaction.transactionType === 1; // 1为流入
 
@@ -94,51 +95,7 @@ export const IncomeDetailsSection = (): JSX.Element => {
     };
   };
 
-  const historyData: HistoryItem[] = [
-    {
-      id: "1",
-      title: "Curation income",
-      description: 'From "Post titlePost titlePosttitlePost"',
-      amount: "+20.23USDC",
-      status: "Completed",
-      date: "2023.2.22 12:21",
-      isPositive: true,
-    },
-    {
-      id: "2",
-      title: "Curation income",
-      description: 'From "Post titlePost titlePosttitlePost"',
-      amount: "+20.23USDC",
-      status: "Completed",
-      date: "2023.2.22 12:21",
-      isPositive: true,
-    },
-    {
-      id: "3",
-      title: "Curation income",
-      description: 'From "Post titlePost titlePosttitlePost"',
-      amount: "+20.23USDC",
-      status: "Completed",
-      date: "2023.2.22 12:21",
-      isPositive: true,
-    },
-    {
-      id: "4",
-      title: "Withdraw",
-      amount: "-18.3USDC",
-      status: "Completed",
-      date: "2023.2.22 12:21",
-      isPositive: false,
-    },
-    {
-      id: "5",
-      title: "System fee",
-      amount: "-0.1USDC",
-      status: "Completed",
-      date: "2023.2.22 12:21",
-      isPositive: false,
-    },
-  ];
+  // 移除静态示例数据，现在使用真实API数据和空状态
 
   // 检查用户是否已经绑定了邮箱
   const hasEmail = accountInfo?.email && accountInfo.email.trim().length > 0;
@@ -311,7 +268,29 @@ export const IncomeDetailsSection = (): JSX.Element => {
           <div className="flex items-center justify-center p-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
+        ) : error ? (
+          /* Error State */
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="w-16 h-16 mb-4 rounded-full bg-red-100 flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 15.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load transaction history</h3>
+            <p className="text-gray-600 mb-4 max-w-md">
+              We couldn't retrieve your transaction history. Please check your connection and try again.
+            </p>
+            <Button
+              onClick={refreshData}
+              variant="outline"
+              size="sm"
+              className="text-blue-600 border-blue-600 hover:bg-blue-50"
+            >
+              Try Again
+            </Button>
+          </div>
         ) : transactions.length > 0 ? (
+          /* Real Transaction Data */
           transactions.map((transaction) => {
             const item = formatTransactionForDisplay(transaction);
             return (
@@ -353,43 +332,38 @@ export const IncomeDetailsSection = (): JSX.Element => {
             );
           })
         ) : (
-          historyData.map((item) => (
-            <article
-              key={item.id}
-              className="flex items-center gap-[60px] p-5 relative self-stretch w-full flex-[0_0_auto] min-h-[100px] border-b border-gray-100 last:border-b-0"
-            >
-              <div className="flex flex-col w-[440px] items-start justify-center gap-[5px] relative self-stretch">
-                <h3 className="relative w-fit mt-[-1.00px] font-medium text-gray-900 text-xl">
-                  {item.title}
-                </h3>
-                {item.description && (
-                  <p className="relative self-stretch font-normal text-gray-600 text-base">
-                    {item.description}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex w-[117px] items-center gap-[5px] relative">
-                <span
-                  className={`relative flex items-center justify-center w-fit mt-[-1.00px] font-medium text-lg ${
-                    item.isPositive ? "text-blue-600" : "text-gray-900"
-                  }`}
+          /* Empty State */
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="w-20 h-20 mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">No transactions yet</h3>
+            <p className="text-gray-600 mb-6 max-w-md leading-relaxed">
+              You haven't made any transactions yet. When you earn income from content curation or make withdrawals, they will appear here.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => {/* Navigate to treasury or discovery */}}
+                variant="outline"
+                size="sm"
+                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+              >
+                Start Curating
+              </Button>
+              {hasEmail && (
+                <Button
+                  onClick={handleWithdrawClick}
+                  variant="outline"
+                  size="sm"
+                  className="text-green-600 border-green-600 hover:bg-green-50"
                 >
-                  {item.amount}
-                </span>
-              </div>
-
-              <div className="flex flex-col w-[180px] items-start justify-center gap-2.5 relative self-stretch">
-                <span className="relative flex items-center justify-center w-fit font-normal text-gray-900 text-lg text-right">
-                  {item.status}
-                </span>
-              </div>
-
-              <time className="relative flex items-center justify-center w-fit text-gray-600 text-sm">
-                {item.date}
-              </time>
-            </article>
-          ))
+                  Test Withdrawal
+                </Button>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
