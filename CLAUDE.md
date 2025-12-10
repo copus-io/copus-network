@@ -61,9 +61,8 @@ npm run build:development      # Development build
 - **Payment**: x402 Protocol + ERC-3009 (gasless USDC payments)
 
 ### API Configuration
-- **Development**: `https://api.test.copus.io/copusV2`
-- **Staging**: `https://api.test.copus.io/copusV2`
-- **Production**: `https://api.copus.io/copusV2`
+- **Development/Test**: `https://api-test.copus.network`
+- **Production**: `https://api-prod.copus.network`
 
 Environment-specific settings are in `.env.development`, `.env.staging`, and `.env.production`.
 

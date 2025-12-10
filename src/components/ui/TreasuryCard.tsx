@@ -129,6 +129,13 @@ export const getSpaceTreasureCount = (space: SpaceData): number => {
 };
 
 /**
+ * Extract hostname from URL for display
+ */
+const getDisplayHostname = (url: string): string => {
+  return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+};
+
+/**
  * TreasuryCard Component
  * A reusable card component for displaying treasury/space information
  * with consistent look, naming logic, and treasure count across the app
@@ -197,21 +204,13 @@ export const TreasuryCard = ({
             className="flex flex-col w-full h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
             style={{ backgroundImage: `url(${mainItem.coverImage})` }}
           >
-            {mainItem.website && (
-              <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-                <a
-                  href={mainItem.url.startsWith('http') ? mainItem.url : `https://${mainItem.url}`}
-                  className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-[#ffffffcc] rounded-[15px] overflow-hidden"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                    {mainItem.website}
-                  </span>
-                </a>
-              </div>
-            )}
+            <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
+              <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
+                <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
+                  {getDisplayHostname(mainItem.url)}
+                </span>
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-col items-start gap-[15px] relative w-full flex-[0_0_auto]">
@@ -239,21 +238,13 @@ export const TreasuryCard = ({
                   className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
                   style={{ backgroundImage: `url(${item.coverImage})` }}
                 >
-                  {item.website && (
-                    <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-                      <a
-                        href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                        className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                          {item.website}
-                        </span>
-                      </a>
-                    </div>
-                  )}
+                  <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
+                    <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]">
+                      <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
+                        {getDisplayHostname(item.url)}
+                      </span>
+                    </span>
+                  </div>
                 </div>
 
                 <div
