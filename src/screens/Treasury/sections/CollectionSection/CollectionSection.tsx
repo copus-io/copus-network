@@ -13,6 +13,13 @@ interface CollectionSectionProps {
   items: CollectionItem[];
 }
 
+/**
+ * Extract hostname from URL for display
+ */
+const getDisplayHostname = (url: string): string => {
+  return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+};
+
 export const CollectionSection = ({ title, treasureCount, items }: CollectionSectionProps): JSX.Element => {
   if (items.length === 0) {
     return (
@@ -44,16 +51,11 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
             style={{ backgroundImage: `url(${mainItem.coverImage})` }}
           >
             <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-              <a
-                href={mainItem.url.startsWith('http') ? mainItem.url : `https://${mainItem.url}`}
-                className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-white/80 rounded-[15px] overflow-hidden hover:bg-white transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-white/80 rounded-[15px] overflow-hidden">
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                  {mainItem.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                  {getDisplayHostname(mainItem.url)}
                 </span>
-              </a>
+              </span>
             </div>
           </div>
 
@@ -83,16 +85,11 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
                   style={{ backgroundImage: `url(${item.coverImage})` }}
                 >
                   <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-                    <a
-                      href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                      className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white/80 rounded-[15px] overflow-hidden relative flex-[0_0_auto] hover:bg-white transition-colors"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white/80 rounded-[15px] overflow-hidden relative flex-[0_0_auto]">
                       <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                        {item.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                        {getDisplayHostname(item.url)}
                       </span>
-                    </a>
+                    </span>
                   </div>
                 </div>
 

@@ -274,7 +274,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 max-h-[80vh]"
+        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 max-h-[80vh]"
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
@@ -476,7 +476,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             </div>
 
             {/* Save and Cancel Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" style={{ marginLeft: '-30px', marginRight: '-30px', paddingLeft: '30px', paddingRight: '30px', width: 'calc(100% + 60px)' }}>
+            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ml-[-30px] mr-[-30px] pl-[30px] pr-[30px] w-[calc(100%+60px)] max-[440px]:ml-[-15px] max-[440px]:mr-[-15px] max-[440px]:pl-[15px] max-[440px]:pr-[15px] max-[440px]:w-[calc(100%+30px)]">
               <button
                 className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={handleCancel}
