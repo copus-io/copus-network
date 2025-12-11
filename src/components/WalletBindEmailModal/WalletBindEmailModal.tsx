@@ -177,24 +177,26 @@ export const WalletBindEmailModal = ({
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 w-6 h-6 flex items-center justify-center"
+          className="absolute top-[30px] right-[30px] text-gray-400 hover:text-gray-600"
           aria-label="Close modal"
         >
-          ×
+          <svg className="w-[12px] h-[12px]" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L11 11M1 11L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
 
         {/* Header */}
-        <div className="flex flex-col items-center gap-[15px] relative flex-[0_0_auto]">
+        <div className="flex flex-col items-center gap-[15px] relative flex-[0_0_auto] mt-5">
           <h2
             id="bind-title"
             className="relative w-fit font-semibold text-gray-900 text-xl text-center"
           >
-            Bind Email to Wallet
+            Bind email to wallet
           </h2>
 
           <p
             id="bind-description"
-            className="relative w-fit text-gray-600 text-sm text-center"
+            className="relative max-w-[280px] text-gray-600 text-sm text-center"
           >
             {step === "email"
               ? "To enable withdrawals, please bind an email address to your wallet"
@@ -232,11 +234,10 @@ export const WalletBindEmailModal = ({
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-[15px] relative self-stretch w-full">
+            <div className="flex items-center justify-center gap-[15px] relative self-stretch w-full">
               <Button
                 onClick={handleClose}
-                variant="outline"
-                className="flex-1"
+                className="px-5 py-2.5 rounded-[50px] bg-transparent text-gray-600 hover:bg-gray-100 transition-colors h-auto shadow-none"
                 disabled={isLoading}
               >
                 Cancel
@@ -244,11 +245,7 @@ export const WalletBindEmailModal = ({
 
               <Button
                 onClick={handleSendCode}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-0"
-                style={{
-                  backgroundColor: '#2563eb',
-                  color: 'white',
-                }}
+                className="px-5 py-2.5 bg-red hover:bg-red/90 text-white rounded-[50px] transition-colors h-auto"
                 disabled={!email || isLoading}
               >
                 {isLoading ? "Sending..." : "Send Code"}
@@ -288,20 +285,17 @@ export const WalletBindEmailModal = ({
             {/* Back to email button */}
             <Button
               onClick={() => setStep("email")}
-              variant="outline"
-              size="sm"
-              className="self-stretch"
+              className="self-stretch rounded-[50px] border border-solid border-gray-300 bg-transparent text-gray-600 hover:bg-gray-50 transition-colors h-auto py-2"
               disabled={isLoading}
             >
               Change Email Address
             </Button>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-[15px] relative self-stretch w-full">
+            <div className="flex items-center justify-center gap-[15px] relative self-stretch w-full">
               <Button
                 onClick={handleClose}
-                variant="outline"
-                className="flex-1"
+                className="px-5 py-2.5 rounded-[50px] bg-transparent text-gray-600 hover:bg-gray-100 transition-colors h-auto shadow-none"
                 disabled={isLoading}
               >
                 Cancel
@@ -309,11 +303,7 @@ export const WalletBindEmailModal = ({
 
               <Button
                 onClick={handleBindEmail}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white border-0"
-                style={{
-                  backgroundColor: '#2563eb',
-                  color: 'white',
-                }}
+                className="px-5 py-2.5 bg-red hover:bg-red/90 text-white rounded-[50px] transition-colors h-auto"
                 disabled={!verificationCode || isLoading}
               >
                 {isLoading ? "Binding..." : "Bind Email"}

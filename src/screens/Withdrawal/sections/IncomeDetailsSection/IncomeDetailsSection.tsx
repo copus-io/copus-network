@@ -371,7 +371,8 @@ export const IncomeDetailsSection = ({
       {/* Stats Cards */}
       <div className="flex items-center gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
         {/* Total Income Card */}
-        <div className="flex flex-col items-center gap-5 p-5 relative flex-1 self-stretch grow rounded-[15px] bg-white/80 backdrop-blur-sm border border-gray-200">
+        <div className="relative flex-1 self-stretch grow rounded-[15px] bg-white">
+          <div className="flex flex-col items-center gap-5 p-5 relative w-full h-full rounded-[15px] bg-[#e0e0e0]/40">
           <div className="flex h-[25px] items-center gap-[3px] relative self-stretch w-full">
             <h2 className="relative w-fit mt-[-1.00px] text-lg font-medium text-gray-600">
               Total income
@@ -389,46 +390,45 @@ export const IncomeDetailsSection = ({
               </p>
             )}
           </div>
+          </div>
         </div>
 
         {/* Withdrawable Amount Card */}
-        <div className="flex-col items-center justify-center gap-5 px-5 py-[30px] flex-1 grow rounded-[15px] bg-white/80 backdrop-blur-sm border border-gray-200 flex relative">
-          <div className="flex items-start relative self-stretch w-full flex-[0_0_auto]">
-            <h2 className="relative w-fit mt-[-1.00px] text-lg font-medium text-gray-600">
-              Withdraw-able amount
-            </h2>
-          </div>
+        <div className="relative flex-1 grow rounded-[15px] bg-white">
+          <div className="flex-col items-center justify-center gap-5 px-5 py-[30px] w-full h-full rounded-[15px] bg-[#e0e0e0]/40 flex relative">
+            <div className="flex items-start relative self-stretch w-full flex-[0_0_auto]">
+              <h2 className="relative w-fit mt-[-1.00px] text-lg font-medium text-gray-600">
+                Withdraw-able amount
+              </h2>
+            </div>
 
-          <div className="flex items-center justify-between pt-0 pb-2.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
-            {loading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            ) : (
-              <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-2xl text-gray-900">
-                {accountInfo?.balance || '0'} USD
-              </p>
-            )}
+            <div className="flex items-center justify-between pt-0 pb-2.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
+              {loading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              ) : (
+                <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-2xl text-gray-900">
+                  {accountInfo?.balance || '0'} USD
+                </p>
+              )}
 
-            {hasEmail ? (
-              <Button
-                onClick={handleWithdrawClick}
-                variant="outline"
-                size="sm"
-                className="bg-transparent border-blue-500 text-blue-500 hover:bg-blue-50"
-                disabled={loading}
-              >
-                Withdraw
-              </Button>
-            ) : (
-              <Button
-                onClick={handleBindEmailClick}
-                variant="outline"
-                size="sm"
-                className="bg-transparent border-orange-500 text-orange-500 hover:bg-orange-50"
-                disabled={loading}
-              >
-                Bind Email
-              </Button>
-            )}
+              {hasEmail ? (
+                <Button
+                  onClick={handleWithdrawClick}
+                  className="px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto"
+                  disabled={loading}
+                >
+                  Withdraw
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleBindEmailClick}
+                  className="px-5 py-2 rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red/5 transition-colors h-auto font-bold"
+                  disabled={loading}
+                >
+                  Bind Email
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -457,7 +457,7 @@ export const IncomeDetailsSection = ({
       </div>
 
       {/* History Items */}
-      <div className="w-full bg-white rounded-[15px] border border-gray-200">
+      <div className="w-full mt-4">
         {loading ? (
           <div className="flex items-center justify-center p-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -483,7 +483,7 @@ export const IncomeDetailsSection = ({
               Try Again
             </Button>
           </div>
-        ) : transactions.length > 0 ? (
+        ) : transactions && transactions.length > 0 ? (
           /* Real Transaction Data */
           transactions.map((transaction) => {
             const item = formatTransactionForDisplay(transaction);
@@ -540,18 +540,14 @@ export const IncomeDetailsSection = ({
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={() => {/* Navigate to treasury or discovery */}}
-                variant="outline"
-                size="sm"
-                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                className="px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto"
               >
                 Start Curating
               </Button>
               {hasEmail && (
                 <Button
                   onClick={handleWithdrawClick}
-                  variant="outline"
-                  size="sm"
-                  className="text-green-600 border-green-600 hover:bg-green-50"
+                  className="px-5 py-2 rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red/5 transition-colors h-auto"
                 >
                   Test Withdrawal
                 </Button>
