@@ -67,7 +67,7 @@ export interface WalletBindEmailRequest {
    */
   email: string;
   /**
-   * 钱包签名
+   * 钱包签名 (必需字段)
    */
   signature: string;
 }
@@ -77,10 +77,37 @@ export class WithdrawalService {
    * Submit withdrawal request
    */
   static async submitWithdrawal(data: WithdrawalRequest): Promise<WithdrawalResponse> {
-    return await apiRequest<WithdrawalResponse>('/client/user/withdrawal/request', {
+    console.log('🔗 WithdrawalService.submitWithdrawal 调用:', {
+      endpoint: '/client/user/withdrawal/request',
       method: 'POST',
-      body: JSON.stringify(data),
+      requestData: data,
+      requestJSON: JSON.stringify(data),
+      timestamp: new Date().toISOString()
     });
+
+    try {
+      const response = await apiRequest<WithdrawalResponse>('/client/user/withdrawal/request', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
+      console.log('📡 WithdrawalService API响应:', {
+        response,
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : 'null',
+        timestamp: new Date().toISOString()
+      });
+
+      return response;
+    } catch (error) {
+      console.error('🔥 WithdrawalService API错误:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        requestData: data,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
   }
 
   /**
@@ -137,9 +164,17 @@ export class WithdrawalService {
    * Get user account information including balance and total income
    */
   static async getUserAccountInfo(): Promise<UserAccountInfo> {
-    return await apiRequest<UserAccountInfo>('/client/account/info', {
+    const response = await apiRequest<{status: number; msg: string; data: UserAccountInfo}>('/client/account/info', {
       method: 'GET',
     });
+
+    // Handle the nested API response structure
+    if (response && typeof response === 'object' && 'data' in response) {
+      return response.data;
+    }
+
+    // Fallback for direct response format
+    return response as UserAccountInfo;
   }
 
   /**
@@ -160,18 +195,41 @@ export class WithdrawalService {
 
     const url = `/client/account/pageTx${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
-    return await apiRequest<TransactionHistoryResponse>(url, {
+    const response = await apiRequest<{status: number; msg: string; data: TransactionHistoryResponse}>(url, {
       method: 'GET',
     });
+
+    // Handle the nested API response structure
+    if (response && typeof response === 'object' && 'data' in response) {
+      return response.data;
+    }
+
+    // Fallback for direct response format
+    return response as TransactionHistoryResponse;
   }
 
   /**
    * Bind email to wallet for users who haven't bound an email yet
    */
-  static async bindWalletEmail(data: WalletBindEmailRequest): Promise<boolean> {
-    return await apiRequest<boolean>('/client/user/walletBindEmail', {
+  static async bindWalletEmail(data: WalletBindEmailRequest): Promise<any> {
+    console.log('🔍 API Request Debug:', {
+      endpoint: '/client/user/walletBindEmail',
+      method: 'POST',
+      requestBody: data,
+      requestBodyJSON: JSON.stringify(data)
+    });
+
+    const response = await apiRequest<any>('/client/user/walletBindEmail', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+
+    console.log('📥 API Response Debug:', {
+      response: response,
+      responseType: typeof response,
+      responseKeys: Object.keys(response || {})
+    });
+
+    return response;
   }
 }

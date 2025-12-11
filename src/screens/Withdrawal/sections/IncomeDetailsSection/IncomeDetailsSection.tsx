@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../../../components/ui/button";
 import { useToast } from "../../../../components/ui/toast";
 import { WithdrawalModal } from "../../../../components/WithdrawalModal";
@@ -17,7 +17,19 @@ interface DisplayTransaction {
   isPositive?: boolean;
 }
 
-export const IncomeDetailsSection = (): JSX.Element => {
+interface IncomeDetailsSectionProps {
+  userInfo?: any;
+  loading?: boolean;
+  refreshUserInfo?: () => void;
+  transactions?: any[];
+}
+
+export const IncomeDetailsSection = ({
+  userInfo: propUserInfo,
+  loading: propLoading,
+  refreshUserInfo,
+  transactions: propTransactions
+}: IncomeDetailsSectionProps = {}): JSX.Element => {
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [showWalletBindEmail, setShowWalletBindEmail] = useState(false);
@@ -29,8 +41,45 @@ export const IncomeDetailsSection = (): JSX.Element => {
     chainId: number;
   } | null>(null);
 
-  const { accountInfo, transactions, loading, error, refreshData } = useUserBalance();
+  const { accountInfo, transactions: hookTransactions, loading: balanceLoading, error, refreshData } = useUserBalance();
   const { showToast } = useToast();
+
+  // 使用来自父组件的数据，如果没有则回退到useUserBalance
+  const userInfo = propUserInfo || accountInfo;
+  const loading = propLoading !== undefined ? propLoading : balanceLoading;
+  const transactions = propTransactions || hookTransactions;
+
+  // 在页面访问时重新获取用户信息以检查邮箱绑定状态
+  useEffect(() => {
+    console.log('🔄 Income page accessed, refreshing user info to check email binding status...');
+    refreshData();
+  }, []); // 每次组件加载时调用
+
+  // 添加定时刷新，确保用户状态同步
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 Page became visible, refreshing user data...');
+        refreshData();
+      }
+    };
+
+    // 当页面重新变为可见时刷新数据
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 定时检查用户状态（每30秒）
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        console.log('🔄 Periodic user data refresh...');
+        refreshData();
+      }
+    }, 30000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [refreshData]);
 
   // 获取钱包地址
   const getWalletAddress = async (): Promise<string> => {
@@ -57,8 +106,43 @@ export const IncomeDetailsSection = (): JSX.Element => {
 
   // 转换交易数据格式用于显示
   const formatTransactionForDisplay = (transaction: any): DisplayTransaction => {
+    // 调试：显示原始交易数据结构
+    console.log('🔧 Formatting transaction data:', {
+      originalTransaction: transaction,
+      transactionType: transaction.transactionType,
+      amount: transaction.amount,
+      createdAt: transaction.createdAt,
+      timestamp: transaction.timestamp,
+      time: transaction.time,
+      allFields: Object.keys(transaction)
+    });
+
     // 根据交易类型判断是否为正值
-    const isPositive = transaction.transactionType === 1; // 1为流入
+    // 先检查实际的交易类型值
+    console.log('💰 Transaction type analysis:', {
+      transactionType: transaction.transactionType,
+      amount: transaction.amount,
+      description: transaction.description,
+      rawTransaction: transaction
+    });
+
+    // 临时逻辑：根据你的描述，消费应该显示为负数
+    // 让我们根据实际数据调整这个逻辑
+    let isPositive;
+    if (transaction.transactionType === 1) {
+      // 如果 type 1 但实际是消费，应该显示负号
+      isPositive = false; // 暂时改为 false 来测试
+    } else if (transaction.transactionType === 2) {
+      isPositive = false; // 支出
+    } else {
+      isPositive = true; // 其他情况默认为正
+    }
+
+    console.log('💰 Sign decision:', {
+      transactionType: transaction.transactionType,
+      isPositive: isPositive,
+      willShowSign: isPositive ? '+' : '-'
+    });
 
     // 根据交易类型显示不同的标题
     const getTransactionTitle = (type: number) => {
@@ -72,9 +156,27 @@ export const IncomeDetailsSection = (): JSX.Element => {
       }
     };
 
-    // 格式化日期
-    const formatDate = (timestamp: number) => {
+    // 格式化日期 - 尝试多种可能的时间戳字段
+    const formatDate = (txData: any) => {
+      let timestamp = txData.createdAt || txData.timestamp || txData.time || txData.createTime;
+
+      // 如果时间戳是字符串，尝试转换
+      if (typeof timestamp === 'string') {
+        timestamp = Date.parse(timestamp);
+      }
+
+      // 如果时间戳太小，可能是秒而不是毫秒
+      if (timestamp < 1000000000000) {
+        timestamp = timestamp * 1000;
+      }
+
       const date = new Date(timestamp);
+
+      // 检查日期是否有效
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+
       return date.toLocaleDateString('zh-CN', {
         year: 'numeric',
         month: '2-digit',
@@ -84,28 +186,84 @@ export const IncomeDetailsSection = (): JSX.Element => {
       }).replace(/\//g, '.');
     };
 
+    // 格式化金额 - 处理可能已经包含符号的金额
+    const formatAmount = (amount: any, isIncome: boolean) => {
+      let numAmount = parseFloat(amount);
+
+      // 如果金额已经是负数，取绝对值
+      if (numAmount < 0) {
+        numAmount = Math.abs(numAmount);
+      }
+
+      // 根据交易类型添加正确的符号
+      const sign = isIncome ? '+' : '-';
+
+      return `${sign}${numAmount}USDC`;
+    };
+
     return {
       id: transaction.id.toString(),
       type: getTransactionTitle(transaction.transactionType),
       description: transaction.description || '',
-      amount: `${isPositive ? '+' : '-'}${transaction.amount}USDC`,
+      amount: formatAmount(transaction.amount, isPositive),
       status: transaction.status === 0 ? "Completed" : "Pending",
-      date: formatDate(transaction.createdAt),
+      date: formatDate(transaction),
       isPositive
     };
   };
 
   // 移除静态示例数据，现在使用真实API数据和空状态
 
-  // 检查用户是否已经绑定了邮箱
-  const hasEmail = accountInfo?.email && accountInfo.email.trim().length > 0;
+  // 基于真正的userinfo检查邮箱绑定状态
+  const hasEmail = React.useMemo(() => {
+    if (!userInfo) {
+      console.log('📧 No userInfo available from AuthService.getUserInfo()');
+      return false;
+    }
 
-  // 添加调试日志
-  console.log('📧 Email check debug:', {
-    accountInfo,
-    email: accountInfo?.email,
+    const email = userInfo.email;
+    const emailExists = email && typeof email === 'string' && email.trim().length > 0;
+
+    console.log('📧 Email binding check (from REAL userinfo):', {
+      email: email,
+      emailType: typeof email,
+      emailLength: email ? email.length : 0,
+      emailTrimmed: email ? email.trim() : '',
+      emailTrimmedLength: email ? email.trim().length : 0,
+      emailExists: emailExists,
+      userInfo: userInfo,
+      dataSource: 'AuthService.getUserInfo()',
+      timestamp: new Date().toISOString()
+    });
+
+    return Boolean(emailExists);
+  }, [userInfo]);
+
+  // 强化调试日志 - 显示关键决策信息
+  console.log('🚦 Button decision logic (based on REAL userinfo):', {
     hasEmail,
-    loading
+    loading,
+    shouldShowWithdrawButton: hasEmail && !loading,
+    shouldShowBindEmailButton: !hasEmail && !loading,
+    userInfoExists: Boolean(userInfo),
+    userInfoSource: propUserInfo ? 'parent component' : 'useUserBalance fallback',
+    fullUserInfo: JSON.stringify(userInfo, null, 2)
+  });
+
+  // 调试交易列表数据
+  console.log('📊 Transaction list debug:', {
+    transactionsArray: transactions,
+    propTransactions: propTransactions,
+    hookTransactions: hookTransactions,
+    transactionsLength: transactions?.length || 0,
+    transactionsType: typeof transactions,
+    isArray: Array.isArray(transactions),
+    firstTransaction: transactions?.[0],
+    loading: loading,
+    error: error,
+    willShowList: !loading && !error && transactions?.length > 0,
+    willShowEmpty: !loading && !error && (!transactions || transactions.length === 0),
+    dataSource: propTransactions ? 'parent_component' : 'useUserBalance_hook'
   });
 
   const handleWithdrawClick = async () => {
@@ -136,6 +294,12 @@ export const IncomeDetailsSection = (): JSX.Element => {
     try {
       // 首先获取钱包地址
       const address = await getWalletAddress();
+      console.log('🔍 Wallet address obtained:', {
+        address: address,
+        length: address?.length || 0,
+        isValid: address && address.length === 42 && address.startsWith('0x')
+      });
+
       if (!address) {
         showToast('Please connect your wallet first', 'error');
         return;
@@ -152,10 +316,40 @@ export const IncomeDetailsSection = (): JSX.Element => {
 
   const handleWalletEmailBound = async () => {
     setShowWalletBindEmail(false);
-    // 邮箱绑定成功后，刷新用户账户信息获取最新的邮箱数据
-    await refreshData();
-    // 然后显示提现模态框
-    setShowWithdrawalModal(true);
+    console.log('✅ Email binding successful, refreshing REAL userinfo...');
+
+    try {
+      // 优先使用父组件的refreshUserInfo (调用AuthService.getUserInfo)
+      if (refreshUserInfo) {
+        console.log('🔄 Calling refreshUserInfo from parent component (REAL userinfo API)...');
+        await refreshUserInfo();
+        console.log('✅ Parent refreshUserInfo completed');
+      }
+
+      // 同时刷新余额等其他数据
+      console.log('🔄 Also refreshing balance and transaction data...');
+      await refreshData();
+      console.log('✅ Balance data refresh completed');
+
+      // 延迟后再次刷新确保数据同步
+      setTimeout(async () => {
+        if (refreshUserInfo) {
+          try {
+            console.log('🔄 Second refresh of REAL userinfo to ensure consistency...');
+            await refreshUserInfo();
+            console.log('✅ Second userinfo refresh completed');
+          } catch (secondRefreshError) {
+            console.warn('⚠️ Second userinfo refresh failed:', secondRefreshError);
+          }
+        }
+      }, 2000);
+
+      showToast('Email bound successfully! User info updated.', 'success');
+
+    } catch (error) {
+      console.error('❌ Failed to refresh user data after email binding:', error);
+      showToast('Email bound, but failed to refresh user data.', 'warning');
+    }
   };
 
   const handleVerifyEmail = (data: { amount: string; toAddress: string; network: string; chainId: number }) => {
@@ -191,7 +385,7 @@ export const IncomeDetailsSection = (): JSX.Element => {
               </div>
             ) : (
               <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-2xl text-gray-900">
-                {accountInfo?.totalIncome || '0'} USDC
+                {accountInfo?.totalIncome || '0'} USD
               </p>
             )}
           </div>
@@ -210,7 +404,7 @@ export const IncomeDetailsSection = (): JSX.Element => {
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
             ) : (
               <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-2xl text-gray-900">
-                {accountInfo?.balance || '0'} USDC
+                {accountInfo?.balance || '0'} USD
               </p>
             )}
 
@@ -375,8 +569,8 @@ export const IncomeDetailsSection = (): JSX.Element => {
         withdrawableAmount={accountInfo ? `${accountInfo.balance} USDC` : "0 USDC"}
         network="Base Sepolia"
         walletAddress=""
-        minimumAmount="10USD"
-        serviceFee="1USD"
+        minimumAmount="0.1USD"
+        serviceFee="10%"
         chainId={84532}
         assetName="USDC"
       />
@@ -387,7 +581,7 @@ export const IncomeDetailsSection = (): JSX.Element => {
           setShowEmailVerification(false);
           setWithdrawalData(null);
         }}
-        email="user@gmail.com"
+        email={userInfo?.email || "user@example.com"}
         onVerified={handleEmailVerified}
         withdrawalData={withdrawalData}
         chainId={84532}

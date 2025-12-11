@@ -32,6 +32,24 @@ export const EmailVerificationModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
 
+  // 邮箱掩码函数
+  const maskEmail = (email: string): string => {
+    if (!email || !email.includes('@')) return email;
+
+    const [localPart, domain] = email.split('@');
+
+    if (localPart.length <= 3) {
+      // 如果本地部分太短，只显示第一个字符和星号
+      return `${localPart[0]}***@${domain}`;
+    } else {
+      // 显示前2个字符，中间用星号替换，显示最后1个字符
+      const firstPart = localPart.slice(0, 2);
+      const lastPart = localPart.slice(-1);
+      const masked = `${firstPart}***${lastPart}@${domain}`;
+      return masked;
+    }
+  };
+
   const handleSendCode = async () => {
     setIsLoading(true);
     try {
@@ -66,16 +84,50 @@ export const EmailVerificationModal = ({
         toAddress: withdrawalData.toAddress
       };
 
+      console.log('🚀 提现请求详情:', {
+        withdrawalRequest,
+        email,
+        rawWithdrawalData: withdrawalData,
+        timestamp: new Date().toISOString()
+      });
+
       const response = await WithdrawalService.submitWithdrawal(withdrawalRequest);
 
-      if (response.status === 0) {
-        showToast(`提现申请提交成功！订单号: ${response.orderId}`, 'success');
-        onVerified();
+      console.log('📥 提现API响应:', {
+        response,
+        status: response?.status,
+        message: response?.message,
+        orderId: response?.orderId,
+        timestamp: new Date().toISOString()
+      });
+
+      // 检查API调用是否成功
+      if (response.status === 1) {
+        // API调用成功，检查业务逻辑结果
+        if (response.data && response.data.status === 0) {
+          console.log('✅ 提现成功，订单号:', response.data.orderId);
+          showToast(`提现申请提交成功！订单号: ${response.data.orderId}`, 'success');
+          onVerified();
+        } else {
+          // 业务逻辑失败
+          const errorMessage = response.data?.message || response.msg || '提现申请失败';
+          console.log('❌ 提现失败，业务状态:', response.data?.status, '错误信息:', errorMessage);
+          showToast(errorMessage, 'error');
+        }
       } else {
-        showToast(response.message || '提现申请失败', 'error');
+        // API调用失败
+        const errorMessage = response.msg || response.message || '提现申请失败';
+        console.log('❌ API调用失败，状态:', response.status, '错误信息:', errorMessage);
+        showToast(errorMessage, 'error');
       }
     } catch (error: any) {
-      console.error('提现申请失败:', error);
+      console.error('💥 提现申请异常:', {
+        error,
+        errorMessage: error.message,
+        errorStack: error.stack,
+        withdrawalData,
+        timestamp: new Date().toISOString()
+      });
       showToast(error.message || '提现申请失败，请稍后重试', 'error');
     } finally {
       setIsLoading(false);
@@ -126,7 +178,7 @@ export const EmailVerificationModal = ({
         {/* Email display */}
         <div className="flex items-center gap-[15px] p-4 relative self-stretch w-full bg-gray-50 rounded-lg">
           <div className="relative flex-1 text-gray-700 text-center">
-            {email}
+            {maskEmail(email)}
           </div>
         </div>
 
@@ -169,13 +221,22 @@ export const EmailVerificationModal = ({
             Cancel
           </Button>
 
-          <Button
+          <button
             onClick={handleVerify}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             disabled={!verificationCode || isLoading}
+            className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg [font-family:'Lato',Helvetica] font-bold text-lg transition-all ${
+              !verificationCode || isLoading
+                ? 'bg-gray-300 cursor-not-allowed opacity-60 text-gray-500'
+                : 'bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] cursor-pointer hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] active:scale-95 text-[#ffffff]'
+            }`}
+            aria-label="Verify email code"
           >
-            {isLoading ? "Verifying..." : "Verify"}
-          </Button>
+            <span className={`relative w-fit tracking-[0] leading-5 whitespace-nowrap ${
+              !verificationCode || isLoading ? 'text-gray-500' : 'text-[#ffffff]'
+            }`}>
+              {isLoading ? "Verifying..." : "Verify"}
+            </span>
+          </button>
         </div>
       </div>
     </div>

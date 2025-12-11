@@ -29,8 +29,8 @@ export const WithdrawalModal = ({
   withdrawableAmount = "100.2 USDC",
   network = "Base Sepolia",
   walletAddress = "0DUSKFL...UEO",
-  minimumAmount = "10USD",
-  serviceFee = "1USD",
+  minimumAmount = "0.1USD",
+  serviceFee = "10%",
   chainId = 84532, // Base Sepolia chainId
   assetName = "USDC"
 }: WithdrawalModalProps): JSX.Element => {
@@ -52,7 +52,7 @@ export const WithdrawalModal = ({
 
   const handleVerify = () => {
     const amount = Number.parseFloat(withdrawAmount);
-    const minAmount = Number.parseFloat(minimumAmount?.replace(/[^\d.]/g, '') || "10");
+    const minAmount = Number.parseFloat(minimumAmount?.replace(/[^\d.]/g, '') || "0.1");
 
     if (amount <= 0) {
       showToast('请输入有效的提现金额', 'error');
@@ -86,6 +86,15 @@ export const WithdrawalModal = ({
     // Only allow numeric input
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       setWithdrawAmount(value);
+    }
+  };
+
+  const handleAllAmount = () => {
+    // 从 withdrawableAmount 中提取数字部分
+    // 例如 "100.2 USDC" -> "100.2"
+    const amountMatch = withdrawableAmount.match(/[\d.]+/);
+    if (amountMatch) {
+      setWithdrawAmount(amountMatch[0]);
     }
   };
 
@@ -128,10 +137,10 @@ export const WithdrawalModal = ({
                   key={option.value}
                   type="button"
                   onClick={() => setSelectedNetwork(option.value)}
-                  className={`px-3 py-1.5 rounded-lg transition-all text-sm font-medium ${
+                  className={`px-3 py-1.5 rounded-lg transition-all [font-family:'Lato',Helvetica] text-sm ${
                     selectedNetwork === option.value
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                      ? 'bg-[#0052ff] text-white font-medium'
+                      : 'bg-gray-100 text-off-black hover:bg-gray-200'
                   }`}
                 >
                   {option.label}
@@ -160,14 +169,23 @@ export const WithdrawalModal = ({
             <label htmlFor="withdraw-amount" className="block text-sm font-medium text-gray-700">
               Amount
             </label>
-            <input
-              id="withdraw-amount"
-              type="text"
-              value={withdrawAmount}
-              onChange={handleAmountChange}
-              placeholder="0"
-              className="flex h-12 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-lg placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="relative">
+              <input
+                id="withdraw-amount"
+                type="text"
+                value={withdrawAmount}
+                onChange={handleAmountChange}
+                placeholder="0"
+                className="flex h-12 w-full rounded-lg border border-gray-300 bg-white px-3 pr-16 py-2 text-lg placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <button
+                type="button"
+                onClick={handleAllAmount}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+              >
+                All
+              </button>
+            </div>
             <p className="text-xs text-gray-500">
               Min: {minimumAmount} • Service fee: {serviceFee}
             </p>
@@ -184,13 +202,22 @@ export const WithdrawalModal = ({
             Cancel
           </Button>
 
-          <Button
+          <button
             onClick={handleVerify}
             disabled={isVerifyDisabled}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300 disabled:text-gray-500"
+            className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg [font-family:'Lato',Helvetica] font-bold text-lg transition-all ${
+              isVerifyDisabled
+                ? 'bg-gray-300 cursor-not-allowed opacity-60 text-gray-500'
+                : 'bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] cursor-pointer hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] active:scale-95 text-[#ffffff]'
+            }`}
+            aria-label="Verify withdrawal"
           >
-            Verify
-          </Button>
+            <span className={`relative w-fit tracking-[0] leading-5 whitespace-nowrap ${
+              isVerifyDisabled ? 'text-gray-500' : 'text-[#ffffff]'
+            }`}>
+              Verify
+            </span>
+          </button>
         </div>
       </div>
     </div>
