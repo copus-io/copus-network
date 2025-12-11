@@ -14,6 +14,7 @@ interface EmailVerificationModalProps {
     toAddress: string;
     network?: string;
     chainId?: number;
+    assetName?: string;
   };
   chainId?: number;
   assetName?: string;
@@ -25,7 +26,7 @@ export const EmailVerificationModal = ({
   email = "XX@gmail.com",
   onVerified,
   withdrawalData,
-  chainId = 84532, // Base Sepolia chainId
+  chainId = 8453, // Base mainnet chainId
   assetName = "USDC"
 }: EmailVerificationModalProps): JSX.Element => {
   const [verificationCode, setVerificationCode] = useState("");
@@ -78,7 +79,7 @@ export const EmailVerificationModal = ({
     try {
       const withdrawalRequest: WithdrawalRequest = {
         amount: withdrawalData.amount,
-        assetName,
+        assetName: withdrawalData.assetName || assetName,
         chainId: withdrawalData.chainId || chainId,
         code: verificationCode,
         toAddress: withdrawalData.toAddress

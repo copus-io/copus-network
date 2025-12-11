@@ -7,7 +7,7 @@ import { WithdrawalRequest } from "../../types/withdrawal";
 interface WithdrawalModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onVerifyEmail: (data: { amount: string; toAddress: string; network: string; chainId: number }) => void;
+  onVerifyEmail: (data: { amount: string; toAddress: string; network: string; chainId: number; assetName: string }) => void;
   withdrawableAmount?: string;
   network?: string;
   walletAddress?: string;
@@ -18,8 +18,21 @@ interface WithdrawalModalProps {
 }
 
 const networkOptions = [
-  { value: 'base-sepolia', label: 'Base Sepolia', chainId: 84532 },
-  { value: 'xlayer', label: 'X Layer', chainId: 196 },
+  {
+    value: 'base',
+    label: 'Base',
+    chainId: 8453,
+    assets: [{ value: 'USDC', label: 'USDC' }]
+  },
+  {
+    value: 'xlayer',
+    label: 'X Layer',
+    chainId: 196,
+    assets: [
+      { value: 'USDC', label: 'USDC' },
+      { value: 'USDT', label: 'USDT' }
+    ]
+  },
 ];
 
 export const WithdrawalModal = ({
@@ -27,18 +40,35 @@ export const WithdrawalModal = ({
   onClose,
   onVerifyEmail,
   withdrawableAmount = "100.2 USDC",
-  network = "Base Sepolia",
+  network = "Base",
   walletAddress = "0DUSKFL...UEO",
-  minimumAmount = "0.1USD",
+  minimumAmount = "10USD",
   serviceFee = "10%",
-  chainId = 84532, // Base Sepolia chainId
+  chainId = 8453, // Base mainnet chainId
   assetName = "USDC"
 }: WithdrawalModalProps): JSX.Element => {
   const [withdrawAmount, setWithdrawAmount] = useState<string>("0");
   const [toAddress, setToAddress] = useState<string>(walletAddress || "");
-  const [selectedNetwork, setSelectedNetwork] = useState("base-sepolia");
+  const [selectedNetwork, setSelectedNetwork] = useState("base");
+  const [selectedAsset, setSelectedAsset] = useState("USDC");
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
+
+  // Get current network config and available assets
+  const currentNetworkConfig = networkOptions.find(n => n.value === selectedNetwork);
+  const availableAssets = currentNetworkConfig?.assets || [];
+
+  // Handle network change and reset asset if not available
+  const handleNetworkChange = (networkValue: string) => {
+    setSelectedNetwork(networkValue);
+    const newNetworkConfig = networkOptions.find(n => n.value === networkValue);
+    const newAvailableAssets = newNetworkConfig?.assets || [];
+
+    // If current asset is not available in new network, select first available
+    if (!newAvailableAssets.some(asset => asset.value === selectedAsset)) {
+      setSelectedAsset(newAvailableAssets[0]?.value || 'USDC');
+    }
+  };
 
   const handleClose = () => {
     setWithdrawAmount("0");
@@ -52,7 +82,7 @@ export const WithdrawalModal = ({
 
   const handleVerify = () => {
     const amount = Number.parseFloat(withdrawAmount);
-    const minAmount = Number.parseFloat(minimumAmount?.replace(/[^\d.]/g, '') || "0.1");
+    const minAmount = Number.parseFloat(minimumAmount?.replace(/[^\d.]/g, '') || "10");
 
     if (amount <= 0) {
       showToast('请输入有效的提现金额', 'error');
@@ -76,8 +106,9 @@ export const WithdrawalModal = ({
     onVerifyEmail({
       amount: withdrawAmount,
       toAddress: toAddress,
-      network: selectedNetworkInfo?.label || "Base Sepolia",
-      chainId: selectedNetworkInfo?.chainId || 84532
+      network: selectedNetworkInfo?.label || "Base",
+      chainId: selectedNetworkInfo?.chainId || 8453,
+      assetName: selectedAsset
     });
   };
 
@@ -122,12 +153,6 @@ export const WithdrawalModal = ({
 
         {/* Withdrawal info */}
         <div className="space-y-4 mb-6">
-          {/* Available amount */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Withdraw-able amount</span>
-            <span className="font-medium text-gray-900">{withdrawableAmount}</span>
-          </div>
-
           {/* Network selection */}
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Network</span>
@@ -136,7 +161,7 @@ export const WithdrawalModal = ({
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setSelectedNetwork(option.value)}
+                  onClick={() => handleNetworkChange(option.value)}
                   className={`px-3 py-1.5 rounded-lg transition-all [font-family:'Lato',Helvetica] text-sm ${
                     selectedNetwork === option.value
                       ? 'bg-[#0052ff] text-white font-medium'
@@ -147,6 +172,35 @@ export const WithdrawalModal = ({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Asset selection - only show if multiple assets available */}
+          {availableAssets.length > 1 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Asset</span>
+              <div className="inline-flex items-center gap-2">
+                {availableAssets.map((asset) => (
+                  <button
+                    key={asset.value}
+                    type="button"
+                    onClick={() => setSelectedAsset(asset.value)}
+                    className={`px-3 py-1.5 rounded-lg transition-all [font-family:'Lato',Helvetica] text-sm ${
+                      selectedAsset === asset.value
+                        ? 'bg-[#0052ff] text-white font-medium'
+                        : 'bg-gray-100 text-off-black hover:bg-gray-200'
+                    }`}
+                  >
+                    {asset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Available amount */}
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Withdraw-able amount</span>
+            <span className="font-medium text-gray-900">{withdrawableAmount}</span>
           </div>
 
           {/* Wallet address input */}

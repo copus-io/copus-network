@@ -55,7 +55,7 @@ export const IncomeDetailsSection = ({
     refreshData();
   }, []); // 每次组件加载时调用
 
-  // 添加定时刷新，确保用户状态同步
+  // 当页面重新变为可见时刷新数据
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -64,20 +64,10 @@ export const IncomeDetailsSection = ({
       }
     };
 
-    // 当页面重新变为可见时刷新数据
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // 定时检查用户状态（每30秒）
-    const interval = setInterval(() => {
-      if (!document.hidden) {
-        console.log('🔄 Periodic user data refresh...');
-        refreshData();
-      }
-    }, 30000);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(interval);
     };
   }, [refreshData]);
 
@@ -198,7 +188,7 @@ export const IncomeDetailsSection = ({
       // 根据交易类型添加正确的符号
       const sign = isIncome ? '+' : '-';
 
-      return `${sign}${numAmount}USDC`;
+      return `${sign}${numAmount}USD`;
     };
 
     return {
@@ -352,7 +342,7 @@ export const IncomeDetailsSection = ({
     }
   };
 
-  const handleVerifyEmail = (data: { amount: string; toAddress: string; network: string; chainId: number }) => {
+  const handleVerifyEmail = (data: { amount: string; toAddress: string; network: string; chainId: number; assetName: string }) => {
     setWithdrawalData(data);
     setShowWithdrawalModal(false);
     setShowEmailVerification(true);
@@ -485,7 +475,7 @@ export const IncomeDetailsSection = ({
           </div>
         ) : transactions && transactions.length > 0 ? (
           /* Real Transaction Data */
-          transactions.map((transaction) => {
+          transactions?.map((transaction) => {
             const item = formatTransactionForDisplay(transaction);
             return (
               <article
@@ -562,12 +552,12 @@ export const IncomeDetailsSection = ({
         isOpen={showWithdrawalModal}
         onClose={() => setShowWithdrawalModal(false)}
         onVerifyEmail={handleVerifyEmail}
-        withdrawableAmount={accountInfo ? `${accountInfo.balance} USDC` : "0 USDC"}
-        network="Base Sepolia"
+        withdrawableAmount={accountInfo ? `${accountInfo.balance} USD` : "0 USD"}
+        network="Base"
         walletAddress=""
-        minimumAmount="0.1USD"
+        minimumAmount="10USD"
         serviceFee="10%"
-        chainId={84532}
+        chainId={8453}
         assetName="USDC"
       />
 
@@ -580,8 +570,7 @@ export const IncomeDetailsSection = ({
         email={userInfo?.email || "user@example.com"}
         onVerified={handleEmailVerified}
         withdrawalData={withdrawalData}
-        chainId={84532}
-        assetName="USDC"
+        chainId={8453}
       />
 
       <WalletBindEmailModal
