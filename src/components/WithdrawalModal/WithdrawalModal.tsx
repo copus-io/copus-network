@@ -154,14 +154,26 @@ export const WithdrawalModal = ({
             <label htmlFor="wallet-address" className="block text-sm font-medium text-gray-700">
               To Address
             </label>
-            <input
-              id="wallet-address"
-              type="text"
-              value={toAddress}
-              onChange={(e) => setToAddress(e.target.value)}
-              placeholder="输入钱包地址"
-              className="flex h-12 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
-            />
+            <div className="relative">
+              <input
+                id="wallet-address"
+                type="text"
+                value={toAddress}
+                onChange={(e) => setToAddress(e.target.value)}
+                placeholder="输入钱包地址"
+                className="flex h-12 w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+              />
+              {toAddress && (
+                <button
+                  type="button"
+                  onClick={() => setToAddress("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Clear address"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Amount input */}
