@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "../ui/button";
 import { useToast } from "../ui/toast";
 import { WithdrawalService } from "../../services/withdrawalService";
@@ -133,22 +134,25 @@ export const WithdrawalModal = ({
 
   if (!isOpen) return <></>;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-[15px] shadow-xl max-w-md w-full mx-4 p-6">
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+      <div className="bg-white rounded-[15px] shadow-xl max-w-md w-full mx-4 p-[30px] relative">
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="absolute top-[30px] right-[30px] text-gray-400 hover:text-gray-600"
+          aria-label="Close modal"
+        >
+          <svg className="w-[12px] h-[12px]" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L11 11M1 11L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <div className="flex flex-col items-center gap-[15px] mb-6 mt-5">
+          <h2 className="text-xl font-semibold text-gray-900 text-center">
             Withdraw
           </h2>
-
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 w-6 h-6 flex items-center justify-center"
-            aria-label="Close modal"
-          >
-            ×
-          </button>
         </div>
 
         {/* Withdrawal info */}
@@ -214,8 +218,8 @@ export const WithdrawalModal = ({
                 type="text"
                 value={toAddress}
                 onChange={(e) => setToAddress(e.target.value)}
-                placeholder="输入钱包地址"
-                className="flex h-12 w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                placeholder="Enter wallet address"
+                className="flex h-12 w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [font-family:'Lato',Helvetica]"
               />
               {toAddress && (
                 <button
@@ -259,33 +263,30 @@ export const WithdrawalModal = ({
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3">
+        <div className="flex items-center justify-center gap-[15px]">
           <Button
             onClick={handleCancel}
-            variant="outline"
-            className="flex-1"
+            className="px-5 py-2.5 rounded-[50px] bg-transparent text-gray-600 hover:bg-gray-100 transition-colors h-auto shadow-none"
           >
             Cancel
           </Button>
 
-          <button
+          <Button
             onClick={handleVerify}
             disabled={isVerifyDisabled}
-            className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg [font-family:'Lato',Helvetica] font-bold text-lg transition-all ${
+            className={`px-5 py-2.5 rounded-[50px] transition-colors h-auto ${
               isVerifyDisabled
                 ? 'bg-gray-300 cursor-not-allowed opacity-60 text-gray-500'
-                : 'bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] cursor-pointer hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] active:scale-95 text-[#ffffff]'
+                : 'bg-red hover:bg-red/90 text-white'
             }`}
             aria-label="Verify withdrawal"
           >
-            <span className={`relative w-fit tracking-[0] leading-5 whitespace-nowrap ${
-              isVerifyDisabled ? 'text-gray-500' : 'text-[#ffffff]'
-            }`}>
-              Verify
-            </span>
-          </button>
+            Verify
+          </Button>
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

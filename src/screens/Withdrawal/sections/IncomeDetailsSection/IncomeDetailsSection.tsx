@@ -361,25 +361,21 @@ export const IncomeDetailsSection = ({
       {/* Stats Cards */}
       <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 lg:gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
         {/* Total Income Card */}
-        <div className="relative flex-1 self-stretch grow rounded-[15px] bg-white min-w-0">
-          <div className="flex flex-col items-center gap-3 sm:gap-5 p-3 sm:p-5 relative w-full h-full rounded-[15px] bg-[#e0e0e0]/40">
-          <div className="flex h-auto items-center gap-[3px] relative self-stretch w-full">
-            <h2 className="relative w-fit text-sm sm:text-base lg:text-lg font-medium text-gray-600">
+        <div className="relative flex-1 grow rounded-[15px] bg-white min-w-0">
+          <div className="flex flex-col items-start gap-3 sm:gap-5 px-3 sm:px-5 py-4 sm:py-[30px] w-full h-full rounded-[15px] bg-[#e0e0e0]/40">
+            <h2 className="text-sm sm:text-base lg:text-lg font-medium text-gray-600">
               Total income
             </h2>
-          </div>
 
-          <div className="items-start gap-[5px] pt-0 pb-0 sm:pb-2.5 px-0 self-stretch w-full flex-[0_0_auto] flex relative">
-            {loading ? (
-              <div className="flex items-center justify-center w-full">
+            <div className="flex items-center pb-0 sm:pb-2.5">
+              {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-lg sm:text-xl lg:text-2xl text-gray-900">
-                {accountInfo?.totalIncome || '0'} USD
-              </p>
-            )}
-          </div>
+              ) : (
+                <p className="font-semibold text-lg sm:text-xl lg:text-2xl text-gray-900">
+                  {accountInfo?.totalIncome || '0'} USD
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -431,17 +427,17 @@ export const IncomeDetailsSection = ({
       </div>
 
       {/* History Table Header */}
-      <div className="flex items-start gap-2 sm:gap-4 lg:gap-8 px-3 sm:px-5 py-2 sm:py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-100">
-        <div className="relative flex items-start flex-1 min-w-0 mt-[-1.00px] font-normal text-gray-600 text-xs sm:text-sm">
+      <div className="flex items-start gap-4 px-3 sm:px-5 py-2 sm:py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-100">
+        <div className="relative flex items-start flex-1 min-w-0 font-normal text-gray-600 text-xs sm:text-sm">
           Description
         </div>
-        <div className="relative flex items-start w-16 sm:w-20 lg:w-24 mt-[-1.00px] font-normal text-gray-600 text-xs sm:text-sm">
+        <div className="relative flex items-start w-20 font-normal text-gray-600 text-xs sm:text-sm">
           Amount
         </div>
-        <div className="relative flex items-start w-16 sm:w-20 lg:w-32 mt-[-1.00px] font-normal text-gray-600 text-xs sm:text-sm">
+        <div className="relative flex items-start w-20 font-normal text-gray-600 text-xs sm:text-sm">
           Status
         </div>
-        <div className="relative flex items-start w-14 sm:w-16 lg:w-20 mt-[-1.00px] font-normal text-gray-600 text-xs sm:text-sm">
+        <div className="relative flex items-start w-24 font-normal text-gray-600 text-xs sm:text-sm">
           Date
         </div>
       </div>
@@ -480,22 +476,22 @@ export const IncomeDetailsSection = ({
             return (
               <article
                 key={item.id}
-                className="flex items-center gap-2 sm:gap-4 lg:gap-8 p-3 sm:p-5 relative self-stretch w-full flex-[0_0_auto] min-h-[80px] sm:min-h-[100px] border-b border-gray-100 last:border-b-0"
+                className="flex items-center gap-4 p-3 sm:p-5 relative self-stretch w-full flex-[0_0_auto] min-h-[80px] sm:min-h-[100px] border-b border-[#e0e0e0] last:border-b-0"
               >
                 <div className="flex flex-col flex-1 min-w-0 items-start justify-center gap-1 sm:gap-[5px] relative self-stretch">
-                  <h3 className="relative w-fit mt-[-1.00px] font-medium text-gray-900 text-base sm:text-lg lg:text-xl truncate max-w-full">
+                  <h3 className="font-medium text-gray-900 text-base sm:text-lg lg:text-xl truncate max-w-full">
                     {item.type}
                   </h3>
                   {item.description && (
-                    <p className="relative self-stretch font-normal text-gray-600 text-sm sm:text-base line-clamp-2">
+                    <p className="font-normal text-gray-600 text-sm sm:text-base line-clamp-2">
                       {item.description}
                     </p>
                   )}
                 </div>
 
-                <div className="flex w-16 sm:w-20 lg:w-24 items-center gap-1 sm:gap-[5px] relative justify-end">
+                <div className="flex w-20 items-center justify-start">
                   <span
-                    className={`relative flex items-center justify-center w-fit mt-[-1.00px] font-medium text-sm sm:text-base lg:text-lg text-right ${
+                    className={`font-medium text-sm sm:text-base ${
                       item.isPositive ? "text-blue-600" : "text-gray-900"
                     }`}
                   >
@@ -503,15 +499,17 @@ export const IncomeDetailsSection = ({
                   </span>
                 </div>
 
-                <div className="flex flex-col w-16 sm:w-20 lg:w-32 items-start justify-center gap-1 sm:gap-2.5 relative self-stretch">
-                  <span className="relative flex items-center justify-start w-full font-normal text-gray-900 text-sm sm:text-base lg:text-lg">
+                <div className="flex w-20 items-center justify-start">
+                  <span className="font-normal text-gray-900 text-sm sm:text-base">
                     {item.status}
                   </span>
                 </div>
 
-                <time className="relative flex items-center justify-center w-14 sm:w-16 lg:w-20 text-gray-600 text-xs sm:text-sm text-right">
-                  {item.date}
-                </time>
+                <div className="flex w-24 items-center justify-start">
+                  <time className="text-gray-600 text-xs sm:text-sm">
+                    {item.date}
+                  </time>
+                </div>
               </article>
             );
           })
