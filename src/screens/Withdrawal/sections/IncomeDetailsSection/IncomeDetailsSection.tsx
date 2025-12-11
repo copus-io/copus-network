@@ -357,25 +357,25 @@ export const IncomeDetailsSection = ({
   };
 
   return (
-    <section className="flex flex-col items-center pl-[60px] pr-0 py-0 relative flex-1 grow">
+    <section className="flex flex-col items-center px-4 sm:px-8 lg:pl-[60px] lg:pr-0 py-0 relative flex-1 grow">
       {/* Stats Cards */}
-      <div className="flex items-center gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
+      <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 lg:gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
         {/* Total Income Card */}
-        <div className="relative flex-1 self-stretch grow rounded-[15px] bg-white">
-          <div className="flex flex-col items-center gap-5 p-5 relative w-full h-full rounded-[15px] bg-[#e0e0e0]/40">
-          <div className="flex h-[25px] items-center gap-[3px] relative self-stretch w-full">
-            <h2 className="relative w-fit mt-[-1.00px] text-lg font-medium text-gray-600">
+        <div className="relative flex-1 self-stretch grow rounded-[15px] bg-white min-w-0">
+          <div className="flex flex-col items-center gap-3 sm:gap-5 p-3 sm:p-5 relative w-full h-full rounded-[15px] bg-[#e0e0e0]/40">
+          <div className="flex h-auto items-center gap-[3px] relative self-stretch w-full">
+            <h2 className="relative w-fit text-sm sm:text-base lg:text-lg font-medium text-gray-600">
               Total income
             </h2>
           </div>
 
-          <div className="items-start gap-[5px] pt-0 pb-2.5 px-0 self-stretch w-full flex-[0_0_auto] flex relative">
+          <div className="items-start gap-[5px] pt-0 pb-0 sm:pb-2.5 px-0 self-stretch w-full flex-[0_0_auto] flex relative">
             {loading ? (
               <div className="flex items-center justify-center w-full">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-500"></div>
               </div>
             ) : (
-              <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-2xl text-gray-900">
+              <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-lg sm:text-xl lg:text-2xl text-gray-900">
                 {accountInfo?.totalIncome || '0'} USD
               </p>
             )}
@@ -384,19 +384,19 @@ export const IncomeDetailsSection = ({
         </div>
 
         {/* Withdrawable Amount Card */}
-        <div className="relative flex-1 grow rounded-[15px] bg-white">
-          <div className="flex-col items-center justify-center gap-5 px-5 py-[30px] w-full h-full rounded-[15px] bg-[#e0e0e0]/40 flex relative">
+        <div className="relative flex-1 grow rounded-[15px] bg-white min-w-0">
+          <div className="flex-col items-center justify-center gap-3 sm:gap-5 px-3 sm:px-5 py-4 sm:py-[30px] w-full h-full rounded-[15px] bg-[#e0e0e0]/40 flex relative">
             <div className="flex items-start relative self-stretch w-full flex-[0_0_auto]">
-              <h2 className="relative w-fit mt-[-1.00px] text-lg font-medium text-gray-600">
+              <h2 className="relative w-fit mt-[-1.00px] text-sm sm:text-base lg:text-lg font-medium text-gray-600">
                 Withdraw-able amount
               </h2>
             </div>
 
-            <div className="flex items-center justify-between pt-0 pb-2.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 pt-0 pb-0 sm:pb-2.5 px-0 relative self-stretch w-full flex-[0_0_auto]">
               {loading ? (
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-500"></div>
               ) : (
-                <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-2xl text-gray-900">
+                <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-lg sm:text-xl lg:text-2xl text-gray-900">
                   {accountInfo?.balance || '0'} USD
                 </p>
               )}
@@ -404,7 +404,7 @@ export const IncomeDetailsSection = ({
               {hasEmail ? (
                 <Button
                   onClick={handleWithdrawClick}
-                  className="px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto"
+                  className="px-3 sm:px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base w-full sm:w-auto"
                   disabled={loading}
                 >
                   Withdraw
@@ -412,7 +412,7 @@ export const IncomeDetailsSection = ({
               ) : (
                 <Button
                   onClick={handleBindEmailClick}
-                  className="px-5 py-2 rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red/5 transition-colors h-auto font-bold"
+                  className="px-3 sm:px-5 py-2 rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red/5 transition-colors h-auto font-bold text-sm sm:text-base w-full sm:w-auto"
                   disabled={loading}
                 >
                   Bind Email
@@ -424,24 +424,24 @@ export const IncomeDetailsSection = ({
       </div>
 
       {/* History Section */}
-      <div className="flex items-center gap-[5px] pl-5 pr-0 pt-[30px] pb-2.5 relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative w-fit mt-[-1.00px] text-lg font-medium text-gray-900">
+      <div className="flex items-center gap-[5px] px-3 sm:px-5 pr-0 pt-6 sm:pt-[30px] pb-2.5 relative self-stretch w-full flex-[0_0_auto]">
+        <h2 className="relative w-fit mt-[-1.00px] text-base sm:text-lg font-medium text-gray-900">
           History
         </h2>
       </div>
 
       {/* History Table Header */}
-      <div className="flex items-start gap-[60px] px-5 py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-100">
-        <div className="relative flex items-start w-[440px] mt-[-1.00px] font-normal text-gray-600 text-sm">
+      <div className="flex items-start gap-2 sm:gap-4 lg:gap-8 px-3 sm:px-5 py-2 sm:py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-100">
+        <div className="relative flex items-start flex-1 min-w-0 mt-[-1.00px] font-normal text-gray-600 text-xs sm:text-sm">
           Description
         </div>
-        <div className="relative flex items-start w-[117px] mt-[-1.00px] font-normal text-gray-600 text-sm">
+        <div className="relative flex items-start w-16 sm:w-20 lg:w-24 mt-[-1.00px] font-normal text-gray-600 text-xs sm:text-sm">
           Amount
         </div>
-        <div className="relative flex items-start w-[180px] mt-[-1.00px] font-normal text-gray-600 text-sm">
+        <div className="relative flex items-start w-16 sm:w-20 lg:w-32 mt-[-1.00px] font-normal text-gray-600 text-xs sm:text-sm">
           Status
         </div>
-        <div className="relative flex items-start w-[119px] mt-[-1.00px] font-normal text-gray-600 text-sm">
+        <div className="relative flex items-start w-14 sm:w-16 lg:w-20 mt-[-1.00px] font-normal text-gray-600 text-xs sm:text-sm">
           Date
         </div>
       </div>
@@ -480,22 +480,22 @@ export const IncomeDetailsSection = ({
             return (
               <article
                 key={item.id}
-                className="flex items-center gap-[60px] p-5 relative self-stretch w-full flex-[0_0_auto] min-h-[100px] border-b border-gray-100 last:border-b-0"
+                className="flex items-center gap-2 sm:gap-4 lg:gap-8 p-3 sm:p-5 relative self-stretch w-full flex-[0_0_auto] min-h-[80px] sm:min-h-[100px] border-b border-gray-100 last:border-b-0"
               >
-                <div className="flex flex-col w-[440px] items-start justify-center gap-[5px] relative self-stretch">
-                  <h3 className="relative w-fit mt-[-1.00px] font-medium text-gray-900 text-xl">
+                <div className="flex flex-col flex-1 min-w-0 items-start justify-center gap-1 sm:gap-[5px] relative self-stretch">
+                  <h3 className="relative w-fit mt-[-1.00px] font-medium text-gray-900 text-base sm:text-lg lg:text-xl truncate max-w-full">
                     {item.type}
                   </h3>
                   {item.description && (
-                    <p className="relative self-stretch font-normal text-gray-600 text-base">
+                    <p className="relative self-stretch font-normal text-gray-600 text-sm sm:text-base line-clamp-2">
                       {item.description}
                     </p>
                   )}
                 </div>
 
-                <div className="flex w-[117px] items-center gap-[5px] relative">
+                <div className="flex w-16 sm:w-20 lg:w-24 items-center gap-1 sm:gap-[5px] relative justify-end">
                   <span
-                    className={`relative flex items-center justify-center w-fit mt-[-1.00px] font-medium text-lg ${
+                    className={`relative flex items-center justify-center w-fit mt-[-1.00px] font-medium text-sm sm:text-base lg:text-lg text-right ${
                       item.isPositive ? "text-blue-600" : "text-gray-900"
                     }`}
                   >
@@ -503,13 +503,13 @@ export const IncomeDetailsSection = ({
                   </span>
                 </div>
 
-                <div className="flex flex-col w-[180px] items-start justify-center gap-2.5 relative self-stretch">
-                  <span className="relative flex items-center justify-center w-fit font-normal text-gray-900 text-lg text-right">
+                <div className="flex flex-col w-16 sm:w-20 lg:w-32 items-start justify-center gap-1 sm:gap-2.5 relative self-stretch">
+                  <span className="relative flex items-center justify-start w-full font-normal text-gray-900 text-sm sm:text-base lg:text-lg">
                     {item.status}
                   </span>
                 </div>
 
-                <time className="relative flex items-center justify-center w-fit text-gray-600 text-sm">
+                <time className="relative flex items-center justify-center w-14 sm:w-16 lg:w-20 text-gray-600 text-xs sm:text-sm text-right">
                   {item.date}
                 </time>
               </article>
@@ -517,20 +517,20 @@ export const IncomeDetailsSection = ({
           })
         ) : (
           /* Empty State */
-          <div className="flex flex-col items-center justify-center p-12 text-center">
-            <div className="w-20 h-20 mb-6 rounded-full bg-gray-100 flex items-center justify-center">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex flex-col items-center justify-center p-6 sm:p-12 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mb-4 sm:mb-6 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-3">No transactions yet</h3>
-            <p className="text-gray-600 mb-6 max-w-md leading-relaxed">
+            <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-2 sm:mb-3">No transactions yet</h3>
+            <p className="text-gray-600 mb-4 sm:mb-6 max-w-md leading-relaxed text-sm sm:text-base">
               You haven't made any transactions yet. When you earn income from content curation or make withdrawals, they will appear here.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <Button
                 onClick={() => {/* Navigate to treasury or discovery */}}
-                className="px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto"
+                className="px-4 sm:px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base w-full sm:w-auto"
               >
                 Start Curating
               </Button>
