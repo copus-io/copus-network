@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { HeaderSection } from "../../components/shared/HeaderSection/HeaderSection";
 import { SideMenuSection } from "../../components/shared/SideMenuSection/SideMenuSection";
@@ -11,8 +11,19 @@ export const Withdrawal = (): JSX.Element => {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchRef = useRef<number>(0);
 
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = async (force: boolean = false) => {
+    // 防抖逻辑：防止频繁调用
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchRef.current;
+    const MIN_INTERVAL = 2000; // 2秒间隔
+
+    if (!force && timeSinceLastFetch < MIN_INTERVAL) {
+      console.log('🚫 API call debounced, too frequent. Time since last:', timeSinceLastFetch + 'ms');
+      return;
+    }
     try {
       setLoading(true);
       console.log('🏠 Withdrawal page mounted, calling REAL userinfo API and transactions...');
@@ -82,8 +93,38 @@ export const Withdrawal = (): JSX.Element => {
       console.error('❌ Failed to fetch userinfo or transactions:', error);
     } finally {
       setLoading(false);
+      lastFetchRef.current = Date.now();
     }
   };
+
+  // 创建防抖版本的刷新函数
+  const debouncedFetchUserInfo = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      fetchUserInfo();
+    }, 500);
+  }, []);
+
+  // 页面可见性监听器，统一处理
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 Page became visible, debounced refresh...');
+        debouncedFetchUserInfo();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [debouncedFetchUserInfo]);
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -91,8 +132,8 @@ export const Withdrawal = (): JSX.Element => {
   }, [location.pathname]);
 
   useEffect(() => {
-    // 页面加载时立即调用真正的userinfo接口
-    fetchUserInfo();
+    // 页面加载时立即调用真正的userinfo接口（强制执行，绕过防抖）
+    fetchUserInfo(true);
   }, []);
 
 

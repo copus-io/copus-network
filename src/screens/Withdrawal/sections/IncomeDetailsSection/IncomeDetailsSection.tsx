@@ -4,7 +4,7 @@ import { useToast } from "../../../../components/ui/toast";
 import { WithdrawalModal } from "../../../../components/WithdrawalModal";
 import { EmailVerificationModal } from "../../../../components/EmailVerificationModal";
 import { WalletBindEmailModal } from "../../../../components/WalletBindEmailModal";
-import { useUserBalance } from "../../../../hooks/useUserBalance";
+// Removed useUserBalance import - now using only parent component data
 
 // Interface for displaying formatted transaction data
 interface DisplayTransaction {
@@ -41,35 +41,16 @@ export const IncomeDetailsSection = ({
     chainId: number;
   } | null>(null);
 
-  const { accountInfo, transactions: hookTransactions, loading: balanceLoading, error, refreshData } = useUserBalance();
   const { showToast } = useToast();
 
-  // 使用来自父组件的数据，如果没有则回退到useUserBalance
-  const userInfo = propUserInfo || accountInfo;
-  const loading = propLoading !== undefined ? propLoading : balanceLoading;
-  const transactions = propTransactions || hookTransactions;
+  // 完全依赖父组件传递的数据，不再使用useUserBalance hook
+  const userInfo = propUserInfo;
+  const loading = propLoading !== undefined ? propLoading : false;
+  const transactions = propTransactions || [];
 
-  // 在页面访问时重新获取用户信息以检查邮箱绑定状态
-  useEffect(() => {
-    console.log('🔄 Income page accessed, refreshing user info to check email binding status...');
-    refreshData();
-  }, []); // 每次组件加载时调用
+  // 页面访问时的初始化，现在由父组件处理数据获取
 
-  // 当页面重新变为可见时刷新数据
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('🔄 Page became visible, refreshing user data...');
-        refreshData();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [refreshData]);
+  // 页面可见性检测现在由父组件统一处理
 
   // 获取钱包地址
   const getWalletAddress = async (): Promise<string> => {
@@ -236,7 +217,7 @@ export const IncomeDetailsSection = ({
     shouldShowWithdrawButton: hasEmail && !loading,
     shouldShowBindEmailButton: !hasEmail && !loading,
     userInfoExists: Boolean(userInfo),
-    userInfoSource: propUserInfo ? 'parent component' : 'useUserBalance fallback',
+    userInfoSource: 'parent component only',
     fullUserInfo: JSON.stringify(userInfo, null, 2)
   });
 
@@ -253,7 +234,7 @@ export const IncomeDetailsSection = ({
     error: error,
     willShowList: !loading && !error && transactions?.length > 0,
     willShowEmpty: !loading && !error && (!transactions || transactions.length === 0),
-    dataSource: propTransactions ? 'parent_component' : 'useUserBalance_hook'
+    dataSource: 'parent_component'
   });
 
   const handleWithdrawClick = async () => {
@@ -318,7 +299,7 @@ export const IncomeDetailsSection = ({
 
       // 同时刷新余额等其他数据
       console.log('🔄 Also refreshing balance and transaction data...');
-      await refreshData();
+      await refreshUserInfo && refreshUserInfo();
       console.log('✅ Balance data refresh completed');
 
       // 延迟后再次刷新确保数据同步
@@ -352,7 +333,7 @@ export const IncomeDetailsSection = ({
     setShowEmailVerification(false);
     setWithdrawalData(null);
     // 提现申请成功，刷新余额和交易历史
-    refreshData();
+    refreshUserInfo && refreshUserInfo();
     console.log("Withdrawal request submitted successfully");
   };
 
@@ -461,7 +442,7 @@ export const IncomeDetailsSection = ({
               We couldn't retrieve your transaction history. Please check your connection and try again.
             </p>
             <Button
-              onClick={refreshData}
+              onClick={() => refreshUserInfo && refreshUserInfo()}
               variant="outline"
               size="sm"
               className="text-blue-600 border-blue-600 hover:bg-blue-50"
