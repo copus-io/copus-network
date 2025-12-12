@@ -1177,23 +1177,53 @@ export const Content = (): JSX.Element => {
         console.log('  需要为网络获取:', selectedNetwork);
         showToast(`Preparing payment for ${selectedNetwork}...`, 'info');
 
-        console.log('📡 正在获取支付信息...');
+        console.log('📡 Fetching payment info...');
         const fetchedData = await fetchPaymentInfo(selectedNetwork);
-        console.log('📡 获取支付信息结果:', {
-          有EIP712数据: !!fetchedData.eip712Data,
-          有支付信息: !!fetchedData.paymentInfo
+        console.log('📡 Payment info fetch result:', {
+          hasEIP712Data: !!fetchedData.eip712Data,
+          hasPaymentInfo: !!fetchedData.paymentInfo
         });
 
-        // 新的OKX API应该为所有网络返回EIP-712数据和支付信息
-        if (!fetchedData.eip712Data || !fetchedData.paymentInfo) {
-          console.error('❌ 获取的支付数据缺失:', fetchedData);
+        // Check if we got payment info
+        if (!fetchedData.paymentInfo) {
+          console.error('❌ Payment info missing:', fetchedData);
           throw new Error(`Failed to get payment data for ${selectedNetwork}`);
         }
 
-        // 存储新数据以便立即使用
-        currentEip712Data = fetchedData.eip712Data;
         currentPaymentInfo = fetchedData.paymentInfo;
-        console.log('✅ 新支付数据已存储以便立即使用');
+
+        // For Base networks, if EIP-712 data is not provided, construct it manually
+        if (!fetchedData.eip712Data && (selectedNetwork === 'base-mainnet' || selectedNetwork === 'base-sepolia')) {
+          console.log('📝 Constructing EIP-712 data for Base network...');
+          const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+          const nonce = generateNonce();
+          const now = Math.floor(Date.now() / 1000);
+
+          currentEip712Data = {
+            domain: {
+              name: 'USD Coin',
+              version: '2',
+              chainId: parseInt(getNetworkConfig(selectedNetwork).chainId, 16),
+              verifyingContract: contractAddress
+            },
+            message: {
+              from: finalPaymentAddress,
+              to: currentPaymentInfo.payTo,
+              value: currentPaymentInfo.amount,
+              validAfter: now.toString(),
+              validBefore: (now + 3600).toString(),
+              nonce: nonce
+            }
+          };
+          console.log('✅ EIP-712 data constructed:', currentEip712Data);
+        } else if (fetchedData.eip712Data) {
+          currentEip712Data = fetchedData.eip712Data;
+        } else {
+          console.error('❌ EIP-712 data missing and not a Base network:', fetchedData);
+          throw new Error(`Failed to get EIP-712 data for ${selectedNetwork}`);
+        }
+
+        console.log('✅ Payment data ready for use');
       } else {
         console.log('✅ 使用缓存的支付数据');
       }
