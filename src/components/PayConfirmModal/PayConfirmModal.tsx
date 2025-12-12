@@ -52,7 +52,7 @@ const walletOptions: WalletOption[] = [
 
 const networkOptions = [
   { value: 'xlayer', label: 'X Layer' },
-  { value: 'base-mainnet', label: 'Base Mainnet' },
+  { value: 'base-mainnet', label: 'Base' },
 ];
 
 const xlayerCurrencyOptions = [
