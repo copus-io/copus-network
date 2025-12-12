@@ -243,6 +243,13 @@ export const IncomeDetailsSection = ({
 
   const handleWithdrawClick = async () => {
     try {
+      // 检查是否有足够的提现余额
+      const withdrawableBalance = parseFloat(propAccountInfo?.balance || '0');
+      if (withdrawableBalance <= 0) {
+        showToast('Insufficient withdrawable balance', 'error');
+        return;
+      }
+
       // 首先获取钱包地址
       const address = await getWalletAddress();
       if (!address) {
@@ -496,14 +503,6 @@ export const IncomeDetailsSection = ({
               >
                 Start Curating
               </Button>
-              {hasEmail && (
-                <Button
-                  onClick={handleWithdrawClick}
-                  className="px-5 py-2 rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-red/5 transition-colors h-auto"
-                >
-                  Test Withdrawal
-                </Button>
-              )}
             </div>
           </div>
         )}
