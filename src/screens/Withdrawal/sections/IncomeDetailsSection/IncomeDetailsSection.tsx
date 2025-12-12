@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
 import { useToast } from "../../../../components/ui/toast";
 import { WithdrawalModal } from "../../../../components/WithdrawalModal";
@@ -44,6 +45,7 @@ export const IncomeDetailsSection = ({
   } | null>(null);
 
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   // 完全依赖父组件传递的数据，不再使用useUserBalance hook
   const userInfo = propUserInfo;
@@ -489,7 +491,7 @@ export const IncomeDetailsSection = ({
             </p>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <Button
-                onClick={() => {/* Navigate to treasury or discovery */}}
+                onClick={() => navigate('/curate')}
                 className="px-4 sm:px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base w-full sm:w-auto"
               >
                 Start Curating
