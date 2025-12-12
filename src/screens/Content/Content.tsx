@@ -733,10 +733,10 @@ export const Content = (): JSX.Element => {
         tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
       });
 
-      console.log('🚀 发起支付API请求...');
+      console.log('🚀 Sending payment API request...');
       const response = await fetch(fullUrl, { headers });
 
-      console.log('📡 支付API响应状态:', {
+      console.log('📡 Payment API response status:', {
         status: response.status,
         statusText: response.statusText,
         ok: response.ok,
@@ -753,13 +753,21 @@ export const Content = (): JSX.Element => {
         }
       }
 
-      const data = await response.json();
-      console.log('📦 支付API原始响应数据:', {
+      let data = await response.json();
+      console.log('📦 Payment API raw response data:', {
         network: network,
         responseType: typeof data,
         dataKeys: Object.keys(data || {}),
         data: data
       });
+
+      // Unwrap common API response wrappers (e.g., { data: { ... } } or { code: 0, data: { ... } })
+      if (data && typeof data === 'object' && !data.domain && !data.message && !data.accepts) {
+        if (data.data && (typeof data.data === 'object' || typeof data.data === 'string')) {
+          console.log('📦 Unwrapping nested data field:', data.data);
+          data = data.data;
+        }
+      }
 
       // Handle different response formats based on endpoint
       if (network === 'xlayer' && data.domain && data.message) {
@@ -810,7 +818,53 @@ export const Content = (): JSX.Element => {
 
         // Return the data immediately for use in the calling function
         return { eip712Data, paymentInfo };
-      } else if ((network === 'base-mainnet' || network === 'base-sepolia') && typeof data === 'string') {
+      } else if ((network === 'base-mainnet' || network === 'base-sepolia') && (typeof data === 'string' || (data && data.domain && data.message))) {
+        // Base API may return target URL as string or EIP-712 structure
+        // If it returns EIP-712 structure, handle it like XLayer
+        if (data && data.domain && data.message) {
+          // Base API returned EIP-712 structure
+          const testConnectedAddress = walletAddress;
+          const testStoredAddress = user?.walletAddress;
+
+          let actualWalletAddress = null;
+          try {
+            const provider = window.ethereum;
+            if (provider) {
+              const accounts = await provider.request({ method: 'eth_accounts' });
+              actualWalletAddress = accounts[0] || null;
+            }
+          } catch (error) {
+            console.warn('Could not get wallet account:', error);
+          }
+
+          const addressToUse = actualWalletAddress || testConnectedAddress || testStoredAddress;
+          if (!addressToUse) {
+            throw new Error('Please connect your wallet first');
+          }
+
+          const eip712Data = {
+            ...data,
+            message: {
+              ...data.message,
+              from: addressToUse
+            }
+          };
+
+          setOkxEip712Data(eip712Data);
+
+          const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
+          const paymentInfo = {
+            payTo: data.message.to,
+            asset: data.domain.verifyingContract,
+            amount: data.message.value,
+            network: network,
+            resource: resourceUrl
+          };
+
+          setX402PaymentInfo(paymentInfo);
+          return { eip712Data, paymentInfo };
+        }
+
         // Base API returns target URL as string, need to construct payment info manually
         const contractAddress = getTokenContract(network, selectedCurrency);
         if (!contractAddress) {
@@ -1106,7 +1160,7 @@ export const Content = (): JSX.Element => {
       finalPaymentAddress = accounts[0] || walletAddress;
       console.log('  选择的最终支付地址:', finalPaymentAddress);
     } catch (error) {
-      console.warn('⚠️ 无法获取钱包账户，使用存储的地址:', error);
+      console.warn('⚠️ Failed to get wallet account, using stored address:', error);
       console.log('  回退到存储的钱包地址:', walletAddress);
     }
 
@@ -1133,7 +1187,7 @@ export const Content = (): JSX.Element => {
         // 新的OKX API应该为所有网络返回EIP-712数据和支付信息
         if (!fetchedData.eip712Data || !fetchedData.paymentInfo) {
           console.error('❌ 获取的支付数据缺失:', fetchedData);
-          throw new Error(`无法获取 ${selectedNetwork} 的支付数据`);
+          throw new Error(`Failed to get payment data for ${selectedNetwork}`);
         }
 
         // 存储新数据以便立即使用
@@ -1548,7 +1602,7 @@ export const Content = (): JSX.Element => {
           console.log('📄 错误响应不是JSON格式，原始文本:', errorText);
         }
 
-        throw new Error(`支付验证失败: ${unlockResponse.status} ${unlockResponse.statusText}`);
+        throw new Error(`Payment verification failed: ${unlockResponse.status} ${unlockResponse.statusText}`);
       }
 
       console.log('✅ 支付请求成功');
