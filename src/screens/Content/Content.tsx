@@ -1200,6 +1200,23 @@ export const Content = (): JSX.Element => {
           const now = Math.floor(Date.now() / 1000);
 
           currentEip712Data = {
+            types: {
+              EIP712Domain: [
+                { name: 'name', type: 'string' },
+                { name: 'version', type: 'string' },
+                { name: 'chainId', type: 'uint256' },
+                { name: 'verifyingContract', type: 'address' }
+              ],
+              TransferWithAuthorization: [
+                { name: 'from', type: 'address' },
+                { name: 'to', type: 'address' },
+                { name: 'value', type: 'uint256' },
+                { name: 'validAfter', type: 'uint256' },
+                { name: 'validBefore', type: 'uint256' },
+                { name: 'nonce', type: 'bytes32' }
+              ]
+            },
+            primaryType: 'TransferWithAuthorization',
             domain: {
               name: 'USD Coin',
               version: '2',
