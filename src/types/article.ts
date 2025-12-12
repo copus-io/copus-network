@@ -67,6 +67,7 @@ export interface BackendCategoryInfo {
 }
 
 export interface BackendArticle {
+  id: number; // Numeric article ID for bindArticles API
   uuid: string;
   authorInfo: BackendAuthorInfo;
   content: string;
@@ -101,7 +102,8 @@ export interface BackendApiResponse {
 
 // Frontend transformed data structures
 export interface Article {
-  id: string;
+  id: string; // UUID for display/routing
+  numericId: number; // Numeric ID for bindArticles API
   title: string;
   description: string;
   category: string;

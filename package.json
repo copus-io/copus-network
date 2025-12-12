@@ -20,7 +20,6 @@
     "env:prod": "./scripts/switch-env.sh production"
   },
   "dependencies": {
-    "@okxweb3/coin-ethereum": "^2.4.0",
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-checkbox": "^1.1.2",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -30,7 +29,6 @@
     "@radix-ui/react-switch": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.1",
     "@tanstack/react-query": "^5.90.2",
-    "@tanstack/react-query-devtools": "^5.90.2",
     "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "2.1.1",
@@ -44,7 +42,6 @@
     "tailwindcss-animate": "1.0.7"
   },
   "devDependencies": {
-    "@animaapp/vite-plugin-screen-graph": "^0.1.5",
     "@types/crypto-js": "^4.2.2",
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.0",

@@ -69,6 +69,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
 
   const transformedArticle = {
     id: backendArticle.uuid,
+    numericId: backendArticle.id, // Numeric ID for bindArticles API
     title: backendArticle.title,
     description: backendArticle.content,
     category: backendArticle.categoryInfo?.name || '',

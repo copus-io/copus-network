@@ -3,6 +3,7 @@ import { useUser } from "../../contexts/UserContext";
 import { AuthService } from "../../services/authService";
 import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
+import { logger } from "../../utils/logger";
 
 interface CollectTreasureModalProps {
   isOpen: boolean;
@@ -60,6 +61,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   const [newTreasuryName, setNewTreasuryName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedArticleId, setResolvedArticleId] = useState<number | null>(null);
+  const [curationsSpaceId, setCurationsSpaceId] = useState<number | null>(null); // Store Curations space ID to always include in save
 
   // Fetch user's bindable spaces using the bindableSpaces API
   useEffect(() => {
@@ -73,16 +75,15 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         let numericId = articleNumericId;
         if (!numericId || numericId <= 0) {
           // Fetch article detail to get the numeric ID
-          console.log('Fetching article detail to get numeric ID for:', articleId);
+          logger.log('Fetching article detail to get numeric ID for:', articleId);
           const articleDetail = await getArticleDetail(articleId);
           numericId = articleDetail.id;
-          console.log('Got numeric article ID:', numericId);
+          logger.log('Got numeric article ID:', numericId);
         }
         setResolvedArticleId(numericId);
 
         // Use the bindableSpaces API with articleId to get binding status
         const bindableResponse = await AuthService.getBindableSpaces(numericId);
-        console.log('Bindable spaces response:', bindableResponse);
 
         // Parse the response - handle different possible formats
         let spacesArray: BindableSpace[] = [];
@@ -144,9 +145,22 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           };
         });
 
-        // Sort collections: spaceType 1 (Treasury) first, then by ID descending (newest first)
-        const sortedCollections = collectionOptions.sort((a, b) => {
-          // spaceType 1 (Treasury) comes first - this is the user's default treasury
+        // Find Curations space (spaceType 2) - backend now properly handles it
+        const curationsSpace = collectionOptions.find(c => c.spaceType === 2);
+        if (curationsSpace) {
+          setCurationsSpaceId(curationsSpace.numericId);
+        }
+
+        // Filter out Curations space (spaceType 2) from the UI - curations are managed separately
+        // and should not be toggled by the user in the collect modal
+        const filteredCollections = collectionOptions.filter(c => c.spaceType !== 2);
+
+        // Sort collections: bound spaces first, then spaceType 1 (Treasury), then by ID descending
+        const sortedCollections = filteredCollections.sort((a, b) => {
+          // Already bound spaces come first (these have the red check mark)
+          if (a.wasOriginallyBound && !b.wasOriginallyBound) return -1;
+          if (!a.wasOriginallyBound && b.wasOriginallyBound) return 1;
+          // Then spaceType 1 (Treasury) comes first - this is the user's default treasury
           if (a.spaceType === 1 && b.spaceType !== 1) return -1;
           if (a.spaceType !== 1 && b.spaceType === 1) return 1;
           // Then sort by numeric ID descending (higher ID = more recently created)
@@ -163,7 +177,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
         setCollections(collectionsWithDefault);
       } catch (err) {
-        console.error('Failed to fetch bindable spaces:', err);
+        logger.error('Failed to fetch bindable spaces:', err);
       } finally {
         setLoading(false);
       }
@@ -200,18 +214,24 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setIsSubmitting(true);
 
       // Get all selected space IDs
-      const selectedSpaceIds = collections
+      let selectedSpaceIds = collections
         .filter(c => c.isSelected)
         .map(c => c.numericId);
 
-      console.log('Saving article to spaces:', { resolvedArticleId, selectedSpaceIds });
+      // IMPORTANT: Always include Curations space if it exists
+      // This prevents removing articles from curations when saving to other treasuries
+      // The bindArticles API replaces all bindings, so we must preserve curations
+      if (curationsSpaceId && !selectedSpaceIds.includes(curationsSpaceId)) {
+        selectedSpaceIds = [curationsSpaceId, ...selectedSpaceIds];
+      }
 
       // Call bindArticles API with the resolved numeric article ID
       await AuthService.bindArticles(resolvedArticleId, selectedSpaceIds);
 
-      const selectedCount = selectedSpaceIds.length;
-      if (selectedCount > 0) {
-        showToast(`Saved to ${selectedCount} treasury${selectedCount > 1 ? 's' : ''}`, 'success');
+      // Count only user-selected spaces (excluding auto-included Curations)
+      const userSelectedCount = collections.filter(c => c.isSelected).length;
+      if (userSelectedCount > 0) {
+        showToast(`Saved to ${userSelectedCount} treasury${userSelectedCount > 1 ? 's' : ''}`, 'success');
       } else {
         showToast('Removed from all treasuries', 'success');
       }
@@ -223,7 +243,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       onClose();
     } catch (err) {
-      console.error('Failed to save:', err);
+      logger.error('Failed to save:', err);
       showToast('Failed to save', 'error');
     } finally {
       setIsSubmitting(false);
@@ -246,7 +266,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       // Call the createSpace API to create a new treasury
       const createResponse = await AuthService.createSpace(newTreasuryName.trim());
-      console.log('Create space response:', createResponse);
+      logger.log('Create space response:', createResponse);
 
       // Extract the created space from response
       const createdSpace = createResponse?.data || createResponse;
@@ -275,7 +295,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setShowCreateNew(false);
       setNewTreasuryName("");
     } catch (err) {
-      console.error('Failed to create treasury:', err);
+      logger.error('Failed to create treasury:', err);
       showToast('Failed to create treasury', 'error');
     } finally {
       setIsSubmitting(false);
@@ -302,7 +322,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       {/* Modal */}
       <div
-        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] z-10 ${showCreateNew ? '' : 'h-[500px]'}`}
+        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 max-h-[80vh]"
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
@@ -512,7 +532,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             </div>
 
             {/* Save and Cancel Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" style={{ marginLeft: '-30px', marginRight: '-30px', paddingLeft: '30px', paddingRight: '30px', width: 'calc(100% + 60px)' }}>
+            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ml-[-30px] mr-[-30px] pl-[30px] pr-[30px] w-[calc(100%+60px)] max-[440px]:ml-[-15px] max-[440px]:mr-[-15px] max-[440px]:pl-[15px] max-[440px]:pr-[15px] max-[440px]:w-[calc(100%+30px)]">
               <button
                 className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={handleCancel}

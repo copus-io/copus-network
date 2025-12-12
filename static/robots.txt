@@ -1,0 +1,8 @@
+# Copus Network - robots.txt
+# We welcome all crawlers and AI agents
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://copus.network/sitemap.xml

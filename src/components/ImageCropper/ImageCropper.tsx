@@ -625,22 +625,6 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
           />
         </div>
 
-        <div className="text-sm text-gray-600 mb-4 text-center">
-          <div>🎯 Drag to move crop area</div>
-          <div>🖼️ Drag blank area to move image</div>
-          <div>📏 Drag corners to resize</div>
-          <div>🔍 Scroll wheel to zoom</div>
-          <div className="text-xs text-gray-500 mt-1">Zoom range: {scale.toFixed(1)}x (0.5x - 3.0x)</div>
-          {aspectRatio !== 1 && <div>🔒 Maintain {(() => {
-            // Display common aspect ratios nicely
-            if (Math.abs(aspectRatio - 16/9) < 0.01) return '16:9';
-            if (Math.abs(aspectRatio - 4/3) < 0.01) return '4:3';
-            if (Math.abs(aspectRatio - 3/2) < 0.01) return '3:2';
-            if (Math.abs(aspectRatio - 21/9) < 0.01) return '21:9';
-            return aspectRatio > 1 ? `${aspectRatio.toFixed(2)}:1` : `1:${(1/aspectRatio).toFixed(2)}`;
-          })()} aspect ratio</div>}
-        </div>
-
         <div className="flex justify-end gap-5">
           <button
             type="button"

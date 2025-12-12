@@ -39,6 +39,18 @@ export const GemSpinner: React.FC<{ className?: string; size?: 'sm' | 'md' | 'lg
   );
 };
 
+// Full page loading component for route transitions
+export const CopusLoading: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex flex-col items-center gap-4">
+        <GemSpinner size="lg" />
+        <span className="text-gray-500 text-sm">{message}</span>
+      </div>
+    </div>
+  );
+};
+
 // Book flip animation - for sending verification codes and other document-related operations
 export const BookFlip: React.FC<{ className?: string }> = ({ className = '' }) => {
   return (

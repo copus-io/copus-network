@@ -501,7 +501,7 @@ export const Content = (): JSX.Element => {
 
   // Debug: Log article data to check arChainId and payment info
   useEffect(() => {
-    if (article && process.env.NODE_ENV === 'development') {
+    if (article && import.meta.env.MODE === 'development') {
       console.log('Article loaded:', {
         uuid: article.uuid,
         targetUrlIsLocked: article.targetUrlIsLocked,
@@ -744,10 +744,22 @@ export const Content = (): JSX.Element => {
       const fullUrl = `${apiBaseUrl}${paymentEndpoint}?${extendedParams.toString()}`;
       console.log('📤 Payment info request for', network, ':', {
         url: fullUrl,
-        params: Object.fromEntries(extendedParams)
+        params: Object.fromEntries(extendedParams),
+        selectedCurrency: selectedCurrency,
+        tokenInfo: tokenInfo,
+        hasToken: !!token,
+        tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
       });
 
+      console.log('🚀 Sending payment API request...');
       const response = await fetch(fullUrl, { headers });
+
+      console.log('📡 Payment API response status:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
 
       if (!response.ok && response.status !== 402) {
         // 402 is the expected "Payment Required" status for payment APIs
@@ -759,7 +771,21 @@ export const Content = (): JSX.Element => {
         }
       }
 
-      const data = await response.json();
+      let data = await response.json();
+      console.log('📦 Payment API raw response data:', {
+        network: network,
+        responseType: typeof data,
+        dataKeys: Object.keys(data || {}),
+        data: data
+      });
+
+      // Unwrap common API response wrappers (e.g., { data: { ... } } or { code: 0, data: { ... } })
+      if (data && typeof data === 'object' && !data.domain && !data.message && !data.accepts) {
+        if (data.data && (typeof data.data === 'object' || typeof data.data === 'string')) {
+          console.log('📦 Unwrapping nested data field:', data.data);
+          data = data.data;
+        }
+      }
 
       // Handle different response formats based on endpoint
       if (network === 'xlayer' && data.domain && data.message) {
@@ -810,7 +836,53 @@ export const Content = (): JSX.Element => {
 
         // Return the data immediately for use in the calling function
         return { eip712Data, paymentInfo };
-      } else if ((network === 'base-mainnet' || network === 'base-sepolia') && typeof data === 'string') {
+      } else if ((network === 'base-mainnet' || network === 'base-sepolia') && (typeof data === 'string' || (data && data.domain && data.message))) {
+        // Base API may return target URL as string or EIP-712 structure
+        // If it returns EIP-712 structure, handle it like XLayer
+        if (data && data.domain && data.message) {
+          // Base API returned EIP-712 structure
+          const testConnectedAddress = walletAddress;
+          const testStoredAddress = user?.walletAddress;
+
+          let actualWalletAddress = null;
+          try {
+            const provider = window.ethereum;
+            if (provider) {
+              const accounts = await provider.request({ method: 'eth_accounts' });
+              actualWalletAddress = accounts[0] || null;
+            }
+          } catch (error) {
+            console.warn('Could not get wallet account:', error);
+          }
+
+          const addressToUse = actualWalletAddress || testConnectedAddress || testStoredAddress;
+          if (!addressToUse) {
+            throw new Error('Please connect your wallet first');
+          }
+
+          const eip712Data = {
+            ...data,
+            message: {
+              ...data.message,
+              from: addressToUse
+            }
+          };
+
+          setOkxEip712Data(eip712Data);
+
+          const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
+          const paymentInfo = {
+            payTo: data.message.to,
+            asset: data.domain.verifyingContract,
+            amount: data.message.value,
+            network: network,
+            resource: resourceUrl
+          };
+
+          setX402PaymentInfo(paymentInfo);
+          return { eip712Data, paymentInfo };
+        }
+
         // Base API returns target URL as string, need to construct payment info manually
         const contractAddress = getTokenContract(network, selectedCurrency);
         if (!contractAddress) {
@@ -1032,75 +1104,220 @@ export const Content = (): JSX.Element => {
   // Step 3: Execute Payment using x402 + ERC-3009
 
   const handlePayNow = async () => {
-    // Prevent duplicate submissions
+    console.log('💳 ========== 开始支付流程 ==========');
+    console.log('🌐 环境和配置信息:');
+    console.log('  当前环境:', import.meta.env.MODE);
+    console.log('  API基础URL:', import.meta.env.VITE_API_BASE_URL);
+    console.log('  当前域名:', window.location.origin);
+
+    console.log('🔍 初始支付状态检查:');
+    console.log('  支付进行中:', isPaymentInProgress);
+    console.log('  钱包地址:', walletAddress);
+    console.log('  钱包提供者:', !!walletProvider);
+    console.log('  选择的网络:', selectedNetwork);
+    console.log('  选择的货币:', selectedCurrency);
+    console.log('  钱包类型:', walletType);
+
+    // 检查USDT特定配置
+    if (selectedCurrency === 'usdt') {
+      console.log('💰 USDT支付特定检查:');
+      const networkConfig = getNetworkConfig(selectedNetwork);
+      console.log('  X Layer网络配置:', networkConfig);
+      console.log('  X Layer是否支持USDT:', getSupportedTokens(selectedNetwork).includes('usdt'));
+      console.log('  USDT合约地址:', getTokenContract(selectedNetwork, 'usdt'));
+    }
+
+    // 防止重复提交
     if (isPaymentInProgress) {
+      console.warn('⚠️ 支付已在进行中，终止操作');
       showToast('Payment is in progress, please wait...', 'warning');
       return;
     }
 
     if (!walletAddress || !walletProvider) {
+      console.error('❌ 钱包未正确连接:', { 钱包地址: walletAddress, 钱包提供者: !!walletProvider });
       showToast('Wallet not connected', 'error');
       return;
     }
 
-    // Start payment, set state
+    // 开始支付，设置状态
     setIsPaymentInProgress(true);
+    console.log('🚀 支付流程已启动，设置状态为进行中');
 
     // Local variables to store fresh data for immediate use
     let currentEip712Data = okxEip712Data;
     let currentPaymentInfo = x402PaymentInfo;
 
-    // Determine the final address to use consistently throughout the payment process
+    console.log('📊 当前支付数据状态:');
+    console.log('  当前EIP712数据:', !!currentEip712Data ? '可用' : '不可用');
+    console.log('  当前支付信息:', !!currentPaymentInfo ? '可用' : '不可用');
+    if (currentEip712Data) {
+      console.log('  EIP-712域:', currentEip712Data.domain);
+      console.log('  EIP-712消息预览:', {
+        发送者: currentEip712Data.message?.from,
+        接收者: currentEip712Data.message?.to,
+        金额: currentEip712Data.message?.value
+      });
+    }
+    if (currentPaymentInfo) {
+      console.log('  支付信息:', {
+        支付给: currentPaymentInfo.payTo,
+        资产: currentPaymentInfo.asset,
+        金额: currentPaymentInfo.amount,
+        网络: currentPaymentInfo.network
+      });
+    }
+
+    // 确定在整个支付过程中使用的最终地址
     let finalPaymentAddress = walletAddress;
+    console.log('👤 确定最终支付地址:');
+    console.log('  初始钱包地址:', walletAddress);
     try {
       const accounts = await walletProvider.request({ method: 'eth_accounts' });
+      console.log('  从钱包提供者获取的账户:', accounts);
       finalPaymentAddress = accounts[0] || walletAddress;
+      console.log('  选择的最终支付地址:', finalPaymentAddress);
     } catch (error) {
-      console.warn('Could not get MetaMask account, using wallet address:', error);
+      console.warn('⚠️ Failed to get wallet account, using stored address:', error);
+      console.log('  回退到存储的钱包地址:', walletAddress);
     }
 
     try {
-      // Check if payment info is available (should be preloaded)
-      // All networks now use new OKX API with EIP-712 format
-      if (!x402PaymentInfo || !currentEip712Data || x402PaymentInfo.network !== selectedNetwork) {
-        showToast(`Preparing payment for ${selectedNetwork}...`, 'info');
-        const fetchedData = await fetchPaymentInfo(selectedNetwork);
+      // 检查支付信息是否可用（应该已预加载）
+      // 所有网络现在都使用带有EIP-712格式的新OKX API
+      console.log('🔄 检查支付数据可用性:');
+      console.log('  x402支付信息可用:', !!x402PaymentInfo);
+      console.log('  当前EIP712数据可用:', !!currentEip712Data);
+      console.log('  网络匹配:', x402PaymentInfo?.network === selectedNetwork);
 
-        // New OKX API should return both EIP-712 data and payment info for all networks
-        if (!fetchedData.eip712Data || !fetchedData.paymentInfo) {
+      if (!x402PaymentInfo || !currentEip712Data || x402PaymentInfo.network !== selectedNetwork) {
+        console.log('⚠️ 支付数据不可用或网络不匹配，获取新数据');
+        console.log('  需要为网络获取:', selectedNetwork);
+        showToast(`Preparing payment for ${selectedNetwork}...`, 'info');
+
+        console.log('📡 Fetching payment info...');
+        const fetchedData = await fetchPaymentInfo(selectedNetwork);
+        console.log('📡 Payment info fetch result:', {
+          hasEIP712Data: !!fetchedData.eip712Data,
+          hasPaymentInfo: !!fetchedData.paymentInfo
+        });
+
+        // Check if we got payment info
+        if (!fetchedData.paymentInfo) {
+          console.error('❌ Payment info missing:', fetchedData);
           throw new Error(`Failed to get payment data for ${selectedNetwork}`);
         }
 
-        // Store the fresh data for immediate use
-        currentEip712Data = fetchedData.eip712Data;
         currentPaymentInfo = fetchedData.paymentInfo;
+
+        // For Base networks, if EIP-712 data is not provided, construct it manually
+        if (!fetchedData.eip712Data && (selectedNetwork === 'base-mainnet' || selectedNetwork === 'base-sepolia')) {
+          console.log('📝 Constructing EIP-712 data for Base network...');
+          const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+          const nonce = generateNonce();
+          const now = Math.floor(Date.now() / 1000);
+
+          currentEip712Data = {
+            types: {
+              EIP712Domain: [
+                { name: 'name', type: 'string' },
+                { name: 'version', type: 'string' },
+                { name: 'chainId', type: 'uint256' },
+                { name: 'verifyingContract', type: 'address' }
+              ],
+              TransferWithAuthorization: [
+                { name: 'from', type: 'address' },
+                { name: 'to', type: 'address' },
+                { name: 'value', type: 'uint256' },
+                { name: 'validAfter', type: 'uint256' },
+                { name: 'validBefore', type: 'uint256' },
+                { name: 'nonce', type: 'bytes32' }
+              ]
+            },
+            primaryType: 'TransferWithAuthorization',
+            domain: {
+              name: 'USD Coin',
+              version: '2',
+              chainId: parseInt(getNetworkConfig(selectedNetwork).chainId, 16),
+              verifyingContract: contractAddress
+            },
+            message: {
+              from: finalPaymentAddress,
+              to: currentPaymentInfo.payTo,
+              value: currentPaymentInfo.amount,
+              validAfter: now.toString(),
+              validBefore: (now + 3600).toString(),
+              nonce: nonce
+            }
+          };
+          console.log('✅ EIP-712 data constructed:', currentEip712Data);
+        } else if (fetchedData.eip712Data) {
+          currentEip712Data = fetchedData.eip712Data;
+        } else {
+          console.error('❌ EIP-712 data missing and not a Base network:', fetchedData);
+          throw new Error(`Failed to get EIP-712 data for ${selectedNetwork}`);
+        }
+
+        console.log('✅ Payment data ready for use');
+      } else {
+        console.log('✅ 使用缓存的支付数据');
       }
 
-      // Ensure user is on the correct network for payment
+      // 确保用户在正确的网络上进行支付
+      console.log('🔗 网络验证和切换:');
       const paymentNetworkConfig = getNetworkConfig(selectedNetwork);
+      console.log('  选择的网络:', selectedNetwork);
+      console.log('  期望的链ID:', paymentNetworkConfig.chainId);
+      console.log('  网络配置:', paymentNetworkConfig);
+
       const chainId = await walletProvider.request({ method: 'eth_chainId' });
+      console.log('  当前钱包链ID:', chainId);
 
       if (chainId !== paymentNetworkConfig.chainId) {
+        console.log('⚠️ 检测到网络不匹配，正在切换网络');
+        console.log('  从:', chainId);
+        console.log('  到:', paymentNetworkConfig.chainId);
         showToast(`Switching to ${selectedNetwork} network for payment...`, 'info');
         await switchToNetwork(walletProvider, selectedNetwork);
+        console.log('✅ 网络切换完成');
+      } else {
+        console.log('✅ 已在正确的网络上');
       }
 
-      // Create ERC-3009 TransferWithAuthorization signature
+      // 创建ERC-3009 TransferWithAuthorization签名
       const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
+      console.log('✍️ 启动签名流程:');
+      console.log('  钱包类型:', walletType);
+      console.log('  钱包名称:', walletName);
+      console.log('  最终支付地址:', finalPaymentAddress);
+
       showToast(`Please sign the payment authorization in ${walletName}...`, 'info');
 
       let signedAuth;
 
       // All networks now use EIP-712 signing with the new OKX API
       if (currentEip712Data) {
+        console.log('✍️ Starting EIP-712 signature process:');
+
         // Get payment contract address and chain ID for the selected network
         const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
         const chainIdInt = parseInt(paymentNetworkConfig.chainId, 16);
 
+        console.log('  Contract address:', paymentContractAddress);
+        console.log('  Chain ID (int):', chainIdInt);
+        console.log('  Selected currency:', selectedCurrency);
+
         // Try OKX-optimized signing method first (for XLayer), fallback to standard EIP-712
         try {
           if (selectedNetwork === 'xlayer' && walletType === 'okx') {
-            console.log('Attempting OKX browser signature method for XLayer...');
+            console.log('🦊 ========== INITIATING OKX SIGNING FOR XLAYER ==========');
+            console.log('🦊 [MAIN] Attempting OKX browser signature method for XLayer...');
+            console.log('🦊 [MAIN] OKX wallet detected, using specialized signing');
+            console.log('🦊 [MAIN] 钱包检查详情:');
+            console.log('  钱包对象存在:', !!walletProvider);
+            console.log('  isOKXWallet标识:', walletProvider?.isOKXWallet);
+            console.log('  钱包名称:', walletProvider?.name);
+            console.log('  钱包版本:', walletProvider?.version);
 
             // Extract parameters from EIP-712 data for OKX method
             const transferParams = {
@@ -1112,17 +1329,33 @@ export const Content = (): JSX.Element => {
               nonce: currentEip712Data.message.nonce
             };
 
+            console.log('🦊 [MAIN] OKX Transfer params extracted from EIP-712 data:', transferParams);
+            console.log('🦊 [MAIN] Additional OKX signing context:', {
+              chainIdInt: chainIdInt,
+              paymentContractAddress: paymentContractAddress,
+              selectedCurrency: selectedCurrency,
+              walletProvider: walletProvider?.isOKXWallet ? 'OKX Wallet' : 'Unknown',
+              currentEip712DataKeys: Object.keys(currentEip712Data)
+            });
+
+            console.log('🦊 [MAIN] Calling signTransferWithAuthorizationOKXBrowser...');
             signedAuth = await signTransferWithAuthorizationOKXBrowser(
               transferParams,
               walletProvider,
               chainIdInt,
-              paymentContractAddress || ''
+              paymentContractAddress || '',
+              selectedCurrency // Pass the selected token type
             );
+
+            console.log('🦊 [MAIN] ✅ OKX browser signature successful!');
+            console.log('🦊 [MAIN] OKX signed result:', signedAuth);
+            console.log('🦊 ========== OKX SIGNING COMPLETED ==========');
           } else {
             throw new Error('Using standard EIP-712 method');
           }
         } catch (okxError) {
-          console.log('Using standard EIP-712 signing method...');
+          console.log('📝 Using standard EIP-712 signing method...');
+          console.log('  OKX error (fallback expected):', okxError);
 
           // Standard EIP-712 signing for all wallets and networks
           const correctedEip712Data = {
@@ -1133,17 +1366,133 @@ export const Content = (): JSX.Element => {
             }
           };
 
+          console.log('📝 Corrected EIP-712 data for standard signing:');
+          console.log('  Domain:', correctedEip712Data.domain);
+          console.log('  Message:', correctedEip712Data.message);
+          console.log('  From address correction:', {
+            original: currentEip712Data.message.from,
+            corrected: finalPaymentAddress
+          });
+
+          // 签名前的详细检查
+          console.log('🔍 ========== 签名前详细检查 ==========');
+          console.log('🔍 EIP-712数据完整性验证:');
+          console.log('  域名:', correctedEip712Data.domain?.name);
+          console.log('  版本:', correctedEip712Data.domain?.version);
+          console.log('  链ID:', correctedEip712Data.domain?.chainId);
+          console.log('  验证合约:', correctedEip712Data.domain?.verifyingContract);
+          console.log('  主要类型:', correctedEip712Data.primaryType);
+
+          console.log('🔍 消息参数验证:');
+          console.log('  发送方:', correctedEip712Data.message.from);
+          console.log('  接收方:', correctedEip712Data.message.to);
+          console.log('  金额:', correctedEip712Data.message.value);
+          console.log('  有效开始时间:', correctedEip712Data.message.validAfter);
+          console.log('  有效结束时间:', correctedEip712Data.message.validBefore);
+          console.log('  随机数:', correctedEip712Data.message.nonce);
+
+          console.log('🔍 环境检查:');
+          console.log('  钱包提供者类型:', typeof walletProvider);
+          console.log('  钱包提供者可用:', !!walletProvider);
+          console.log('  是否有request方法:', typeof walletProvider?.request === 'function');
+          console.log('  发送方地址格式检查:', {
+            地址: finalPaymentAddress,
+            长度: finalPaymentAddress?.length,
+            是否以0x开头: finalPaymentAddress?.startsWith('0x'),
+            是否为有效格式: /^0x[a-fA-F0-9]{40}$/.test(finalPaymentAddress || '')
+          });
+
+          console.log('🔍 JSON序列化检查:');
+          const jsonString = JSON.stringify(correctedEip712Data);
+          console.log('  序列化长度:', jsonString.length);
+          console.log('  序列化预览:', jsonString.substring(0, 200) + '...');
+
+          // 验证JSON可以被正确解析
+          try {
+            const parsed = JSON.parse(jsonString);
+            console.log('  ✅ JSON序列化/解析验证通过');
+          } catch (jsonError) {
+            console.error('  ❌ JSON序列化/解析失败:', jsonError);
+          }
+
+          console.log('📤 Sending eth_signTypedData_v4 request...');
+          console.log('📤 请求参数详情:');
+          console.log('  方法:', 'eth_signTypedData_v4');
+          console.log('  参数1 (账户地址):', finalPaymentAddress);
+          console.log('  参数2 (数据)长度:', jsonString.length);
+
+          // 显示时间戳便于追踪
+          const signRequestTime = new Date().toISOString();
+          console.log('📤 签名请求发送时间:', signRequestTime);
           // Sign using eth_signTypedData_v4 with the corrected structure
           const signature = await walletProvider.request({
             method: 'eth_signTypedData_v4',
             params: [finalPaymentAddress, JSON.stringify(correctedEip712Data)]
           });
 
+          // 记录签名响应时间
+          const signResponseTime = new Date().toISOString();
+          console.log('📥 签名响应接收时间:', signResponseTime);
+
+          console.log('✅ Standard signature received:', signature);
+
+          // 签名后的详细分析
+          console.log('🔍 ========== 签名后详细分析 ==========');
+          console.log('🔍 原始签名数据分析:');
+          console.log('  签名类型:', typeof signature);
+          console.log('  签名长度:', signature?.length);
+          console.log('  签名格式检查:', {
+            是否以0x开头: signature?.startsWith('0x'),
+            是否为字符串: typeof signature === 'string',
+            期望长度: signature?.length === 132, // 0x + 64 + 64 + 2 = 132
+          });
+
+          // 验证签名格式
+          const signatureRegex = /^0x[a-fA-F0-9]{130}$/;
+          const isValidSignatureFormat = signatureRegex.test(signature || '');
+          console.log('  签名格式有效性:', isValidSignatureFormat);
+
+          if (!isValidSignatureFormat) {
+            console.error('❌ 签名格式无效!');
+            console.error('  期望格式: 0x + 130个十六进制字符');
+            console.error('  实际接收:', signature);
+          }
+
           // Parse signature into v, r, s components
           const r = signature.slice(0, 66);
           const s = '0x' + signature.slice(66, 130);
           const vHex = signature.slice(130, 132);
           const v = parseInt(vHex, 16);
+
+          console.log('🔪 Standard signature parsing:');
+          console.log('  r组件:', r, '(长度:', r.length, ')');
+          console.log('  s组件:', s, '(长度:', s.length, ')');
+          console.log('  vHex:', vHex, '(长度:', vHex.length, ')');
+          console.log('  v十进制:', v);
+
+          // 验证解析的组件
+          console.log('🔍 签名组件验证:');
+          const isValidR = /^0x[a-fA-F0-9]{64}$/.test(r);
+          const isValidS = /^0x[a-fA-F0-9]{64}$/.test(s);
+          const isValidV = v === 27 || v === 28 || v === 0 || v === 1;
+
+          console.log('  r组件有效性:', isValidR);
+          console.log('  s组件有效性:', isValidS);
+          console.log('  v值有效性:', isValidV, '(期望值: 0,1,27,28)');
+
+          if (!isValidR || !isValidS || !isValidV) {
+            console.warn('⚠️ 一些签名组件验证失败，这可能导致后续问题');
+          }
+
+          console.log('🔍 签名重建验证:');
+          const rebuiltSignature = r + s.slice(2) + vHex;
+          const rebuiltMatches = rebuiltSignature === signature;
+          console.log('  重建签名:', rebuiltSignature);
+          console.log('  与原始匹配:', rebuiltMatches);
+
+          if (!rebuiltMatches) {
+            console.error('❌ 签名重建失败! 这表明解析过程有问题');
+          }
 
           signedAuth = {
             from: finalPaymentAddress,
@@ -1156,17 +1505,35 @@ export const Content = (): JSX.Element => {
             r,
             s
           };
+
+          console.log('✅ Final signed authorization (standard):', signedAuth);
         }
       } else {
+        console.error('❌ No EIP-712 data available for signing');
         throw new Error('No EIP-712 data available for signing');
       }
 
       // Map network name for x402 protocol
       // x402 protocol uses 'base' for Base mainnet, not 'base-mainnet'
+      console.log('🗺️ Network name mapping:');
+      console.log('  Selected network:', selectedNetwork);
+      console.log('  Current payment info network:', currentPaymentInfo.network);
+
       const x402NetworkName = selectedNetwork === 'base-mainnet' ? 'base' :
                              selectedNetwork === 'xlayer' ? 'xlayer' :
                              currentPaymentInfo.network;
 
+      console.log('  Mapped x402 network name:', x402NetworkName);
+
+      console.log('💳 Creating X-PAYMENT header...');
+      console.log('  Network:', x402NetworkName);
+      console.log('  Asset:', currentPaymentInfo.asset);
+      console.log('  Signed auth summary:', {
+        from: signedAuth.from,
+        to: signedAuth.to,
+        value: signedAuth.value,
+        v: signedAuth.v
+      });
 
       // Create X-PAYMENT header with signed authorization
       const paymentHeader = createX402PaymentHeader(
@@ -1175,18 +1542,37 @@ export const Content = (): JSX.Element => {
         currentPaymentInfo.asset
       );
 
+      console.log('✅ X-PAYMENT header created successfully');
+
       // Debug output for development
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         try {
           const decodedHeader = JSON.parse(atob(paymentHeader));
-          console.log('Payment header created for network:', x402NetworkName);
-          console.log('Signature verification details:', {
+          console.log('🔍 Payment header verification:');
+          console.log('  Network in header:', decodedHeader.network);
+          console.log('  X402 version:', decodedHeader.x402Version);
+          console.log('  Scheme:', decodedHeader.scheme);
+
+          const verification = {
             fromMatches: decodedHeader.payload?.authorization?.from === finalPaymentAddress,
             toMatches: decodedHeader.payload?.authorization?.to === currentPaymentInfo.payTo,
             valueMatches: decodedHeader.payload?.authorization?.value === currentPaymentInfo.amount?.toString()
-          });
+          };
+          console.log('  Verification results:', verification);
+
+          if (!verification.fromMatches || !verification.toMatches || !verification.valueMatches) {
+            console.warn('⚠️ Payment header verification failed!');
+            console.log('    Expected from:', finalPaymentAddress);
+            console.log('    Header from:', decodedHeader.payload?.authorization?.from);
+            console.log('    Expected to:', currentPaymentInfo.payTo);
+            console.log('    Header to:', decodedHeader.payload?.authorization?.to);
+            console.log('    Expected value:', currentPaymentInfo.amount?.toString());
+            console.log('    Header value:', decodedHeader.payload?.authorization?.value);
+          } else {
+            console.log('✅ Payment header verification successful');
+          }
         } catch (e) {
-          console.error('Failed to decode payment header for debug:', e);
+          console.error('❌ Failed to decode payment header for debug:', e);
         }
       }
 
@@ -1221,15 +1607,11 @@ export const Content = (): JSX.Element => {
         console.warn('⚠️ No authentication token found! Payment may fail');
       }
 
-      console.log('📤 Payment request headers:', {
-        'X-PAYMENT': `${paymentHeader.substring(0, 50)}...`,
-        'X-PAYMENT-ASSET': paymentHeaders['X-PAYMENT-ASSET'] || 'Not provided',
-        'Authorization': token ? 'Bearer [TOKEN]' : 'Not provided',
-        'Content-Type': paymentHeaders['Content-Type']
-      });
-
-      // Ensure payment URL includes all necessary parameters
+      // Ensure payment URL includes all necessary parameters and uses the same address as EIP-712 data
       let paymentUrl = currentPaymentInfo.resource;
+      console.log('🔗 Payment URL preparation:');
+      console.log('  Original resource URL:', currentPaymentInfo.resource);
+
       const url = new URL(paymentUrl);
 
       // Get token info for URL parameters
@@ -1244,32 +1626,74 @@ export const Content = (): JSX.Element => {
 
       if (selectedNetwork === 'xlayer' && paymentUrl.includes('from=')) {
         // Replace the 'from' parameter with the final payment address
+        const originalFrom = url.searchParams.get('from');
         url.searchParams.set('from', finalPaymentAddress);
+        console.log('  XLayer URL address correction:');
+        console.log('    Original from:', originalFrom);
+        console.log('    Corrected from:', finalPaymentAddress);
+      } else {
+        console.log('  Using original URL (no address correction needed)');
       }
 
       paymentUrl = url.toString();
       console.log('🔗 Final payment URL with all parameters:', paymentUrl);
 
+      console.log('📤 Final payment request details:');
+      console.log('  URL:', paymentUrl);
+      console.log('  Headers summary:', {
+        'X-PAYMENT': `${paymentHeader.substring(0, 50)}... (${paymentHeader.length} chars)`,
+        'X-PAYMENT-ASSET': paymentHeaders['X-PAYMENT-ASSET'] || 'Not provided',
+        'Authorization': token ? 'Bearer [TOKEN]' : 'Not provided',
+        'Content-Type': paymentHeaders['Content-Type']
+      });
+      console.log('  Complete headers object:', paymentHeaders);
 
+      console.log('🚀 发送支付请求...');
       const unlockResponse = await fetch(paymentUrl, {
         headers: paymentHeaders
       });
 
+      console.log('📥 收到支付响应:');
+      console.log('  状态码:', unlockResponse.status);
+      console.log('  状态文本:', unlockResponse.statusText);
+      console.log('  请求成功:', unlockResponse.ok);
+
 
       if (!unlockResponse.ok) {
+        console.error('❌ 支付请求失败');
         const errorText = await unlockResponse.text();
-        console.error('Payment verification failed:', {
-          status: unlockResponse.status,
-          statusText: unlockResponse.statusText,
-          error: errorText,
-          network: currentPaymentInfo.network
+        console.error('📄 错误响应详情:', {
+          状态码: unlockResponse.status,
+          状态文本: unlockResponse.statusText,
+          响应头: Object.fromEntries(unlockResponse.headers),
+          错误内容: errorText,
+          网络: currentPaymentInfo.network,
+          请求URL: paymentUrl
         });
 
-        throw new Error(`failed to verify payment: ${unlockResponse.status} ${unlockResponse.statusText}`);
+        // 尝试将错误解析为JSON以便更好地调试
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error('📄 解析的错误JSON:', errorJson);
+        } catch (parseError) {
+          console.log('📄 错误响应不是JSON格式，原始文本:', errorText);
+        }
+
+        throw new Error(`Payment verification failed: ${unlockResponse.status} ${unlockResponse.statusText}`);
       }
 
+      console.log('✅ 支付请求成功');
       const unlockData = await unlockResponse.json();
-      console.log('🎉 Payment success response:', unlockData);
+      console.log('🎉 支付成功响应:', unlockData);
+      console.log('📄 响应结构分析:', {
+        有data字段: 'data' in unlockData,
+        有targetUrl字段: 'targetUrl' in unlockData,
+        有url字段: 'url' in unlockData,
+        data值: unlockData.data,
+        targetUrl值: unlockData.targetUrl,
+        url值: unlockData.url,
+        所有字段: Object.keys(unlockData)
+      });
 
       // Handle different response structures for different networks
       let targetUrl = unlockData.data || unlockData.targetUrl;
@@ -1312,15 +1736,32 @@ export const Content = (): JSX.Element => {
       }
 
     } catch (error: any) {
-      console.error('Payment error:', error);
+      console.error('❌ ========== 支付错误 ==========');
+      console.error('错误详情:', {
+        错误消息: error.message,
+        错误代码: error.code,
+        错误堆栈: error.stack,
+        错误名称: error.name,
+        完整错误: error
+      });
+
       if (error.code === 4001) {
+        console.log('👤 用户取消了签名');
         showToast('Signature cancelled', 'info');
+      } else if (error.code === 4902) {
+        console.log('🔗 钱包中未添加该网络');
+        showToast('Please add the network to your wallet', 'error');
       } else {
+        console.error('💥 意外的支付错误:', error.message || '未知错误');
         showToast(`Payment failed: ${error.message || 'Unknown error'}`, 'error');
       }
+
+      console.error('❌ ========== 支付错误结束 ==========');
     } finally {
-      // Reset payment state, allow next payment
+      // 重置支付状态，允许下次支付
+      console.log('🔄 重置支付状态');
       setIsPaymentInProgress(false);
+      console.log('💳 ========== 支付流程结束 ==========');
     }
   };
 
@@ -1598,7 +2039,7 @@ export const Content = (): JSX.Element => {
           onWalletSelect={handleWalletSelect}
           walletAddress={walletAddress}
           availableBalance={walletBalance}
-          amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
+          amount={article?.priceInfo ? `${article.priceInfo.price} USD` : '0.01 USD'}
           network={getNetworkConfig(selectedNetwork).name}
           faucetLink={selectedNetwork === 'xlayer' && walletType === 'okx' ? 'https://www.okx.com/dex' : 'https://faucet.circle.com/'}
           isInsufficientBalance={(() => {

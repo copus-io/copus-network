@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { AuthService } from "../../../services/authService";
@@ -7,6 +7,15 @@ import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
+
+// Module-level cache to prevent duplicate fetches across StrictMode remounts
+interface SpaceFetchCacheEntry {
+  timestamp: number;
+  inProgress: boolean;
+  data?: { spaceInfo: any; articles: any[]; totalCount: number; spaceId: number | null };
+}
+const spaceFetchCache: Map<string, SpaceFetchCacheEntry> = new Map();
+const SPACE_CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles
 
 // Space Info Section Component
 const SpaceInfoSection = ({
@@ -196,6 +205,8 @@ export const SpaceContentSection = (): JSX.Element => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalArticleCount, setTotalArticleCount] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [reachedEnd, setReachedEnd] = useState(false); // Track if we've loaded all articles
+  const isLoadingMoreRef = useRef(false); // Ref to prevent race conditions in scroll handler
   const PAGE_SIZE = 20;
 
   // Edit space modal state
@@ -223,22 +234,52 @@ export const SpaceContentSection = (): JSX.Element => {
         return;
       }
 
+      const decodedIdentifier = decodeURIComponent(spaceIdentifier);
+
+      // Create a unique cache key for this space
+      const cacheKey = namespace ? `namespace:${decodedIdentifier}` : `category:${decodedIdentifier}`;
+
+      // Check module-level cache to prevent duplicate fetches (survives StrictMode remounts)
+      const now = Date.now();
+      const cached = spaceFetchCache.get(cacheKey);
+
+      // If we have cached data and it's still valid, use it immediately
+      if (cached && cached.data && (now - cached.timestamp < SPACE_CACHE_TTL)) {
+        console.log('[Space] Using cached data for:', cacheKey);
+        setSpaceInfo(cached.data.spaceInfo);
+        setArticles(cached.data.articles);
+        setTotalArticleCount(cached.data.totalCount);
+        if (cached.data.spaceId) setSpaceId(cached.data.spaceId);
+        setLoading(false);
+        return;
+      }
+
+      // If fetch is already in progress, skip to prevent duplicate calls
+      if (cached && cached.inProgress) {
+        console.log('[Space] Fetch already in progress for:', cacheKey, '- skipping');
+        return;
+      }
+
+      // Mark as in progress immediately to prevent race conditions
+      spaceFetchCache.set(cacheKey, { timestamp: now, inProgress: true });
+
       try {
         setLoading(true);
         setError(null);
-
-        const decodedIdentifier = decodeURIComponent(spaceIdentifier);
 
         // Check if this is a namespace route (from /treasury/:namespace)
         const isNamespaceRoute = !!namespace;
 
         let articlesArray: any[] = [];
+        let fetchedSpaceInfo: any = null;
+        let fetchedSpaceId: number | null = null;
+        let fetchedTotalCount = 0;
 
         if (isNamespaceRoute) {
           // Fetch space info by namespace using getSpaceInfo API
-          console.log('Fetching space info by namespace:', decodedIdentifier);
+          console.log('[Space] Fetching space info by namespace:', decodedIdentifier);
           const spaceInfoResponse = await AuthService.getSpaceInfo(decodedIdentifier);
-          console.log('Space info API response:', spaceInfoResponse);
+          console.log('[Space] Space info API response:', spaceInfoResponse);
 
           // Extract space info from response.data
           const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
@@ -255,31 +296,26 @@ export const SpaceContentSection = (): JSX.Element => {
             displayName = `${authorUsername}'s Curations`;
           }
 
-          // Set space info from API response
-          setSpaceInfo({
+          // Build space info object
+          fetchedSpaceInfo = {
             name: displayName,
             authorName: authorUsername,
             authorAvatar: spaceData?.userInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
             authorNamespace: spaceData?.userInfo?.namespace || user?.namespace,
             spaceType: spaceData?.spaceType,
-          });
+          };
 
           // Store spaceId for later use (edit functionality)
-          const spaceIdFromResponse = spaceData?.id;
-          if (spaceIdFromResponse) {
-            setSpaceId(spaceIdFromResponse);
-          }
+          fetchedSpaceId = spaceData?.id || null;
 
           // Store the total article count from space info
-          const totalCount = spaceData?.articleCount || 0;
-          setTotalArticleCount(totalCount);
+          fetchedTotalCount = spaceData?.articleCount || 0;
 
           // Fetch articles using spaceId from the space info
-          const spaceId = spaceIdFromResponse;
-          if (spaceId) {
-            console.log('Fetching articles for spaceId:', spaceId, 'page:', 1, 'pageSize:', PAGE_SIZE);
-            const articlesResponse = await AuthService.getSpaceArticles(spaceId, 1, PAGE_SIZE);
-            console.log('Space articles API response:', articlesResponse);
+          if (fetchedSpaceId) {
+            console.log('[Space] Fetching articles for spaceId:', fetchedSpaceId, 'page:', 1, 'pageSize:', PAGE_SIZE);
+            const articlesResponse = await AuthService.getSpaceArticles(fetchedSpaceId, 1, PAGE_SIZE);
+            console.log('[Space] Space articles API response:', articlesResponse);
 
             // Extract articles from paginated response
             if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
@@ -289,8 +325,20 @@ export const SpaceContentSection = (): JSX.Element => {
             }
           }
 
+          // Set all states
+          setSpaceInfo(fetchedSpaceInfo);
+          if (fetchedSpaceId) setSpaceId(fetchedSpaceId);
+          setTotalArticleCount(fetchedTotalCount);
           setArticles(articlesArray);
           setCurrentPage(1);
+          setReachedEnd(false); // Reset reached end state for new space
+
+          // Store in cache for reuse
+          spaceFetchCache.set(cacheKey, {
+            timestamp: Date.now(),
+            inProgress: false,
+            data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: fetchedTotalCount, spaceId: fetchedSpaceId }
+          });
         } else {
           // Old category-based route (for backwards compatibility)
           setSpaceInfo({
@@ -357,16 +405,24 @@ export const SpaceContentSection = (): JSX.Element => {
         }
 
       } catch (err) {
-        console.error('Failed to fetch space data:', err);
+        console.error('[Space] Failed to fetch space data:', err);
         setError('Failed to load space data');
         showToast('Failed to fetch space data, please try again', 'error');
+        // Clear cache on error so user can retry
+        spaceFetchCache.delete(cacheKey);
       } finally {
         setLoading(false);
+        // Mark as no longer in progress (but keep cached data if successful)
+        const existingCache = spaceFetchCache.get(cacheKey);
+        if (existingCache && existingCache.inProgress) {
+          spaceFetchCache.set(cacheKey, { ...existingCache, inProgress: false });
+        }
       }
     };
 
     fetchSpaceData();
-  }, [spaceIdentifier, namespace, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spaceIdentifier, namespace, user?.id, user?.username, user?.faceUrl, user?.namespace]);
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData => {
@@ -496,12 +552,17 @@ export const SpaceContentSection = (): JSX.Element => {
     showToast('Link copied to clipboard', 'success');
   };
 
-  // Handle load more articles
-  const handleLoadMore = async () => {
-    if (!spaceId || loadingMore) return;
+  // Check if there are more articles to load
+  const hasMoreArticles = !reachedEnd && articles.length < totalArticleCount;
 
+  // Handle load more articles
+  const handleLoadMore = useCallback(async () => {
+    // Use ref to prevent multiple simultaneous calls
+    if (!spaceId || isLoadingMoreRef.current || !hasMoreArticles) return;
+
+    isLoadingMoreRef.current = true;
+    setLoadingMore(true);
     try {
-      setLoadingMore(true);
       const nextPage = currentPage + 1;
       console.log('Loading more articles, page:', nextPage);
 
@@ -518,28 +579,39 @@ export const SpaceContentSection = (): JSX.Element => {
       if (newArticles.length > 0) {
         setArticles(prev => [...prev, ...newArticles]);
         setCurrentPage(nextPage);
+      } else {
+        // No more articles returned - mark as reached end
+        setReachedEnd(true);
+      }
+
+      // Also check if we got less than a full page
+      if (newArticles.length < PAGE_SIZE) {
+        setReachedEnd(true);
       }
     } catch (err) {
       console.error('Failed to load more articles:', err);
       showToast('Failed to load more articles', 'error');
     } finally {
       setLoadingMore(false);
+      isLoadingMoreRef.current = false;
     }
-  };
-
-  // Check if there are more articles to load
-  const hasMoreArticles = articles.length < totalArticleCount;
+  }, [spaceId, hasMoreArticles, currentPage, showToast]);
 
   // Auto-load more on scroll (same as Discovery page)
   useEffect(() => {
     const handleScroll = () => {
+      // Skip if no more articles or already loading
+      if (!hasMoreArticles || isLoadingMoreRef.current) {
+        return;
+      }
+
       // Check if scrolled near the bottom of the page
       const scrollTop = window.scrollY;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
 
-      if (scrolledToBottom && hasMoreArticles && !loadingMore && spaceId) {
+      if (scrolledToBottom && spaceId) {
         handleLoadMore();
       }
     };
@@ -548,7 +620,7 @@ export const SpaceContentSection = (): JSX.Element => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [hasMoreArticles, loadingMore, spaceId, currentPage]);
+  }, [hasMoreArticles, spaceId, handleLoadMore]);
 
   // Handle author click - navigate to treasury page
   const handleAuthorClick = () => {
