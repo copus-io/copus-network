@@ -9,6 +9,7 @@ import { WithdrawalService } from "../../services/withdrawalService";
 export const Withdrawal = (): JSX.Element => {
   const location = useLocation();
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [accountInfo, setAccountInfo] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -30,14 +31,15 @@ export const Withdrawal = (): JSX.Element => {
       console.log('📍 Route: /withdrawal');
       console.log('🔄 Calling AuthService.getUserInfo() - the CORRECT userinfo API');
 
-      // 并行调用用户信息和交易数据
-      const [userInfoResponse, transactionResponse] = await Promise.all([
+      // 并行调用用户信息、交易数据和账户余额信息
+      const [userInfoResponse, transactionResponse, accountInfoResponse] = await Promise.all([
         AuthService.getUserInfo(),
         WithdrawalService.getTransactionHistory({
           pageIndex: 1,
           pageSize: 20,
           flowType: 0
-        })
+        }),
+        WithdrawalService.getUserAccountInfo()
       ]);
 
       console.log('📥 REAL userinfo API response:', userInfoResponse);
@@ -65,7 +67,10 @@ export const Withdrawal = (): JSX.Element => {
         rawResponseStructure: JSON.stringify(transactionResponse, null, 2)
       });
 
+      console.log('💰 Account balance API response:', accountInfoResponse);
+
       setUserInfo(userInfoResponse);
+      setAccountInfo(accountInfoResponse);
       setTransactions(transactionResponse.data || []);
 
       const hasEmail = Boolean(userInfoResponse.email && userInfoResponse.email.trim().length > 0);
@@ -145,6 +150,7 @@ export const Withdrawal = (): JSX.Element => {
         <div className="flex h-full items-center justify-center px-[30px] py-0 relative w-full transition-all duration-500 ease-in-out animate-in fade-in-0 slide-in-from-bottom-4" style={{willChange: 'transform, opacity'}}>
           <IncomeDetailsSection
             userInfo={userInfo}
+            accountInfo={accountInfo}
             loading={loading}
             refreshUserInfo={fetchUserInfo}
             transactions={transactions}

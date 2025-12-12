@@ -19,6 +19,7 @@ interface DisplayTransaction {
 
 interface IncomeDetailsSectionProps {
   userInfo?: any;
+  accountInfo?: any;
   loading?: boolean;
   refreshUserInfo?: () => void;
   transactions?: any[];
@@ -26,6 +27,7 @@ interface IncomeDetailsSectionProps {
 
 export const IncomeDetailsSection = ({
   userInfo: propUserInfo,
+  accountInfo: propAccountInfo,
   loading: propLoading,
   refreshUserInfo,
   transactions: propTransactions
@@ -225,15 +227,15 @@ export const IncomeDetailsSection = ({
   console.log('📊 Transaction list debug:', {
     transactionsArray: transactions,
     propTransactions: propTransactions,
-    hookTransactions: hookTransactions,
+    // hookTransactions removed (now using parent component data),
     transactionsLength: transactions?.length || 0,
     transactionsType: typeof transactions,
     isArray: Array.isArray(transactions),
     firstTransaction: transactions?.[0],
     loading: loading,
-    error: error,
-    willShowList: !loading && !error && transactions?.length > 0,
-    willShowEmpty: !loading && !error && (!transactions || transactions.length === 0),
+    // error state removed (now handled by parent component),
+    willShowList: !loading && transactions?.length > 0,
+    willShowEmpty: !loading && (!transactions || transactions.length === 0),
     dataSource: 'parent_component'
   });
 
@@ -353,7 +355,7 @@ export const IncomeDetailsSection = ({
                 <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-500"></div>
               ) : (
                 <p className="font-semibold text-lg sm:text-xl lg:text-2xl text-gray-900">
-                  {accountInfo?.totalIncome || '0'} USD
+                  {propAccountInfo?.totalIncome || '0'} USD
                 </p>
               )}
             </div>
@@ -374,7 +376,7 @@ export const IncomeDetailsSection = ({
                 <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-blue-500"></div>
               ) : (
                 <p className="relative flex items-center justify-center w-fit mt-[-1.00px] font-semibold text-lg sm:text-xl lg:text-2xl text-gray-900">
-                  {accountInfo?.balance || '0'} USD
+                  {propAccountInfo?.balance || '0'} USD
                 </p>
               )}
 
@@ -428,27 +430,6 @@ export const IncomeDetailsSection = ({
         {loading ? (
           <div className="flex items-center justify-center p-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        ) : error ? (
-          /* Error State */
-          <div className="flex flex-col items-center justify-center p-12 text-center">
-            <div className="w-16 h-16 mb-4 rounded-full bg-red-100 flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 15.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load transaction history</h3>
-            <p className="text-gray-600 mb-4 max-w-md">
-              We couldn't retrieve your transaction history. Please check your connection and try again.
-            </p>
-            <Button
-              onClick={() => refreshUserInfo && refreshUserInfo()}
-              variant="outline"
-              size="sm"
-              className="text-blue-600 border-blue-600 hover:bg-blue-50"
-            >
-              Try Again
-            </Button>
           </div>
         ) : transactions && transactions.length > 0 ? (
           /* Real Transaction Data */
@@ -531,7 +512,7 @@ export const IncomeDetailsSection = ({
         isOpen={showWithdrawalModal}
         onClose={() => setShowWithdrawalModal(false)}
         onVerifyEmail={handleVerifyEmail}
-        withdrawableAmount={accountInfo ? `${accountInfo.balance} USD` : "0 USD"}
+        withdrawableAmount={propAccountInfo?.balance ? `${propAccountInfo.balance} USD` : "0 USD"}
         network="Base"
         walletAddress=""
         minimumAmount="10USD"

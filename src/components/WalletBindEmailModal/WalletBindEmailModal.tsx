@@ -38,8 +38,8 @@ export const WalletBindEmailModal = ({
     setIsLoading(true);
     try {
       console.log('📧 Sending verification code to:', email);
-      // 直接发送验证码，不进行钱包登录
-      // 钱包签名和token刷新将在绑定时进行
+      // Send verification code directly without wallet login
+      // Wallet signing and token refresh will be done during binding
       await WithdrawalService.sendBindingVerificationCode(email);
       console.log('✅ Verification code sent successfully');
       showToast('Verification code sent to your email', 'success');
@@ -53,7 +53,7 @@ export const WalletBindEmailModal = ({
         stack: error.stack
       });
 
-      // 如果是token过期错误，提示用户在绑定时会自动刷新token
+      // If token expired error, user will be prompted that token will auto-refresh during binding
       let errorMessage = 'Failed to send verification code, please try again';
       if (error.message) {
         if (error.message.includes('CORS') || error.message.includes('network')) {

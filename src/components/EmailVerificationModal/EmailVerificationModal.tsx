@@ -33,17 +33,17 @@ export const EmailVerificationModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
 
-  // 邮箱掩码函数
+  // Email masking function
   const maskEmail = (email: string): string => {
     if (!email || !email.includes('@')) return email;
 
     const [localPart, domain] = email.split('@');
 
     if (localPart.length <= 3) {
-      // 如果本地部分太短，只显示第一个字符和星号
+      // If local part is too short, only show first character and asterisks
       return `${localPart[0]}***@${domain}`;
     } else {
-      // 显示前2个字符，中间用星号替换，显示最后1个字符
+      // Show first 2 characters, replace middle with asterisks, show last 1 character
       const firstPart = localPart.slice(0, 2);
       const lastPart = localPart.slice(-1);
       const masked = `${firstPart}***${lastPart}@${domain}`;
@@ -55,10 +55,10 @@ export const EmailVerificationModal = ({
     setIsLoading(true);
     try {
       await WithdrawalService.sendVerificationCode(email);
-      showToast('验证码已发送到您的邮箱', 'success');
+      showToast('Verification code sent to your email', 'success');
     } catch (error) {
-      console.error('发送验证码失败:', error);
-      showToast('发送验证码失败，请稍后重试', 'error');
+      console.error('Failed to send verification code:', error);
+      showToast('Failed to send verification code, please try again later', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -66,12 +66,12 @@ export const EmailVerificationModal = ({
 
   const handleVerify = async () => {
     if (!verificationCode) {
-      showToast('请输入验证码', 'error');
+      showToast('Please enter verification code', 'error');
       return;
     }
 
     if (!withdrawalData) {
-      showToast('提现数据缺失，请重新操作', 'error');
+      showToast('Withdrawal data missing, please try again', 'error');
       return;
     }
 
@@ -85,7 +85,7 @@ export const EmailVerificationModal = ({
         toAddress: withdrawalData.toAddress
       };
 
-      console.log('🚀 提现请求详情:', {
+      console.log('🚀 Withdrawal request details:', {
         withdrawalRequest,
         email,
         rawWithdrawalData: withdrawalData,
@@ -94,7 +94,7 @@ export const EmailVerificationModal = ({
 
       const response = await WithdrawalService.submitWithdrawal(withdrawalRequest);
 
-      console.log('📥 提现API响应:', {
+      console.log('📥 Withdrawal API response:', {
         response,
         status: response?.status,
         message: response?.message,
@@ -102,34 +102,34 @@ export const EmailVerificationModal = ({
         timestamp: new Date().toISOString()
       });
 
-      // 检查API调用是否成功
+      // Check if API call was successful
       if (response.status === 1) {
-        // API调用成功，检查业务逻辑结果
+        // API call successful, check business logic result
         if (response.data && response.data.status === 0) {
-          console.log('✅ 提现成功，订单号:', response.data.orderId);
-          showToast(`提现申请提交成功！订单号: ${response.data.orderId}`, 'success');
+          console.log('✅ Withdrawal successful, order ID:', response.data.orderId);
+          showToast(`Withdrawal request submitted successfully! Order ID: ${response.data.orderId}`, 'success');
           onVerified();
         } else {
-          // 业务逻辑失败
-          const errorMessage = response.data?.message || response.msg || '提现申请失败';
-          console.log('❌ 提现失败，业务状态:', response.data?.status, '错误信息:', errorMessage);
+          // Business logic failed
+          const errorMessage = response.data?.message || response.msg || 'Withdrawal request failed';
+          console.log('❌ Withdrawal failed, business status:', response.data?.status, 'Error message:', errorMessage);
           showToast(errorMessage, 'error');
         }
       } else {
-        // API调用失败
-        const errorMessage = response.msg || response.message || '提现申请失败';
-        console.log('❌ API调用失败，状态:', response.status, '错误信息:', errorMessage);
+        // API call failed
+        const errorMessage = response.msg || response.message || 'Withdrawal request failed';
+        console.log('❌ API call failed, status:', response.status, 'Error message:', errorMessage);
         showToast(errorMessage, 'error');
       }
     } catch (error: any) {
-      console.error('💥 提现申请异常:', {
+      console.error('💥 Withdrawal request exception:', {
         error,
         errorMessage: error.message,
         errorStack: error.stack,
         withdrawalData,
         timestamp: new Date().toISOString()
       });
-      showToast(error.message || '提现申请失败，请稍后重试', 'error');
+      showToast(error.message || 'Withdrawal request failed, please try again later', 'error');
     } finally {
       setIsLoading(false);
     }

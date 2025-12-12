@@ -86,24 +86,24 @@ export const WithdrawalModal = ({
     const minAmount = Number.parseFloat(minimumAmount?.replace(/[^\d.]/g, '') || "10");
 
     if (amount <= 0) {
-      showToast('请输入有效的提现金额', 'error');
+      showToast('Please enter a valid withdrawal amount', 'error');
       return;
     }
 
     if (amount < minAmount) {
-      showToast(`提现金额不能少于 ${minimumAmount}`, 'error');
+      showToast(`Withdrawal amount cannot be less than ${minimumAmount}`, 'error');
       return;
     }
 
     if (!toAddress || toAddress.length < 10) {
-      showToast('请输入有效的钱包地址', 'error');
+      showToast('Please enter a valid wallet address', 'error');
       return;
     }
 
-    // 获取选中的网络信息
+    // Get selected network information
     const selectedNetworkInfo = networkOptions.find(n => n.value === selectedNetwork);
 
-    // 将数据传递给邮箱验证组件
+    // Pass data to email verification component
     onVerifyEmail({
       amount: withdrawAmount,
       toAddress: toAddress,
@@ -122,8 +122,8 @@ export const WithdrawalModal = ({
   };
 
   const handleAllAmount = () => {
-    // 从 withdrawableAmount 中提取数字部分
-    // 例如 "100.2 USDC" -> "100.2"
+    // Extract numeric part from withdrawableAmount
+    // For example "100.2 USDC" -> "100.2"
     const amountMatch = withdrawableAmount.match(/[\d.]+/);
     if (amountMatch) {
       setWithdrawAmount(amountMatch[0]);
