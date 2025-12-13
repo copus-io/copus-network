@@ -18,6 +18,9 @@ import { Discovery } from "./screens/Discovery/Discovery";
 import { Withdrawal } from "./screens/Withdrawal/Withdrawal";
 import { Login } from "./screens/Login/Login";
 
+// ShortLinkHandler - eagerly loaded to prevent dynamic import errors
+import { ShortLinkHandler } from "./components/ShortLinkHandler";
+
 // Lazy loaded routes - split code for better initial load
 const Following = lazy(() => import("./screens/Following/Following").then(m => ({ default: m.Following })));
 const Notification = lazy(() => import("./screens/Notification/Notification").then(m => ({ default: m.Notification })));
@@ -38,7 +41,6 @@ const Published = lazy(() => import("./routes/Published/screens/Published").then
 const SignUp = lazy(() => import("./routes/SignUp/screens/SignUp").then(m => ({ default: m.SignUp })));
 const NotFoundPage = lazy(() => import("./components/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
 const OAuthRedirect = lazy(() => import("./components/OAuthRedirect"));
-const ShortLinkHandler = lazy(() => import("./components/ShortLinkHandler").then(m => ({ default: m.ShortLinkHandler })));
 
 // Suspense wrapper for lazy components
 const LazyRoute = ({ children }: { children: React.ReactNode }) => (
@@ -147,7 +149,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/u/:namespace",
-    element: <LazyRoute><ShortLinkHandler /></LazyRoute>, // Short link format: /u/namespace
+    element: <ShortLinkHandler />, // Short link format: /u/namespace
   },
   {
     path: "/curate",
