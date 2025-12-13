@@ -196,10 +196,6 @@ export const SpaceContentSection = (): JSX.Element => {
   // Support both /space/:category and /treasury/:namespace routes
   const spaceIdentifier = namespace || category;
 
-  // Debug logging
-  console.log('📍 SpaceContentSection rendered');
-  console.log('📍 URL params:', { category, namespace, spaceIdentifier });
-  console.log('📍 Current URL:', window.location.href);
   const { user, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
 
