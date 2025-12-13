@@ -150,20 +150,10 @@ export const TreasuryCard = ({
   const items = transformSpaceToItems(space);
 
   if (items.length === 0) {
-    const handleEmptyCardClick = () => {
-      console.log('🎯 Empty TreasuryCard clicked');
-      console.log('🎯 onClick prop:', onClick);
-      if (onClick) {
-        onClick();
-      } else {
-        console.warn('🎯 No onClick handler provided for empty card');
-      }
-    };
-
     return (
       <section
         className={`relative w-full h-fit flex flex-col items-start gap-[15px] ${onClick ? 'cursor-pointer' : ''}`}
-        onClick={handleEmptyCardClick}
+        onClick={onClick}
       >
         <div className={`flex h-[300px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`}>
           {emptyAction ? (
@@ -202,21 +192,10 @@ export const TreasuryCard = ({
 
   const [mainItem, ...sideItems] = items;
 
-  const handleCardClick = () => {
-    console.log('🎯 TreasuryCard clicked');
-    console.log('🎯 onClick prop:', onClick);
-    console.log('🎯 Space data:', space);
-    if (onClick) {
-      onClick();
-    } else {
-      console.warn('🎯 No onClick handler provided');
-    }
-  };
-
   return (
     <section
       className="relative w-full h-fit flex flex-col items-start gap-[15px] cursor-pointer"
-      onClick={handleCardClick}
+      onClick={onClick}
     >
       <div className="flex h-[300px] items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden">
         {/* Main item on the left - takes ~65% width */}
