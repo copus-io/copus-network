@@ -366,8 +366,28 @@ export const MainContentSection = (): JSX.Element => {
 
   // Navigate to a specific space/treasury
   const handleSpaceClick = (space: any) => {
+    console.log('🔍 Space clicked - about to navigate');
+    console.log('🔍 Space namespace:', space.namespace);
+    console.log('🔍 Current URL before:', window.location.href);
+
     if (space.namespace) {
-      navigate(`/treasury/${space.namespace}`);
+      const targetPath = `/treasury/${space.namespace}`;
+      console.log('🔍 Navigating to:', targetPath);
+
+      try {
+        navigate(targetPath);
+        console.log('🔍 Navigate call completed');
+
+        // Check URL again after a delay
+        setTimeout(() => {
+          console.log('🔍 URL after navigation:', window.location.href);
+          console.log('🔍 window.location.pathname:', window.location.pathname);
+        }, 200);
+      } catch (error) {
+        console.error('🔍 Navigation error:', error);
+      }
+    } else {
+      console.warn('🔍 No namespace, cannot navigate');
     }
   };
 

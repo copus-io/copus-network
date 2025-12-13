@@ -8,6 +8,9 @@ import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 
+// Add debug logging for Space component
+console.log('📍 SpaceContentSection module loaded');
+
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 interface SpaceFetchCacheEntry {
   timestamp: number;
@@ -192,6 +195,11 @@ export const SpaceContentSection = (): JSX.Element => {
   const { category, namespace } = useParams<{ category?: string; namespace?: string }>();
   // Support both /space/:category and /treasury/:namespace routes
   const spaceIdentifier = namespace || category;
+
+  // Debug logging
+  console.log('📍 SpaceContentSection rendered');
+  console.log('📍 URL params:', { category, namespace, spaceIdentifier });
+  console.log('📍 Current URL:', window.location.href);
   const { user, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
 
