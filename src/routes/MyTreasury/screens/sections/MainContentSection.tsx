@@ -366,8 +366,13 @@ export const MainContentSection = (): JSX.Element => {
 
   // Navigate to a specific space/treasury
   const handleSpaceClick = (space: any) => {
+    console.log('🔍 Space clicked:', space);
+    console.log('🔍 Space namespace:', space.namespace);
     if (space.namespace) {
+      console.log('🔍 Navigating to:', `/treasury/${space.namespace}`);
       navigate(`/treasury/${space.namespace}`);
+    } else {
+      console.warn('🔍 No namespace found, cannot navigate');
     }
   };
 
