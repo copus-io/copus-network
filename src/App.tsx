@@ -14,15 +14,15 @@ import { CopusLoading } from "./components/ui/copus-loading";
 // Eagerly loaded - critical path
 import { Discovery } from "./screens/Discovery/Discovery";
 
-// Withdrawal - eagerly loaded for better UX
+// Withdrawal and Login - eagerly loaded for better UX
 import { Withdrawal } from "./screens/Withdrawal/Withdrawal";
+import { Login } from "./screens/Login/Login";
 
 // Lazy loaded routes - split code for better initial load
 const Following = lazy(() => import("./screens/Following/Following").then(m => ({ default: m.Following })));
 const Notification = lazy(() => import("./screens/Notification/Notification").then(m => ({ default: m.Notification })));
 const Setting = lazy(() => import("./screens/Setting/Setting").then(m => ({ default: m.Setting })));
 const Treasury = lazy(() => import("./screens/Treasury/Treasury").then(m => ({ default: m.Treasury })));
-const Login = lazy(() => import("./screens/Login/Login").then(m => ({ default: m.Login })));
 const Create = lazy(() => import("./screens/Create/Create").then(m => ({ default: m.Create })));
 const Content = lazy(() => import("./screens/Content/Content").then(m => ({ default: m.Content })));
 const UserProfile = lazy(() => import("./screens/UserProfile/UserProfile").then(m => ({ default: m.UserProfile })));
@@ -102,7 +102,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <LazyRoute><Login /></LazyRoute>,
+    element: <Login />,
   },
   {
     path: "/callback",
