@@ -18,6 +18,9 @@ import { Discovery } from "./screens/Discovery/Discovery";
 import { Withdrawal } from "./screens/Withdrawal/Withdrawal";
 import { Login } from "./screens/Login/Login";
 
+// Content - eagerly loaded to prevent dynamic import errors
+import { Content } from "./screens/Content/Content";
+
 // ShortLinkHandler - eagerly loaded to prevent dynamic import errors
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
@@ -27,7 +30,6 @@ const Notification = lazy(() => import("./screens/Notification/Notification").th
 const Setting = lazy(() => import("./screens/Setting/Setting").then(m => ({ default: m.Setting })));
 const Treasury = lazy(() => import("./screens/Treasury/Treasury").then(m => ({ default: m.Treasury })));
 const Create = lazy(() => import("./screens/Create/Create").then(m => ({ default: m.Create })));
-const Content = lazy(() => import("./screens/Content/Content").then(m => ({ default: m.Content })));
 const UserProfile = lazy(() => import("./screens/UserProfile/UserProfile").then(m => ({ default: m.UserProfile })));
 const Space = lazy(() => import("./screens/Space/Space").then(m => ({ default: m.Space })));
 
@@ -161,7 +163,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/work/:id",
-    element: <LazyRoute><Content /></LazyRoute>,
+    element: <Content />,
   },
   {
     path: "/auth/unauthorized",
