@@ -213,7 +213,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words">
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title || 'Enter a title...'}
                   </h3>
                 </div>
@@ -292,7 +292,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words">
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
@@ -467,7 +467,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words">
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>

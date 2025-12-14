@@ -1799,12 +1799,8 @@ export const Content = (): JSX.Element => {
                       )}
 
                       <h1
-                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
+                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
                         style={{
-                          display: '-webkit-box',
-                          WebkitBoxOrient: 'vertical',
-                          WebkitLineClamp: 2,
-                          overflow: 'hidden',
                           wordBreak: 'break-word',
                           overflowWrap: 'break-word'
                         }}
