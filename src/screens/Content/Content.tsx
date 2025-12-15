@@ -15,6 +15,7 @@ import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { CollectTreasureModal } from "../../components/CollectTreasureModal";
 import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
+import { CommentSection } from "../../components/CommentSection";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
@@ -1917,6 +1918,15 @@ export const Content = (): JSX.Element => {
               </div>
             </section>
           )}
+
+          {/* Comment Section */}
+          {article && (
+            <CommentSection
+              targetType="article"
+              targetId={article.uuid}
+              className="w-full mt-8 mb-24"
+            />
+          )}
         </main>
 
         {/* Sticky bottom button bar */}
@@ -2102,6 +2112,7 @@ export const Content = (): JSX.Element => {
             }}
           />
         )}
+
       </div>
     </div>
   );

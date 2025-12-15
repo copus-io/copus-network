@@ -1,0 +1,80 @@
+// Comment list component
+
+import React, { useState } from 'react';
+import { Comment } from '../../types/comment';
+import { CommentItem } from './CommentItem';
+
+interface CommentListProps {
+  comments: Comment[];
+  targetType: 'article' | 'treasury' | 'user' | 'space';
+  targetId: string;
+  hasMore?: boolean;
+  totalCount?: number;
+  className?: string;
+}
+
+export const CommentList: React.FC<CommentListProps> = ({
+  comments,
+  targetType,
+  targetId,
+  hasMore = false,
+  totalCount = 0,
+  className = ''
+}) => {
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    // TODO: Implement pagination
+    // For now, just simulate loading
+    setTimeout(() => {
+      setLoadingMore(false);
+    }, 1000);
+  };
+
+  const topLevelComments = comments.filter(comment => comment.depth === 0);
+  const getRepliesForComment = (commentId: string) => {
+    return comments.filter(comment => comment.parentId === commentId);
+  };
+
+  if (comments.length === 0) {
+    return (
+      <div className={`py-16 text-center ${className}`}>
+        <div className="text-gray-400 text-6xl mb-4">💭</div>
+        <p className="text-gray-600 text-lg mb-2">还没有评论</p>
+        <p className="text-gray-500">来发表第一条评论，开启讨论吧！</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-[300px] ${className}`}>
+      {/* Comments list */}
+      <div className="space-y-6">
+        {topLevelComments.map((comment, index) => (
+          <div key={comment.id} className="pb-4 border-b border-gray-100 last:border-b-0">
+            <CommentItem
+              comment={comment}
+              replies={getRepliesForComment(comment.id)}
+              targetType={targetType}
+              targetId={targetId}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Load more button */}
+      {hasMore && (
+        <div className="text-center py-8 border-t border-gray-100 mt-6">
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="px-8 py-3 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {loadingMore ? '加载中...' : `查看更多评论 (${Math.max(0, totalCount - comments.length)}条)`}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
