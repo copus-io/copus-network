@@ -28,7 +28,7 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   replyToUser,
   onSubmitSuccess,
   onCancel,
-  placeholder = 'Share your thoughts on this article...',
+  placeholder = 'Share your thoughts on this link...',
   className = '',
   onLoadComments,
   showingPrototypeComments = false
@@ -114,23 +114,23 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   }
 
   return (
-    <div className={`py-6 border-b border-gray-200 ${className}`}>
+    <div className={`py-1 ${className}`}>
       <div className="flex gap-4">
         {/* Comment input */}
         <div className="flex-1">
-          <div className="bg-gray-50 rounded-lg border border-gray-200 transition-all">
+          <div className="bg-white rounded-lg transition-all">
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder={replyToUser ? `Reply to @${replyToUser}...` : 'Share your thoughts on this article...'}
-              className="w-full p-4 bg-transparent border-0 rounded-lg resize-none text-gray-900 placeholder-gray-500 [font-family:'Lato',Helvetica] text-base"
+              placeholder={replyToUser ? `Reply to @${replyToUser}...` : placeholder}
+              className="w-full px-6 py-3 bg-transparent border-0 rounded-lg resize-none text-gray-900 placeholder-gray-500 [font-family:'Lato',Helvetica] text-base"
               style={{ outline: 'none' }}
-              rows={4}
+              rows={2}
               disabled={isSubmitting}
             />
 
             {/* Action bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
+            <div className="flex items-center justify-between px-4 py-3 bg-white rounded-b-lg">
               <div className="text-sm text-gray-500 [font-family:'Lato',Helvetica]">
                 {content.length > 0 && (
                   <span className={content.length > 500 ? 'text-red' : ''}>
@@ -155,7 +155,7 @@ export const CommentForm: React.FC<CommentFormProps> = ({
                   type="button"
                   onClick={handleSubmit}
                   disabled={!content.trim() || isSubmitting || content.length > 500}
-                  className="px-6 py-2 bg-red text-white rounded-full text-sm font-medium hover:bg-red/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all [font-family:'Lato',Helvetica]"
+                  className="px-6 py-2 bg-red text-white rounded-full text-sm font-medium hover:bg-red/90 disabled:bg-[#E0E0E0]/40 disabled:text-[#A9A9A9] disabled:cursor-not-allowed transition-all [font-family:'Lato',Helvetica]"
                   style={{ outline: 'none' }}
                 >
                   {isSubmitting ? 'Posting...' : 'Post comment'}

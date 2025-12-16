@@ -64,11 +64,11 @@ export const useCreateComment = () => {
         );
       }
 
-      showToast('评论发布成功', 'success');
+      showToast('Comment posted successfully', 'success');
     },
     onError: (error) => {
       console.error('Failed to create comment:', error);
-      showToast('发布评论失败，请重试', 'error');
+      showToast('Failed to post comment, please try again', 'error');
     },
   });
 };
@@ -98,11 +98,11 @@ export const useUpdateComment = () => {
           };
         }
       );
-      showToast('评论更新成功', 'success');
+      showToast('Comment updated successfully', 'success');
     },
     onError: (error) => {
       console.error('Failed to update comment:', error);
-      showToast('更新评论失败，请重试', 'error');
+      showToast('Failed to update comment, please try again', 'error');
     },
   });
 };
@@ -128,11 +128,11 @@ export const useDeleteComment = () => {
           };
         }
       );
-      showToast('评论删除成功', 'success');
+      showToast('Comment deleted successfully', 'success');
     },
     onError: (error) => {
       console.error('Failed to delete comment:', error);
-      showToast('删除评论失败，请重试', 'error');
+      showToast('Failed to delete comment, please try again', 'error');
     },
   });
 };
@@ -204,7 +204,7 @@ export const useToggleCommentLike = () => {
         });
       }
       console.error('Failed to toggle comment like:', error);
-      showToast('操作失败，请重试', 'error');
+      // No toast notification for like errors - UI already updated optimistically
     },
   });
 };

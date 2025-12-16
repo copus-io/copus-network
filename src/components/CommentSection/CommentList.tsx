@@ -48,11 +48,11 @@ export const CommentList: React.FC<CommentListProps> = ({
   }
 
   return (
-    <div className={`min-h-[300px] ${className}`}>
+    <div className={className}>
       {/* Comments list */}
-      <div className="space-y-6">
+      <div className="space-y-0">
         {topLevelComments.map((comment, index) => (
-          <div key={comment.id} className="pb-4 border-b border-gray-100 last:border-b-0">
+          <div key={comment.id} className="pt-5 pb-10 border-b border-[#D3D3D3] last:border-b-0 last:pb-0">
             <CommentItem
               comment={comment}
               replies={getRepliesForComment(comment.id)}

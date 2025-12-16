@@ -124,7 +124,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <span className="[font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-2xl">
+              <span className="[font-family:'Lato',Helvetica] font-[450] text-[#231f20] text-2xl">
                 Comments
               </span>
               <span className="[font-family:'Lato',Helvetica] text-base text-dark-grey">
@@ -136,8 +136,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as CommentSortBy)}
-              className="px-4 py-2 border border-[#E0E0E0] rounded-full text-base text-dark-grey bg-white transition-all [font-family:'Lato',Helvetica] hover:border-gray-400"
-              style={{ outline: 'none' }}
+              className="pl-4 pr-10 py-2 border border-[#D3D3D3] rounded-full text-sm text-dark-grey bg-white transition-all [font-family:'Lato',Helvetica] hover:border-medium-grey appearance-none cursor-pointer"
+              style={{
+                outline: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23686868' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 1rem center'
+              }}
             >
               <option value="newest">Newest</option>
               <option value="likes">Most liked</option>
@@ -147,7 +152,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         </div>
       </div>
 
-      <div className="px-0 py-4">
+      <div className="px-0 pt-4 pb-0">
         {/* Comment form */}
         <CommentForm
           targetType={targetType}
