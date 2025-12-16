@@ -36,12 +36,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return '刚刚';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}小时前`;
-    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}天前`;
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
 
-    return date.toLocaleDateString('zh-CN', {
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -63,24 +63,19 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   return (
     <div className={`${className}`}>
       <div className="flex gap-3">
-        {/* User avatar */}
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm ${getAvatarGradient(comment.authorId)}`}>
-          {comment.authorName?.[0]?.toUpperCase() || 'U'}
-        </div>
-
         <div className="flex-1">
           {/* User info and time */}
           <div className="flex items-center gap-2 mb-2">
-            <span className="font-medium text-gray-900 text-sm">
+            <span className="font-medium text-gray-900 text-base [font-family:'Lato',Helvetica]">
               {comment.authorName}
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-sm text-gray-500 [font-family:'Lato',Helvetica]">
               {formatTimeAgo(comment.createdAt)}
             </span>
           </div>
 
           {/* Comment content */}
-          <div className="text-gray-800 text-sm leading-relaxed mb-3">
+          <div className="text-gray-800 text-base leading-relaxed mb-3 [font-family:'Lato',Helvetica]">
             {comment.content.split('\n').map((line, index) => (
               <React.Fragment key={index}>
                 {line}
@@ -94,11 +89,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <button
               onClick={handleLike}
               disabled={toggleLikeMutation.isPending}
-              className={`inline-flex items-center gap-1 text-xs transition-all duration-200 ${
+              className={`inline-flex items-center gap-1 text-sm transition-all duration-200 [font-family:'Lato',Helvetica] ${
                 comment.isLiked
-                  ? 'text-red-500'
-                  : 'text-gray-400 hover:text-red-500'
+                  ? 'text-red'
+                  : 'text-gray-400 hover:text-red'
               }`}
+              style={{ outline: 'none' }}
             >
               <span>❤️</span>
               <span>{comment.likesCount}</span>
@@ -106,10 +102,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
             <button
               onClick={handleReply}
-              className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 transition-all duration-200"
+              className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
+              style={{ outline: 'none' }}
             >
               <span>💬</span>
-              <span>回复</span>
+              <span>Reply</span>
             </button>
           </div>
 
@@ -134,24 +131,19 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <div className="mt-4 space-y-4">
               {replies.map((reply) => (
                 <div key={reply.id} className="flex gap-3">
-                  {/* Reply avatar */}
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-medium text-sm shadow-sm ${getAvatarGradient(reply.authorId)}`}>
-                    {reply.authorName?.[0]?.toUpperCase() || 'U'}
-                  </div>
-
                   <div className="flex-1">
                     {/* Reply user info */}
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="font-medium text-gray-900 text-sm">
+                      <span className="font-medium text-gray-900 text-base [font-family:'Lato',Helvetica]">
                         {reply.authorName}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-sm text-gray-500 [font-family:'Lato',Helvetica]">
                         {formatTimeAgo(reply.createdAt)}
                       </span>
                     </div>
 
                     {/* Reply content with @mention styling */}
-                    <div className="text-gray-800 text-sm leading-relaxed mb-3">
+                    <div className="text-gray-800 text-base leading-relaxed mb-3 [font-family:'Lato',Helvetica]">
                       {reply.content}
                     </div>
 
@@ -159,11 +151,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => toggleLikeMutation.mutate(reply.id)}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium transition-all duration-200 [font-family:'Lato',Helvetica] ${
                           reply.isLiked
-                            ? 'text-red-500 bg-red-50 hover:bg-red-100'
-                            : 'text-gray-500 hover:text-red-500 hover:bg-red-50'
+                            ? 'text-red bg-red-50 hover:bg-red-100'
+                            : 'text-gray-500 hover:text-red hover:bg-red-50'
                         }`}
+                        style={{ outline: 'none' }}
                       >
                         <span className="text-sm">❤️</span>
                         <span>{reply.likesCount}</span>
@@ -173,10 +166,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                         onClick={() => {
                           // TODO: Implement reply to reply
                         }}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-gray-500 hover:text-blue-500 hover:bg-blue-50 transition-all duration-200"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium text-gray-500 hover:text-red hover:bg-red-50 transition-all duration-200 [font-family:'Lato',Helvetica]"
+                        style={{ outline: 'none' }}
                       >
                         <span className="text-sm">💬</span>
-                        <span>回复</span>
+                        <span>Reply</span>
                       </button>
                     </div>
                   </div>

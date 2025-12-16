@@ -40,11 +40,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     {
       id: '1',
       uuid: '1',
-      content: '这篇文章写得真不错！特别是关于技术实现的部分，让我学到了很多。希望作者能多写一些这样的技术分享文章。',
+      content: 'This article is really well-written! I especially learned a lot from the technical implementation section. Hope the author can share more technical articles like this.',
       targetType: targetType as 'article',
       targetId: targetId,
       authorId: 1,
-      authorName: '技术爱好者',
+      authorName: 'TechEnthusiast',
       parentId: undefined,
       depth: 0,
       likesCount: 12,
@@ -57,11 +57,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     {
       id: '2',
       uuid: '2',
-      content: '同意楼上的观点，作者的技术深度确实很不错。我想问一下，文章中提到的解决方案在生产环境中的性能表现如何？',
+      content: 'I agree with the point above, the author\'s technical depth is impressive. I\'d like to ask, how does the solution mentioned in the article perform in a production environment?',
       targetType: targetType as 'article',
       targetId: targetId,
       authorId: 2,
-      authorName: '代码小王子',
+      authorName: 'CodePrince',
       parentId: '1',
       depth: 1,
       likesCount: 5,
@@ -74,11 +74,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     {
       id: '3',
       uuid: '3',
-      content: '@代码小王子 根据我们团队的实际使用经验，性能表现还是很不错的，建议你可以先在测试环境跑跑看。',
+      content: '@CodePrince Based on our team\'s practical experience, the performance is quite good. I suggest you could try it in a test environment first.',
       targetType: targetType as 'article',
       targetId: targetId,
       authorId: 1,
-      authorName: '技术爱好者',
+      authorName: 'TechEnthusiast',
       parentId: '1',
       depth: 1,
       likesCount: 8,
@@ -91,11 +91,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     {
       id: '4',
       uuid: '4',
-      content: '感谢分享！我正好在做类似的项目，这个方案给了我很多启发。👍',
+      content: 'Thanks for sharing! I\'m working on a similar project, and this approach has given me a lot of inspiration. 👍',
       targetType: targetType as 'article',
       targetId: targetId,
       authorId: 3,
-      authorName: '产品经理Alice',
+      authorName: 'ProductManagerAlice',
       parentId: undefined,
       depth: 0,
       likesCount: 3,
@@ -118,18 +118,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 
 
   return (
-    <div className={`w-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden min-h-[600px] ${className}`}>
+    <div className={`w-full overflow-hidden min-h-[600px] ${className}`}>
       {/* Comment header with stats and sort options */}
-      <div className="px-6 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div className="px-0 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">💬</span>
             <div className="flex flex-col">
-              <span className="font-semibold text-gray-900 text-xl">
-                评论讨论
+              <span className="[font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-2xl">
+                Comments
               </span>
-              <span className="text-sm text-gray-600">
-                共 {totalComments} 条评论
+              <span className="[font-family:'Lato',Helvetica] text-base text-dark-grey">
+                {totalComments} {totalComments === 1 ? 'comment' : 'comments'}
               </span>
             </div>
           </div>
@@ -137,17 +136,18 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as CommentSortBy)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+              className="px-4 py-2 border border-[#E0E0E0] rounded-full text-base text-dark-grey bg-white transition-all [font-family:'Lato',Helvetica] hover:border-gray-400"
+              style={{ outline: 'none' }}
             >
-              <option value="newest">最新评论</option>
-              <option value="likes">最热评论</option>
-              <option value="oldest">最早评论</option>
+              <option value="newest">Newest</option>
+              <option value="likes">Most liked</option>
+              <option value="oldest">Oldest</option>
             </select>
           </div>
         </div>
       </div>
 
-      <div className="px-6 py-4">
+      <div className="px-0 py-4">
         {/* Comment form */}
         <CommentForm
           targetType={targetType}

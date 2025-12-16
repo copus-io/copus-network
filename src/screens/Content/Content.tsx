@@ -1777,8 +1777,10 @@ export const Content = (): JSX.Element => {
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection articleAuthorId={content?.userId} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[120px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
-          <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
+        <main className="flex flex-col lg:flex-row items-start pt-[70px] lg:pt-[120px] pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow">
+          {/* Main Content Column */}
+          <div className="flex-1 w-full">
+            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
@@ -1812,7 +1814,7 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <div className="relative w-full lg:w-[364px] h-[205px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
+                <div className="relative w-full lg:w-[280px] h-[158px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
                      style={{
                        backgroundImage: `url(${getValidDetailImageUrl(content.coverImage)})`
                      }}
@@ -1899,33 +1901,36 @@ export const Content = (): JSX.Element => {
                 </div>
               </div>
             </div>
-          </article>
+            </article>
 
-          {/* Collected in Section */}
+            {/* Comment Section */}
+            {article && (
+              <CommentSection
+                targetType="article"
+                targetId={article.uuid}
+                className="w-full mt-8 mb-24"
+              />
+            )}
+          </div>
+
+          {/* Right Sidebar - Collected in Section */}
           {collectedInData.length > 0 && (
-            <section className="flex flex-col items-start gap-[15px] w-full pt-[15px]">
-              <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px]">
-                Collected in
-              </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full">
-                {collectedInData.map((space) => (
-                  <TreasuryCard
-                    key={space.namespace || space.id?.toString()}
-                    space={space}
-                    onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
-                  />
-                ))}
+            <aside className="w-full lg:w-[240px] xl:w-[280px] lg:ml-[20px] xl:ml-[50px] lg:sticky lg:top-[100px] lg:self-start lg:flex-shrink-0">
+              <div className="flex flex-col items-start gap-[15px]">
+                <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px]">
+                  Collected in
+                </h2>
+                <div className="flex flex-col gap-4 w-full">
+                  {collectedInData.map((space) => (
+                    <TreasuryCard
+                      key={space.namespace || space.id?.toString()}
+                      space={space}
+                      onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
+                    />
+                  ))}
+                </div>
               </div>
-            </section>
-          )}
-
-          {/* Comment Section */}
-          {article && (
-            <CommentSection
-              targetType="article"
-              targetId={article.uuid}
-              className="w-full mt-8 mb-24"
-            />
+            </aside>
           )}
         </main>
 

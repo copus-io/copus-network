@@ -28,7 +28,7 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   replyToUser,
   onSubmitSuccess,
   onCancel,
-  placeholder = '写下你对这篇文章的想法...',
+  placeholder = 'Share your thoughts on this article...',
   className = '',
   onLoadComments,
   showingPrototypeComments = false
@@ -42,7 +42,7 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   const handleSubmit = async () => {
     if (!content.trim()) return;
     if (!user) {
-      alert('请先登录');
+      alert('Please log in first');
       return;
     }
 
@@ -89,24 +89,24 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     return (
       <div className={`py-6 border-b border-gray-100 ${className}`}>
         <div className="text-center py-4">
-          <p className="text-gray-500 mb-3">
+          <p className="text-gray-500 mb-3 [font-family:'Lato',Helvetica]">
             <Link
               to="/login"
-              className="text-blue-500 hover:text-blue-600 underline cursor-pointer"
+              className="text-red hover:text-red/80 underline cursor-pointer"
             >
-              登录
+              Log in
             </Link>
-            后参与评论讨论
+            {' '}to join the discussion
           </p>
           <button
             onClick={onLoadComments}
-            className={`inline-block px-6 py-3 text-white rounded-lg font-semibold transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg ${
+            className={`inline-block px-6 py-3 text-white rounded-full font-semibold transition-all duration-200 [font-family:'Lato',Helvetica] ${
               showingPrototypeComments
-                ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700'
-                : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700'
+                ? 'bg-red hover:bg-red/90'
+                : 'bg-red hover:bg-red/90'
             }`}
           >
-            {showingPrototypeComments ? '隐藏原型评论' : '展示原型评论'}
+            {showingPrototypeComments ? 'Hide prototype comments' : 'Show prototype comments'}
           </button>
         </div>
       </div>
@@ -116,28 +116,24 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   return (
     <div className={`py-6 border-b border-gray-200 ${className}`}>
       <div className="flex gap-4">
-        {/* User avatar */}
-        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-base ${getAvatarGradient()}`}>
-          {user.username?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
-        </div>
-
         {/* Comment input */}
         <div className="flex-1">
-          <div className="bg-gray-50 rounded-lg border border-gray-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+          <div className="bg-gray-50 rounded-lg border border-gray-200 transition-all">
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder={replyToUser ? `回复 @${replyToUser}...` : '写下你对这篇文章的想法...'}
-              className="w-full p-4 bg-transparent border-0 rounded-lg resize-none focus:outline-none text-gray-900 placeholder-gray-500"
+              placeholder={replyToUser ? `Reply to @${replyToUser}...` : 'Share your thoughts on this article...'}
+              className="w-full p-4 bg-transparent border-0 rounded-lg resize-none text-gray-900 placeholder-gray-500 [font-family:'Lato',Helvetica] text-base"
+              style={{ outline: 'none' }}
               rows={4}
               disabled={isSubmitting}
             />
 
             {/* Action bar */}
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white rounded-b-lg">
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 [font-family:'Lato',Helvetica]">
                 {content.length > 0 && (
-                  <span className={content.length > 500 ? 'text-red-500' : ''}>
+                  <span className={content.length > 500 ? 'text-red' : ''}>
                     {content.length}/500
                   </span>
                 )}
@@ -148,19 +144,21 @@ export const CommentForm: React.FC<CommentFormProps> = ({
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-all"
+                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-all [font-family:'Lato',Helvetica]"
+                    style={{ outline: 'none' }}
                     disabled={isSubmitting}
                   >
-                    取消
+                    Cancel
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={!content.trim() || isSubmitting || content.length > 500}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all shadow-sm"
+                  className="px-6 py-2 bg-red text-white rounded-full text-sm font-medium hover:bg-red/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all [font-family:'Lato',Helvetica]"
+                  style={{ outline: 'none' }}
                 >
-                  {isSubmitting ? '发布中...' : '发布评论'}
+                  {isSubmitting ? 'Posting...' : 'Post comment'}
                 </button>
               </div>
             </div>

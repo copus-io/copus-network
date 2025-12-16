@@ -41,8 +41,8 @@ export const CommentList: React.FC<CommentListProps> = ({
     return (
       <div className={`py-16 text-center ${className}`}>
         <div className="text-gray-400 text-6xl mb-4">💭</div>
-        <p className="text-gray-600 text-lg mb-2">还没有评论</p>
-        <p className="text-gray-500">来发表第一条评论，开启讨论吧！</p>
+        <p className="text-gray-600 text-lg mb-2 [font-family:'Lato',Helvetica]">No comments yet</p>
+        <p className="text-gray-500 [font-family:'Lato',Helvetica]">Be the first to share your thoughts!</p>
       </div>
     );
   }
@@ -69,9 +69,10 @@ export const CommentList: React.FC<CommentListProps> = ({
           <button
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="px-8 py-3 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="px-8 py-3 text-sm text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium [font-family:'Lato',Helvetica]"
+            style={{ outline: 'none' }}
           >
-            {loadingMore ? '加载中...' : `查看更多评论 (${Math.max(0, totalCount - comments.length)}条)`}
+            {loadingMore ? 'Loading...' : `Load more (${Math.max(0, totalCount - comments.length)} remaining)`}
           </button>
         </div>
       )}
