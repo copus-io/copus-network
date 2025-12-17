@@ -865,36 +865,11 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    // Check if user has token for personalized data
-    const token = localStorage.getItem('copus_token');
-    const hasValidToken = token && token.trim() !== '';
 
-    if (hasValidToken) {
-      // With token: get personalized treasury info
-      return apiRequest('/client/userHome/userInfo', {
-        method: 'GET',
-        requiresAuth: true,
-      });
-    } else {
-      // Without token: return default empty data
-      console.log('📝 No token found, returning default treasury info');
-      return {
-        bio: '',
-        coverUrl: '',
-        email: '',
-        faceUrl: '',
-        id: 0,
-        namespace: '',
-        socialLinks: [],
-        statistics: {
-          articleCount: 0,
-          likedArticleCount: 0,
-          myArticleLikedCount: 0
-        },
-        username: '',
-        walletAddress: ''
-      };
-    }
+    return apiRequest('/client/myHome/userInfo', {
+      method: 'GET',
+      requiresAuth: true,
+    });
   }
 
   /**
