@@ -411,6 +411,15 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     }
   };
 
+  // Handle share
+  const handleShare = () => {
+    if (userInfo?.namespace) {
+      const url = `${window.location.origin}/u/${userInfo.namespace}`;
+      navigator.clipboard.writeText(url);
+      showToast('Profile link copied to clipboard', 'success');
+    }
+  };
+
   if (loading) {
     return <ArticleListSkeleton />;
   }
@@ -501,7 +510,19 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               onClick={handleAvatarClick}
             />
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
+            <div className="flex items-center gap-4 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900">{userInfo.username}</h1>
+              <button
+                type="button"
+                aria-label="Share profile"
+                className="relative flex-[0_0_auto] hover:opacity-70 transition-opacity"
+                onClick={handleShare}
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 6.667a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM5 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM15 18.333a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7.158 11.258l5.692 3.317M12.842 5.425l-5.684 3.317" stroke="#686868" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
             <p className="text-gray-600 mb-4">@{userInfo.namespace}</p>
             <p className="text-gray-700 mb-6">{userInfo.bio}</p>
 
