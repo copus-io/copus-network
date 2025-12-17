@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/button";
 import { useToast } from "../../ui/toast";
+import { useUser } from "../../../contexts/UserContext";
 
 interface SideMenuSectionProps {
   activeItem?: string;
@@ -41,7 +42,7 @@ const IncomeIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const menuItems = [
+const getMenuItems = (userNamespace?: string) => [
   {
     icon: DiscoverIcon,
     label: "Discovery",
@@ -57,7 +58,7 @@ const menuItems = [
   {
     icon: TreasuryIcon,
     label: "Treasuries",
-    href: "/treasury",
+    href: userNamespace ? `/u/${userNamespace}` : "/login",
     key: "treasury",
   },
   {
@@ -76,6 +77,8 @@ const footerLinks = [
 
 export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Element => {
   const { showToast } = useToast();
+  const { user } = useUser();
+  const menuItems = getMenuItems(user?.namespace);
 
   const handleContactClick = async () => {
     const email = 'handuo@server31.io';

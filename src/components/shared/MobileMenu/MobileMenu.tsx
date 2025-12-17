@@ -11,6 +11,7 @@ interface MobileMenuProps {
   activeMenuItem?: string;
   userAvatar?: string;
   username?: string;
+  userNamespace?: string;
 }
 
 interface MenuItem {
@@ -66,7 +67,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   isLoggedIn,
   activeMenuItem,
   userAvatar,
-  username
+  username,
+  userNamespace
 }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -107,7 +109,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
     {
       id: "treasury",
       label: "Treasury",
-      path: "/my-treasury",
+      path: userNamespace ? `/u/${userNamespace}` : "/login",
     },
     {
       id: "earnings",
