@@ -1,6 +1,5 @@
 import React, { lazy, Suspense } from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import { useScrollToTop } from "./hooks/useScrollToTop";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { UserProvider } from "./contexts/UserContext";
@@ -51,12 +50,6 @@ const LazyRoute = ({ children }: { children: React.ReactNode }) => (
     {children}
   </Suspense>
 );
-
-// Router wrapper with scroll to top functionality
-const AppRouter = () => {
-  useScrollToTop(); // 监听路由变化并滚动到顶部
-  return <RouterProvider router={router} />;
-};
 
 const router = createBrowserRouter([
   {
@@ -212,7 +205,7 @@ export const App = () => {
           <NotificationProvider>
             <ImagePreviewProvider>
               <ToastProvider>
-                <AppRouter />
+                <RouterProvider router={router} />
                 <GlobalImagePreview />
               </ToastProvider>
             </ImagePreviewProvider>
