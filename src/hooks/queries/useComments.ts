@@ -15,12 +15,26 @@ export const useComments = (
     limit?: number;
   } = {}
 ) => {
-  return useQuery({
+  console.log('🎯 useComments hook called with:', { targetType, targetId, options });
+
+  const result = useQuery({
     queryKey: ['comments', targetType, targetId, options],
-    queryFn: () => CommentService.getComments(targetType, targetId, options),
+    queryFn: () => {
+      console.log('🎯 useComments queryFn executing for:', { targetType, targetId, options });
+      return CommentService.getComments(targetType, targetId, options);
+    },
     staleTime: 1000 * 60 * 2, // 2分钟内认为数据新鲜
     enabled: !!(targetType && targetId), // 只有在有target信息时才启用查询
   });
+
+  console.log('🎯 useComments hook result:', {
+    isLoading: result.isLoading,
+    isError: result.isError,
+    data: result.data,
+    error: result.error
+  });
+
+  return result;
 };
 
 // Create comment mutation
@@ -31,9 +45,9 @@ export const useCreateComment = () => {
   return useMutation({
     mutationFn: CommentService.createComment,
     onSuccess: (newComment, variables) => {
-      // 更新评论列表缓存
-      queryClient.setQueryData(
-        ['comments', variables.targetType, variables.targetId],
+      // 更新所有相关的评论列表缓存
+      queryClient.setQueriesData(
+        { queryKey: ['comments', variables.targetType, variables.targetId] },
         (old: any) => {
           if (!old) return { comments: [newComment], totalCount: 1, hasMore: false };
 
@@ -47,8 +61,8 @@ export const useCreateComment = () => {
 
       // 如果是回复，更新父评论的回复数
       if (variables.parentId) {
-        queryClient.setQueryData(
-          ['comments', variables.targetType, variables.targetId],
+        queryClient.setQueriesData(
+          { queryKey: ['comments', variables.targetType, variables.targetId] },
           (old: any) => {
             if (!old) return old;
 

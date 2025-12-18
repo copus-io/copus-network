@@ -1,12 +1,11 @@
 // Main comment section component - NetEase Cloud Music style
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useComments } from '../../hooks/queries/useComments';
 import { CommentSortBy } from '../../types/comment';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 import { CommentSkeleton } from './CommentSkeleton';
-import { useUser } from '../../contexts/UserContext';
 
 interface CommentSectionProps {
   targetType: 'article' | 'treasury' | 'user' | 'space';
@@ -20,102 +19,21 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   className = ''
 }) => {
   const [sortBy, setSortBy] = useState<CommentSortBy>('newest');
-  const [showPrototypeComments, setShowPrototypeComments] = useState(false);
 
-  const { user } = useUser();
   const { data: commentsData, isLoading, error } = useComments(targetType, targetId, {
     sortBy,
     limit: 20
   });
 
-  // If user is logged in, automatically show prototype comments
-  useEffect(() => {
-    if (user) {
-      setShowPrototypeComments(true);
-    }
-  }, [user]);
+  const totalComments = commentsData?.totalCount || 0;
 
-  // Mock data for prototype
-  const mockComments = [
-    {
-      id: '1',
-      uuid: '1',
-      content: 'This article is really well-written! I especially learned a lot from the technical implementation section. Hope the author can share more technical articles like this.',
-      targetType: targetType as 'article',
-      targetId: targetId,
-      authorId: 1,
-      authorName: 'TechEnthusiast',
-      parentId: undefined,
-      depth: 0,
-      likesCount: 12,
-      repliesCount: 2,
-      isLiked: false,
-      createdAt: '2024-12-16T10:30:00Z',
-      canEdit: false,
-      canDelete: false
-    },
-    {
-      id: '2',
-      uuid: '2',
-      content: 'I agree with the point above, the author\'s technical depth is impressive. I\'d like to ask, how does the solution mentioned in the article perform in a production environment?',
-      targetType: targetType as 'article',
-      targetId: targetId,
-      authorId: 2,
-      authorName: 'CodePrince',
-      parentId: '1',
-      depth: 1,
-      likesCount: 5,
-      repliesCount: 0,
-      isLiked: true,
-      createdAt: '2024-12-16T11:15:00Z',
-      canEdit: true,
-      canDelete: true
-    },
-    {
-      id: '3',
-      uuid: '3',
-      content: '@CodePrince Based on our team\'s practical experience, the performance is quite good. I suggest you could try it in a test environment first.',
-      targetType: targetType as 'article',
-      targetId: targetId,
-      authorId: 1,
-      authorName: 'TechEnthusiast',
-      parentId: '1',
-      depth: 1,
-      likesCount: 8,
-      repliesCount: 0,
-      isLiked: false,
-      createdAt: '2024-12-16T12:45:00Z',
-      canEdit: false,
-      canDelete: false
-    },
-    {
-      id: '4',
-      uuid: '4',
-      content: 'Thanks for sharing! I\'m working on a similar project, and this approach has given me a lot of inspiration. 👍',
-      targetType: targetType as 'article',
-      targetId: targetId,
-      authorId: 3,
-      authorName: 'ProductManagerAlice',
-      parentId: undefined,
-      depth: 0,
-      likesCount: 3,
-      repliesCount: 0,
-      isLiked: false,
-      createdAt: '2024-12-16T14:20:00Z',
-      canEdit: false,
-      canDelete: false
-    }
-  ];
-
-  const mockCommentsData = {
-    comments: mockComments,
-    totalCount: 4,
-    hasMore: false
-  };
-
-  const displayCommentsData = showPrototypeComments ? mockCommentsData : commentsData;
-  const totalComments = displayCommentsData?.totalCount || 0;
-
+  console.log('📊 CommentSection data:', {
+    isLoading,
+    error,
+    commentsData,
+    totalComments,
+    commentsLength: commentsData?.comments?.length
+  });
 
   return (
     <div className={`w-full overflow-hidden min-h-[600px] ${className}`}>
@@ -157,10 +75,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <CommentForm
           targetType={targetType}
           targetId={targetId}
-          onLoadComments={() => {
-            setShowPrototypeComments(!showPrototypeComments);
-          }}
-          showingPrototypeComments={showPrototypeComments}
         />
 
         {/* Comment list */}
@@ -173,10 +87,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
             </div>
           ) : (
             <CommentList
-              comments={displayCommentsData?.comments || []}
+              comments={commentsData?.comments || []}
               targetType={targetType}
               targetId={targetId}
-              hasMore={displayCommentsData?.hasMore || false}
+              hasMore={commentsData?.hasMore || false}
               totalCount={totalComments}
             />
           )}

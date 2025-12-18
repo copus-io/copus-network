@@ -8,12 +8,84 @@ import {
   CommentsResponse,
   CommentStats,
   CommentLikeResponse,
-  CommentSortBy
+  CommentSortBy,
+  ApiComment,
+  ApiCreateCommentRequest,
+  ApiCommentResponse,
+  ApiDeleteCommentRequest,
+  ApiLikeCommentRequest,
+  ApiLikeCommentResponse,
+  ApiGetCommentsRequest,
+  ApiGetCommentsResponse,
+  UserInfo
 } from '../types/comment';
 
 export class CommentService {
   /**
-   * Get comments for a target (article, treasury, etc.)
+   * Convert API comment to frontend comment format
+   */
+  private static convertApiCommentToComment(
+    apiComment: ApiComment,
+    targetType: 'article' | 'treasury' | 'user' | 'space',
+    targetId: string,
+    parentId?: string
+  ): Comment {
+    console.log('🔄 Converting API comment:', {
+      apiComment,
+      targetType,
+      targetId,
+      parentId,
+      userInfoCheck: {
+        hasUsername: !!apiComment.userInfo?.username,
+        hasNamespace: !!apiComment.userInfo?.namespace,
+        hasId: !!apiComment.userInfo?.id,
+        username: apiComment.userInfo?.username,
+        namespace: apiComment.userInfo?.namespace,
+        id: apiComment.userInfo?.id
+      }
+    });
+
+    return {
+      id: String(apiComment.id),
+      uuid: String(apiComment.id),
+      content: apiComment.content,
+      contentType: 'text',
+
+      // 关联信息
+      targetType,
+      targetId,
+
+      // 作者信息
+      authorId: apiComment.userInfo.id,
+      authorName: apiComment.userInfo.username || apiComment.userInfo.namespace || `用户${apiComment.userInfo.id}`,
+      authorNamespace: apiComment.userInfo.namespace,
+      authorAvatar: apiComment.userInfo.faceUrl,
+
+      // 回复系统
+      parentId,
+      depth: parentId ? 1 : 0,
+      replyToUser: apiComment.replyToUser?.username,
+
+      // 互动统计
+      likesCount: apiComment.likeCount,
+      repliesCount: apiComment.commentCount,
+      isLiked: apiComment.isLiked,
+
+      // 元数据
+      createdAt: new Date(apiComment.createdAt < 1e12 ? apiComment.createdAt * 1000 : apiComment.createdAt).toISOString(),
+      updatedAt: new Date(apiComment.createdAt < 1e12 ? apiComment.createdAt * 1000 : apiComment.createdAt).toISOString(),
+      isEdited: false,
+      isDeleted: false,
+
+      // 权限控制 (TODO: 从用户权限计算)
+      canEdit: false,
+      canDelete: false
+    };
+  }
+
+  /**
+   * Get comments for an article
+   * Note: 目前只支持article类型，其他类型需要后端提供相应接口
    */
   static async getComments(
     targetType: string,
@@ -25,90 +97,261 @@ export class CommentService {
       cursor?: string;
     } = {}
   ): Promise<CommentsResponse> {
-    const params = new URLSearchParams({
-      targetType,
-      targetId,
-      page: String(options.page || 1),
-      limit: String(options.limit || 20),
-      sortBy: options.sortBy || 'newest',
-      ...(options.cursor && { cursor: options.cursor })
-    });
+    console.log('🔍 CommentService.getComments called with:', { targetType, targetId, options });
 
-    return apiRequest(`/comments?${params}`);
+    // 目前只支持article类型
+    if (targetType !== 'article') {
+      console.log('❌ Only article type supported, returning empty');
+      return {
+        comments: [],
+        totalCount: 0,
+        hasMore: false
+      };
+    }
+
+    const { page = 1, limit = 20 } = options;
+
+    const requestData: ApiGetCommentsRequest = {
+      articleId: parseInt(targetId),
+      pageIndex: page,
+      pageSize: limit
+    };
+
+    console.log('📤 GET comments request data:', requestData);
+
+    try {
+      const queryParams = new URLSearchParams({
+        articleId: requestData.articleId.toString(),
+        pageIndex: requestData.pageIndex.toString(),
+        pageSize: requestData.pageSize.toString()
+      });
+
+      const url = `/client/reader/article/comment/page?${queryParams.toString()}`;
+      console.log('🌐 Making GET request to:', url);
+
+      const response: any = await apiRequest(url, {
+        method: 'GET',
+        requiresAuth: true
+      });
+
+      console.log('📥 GET comments API response:', response);
+      console.log('📥 Response type:', typeof response);
+      console.log('📥 Response success property:', response?.success);
+      console.log('📥 Response status property:', response?.status);
+
+      // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
+      if (response.status !== 1) {
+        console.error('❌ API response indicates failure:', response);
+        throw new Error(response.msg || 'Failed to fetch comments');
+      }
+
+      console.log('🔍 Full API response.data:', response.data);
+
+      const { items, pageCount, pageIndex, pageSize, totalCount } = response.data;
+      console.log('📊 Response data structure:', {
+        itemsCount: items?.length,
+        pageCount,
+        pageIndex,
+        pageSize,
+        totalCount,
+        itemsExists: 'items' in response.data,
+        dataKeys: Object.keys(response.data)
+      });
+
+      // 尝试不同的字段名，可能API使用了不同的字段
+      const commentsArray = items || response.data.list || response.data.comments || response.data.records || [];
+      console.log('📋 Comments array:', commentsArray);
+      console.log('📋 Array length:', commentsArray.length);
+      console.log('📋 Array type:', Array.isArray(commentsArray), typeof commentsArray);
+      console.log('📋 First few items:', commentsArray.slice(0, 2));
+
+      // Convert API comments to frontend format
+      console.log('🔄 Starting comment conversion, raw comments:', commentsArray);
+      const comments = commentsArray.map((apiComment, index) => {
+        try {
+          console.log(`🔄 Converting comment ${index}:`, apiComment);
+          const converted = CommentService.convertApiCommentToComment(apiComment, targetType, targetId);
+          console.log(`✅ Converted comment ${index}:`, converted);
+          return converted;
+        } catch (error) {
+          console.error(`💥 Error converting comment ${index}:`, error, apiComment);
+          return null; // Skip invalid comments
+        }
+      }).filter(comment => comment !== null);
+
+      console.log('✅ Successfully processed comments:', {
+        commentsCount: comments.length,
+        hasMore: pageIndex < pageCount
+      });
+
+      return {
+        comments,
+        totalCount,
+        hasMore: pageIndex < pageCount,
+        pageCount,
+        pageIndex,
+        pageSize
+      };
+    } catch (error) {
+      console.error('💥 Failed to fetch comments - detailed error:', error);
+      console.error('💥 Error name:', error?.name);
+      console.error('💥 Error message:', error?.message);
+      console.error('💥 Error stack:', error?.stack);
+
+      // Return empty result on error instead of throwing
+      return {
+        comments: [],
+        totalCount: 0,
+        hasMore: false
+      };
+    }
   }
 
   /**
    * Create a new comment
    */
   static async createComment(data: CreateCommentRequest): Promise<Comment> {
-    return apiRequest('/comments', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    console.log('✍️ CommentService.createComment called with:', data);
+
+    // 目前只支持article类型
+    if (data.targetType !== 'article') {
+      console.log('❌ Only article type supported for creation');
+      throw new Error('Only article comments are supported currently');
+    }
+
+    const requestData: ApiCreateCommentRequest = {
+      articleId: parseInt(data.targetId),
+      content: data.content,
+      id: 0, // 创建新评论时使用0
+      parentId: data.parentId ? parseInt(data.parentId) : undefined
+    };
+
+    console.log('📤 Create comment request data:', requestData);
+
+    try {
+      const url = '/client/reader/article/comment/createOrEdit';
+      console.log('🌐 Making POST request to:', url);
+
+      const response: any = await apiRequest(url, {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+        requiresAuth: true
+      });
+
+      console.log('📥 Create comment API response:', response);
+      console.log('📥 Response type:', typeof response);
+      console.log('📥 Response success property:', response?.success);
+      console.log('📥 Response status property:', response?.status);
+
+      // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
+      if (response.status !== 1) {
+        console.error('❌ Create comment API error:', response);
+        throw new Error(response.msg || 'Failed to create comment');
+      }
+
+      console.log('✅ Comment created successfully, converting to frontend format');
+      console.log('📄 Response data for conversion:', response.data);
+
+      // 检查API返回的评论数据结构
+      const commentData = response.data?.comment || response.data;
+
+      return CommentService.convertApiCommentToComment(
+        commentData,
+        data.targetType,
+        data.targetId,
+        data.parentId
+      );
+    } catch (error) {
+      console.error('💥 Failed to create comment - detailed error:', error);
+      console.error('💥 Error name:', error?.name);
+      console.error('💥 Error message:', error?.message);
+      console.error('💥 Error stack:', error?.stack);
+      throw error; // Re-throw for proper error handling in UI
+    }
   }
 
   /**
    * Update an existing comment
    */
   static async updateComment(commentId: string, data: UpdateCommentRequest): Promise<Comment> {
-    return apiRequest(`/comments/${commentId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
+    // TODO: 需要后端提供编辑评论接口
+    // 目前使用相同的创建接口，带上id参数
+    const requestData: ApiCreateCommentRequest = {
+      articleId: 0, // TODO: 需要从评论获取articleId
+      content: data.content,
+      id: parseInt(commentId)
+    };
+
+    const response: ApiCommentResponse = await apiRequest('/client/reader/article/comment/createOrEdit', {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+      requiresAuth: true
     });
+
+    if (!response.success) {
+      throw new Error(response.errorMessage || 'Failed to update comment');
+    }
+
+    return CommentService.convertApiCommentToComment(
+      response.comment,
+      'article', // TODO: 从上下文获取
+      '', // TODO: 从上下文获取
+    );
   }
 
   /**
    * Delete a comment
    */
   static async deleteComment(commentId: string): Promise<void> {
-    return apiRequest(`/comments/${commentId}`, {
-      method: 'DELETE',
+    const requestData: ApiDeleteCommentRequest = {
+      commentId: parseInt(commentId)
+    };
+
+    const response: ApiCommentResponse = await apiRequest('/client/reader/article/comment/delete', {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+      requiresAuth: true
     });
+
+    if (!response.success) {
+      throw new Error(response.errorMessage || 'Failed to delete comment');
+    }
   }
 
   /**
    * Toggle like/unlike a comment
    */
   static async toggleCommentLike(commentId: string): Promise<CommentLikeResponse> {
-    return apiRequest(`/comments/${commentId}/like`, {
+    const requestData: ApiLikeCommentRequest = {
+      commentId: parseInt(commentId)
+    };
+
+    const response: ApiLikeCommentResponse = await apiRequest('/client/reader/article/comment/like', {
       method: 'POST',
+      body: JSON.stringify(requestData),
+      requiresAuth: true
     });
+
+    if (!response.success) {
+      throw new Error(response.errorMessage || 'Failed to like comment');
+    }
+
+    // Note: API 只返回 likeCount，不返回 isLiked 状态
+    // 前端需要自己维护 isLiked 状态
+    return {
+      isLiked: true, // 假设操作成功就是点赞了，前端自己切换状态
+      likesCount: response.likeCount
+    };
   }
 
   /**
    * Get comment statistics
    */
   static async getCommentStats(targetType: string, targetId: string): Promise<CommentStats> {
-    return apiRequest(`/comments/stats?targetType=${targetType}&targetId=${targetId}`);
-  }
-
-  /**
-   * Report a comment for moderation
-   */
-  static async reportComment(commentId: string, reason: string): Promise<void> {
-    return apiRequest(`/comments/${commentId}/report`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
-  }
-
-  /**
-   * Get replies for a specific comment
-   */
-  static async getReplies(
-    commentId: string,
-    options: {
-      page?: number;
-      limit?: number;
-      sortBy?: CommentSortBy;
-    } = {}
-  ): Promise<CommentsResponse> {
-    const params = new URLSearchParams({
-      page: String(options.page || 1),
-      limit: String(options.limit || 10),
-      sortBy: options.sortBy || 'newest',
-    });
-
-    return apiRequest(`/comments/${commentId}/replies?${params}`);
+    // TODO: 需要后端提供统计接口
+    return {
+      totalComments: 0,
+      topCommenters: []
+    };
   }
 }

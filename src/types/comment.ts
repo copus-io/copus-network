@@ -1,5 +1,79 @@
 // Comment types for Copus platform
 
+// 用户信息类型 (从API返回)
+export interface UserInfo {
+  id: number;
+  username: string;
+  namespace: string;
+  faceUrl: string;
+}
+
+// API返回的评论数据结构
+export interface ApiComment {
+  id: number;
+  content: string;
+  createdAt: number; // 时间戳
+  isLiked: boolean;
+  likeCount: number;
+  commentCount: number; // 回复数量
+  userInfo: UserInfo;
+  replyToUser?: UserInfo;
+}
+
+// API创建评论请求
+export interface ApiCreateCommentRequest {
+  articleId: number;
+  content: string;
+  id?: number; // 编辑时使用
+  parentId?: number; // 回复时使用
+}
+
+// API删除评论请求
+export interface ApiDeleteCommentRequest {
+  commentId: number;
+}
+
+// API点赞评论请求
+export interface ApiLikeCommentRequest {
+  commentId: number;
+}
+
+// API点赞评论响应
+export interface ApiLikeCommentResponse {
+  success: boolean;
+  errorMessage?: string;
+  likeCount: number;
+}
+
+// API响应结构
+export interface ApiCommentResponse {
+  success: boolean;
+  errorMessage?: string;
+  comment: ApiComment;
+}
+
+// API分页获取评论请求
+export interface ApiGetCommentsRequest {
+  articleId: number;
+  pageIndex: number;
+  pageSize: number;
+  rootId?: number; // 获取特定顶级评论的回复
+}
+
+// API分页获取评论响应
+export interface ApiGetCommentsResponse {
+  success: boolean;
+  errorMessage?: string;
+  data: {
+    items: ApiComment[];
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  };
+}
+
+// 前端使用的评论数据结构 (适配后)
 export interface Comment {
   id: string;
   uuid: string;
@@ -40,7 +114,7 @@ export interface Comment {
   canDelete: boolean;
 }
 
-// 创建评论的请求类型
+// 创建评论的请求类型 (前端使用)
 export interface CreateCommentRequest {
   content: string;
   targetType: 'article' | 'treasury' | 'user' | 'space';
@@ -62,6 +136,9 @@ export interface CommentsResponse {
   totalCount: number;
   hasMore: boolean;
   nextCursor?: string;
+  pageCount?: number;
+  pageIndex?: number;
+  pageSize?: number;
 }
 
 // 评论统计信息

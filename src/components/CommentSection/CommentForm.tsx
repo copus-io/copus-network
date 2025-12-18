@@ -16,8 +16,6 @@ interface CommentFormProps {
   onCancel?: () => void;
   placeholder?: string;
   className?: string;
-  onLoadComments?: () => void;
-  showingPrototypeComments?: boolean;
 }
 
 export const CommentForm: React.FC<CommentFormProps> = ({
@@ -30,8 +28,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   onCancel,
   placeholder = 'Share your thoughts on this link...',
   className = '',
-  onLoadComments,
-  showingPrototypeComments = false
 }) => {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,16 +94,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
             </Link>
             {' '}to join the discussion
           </p>
-          <button
-            onClick={onLoadComments}
-            className={`inline-block px-6 py-3 text-white rounded-full font-semibold transition-all duration-200 [font-family:'Lato',Helvetica] ${
-              showingPrototypeComments
-                ? 'bg-red hover:bg-red/90'
-                : 'bg-red hover:bg-red/90'
-            }`}
-          >
-            {showingPrototypeComments ? 'Hide prototype comments' : 'Show prototype comments'}
-          </button>
         </div>
       </div>
     );

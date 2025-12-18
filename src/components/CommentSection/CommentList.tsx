@@ -23,6 +23,15 @@ export const CommentList: React.FC<CommentListProps> = ({
 }) => {
   const [loadingMore, setLoadingMore] = useState(false);
 
+  console.log('🎯 CommentList received props:', {
+    commentsCount: comments.length,
+    totalCount,
+    hasMore,
+    targetType,
+    targetId,
+    comments: comments.slice(0, 3) // 只显示前3条避免日志过长
+  });
+
   const handleLoadMore = async () => {
     setLoadingMore(true);
     // TODO: Implement pagination
@@ -32,10 +41,20 @@ export const CommentList: React.FC<CommentListProps> = ({
     }, 1000);
   };
 
-  const topLevelComments = comments.filter(comment => comment.depth === 0);
+  const topLevelComments = comments.filter(comment => {
+    console.log('🎯 Filtering comment:', { id: comment.id, depth: comment.depth, isTopLevel: comment.depth === 0 });
+    return comment.depth === 0;
+  });
   const getRepliesForComment = (commentId: string) => {
     return comments.filter(comment => comment.parentId === commentId);
   };
+
+  console.log('🎯 CommentList processing:', {
+    totalComments: comments.length,
+    topLevelCommentsCount: topLevelComments.length,
+    firstComment: comments[0],
+    topLevelComments: topLevelComments.slice(0, 3)
+  });
 
   if (comments.length === 0) {
     return (
