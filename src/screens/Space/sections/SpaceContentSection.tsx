@@ -289,23 +289,25 @@ export const SpaceContentSection = (): JSX.Element => {
           const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
 
           // Get author username for display name
-          const authorUsername = spaceData?.userInfo?.username || user?.username || 'User';
+          // Note: Do NOT fall back to logged-in user's username - use API data or 'User' as default
+          const authorUsername = spaceData?.userInfo?.username || 'User';
 
           // Determine display name based on spaceType (same logic as Treasury list)
-          // spaceType 1 = Collections, spaceType 2 = Curations
+          // spaceType 1 = Treasury, spaceType 2 = Curations
           let displayName = spaceData?.name || decodedIdentifier;
           if (spaceData?.spaceType === 1) {
-            displayName = `${authorUsername}'s Collections`;
+            displayName = `${authorUsername}'s Treasury`;
           } else if (spaceData?.spaceType === 2) {
             displayName = `${authorUsername}'s Curations`;
           }
 
           // Build space info object
+          // Note: Do NOT fall back to logged-in user's avatar/namespace - always show the space creator's info
           fetchedSpaceInfo = {
             name: displayName,
             authorName: authorUsername,
-            authorAvatar: spaceData?.userInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
-            authorNamespace: spaceData?.userInfo?.namespace || user?.namespace,
+            authorAvatar: spaceData?.userInfo?.faceUrl || profileDefaultAvatar,
+            authorNamespace: spaceData?.userInfo?.namespace,
             spaceType: spaceData?.spaceType,
           };
 
