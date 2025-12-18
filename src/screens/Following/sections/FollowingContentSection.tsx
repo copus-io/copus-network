@@ -12,7 +12,7 @@ interface FollowedSpace {
   id: number;
   name: string;
   namespace: string;
-  spaceType?: number; // 1 = Collections, 2 = Curations (default spaces)
+  spaceType?: number; // 1 = Treasury, 2 = Curations (default spaces)
   userId?: number;
   ownerInfo?: {
     id?: number;
@@ -88,7 +88,7 @@ export const FollowingContentSection = (): JSX.Element => {
               if (space.spaceType === 2 || space.name?.toLowerCase().includes('curation')) {
                 displayName = `${username}'s Curations`;
               } else {
-                displayName = `${username}'s Collections`;
+                displayName = `${username}'s Treasury`;
               }
               return { ...space, resolvedUsername: displayName };
             }
