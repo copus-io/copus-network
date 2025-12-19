@@ -1,5 +1,11 @@
 import { apiRequest } from './api';
 import { ArticleCategoryListResponse } from '../types/category';
+import {
+  UserInfo,
+  GetUserInfoOptions,
+  CachedUserInfo,
+  ApiUserInfoResponse
+} from '../types/user';
 
 export interface VerificationCodeParams {
   email: string;
@@ -602,10 +608,146 @@ export class AuthService {
     return this.metamaskLogin(address, signature, hasToken);
   }
 
+  // User info cache
+  private static userInfoCache = new Map<string, CachedUserInfo>();
+  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   /**
-   * Get user information
+   * Get user information with caching and error handling
    */
-  static async getUserInfo(token?: string): Promise<{
+  static async getUserInfo(options: GetUserInfoOptions = {}): Promise<UserInfo> {
+    const { forceRefresh = false, token } = options;
+    const cacheKey = token || 'default';
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.userInfoCache.get(cacheKey);
+      if (cached && Date.now() < cached.cacheExpiry) {
+        return {
+          id: cached.id,
+          username: cached.username,
+          namespace: cached.namespace,
+          email: cached.email,
+          bio: cached.bio,
+          faceUrl: cached.faceUrl,
+          coverUrl: cached.coverUrl,
+          walletAddress: cached.walletAddress,
+          loginType: cached.loginType
+        };
+      }
+    }
+
+    try {
+      const requestOptions: any = {
+        method: 'GET',
+        requiresAuth: true,
+      };
+
+      // If token is provided, add it to headers
+      if (token) {
+        requestOptions.headers = {
+          'Authorization': `Bearer ${token}`
+        };
+      }
+
+      const response: ApiUserInfoResponse = await apiRequest('/client/user/userInfo', requestOptions);
+
+      // Validate API response format
+      if (response.status !== 1 || !response.data) {
+        throw new Error(response.msg || 'Failed to fetch user information');
+      }
+
+      // Extract and validate user data
+      const userData = response.data;
+      const userInfo: UserInfo = {
+        id: userData.id || 0,
+        username: userData.username || '',
+        namespace: userData.namespace || '',
+        email: userData.email || '',
+        bio: userData.bio || '',
+        faceUrl: userData.faceUrl || '',
+        coverUrl: userData.coverUrl || '',
+        walletAddress: userData.walletAddress || '',
+        loginType: userData.loginType || 'email'
+      };
+
+      // Cache the result
+      const cachedInfo: CachedUserInfo = {
+        ...userInfo,
+        lastFetched: Date.now(),
+        cacheExpiry: Date.now() + this.CACHE_DURATION
+      };
+      this.userInfoCache.set(cacheKey, cachedInfo);
+
+      return userInfo;
+    } catch (error: any) {
+      // Enhanced error handling
+      const errorMessage = error?.response?.data?.msg ||
+                          error?.message ||
+                          'Failed to fetch user information';
+
+      console.error('getUserInfo error:', {
+        error: errorMessage,
+        token: token ? '[PROVIDED]' : '[DEFAULT]',
+        timestamp: new Date().toISOString()
+      });
+
+      // If it's an auth error, clear cache and let auth system handle it
+      if (error?.status === 401 || error?.status === 403) {
+        this.userInfoCache.delete(cacheKey);
+        throw error; // Re-throw auth errors for proper handling
+      }
+
+      // For other errors, try to return cached data if available
+      const cached = this.userInfoCache.get(cacheKey);
+      if (cached) {
+        console.warn('Using cached user info due to API error');
+        return {
+          id: cached.id,
+          username: cached.username,
+          namespace: cached.namespace,
+          email: cached.email,
+          bio: cached.bio,
+          faceUrl: cached.faceUrl,
+          coverUrl: cached.coverUrl,
+          walletAddress: cached.walletAddress,
+          loginType: cached.loginType
+        };
+      }
+
+      // If no cache available, throw the error
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Clear user info cache
+   */
+  static clearUserInfoCache(token?: string): void {
+    if (token) {
+      this.userInfoCache.delete(token);
+    } else {
+      this.userInfoCache.clear();
+    }
+  }
+
+  /**
+   * Preload user info (fire and forget)
+   */
+  static async preloadUserInfo(token?: string): Promise<void> {
+    try {
+      await this.getUserInfo({ token, forceRefresh: false });
+    } catch (error) {
+      // Silently ignore preload errors
+      console.debug('User info preload failed:', error);
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   * @deprecated Use getUserInfo(options) instead
+   */
+  static async getUserInfoLegacy(token?: string): Promise<{
     bio: string;
     coverUrl: string;
     email: string;
@@ -615,21 +757,17 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    const options: any = {
-      method: 'GET',
-      requiresAuth: true,
+    const userInfo = await this.getUserInfo({ token });
+    return {
+      bio: userInfo.bio,
+      coverUrl: userInfo.coverUrl,
+      email: userInfo.email,
+      faceUrl: userInfo.faceUrl,
+      id: userInfo.id,
+      namespace: userInfo.namespace,
+      username: userInfo.username,
+      walletAddress: userInfo.walletAddress
     };
-
-    // If token is provided, add it to headers
-    if (token) {
-      options.headers = {
-        'Authorization': `Bearer ${token}`
-      };
-    }
-
-    const response = await apiRequest('/client/user/userInfo', options);
-    // User information is in response.data
-    return response.data;
   }
 
   /**
