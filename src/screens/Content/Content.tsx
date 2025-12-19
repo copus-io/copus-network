@@ -118,7 +118,7 @@ export const Content = (): JSX.Element => {
   const [isPaymentInProgress, setIsPaymentInProgress] = useState(false);
 
   // Use new article detail API hook
-  const { article, loading, error } = useArticleDetail(id || '');
+  const { article, loading, error, refetch: refetchArticle } = useArticleDetail(id || '');
 
   // State for "Collected in" section - stores spaces directly
   const [collectedInData, setCollectedInData] = useState<SpaceData[]>([]);
@@ -2094,8 +2094,8 @@ export const Content = (): JSX.Element => {
             articleNumericId={article.id}
             articleTitle={article.title}
             isAlreadyCollected={isLiked}
-            onCollectSuccess={() => {
-              // Update like state when collection is successful
+            onCollectSuccess={async () => {
+              // Optimistic update for immediate feedback
               if (!isLiked) {
                 const newLikesCount = likesCount + 1;
                 setIsLiked(true);
@@ -2104,6 +2104,8 @@ export const Content = (): JSX.Element => {
               }
               // Refresh "Collected in" section to show the new treasury
               fetchCollectedInData();
+              // Refetch article to get accurate diamond count from API
+              await refetchArticle();
             }}
           />
         )}
