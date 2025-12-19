@@ -182,8 +182,8 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
     );
   };
 
-  // Handle save - return selected spaces to parent
-  const handleSave = () => {
+  // Handle save - return selected spaces to parent and call bindArticles if in edit mode
+  const handleSave = async () => {
     const selectedSpaces: SelectedSpace[] = collections
       .filter(c => c.isSelected)
       .map(c => ({
@@ -192,6 +192,24 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         namespace: c.namespace,
         spaceType: c.spaceType,
       }));
+
+    // If articleId is provided (edit mode), call bindArticles API directly
+    if (articleId && selectedSpaces.length > 0) {
+      try {
+        setIsSubmitting(true);
+        console.log('📦 Binding article to treasuries:', selectedSpaces.map(s => s.id));
+        await AuthService.bindArticles(articleId, selectedSpaces.map(s => s.id));
+        console.log('✅ Treasury bindings updated successfully');
+        showToast('Treasury updated', 'success');
+      } catch (error) {
+        console.error('❌ Failed to update treasury bindings:', error);
+        showToast('Failed to update treasury', 'error');
+        setIsSubmitting(false);
+        return; // Don't close modal on error
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
 
     onSave(selectedSpaces);
     onClose();
