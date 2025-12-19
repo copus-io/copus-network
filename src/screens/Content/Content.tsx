@@ -537,46 +537,49 @@ export const Content = (): JSX.Element => {
   // Set like state when article data is fetched
   useEffect(() => {
     if (content && article) {
-      // Get global state or use API data
-      const globalState = getArticleLikeState(article.uuid, content.isLiked, content.likes);
-      setIsLiked(globalState.isLiked);
-      setLikesCount(globalState.likeCount);
+      // Use fresh API data for the work page - article.likeCount is the source of truth
+      // Don't use cached global state as it may be stale
+      setIsLiked(article.isLiked || false);
+      setLikesCount(article.likeCount || 0);
+      // Update global state with fresh API data so other pages stay in sync
+      updateArticleLikeState(article.uuid, article.isLiked || false, article.likeCount || 0);
     }
-  }, [content, article, getArticleLikeState]);
+  }, [content, article, updateArticleLikeState]);
 
   // Fetch "Collected in" data - get spaces that contain this article
+  // Extracted as a reusable function so it can be called after collecting
+  const fetchCollectedInData = async () => {
+    if (!article || !article.id) {
+      return;
+    }
+
+    try {
+      // Fetch spaces that contain this article using the article's id field
+      const spacesResponse = await AuthService.getSpacesByArticleId(article.id);
+      console.log('Spaces by article ID response:', spacesResponse);
+
+      // Parse the response - handle different possible formats
+      let spacesArray: SpaceData[] = [];
+      if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
+        spacesArray = spacesResponse.data.data;
+      } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
+        spacesArray = spacesResponse.data;
+      } else if (Array.isArray(spacesResponse)) {
+        spacesArray = spacesResponse;
+      }
+
+      // Use space data directly from API response
+      // The spacesByArticleId API returns spaces with a `data` array containing preview articles
+      // NOTE: Backend currently returns only 2 preview articles per space - if 3 are needed,
+      // the backend API needs to be updated to return 3 preview articles
+      setCollectedInData(spacesArray);
+    } catch (err) {
+      console.error('Failed to fetch collected in data:', err);
+      setCollectedInData([]);
+    }
+  };
+
   useEffect(() => {
-    const fetchCollectedInData = async () => {
-      if (!article || !article.id) {
-        return;
-      }
-
-      try {
-        // Fetch spaces that contain this article using the article's id field
-        const spacesResponse = await AuthService.getSpacesByArticleId(article.id);
-        console.log('Spaces by article ID response:', spacesResponse);
-
-        // Parse the response - handle different possible formats
-        let spacesArray: SpaceData[] = [];
-        if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
-          spacesArray = spacesResponse.data.data;
-        } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
-          spacesArray = spacesResponse.data;
-        } else if (Array.isArray(spacesResponse)) {
-          spacesArray = spacesResponse;
-        }
-
-        // Use space data directly from API response
-        // The spacesByArticleId API returns spaces with a `data` array containing preview articles
-        // NOTE: Backend currently returns only 2 preview articles per space - if 3 are needed,
-        // the backend API needs to be updated to return 3 preview articles
-        setCollectedInData(spacesArray);
-      } catch (err) {
-        console.error('Failed to fetch collected in data:', err);
-        setCollectedInData([]);
-      }
-    };
-
     fetchCollectedInData();
   }, [article]);
 
@@ -2099,6 +2102,8 @@ export const Content = (): JSX.Element => {
                 setLikesCount(newLikesCount);
                 updateArticleLikeState(article.uuid, true, newLikesCount);
               }
+              // Refresh "Collected in" section to show the new treasury
+              fetchCollectedInData();
             }}
           />
         )}
