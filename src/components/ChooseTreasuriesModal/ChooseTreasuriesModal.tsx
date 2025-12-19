@@ -8,6 +8,7 @@ interface ChooseTreasuriesModalProps {
   onClose: () => void;
   onSave: (selectedSpaces: SelectedSpace[]) => void; // Return selected spaces to parent
   initialSelectedIds?: number[]; // Optional: pre-selected space IDs
+  articleId?: number; // Optional: article ID for edit mode to get existing bindings
 }
 
 export interface SelectedSpace {
@@ -48,6 +49,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
   onClose,
   onSave,
   initialSelectedIds = [],
+  articleId,
 }) => {
   const { user } = useUser();
   const { showToast } = useToast();
@@ -67,9 +69,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
       try {
         setLoading(true);
 
-        // Use the bindableSpaces API without articleId (just get all spaces)
-        const bindableResponse = await AuthService.getBindableSpaces();
-        console.log('Bindable spaces response (Choose):', bindableResponse);
+        // Use the bindableSpaces API - pass articleId in edit mode to get isBind status
+        const bindableResponse = await AuthService.getBindableSpaces(articleId);
+        console.log('Bindable spaces response (Choose):', bindableResponse, 'articleId:', articleId);
 
         // Parse the response
         let spacesArray: BindableSpace[] = [];
@@ -123,8 +125,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           const spaceName = space.name || displayName;
           const firstLetter = spaceName.charAt(0).toUpperCase();
 
-          // Only pre-select if initialSelectedIds contains this space
-          const shouldBeSelected = initialSelectedIds.includes(space.id);
+          // Pre-select if: articleId provided and space.isBind is true (existing binding),
+          // OR initialSelectedIds contains this space
+          const shouldBeSelected = (articleId && space.isBind) || initialSelectedIds.includes(space.id);
 
           return {
             id: space.id.toString(),
@@ -160,7 +163,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
     };
 
     fetchCollections();
-  }, [isOpen, user?.id, user?.username, user?.faceUrl, initialSelectedIds]);
+  }, [isOpen, user?.id, user?.username, user?.faceUrl, initialSelectedIds, articleId]);
 
   // Reset state when modal closes
   useEffect(() => {

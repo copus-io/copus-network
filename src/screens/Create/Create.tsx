@@ -1263,6 +1263,7 @@ export const Create = (): JSX.Element => {
           }
         }}
         initialSelectedIds={selectedTreasuries.map(t => t.id)}
+        articleId={isEditMode ? editingArticle?.id : undefined}
       />
     </div>
   );
