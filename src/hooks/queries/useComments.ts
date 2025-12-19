@@ -45,40 +45,47 @@ export const useCreateComment = () => {
   return useMutation({
     mutationFn: CommentService.createComment,
     onSuccess: (newComment, variables) => {
-      // 更新所有相关的评论列表缓存
+      // 更新评论列表缓存
       queryClient.setQueriesData(
         { queryKey: ['comments', variables.targetType, variables.targetId] },
         (old: any) => {
           if (!old) return { comments: [newComment], totalCount: 1, hasMore: false };
 
+          // 总是将新评论添加到列表中（无论是顶级评论还是回复）
+          const updatedComments = [...old.comments, newComment];
+
+          // 如果是回复，还需要更新父评论的回复数量
+          if (variables.parentId) {
+            const commentsWithUpdatedReplies = updatedComments.map((comment: Comment) =>
+              comment.id === variables.parentId
+                ? { ...comment, repliesCount: comment.repliesCount + 1 }
+                : comment
+            );
+
+            return {
+              ...old,
+              comments: commentsWithUpdatedReplies,
+              totalCount: old.totalCount + 1,
+            };
+          }
+
           return {
             ...old,
-            comments: [newComment, ...old.comments],
+            comments: updatedComments,
             totalCount: old.totalCount + 1,
           };
         }
       );
 
-      // 如果是回复，更新父评论的回复数
-      if (variables.parentId) {
-        queryClient.setQueriesData(
-          { queryKey: ['comments', variables.targetType, variables.targetId] },
-          (old: any) => {
-            if (!old) return old;
-
-            return {
-              ...old,
-              comments: old.comments.map((comment: Comment) =>
-                comment.id === variables.parentId
-                  ? { ...comment, repliesCount: comment.repliesCount + 1 }
-                  : comment
-              ),
-            };
-          }
-        );
-      }
-
       showToast('Comment posted successfully', 'success');
+
+      // 如果是回复，刷新评论列表以确保数据同步
+      if (variables.parentId) {
+        console.log('🔄 Reply created, invalidating queries to ensure data sync');
+        queryClient.invalidateQueries({
+          queryKey: ['comments', variables.targetType, variables.targetId]
+        });
+      }
     },
     onError: (error) => {
       console.error('Failed to create comment:', error);

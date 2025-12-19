@@ -227,6 +227,8 @@ export class CommentService {
     };
 
     console.log('📤 Create comment request data:', requestData);
+    console.log('📤 Is this a reply?', !!data.parentId);
+    console.log('📤 Parent ID:', data.parentId);
 
     try {
       const url = '/client/reader/article/comment/createOrEdit';
