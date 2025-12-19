@@ -196,19 +196,27 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         spaceType: c.spaceType,
       }));
 
-    // If articleId is provided (edit mode), only bind NEWLY selected treasuries
-    // This prevents overwriting other users' bindings
+    // SECURITY: Only bind to the current user's own treasuries
+    // - getBindableSpaces() only returns spaces owned by the current user
+    // - collections state only contains the current user's spaces
+    // - We only send IDs from collections, never external IDs
+    // - Backend should also validate space ownership (defense in depth)
     if (articleId) {
       // Find treasuries that are newly selected (not originally bound but now selected)
+      // These are guaranteed to be the current user's spaces since they come from collections
       const newlySelectedSpaces = collections
         .filter(c => c.isSelected && !c.wasOriginallyBound)
         .map(c => c.numericId);
 
-      if (newlySelectedSpaces.length > 0) {
+      // Additional safety: verify all IDs are in our collections (user's own spaces)
+      const validSpaceIds = new Set(collections.map(c => c.numericId));
+      const safeSpaceIds = newlySelectedSpaces.filter(id => validSpaceIds.has(id));
+
+      if (safeSpaceIds.length > 0) {
         try {
           setIsSubmitting(true);
-          console.log('📦 Binding article to NEW treasuries only:', newlySelectedSpaces);
-          await AuthService.bindArticles(articleId, newlySelectedSpaces);
+          console.log('📦 Binding article to NEW treasuries only (user-owned):', safeSpaceIds);
+          await AuthService.bindArticles(articleId, safeSpaceIds);
           console.log('✅ Treasury bindings updated successfully');
           showToast('Treasury updated', 'success');
         } catch (error) {
