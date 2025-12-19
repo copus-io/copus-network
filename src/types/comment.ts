@@ -128,6 +128,7 @@ export interface CreateCommentRequest {
 export interface UpdateCommentRequest {
   content: string;
   contentType?: 'text' | 'markdown';
+  articleId?: string; // 编辑时需要的articleId
 }
 
 // 评论列表响应类型

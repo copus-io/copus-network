@@ -66,7 +66,7 @@ interface CommentItemProps {
 }
 
 // Helper component for replies
-const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any }> = ({ reply, toggleLikeMutation }) => {
+const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any; targetId: string }> = ({ reply, toggleLikeMutation, targetId }) => {
   const deleteCommentMutation = useDeleteComment();
   const { user } = useUser();
   const [replyIsLiked, setReplyIsLiked] = useState(reply.isLiked);
@@ -87,7 +87,7 @@ const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any }> 
 
   const handleReplyDelete = () => {
     if (window.confirm('Are you sure you want to delete this reply?')) {
-      deleteCommentMutation.mutate(reply.id);
+      deleteCommentMutation.mutate({ commentId: reply.id, articleId: targetId });
     }
   };
 
@@ -209,6 +209,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   const updateCommentMutation = useUpdateComment();
   const { user } = useUser();
 
+
   const handleLike = () => {
     if (!user) {
       // 未登录用户点击点赞，提示需要登录
@@ -245,7 +246,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   const handleEditSubmit = (content: string) => {
     updateCommentMutation.mutate(
-      { commentId: comment.id, data: { content } },
+      { commentId: comment.id, data: { content, articleId: targetId } },
       {
         onSuccess: () => {
           setShowEditForm(false);
@@ -256,7 +257,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   const handleDelete = () => {
     if (window.confirm('Are you sure you want to delete this comment?')) {
-      deleteCommentMutation.mutate(comment.id);
+      deleteCommentMutation.mutate({ commentId: comment.id, articleId: targetId });
     }
   };
 
@@ -421,7 +422,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           {replies.length > 0 && (
             <div className="mt-4 ml-8 space-y-4 pl-6 border-l border-[#D3D3D3]">
               {replies.map((reply) => (
-                <ReplyItemComponent key={reply.id} reply={reply} toggleLikeMutation={toggleLikeMutation} />
+                <ReplyItemComponent key={reply.id} reply={reply} toggleLikeMutation={toggleLikeMutation} targetId={targetId} />
               ))}
             </div>
           )}

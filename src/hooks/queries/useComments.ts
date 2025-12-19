@@ -15,24 +15,14 @@ export const useComments = (
     limit?: number;
   } = {}
 ) => {
-  console.log('🎯 useComments hook called with:', { targetType, targetId, options });
 
   const result = useQuery({
     queryKey: ['comments', targetType, targetId, options],
-    queryFn: () => {
-      console.log('🎯 useComments queryFn executing for:', { targetType, targetId, options });
-      return CommentService.getComments(targetType, targetId, options);
-    },
+    queryFn: () => CommentService.getComments(targetType, targetId, options),
     staleTime: 1000 * 60 * 2, // 2分钟内认为数据新鲜
     enabled: !!(targetType && targetId), // 只有在有target信息时才启用查询
   });
 
-  console.log('🎯 useComments hook result:', {
-    isLoading: result.isLoading,
-    isError: result.isError,
-    data: result.data,
-    error: result.error
-  });
 
   return result;
 };
@@ -80,7 +70,6 @@ export const useCreateComment = () => {
       showToast('Comment posted successfully', 'success');
 
       // 强制刷新评论列表以确保包含新的回复
-      console.log('🔄 Comment/reply created, invalidating queries to fetch latest data');
       queryClient.invalidateQueries({
         queryKey: ['comments', variables.targetType, variables.targetId]
       });
@@ -132,8 +121,9 @@ export const useDeleteComment = () => {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: CommentService.deleteComment,
-    onSuccess: (_, commentId) => {
+    mutationFn: ({ commentId, articleId }: { commentId: string; articleId: string }) =>
+      CommentService.deleteComment(commentId, articleId),
+    onSuccess: (_, { commentId }) => {
       // 从评论列表中移除已删除的评论
       queryClient.setQueriesData(
         { queryKey: ['comments'] },

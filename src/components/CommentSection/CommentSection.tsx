@@ -27,13 +27,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 
   const totalComments = commentsData?.totalCount || 0;
 
-  console.log('📊 CommentSection data:', {
-    isLoading,
-    error,
-    commentsData,
-    totalComments,
-    commentsLength: commentsData?.comments?.length
-  });
 
   return (
     <div className={`w-full overflow-hidden min-h-[600px] ${className}`}>

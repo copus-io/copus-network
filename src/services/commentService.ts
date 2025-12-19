@@ -30,22 +30,8 @@ export class CommentService {
     targetId: string,
     parentId?: string
   ): Comment {
-    console.log('🔄 Converting API comment:', {
-      apiComment,
-      targetType,
-      targetId,
-      parentId,
-      userInfoCheck: {
-        hasUsername: !!apiComment.userInfo?.username,
-        hasNamespace: !!apiComment.userInfo?.namespace,
-        hasId: !!apiComment.userInfo?.id,
-        username: apiComment.userInfo?.username,
-        namespace: apiComment.userInfo?.namespace,
-        id: apiComment.userInfo?.id
-      }
-    });
 
-    return {
+    const finalComment = {
       id: String(apiComment.id),
       uuid: String(apiComment.id),
       content: apiComment.content,
@@ -81,6 +67,9 @@ export class CommentService {
       canEdit: false,
       canDelete: false
     };
+
+
+    return finalComment;
   }
 
   /**
@@ -97,11 +86,9 @@ export class CommentService {
       cursor?: string;
     } = {}
   ): Promise<CommentsResponse> {
-    console.log('🔍 CommentService.getComments called with:', { targetType, targetId, options });
 
     // 目前只支持article类型
     if (targetType !== 'article') {
-      console.log('❌ Only article type supported, returning empty');
       return {
         comments: [],
         totalCount: 0,
@@ -114,25 +101,33 @@ export class CommentService {
     try {
       // 第一步：获取所有顶级评论
       const topLevelComments = await this.fetchCommentsPage(targetId, page, limit);
-      console.log('📋 Fetched top-level comments:', topLevelComments.comments.length);
 
-      // 第二步：获取所有有回复的评论的回复
+      // 第二步：并行获取所有有回复的评论的回复
       const allComments = [...topLevelComments.comments];
 
-      for (const comment of topLevelComments.comments) {
-        if (comment.repliesCount > 0) {
-          console.log(`🔄 Fetching replies for comment ${comment.id} (${comment.repliesCount} replies)`);
-          const replies = await this.fetchRepliesForComment(targetId, parseInt(comment.id));
-          console.log(`📥 Fetched ${replies.length} replies for comment ${comment.id}`);
-          allComments.push(...replies);
-        }
+      const commentsWithReplies = topLevelComments.comments.filter(comment => comment.repliesCount > 0);
+
+      if (commentsWithReplies.length > 0) {
+
+        // 并行获取所有回复，而不是串行
+        const repliesPromises = commentsWithReplies.map(comment =>
+          this.fetchRepliesForComment(targetId, parseInt(comment.id))
+            .then(replies => ({ commentId: comment.id, replies }))
+            .catch(error => {
+              return { commentId: comment.id, replies: [] };
+            })
+        );
+
+        const repliesResults = await Promise.all(repliesPromises);
+
+        // 将所有回复添加到评论列表中
+        repliesResults.forEach(({ commentId, replies }) => {
+          if (replies.length > 0) {
+            allComments.push(...replies);
+          }
+        });
       }
 
-      console.log('✅ Successfully processed all comments:', {
-        topLevelCount: topLevelComments.comments.length,
-        totalWithReplies: allComments.length,
-        hasMore: topLevelComments.hasMore
-      });
 
       return {
         comments: allComments,
@@ -143,10 +138,7 @@ export class CommentService {
         pageSize: topLevelComments.pageSize
       };
     } catch (error) {
-      console.error('💥 Failed to fetch comments - detailed error:', error);
-      console.error('💥 Error name:', error?.name);
-      console.error('💥 Error message:', error?.message);
-      console.error('💥 Error stack:', error?.stack);
+      console.error('Failed to fetch comments:', error);
 
       // Return empty result on error instead of throwing
       return {
@@ -173,8 +165,6 @@ export class CommentService {
       ...(rootId && { rootId })
     };
 
-    console.log('📤 GET comments request data:', requestData);
-
     const queryParams = new URLSearchParams({
       articleId: requestData.articleId.toString(),
       pageIndex: requestData.pageIndex.toString(),
@@ -183,28 +173,21 @@ export class CommentService {
     });
 
     const url = `/client/reader/article/comment/page?${queryParams.toString()}`;
-    console.log('🌐 Making GET request to:', url);
 
     const response: any = await apiRequest(url, {
       method: 'GET',
       requiresAuth: false // 获取评论列表不需要登录，任何人都可以查看
     });
 
-    console.log('📥 GET comments API response:', response);
-
     // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
     if (response.status !== 1) {
-      console.error('❌ API response indicates failure:', response);
       throw new Error(response.msg || 'Failed to fetch comments');
     }
-
-    console.log('🔍 Full API response.data:', response.data);
 
     const { items, pageCount, pageIndex, pageSize, totalCount } = response.data;
 
     // 尝试不同的字段名，可能API使用了不同的字段
     const commentsArray = items || response.data.list || response.data.comments || response.data.records || [];
-    console.log('📋 Comments array:', commentsArray);
 
     // Convert API comments to frontend format
     const comments = commentsArray.map((apiComment, index) => {
@@ -217,7 +200,7 @@ export class CommentService {
         );
         return converted;
       } catch (error) {
-        console.error(`💥 Error converting comment ${index}:`, error, apiComment);
+        console.error(`Error converting comment ${index}:`, error);
         return null; // Skip invalid comments
       }
     }).filter(comment => comment !== null);
@@ -240,7 +223,7 @@ export class CommentService {
       const repliesResponse = await this.fetchCommentsPage(targetId, 1, 100, rootId); // 获取最多100条回复
       return repliesResponse.comments;
     } catch (error) {
-      console.error(`💥 Failed to fetch replies for comment ${rootId}:`, error);
+      console.error(`Failed to fetch replies for comment ${rootId}:`, error);
       return []; // 回复获取失败时返回空数组，不影响主评论显示
     }
   }
@@ -249,11 +232,8 @@ export class CommentService {
    * Create a new comment
    */
   static async createComment(data: CreateCommentRequest): Promise<Comment> {
-    console.log('✍️ CommentService.createComment called with:', data);
-
     // 目前只支持article类型
     if (data.targetType !== 'article') {
-      console.log('❌ Only article type supported for creation');
       throw new Error('Only article comments are supported currently');
     }
 
@@ -264,13 +244,9 @@ export class CommentService {
       parentId: data.parentId ? parseInt(data.parentId) : undefined
     };
 
-    console.log('📤 Create comment request data:', requestData);
-    console.log('📤 Is this a reply?', !!data.parentId);
-    console.log('📤 Parent ID:', data.parentId);
 
     try {
       const url = '/client/reader/article/comment/createOrEdit';
-      console.log('🌐 Making POST request to:', url);
 
       const response: any = await apiRequest(url, {
         method: 'POST',
@@ -278,34 +254,25 @@ export class CommentService {
         requiresAuth: true
       });
 
-      console.log('📥 Create comment API response:', response);
-      console.log('📥 Response type:', typeof response);
-      console.log('📥 Response success property:', response?.success);
-      console.log('📥 Response status property:', response?.status);
-
       // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
       if (response.status !== 1) {
-        console.error('❌ Create comment API error:', response);
         throw new Error(response.msg || 'Failed to create comment');
       }
-
-      console.log('✅ Comment created successfully, converting to frontend format');
-      console.log('📄 Response data for conversion:', response.data);
 
       // 检查API返回的评论数据结构
       const commentData = response.data?.comment || response.data;
 
-      return CommentService.convertApiCommentToComment(
+      const convertedComment = CommentService.convertApiCommentToComment(
         commentData,
         data.targetType,
         data.targetId,
         data.parentId
       );
+
+
+      return convertedComment;
     } catch (error) {
-      console.error('💥 Failed to create comment - detailed error:', error);
-      console.error('💥 Error name:', error?.name);
-      console.error('💥 Error message:', error?.message);
-      console.error('💥 Error stack:', error?.stack);
+      console.error('Failed to create comment:', error);
       throw error; // Re-throw for proper error handling in UI
     }
   }
@@ -314,54 +281,74 @@ export class CommentService {
    * Update an existing comment
    */
   static async updateComment(commentId: string, data: UpdateCommentRequest): Promise<Comment> {
-    // TODO: 需要后端提供编辑评论接口
-    // 目前使用相同的创建接口，带上id参数
-    const requestData: ApiCreateCommentRequest = {
-      articleId: 0, // TODO: 需要从评论获取articleId
-      content: data.content,
-      id: parseInt(commentId)
-    };
+    try {
+      // 使用相同的创建/编辑接口，带上id参数表示编辑
+      const requestData: ApiCreateCommentRequest = {
+        articleId: data.articleId ? parseInt(data.articleId) : 0,
+        content: data.content,
+        id: parseInt(commentId)
+      };
 
-    const response: ApiCommentResponse = await apiRequest('/client/reader/article/comment/createOrEdit', {
-      method: 'POST',
-      body: JSON.stringify(requestData),
-      requiresAuth: true
-    });
+      console.log('Update comment request data:', requestData);
 
-    if (!response.success) {
-      throw new Error(response.errorMessage || 'Failed to update comment');
+      const response: any = await apiRequest('/client/reader/article/comment/createOrEdit', {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+        requiresAuth: true
+      });
+
+      console.log('Update comment API response:', response);
+
+      // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
+      if (response.status !== 1) {
+        throw new Error(response.msg || 'Failed to update comment');
+      }
+
+      // 检查API返回的评论数据结构
+      const commentData = response.data?.comment || response.data;
+
+      return CommentService.convertApiCommentToComment(
+        commentData,
+        'article', // 目前只支持article类型
+        data.articleId || '', // 使用传入的articleId
+      );
+    } catch (error) {
+      console.error('Failed to update comment:', error);
+      throw error; // Re-throw for proper error handling in UI
     }
-
-    return CommentService.convertApiCommentToComment(
-      response.comment,
-      'article', // TODO: 从上下文获取
-      '', // TODO: 从上下文获取
-    );
   }
 
   /**
    * Delete a comment
    */
-  static async deleteComment(commentId: string): Promise<void> {
-    const requestData: ApiDeleteCommentRequest = {
-      commentId: parseInt(commentId)
+  static async deleteComment(commentId: string, articleId?: string): Promise<void> {
+    // Try using 'commentId' as the parameter name
+    const requestData: any = {
+      commentId: parseInt(commentId)  // Use 'commentId' instead of 'id'
     };
 
+    // If articleId is provided, add it to the request
+    if (articleId) {
+      requestData.articleId = parseInt(articleId);
+    }
 
-    const response: any = await apiRequest('/client/reader/article/comment/delete', {
+    const requestOptions = {
       method: 'POST',
       body: JSON.stringify(requestData),
       requiresAuth: true
-    });
+    };
 
+    try {
+      const response: any = await apiRequest('/client/reader/article/comment/delete', requestOptions);
 
-    // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
-    if (response.status !== 1) {
-      console.error('❌ Delete comment API error:', response);
-      throw new Error(response.msg || 'Failed to delete comment');
+      // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
+      if (response.status !== 1) {
+        throw new Error(response.msg || 'Failed to delete comment');
+      }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      throw error;
     }
-
-    console.log('✅ Comment deleted successfully');
   }
 
   /**
@@ -378,16 +365,10 @@ export class CommentService {
       requiresAuth: true
     });
 
-    console.log('📥 Like comment API response:', response);
-    console.log('📥 Response status property:', response?.status);
-
     // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
     if (response.status !== 1) {
-      console.error('❌ Like comment API error:', response);
       throw new Error(response.msg || 'Failed to like comment');
     }
-
-    console.log('✅ Comment like toggled successfully');
 
     // Note: API 只返回 likeCount，不返回 isLiked 状态
     // 前端需要自己维护 isLiked 状态
