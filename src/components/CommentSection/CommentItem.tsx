@@ -2,9 +2,60 @@
 
 import React, { useState } from 'react';
 import { Comment } from '../../types/comment';
-import { useToggleCommentLike, useDeleteComment } from '../../hooks/queries/useComments';
+import { useToggleCommentLike, useDeleteComment, useUpdateComment } from '../../hooks/queries/useComments';
 import { CommentForm } from './CommentForm';
 import { useUser } from '../../contexts/UserContext';
+
+// Edit comment form component
+interface EditCommentFormProps {
+  initialContent: string;
+  onSubmit: (content: string) => void;
+  onCancel: () => void;
+  isSubmitting?: boolean;
+}
+
+const EditCommentForm: React.FC<EditCommentFormProps> = ({
+  initialContent,
+  onSubmit,
+  onCancel,
+  isSubmitting = false
+}) => {
+  const [content, setContent] = useState(initialContent);
+
+  const handleSubmit = () => {
+    if (!content.trim()) return;
+    onSubmit(content.trim());
+  };
+
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg">
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Edit your comment..."
+        className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent [font-family:'Lato',Helvetica]"
+        rows={3}
+        disabled={isSubmitting}
+      />
+      <div className="flex justify-end gap-2 mt-3">
+        <button
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 [font-family:'Lato',Helvetica]"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || !content.trim()}
+          className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 [font-family:'Lato',Helvetica]"
+        >
+          {isSubmitting ? 'Updating...' : 'Update'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 interface CommentItemProps {
   comment: Comment;
@@ -22,6 +73,12 @@ const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any }> 
   const [replyLikesCount, setReplyLikesCount] = useState(reply.likesCount);
 
   const handleReplyLike = () => {
+    if (!user) {
+      // 未登录用户点击点赞，提示需要登录
+      alert('请登录后再进行点赞操作');
+      return;
+    }
+
     const newIsLiked = !replyIsLiked;
     setReplyIsLiked(newIsLiked);
     setReplyLikesCount(prev => newIsLiked ? prev + 1 : prev - 1);
@@ -144,13 +201,21 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   className = ''
 }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const [isLiked, setIsLiked] = useState(comment.isLiked);
   const [likesCount, setLikesCount] = useState(comment.likesCount);
   const toggleLikeMutation = useToggleCommentLike();
   const deleteCommentMutation = useDeleteComment();
+  const updateCommentMutation = useUpdateComment();
   const { user } = useUser();
 
   const handleLike = () => {
+    if (!user) {
+      // 未登录用户点击点赞，提示需要登录
+      alert('请登录后再进行点赞操作');
+      return;
+    }
+
     // Toggle like state locally
     const newIsLiked = !isLiked;
     setIsLiked(newIsLiked);
@@ -161,7 +226,32 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   const handleReply = () => {
+    if (!user) {
+      // 未登录用户点击回复，提示需要登录
+      alert('请登录后再进行回复操作');
+      return;
+    }
     setShowReplyForm(!showReplyForm);
+  };
+
+  const handleEdit = () => {
+    if (!user) {
+      // 未登录用户点击编辑，提示需要登录
+      alert('请登录后再进行编辑操作');
+      return;
+    }
+    setShowEditForm(!showEditForm);
+  };
+
+  const handleEditSubmit = (content: string) => {
+    updateCommentMutation.mutate(
+      { commentId: comment.id, data: { content } },
+      {
+        onSuccess: () => {
+          setShowEditForm(false);
+        }
+      }
+    );
   };
 
   const handleDelete = () => {
@@ -172,6 +262,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   // Check if current user can delete this comment
   const canDelete = user && (comment.canDelete || user.id === comment.authorId);
+
+  // Check if current user is the comment author
+  const isCommentAuthor = user && user.id === comment.authorId;
+
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -259,13 +353,23 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <span>{likesCount}</span>
             </button>
 
-            <button
-              onClick={handleReply}
-              className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
-              style={{ outline: 'none' }}
-            >
-              <span>Reply</span>
-            </button>
+            {isCommentAuthor ? (
+              <button
+                onClick={handleEdit}
+                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
+                style={{ outline: 'none' }}
+              >
+                <span>Edit</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleReply}
+                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
+                style={{ outline: 'none' }}
+              >
+                <span>Reply</span>
+              </button>
+            )}
 
             {canDelete && (
               <button
@@ -297,6 +401,18 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 placeholder={`回复 @${comment.authorName}`}
                 onSubmitSuccess={() => setShowReplyForm(false)}
                 onCancel={() => setShowReplyForm(false)}
+              />
+            </div>
+          )}
+
+          {/* Edit form */}
+          {showEditForm && (
+            <div className="mt-4">
+              <EditCommentForm
+                initialContent={comment.content}
+                onSubmit={handleEditSubmit}
+                onCancel={() => setShowEditForm(false)}
+                isSubmitting={updateCommentMutation.isPending}
               />
             </div>
           )}

@@ -131,7 +131,7 @@ export class CommentService {
 
       const response: any = await apiRequest(url, {
         method: 'GET',
-        requiresAuth: true
+        requiresAuth: false // 获取评论列表不需要登录，任何人都可以查看
       });
 
       console.log('📥 GET comments API response:', response);
@@ -307,15 +307,21 @@ export class CommentService {
       commentId: parseInt(commentId)
     };
 
-    const response: ApiCommentResponse = await apiRequest('/client/reader/article/comment/delete', {
+
+    const response: any = await apiRequest('/client/reader/article/comment/delete', {
       method: 'POST',
       body: JSON.stringify(requestData),
       requiresAuth: true
     });
 
-    if (!response.success) {
-      throw new Error(response.errorMessage || 'Failed to delete comment');
+
+    // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
+    if (response.status !== 1) {
+      console.error('❌ Delete comment API error:', response);
+      throw new Error(response.msg || 'Failed to delete comment');
     }
+
+    console.log('✅ Comment deleted successfully');
   }
 
   /**
@@ -326,21 +332,28 @@ export class CommentService {
       commentId: parseInt(commentId)
     };
 
-    const response: ApiLikeCommentResponse = await apiRequest('/client/reader/article/comment/like', {
+    const response: any = await apiRequest('/client/reader/article/comment/like', {
       method: 'POST',
       body: JSON.stringify(requestData),
       requiresAuth: true
     });
 
-    if (!response.success) {
-      throw new Error(response.errorMessage || 'Failed to like comment');
+    console.log('📥 Like comment API response:', response);
+    console.log('📥 Response status property:', response?.status);
+
+    // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
+    if (response.status !== 1) {
+      console.error('❌ Like comment API error:', response);
+      throw new Error(response.msg || 'Failed to like comment');
     }
+
+    console.log('✅ Comment like toggled successfully');
 
     // Note: API 只返回 likeCount，不返回 isLiked 状态
     // 前端需要自己维护 isLiked 状态
     return {
       isLiked: true, // 假设操作成功就是点赞了，前端自己切换状态
-      likesCount: response.likeCount
+      likesCount: response.data?.likeCount || response.likeCount || 0
     };
   }
 
