@@ -57,7 +57,7 @@ export interface ApiGetCommentsRequest {
   articleId: number;
   pageIndex: number;
   pageSize: number;
-  rootId?: number; // 获取特定顶级评论的回复
+  rootId?: number; // 获取特定顶级评论的回复，不传则获取所有顶级评论
 }
 
 // API分页获取评论响应

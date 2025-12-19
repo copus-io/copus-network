@@ -84,7 +84,7 @@ export class CommentService {
   }
 
   /**
-   * Get comments for an article
+   * Get comments for an article with replies
    * Note: 目前只支持article类型，其他类型需要后端提供相应接口
    */
   static async getComments(
@@ -111,86 +111,36 @@ export class CommentService {
 
     const { page = 1, limit = 20 } = options;
 
-    const requestData: ApiGetCommentsRequest = {
-      articleId: parseInt(targetId),
-      pageIndex: page,
-      pageSize: limit
-    };
-
-    console.log('📤 GET comments request data:', requestData);
-
     try {
-      const queryParams = new URLSearchParams({
-        articleId: requestData.articleId.toString(),
-        pageIndex: requestData.pageIndex.toString(),
-        pageSize: requestData.pageSize.toString()
-      });
+      // 第一步：获取所有顶级评论
+      const topLevelComments = await this.fetchCommentsPage(targetId, page, limit);
+      console.log('📋 Fetched top-level comments:', topLevelComments.comments.length);
 
-      const url = `/client/reader/article/comment/page?${queryParams.toString()}`;
-      console.log('🌐 Making GET request to:', url);
+      // 第二步：获取所有有回复的评论的回复
+      const allComments = [...topLevelComments.comments];
 
-      const response: any = await apiRequest(url, {
-        method: 'GET',
-        requiresAuth: false // 获取评论列表不需要登录，任何人都可以查看
-      });
-
-      console.log('📥 GET comments API response:', response);
-      console.log('📥 Response type:', typeof response);
-      console.log('📥 Response success property:', response?.success);
-      console.log('📥 Response status property:', response?.status);
-
-      // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
-      if (response.status !== 1) {
-        console.error('❌ API response indicates failure:', response);
-        throw new Error(response.msg || 'Failed to fetch comments');
+      for (const comment of topLevelComments.comments) {
+        if (comment.repliesCount > 0) {
+          console.log(`🔄 Fetching replies for comment ${comment.id} (${comment.repliesCount} replies)`);
+          const replies = await this.fetchRepliesForComment(targetId, parseInt(comment.id));
+          console.log(`📥 Fetched ${replies.length} replies for comment ${comment.id}`);
+          allComments.push(...replies);
+        }
       }
 
-      console.log('🔍 Full API response.data:', response.data);
-
-      const { items, pageCount, pageIndex, pageSize, totalCount } = response.data;
-      console.log('📊 Response data structure:', {
-        itemsCount: items?.length,
-        pageCount,
-        pageIndex,
-        pageSize,
-        totalCount,
-        itemsExists: 'items' in response.data,
-        dataKeys: Object.keys(response.data)
-      });
-
-      // 尝试不同的字段名，可能API使用了不同的字段
-      const commentsArray = items || response.data.list || response.data.comments || response.data.records || [];
-      console.log('📋 Comments array:', commentsArray);
-      console.log('📋 Array length:', commentsArray.length);
-      console.log('📋 Array type:', Array.isArray(commentsArray), typeof commentsArray);
-      console.log('📋 First few items:', commentsArray.slice(0, 2));
-
-      // Convert API comments to frontend format
-      console.log('🔄 Starting comment conversion, raw comments:', commentsArray);
-      const comments = commentsArray.map((apiComment, index) => {
-        try {
-          console.log(`🔄 Converting comment ${index}:`, apiComment);
-          const converted = CommentService.convertApiCommentToComment(apiComment, targetType, targetId);
-          console.log(`✅ Converted comment ${index}:`, converted);
-          return converted;
-        } catch (error) {
-          console.error(`💥 Error converting comment ${index}:`, error, apiComment);
-          return null; // Skip invalid comments
-        }
-      }).filter(comment => comment !== null);
-
-      console.log('✅ Successfully processed comments:', {
-        commentsCount: comments.length,
-        hasMore: pageIndex < pageCount
+      console.log('✅ Successfully processed all comments:', {
+        topLevelCount: topLevelComments.comments.length,
+        totalWithReplies: allComments.length,
+        hasMore: topLevelComments.hasMore
       });
 
       return {
-        comments,
-        totalCount,
-        hasMore: pageIndex < pageCount,
-        pageCount,
-        pageIndex,
-        pageSize
+        comments: allComments,
+        totalCount: topLevelComments.totalCount,
+        hasMore: topLevelComments.hasMore,
+        pageCount: topLevelComments.pageCount,
+        pageIndex: topLevelComments.pageIndex,
+        pageSize: topLevelComments.pageSize
       };
     } catch (error) {
       console.error('💥 Failed to fetch comments - detailed error:', error);
@@ -204,6 +154,94 @@ export class CommentService {
         totalCount: 0,
         hasMore: false
       };
+    }
+  }
+
+  /**
+   * Fetch a single page of comments (top-level or replies)
+   */
+  private static async fetchCommentsPage(
+    targetId: string,
+    page: number,
+    limit: number,
+    rootId?: number
+  ): Promise<CommentsResponse> {
+    const requestData: ApiGetCommentsRequest = {
+      articleId: parseInt(targetId),
+      pageIndex: page,
+      pageSize: limit,
+      ...(rootId && { rootId })
+    };
+
+    console.log('📤 GET comments request data:', requestData);
+
+    const queryParams = new URLSearchParams({
+      articleId: requestData.articleId.toString(),
+      pageIndex: requestData.pageIndex.toString(),
+      pageSize: requestData.pageSize.toString(),
+      ...(rootId && { rootId: rootId.toString() })
+    });
+
+    const url = `/client/reader/article/comment/page?${queryParams.toString()}`;
+    console.log('🌐 Making GET request to:', url);
+
+    const response: any = await apiRequest(url, {
+      method: 'GET',
+      requiresAuth: false // 获取评论列表不需要登录，任何人都可以查看
+    });
+
+    console.log('📥 GET comments API response:', response);
+
+    // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
+    if (response.status !== 1) {
+      console.error('❌ API response indicates failure:', response);
+      throw new Error(response.msg || 'Failed to fetch comments');
+    }
+
+    console.log('🔍 Full API response.data:', response.data);
+
+    const { items, pageCount, pageIndex, pageSize, totalCount } = response.data;
+
+    // 尝试不同的字段名，可能API使用了不同的字段
+    const commentsArray = items || response.data.list || response.data.comments || response.data.records || [];
+    console.log('📋 Comments array:', commentsArray);
+
+    // Convert API comments to frontend format
+    const comments = commentsArray.map((apiComment, index) => {
+      try {
+        const converted = CommentService.convertApiCommentToComment(
+          apiComment,
+          'article',
+          targetId,
+          rootId ? rootId.toString() : undefined // 如果是获取回复，传入parentId
+        );
+        return converted;
+      } catch (error) {
+        console.error(`💥 Error converting comment ${index}:`, error, apiComment);
+        return null; // Skip invalid comments
+      }
+    }).filter(comment => comment !== null);
+
+    return {
+      comments,
+      totalCount,
+      hasMore: pageIndex < pageCount,
+      pageCount,
+      pageIndex,
+      pageSize
+    };
+  }
+
+  /**
+   * Fetch all replies for a specific comment
+   */
+  private static async fetchRepliesForComment(targetId: string, rootId: number): Promise<Comment[]> {
+    try {
+      const repliesResponse = await this.fetchCommentsPage(targetId, 1, 100, rootId); // 获取最多100条回复
+      return repliesResponse.comments;
+    } catch (error) {
+      console.error(`💥 Failed to fetch replies for comment ${rootId}:`, error);
+      return []; // 回复获取失败时返回空数组，不影响主评论显示
     }
   }
 

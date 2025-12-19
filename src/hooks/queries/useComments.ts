@@ -79,13 +79,11 @@ export const useCreateComment = () => {
 
       showToast('Comment posted successfully', 'success');
 
-      // 如果是回复，刷新评论列表以确保数据同步
-      if (variables.parentId) {
-        console.log('🔄 Reply created, invalidating queries to ensure data sync');
-        queryClient.invalidateQueries({
-          queryKey: ['comments', variables.targetType, variables.targetId]
-        });
-      }
+      // 强制刷新评论列表以确保包含新的回复
+      console.log('🔄 Comment/reply created, invalidating queries to fetch latest data');
+      queryClient.invalidateQueries({
+        queryKey: ['comments', variables.targetType, variables.targetId]
+      });
     },
     onError: (error) => {
       console.error('Failed to create comment:', error);
