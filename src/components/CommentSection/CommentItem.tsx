@@ -66,11 +66,18 @@ interface CommentItemProps {
 }
 
 // Helper component for replies
-const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any; targetId: string }> = ({ reply, toggleLikeMutation, targetId }) => {
+const ReplyItemComponent: React.FC<{
+  reply: Comment;
+  toggleLikeMutation: any;
+  targetId: string;
+  targetType: 'article' | 'treasury' | 'user' | 'space';
+  parentComment: Comment;
+}> = ({ reply, toggleLikeMutation, targetId, targetType, parentComment }) => {
   const deleteCommentMutation = useDeleteComment();
   const { user } = useUser();
   const [replyIsLiked, setReplyIsLiked] = useState(reply.isLiked);
   const [replyLikesCount, setReplyLikesCount] = useState(reply.likesCount);
+  const [showReplyForm, setShowReplyForm] = useState(false);
 
   const handleReplyLike = () => {
     if (!user) {
@@ -85,6 +92,14 @@ const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any; ta
     toggleLikeMutation.mutate(reply.id);
   };
 
+  const handleReplyToReply = () => {
+    if (!user) {
+      alert('请登录后再进行回复操作');
+      return;
+    }
+    setShowReplyForm(!showReplyForm);
+  };
+
   const handleReplyDelete = () => {
     if (window.confirm('Are you sure you want to delete this reply?')) {
       deleteCommentMutation.mutate({ commentId: reply.id, articleId: targetId });
@@ -93,6 +108,9 @@ const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any; ta
 
   // Check if current user can delete this reply
   const canDeleteReply = user && (reply.canDelete || user.id === reply.authorId);
+
+  // Check if current user is the reply author
+  const isReplyAuthor = user && user.id === reply.authorId;
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -161,10 +179,9 @@ const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any; ta
             <span>{replyLikesCount}</span>
           </button>
 
+          {/* Reply button - always visible for logged-in users */}
           <button
-            onClick={() => {
-              // TODO: Implement reply to reply
-            }}
+            onClick={handleReplyToReply}
             className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium text-gray-500 hover:text-red hover:bg-red-50 transition-all duration-200 [font-family:'Lato',Helvetica]"
             style={{ outline: 'none' }}
           >
@@ -188,6 +205,22 @@ const ReplyItemComponent: React.FC<{ reply: Comment; toggleLikeMutation: any; ta
             </button>
           )}
         </div>
+
+        {/* Reply form for reply-to-reply */}
+        {showReplyForm && (
+          <div className="mt-3">
+            <CommentForm
+              targetType={targetType}
+              targetId={targetId}
+              parentId={parentComment.id}
+              replyToId={reply.id}
+              replyToUser={reply.authorName}
+              placeholder={`回复 @${reply.authorName}`}
+              onSubmitSuccess={() => setShowReplyForm(false)}
+              onCancel={() => setShowReplyForm(false)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -354,21 +387,23 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <span>{likesCount}</span>
             </button>
 
-            {isCommentAuthor ? (
+            {/* Reply button - always visible for logged-in users */}
+            <button
+              onClick={handleReply}
+              className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
+              style={{ outline: 'none' }}
+            >
+              <span>Reply</span>
+            </button>
+
+            {/* Edit button - only for comment author */}
+            {isCommentAuthor && (
               <button
                 onClick={handleEdit}
                 className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
                 style={{ outline: 'none' }}
               >
                 <span>Edit</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleReply}
-                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
-                style={{ outline: 'none' }}
-              >
-                <span>Reply</span>
               </button>
             )}
 
@@ -422,7 +457,14 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           {replies.length > 0 && (
             <div className="mt-4 ml-8 space-y-4 pl-6 border-l border-[#D3D3D3]">
               {replies.map((reply) => (
-                <ReplyItemComponent key={reply.id} reply={reply} toggleLikeMutation={toggleLikeMutation} targetId={targetId} />
+                <ReplyItemComponent
+                  key={reply.id}
+                  reply={reply}
+                  toggleLikeMutation={toggleLikeMutation}
+                  targetId={targetId}
+                  targetType={targetType}
+                  parentComment={comment}
+                />
               ))}
             </div>
           )}
