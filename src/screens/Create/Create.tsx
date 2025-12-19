@@ -681,6 +681,19 @@ export const Create = (): JSX.Element => {
       console.log('✅ Publish response:', response);
       console.log('✅ Response type:', typeof response);
 
+      // In edit mode, call bindArticles separately to update treasury bindings
+      // The edit API may not handle spaceIds, so we need to call bindArticles explicitly
+      if (isEditMode && editingArticle?.id && selectedTreasuries.length > 0) {
+        try {
+          console.log('📦 Binding article to treasuries:', selectedTreasuries.map(t => t.id));
+          await AuthService.bindArticles(editingArticle.id, selectedTreasuries.map(t => t.id));
+          console.log('✅ Treasury bindings updated successfully');
+        } catch (bindError) {
+          console.error('⚠️ Failed to update treasury bindings:', bindError);
+          // Don't fail the whole operation, just log the error
+        }
+      }
+
       showToast(isEditMode ? 'Updated successfully!' : 'Published successfully!', 'success');
 
       // Invalidate article caches to ensure fresh data is loaded
