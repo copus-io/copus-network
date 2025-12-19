@@ -39,6 +39,7 @@ interface Collection {
   name: string;
   image: string;
   isSelected: boolean;
+  wasOriginallyBound: boolean; // Track if this was already bound when modal opened
   spaceType?: number;
   namespace?: string;
   firstLetter: string; // First letter of space name for avatar fallback
@@ -127,7 +128,8 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
 
           // Pre-select if: articleId provided and space.isBind is true (existing binding),
           // OR initialSelectedIds contains this space
-          const shouldBeSelected = (articleId && space.isBind) || initialSelectedIds.includes(space.id);
+          const wasOriginallyBound = !!(articleId && space.isBind);
+          const shouldBeSelected = wasOriginallyBound || initialSelectedIds.includes(space.id);
 
           return {
             id: space.id.toString(),
@@ -135,6 +137,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             name: displayName,
             image: coverImage,
             isSelected: shouldBeSelected,
+            wasOriginallyBound, // Track original binding state
             spaceType: spaceTypeNum,
             namespace: space.namespace,
             firstLetter,
@@ -193,21 +196,29 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         spaceType: c.spaceType,
       }));
 
-    // If articleId is provided (edit mode), call bindArticles API directly
-    if (articleId && selectedSpaces.length > 0) {
-      try {
-        setIsSubmitting(true);
-        console.log('📦 Binding article to treasuries:', selectedSpaces.map(s => s.id));
-        await AuthService.bindArticles(articleId, selectedSpaces.map(s => s.id));
-        console.log('✅ Treasury bindings updated successfully');
-        showToast('Treasury updated', 'success');
-      } catch (error) {
-        console.error('❌ Failed to update treasury bindings:', error);
-        showToast('Failed to update treasury', 'error');
-        setIsSubmitting(false);
-        return; // Don't close modal on error
-      } finally {
-        setIsSubmitting(false);
+    // If articleId is provided (edit mode), only bind NEWLY selected treasuries
+    // This prevents overwriting other users' bindings
+    if (articleId) {
+      // Find treasuries that are newly selected (not originally bound but now selected)
+      const newlySelectedSpaces = collections
+        .filter(c => c.isSelected && !c.wasOriginallyBound)
+        .map(c => c.numericId);
+
+      if (newlySelectedSpaces.length > 0) {
+        try {
+          setIsSubmitting(true);
+          console.log('📦 Binding article to NEW treasuries only:', newlySelectedSpaces);
+          await AuthService.bindArticles(articleId, newlySelectedSpaces);
+          console.log('✅ Treasury bindings updated successfully');
+          showToast('Treasury updated', 'success');
+        } catch (error) {
+          console.error('❌ Failed to update treasury bindings:', error);
+          showToast('Failed to update treasury', 'error');
+          setIsSubmitting(false);
+          return; // Don't close modal on error
+        } finally {
+          setIsSubmitting(false);
+        }
       }
     }
 
@@ -247,6 +258,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         name: treasuryName,
         image: '', // No cover image for new treasury
         isSelected: true, // Auto-select the newly created treasury
+        wasOriginallyBound: false, // New treasury is not originally bound
         spaceType: createdSpace.spaceType || 0,
         namespace: createdSpace.namespace,
         firstLetter: treasuryName.charAt(0).toUpperCase(),
