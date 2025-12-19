@@ -1962,7 +1962,7 @@ export const Content = (): JSX.Element => {
               })() && (
                 <button
                   onClick={() => navigate(`/curate?edit=${article.uuid}`)}
-                  className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0 hover:bg-gray-100"
+                  className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0 border border-solid border-[#686868] hover:bg-gray-100"
                   aria-label="Edit"
                   title="Edit"
                 >
