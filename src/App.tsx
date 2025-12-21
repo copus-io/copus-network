@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from "react-helmet-async";
 import { queryClient } from "./lib/queryClient";
 import { UserProvider } from "./contexts/UserContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
@@ -199,19 +200,21 @@ const router = createBrowserRouter([
 
 export const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <CategoryProvider>
-          <NotificationProvider>
-            <ImagePreviewProvider>
-              <ToastProvider>
-                <RouterProvider router={router} />
-                <GlobalImagePreview />
-              </ToastProvider>
-            </ImagePreviewProvider>
-          </NotificationProvider>
-        </CategoryProvider>
-      </UserProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <UserProvider>
+          <CategoryProvider>
+            <NotificationProvider>
+              <ImagePreviewProvider>
+                <ToastProvider>
+                  <RouterProvider router={router} />
+                  <GlobalImagePreview />
+                </ToastProvider>
+              </ImagePreviewProvider>
+            </NotificationProvider>
+          </CategoryProvider>
+        </UserProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 };

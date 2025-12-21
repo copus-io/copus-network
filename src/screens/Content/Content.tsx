@@ -34,6 +34,7 @@ import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils'
 import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
+import { SEO, ArticleSchema } from '../../components/SEO/SEO';
 
 // Helper function to get token information for payment requests
 const getTokenInfo = (tokenType: TokenType): TokenInfo => {
@@ -1778,10 +1779,37 @@ export const Content = (): JSX.Element => {
   // JSX Return (unchanged from original)
   // ========================================
   return (
-    <div
-      className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
-      data-model-id="9091:54529"
-    >
+    <>
+      {/* Dynamic SEO meta tags for article pages */}
+      {content && (
+        <>
+          <SEO
+            title={content.title}
+            description={content.description?.substring(0, 160) || content.title}
+            image={content.coverImage || 'https://copus.network/og-image.jpg'}
+            url={`https://copus.network/work/${id}`}
+            type="article"
+            article={{
+              publishedTime: article?.createAt ? new Date(article.createAt * 1000).toISOString() : undefined,
+              author: content.userName,
+              section: content.category,
+            }}
+          />
+          <ArticleSchema
+            title={content.title}
+            description={content.description?.substring(0, 300) || content.title}
+            image={content.coverImage || 'https://copus.network/og-image.jpg'}
+            url={`https://copus.network/work/${id}`}
+            datePublished={article?.createAt ? new Date(article.createAt * 1000).toISOString() : new Date().toISOString()}
+            authorName={content.userName}
+            authorUrl={content.userNamespace ? `https://copus.network/user/${content.userNamespace}` : undefined}
+          />
+        </>
+      )}
+      <div
+        className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
+        data-model-id="9091:54529"
+      >
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection articleAuthorId={content?.userId} />
 
@@ -2117,5 +2145,6 @@ export const Content = (): JSX.Element => {
         )}
       </div>
     </div>
+    </>
   );
 };
