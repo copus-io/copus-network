@@ -1,9 +1,10 @@
 // Main comment section component - NetEase Cloud Music style
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useComments } from '../../hooks/queries/useComments';
+import { useArticleWithComments } from '../../hooks/queries/useArticleWithComments';
 import { CommentSortBy } from '../../types/comment';
-import { CommentForm } from './CommentForm';
+import { CommentForm, CommentFormRef } from './CommentForm';
 import { CommentList } from './CommentList';
 import { CommentSkeleton } from './CommentSkeleton';
 
@@ -20,12 +21,116 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 }) => {
   const [sortBy, setSortBy] = useState<CommentSortBy>('newest');
 
-  const { data: commentsData, isLoading, error } = useComments(targetType, targetId, {
-    sortBy,
-    limit: 20
+  // 统一回复状态管理
+  const [replyState, setReplyState] = useState<{
+    isReplying: boolean;
+    parentId?: string;
+    replyToId?: string;
+    replyToUser?: string;
+  }>({
+    isReplying: false
   });
 
-  const totalComments = commentsData?.totalCount || 0;
+  const commentFormRef = useRef<CommentFormRef>(null);
+
+  // 处理回复按钮点击
+  const handleReplyClick = (commentId: string, userName: string, grandParentId?: string) => {
+    console.log('🔥🔥🔥 统一回复系统被调用!', { commentId, userName, grandParentId });
+
+    // 📝 新的parentId逻辑：
+    // - 回复1级评论：parentId = commentId (被回复的1级评论ID)
+    // - 回复2级评论：parentId = commentId (被回复的2级评论ID)
+    // 所以 parentId 始终等于当前被回复的评论ID
+
+    // 判断是否是回复2级评论（用于replyToUser显示）
+    const isReplyTo2ndLevel = !!grandParentId;
+
+    const replyInfo = {
+      parentId: commentId, // 新逻辑：始终指向当前被回复的评论
+      replyToId: commentId, // 被回复的具体评论
+      replyToUser: isReplyTo2ndLevel ? userName : undefined // 只有回复2级评论时才设置replyToUser
+    };
+
+    console.log('📝 新的Reply逻辑:', {
+      isReplyTo2ndLevel,
+      replyInfo,
+      说明: isReplyTo2ndLevel ? '回复2级评论' : '回复1级评论',
+      originalCommentId: commentId,
+      originalUserName: userName,
+      grandParentId: grandParentId
+    });
+
+    // 设置回复状态
+    setReplyState({
+      isReplying: true,
+      ...replyInfo
+    });
+
+    // 聚焦到上方评论输入框
+    if (commentFormRef.current) {
+      commentFormRef.current.focusAndSetReply(replyInfo);
+    }
+  };
+
+  // For articles, use optimized hook that prioritizes article detail API's commentCount
+  const articleWithComments = useArticleWithComments(
+    targetType === 'article' ? targetId : '',
+    {
+      sortBy,
+      limit: 20,
+      commentsEnabled: targetType === 'article'
+    }
+  );
+
+  // For non-article types, use regular comments hook
+  const { data: commentsData, isLoading: commentsLoading, error } = useComments(
+    targetType,
+    targetId,
+    {
+      sortBy,
+      limit: 20,
+      enabled: targetType !== 'article' // Only enabled for non-article types
+    }
+  );
+
+  // Use optimized data for articles, fallback to regular comments for other types
+  const totalComments = targetType === 'article'
+    ? articleWithComments.totalComments
+    : (commentsData?.totalCount || 0);
+
+  const comments = targetType === 'article'
+    ? articleWithComments.comments
+    : commentsData?.comments;
+
+  const hasMore = targetType === 'article'
+    ? articleWithComments.hasMoreComments
+    : commentsData?.hasMore;
+
+  const isLoading = targetType === 'article'
+    ? articleWithComments.isLoading
+    : commentsLoading;
+
+  // 🔍 Debug: Log comment data loading
+  console.log('🔍 CommentSection Debug:', {
+    targetType,
+    targetId,
+    totalComments,
+    comments: comments?.length || 0,
+    isLoading,
+    hasMore,
+    articleWithComments: targetType === 'article' ? {
+      totalComments: articleWithComments.totalComments,
+      comments: articleWithComments.comments?.length,
+      isLoading: articleWithComments.isLoading,
+      error: articleWithComments.hasError
+    } : null,
+    regularCommentsData: targetType !== 'article' ? {
+      totalCount: commentsData?.totalCount,
+      comments: commentsData?.comments?.length,
+      isLoading: commentsLoading,
+      error: !!error
+    } : null
+  });
 
 
   return (
@@ -66,8 +171,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       <div className="px-0 pt-4 pb-0">
         {/* Comment form */}
         <CommentForm
+          ref={commentFormRef}
           targetType={targetType}
           targetId={targetId}
+          articleId={targetType === 'article' ? articleWithComments.article?.id?.toString() : undefined}
+          replyState={replyState}
+          onReplyComplete={() => setReplyState({ isReplying: false })}
         />
 
         {/* Comment list */}
@@ -80,11 +189,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
             </div>
           ) : (
             <CommentList
-              comments={commentsData?.comments || []}
+              comments={comments || []}
               targetType={targetType}
               targetId={targetId}
-              hasMore={commentsData?.hasMore || false}
+              hasMore={hasMore || false}
               totalCount={totalComments}
+              articleId={targetType === 'article' ? articleWithComments.article?.id?.toString() : undefined}
+              onReplyClick={handleReplyClick}
             />
           )}
         </div>

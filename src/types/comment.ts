@@ -119,8 +119,10 @@ export interface CreateCommentRequest {
   content: string;
   targetType: 'article' | 'treasury' | 'user' | 'space';
   targetId: string;
+  articleId?: string; // 新增：数字ID，用于API调用
   parentId?: string; // 回复评论时使用
-  replyToId?: string; // @回复特定用户
+  replyToId?: string; // @回复特定用户的评论ID
+  replyToUser?: string; // @回复特定用户的用户名
   contentType?: 'text' | 'markdown';
 }
 

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CommentService } from '../../services/commentService';
 import { Comment, CreateCommentRequest, UpdateCommentRequest, CommentSortBy } from '../../types/comment';
 import { useToast } from '../../components/ui/toast';
+import { useUser } from '../../contexts/UserContext';
 
 // Get comments for a target
 export const useComments = (
@@ -13,75 +14,228 @@ export const useComments = (
     sortBy?: CommentSortBy;
     page?: number;
     limit?: number;
+    enabled?: boolean;
+    loadReplies?: boolean; // 新增：是否加载回复
   } = {}
 ) => {
+  const { enabled = true, ...queryOptions } = options;
 
   const result = useQuery({
-    queryKey: ['comments', targetType, targetId, options],
-    queryFn: () => CommentService.getComments(targetType, targetId, options),
+    queryKey: ['comments', targetType, targetId, queryOptions],
+    queryFn: () => CommentService.getComments(targetType, targetId, queryOptions),
     staleTime: 1000 * 60 * 2, // 2分钟内认为数据新鲜
-    enabled: !!(targetType && targetId), // 只有在有target信息时才启用查询
+    enabled: enabled && !!(targetType && targetId), // 只有在启用且有target信息时才启用查询
   });
-
 
   return result;
 };
 
-// Create comment mutation
+// 新增：优化的评论加载hook，减少API调用
+export const useOptimizedComments = (
+  targetType: string,
+  targetId: string,
+  options: {
+    sortBy?: CommentSortBy;
+    page?: number;
+    limit?: number;
+    enabled?: boolean;
+  } = {}
+) => {
+  const { enabled = true, ...queryOptions } = options;
+
+  const result = useQuery({
+    queryKey: ['optimizedComments', targetType, targetId, queryOptions],
+    queryFn: () => CommentService.getComments(targetType, targetId, {
+      ...queryOptions,
+      loadReplies: false // 改为 false，使用懒加载模式
+    }),
+    staleTime: 0, // 设置为0确保新评论立即显示
+    enabled: enabled && !!(targetType && targetId),
+  });
+
+  return result;
+};
+
+// Create comment mutation with optimistic updates and real-time refresh
 export const useCreateComment = () => {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
   return useMutation({
     mutationFn: CommentService.createComment,
-    onSuccess: (newComment, variables) => {
-      // 更新评论列表缓存
-      queryClient.setQueriesData(
-        { queryKey: ['comments', variables.targetType, variables.targetId] },
-        (old: any) => {
-          if (!old) return { comments: [newComment], totalCount: 1, hasMore: false };
+    onMutate: async (variables) => {
+      console.log('🚀 Starting optimistic update for comment creation:', variables);
 
-          // 总是将新评论添加到列表中（无论是顶级评论还是回复）
-          const updatedComments = [...old.comments, newComment];
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: ['articleWithComments'] });
+      await queryClient.cancelQueries({ queryKey: ['optimizedComments'] });
 
-          // 如果是回复，还需要更新父评论的回复数量
-          if (variables.parentId) {
-            const commentsWithUpdatedReplies = updatedComments.map((comment: Comment) =>
-              comment.id === variables.parentId
-                ? { ...comment, repliesCount: comment.repliesCount + 1 }
-                : comment
-            );
+      // Snapshot the previous value
+      const previousArticleData = queryClient.getQueryData(['articleWithComments', variables.targetId]);
+      const previousCommentsData = queryClient.getQueryData(['optimizedComments', variables.targetType, variables.targetId]);
 
+      // Create optimistic comment
+      const optimisticComment: Comment = {
+        id: `temp-${Date.now()}`, // Temporary ID
+        content: variables.content,
+        contentType: 'text',
+        targetType: variables.targetType,
+        targetId: variables.targetId,
+        authorId: 0, // Will be filled by server response
+        authorName: 'You', // Placeholder
+        authorNamespace: '',
+        authorAvatar: '',
+        parentId: variables.parentId,
+        depth: variables.parentId ? 1 : 0,
+        replyToId: variables.replyToId,
+        replyToUser: variables.replyToUser,
+        targetContent: undefined,
+        _requestContext: undefined,
+        likesCount: 0,
+        repliesCount: 0,
+        isLiked: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isEdited: false,
+        isDeleted: false
+      };
+
+      // Optimistically update article comments if it's an article
+      if (variables.targetType === 'article' && previousArticleData) {
+        queryClient.setQueryData(['articleWithComments', variables.targetId], (old: any) => {
+          if (!old) return old;
+
+          // If this is a top-level comment (no parentId), add to main list
+          if (!variables.parentId) {
             return {
               ...old,
-              comments: commentsWithUpdatedReplies,
-              totalCount: old.totalCount + 1,
+              comments: old.comments ? [optimisticComment, ...old.comments] : [optimisticComment],
+              totalComments: (old.totalComments || 0) + 1
             };
           }
+
+          // If this is a reply, we don't add it to the main comments list
+          // The reply will be handled by the reply loading system
+          return {
+            ...old,
+            totalComments: (old.totalComments || 0) + 1
+          };
+        });
+      }
+
+      // Optimistically update regular comments
+      if (previousCommentsData) {
+        queryClient.setQueryData(['optimizedComments', variables.targetType, variables.targetId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            comments: old.comments ? [optimisticComment, ...old.comments] : [optimisticComment],
+            totalCount: (old.totalCount || 0) + 1
+          };
+        });
+      }
+
+      // Handle optimistic updates for replies
+      if (variables.parentId) {
+        console.log('🔧 Handling optimistic update for reply to parent:', variables.parentId);
+
+        // Find the root comment ID for this reply thread
+        const findRootCommentId = () => {
+          // For nested replies, we need to find which root comment this belongs to
+          // This could be complex, so for now, let's invalidate the reply queries
+          return variables.parentId;
+        };
+
+        const rootCommentId = findRootCommentId();
+
+        // Update the specific reply query cache if it exists
+        const replyQueryKey = ['commentReplies', variables.targetType, variables.targetId, rootCommentId];
+        const existingRepliesData = queryClient.getQueryData(replyQueryKey);
+
+        if (existingRepliesData) {
+          console.log('🔧 Adding optimistic reply to existing replies cache');
+          queryClient.setQueryData(replyQueryKey, (old: any) => {
+            if (!old) return old;
+            return {
+              ...old,
+              replies: old.replies ? [...old.replies, optimisticComment] : [optimisticComment],
+              totalCount: (old.totalCount || 0) + 1
+            };
+          });
+        }
+      }
+
+      return { previousArticleData, previousCommentsData, optimisticComment };
+    },
+    onSuccess: (newComment, variables, context) => {
+      console.log('✅ Comment created successfully:', { newComment, variables });
+
+      showToast('Comment posted successfully', 'success');
+
+      // Update with real server data
+      if (variables.targetType === 'article') {
+        queryClient.setQueryData(['articleWithComments', variables.targetId], (old: any) => {
+          if (!old) return old;
+          const updatedComments = old.comments?.map((comment: Comment) =>
+            comment.id === context?.optimisticComment.id ? newComment : comment
+          ) || [newComment];
 
           return {
             ...old,
             comments: updatedComments,
-            totalCount: old.totalCount + 1,
+            totalComments: old.totalComments // Keep the optimistic count
           };
+        });
+      }
+
+      // For replies, immediately refresh the reply data to show the new comment
+      if (variables.parentId) {
+        console.log('🔄 Reply created, refreshing reply queries for parent:', variables.parentId);
+
+        // Find and refresh the relevant reply query
+        queryClient.invalidateQueries({
+          queryKey: ['commentReplies'],
+          exact: false
+        });
+
+        // Also refresh the main comment to update reply count
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['articleWithComments'] });
+          queryClient.invalidateQueries({ queryKey: ['optimizedComments'] });
+        }, 100);
+      } else {
+        // For top-level comments, do normal invalidation
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['articleWithComments'] });
+          queryClient.invalidateQueries({ queryKey: ['optimizedComments'] });
+        }, 100);
+      }
+
+      // Scroll to new comment
+      setTimeout(() => {
+        const commentElement = document.getElementById(`comment-${newComment.id}`);
+        if (commentElement) {
+          commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      );
-
-      showToast('Comment posted successfully', 'success');
-
-      // 强制刷新评论列表以确保包含新的回复
-      queryClient.invalidateQueries({
-        queryKey: ['comments', variables.targetType, variables.targetId]
-      });
+      }, 200);
     },
-    onError: (error) => {
-      console.error('Failed to create comment:', error);
+    onError: (error, variables, context) => {
+      console.error('❌ Failed to create comment:', error);
+
+      // Rollback optimistic updates
+      if (context?.previousArticleData) {
+        queryClient.setQueryData(['articleWithComments', variables.targetId], context.previousArticleData);
+      }
+      if (context?.previousCommentsData) {
+        queryClient.setQueryData(['optimizedComments', variables.targetType, variables.targetId], context.previousCommentsData);
+      }
+
       showToast('Failed to post comment, please try again', 'error');
     },
   });
 };
 
-// Update comment mutation
+// Update comment mutation with optimistic updates
 export const useUpdateComment = () => {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -89,33 +243,83 @@ export const useUpdateComment = () => {
   return useMutation({
     mutationFn: ({ commentId, data }: { commentId: string; data: UpdateCommentRequest }) =>
       CommentService.updateComment(commentId, data),
-    onSuccess: (updatedComment) => {
-      // 更新评论列表中的特定评论
-      queryClient.setQueriesData(
-        { queryKey: ['comments'] },
-        (old: any) => {
-          if (!old) return old;
+    onMutate: async ({ commentId, data }) => {
+      console.log('✏️ Starting optimistic update for comment:', commentId);
 
-          return {
-            ...old,
-            comments: old.comments.map((comment: Comment) =>
-              comment.id === updatedComment.id
-                ? { ...updatedComment, isEdited: true }
-                : comment
-            ),
-          };
-        }
-      );
-      showToast('Comment updated successfully', 'success');
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['articleWithComments'] });
+      await queryClient.cancelQueries({ queryKey: ['optimizedComments'] });
+      await queryClient.cancelQueries({ queryKey: ['comments'] });
+
+      // Snapshot the previous values
+      const previousArticleData = queryClient.getQueryData(['articleWithComments']);
+      const previousCommentsQueries = queryClient.getQueriesData({ queryKey: ['comments'] });
+      const previousOptimizedQueries = queryClient.getQueriesData({ queryKey: ['optimizedComments'] });
+
+      // Optimistically update in all relevant queries
+      const updateComment = (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          comments: old.comments?.map((comment: Comment) =>
+            comment.id.toString() === commentId.toString()
+              ? { ...comment, content: data.content, isEdited: true, updatedAt: new Date().toISOString() }
+              : comment
+          ),
+        };
+      };
+
+      queryClient.setQueriesData({ queryKey: ['articleWithComments'] }, updateComment);
+      queryClient.setQueriesData({ queryKey: ['comments'] }, updateComment);
+      queryClient.setQueriesData({ queryKey: ['optimizedComments'] }, updateComment);
+
+      return { previousArticleData, previousCommentsQueries, previousOptimizedQueries };
     },
-    onError: (error) => {
-      console.error('Failed to update comment:', error);
+    onSuccess: (updatedComment) => {
+      console.log('✅ Comment updated successfully:', updatedComment);
+      showToast('Comment updated successfully', 'success');
+
+      // Update with real server data
+      const updateWithServerData = (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          comments: old.comments?.map((comment: Comment) =>
+            comment.id === updatedComment.id
+              ? { ...updatedComment, isEdited: true }
+              : comment
+          ),
+        };
+      };
+
+      queryClient.setQueriesData({ queryKey: ['articleWithComments'] }, updateWithServerData);
+      queryClient.setQueriesData({ queryKey: ['comments'] }, updateWithServerData);
+      queryClient.setQueriesData({ queryKey: ['optimizedComments'] }, updateWithServerData);
+    },
+    onError: (error, { commentId }, context) => {
+      console.error('❌ Failed to update comment:', error);
+
+      // Rollback optimistic updates
+      if (context?.previousArticleData) {
+        queryClient.setQueryData(['articleWithComments'], context.previousArticleData);
+      }
+      if (context?.previousCommentsQueries) {
+        context.previousCommentsQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousOptimizedQueries) {
+        context.previousOptimizedQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+
       showToast('Failed to update comment, please try again', 'error');
     },
   });
 };
 
-// Delete comment mutation
+// Delete comment mutation with optimistic updates
 export const useDeleteComment = () => {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -123,24 +327,132 @@ export const useDeleteComment = () => {
   return useMutation({
     mutationFn: ({ commentId, articleId }: { commentId: string; articleId: string }) =>
       CommentService.deleteComment(commentId, articleId),
-    onSuccess: (_, { commentId }) => {
-      // 从评论列表中移除已删除的评论
+    onMutate: async ({ commentId, articleId }) => {
+      console.log('🗑️ Starting optimistic delete for comment:', commentId);
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['articleWithComments'] });
+      await queryClient.cancelQueries({ queryKey: ['optimizedComments'] });
+      await queryClient.cancelQueries({ queryKey: ['comments'] });
+      await queryClient.cancelQueries({ queryKey: ['commentReplies'] }); // 新增：取消回复查询
+
+      // Snapshot the previous values
+      const previousArticleData = queryClient.getQueryData(['articleWithComments']);
+      const previousCommentsQueries = queryClient.getQueriesData({ queryKey: ['comments'] });
+      const previousOptimizedQueries = queryClient.getQueriesData({ queryKey: ['optimizedComments'] });
+      const previousReplyQueries = queryClient.getQueriesData({ queryKey: ['commentReplies'] }); // 新增：快照回复查询
+
+      // Optimistically remove comment from articleWithComments
+      queryClient.setQueriesData(
+        { queryKey: ['articleWithComments'] },
+        (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            comments: old.comments?.filter((comment: Comment) => comment.id.toString() !== commentId.toString()),
+            totalComments: Math.max(0, (old.totalComments || 0) - 1)
+          };
+        }
+      );
+
+      // Optimistically remove from all comment queries
       queryClient.setQueriesData(
         { queryKey: ['comments'] },
         (old: any) => {
           if (!old) return old;
-
           return {
             ...old,
-            comments: old.comments.filter((comment: Comment) => comment.id !== commentId),
-            totalCount: Math.max(0, old.totalCount - 1),
+            comments: old.comments?.filter((comment: Comment) => comment.id.toString() !== commentId.toString()),
+            totalCount: Math.max(0, (old.totalCount || 0) - 1)
           };
         }
       );
-      showToast('Comment deleted successfully', 'success');
+
+      // Optimistically remove from optimized comment queries
+      queryClient.setQueriesData(
+        { queryKey: ['optimizedComments'] },
+        (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            comments: old.comments?.filter((comment: Comment) => comment.id.toString() !== commentId.toString()),
+            totalCount: Math.max(0, (old.totalCount || 0) - 1)
+          };
+        }
+      );
+
+      // 🔥 新增：专门处理嵌套回复的删除（重要！）
+      // 删除 commentReplies 查询中的回复
+      queryClient.setQueriesData(
+        { queryKey: ['commentReplies'] },
+        (old: any) => {
+          if (!old || !old.replies) return old;
+
+          console.log('🔧 Removing reply from commentReplies cache:', {
+            commentId,
+            totalBefore: old.replies.length
+          });
+
+          const filteredReplies = old.replies.filter((reply: Comment) =>
+            reply.id.toString() !== commentId.toString()
+          );
+
+          console.log('🔧 After filtering replies:', {
+            totalAfter: filteredReplies.length,
+            removed: old.replies.length - filteredReplies.length
+          });
+
+          return {
+            ...old,
+            replies: filteredReplies,
+            totalCount: Math.max(0, filteredReplies.length)
+          };
+        }
+      );
+
+      return {
+        previousArticleData,
+        previousCommentsQueries,
+        previousOptimizedQueries,
+        previousReplyQueries // 新增：返回回复查询快照以便回滚
+      };
     },
-    onError: (error) => {
-      console.error('Failed to delete comment:', error);
+    onSuccess: (_, { commentId }) => {
+      console.log('✅ Comment deleted successfully:', commentId);
+      showToast('Comment deleted successfully', 'success');
+
+      // Invalidate to ensure consistency
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['articleWithComments'] });
+        queryClient.invalidateQueries({ queryKey: ['comments'] });
+        queryClient.invalidateQueries({ queryKey: ['optimizedComments'] });
+        queryClient.invalidateQueries({ queryKey: ['commentReplies'] }); // 新增：无效化回复查询
+      }, 100);
+    },
+    onError: (error, { commentId }, context) => {
+      console.error('❌ Failed to delete comment:', error);
+
+      // Rollback optimistic updates
+      if (context?.previousArticleData) {
+        queryClient.setQueryData(['articleWithComments'], context.previousArticleData);
+      }
+      if (context?.previousCommentsQueries) {
+        context.previousCommentsQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousOptimizedQueries) {
+        context.previousOptimizedQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      // 新增：回滚回复查询
+      if (context?.previousReplyQueries) {
+        context.previousReplyQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+
       showToast('Failed to delete comment, please try again', 'error');
     },
   });
@@ -235,12 +547,44 @@ export const useReplies = (
     sortBy?: CommentSortBy;
     page?: number;
     limit?: number;
+    enabled?: boolean;
   } = {}
 ) => {
+  const { enabled = true, ...queryOptions } = options;
+
   return useQuery({
-    queryKey: ['replies', commentId, options],
-    queryFn: () => CommentService.getReplies(commentId, options),
+    queryKey: ['replies', commentId, queryOptions],
+    queryFn: () => CommentService.getReplies(commentId, queryOptions),
     staleTime: 1000 * 60 * 2,
-    enabled: !!commentId,
+    enabled: enabled && !!commentId,
+  });
+};
+
+// 专门用于按需加载单个评论回复的钩子
+export const useLoadCommentReplies = (
+  targetType: string,
+  targetId: string,
+  commentId: string,
+  options: {
+    enabled?: boolean;
+    articleId?: string; // 新增：数字ID，用于API调用
+  } = {}
+) => {
+  const { enabled = false, articleId } = options;
+
+  return useQuery({
+    queryKey: ['commentReplies', targetType, targetId, commentId],
+    queryFn: async () => {
+      // 优先使用 articleId，回退到 targetId
+      const apiTargetId = articleId || targetId;
+      const replies = await CommentService.fetchRepliesForComment(apiTargetId, parseInt(commentId));
+      return {
+        commentId,
+        replies,
+        totalCount: replies.length
+      };
+    },
+    staleTime: 1000 * 60 * 5, // 5分钟缓存
+    enabled: enabled && !!commentId && !!targetId,
   });
 };

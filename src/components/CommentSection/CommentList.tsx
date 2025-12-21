@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Comment } from '../../types/comment';
 import { CommentItem } from './CommentItem';
+import { useQuery } from '@tanstack/react-query';
+import { CommentService } from '../../services/commentService';
 
 interface CommentListProps {
   comments: Comment[];
@@ -11,6 +13,8 @@ interface CommentListProps {
   hasMore?: boolean;
   totalCount?: number;
   className?: string;
+  articleId?: string;
+  onReplyClick?: (commentId: string, userName: string, parentId?: string) => void;
 }
 
 export const CommentList: React.FC<CommentListProps> = ({
@@ -19,7 +23,9 @@ export const CommentList: React.FC<CommentListProps> = ({
   targetId,
   hasMore = false,
   totalCount = 0,
-  className = ''
+  className = '',
+  articleId,
+  onReplyClick
 }) => {
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -60,6 +66,8 @@ export const CommentList: React.FC<CommentListProps> = ({
               replies={getRepliesForComment(comment.id)}
               targetType={targetType}
               targetId={targetId}
+              articleId={articleId}
+              onReplyClick={onReplyClick}
             />
           </div>
         ))}

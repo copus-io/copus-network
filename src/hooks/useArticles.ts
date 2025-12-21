@@ -25,6 +25,7 @@ export const useArticles = (
   });
 
   const fetchArticles = useCallback(async (params: PageArticleParams = {}, append = false) => {
+    console.log('🔄 fetchArticles called:', { params, append, initialParams });
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
@@ -35,6 +36,7 @@ export const useArticles = (
         page: append ? (params.page || 1) : 1, // Use provided page number in append mode, otherwise start from page 1
       };
 
+      console.log('📡 About to call getPageArticles with:', finalParams);
       const response = await getPageArticles(finalParams);
 
 
