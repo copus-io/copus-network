@@ -96,7 +96,7 @@ const ReplyItemComponent: React.FC<{
 
   const handleReplyLike = () => {
     if (!user) {
-      alert('请登录后再进行点赞操作');
+      alert('Please log in first');
       return;
     }
 
@@ -108,7 +108,7 @@ const ReplyItemComponent: React.FC<{
 
   const handleReplyToReply = () => {
     if (!user) {
-      alert('请登录后再进行回复操作');
+      alert('Please log in first');
       return;
     }
     // 使用统一回复系统，传递parentId以便正确构建回复层级
@@ -797,8 +797,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   const handleLike = () => {
     if (!user) {
-      // 未登录用户点击点赞，提示需要登录
-      alert('请登录后再进行点赞操作');
+      // Show login prompt for non-logged users clicking like
+      alert('Please log in first');
       return;
     }
 
@@ -814,8 +814,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   const handleEdit = () => {
     if (!user) {
-      // 未登录用户点击编辑，提示需要登录
-      alert('请登录后再进行编辑操作');
+      // Show login prompt for non-logged users clicking edit
+      alert('Please log in first');
       return;
     }
     setShowEditForm(!showEditForm);
@@ -949,7 +949,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               onClick={() => {
                 // 如果用户未登录，提示登录
                 if (!user) {
-                  alert('请登录后再进行回复操作');
+                  alert('Please log in first');
                   return;
                 }
 

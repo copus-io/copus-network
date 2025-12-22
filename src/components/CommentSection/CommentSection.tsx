@@ -21,7 +21,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 }) => {
   const [sortBy, setSortBy] = useState<CommentSortBy>('newest');
 
-  // 统一回复状态管理
+  // Unified reply state management
   const [replyState, setReplyState] = useState<{
     isReplying: boolean;
     parentId?: string;
@@ -33,40 +33,40 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 
   const commentFormRef = useRef<CommentFormRef>(null);
 
-  // 处理回复按钮点击
+  // Handle reply button click
   const handleReplyClick = (commentId: string, userName: string, grandParentId?: string) => {
-    console.log('🔥🔥🔥 统一回复系统被调用!', { commentId, userName, grandParentId });
+    console.log('🔥🔥🔥 Unified reply system called!', { commentId, userName, grandParentId });
 
-    // 📝 新的parentId逻辑：
-    // - 回复1级评论：parentId = commentId (被回复的1级评论ID)
-    // - 回复2级评论：parentId = commentId (被回复的2级评论ID)
-    // 所以 parentId 始终等于当前被回复的评论ID
+    // 📝 New parentId logic:
+    // - Reply to 1st level comment: parentId = commentId (replied 1st level comment ID)
+    // - Reply to 2nd level comment: parentId = commentId (replied 2nd level comment ID)
+    // So parentId always equals the current replied comment ID
 
-    // 判断是否是回复2级评论（用于replyToUser显示）
+    // Determine if replying to 2nd level comment (for replyToUser display)
     const isReplyTo2ndLevel = !!grandParentId;
 
     const replyInfo = {
-      parentId: commentId, // 新逻辑：始终指向当前被回复的评论
-      replyToId: commentId, // 被回复的具体评论
-      replyToUser: isReplyTo2ndLevel ? userName : undefined // 只有回复2级评论时才设置replyToUser
+      parentId: commentId, // New logic: always points to the currently replied comment
+      replyToId: commentId, // The specific comment being replied to
+      replyToUser: isReplyTo2ndLevel ? userName : undefined // Only set replyToUser when replying to 2nd level comments
     };
 
-    console.log('📝 新的Reply逻辑:', {
+    console.log('📝 New Reply logic:', {
       isReplyTo2ndLevel,
       replyInfo,
-      说明: isReplyTo2ndLevel ? '回复2级评论' : '回复1级评论',
+      description: isReplyTo2ndLevel ? 'Reply to 2nd level comment' : 'Reply to 1st level comment',
       originalCommentId: commentId,
       originalUserName: userName,
       grandParentId: grandParentId
     });
 
-    // 设置回复状态
+    // Set reply state
     setReplyState({
       isReplying: true,
       ...replyInfo
     });
 
-    // 聚焦到上方评论输入框
+    // Focus on comment input box above
     if (commentFormRef.current) {
       commentFormRef.current.focusAndSetReply(replyInfo);
     }

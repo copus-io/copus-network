@@ -22,6 +22,22 @@ import {
 
 export class CommentService {
   /**
+   * Convert frontend sort option to API parameter
+   */
+  private static convertSortByToApiParam(sortBy: CommentSortBy): string {
+    switch (sortBy) {
+      case 'newest':
+        return 'createAt_desc'; // 按创建时间降序
+      case 'oldest':
+        return 'createAt_asc'; // 按创建时间升序
+      case 'likes':
+        return 'likeCount_desc'; // 按点赞数降序
+      default:
+        return 'createAt_desc';
+    }
+  }
+
+  /**
    * Convert API comment to frontend comment format
    */
   private static convertApiCommentToComment(
@@ -107,11 +123,11 @@ export class CommentService {
       };
     }
 
-    const { page = 1, limit = 20, loadReplies = false } = options; // 默认不加载回复，改为按需加载
+    const { page = 1, limit = 20, loadReplies = false, sortBy } = options; // 默认不加载回复，改为按需加载
 
     try {
       // 第一步：获取所有顶级评论
-      const topLevelComments = await this.fetchCommentsPage(targetId, page, limit);
+      const topLevelComments = await this.fetchCommentsPage(targetId, page, limit, undefined, sortBy);
 
       // 如果不需要加载回复，直接返回主评论
       if (!loadReplies) {
@@ -210,7 +226,8 @@ export class CommentService {
     targetId: string,
     page: number,
     limit: number,
-    rootId?: number
+    rootId?: number,
+    sortBy?: CommentSortBy
   ): Promise<CommentsResponse> {
     const requestData: ApiGetCommentsRequest = {
       articleId: parseInt(targetId),
@@ -223,14 +240,16 @@ export class CommentService {
       articleId: requestData.articleId.toString(),
       pageIndex: requestData.pageIndex.toString(),
       pageSize: requestData.pageSize.toString(),
-      ...(rootId && { rootId: rootId.toString() })
+      ...(rootId && { rootId: rootId.toString() }),
+      // 添加排序参数 - 根据API文档可能的排序字段
+      ...(sortBy && { sortBy: this.convertSortByToApiParam(sortBy) })
     });
 
     const url = `/client/reader/article/comment/page?${queryParams.toString()}`;
 
     const response: any = await apiRequest(url, {
       method: 'GET',
-      requiresAuth: true // 根据API文档curl示例需要Bearer token
+      requiresAuth: false // Allow non-logged users to view comments, only posting requires login
     });
 
 

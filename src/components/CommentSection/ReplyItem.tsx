@@ -38,7 +38,7 @@ export const ReplyItem: React.FC<ReplyItemProps> = ({
   // Memoized handlers
   const handleReplyLike = useCallback(() => {
     if (!user) {
-      alert('请登录后再进行点赞操作');
+      alert('Please log in first');
       return;
     }
 

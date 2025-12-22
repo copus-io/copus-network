@@ -9,10 +9,12 @@ import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
 import { useArticleDetail } from "../../hooks/queries";
+import { useArticleWithComments } from "../../hooks/queries/useArticleWithComments";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
+import { CommentButton } from "../../components/ui/CommentButton";
 import { CollectTreasureModal } from "../../components/CollectTreasureModal";
 import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
 import { CommentSection } from "../../components/CommentSection";
@@ -121,8 +123,34 @@ export const Content = (): JSX.Element => {
   // Use new article detail API hook
   const { article, loading, error } = useArticleDetail(id || '');
 
+  // Get comment count for the comment button
+  const { totalComments, isLoading: isCommentsLoading } = useArticleWithComments(
+    id || '',
+    {
+      commentsEnabled: false // Only get comment count, not the full comments
+    }
+  );
+
   // State for "Collected in" section - stores spaces directly
   const [collectedInData, setCollectedInData] = useState<SpaceData[]>([]);
+
+  // Comment section modal state
+  const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
+  const [shouldShowModal, setShouldShowModal] = useState(false);
+
+  // Handle modal animation timing
+  useEffect(() => {
+    if (isCommentSectionOpen) {
+      // Show modal immediately when opening
+      setShouldShowModal(true);
+    } else {
+      // Delay hiding modal until animation completes
+      const timer = setTimeout(() => {
+        setShouldShowModal(false);
+      }, 500); // Match the transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isCommentSectionOpen]);
 
   // ========================================
   // Helper Functions (extracted for code reuse)
@@ -1901,26 +1929,14 @@ export const Content = (): JSX.Element => {
                 </div>
               </div>
             </div>
-            </article>
 
-            {/* Comment Section */}
-            {article && (
-              <CommentSection
-                targetType="article"
-                targetId={article.uuid}
-                className="w-full mt-8"
-              />
-            )}
-          </div>
-
-          {/* Right Sidebar - Collected in Section */}
-          {collectedInData.length > 0 && (
-            <aside className="w-full lg:w-[250px] xl:w-[290px] lg:ml-[20px] xl:ml-[50px] lg:flex-shrink-0 lg:border-l lg:border-[#D3D3D3] lg:pl-[30px] lg:sticky lg:top-[70px] lg:self-start lg:h-[calc(100vh-70px)] lg:overflow-y-auto">
-              <div className="flex flex-col items-start gap-[15px] pb-4">
-                <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px]">
+            {/* Collected in spaces section - moved back to article content */}
+            {collectedInData.length > 0 && (
+              <section className="mt-[50px] border-t border-[#D3D3D3] pt-[30px]">
+                <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-[28px] mb-[20px]">
                   Collected in
                 </h2>
-                <div className="flex flex-col gap-4 w-full pb-[100px]">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {collectedInData.map((space) => (
                     <TreasuryCard
                       key={space.namespace || space.id?.toString()}
@@ -1929,9 +1945,242 @@ export const Content = (): JSX.Element => {
                     />
                   ))}
                 </div>
-              </div>
-            </aside>
-          )}
+              </section>
+            )}
+            </article>
+
+            {/* Comment Section Modal - NetEase Music Style */}
+            {shouldShowModal && article && (
+              <>
+                {/* Apple-style frosted glass backdrop */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsCommentSectionOpen(false)}
+                  style={{
+                    transition: 'opacity 600ms cubic-bezier(0.4, 0.0, 0.2, 1), backdrop-filter 800ms cubic-bezier(0.4, 0.0, 0.2, 1)',
+                    opacity: isCommentSectionOpen ? 1 : 0,
+                    background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.35) 100%)',
+                    backdropFilter: isCommentSectionOpen
+                      ? 'blur(25px) brightness(0.85) saturate(1.6) contrast(1.15)'
+                      : 'blur(0px) brightness(1) saturate(1) contrast(1)',
+                    WebkitBackdropFilter: isCommentSectionOpen
+                      ? 'blur(25px) brightness(0.85) saturate(1.6) contrast(1.15)'
+                      : 'blur(0px) brightness(1) saturate(1) contrast(1)',
+                  }}
+                />
+
+                {/* Apple-style frosted glass modal */}
+                <div
+                  className="fixed bottom-0 left-0 right-0 z-50"
+                  style={{
+                    transition: 'transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 400ms cubic-bezier(0.4, 0.0, 0.2, 1), scale 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transform: isCommentSectionOpen
+                      ? 'translateY(0%) scale(1)'
+                      : 'translateY(100%) scale(0.95)',
+                    opacity: isCommentSectionOpen ? 1 : 0,
+                    transformOrigin: 'center bottom'
+                  }}
+                >
+                  <div
+                    className="max-h-[85vh] overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.88) 50%, rgba(241, 245, 249, 0.85) 100%)',
+                      backdropFilter: 'blur(45px) brightness(1.12) saturate(1.6) contrast(1.08)',
+                      WebkitBackdropFilter: 'blur(45px) brightness(1.12) saturate(1.6) contrast(1.08)',
+                      borderRadius: '32px 32px 0 0',
+                      border: '1px solid rgba(255, 255, 255, 0.8)',
+                      borderBottom: 'none',
+                      boxShadow: `
+                        0 -12px 40px rgba(0, 0, 0, 0.08),
+                        0 -4px 16px rgba(0, 0, 0, 0.04),
+                        0 -1px 4px rgba(0, 0, 0, 0.02),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                        inset 0 0 30px rgba(255, 255, 255, 0.15)
+                      `,
+                    }}
+                  >
+                    {/* Apple-style drag indicator */}
+                    <div className="flex justify-center py-4">
+                      <div
+                        className="w-12 h-1.5 rounded-full"
+                        style={{
+                          background: 'linear-gradient(90deg, rgba(148, 163, 184, 0.6) 0%, rgba(100, 116, 139, 0.7) 50%, rgba(148, 163, 184, 0.6) 100%)',
+                          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+                          transition: 'all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          transform: isCommentSectionOpen ? 'scaleX(1)' : 'scaleX(0.7)',
+                          opacity: isCommentSectionOpen ? 1 : 0,
+                          animation: isCommentSectionOpen ? 'gentle-bounce 0.8s ease-out 0.3s' : 'none'
+                        }}
+                      />
+
+                      {/* 添加弹跳动画 */}
+                      <style jsx>{`
+                        @keyframes gentle-bounce {
+                          0% { transform: scaleX(0.7) scaleY(1); }
+                          30% { transform: scaleX(1.1) scaleY(0.8); }
+                          60% { transform: scaleX(0.95) scaleY(1.1); }
+                          100% { transform: scaleX(1) scaleY(1); }
+                        }
+                      `}</style>
+                    </div>
+
+                    {/* Apple-style header with enhanced contrast */}
+                    <div className="flex items-center justify-between px-6 pb-6">
+                      <div className="flex items-center gap-4">
+                        {/* Icon with enhanced visual hierarchy */}
+                        <div
+                          className="flex items-center justify-center w-12 h-12 rounded-full shadow-lg"
+                          style={{
+                            background: 'linear-gradient(135deg, #ff6b35 0%, #f23a00 100%)',
+                            boxShadow: '0 4px 12px rgba(242, 58, 0, 0.3), 0 2px 4px rgba(242, 58, 0, 0.2)',
+                          }}
+                        >
+                          <svg
+                            className="w-6 h-6 text-white filter drop-shadow-sm"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2.5}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.691 1.109 3.194 2.676 3.741A11.04 11.04 0 0010.5 18a11.04 11.04 0 008.575-4.009c1.567-.547 2.676-2.05 2.676-3.741V6.75A2.25 2.25 0 0019.5 4.5H4.5A2.25 2.25 0 002.25 6.75v4.501z"
+                            />
+                          </svg>
+                        </div>
+
+                        <div className="flex flex-col">
+                          <h3
+                            className="[font-family:'Lato',Helvetica] font-bold text-2xl mb-1"
+                            style={{
+                              color: 'rgba(0, 0, 0, 0.9)',
+                              textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)',
+                            }}
+                          >
+                            评论区
+                          </h3>
+                          {!isCommentsLoading && (
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="[font-family:'Lato',Helvetica] text-sm font-medium"
+                                style={{ color: 'rgba(0, 0, 0, 0.65)' }}
+                              >
+                                {totalComments === 0 ? '暂无评论' : `${totalComments} 条评论`}
+                              </span>
+                              {totalComments > 0 && (
+                                <>
+                                  <div
+                                    className="w-1 h-1 rounded-full"
+                                    style={{ background: 'rgba(0, 0, 0, 0.3)' }}
+                                  />
+                                  <span
+                                    className="[font-family:'Lato',Helvetica] text-xs font-medium"
+                                    style={{ color: 'rgba(0, 0, 0, 0.5)' }}
+                                  >
+                                    欢迎参与讨论
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Apple-style close button */}
+                      <button
+                        onClick={() => setIsCommentSectionOpen(false)}
+                        className="flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 group"
+                        style={{
+                          background: 'rgba(0, 0, 0, 0.08)',
+                          backdropFilter: 'blur(20px) brightness(1.2)',
+                          border: '1px solid rgba(255, 255, 255, 0.6)',
+                        }}
+                      >
+                        <svg
+                          className="w-5 h-5 group-hover:scale-110 transition-transform duration-200"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2.5}
+                          style={{ color: 'rgba(0, 0, 0, 0.7)' }}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Apple-style content area with enhanced readability */}
+                    <div
+                      className="max-h-[72vh] overflow-y-auto px-2"
+                      style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+                      }}
+                    >
+                      <div
+                        className="mx-2 mb-4 rounded-2xl px-6 py-4"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.6)',
+                          backdropFilter: 'blur(20px) brightness(1.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.8)',
+                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+                        }}
+                      >
+                        {/* 懒加载评论 - 只在真正展开时才渲染 */}
+                        {isCommentSectionOpen ? (
+                          <CommentSection
+                            targetType="article"
+                            targetId={article.uuid}
+                            className="px-0 py-0"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center py-12">
+                            <div className="text-gray-500 [font-family:'Lato',Helvetica] text-sm">
+                              评论加载中...
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Apple-style animations and scrollbar */}
+                <style jsx>{`
+                  /* Apple-style scrollbar */
+                  .max-h-\\[72vh\\]::-webkit-scrollbar {
+                    width: 4px;
+                  }
+                  .max-h-\\[72vh\\]::-webkit-scrollbar-track {
+                    background: transparent;
+                  }
+                  .max-h-\\[72vh\\]::-webkit-scrollbar-thumb {
+                    background: rgba(0, 0, 0, 0.15);
+                    border-radius: 2px;
+                    transition: background 0.3s ease, width 0.3s ease;
+                  }
+                  .max-h-\\[72vh\\]::-webkit-scrollbar-thumb:hover {
+                    background: rgba(0, 0, 0, 0.25);
+                    width: 6px;
+                  }
+                  .max-h-\\[72vh\\]::-webkit-scrollbar-thumb:active {
+                    background: rgba(0, 0, 0, 0.35);
+                  }
+                  /* Hide scrollbar on non-hover */
+                  .max-h-\\[72vh\\] {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+                  }
+                `}</style>
+              </>
+            )}
+          </div>
+
         </main>
 
         {/* Sticky bottom button bar */}
@@ -1944,6 +2193,14 @@ export const Content = (): JSX.Element => {
                 likesCount={likesCount}
                 onClick={handleLike}
                 size="large"
+              />
+
+              {/* Comment button */}
+              <CommentButton
+                commentCount={totalComments || 0}
+                isLoading={isCommentsLoading}
+                onClick={() => setIsCommentSectionOpen(prev => !prev)}
+                isExpanded={isCommentSectionOpen}
               />
 
               {/* Share dropdown menu */}

@@ -237,17 +237,76 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
 
   if (!user) {
     return (
-      <div className={`py-6 border-b border-gray-100 ${className}`}>
-        <div className="text-center py-4">
-          <p className="text-gray-500 mb-3 [font-family:'Lato',Helvetica]">
-            <Link
-              to="/login"
-              className="text-red hover:text-red/80 underline cursor-pointer"
-            >
-              Log in
-            </Link>
-            {' '}to join the discussion
-          </p>
+      <div className={`py-4 ${className}`}>
+        <div className="rounded-[20px] transition-all duration-300 ease-out ring-1 ring-black/[0.02] hover:ring-black/[0.04]" style={{
+          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.9) 100%)',
+          backdropFilter: 'blur(20px) brightness(1.08) saturate(1.1) contrast(1.02)',
+          WebkitBackdropFilter: 'blur(20px) brightness(1.08) saturate(1.1) contrast(1.02)',
+          border: '2px solid transparent',
+          backgroundImage: `
+            linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.9) 100%),
+            linear-gradient(135deg, rgba(203, 213, 225, 0.4) 0%, rgba(148, 163, 184, 0.3) 25%, rgba(191, 219, 254, 0.2) 50%, rgba(148, 163, 184, 0.3) 75%, rgba(203, 213, 225, 0.4) 100%)
+          `,
+          backgroundOrigin: 'border-box',
+          backgroundClip: 'content-box, border-box',
+          boxShadow: `
+            0 4px 20px rgba(0, 0, 0, 0.04),
+            0 1px 4px rgba(0, 0, 0, 0.02),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8),
+            inset 0 0 20px rgba(255, 255, 255, 0.1)
+          `,
+        }}>
+          <div className="text-center py-8 px-6">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <p className="text-gray-600 [font-family:'Lato',Helvetica] text-base font-medium">
+                Want to join the conversation?
+              </p>
+              <Link
+                to="/login"
+                className="inline-flex items-center px-6 py-3 text-white font-semibold rounded-full transition-all duration-200 hover:scale-105 active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #ff7849 0%, #f23a00 85%, #e03200 100%)',
+                  boxShadow: `
+                    0 8px 24px rgba(242, 58, 0, 0.3),
+                    0 3px 12px rgba(242, 58, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+                  `,
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #ff8c5c 0%, #f23a00 75%, #d62f00 100%)';
+                  e.currentTarget.style.boxShadow = `
+                    0 12px 32px rgba(242, 58, 0, 0.4),
+                    0 4px 16px rgba(242, 58, 0, 0.25),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.12)
+                  `;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #ff7849 0%, #f23a00 85%, #e03200 100%)';
+                  e.currentTarget.style.boxShadow = `
+                    0 8px 24px rgba(242, 58, 0, 0.3),
+                    0 3px 12px rgba(242, 58, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+                  `;
+                }}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                Sign in to comment
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -256,18 +315,47 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
   return (
     <div className={`py-1 ${className}`}>
       <div className="flex gap-4">
-        {/* Comment input */}
+        {/* Apple-style comment input with enhanced contrast */}
         <div className="flex-1">
-          <div className="bg-white rounded-lg transition-all">
-            {/* 显示回复提示 */}
+          <div
+            className="rounded-[20px] transition-all duration-300 ease-out ring-1 ring-black/[0.02] hover:ring-black/[0.04] focus-within:ring-2 focus-within:ring-blue-500/25"
+            style={{
+              background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.9) 100%)',
+              backdropFilter: 'blur(20px) brightness(1.08) saturate(1.1) contrast(1.02)',
+              WebkitBackdropFilter: 'blur(20px) brightness(1.08) saturate(1.1) contrast(1.02)',
+              border: '2px solid transparent',
+              backgroundImage: `
+                linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.9) 100%),
+                linear-gradient(135deg, rgba(203, 213, 225, 0.4) 0%, rgba(148, 163, 184, 0.3) 25%, rgba(191, 219, 254, 0.2) 50%, rgba(148, 163, 184, 0.3) 75%, rgba(203, 213, 225, 0.4) 100%)
+              `,
+              backgroundOrigin: 'border-box',
+              backgroundClip: 'content-box, border-box',
+              boxShadow: `
+                0 4px 20px rgba(0, 0, 0, 0.04),
+                0 1px 4px rgba(0, 0, 0, 0.02),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8),
+                inset 0 0 20px rgba(255, 255, 255, 0.1)
+              `,
+            }}
+          >
+            {/* Apple-style reply indicator */}
             {isReplying && (
-              <div className="px-6 pt-3 pb-1">
-                <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 rounded-full px-3 py-1 w-fit">
+              <div className="px-6 pt-4 pb-2">
+                <div
+                  className="flex items-center gap-2 text-sm rounded-full px-4 py-2 w-fit transition-all duration-200"
+                  style={{
+                    color: 'rgba(0, 122, 255, 0.9)',
+                    background: 'linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%)',
+                    border: '1px solid rgba(0, 122, 255, 0.15)',
+                    boxShadow: '0 1px 3px rgba(0, 122, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
+                  }}
+                >
                   <span>💬</span>
                   <span>Replying to {getReplyDisplayText()}</span>
                   <button
                     onClick={handleCancel}
-                    className="text-blue-400 hover:text-blue-600 ml-1"
+                    className="ml-1 hover:scale-110 transition-transform duration-200"
+                    style={{ color: 'rgba(0, 122, 255, 0.7)' }}
                     type="button"
                   >
                     ✕
@@ -281,15 +369,32 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={getPlaceholderText()}
-              className="w-full px-6 py-3 bg-transparent border-0 rounded-lg resize-none text-gray-900 placeholder-gray-500 [font-family:'Lato',Helvetica] text-base"
-              style={{ outline: 'none' }}
-              rows={2}
+              className="w-full px-6 py-4 bg-transparent border-0 resize-none [font-family:'Lato',Helvetica] text-base transition-colors duration-200 rounded-2xl"
+              style={{
+                outline: 'none',
+                color: 'rgba(0, 0, 0, 0.9)',
+                fontSize: '16px',
+                lineHeight: '1.5',
+                minHeight: '80px',
+              }}
+              placeholder-style={{
+                color: 'rgba(0, 0, 0, 0.5)',
+              }}
+              rows={3}
               disabled={isSubmitting}
             />
 
-            {/* Action bar */}
-            <div className="flex items-center justify-between px-4 py-3 bg-white rounded-b-lg">
-              <div className="text-sm text-gray-500 [font-family:'Lato',Helvetica]">
+            {/* Apple-style action bar */}
+            <div
+              className="flex items-center justify-between px-6 py-4 rounded-b-[20px]"
+              style={{
+                background: 'transparent',
+              }}
+            >
+              <div
+                className="text-sm [font-family:'Lato',Helvetica] font-medium"
+                style={{ color: 'rgba(0, 0, 0, 0.6)' }}
+              >
                 {content.length > 0 && (
                   <span className={content.length > 500 ? 'text-red' : ''}>
                     {content.length}/500
@@ -297,13 +402,19 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                 )}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 {(onCancel || isReplying) && (
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-all [font-family:'Lato',Helvetica]"
-                    style={{ outline: 'none' }}
+                    className="px-5 py-2.5 text-sm font-medium rounded-full transition-all duration-200 [font-family:'Lato',Helvetica] hover:scale-105 active:scale-95 hover:bg-opacity-80"
+                    style={{
+                      outline: 'none',
+                      color: 'rgba(71, 85, 105, 0.75)',
+                      background: 'transparent',
+                      border: '1px solid rgba(203, 213, 225, 0.5)',
+                      boxShadow: 'none',
+                    }}
                     disabled={isSubmitting}
                   >
                     {isReplying ? 'Cancel Reply' : 'Cancel'}
@@ -313,8 +424,28 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                   type="button"
                   onClick={handleSubmit}
                   disabled={!content.trim() || isSubmitting || content.length > 500}
-                  className="px-6 py-2 bg-red text-white rounded-full text-sm font-medium hover:bg-red/90 disabled:bg-[#E0E0E0]/40 disabled:text-[#A9A9A9] disabled:cursor-not-allowed transition-all [font-family:'Lato',Helvetica]"
-                  style={{ outline: 'none' }}
+                  className="px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 [font-family:'Lato',Helvetica] hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  style={{
+                    outline: 'none',
+                    background: !content.trim() || isSubmitting || content.length > 500
+                      ? 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(120, 113, 108, 0.3) 100%)'
+                      : 'linear-gradient(135deg, #ff7849 0%, #f23a00 85%, #e03200 100%)',
+                    color: !content.trim() || isSubmitting || content.length > 500
+                      ? 'rgba(100, 116, 139, 0.7)'
+                      : 'rgba(255, 255, 255, 0.98)',
+                    boxShadow: !content.trim() || isSubmitting || content.length > 500
+                      ? '0 1px 2px rgba(0, 0, 0, 0.05)'
+                      : `0 4px 14px rgba(242, 58, 0, 0.25),
+                         0 2px 6px rgba(242, 58, 0, 0.15),
+                         inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                         inset 0 -1px 0 rgba(0, 0, 0, 0.1)`,
+                    border: !content.trim() || isSubmitting || content.length > 500
+                      ? '1px solid rgba(203, 213, 225, 0.4)'
+                      : '1px solid rgba(239, 68, 68, 0.3)',
+                    textShadow: !content.trim() || isSubmitting || content.length > 500
+                      ? 'none'
+                      : '0 1px 2px rgba(0, 0, 0, 0.2)',
+                  }}
                 >
                   {isSubmitting ? 'Posting...' : 'Post comment'}
                 </button>
