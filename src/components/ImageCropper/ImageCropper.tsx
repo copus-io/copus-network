@@ -38,6 +38,24 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   const [originalCropArea, setOriginalCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [lastPinchDistance, setLastPinchDistance] = useState<number | null>(null);
+
+  // Helper to calculate distance between two touch points
+  const getTouchDistance = (touches: React.TouchList): number => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Helper to get center point between two touches
+  const getTouchCenter = (touches: React.TouchList, rect: DOMRect): { x: number; y: number } => {
+    if (touches.length < 2) return { x: 0, y: 0 };
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2 - rect.left,
+      y: (touches[0].clientY + touches[1].clientY) / 2 - rect.top
+    };
+  };
 
   React.useEffect(() => {
     const url = URL.createObjectURL(image);
@@ -412,10 +430,18 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   // Touch event handlers for mobile support
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const touch = e.touches[0];
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Handle pinch-to-zoom with 2 fingers
+    if (e.touches.length === 2) {
+      const distance = getTouchDistance(e.touches);
+      setLastPinchDistance(distance);
+      setIsDragging(false); // Stop any single-finger drag
+      return;
+    }
+
+    const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
@@ -435,13 +461,43 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDragging) return;
     e.preventDefault();
-
-    const touch = e.touches[0];
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Handle pinch-to-zoom with 2 fingers
+    if (e.touches.length === 2 && lastPinchDistance !== null) {
+      const currentDistance = getTouchDistance(e.touches);
+      const rect = canvas.getBoundingClientRect();
+      const center = getTouchCenter(e.touches, rect);
+
+      // Calculate scale change
+      const scaleChange = currentDistance / lastPinchDistance;
+      const newScale = Math.max(0.5, Math.min(3, scale * scaleChange));
+
+      if (newScale !== scale) {
+        // Adjust offset to zoom towards the pinch center
+        const scaleRatio = newScale / scale;
+        setOffset(prev => ({
+          x: center.x - (center.x - prev.x) * scaleRatio,
+          y: center.y - (center.y - prev.y) * scaleRatio
+        }));
+        setScale(newScale);
+
+        // Redraw canvas
+        const ctx = canvas.getContext('2d');
+        if (ctx && loadedImageRef.current) {
+          drawCanvas(ctx, loadedImageRef.current, cropArea);
+        }
+      }
+
+      setLastPinchDistance(currentDistance);
+      return;
+    }
+
+    if (!isDragging) return;
+
+    const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
@@ -573,6 +629,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   const handleTouchEnd = () => {
     setIsDragging(false);
     setResizeHandle(null);
+    setLastPinchDistance(null);
   };
 
   // Handle mouse wheel zoom
