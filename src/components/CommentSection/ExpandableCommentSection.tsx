@@ -1,4 +1,4 @@
-// Expandable Comment Section - 可展开的评论区组件
+// Expandable Comment Section - Expandable comment section component
 
 import React, { useState, useRef, useEffect } from 'react';
 import { CommentSection } from './CommentSection';
@@ -8,10 +8,10 @@ interface ExpandableCommentSectionProps {
   targetType: 'article' | 'treasury' | 'user' | 'space';
   targetId: string;
   className?: string;
-  // 可选配置
-  defaultExpanded?: boolean; // 默认是否展开
-  showPreview?: boolean; // 是否显示预览（最近几条评论）
-  autoCollapse?: boolean; // 是否自动收起
+  // Optional configuration
+  defaultExpanded?: boolean; // Whether expanded by default
+  showPreview?: boolean; // Whether to show preview (recent comments)
+  autoCollapse?: boolean; // Whether to auto-collapse
 }
 
 export const ExpandableCommentSection: React.FC<ExpandableCommentSectionProps> = ({
@@ -40,7 +40,7 @@ export const ExpandableCommentSection: React.FC<ExpandableCommentSectionProps> =
       const newValue = !prev;
       setHasUserInteracted(true);
 
-      // 如果是展开状态，滚动到评论区
+      // If expanding, scroll to comment area
       if (newValue && sectionRef.current) {
         setTimeout(() => {
           sectionRef.current?.scrollIntoView({
@@ -54,7 +54,7 @@ export const ExpandableCommentSection: React.FC<ExpandableCommentSectionProps> =
     });
   };
 
-  // 获取评论区状态描述
+  // Get comment area status description
   const getStatusText = () => {
     if (isLoading) return 'Loading comments...';
     if (totalComments === 0) return 'No comments yet. Be the first to comment!';
@@ -72,7 +72,7 @@ export const ExpandableCommentSection: React.FC<ExpandableCommentSectionProps> =
 
   return (
     <div ref={sectionRef} className={`w-full ${className}`}>
-      {/* 评论区展开/收起按钮 */}
+      {/* Comment area expand/collapse button */}
       <div className="border-t border-gray-200 bg-white">
         <button
           onClick={handleToggle}
@@ -98,7 +98,7 @@ export const ExpandableCommentSection: React.FC<ExpandableCommentSectionProps> =
               </svg>
             </div>
 
-            {/* 评论区标题和状态 */}
+            {/* Comment area title and status */}
             <div className="flex flex-col items-start text-left">
               <div className="flex items-center gap-3 mb-1">
                 <span className="[font-family:'Lato',Helvetica] font-[500] text-[#231f20] text-xl">
@@ -141,7 +141,7 @@ export const ExpandableCommentSection: React.FC<ExpandableCommentSectionProps> =
         </button>
       </div>
 
-      {/* 评论区内容 - 使用更高级的动画 */}
+      {/* Comment area content - using advanced animations */}
       <div
         ref={contentRef}
         id="comment-section-content"

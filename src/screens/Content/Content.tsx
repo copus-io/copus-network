@@ -2058,7 +2058,7 @@ export const Content = (): JSX.Element => {
                               textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)',
                             }}
                           >
-                            评论区
+                            Comments
                           </h3>
                           {!isCommentsLoading && (
                             <div className="flex items-center gap-2">
@@ -2066,7 +2066,7 @@ export const Content = (): JSX.Element => {
                                 className="[font-family:'Lato',Helvetica] text-sm font-medium"
                                 style={{ color: 'rgba(0, 0, 0, 0.65)' }}
                               >
-                                {totalComments === 0 ? '暂无评论' : `${totalComments} 条评论`}
+                                {totalComments === 0 ? 'No comments yet' : `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`}
                               </span>
                               {totalComments > 0 && (
                                 <>
@@ -2078,7 +2078,7 @@ export const Content = (): JSX.Element => {
                                     className="[font-family:'Lato',Helvetica] text-xs font-medium"
                                     style={{ color: 'rgba(0, 0, 0, 0.5)' }}
                                   >
-                                    欢迎参与讨论
+                                    Join the discussion
                                   </span>
                                 </>
                               )}

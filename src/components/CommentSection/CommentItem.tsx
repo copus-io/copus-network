@@ -414,7 +414,7 @@ const ReplyItemComponent: React.FC<{
                                      parentComment.authorNamespace === reply.replyToUser;
 
       let targetComment = null;
-      let targetContent = "回复的评论";
+      let targetContent = "Replied comment";
 
       if (candidateComments.length > 0) {
         // 找到了候选评论，选择最近的一条

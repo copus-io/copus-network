@@ -45,7 +45,7 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
     }
   };
 
-  // 阻止评论区内容点击时关闭
+  // Prevent closing when clicking inside comment area
   const handleContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -71,9 +71,9 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
         />
       )}
 
-      {/* 吸底浮动按钮和评论区容器 */}
+      {/* Bottom floating button and comment area container */}
       <div className={`fixed bottom-0 left-0 right-0 z-50 ${className}`}>
-        {/* 评论区内容 - 从底部展开 */}
+        {/* Comment area content - expand from bottom */}
         <div
           ref={contentRef}
           className={`transition-all duration-500 ease-out ${
@@ -84,7 +84,7 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
           onClick={handleContentClick}
         >
           <div className="bg-white shadow-2xl">
-            {/* 评论区头部 */}
+            {/* Comment area header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center gap-3">
                 <h3 className="[font-family:'Lato',Helvetica] font-[600] text-lg text-[#231f20]">
@@ -116,7 +116,7 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
               </button>
             </div>
 
-            {/* 评论区内容 */}
+            {/* Comment area content */}
             <div className="max-h-[70vh] overflow-y-auto">
               {isExpanded && (
                 <CommentSection
@@ -129,7 +129,7 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
           </div>
         </div>
 
-        {/* 吸底浮动按钮 */}
+        {/* Bottom floating button */}
         <div
           ref={buttonRef}
           className={`transition-all duration-300 ${
@@ -144,7 +144,7 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
               className="w-full flex items-center justify-between p-4 bg-orange-500 rounded-2xl shadow-lg border border-orange-600 hover:shadow-xl hover:scale-[1.02] transition-all duration-200 group"
             >
               <div className="flex items-center gap-4">
-                {/* 评论图标 */}
+                {/* Comment icon */}
                 <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#f23a00] group-hover:bg-[#e33400] transition-colors shadow-sm">
                   <svg
                     className="w-6 h-6 text-white"
@@ -161,7 +161,7 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
                   </svg>
                 </div>
 
-                {/* 文本内容 */}
+                {/* Text content */}
                 <div className="flex flex-col items-start">
                   <span className="[font-family:'Lato',Helvetica] font-[600] text-white text-lg">
                     {getCommentsText()}
@@ -172,7 +172,7 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
                 </div>
               </div>
 
-              {/* 向上箭头 */}
+              {/* Up arrow */}
               <div className="flex items-center">
                 <svg
                   className="w-6 h-6 text-white text-opacity-80 group-hover:text-white transition-colors"
@@ -193,7 +193,7 @@ export const FloatingCommentSection: React.FC<FloatingCommentSectionProps> = ({
         </div>
       </div>
 
-      {/* 为浮动按钮预留空间，避免遮挡页面内容 */}
+      {/* Reserve space for floating button to avoid blocking page content */}
       {!isExpanded && <div className="h-24"></div>}
     </>
   );
