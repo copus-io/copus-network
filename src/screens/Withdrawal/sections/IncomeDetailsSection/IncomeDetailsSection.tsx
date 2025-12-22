@@ -392,7 +392,7 @@ export const IncomeDetailsSection = ({
               {hasEmail ? (
                 <Button
                   onClick={handleWithdrawClick}
-                  className="px-3 sm:px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 sm:px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base w-full sm:w-auto disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                   disabled={loading || parseFloat(propAccountInfo?.balance || '0') <= 0}
                 >
                   Withdraw
