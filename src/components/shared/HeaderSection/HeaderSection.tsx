@@ -331,7 +331,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
       <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[20px] lg:pb-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
         {/* Search Overlay - 100% on mobile, 80% on desktop */}
         {isSearchOpen && (
-          <div className={`fixed inset-x-0 top-0 ${showResults ? 'h-screen lg:h-[80vh]' : 'h-auto'} bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] z-50 flex flex-col shadow-lg lg:rounded-b-2xl`} ref={searchRef}>
+          <div className={`fixed inset-x-0 top-0 ${showResults ? 'h-screen lg:h-[80vh]' : 'h-auto pb-5'} bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] z-50 flex flex-col shadow-lg lg:rounded-b-2xl`} ref={searchRef}>
             {/* Search Header */}
             <div className="flex items-center gap-3 px-[30px] pt-4 pb-1">
               <button
