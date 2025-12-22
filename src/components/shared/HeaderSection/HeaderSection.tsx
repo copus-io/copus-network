@@ -764,7 +764,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
           >
             <Link to="/curate">
               <img
-                className="w-5 h-5"
+                className="w-4 h-4"
                 alt="Vector"
                 src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
               />
