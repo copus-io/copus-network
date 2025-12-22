@@ -1,0 +1,1139 @@
+// Individual comment item component
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Comment } from '../../types/comment';
+import { useToggleCommentLike, useDeleteComment, useUpdateComment, useLoadCommentReplies } from '../../hooks/queries/useComments';
+import { CommentForm } from './CommentForm';
+import { useUser } from '../../contexts/UserContext';
+
+// Edit comment form component
+interface EditCommentFormProps {
+  initialContent: string;
+  onSubmit: (content: string) => void;
+  onCancel: () => void;
+  isSubmitting?: boolean;
+}
+
+const EditCommentForm: React.FC<EditCommentFormProps> = ({
+  initialContent,
+  onSubmit,
+  onCancel,
+  isSubmitting = false
+}) => {
+  const [content, setContent] = useState(initialContent);
+
+  const handleSubmit = () => {
+    if (!content.trim()) return;
+    onSubmit(content.trim());
+  };
+
+  return (
+    <div className="bg-gray-50 p-4 rounded-lg">
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Edit your comment..."
+        className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent [font-family:'Lato',Helvetica]"
+        rows={3}
+        disabled={isSubmitting}
+      />
+      <div className="flex justify-end gap-2 mt-3">
+        <button
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 [font-family:'Lato',Helvetica]"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || !content.trim()}
+          className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 [font-family:'Lato',Helvetica]"
+        >
+          {isSubmitting ? 'Updating...' : 'Update'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+interface CommentItemProps {
+  comment: Comment;
+  replies?: Comment[];
+  targetType: 'article' | 'treasury' | 'user' | 'space';
+  targetId: string;
+  articleId?: string; // 新增：数字ID，用于API调用
+  className?: string;
+  onReplyClick?: (commentId: string, userName: string, parentId?: string) => void;
+}
+
+// Helper component for replies with new content format
+const ReplyItemComponent: React.FC<{
+  reply: Comment;
+  toggleLikeMutation: any;
+  targetId: string;
+  targetType: 'article' | 'treasury' | 'user' | 'space';
+  parentComment: Comment;
+  allReplies: Comment[]; // 添加完整的回复列表，用于查找被回复的评论
+  articleId?: string; // 新增：数字ID，用于API调用
+  onReplyClick?: (commentId: string, userName: string, parentId?: string) => void;
+}> = ({ reply, toggleLikeMutation, targetId, targetType, parentComment, allReplies, articleId, onReplyClick }) => {
+  const navigate = useNavigate();
+  const deleteCommentMutation = useDeleteComment();
+  const { user } = useUser();
+  const [replyIsLiked, setReplyIsLiked] = useState(reply.isLiked);
+  const [replyLikesCount, setReplyLikesCount] = useState(reply.likesCount);
+
+  // Handle user click to navigate to profile page
+  const handleUserClick = (comment: Comment) => {
+    if (comment.authorNamespace) {
+      navigate(`/u/${comment.authorNamespace}`);
+    } else if (comment.authorId) {
+      navigate(`/user/${comment.authorId}/treasury`);
+    }
+  };
+
+  const handleReplyLike = () => {
+    if (!user) {
+      alert('Please log in first');
+      return;
+    }
+
+    const newIsLiked = !replyIsLiked;
+    setReplyIsLiked(newIsLiked);
+    setReplyLikesCount(prev => newIsLiked ? prev + 1 : prev - 1);
+    toggleLikeMutation.mutate(reply.id);
+  };
+
+  const handleReplyToReply = () => {
+    if (!user) {
+      alert('Please log in first');
+      return;
+    }
+    // 使用统一回复系统，传递parentId以便正确构建回复层级
+    console.log('🚨🚨🚨 2级评论Reply按钮被点击!!! reply.id=', reply.id, 'authorName=', reply.authorName, 'parentComment.id=', parentComment.id);
+    onReplyClick?.(reply.id, reply.authorName, parentComment.id);
+  };
+
+  const handleReplyDelete = () => {
+    if (window.confirm('Are you sure you want to delete this reply?')) {
+      deleteCommentMutation.mutate({ commentId: reply.id, articleId: articleId || targetId });
+    }
+  };
+
+  // Check if current user can delete this reply
+  const canDeleteReply = user && (reply.canDelete || user.id === reply.authorId);
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // 新的内容格式：实现3级评论视觉效果
+  const formatReplyContent = () => {
+    console.log('🔍🔥🔥🔥 FormatReplyContent Debug - Reply:', {
+      replyId: reply.id,
+      replyToUser: reply.replyToUser,
+      targetContent: (reply as any).targetContent,
+      hasReplyToUser: !!reply.replyToUser,
+      replyToUserType: typeof reply.replyToUser
+    });
+
+    // 🎯 最高优先级：新的引用显示逻辑
+    // 当 replyToUser 对象存在时，显示引用样式
+    if (reply.replyToUser && typeof reply.replyToUser === 'object') {
+      console.log('🎯✅ 使用新的引用显示逻辑:', {
+        replyId: reply.id,
+        replyToUser: reply.replyToUser,
+        targetContent: (reply as any).targetContent
+      });
+
+      // 获取用户显示名称
+      const getUserDisplayName = (userObj) => {
+        if (!userObj) return '';
+        return userObj.username || 'Anonymous';
+      };
+
+      const displayUserName = getUserDisplayName(reply.replyToUser);
+      const quoteContent = (reply as any).targetContent;
+
+      console.log('🔍 Display details:', {
+        displayUserName,
+        quoteContent,
+        willShowQuote: !!displayUserName
+      });
+
+      if (displayUserName) {
+        console.log('🎯✅✅✅ 即将返回新的引用UI，数据:', { displayUserName, quoteContent });
+        return (
+          <div className="space-y-1">
+            {/* 简洁的网易云风格回复引用 */}
+            <div className="text-sm text-gray-500 leading-relaxed">
+              <span className="text-blue-400">@{displayUserName}</span>
+              <span className="mx-1 text-gray-400">:</span>
+              <span className="italic text-gray-400">"{quoteContent || '原评论内容'}"</span>
+            </div>
+
+            {/* 用户的实际回复内容 */}
+            <div className="text-gray-900 leading-relaxed">
+              {reply.content}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // 辅助函数：格式化用户名
+    const formatUsername = (comment) => {
+      return comment.authorName || 'Anonymous';
+    };
+
+    // 辅助函数：智能截断内容
+    const truncateContent = (content, maxLength = 40) => {
+      if (content.length <= maxLength) return content;
+      return content.substring(0, maxLength).trim() + '...';
+    };
+
+    // 🔧 优先级0：检查localStorage恢复的引用信息（最高优先级）
+    if (reply.replyToId && reply.replyToUser) {
+      console.log('🎯 Using recovered reply context:', {
+        replyId: reply.id,
+        replyToId: reply.replyToId,
+        replyToUser: reply.replyToUser
+      });
+
+      // 在所有回复中查找目标评论（包括主评论和其他回复）
+      const allComments = [parentComment, ...allReplies];
+      const targetComment = allComments.find(c =>
+        c.id.toString() === reply.replyToId.toString()
+      );
+
+      if (targetComment) {
+        // 🔧 3级评论逻辑：只有当 replyToUser 有值时才显示引用（表示3级评论）
+        // 2级评论（直接回复1级）的 replyToUser 为空，不显示引用信息
+        const shouldShowReply = reply.replyToUser &&
+                               (reply.replyToUser.username || reply.replyToUser.namespace);
+
+        return (
+          <div>
+            {shouldShowReply && (
+              <div className="space-y-1">
+                {/* 简洁的网易云风格回复引用 */}
+                <div className="text-sm text-gray-500 leading-relaxed">
+                  <span className="text-blue-400">@{formatUsername(targetComment)}</span>
+                  <span className="mx-1 text-gray-400">:</span>
+                  <span className="italic text-gray-400">"{truncateContent(targetComment.content)}"</span>
+                </div>
+
+                {/* 用户的实际回复内容 */}
+                <div className="text-gray-900 leading-relaxed">
+                  {reply.content}
+                </div>
+              </div>
+            )}
+            {!shouldShowReply && <div>{reply.content}</div>}
+          </div>
+        );
+      }
+    }
+
+    // 🔧 优先级1：检查请求上下文 - 如果这个回复是通过rootId获取的，说明它回复了rootId评论或其子评论
+    const requestContext = (reply as any)._requestContext;
+    console.log('🔧 CommentItem: Checking request context for reply:', {
+      replyId: reply.id,
+      hasRequestContext: !!requestContext,
+      rootId: requestContext?.rootId,
+      parentCommentId: parentComment.id,
+      replyToUser: reply.replyToUser
+    });
+
+    if (requestContext?.rootId) {
+      console.log('🔧 CommentItem: Found rootId context, analyzing reply target...');
+
+      // 🎯 核心逻辑：
+      // 1. rootId告诉我们这是对某个评论线程的回复
+      // 2. 如果有replyToUser，通过时间顺序找到具体的目标评论
+      // 3. 如果没有replyToUser，默认回复主评论（rootId评论）
+
+      let targetComment = null;
+
+      // 🔧 策略：因为后端不提供replyToUser，我们需要智能推断
+      console.log('🔍 Backend replyToUser not available, using intelligent inference');
+
+      // 如果这个回复时间是最新的，可能是刚创建的，检查localStorage
+      const currentReplyTime = new Date(reply.createdAt).getTime();
+      const now = Date.now();
+      const isRecentReply = (now - currentReplyTime) < 60000; // 1分钟内的回复
+
+      if (isRecentReply) {
+        console.log('🔍 Recent reply detected, checking localStorage for context');
+        // 这可能是刚创建的回复，检查localStorage中是否有引用信息
+        // 注意：此时localStorage可能已经被清理了，所以我们需要其他方法
+      }
+
+      // 策略：如果线程中只有主评论，默认回复主评论
+      if (allReplies.length === 0) {
+        targetComment = parentComment;
+        console.log('🎯 Only main comment in thread, replying to main comment');
+      }
+      // 策略：如果线程中有其他回复，默认回复最近的那条回复
+      else {
+        const sortedReplies = allReplies
+          .filter(r => {
+            const isBeforeCurrentReply = new Date(r.createdAt).getTime() < currentReplyTime;
+            const isNotSameComment = r.id !== reply.id;
+            return isBeforeCurrentReply && isNotSameComment;
+          })
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        if (sortedReplies.length > 0) {
+          targetComment = sortedReplies[0]; // 最近的其他回复
+          console.log('🎯 Found most recent reply as target:', {
+            targetId: targetComment.id,
+            targetAuthor: targetComment.authorName,
+            timeDiff: (currentReplyTime - new Date(targetComment.createdAt).getTime()) / 1000 + ' seconds'
+          });
+        } else {
+          targetComment = parentComment; // 回退到主评论
+          console.log('🔄 No valid previous replies, defaulting to main comment');
+        }
+      }
+
+      // 展示找到的引用结果
+      if (targetComment) {
+        const targetUser = reply.replyToUser || formatUsername(targetComment);
+        console.log('✅ Using rootId-based reply context:', {
+          rootId: requestContext.rootId,
+          targetCommentId: targetComment.id,
+          targetUser,
+          targetContent: targetComment.content.substring(0, 40)
+        });
+
+        // 🔧 3级评论逻辑：只有当 replyToUser 有值时才显示引用（表示3级评论）
+        // 2级评论（直接回复1级）的 replyToUser 为空，不显示引用信息
+        const shouldShowReply = reply.replyToUser &&
+                               (reply.replyToUser.username || reply.replyToUser.namespace);
+
+        return (
+          <div>
+            {shouldShowReply && (
+              <div className="space-y-1">
+                {/* 简洁的网易云风格回复引用 */}
+                <div className="text-sm text-gray-500 leading-relaxed">
+                  <span className="text-blue-400">@{targetUser}</span>
+                  <span className="mx-1 text-gray-400">:</span>
+                  <span className="italic text-gray-400">"{truncateContent(targetComment.content)}"</span>
+                </div>
+
+                {/* 用户的实际回复内容 */}
+                <div className="text-gray-900 leading-relaxed">
+                  {reply.content}
+                </div>
+              </div>
+            )}
+            {!shouldShowReply && <div>{reply.content}</div>}
+          </div>
+        );
+      }
+    }
+
+    // 🔧 优先级2：检查是否有准确的replyToId（来自前端创建的回复）
+    if (reply.replyToId) {
+      console.log('🔧 CommentItem: Found replyToId, searching for target comment...');
+      const targetComment = allReplies.find(r => r.id === reply.replyToId) ||
+                           (parentComment.id === reply.replyToId ? parentComment : null);
+
+      if (targetComment) {
+        const targetUser = reply.replyToUser || targetComment.authorName || targetComment.authorNamespace;
+        console.log('🔧 Using replyToId logic:', {
+          replyToId: reply.replyToId,
+          targetComment: targetComment.id,
+          targetUser,
+          targetContent: targetComment.content.substring(0, 40)
+        });
+        // 🔧 3级评论逻辑：只有当 replyToUser 有值时才显示引用（表示3级评论）
+        // 2级评论（直接回复1级）的 replyToUser 为空，不显示引用信息
+        const shouldShowReply = reply.replyToUser &&
+                               (reply.replyToUser.username || reply.replyToUser.namespace);
+
+        return (
+          <div className="space-y-1">
+            <div>{reply.content}</div>
+            {shouldShowReply && (
+              <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border-l-2 border-blue-200">
+                <span className="text-blue-600 font-medium">@{targetUser}</span>
+                <span className="text-gray-500 mx-1">：</span>
+                <span className="italic">"{truncateContent(targetComment.content)}"</span>
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+
+    // 🔧 优先级2：根据API文档，使用replyToUser字段显示引用 + 智能时间匹配
+    if (reply.replyToUser) {
+      console.log('🔧 CommentItem: Using replyToUser logic for reply:', {
+        replyId: reply.id,
+        replyToUser: reply.replyToUser ? {
+          username: reply.replyToUser.username,
+          namespace: reply.replyToUser.namespace,
+          id: reply.replyToUser.id
+        } : null,
+        replyCreatedAt: reply.createdAt
+      });
+
+      // 🚀 智能算法：基于时间序列 + 用户信息精确匹配被回复的评论
+      const currentReplyTime = new Date(reply.createdAt).getTime();
+
+      // 策略1：查找同一用户在此时间之前的最近一条评论
+      const candidateComments = allReplies
+        .filter(r => {
+          const matchesUser = r.authorName === reply.replyToUser || r.authorNamespace === reply.replyToUser;
+          const isBeforeCurrentReply = new Date(r.createdAt).getTime() < currentReplyTime;
+          const isNotSameComment = r.id !== reply.id;
+          return matchesUser && isBeforeCurrentReply && isNotSameComment;
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      // 策略2：检查是否回复主评论作者
+      const isReplyingToMainComment = parentComment.authorName === reply.replyToUser ||
+                                     parentComment.authorNamespace === reply.replyToUser;
+
+      let targetComment = null;
+      let targetContent = "Replied comment";
+
+      if (candidateComments.length > 0) {
+        // 找到了候选评论，选择最近的一条
+        targetComment = candidateComments[0];
+        targetContent = `"${truncateContent(targetComment.content)}"`;
+
+        console.log('🎯 CommentItem: Found target comment via time matching:', {
+          targetCommentId: targetComment.id,
+          targetAuthor: targetComment.authorName,
+          targetContent: targetComment.content.substring(0, 30),
+          timeDiff: (currentReplyTime - new Date(targetComment.createdAt).getTime()) / 1000 / 60 + ' minutes ago'
+        });
+      } else if (isReplyingToMainComment) {
+        // 如果没找到2级评论，但回复的是主评论作者，则指向主评论
+        targetComment = parentComment;
+        targetContent = `"${truncateContent(parentComment.content)}"`;
+
+        console.log('🎯 CommentItem: Targeting main comment:', {
+          mainCommentId: parentComment.id,
+          mainAuthor: parentComment.authorName
+        });
+      } else {
+        console.log('⚠️ CommentItem: Could not find specific target comment for replyToUser:', reply.replyToUser);
+      }
+
+      // 🔧 检查是否应该显示引用信息：如果 replyToUser 对象为空则完全不显示引用信息
+      const shouldShowReply = reply.replyToUser &&
+                             (reply.replyToUser.username || reply.replyToUser.namespace);
+
+      return (
+        <div className="space-y-1">
+          <div>{reply.content}</div>
+          {shouldShowReply && (
+            <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border-l-2 border-blue-200">
+              <span className="text-blue-600 font-medium">@{reply.replyToUser.username || reply.replyToUser.namespace}</span>
+              <span className="text-gray-500 mx-1">：</span>
+              <span className="italic">{targetContent}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // 🔄 回退到智能推理逻辑（当没有准确的replyToId时）
+    const currentUser = reply.authorName || reply.authorNamespace || `用户${reply.authorId}`;
+    const replyIndex = allReplies.findIndex(r => r.id === reply.id);
+
+    // 获取时间排序的回复列表（最新的在前）
+    const sortedReplies = [...allReplies].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const sortedIndex = sortedReplies.findIndex(r => r.id === reply.id);
+
+    // 策略1：如果当前回复作者就是主评论作者，很可能是在回应其他人
+    if (reply.authorId === parentComment.authorId && allReplies.length > 1) {
+      // 找到最近的非主评论作者的回复
+      const otherReplies = sortedReplies.filter(r =>
+        r.id !== reply.id && r.authorId !== parentComment.authorId
+      );
+
+      if (otherReplies.length > 0) {
+        const targetReply = otherReplies[0]; // 最新的其他人的回复
+        // Author responding to community feedback
+        return (
+          <div className="space-y-1">
+            <div>{reply.content}</div>
+            <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border-l-2 border-blue-200">
+              <span className="text-blue-600 font-medium">@{formatUsername(targetReply)}</span>
+              <span className="text-gray-500 mx-1">：</span>
+              <span className="italic">"{truncateContent(targetReply.content)}"</span>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // 策略2：时间序列推断 - 找到发布时间最接近且在此之前的不同作者回复
+    if (allReplies.length > 1) {
+      const currentTime = new Date(reply.createdAt).getTime();
+
+      // 找到发布时间在当前回复之前的回复，按时间倒序排列
+      const beforeReplies = allReplies.filter(r => {
+        const replyTime = new Date(r.createdAt).getTime();
+        return replyTime < currentTime && r.authorId !== reply.authorId;
+      }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      // 如果没有之前的不同作者回复，回复主评论
+      if (beforeReplies.length === 0) {
+        // First different author - replying to main comment
+        return (
+          <div className="space-y-1">
+            <div>{reply.content}</div>
+            <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border-l-2 border-blue-200">
+              <span className="text-blue-600 font-medium">@{formatUsername(parentComment)}</span>
+              <span className="text-gray-500 mx-1">：</span>
+              <span className="italic">"{truncateContent(parentComment.content)}"</span>
+            </div>
+          </div>
+        );
+      }
+
+      // 回复最近的不同作者
+      const targetReply = beforeReplies[0];
+      // Continuing conversation with different author
+      return (
+        <div className="space-y-1">
+          <div>{reply.content}</div>
+          <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border-l-2 border-blue-200">
+            <span className="text-blue-600 font-medium">@{formatUsername(targetReply)}</span>
+            <span className="text-gray-500 mx-1">：</span>
+            <span className="italic">"{truncateContent(targetReply.content)}"</span>
+          </div>
+        </div>
+      );
+    }
+
+    // 策略3：单个回复 - 很明显是回复主评论
+    if (allReplies.length === 1) {
+      // Single reply - clearly responding to main comment
+      return (
+        <div className="space-y-1">
+          <div>{reply.content}</div>
+          <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border-l-2 border-blue-200">
+            <span className="text-blue-600 font-medium">@{formatUsername(parentComment)}</span>
+            <span className="text-gray-500 mx-1">：</span>
+            <span className="italic">"{truncateContent(parentComment.content)}"</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Default: Unable to determine reply context
+    return reply.content;
+  };
+
+  return (
+    <div className="flex gap-3" id={`comment-${reply.id}`}>
+      {/* Reply Avatar */}
+      <div className="flex-shrink-0">
+        <img
+          src={reply.authorAvatar || "data:image/svg+xml,%3csvg%20width='100'%20height='100'%20viewBox='0%200%20100%20100'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='white'/%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='%23E0E0E0'%20fill-opacity='0.4'/%3e%3cpath%20d='M73.9643%2060.6618V60.9375C73.9643%2074.2269%2063.2351%2085%2050%2085C36.7649%2085%2026.0357%2074.2269%2026.0357%2060.9375V60.6618C22.2772%2059.6905%2019.5%2056.2646%2019.5%2052.1875C19.5%2048.1104%2022.2772%2044.6845%2026.0357%2043.7132V39.0625C26.0357%2025.7731%2036.7649%2015%2050%2015C63.2351%2015%2073.9643%2025.7731%2073.9643%2039.0625V43.7132C77.7228%2044.6845%2080.5%2048.1104%2080.5%2052.1875C80.5%2056.2646%2077.7228%2059.6905%2073.9643%2060.6618ZM69.6071%2043.4375H67.2192C62.2208%2043.4375%2057.8638%2040.0217%2056.6515%2035.1527L56.5357%2034.6875L48.85%2038.5461C43.0934%2041.4362%2036.8058%2043.0815%2030.3929%2043.3858V60.9375C30.3929%2071.8106%2039.1713%2080.625%2050%2080.625C60.8287%2080.625%2069.6071%2071.8106%2069.6071%2060.9375V43.4375ZM39.1071%2050C39.1071%2048.7919%2040.0825%2047.8125%2041.2857%2047.8125C42.4889%2047.8125%2043.4643%2048.7919%2043.4643%2050V54.375C43.4643%2055.5831%2042.4889%2056.5625%2041.2857%2056.5625C40.0825%2056.5625%2039.1071%2055.5831%2039.1071%2054.375V50ZM56.5357%2050C56.5357%2048.7919%2057.5111%2047.8125%2058.7143%2047.8125C59.9175%2047.8125%2060.8929%2048.7919%2060.8929%2050V54.375C60.8929%2055.5831%2059.9175%2056.5625%2058.7143%2056.5625C57.5111%2056.5625%2056.5357%2055.5831%2056.5357%2054.375V50ZM41.9964%2071.3039C41.1073%2070.4899%2041.0438%2069.1064%2041.8544%2068.2136C42.6651%2067.3209%2044.0431%2067.2571%2044.9321%2068.0711C46.0649%2069.1081%2047.4581%2069.6875%2048.8886%2069.6875C50.3722%2069.6875%2051.7728%2069.1187%2052.8779%2068.0924C53.7612%2067.2721%2055.1396%2067.3261%2055.9565%2068.2131C56.7735%2069.1%2056.7197%2070.484%2055.8364%2071.3043C53.9384%2073.0668%2051.4869%2074.0625%2048.8886%2074.0625C46.3342%2074.0625%2043.907%2073.0532%2041.9964%2071.3039ZM23.8571%2052.1875C23.8571%2053.8069%2024.7334%2055.2207%2026.0357%2055.9772V48.3978C24.7334%2049.1543%2023.8571%2050.5681%2023.8571%2052.1875ZM76.1429%2052.1875C76.1429%2050.5681%2075.2666%2049.1543%2073.9643%2048.3978V55.9772C75.2666%2055.2207%2076.1429%2053.8069%2076.1429%2052.1875Z'%20fill='black'/%3e%3c/svg%3e"}
+          alt={reply.authorName}
+          onClick={() => handleUserClick(reply)}
+          className="w-8 h-8 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+        />
+      </div>
+
+      <div className="flex-1">
+        {/* Reply user info */}
+        <div className="flex items-center gap-2 mb-2">
+          <span
+            onClick={() => handleUserClick(reply)}
+            className="font-medium text-gray-900 text-lg [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+          >
+            {reply.authorName}
+          </span>
+          <span className="text-sm text-gray-500 [font-family:'Lato',Helvetica]">
+            {formatTimeAgo(reply.createdAt)}
+          </span>
+        </div>
+
+        {/* Reply content with new format */}
+        <div className="text-gray-800 text-base leading-relaxed mb-3 [font-family:'Lato',Helvetica] font-light">
+          {formatReplyContent()}
+        </div>
+
+        {/* Reply actions */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleReplyLike}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium transition-all duration-200 [font-family:'Lato',Helvetica] ${
+              replyIsLiked
+                ? 'text-red bg-red-50 hover:bg-red-100'
+                : 'text-gray-500 hover:text-red hover:bg-red-50'
+            }`}
+            style={{ outline: 'none' }}
+          >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill={replyIsLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span>{replyLikesCount}</span>
+          </button>
+
+          <button
+            onClick={handleReplyToReply}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium text-gray-500 hover:text-red hover:bg-red-50 transition-all duration-200 [font-family:'Lato',Helvetica]"
+            style={{ outline: 'none' }}
+          >
+            <span>Reply</span>
+          </button>
+
+          {canDeleteReply && (
+            <button
+              onClick={handleReplyDelete}
+              disabled={deleteCommentMutation.isPending}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium text-gray-500 hover:text-red hover:bg-red-50 transition-all duration-200 [font-family:'Lato',Helvetica]"
+              style={{ outline: 'none' }}
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3,6 5,6 21,6"></polyline>
+                <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              <span>Delete</span>
+            </button>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export const CommentItem: React.FC<CommentItemProps> = ({
+  comment,
+  replies = [],
+  targetType,
+  targetId,
+  articleId,
+  className = '',
+  onReplyClick
+}) => {
+  const navigate = useNavigate();
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [isLiked, setIsLiked] = useState(comment.isLiked);
+  const [likesCount, setLikesCount] = useState(comment.likesCount);
+  const [repliesExpanded, setRepliesExpanded] = useState(false); // 控制回复展开/折叠
+  const [repliesVisible, setRepliesVisible] = useState(false); // 控制回复是否可见
+  const commentRef = useRef<HTMLDivElement>(null);
+  const toggleLikeMutation = useToggleCommentLike();
+  const deleteCommentMutation = useDeleteComment();
+  const updateCommentMutation = useUpdateComment();
+  const { user } = useUser();
+
+  // Handle user click to navigate to profile page
+  const handleUserClick = (comment: Comment) => {
+    if (comment.authorNamespace) {
+      navigate(`/u/${comment.authorNamespace}`);
+    } else if (comment.authorId) {
+      navigate(`/user/${comment.authorId}/treasury`);
+    }
+  };
+
+  // 页面加载后检查是否需要滚动到此评论，同时恢复引用信息
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const newCommentId = urlParams.get('newComment');
+    const hash = window.location.hash;
+
+    // 检查是否是新创建的评论需要滚动到
+    const shouldScrollTo = newCommentId === comment.id.toString() ||
+                          hash === `#comment-${comment.id}`;
+
+    if (shouldScrollTo && commentRef.current) {
+      // 🔧 检查并恢复引用信息
+      const storedContext = localStorage.getItem('pendingReplyContext');
+      console.log('🔍 Checking localStorage for reply context:', {
+        hasStoredContext: !!storedContext,
+        storedContext: storedContext,
+        newCommentId: comment.id
+      });
+
+      if (storedContext) {
+        try {
+          const replyContext = JSON.parse(storedContext);
+          console.log('🔄 Found stored reply context:', replyContext);
+
+          // 检查是否是同一个target的评论，且时间在5分钟内
+          const isValidContext = replyContext.targetType === targetType &&
+                                replyContext.targetId === targetId &&
+                                (Date.now() - replyContext.timestamp) < 5 * 60 * 1000;
+
+          console.log('🔧 Context validation:', {
+            targetTypeMatch: replyContext.targetType === targetType,
+            targetIdMatch: replyContext.targetId === targetId,
+            timeValid: (Date.now() - replyContext.timestamp) < 5 * 60 * 1000,
+            timeDiff: Date.now() - replyContext.timestamp,
+            isValidContext
+          });
+
+          if (isValidContext) {
+            // 为新评论添加引用信息
+            (comment as any).replyToId = replyContext.replyToId;
+            (comment as any).replyToUser = replyContext.replyToUser;
+            console.log('✅ Applied stored reply context to new comment:', {
+              commentId: comment.id,
+              replyToId: replyContext.replyToId,
+              replyToUser: replyContext.replyToUser
+            });
+          } else {
+            console.log('❌ Invalid context, not applying');
+          }
+
+          // 清理localStorage
+          localStorage.removeItem('pendingReplyContext');
+          console.log('🧹 Cleaned up localStorage');
+        } catch (error) {
+          console.error('❌ Failed to parse reply context:', error);
+          localStorage.removeItem('pendingReplyContext');
+        }
+      } else {
+        console.log('📭 No stored reply context found');
+      }
+
+      setTimeout(() => {
+        commentRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        // 高亮显示新评论
+        if (commentRef.current) {
+          commentRef.current.style.backgroundColor = '#f0f9ff';
+          commentRef.current.style.border = '2px solid #3b82f6';
+          commentRef.current.style.borderRadius = '8px';
+
+          // 3秒后移除高亮
+          setTimeout(() => {
+            if (commentRef.current) {
+              commentRef.current.style.backgroundColor = '';
+              commentRef.current.style.border = '';
+              commentRef.current.style.borderRadius = '';
+            }
+          }, 3000);
+        }
+
+        console.log('📍 Scrolled to new comment:', comment.id);
+      }, 100);
+
+      // 清理 URL 参数，避免刷新时再次滚动
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('newComment');
+      newUrl.hash = '';
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [comment.id, targetType, targetId]);
+
+  // 设置回复折叠的阈值
+  const REPLY_COLLAPSE_THRESHOLD = 2;
+
+  // 按需加载评论回复
+  // 仅在用户点击展开按钮时才加载回复，优化性能
+  const { data: repliesData, isLoading: repliesLoading } = useLoadCommentReplies(
+    targetType,
+    targetId,
+    comment.id,
+    {
+      enabled: repliesVisible, // 只在用户主动展开时才加载
+      articleId: articleId // 传递数字ID
+    }
+  );
+
+  // 使用懒加载的回复数据，如果没有则使用传入的replies作为后备
+  const actualReplies = repliesData?.replies || replies || [];
+
+  // 🔍 调试：查看回复数量信息
+  console.log('🔍 CommentItem Debug - Reply Count Info:', {
+    commentId: comment.id,
+    backendRepliesCount: comment.repliesCount,
+    actualRepliesLength: actualReplies.length,
+    repliesVisible,
+    repliesData: !!repliesData,
+    repliesFromProps: replies?.length || 0
+  });
+
+  // 🔍 调试：检查回复中是否有 targetContent 字段
+  if (actualReplies.length > 0) {
+    actualReplies.forEach((reply, index) => {
+      console.log(`🔍 Reply ${index} targetContent check:`, {
+        replyId: reply.id,
+        hasTargetContent: 'targetContent' in reply,
+        targetContent: (reply as any).targetContent,
+        allKeys: Object.keys(reply)
+      });
+    });
+  }
+
+
+
+  const handleLike = () => {
+    if (!user) {
+      // Show login prompt for non-logged users clicking like
+      alert('Please log in first');
+      return;
+    }
+
+    // Toggle like state locally
+    const newIsLiked = !isLiked;
+    setIsLiked(newIsLiked);
+    setLikesCount(prev => newIsLiked ? prev + 1 : prev - 1);
+
+    // Call API mutation
+    toggleLikeMutation.mutate(comment.id);
+  };
+
+
+  const handleEdit = () => {
+    if (!user) {
+      // Show login prompt for non-logged users clicking edit
+      alert('Please log in first');
+      return;
+    }
+    setShowEditForm(!showEditForm);
+  };
+
+  const handleEditSubmit = (content: string) => {
+    updateCommentMutation.mutate(
+      { commentId: comment.id, data: { content, articleId: targetId } },
+      {
+        onSuccess: () => {
+          setShowEditForm(false);
+        }
+      }
+    );
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      deleteCommentMutation.mutate({ commentId: comment.id, articleId: targetId });
+    }
+  };
+
+  // Check if current user can delete this comment
+  const canDelete = user && (comment.canDelete || user.id === comment.authorId);
+
+  // Check if current user is the comment author
+  const isCommentAuthor = user && user.id === comment.authorId;
+
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Removed getAvatarGradient function as we now use default SVG avatar
+
+  // Check if this is a temporary comment being submitted
+  const isTemporary = (comment as any)._isTemporary;
+  const isNew = (comment as any)._isNew;
+
+  return (
+    <div
+      ref={commentRef}
+      id={`comment-${comment.id}`}
+      className={`${className} ${isTemporary ? 'opacity-60 bg-gray-50 border border-dashed border-gray-300 rounded-lg p-3' : ''} ${isNew ? 'bg-green-50 border border-green-200 rounded-lg p-3 animate-pulse' : ''}`}
+    >
+      <div className="flex gap-3">
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          <img
+            src={comment.authorAvatar || "data:image/svg+xml,%3csvg%20width='100'%20height='100'%20viewBox='0%200%20100%20100'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='white'/%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='%23E0E0E0'%20fill-opacity='0.4'/%3e%3cpath%20d='M73.9643%2060.6618V60.9375C73.9643%2074.2269%2063.2351%2085%2050%2085C36.7649%2085%2026.0357%2074.2269%2026.0357%2060.9375V60.6618C22.2772%2059.6905%2019.5%2056.2646%2019.5%2052.1875C19.5%2048.1104%2022.2772%2044.6845%2026.0357%2043.7132V39.0625C26.0357%2025.7731%2036.7649%2015%2050%2015C63.2351%2015%2073.9643%2025.7731%2073.9643%2039.0625V43.7132C77.7228%2044.6845%2080.5%2048.1104%2080.5%2052.1875C80.5%2056.2646%2077.7228%2059.6905%2073.9643%2060.6618ZM69.6071%2043.4375H67.2192C62.2208%2043.4375%2057.8638%2040.0217%2056.6515%2035.1527L56.5357%2034.6875L48.85%2038.5461C43.0934%2041.4362%2036.8058%2043.0815%2030.3929%2043.3858V60.9375C30.3929%2071.8106%2039.1713%2080.625%2050%2080.625C60.8287%2080.625%2069.6071%2071.8106%2069.6071%2060.9375V43.4375ZM39.1071%2050C39.1071%2048.7919%2040.0825%2047.8125%2041.2857%2047.8125C42.4889%2047.8125%2043.4643%2048.7919%2043.4643%2050V54.375C43.4643%2055.5831%2042.4889%2056.5625%2041.2857%2056.5625C40.0825%2056.5625%2039.1071%2055.5831%2039.1071%2054.375V50ZM56.5357%2050C56.5357%2048.7919%2057.5111%2047.8125%2058.7143%2047.8125C59.9175%2047.8125%2060.8929%2048.7919%2060.8929%2050V54.375C60.8929%2055.5831%2059.9175%2056.5625%2058.7143%2056.5625C57.5111%2056.5625%2056.5357%2055.5831%2056.5357%2054.375V50ZM41.9964%2071.3039C41.1073%2070.4899%2041.0438%2069.1064%2041.8544%2068.2136C42.6651%2067.3209%2044.0431%2067.2571%2044.9321%2068.0711C46.0649%2069.1081%2047.4581%2069.6875%2048.8886%2069.6875C50.3722%2069.6875%2051.7728%2069.1187%2052.8779%2068.0924C53.7612%2067.2721%2055.1396%2067.3261%2055.9565%2068.2131C56.7735%2069.1%2056.7197%2070.484%2055.8364%2071.3043C53.9384%2073.0668%2051.4869%2074.0625%2048.8886%2074.0625C46.3342%2074.0625%2043.907%2073.0532%2041.9964%2071.3039ZM23.8571%2052.1875C23.8571%2053.8069%2024.7334%2055.2207%2026.0357%2055.9772V48.3978C24.7334%2049.1543%2023.8571%2050.5681%2023.8571%2052.1875ZM76.1429%2052.1875C76.1429%2050.5681%2075.2666%2049.1543%2073.9643%2048.3978V55.9772C75.2666%2055.2207%2076.1429%2053.8069%2076.1429%2052.1875Z'%20fill='black'/%3e%3c/svg%3e"}
+            alt={comment.authorName}
+            onClick={() => handleUserClick(comment)}
+            className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+          />
+        </div>
+
+        <div className="flex-1">
+          {/* User info and time */}
+          <div className="flex items-center gap-2 mb-2">
+            <span
+              onClick={() => handleUserClick(comment)}
+              className="font-medium text-gray-900 text-lg [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+            >
+              {comment.authorName}
+            </span>
+            <span className="text-sm text-gray-500 [font-family:'Lato',Helvetica]">
+              {isTemporary ? (
+                <span className="inline-flex items-center gap-1 text-orange-500">
+                  <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                  </svg>
+                  发布中...
+                </span>
+              ) : isNew ? (
+                <span className="inline-flex items-center gap-1 text-green-500 font-medium">
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                  刚刚发布
+                </span>
+              ) : (
+                formatTimeAgo(comment.createdAt)
+              )}
+            </span>
+          </div>
+
+          {/* Comment content */}
+          <div className="text-gray-800 text-base leading-relaxed mb-3 [font-family:'Lato',Helvetica] font-light">
+            {comment.content.split('\n').map((line, index) => (
+              <React.Fragment key={index}>
+                {line}
+                {index < comment.content.split('\n').length - 1 && <br />}
+              </React.Fragment>
+            ))}
+
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleLike}
+              disabled={toggleLikeMutation.isPending}
+              className={`inline-flex items-center gap-1 text-sm transition-all duration-200 [font-family:'Lato',Helvetica] ${
+                isLiked
+                  ? 'text-red'
+                  : 'text-gray-400 hover:text-red'
+              }`}
+              style={{ outline: 'none' }}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+              <span>{likesCount}</span>
+            </button>
+
+            {/* Reply button - 永远用于回复该评论 */}
+            <button
+              onClick={() => {
+                // 如果用户未登录，提示登录
+                if (!user) {
+                  alert('Please log in first');
+                  return;
+                }
+
+                // 统一回复系统：直接回复该评论（创建2级评论）
+                console.log('🚨🚨🚨 1级评论Reply按钮被点击!!! comment.id=', comment.id, 'authorName=', comment.authorName);
+                onReplyClick?.(comment.id, comment.authorName);
+              }}
+              className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-blue-600 transition-all duration-200 [font-family:'Lato',Helvetica]"
+              style={{ outline: 'none' }}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+              </svg>
+              <span>Reply</span>
+            </button>
+
+            {/* View replies button - 专门用于展开/折叠回复列表 */}
+            {(() => {
+              const propsRepliesCount = replies?.length || 0;
+              const loadedRepliesCount = repliesData?.replies?.length || 0;
+              const backendCount = comment.repliesCount || 0;
+              const hasAnyReplies = propsRepliesCount > 0 || loadedRepliesCount > 0 || backendCount > 0;
+
+              // 只有当有回复时才显示此按钮
+              if (!hasAnyReplies) return null;
+
+              const displayCount = propsRepliesCount > 0 ? propsRepliesCount
+                                 : loadedRepliesCount > 0 ? loadedRepliesCount
+                                 : backendCount;
+
+              return (
+                <button
+                  onClick={() => {
+                    if (!repliesVisible) {
+                      // 首次点击展开 - 触发加载回复
+                      console.log('🔄 User clicked to view replies, triggering API call...');
+                      setRepliesVisible(true);
+                    } else {
+                      // 再次点击 - 折叠回复
+                      setRepliesVisible(false);
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1 text-sm transition-all duration-200 [font-family:'Lato',Helvetica] ${
+                    repliesVisible
+                      ? 'text-blue-600 hover:text-blue-700'
+                      : 'text-gray-400 hover:text-blue-600'
+                  }`}
+                  style={{ outline: 'none' }}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 12h6M9 16h6M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H6l-2 2V7a1 1 0 011-1z"/>
+                  </svg>
+                  <span>{displayCount} {displayCount === 1 ? 'reply' : 'replies'}</span>
+                  {repliesVisible ? (
+                    <svg className="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="18,15 12,9 6,15"></polyline>
+                    </svg>
+                  ) : (
+                    <svg className="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                  )}
+                </button>
+              );
+            })()}
+
+
+            {/* Edit button - only for comment author */}
+            {isCommentAuthor && (
+              <button
+                onClick={handleEdit}
+                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
+                style={{ outline: 'none' }}
+              >
+                <span>Edit</span>
+              </button>
+            )}
+
+            {canDelete && (
+              <button
+                onClick={handleDelete}
+                disabled={deleteCommentMutation.isPending}
+                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
+                style={{ outline: 'none' }}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3,6 5,6 21,6"></polyline>
+                  <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                <span>Delete</span>
+              </button>
+            )}
+          </div>
+
+
+          {/* Edit form */}
+          {showEditForm && (
+            <div className="mt-4">
+              <EditCommentForm
+                initialContent={comment.content}
+                onSubmit={handleEditSubmit}
+                onCancel={() => setShowEditForm(false)}
+                isSubmitting={updateCommentMutation.isPending}
+              />
+            </div>
+          )}
+
+          {/* Replies Section */}
+          {actualReplies.length > 0 && repliesVisible && (
+            <div className="mt-4">
+              {/* 显示回复内容 */}
+              <div className="ml-8 space-y-4 pl-6 border-l border-[#f0f0f0]">
+                  {repliesLoading ? (
+                    // 加载状态 - 简洁风格
+                    <div className="py-8 text-center">
+                      <div className="inline-flex items-center gap-3 text-sm text-gray-500 [font-family:'Lato',Helvetica] font-medium">
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading replies...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* 决定显示哪些回复 */}
+                      {(() => {
+                        const shouldCollapse = actualReplies.length > REPLY_COLLAPSE_THRESHOLD;
+                        const visibleReplies = shouldCollapse && !repliesExpanded
+                          ? actualReplies.slice(0, REPLY_COLLAPSE_THRESHOLD)
+                          : actualReplies;
+
+                        return (
+                          <>
+                            {visibleReplies.map((reply) => (
+                              <ReplyItemComponent
+                                key={reply.id}
+                                reply={reply}
+                                toggleLikeMutation={toggleLikeMutation}
+                                targetId={targetId}
+                                targetType={targetType}
+                                parentComment={comment}
+                                allReplies={actualReplies}
+                                articleId={articleId}
+                                onReplyClick={onReplyClick}
+                              />
+                            ))}
+
+                            {/* 展开/折叠按钮 - 简洁现代风格 */}
+                            {shouldCollapse && (
+                              <div className="pt-3">
+                                <button
+                                  onClick={() => setRepliesExpanded(!repliesExpanded)}
+                                  className="group inline-flex items-center gap-2 py-2 text-sm text-gray-500 hover:text-blue-600 transition-colors duration-200 [font-family:'Lato',Helvetica] font-medium"
+                                  style={{ outline: 'none' }}
+                                >
+                                  {repliesExpanded ? (
+                                    <>
+                                      <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polyline points="18,15 12,9 6,15"></polyline>
+                                      </svg>
+                                      <span>Show less</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polyline points="6,9 12,15 18,9"></polyline>
+                                      </svg>
+                                      <span>Show {actualReplies.length - REPLY_COLLAPSE_THRESHOLD} more replies</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            )}
+
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
+                </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
