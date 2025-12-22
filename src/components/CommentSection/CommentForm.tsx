@@ -4,6 +4,7 @@ import React, { useState, forwardRef, useImperativeHandle, useRef, useEffect } f
 import { Link } from 'react-router-dom';
 import { useCreateComment } from '../../hooks/queries/useComments';
 import { useUser } from '../../contexts/UserContext';
+import { getUserDisplayName } from './utils';
 import { CreateCommentRequest } from '../../types/comment';
 
 interface CommentFormProps {
@@ -191,7 +192,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
         // 3级评论：回复特定用户
         let displayName = activeReplyUser;
         if (typeof activeReplyUser === 'object') {
-          displayName = activeReplyUser.username || 'Anonymous';
+          displayName = getUserDisplayName(activeReplyUser);
         }
         return `Reply to @${displayName}...`;
       } else {
@@ -211,7 +212,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     if (activeReplyUser) {
       // 处理用户对象
       if (typeof activeReplyUser === 'object') {
-        const displayName = activeReplyUser.username || 'Anonymous';
+        const displayName = getUserDisplayName(activeReplyUser);
         return `@${displayName}`;
       }
       // 处理字符串（向后兼容）
