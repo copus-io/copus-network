@@ -250,9 +250,9 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         setShowUserMenu(false);
       }
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        // Don't close if clicking on results
+        // Don't close if clicking on results or mobile search overlay
         const target = event.target as HTMLElement;
-        if (!target.closest('.search-results-container')) {
+        if (!target.closest('.search-results-container') && !target.closest('.mobile-search-overlay')) {
           setIsSearchOpen(false);
           setSuggestions([]);
         }
@@ -326,19 +326,333 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         userAvatar={user?.faceUrl || user?.avatar}
         username={user?.username}
         userNamespace={user?.namespace}
+        onSearchClick={() => setIsSearchOpen(true)}
       />
 
+      {/* Mobile Full-Screen Search Overlay */}
+      {isSearchOpen && (
+        <div className="mobile-search-overlay fixed inset-0 bg-white z-50 lg:hidden flex flex-col">
+          {/* Mobile Search Header */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+            <div className="flex-1 flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200">
+              <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (!e.target.value) {
+                    setShowResults(false);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    performSearch(searchQuery);
+                  }
+                }}
+                placeholder="Search..."
+                className="flex-1 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
+                autoFocus
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setShowResults(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <button
+              onClick={handleCloseSearch}
+              className="text-gray-500 text-sm font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+
+          {/* Mobile Search Content */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Tab Filters */}
+            {showResults && (
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto">
+                {searchTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => handleTabChange(tab.key)}
+                    className={`text-[13px] [font-family:'Lato',Helvetica] px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
+                      activeTab === tab.key
+                        ? 'text-red border-red bg-[#F23A001A] font-bold'
+                        : 'text-gray-500 border-gray-300 font-medium'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Search History (when no query) */}
+            {!searchQuery && !showResults && searchHistory.length > 0 && (
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-500 font-medium">Recent searches</span>
+                  <button
+                    onClick={() => saveSearchHistory([])}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    Clear all
+                  </button>
+                </div>
+                {searchHistory.map((item, index) => (
+                  <div
+                    key={index}
+                    onClick={async () => {
+                      setSearchQuery(item);
+                      // Call performSearch directly with the item
+                      await performSearch(item);
+                    }}
+                    className="w-full px-3 py-3 text-left text-sm text-dark-grey hover:bg-gray-50 flex items-center justify-between border-b border-gray-100 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Search className="w-4 h-4 text-gray-400" />
+                      <span>{item}</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newHistory = searchHistory.filter((_, i) => i !== index);
+                        saveSearchHistory(newHistory);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Mobile Search Results */}
+            {showResults && (
+              <div className="px-3 py-3">
+                {isSearching && articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin w-6 h-6 border-2 border-red border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p className="text-gray-500">Searching...</p>
+                  </div>
+                ) : activeTab === 'all' ? (
+                  <div className="space-y-4">
+                    {/* Works Section */}
+                    {articleResults.items.length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => handleTabChange('works')}
+                          className="flex items-center mb-2"
+                        >
+                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[13px]">Works</span>
+                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[11px] ml-2">({articleResults.totalCount})</span>
+                        </button>
+                        <div className="space-y-3">
+                          {articleResults.items.slice(0, 3).map((article) => (
+                            <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                              <ArticleCard article={{
+                                id: article.uuid,
+                                uuid: article.uuid,
+                                title: article.title,
+                                description: article.content,
+                                coverImage: article.coverUrl,
+                                category: article.categoryInfo?.name || '',
+                                categoryColor: article.categoryInfo?.color,
+                                userName: article.authorInfo?.username || '',
+                                userAvatar: article.authorInfo?.faceUrl || '',
+                                userId: article.authorInfo?.id,
+                                userNamespace: article.authorInfo?.namespace,
+                                date: new Date(article.createAt).toLocaleDateString(),
+                                treasureCount: article.likeCount,
+                                visitCount: article.viewCount?.toString() || '0',
+                                isLiked: article.isLiked,
+                                targetUrl: article.targetUrl,
+                              }} layout="compact" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Treasuries Section */}
+                    {spaceResults.items.length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => handleTabChange('treasuries')}
+                          className="flex items-center mb-2"
+                        >
+                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[13px]">Treasuries</span>
+                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[11px] ml-2">({spaceResults.totalCount})</span>
+                        </button>
+                        <div className="space-y-3">
+                          {spaceResults.items.slice(0, 3).map((space) => (
+                            <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                              <TreasuryCard space={space as SpaceData} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Users Section */}
+                    {userResults.items.length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => handleTabChange('users')}
+                          className="flex items-center mb-2"
+                        >
+                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[13px]">Users</span>
+                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[11px] ml-2">({userResults.totalCount})</span>
+                        </button>
+                        <div className="grid grid-cols-3 gap-2">
+                          {userResults.items.slice(0, 6).map((user) => (
+                            <button
+                              key={user.id}
+                              onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
+                              className="rounded-[10px] px-2 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
+                            >
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="w-14 h-14 rounded-full overflow-hidden shadow-sm">
+                                  <img
+                                    src={user.faceUrl || profileDefaultAvatar}
+                                    alt={user.username}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="text-center min-w-0 w-full">
+                                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[11px] truncate">
+                                    {user.username}
+                                  </h3>
+                                  <p className="text-[9px] text-gray-400 truncate">@{user.namespace}</p>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 && (
+                      <div className="py-8 text-center">
+                        <p className="text-gray-500">No results found for "{searchQuery}"</p>
+                      </div>
+                    )}
+                  </div>
+                ) : activeTab === 'works' ? (
+                  <div className="space-y-3">
+                    {articleResults.items.map((article) => (
+                      <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                        <ArticleCard article={{
+                          id: article.uuid,
+                          uuid: article.uuid,
+                          title: article.title,
+                          description: article.content,
+                          coverImage: article.coverUrl,
+                          category: article.categoryInfo?.name || '',
+                          categoryColor: article.categoryInfo?.color,
+                          userName: article.authorInfo?.username || '',
+                          userAvatar: article.authorInfo?.faceUrl || '',
+                          userId: article.authorInfo?.id,
+                          userNamespace: article.authorInfo?.namespace,
+                          date: new Date(article.createAt).toLocaleDateString(),
+                          treasureCount: article.likeCount,
+                          visitCount: article.viewCount?.toString() || '0',
+                          isLiked: article.isLiked,
+                          targetUrl: article.targetUrl,
+                        }} layout="compact" />
+                      </div>
+                    ))}
+                    {articleResults.hasMore && (
+                      <button
+                        onClick={() => loadMore('works')}
+                        disabled={isSearching}
+                        className="w-full py-2 text-sm text-red border border-red rounded-full"
+                      >
+                        {isSearching ? 'Loading...' : 'Load more'}
+                      </button>
+                    )}
+                  </div>
+                ) : activeTab === 'treasuries' ? (
+                  <div className="space-y-3">
+                    {spaceResults.items.map((space) => (
+                      <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                        <TreasuryCard space={space as SpaceData} />
+                      </div>
+                    ))}
+                    {spaceResults.hasMore && (
+                      <button
+                        onClick={() => loadMore('treasuries')}
+                        disabled={isSearching}
+                        className="w-full py-2 text-sm text-red border border-red rounded-full"
+                      >
+                        {isSearching ? 'Loading...' : 'Load more'}
+                      </button>
+                    )}
+                  </div>
+                ) : activeTab === 'users' ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {userResults.items.map((user) => (
+                      <button
+                        key={user.id}
+                        onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
+                        className="rounded-[10px] px-2 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="w-14 h-14 rounded-full overflow-hidden shadow-sm">
+                            <img
+                              src={user.faceUrl || profileDefaultAvatar}
+                              alt={user.username}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="text-center min-w-0 w-full">
+                            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[11px] truncate">
+                              {user.username}
+                            </h3>
+                            <p className="text-[9px] text-gray-400 truncate">@{user.namespace}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                    {userResults.hasMore && (
+                      <div className="col-span-3">
+                        <button
+                          onClick={() => loadMore('users')}
+                          disabled={isSearching}
+                          className="w-full py-2 text-sm text-red border border-red rounded-full"
+                        >
+                          {isSearching ? 'Loading...' : 'Load more'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[20px] lg:pb-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
-        {/* Search Results Dropdown */}
+        {/* Search Results Dropdown - Desktop only */}
         {showResults && (
-          <div className="fixed right-[30px] top-[70px] w-[900px] max-h-[80vh] bg-white rounded-2xl shadow-xl border border-gray-200 z-50 flex flex-col overflow-hidden">
+          <div className="hidden lg:flex fixed right-[30px] top-[70px] w-[900px] max-h-[80vh] bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] rounded-2xl shadow-xl border border-gray-200 z-50 flex-col overflow-hidden">
             {/* Tab Filters */}
             <div className="flex items-center gap-3 px-[20px] py-3 border-b border-gray-100">
               {searchTabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => handleTabChange(tab.key)}
-                  className={`text-sm [font-family:'Lato',Helvetica] px-4 py-1.5 rounded-full border transition-colors ${
+                  className={`text-[14px] [font-family:'Lato',Helvetica] px-4 py-1.5 rounded-full border transition-colors ${
                     activeTab === tab.key
                       ? 'text-red border-red bg-[#F23A001A] font-bold'
                       : 'text-gray-500 border-gray-300 hover:border-gray-400 hover:text-gray-600 font-medium'
@@ -382,9 +696,9 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           </svg>
                         </span>
                       </button>
-                      <div className="grid gap-3 grid-cols-2">
-                        {articleResults.items.slice(0, 4).map((article) => (
-                          <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                      <div className="grid gap-4 grid-cols-3 auto-rows-fr">
+                        {articleResults.items.slice(0, 3).map((article) => (
+                          <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
                             <ArticleCard article={{
                               id: article.uuid,
                               uuid: article.uuid,
@@ -426,8 +740,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           </svg>
                         </span>
                       </button>
-                      <div className="grid gap-3 grid-cols-2">
-                        {spaceResults.items.slice(0, 4).map((space) => (
+                      <div className="grid gap-4 grid-cols-3">
+                        {spaceResults.items.slice(0, 3).map((space) => (
                           <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                             <TreasuryCard space={space as SpaceData} />
                           </div>
@@ -453,26 +767,26 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           </svg>
                         </span>
                       </button>
-                      <div className="grid gap-3 grid-cols-3">
-                        {userResults.items.slice(0, 6).map((user) => (
+                      <div className="grid gap-3 grid-cols-4">
+                        {userResults.items.slice(0, 4).map((user) => (
                           <button
                             key={user.id}
-                            onClick={() => { navigate(`/user/${user.namespace}`); handleCloseSearch(); }}
-                            className="bg-gray-50 rounded-lg p-3 hover:shadow-md transition-all duration-200 text-left"
+                            onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
+                            className="rounded-[10px] px-2.5 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_12px_#c5c5c5] transition-shadow text-left"
                           >
-                            <div className="flex items-center gap-2">
-                              <div className="w-10 h-10 rounded-full overflow-hidden">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-16 h-16 rounded-full overflow-hidden shadow-sm">
                                 <img
                                   src={user.faceUrl || profileDefaultAvatar}
                                   alt={user.username}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-sm truncate">
+                              <div className="text-center min-w-0 w-full">
+                                <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[12px] truncate">
                                   {user.username}
                                 </h3>
-                                <p className="text-xs text-gray-400 truncate">@{user.namespace}</p>
+                                <p className="text-[10px] text-gray-400 truncate">@{user.namespace}</p>
                               </div>
                             </div>
                           </button>
@@ -490,9 +804,9 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               ) : activeTab === 'works' && articleResults.items.length > 0 ? (
                 /* Works Tab */
                 <div>
-                  <div className="grid gap-3 grid-cols-2">
+                  <div className="grid gap-4 grid-cols-3 auto-rows-fr">
                     {articleResults.items.map((article) => (
-                      <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                      <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
                         <ArticleCard article={{
                           id: article.uuid,
                           uuid: article.uuid,
@@ -529,7 +843,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               ) : activeTab === 'treasuries' && spaceResults.items.length > 0 ? (
                 /* Treasuries Tab */
                 <div>
-                  <div className="grid gap-3 grid-cols-2">
+                  <div className="grid gap-4 grid-cols-3">
                     {spaceResults.items.map((space) => (
                       <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                         <TreasuryCard space={space as SpaceData} />
@@ -551,26 +865,26 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               ) : activeTab === 'users' && userResults.items.length > 0 ? (
                 /* Users Tab */
                 <div>
-                  <div className="grid gap-3 grid-cols-3">
+                  <div className="grid gap-3 grid-cols-4">
                     {userResults.items.map((user) => (
                       <button
                         key={user.id}
-                        onClick={() => { navigate(`/user/${user.namespace}`); handleCloseSearch(); }}
-                        className="bg-gray-50 rounded-lg p-3 hover:shadow-md transition-all duration-200 text-left"
+                        onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
+                        className="rounded-[10px] px-2.5 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_12px_#c5c5c5] transition-shadow text-left"
                       >
-                        <div className="flex items-center gap-2">
-                          <div className="w-10 h-10 rounded-full overflow-hidden">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="w-16 h-16 rounded-full overflow-hidden shadow-sm">
                             <img
                               src={user.faceUrl || profileDefaultAvatar}
                               alt={user.username}
                               className="w-full h-full object-cover"
                             />
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-sm truncate">
+                          <div className="text-center min-w-0 w-full">
+                            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[12px] truncate">
                               {user.username}
                             </h3>
-                            <p className="text-xs text-gray-400 truncate">@{user.namespace}</p>
+                            <p className="text-[10px] text-gray-400 truncate">@{user.namespace}</p>
                           </div>
                         </div>
                       </button>
@@ -667,7 +981,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
             <div className="relative flex items-center" ref={searchRef}>
               {isSearchOpen ? (
-                <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-md border border-gray-200 transition-all duration-300" style={{ width: '300px' }}>
+                <>
+                <div className="flex items-center gap-2 bg-white rounded-full px-3 shadow-md border border-gray-200 transition-all duration-300" style={{ width: '240px', height: '35px' }}>
                   <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
                   <input
                     ref={searchInputRef}
@@ -709,7 +1024,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 </div>
                 {/* Search History Dropdown */}
                 {!searchQuery && !showResults && searchHistory.length > 0 && (
-                  <div className="absolute top-full right-0 mt-2 w-[300px] bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="absolute top-full right-0 mt-2 w-[240px] bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
                     <div className="flex items-center justify-between px-3 py-1 mb-1">
                       <span className="text-xs text-gray-500">Recent searches</span>
                       <button
@@ -734,6 +1049,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     ))}
                   </div>
                 )}
+                </>
               ) : (
                 <button
                   onClick={() => setIsSearchOpen(true)}

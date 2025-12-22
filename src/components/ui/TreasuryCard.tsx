@@ -152,7 +152,7 @@ export const TreasuryCard = ({
   if (items.length === 0) {
     return (
       <section
-        className={`relative w-full h-fit flex flex-col items-start gap-[15px] ${onClick ? 'cursor-pointer' : ''}`}
+        className={`relative w-full h-fit flex flex-col items-start gap-2 ${onClick ? 'cursor-pointer' : ''}`}
         onClick={onClick}
       >
         <div className={`flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`} style={{ aspectRatio: '16 / 9' }}>
@@ -179,10 +179,10 @@ export const TreasuryCard = ({
           )}
         </div>
         <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-[18px] tracking-[0] leading-7 whitespace-nowrap">
+          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
             {title}
           </h2>
-          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
+          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap">
             {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
           </p>
         </header>
@@ -194,7 +194,7 @@ export const TreasuryCard = ({
 
   return (
     <section
-      className="relative w-full h-fit flex flex-col items-start gap-[15px] cursor-pointer"
+      className="relative w-full h-fit flex flex-col items-start gap-2 cursor-pointer"
       onClick={onClick}
     >
       <div className="flex items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
@@ -213,8 +213,8 @@ export const TreasuryCard = ({
             </div>
           </div>
 
-          <div className="flex flex-col items-start gap-[15px] relative w-full flex-[0_0_auto]">
-            <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
+          <div className="flex flex-col items-start relative w-full flex-[0_0_auto]">
+            <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-[12px] tracking-[0] leading-4 truncate">
               {mainItem.title}
             </h3>
           </div>
@@ -222,11 +222,11 @@ export const TreasuryCard = ({
 
         {/* Side items on the right - takes ~35% width */}
         {sideItems.length > 0 && (
-          <div className="flex flex-col items-start justify-center gap-1 relative w-[35%] self-stretch rounded-[0px_15px_15px_0px] overflow-hidden">
+          <div className="flex flex-col items-start justify-start gap-1 relative w-[35%] self-stretch rounded-[0px_15px_15px_0px] overflow-hidden">
             {sideItems.map((item, index) => (
               <article
                 key={item.id}
-                className={`flex-1 pl-0 pr-[15px] ${index === 0 ? "pt-[15px]" : "pb-[15px]"} ${
+                className={`${sideItems.length === 1 ? 'h-1/2' : 'flex-1'} pl-0 pr-[15px] ${index === 0 ? "pt-[15px]" : "pb-[15px]"} ${
                   index === 0
                     ? "rounded-[0px_15px_0px_0px]"
                     : "rounded-[0px_0px_15px_0px]"
@@ -248,7 +248,7 @@ export const TreasuryCard = ({
                 <div
                   className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] min-w-0 overflow-hidden"
                 >
-                  <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
+                  <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-[12px] tracking-[0] leading-4 truncate">
                     {item.title}
                   </h3>
                 </div>
@@ -259,10 +259,10 @@ export const TreasuryCard = ({
       </div>
 
       <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-[18px] tracking-[0] leading-7 whitespace-nowrap">
+        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
           {title}
         </h2>
-        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
+        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap">
           {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
         </p>
       </header>

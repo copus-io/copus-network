@@ -360,14 +360,14 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                   />
                 )}
                 {actions.showVisits && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <img
-                      className="w-5 h-5"
+                      className="w-4 h-4"
                       alt="Ic view"
                       src={getIconUrl('VIEW')}
                       style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                     />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1rem' }}>
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
                       {article.visitCount}
                     </span>
                   </div>
@@ -426,13 +426,12 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
           </CardContent>
         );
 
-      case 'discovery':
-      default:
+      case 'compact':
         return (
-          <CardContent className="flex flex-col gap-[20px] py-5 px-[30px] flex-1">
-            <div className="flex flex-col gap-5 flex-1">
+          <CardContent className="flex flex-col gap-[10px] py-3 px-4 flex-1 h-full">
+            <div className="flex flex-col gap-2.5 flex-1 h-full">
               <div
-                className="flex flex-col w-full justify-end p-[15px] rounded-lg bg-cover bg-center bg-no-repeat"
+                className="flex flex-col w-full justify-end p-2 rounded-lg bg-cover bg-center bg-no-repeat"
                 style={{
                   backgroundImage: article.coverImage
                     ? `url(${article.coverImage})`
@@ -443,8 +442,8 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 {/* Website link - hide for paid content */}
                 <div className="flex justify-end">
                   {article.website && !article.isPaymentRequired && (
-                    <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
-                      <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
+                    <div className="inline-flex items-start gap-[3px] px-2 py-1 bg-[#ffffffcc] rounded-[10px] overflow-hidden">
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-[10px] text-right tracking-[0] leading-[13px]">
                         {article.website}
                       </span>
                     </div>
@@ -452,29 +451,116 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-[15px] flex-1">
+              <div className="flex flex-col gap-2 flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="relative min-h-[72px] overflow-hidden">
+                <div className="relative overflow-hidden min-h-[40px]">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[10px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[24px] px-1 mr-1 mb-1 border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[2px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="w-[21px] h-5 flex-shrink-0"
+                        className="w-[14px] h-[13px] flex-shrink-0"
                         alt="x402 payment"
                         src={getIconUrl('X402_PAYMENT')}
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-[11px] tracking-[0] leading-[11px] whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[22px] tracking-[0] leading-[33px] break-words line-clamp-2">
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-[20px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
 
-                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
+                <div className="flex flex-col gap-1.5 px-2 py-2 rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors flex-1">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[16px] tracking-[0] leading-[24px] overflow-hidden min-h-[48px]"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[12px] tracking-[0] leading-[16px] overflow-hidden min-h-[32px]"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitBoxOrient: 'vertical',
+                      WebkitLineClamp: 2,
+                      overflow: 'hidden',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      whiteSpace: 'pre-wrap'
+                    }}
+                  >
+                    "{article.description}"
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <Avatar
+                        className="w-[14px] h-[14px] flex-shrink-0"
+                        onClick={handleUserClick}
+                      >
+                        <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
+                      </Avatar>
+                      <span
+                        className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[11px] tracking-[0] leading-[14px] truncate"
+                        onClick={handleUserClick}
+                      >
+                        {(article.userName && article.userName.trim() !== '') ? article.userName : 'Anonymous'}
+                      </span>
+                    </div>
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[11px] tracking-[0] leading-[14px] flex-shrink-0 ml-2">
+                      {formatDate(article.date)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        );
+
+      case 'discovery':
+      default:
+        return (
+          <CardContent className="flex flex-col gap-[15px] py-4 px-[20px] flex-1">
+            <div className="flex flex-col gap-3 flex-1">
+              <div
+                className="flex flex-col w-full justify-end p-2.5 rounded-lg bg-cover bg-center bg-no-repeat"
+                style={{
+                  backgroundImage: article.coverImage
+                    ? `url(${article.coverImage})`
+                    : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+                  aspectRatio: '16 / 9'
+                }}
+              >
+                {/* Website link - hide for paid content */}
+                <div className="flex justify-end">
+                  {article.website && !article.isPaymentRequired && (
+                    <div className="inline-flex items-start gap-[5px] px-2 py-1 bg-[#ffffffcc] rounded-[12px] overflow-hidden">
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-xs text-right tracking-[0] leading-[16px]">
+                        {article.website}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2.5 flex-1">
+                {/* Title with x402 payment badge */}
+                <div className="relative min-h-[52px] overflow-hidden">
+                  {article.isPaymentRequired && article.paymentPrice && (
+                    <div className="float-left h-[28px] px-1.5 mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                      <img
+                        className="w-[16px] h-[15px] flex-shrink-0"
+                        alt="x402 payment"
+                        src={getIconUrl('X402_PAYMENT')}
+                      />
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-[13px] tracking-[0] leading-[13px] whitespace-nowrap">
+                        {article.paymentPrice}
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[16px] tracking-[0] leading-[24px] break-words line-clamp-2">
+                    {article.title}
+                  </h3>
+                </div>
+
+                <div className="flex flex-col gap-2 px-2 py-2.5 rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
+                  <p
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[13px] tracking-[0] leading-[20px] overflow-hidden min-h-[40px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -489,22 +575,22 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                   </p>
 
                   <div className="flex items-center justify-between mt-auto">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <Avatar
-                        className="w-[18px] h-[18px] cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all duration-200"
+                        className="w-[16px] h-[16px] cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all duration-200"
                         onClick={handleUserClick}
                         title={`View ${article.userName}'s treasures`}
                       >
                         <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
                       </Avatar>
                       <span
-                        className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] cursor-pointer hover:text-blue-600 transition-colors"
+                        className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-[16px] cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={handleUserClick}
                       >
                         {(article.userName && article.userName.trim() !== '') ? article.userName : 'Anonymous'}
                       </span>
                     </div>
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-[16px]">
                       {formatDate(article.date)}
                     </span>
                   </div>
@@ -513,7 +599,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
             </div>
 
             {/* Action buttons area */}
-            <div className="flex items-center justify-between -mx-[30px] px-[30px]">
+            <div className="flex items-center justify-between -mx-[20px] px-[20px]">
               {/* Left side: Treasure button and visit count */}
               <div className="flex items-center gap-4">
                 {actions.showTreasure && (
@@ -532,14 +618,14 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                   />
                 )}
                 {actions.showVisits && (
-                  <div className="inline-flex items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5">
                     <img
-                      className="w-5 h-5"
+                      className="w-4 h-4"
                       alt="Ic view"
                       src={getIconUrl('VIEW')}
                       style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                     />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[20.8px]" style={{ fontSize: '1rem' }}>
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
                       {article.visitCount}
                     </span>
                   </div>
@@ -592,7 +678,9 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
 
   const cardClasses = layout === 'preview'
     ? "bg-white rounded-lg border-0 w-full shadow-sm lg:shadow-card-white flex flex-col"
-    : "bg-white rounded-[8px] border-0 shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[500px]";
+    : layout === 'compact'
+    ? "bg-white rounded-[8px] border-0 shadow-[1px_1px_8px_#d5d5d5] hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col h-full"
+    : "bg-white rounded-[8px] border-0 shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[380px]";
 
   const cardContent = (
     <Card className={cardClasses}>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useToast } from '../../ui/toast';
 import profileDefaultAvatar from '../../../assets/images/profile-default.svg';
+import searchIcon from '../../../assets/images/icon-search.svg';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface MobileMenuProps {
   userAvatar?: string;
   username?: string;
   userNamespace?: string;
+  onSearchClick?: () => void;
 }
 
 interface MenuItem {
@@ -68,7 +70,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   activeMenuItem,
   userAvatar,
   username,
-  userNamespace
+  userNamespace,
+  onSearchClick
 }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -169,23 +172,58 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
       >
         {/* Header with Profile (logged in) or just Close Button */}
         <div className="relative self-stretch w-full flex-[0_0_auto] p-2.5 flex items-start justify-between">
-          {/* Profile Image - only show when logged in */}
+          {/* Profile Image and Search - only show when logged in */}
           {isLoggedIn ? (
-            <button
-              onClick={() => {
-                navigate('/setting');
-                onClose();
-              }}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <img
-                src={userAvatar || profileDefaultAvatar}
-                alt={username || 'Profile'}
-                className="w-12 h-12 rounded-full object-cover border border-gray-200"
-              />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  navigate('/setting');
+                  onClose();
+                }}
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src={userAvatar || profileDefaultAvatar}
+                  alt={username || 'Profile'}
+                  className="w-9 h-9 rounded-full object-cover border border-gray-200"
+                />
+              </button>
+              {onSearchClick && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onSearchClick();
+                  }}
+                  className="flex items-center justify-center"
+                  aria-label="Search"
+                >
+                  <img
+                    className="w-7 h-7"
+                    alt="Search"
+                    src={searchIcon}
+                  />
+                </button>
+              )}
+            </div>
           ) : (
-            <div />
+            <div className="flex items-center gap-3">
+              {onSearchClick && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onSearchClick();
+                  }}
+                  className="flex items-center justify-center"
+                  aria-label="Search"
+                >
+                  <img
+                    className="w-7 h-7"
+                    alt="Search"
+                    src={searchIcon}
+                  />
+                </button>
+              )}
+            </div>
           )}
 
           {/* Close Button */}
