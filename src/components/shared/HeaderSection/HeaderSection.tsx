@@ -148,6 +148,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               >
                 <Avatar className="w-[47px] h-[47px] hover:ring-2 hover:ring-red hover:scale-110 transition-all duration-200 cursor-pointer">
                   <AvatarImage
+                    key={user?.faceUrl || 'default'}
                     src={
                       user?.faceUrl ||
                       user?.avatar ||

@@ -483,13 +483,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             title="Click to change avatar"
             aria-label="Click to change avatar"
           >
-            {/* Avatar image */}
+            {/* Avatar image - key forces re-render when URL changes */}
             <img
+              key={user?.faceUrl || 'default'}
               src={(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar}
               alt="Profile avatar"
               className="w-full h-full object-cover"
               onError={(e) => {
-                console.log('Avatar image failed to load, using default');
                 e.currentTarget.src = profileDefaultAvatar;
               }}
             />
