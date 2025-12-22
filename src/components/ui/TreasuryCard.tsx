@@ -155,7 +155,7 @@ export const TreasuryCard = ({
         className={`relative w-full h-fit flex flex-col items-start gap-[15px] ${onClick ? 'cursor-pointer' : ''}`}
         onClick={onClick}
       >
-        <div className={`flex h-[300px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`}>
+        <div className={`flex h-[220px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`}>
           {emptyAction ? (
             <Link
               to={emptyAction.href}
@@ -179,7 +179,7 @@ export const TreasuryCard = ({
           )}
         </div>
         <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-7 whitespace-nowrap">
+          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-[18px] tracking-[0] leading-7 whitespace-nowrap">
             {title}
           </h2>
           <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
@@ -197,11 +197,11 @@ export const TreasuryCard = ({
       className="relative w-full h-fit flex flex-col items-start gap-[15px] cursor-pointer"
       onClick={onClick}
     >
-      <div className="flex h-[300px] items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden">
+      <div className="flex h-[220px] items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden">
         {/* Main item on the left - takes ~65% width */}
-        <article className="flex flex-col items-start justify-center gap-[5px] px-[15px] py-0 relative self-stretch w-[65%] flex-shrink-0 rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+        <article className="flex flex-col items-start justify-center gap-[5px] px-[15px] py-[15px] relative self-stretch w-[65%] flex-shrink-0 rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <div
-            className="flex flex-col w-full h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
+            className="flex flex-col w-full flex-1 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
             style={{ backgroundImage: `url(${mainItem.coverImage})` }}
           >
             <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
@@ -226,16 +226,14 @@ export const TreasuryCard = ({
             {sideItems.map((item, index) => (
               <article
                 key={item.id}
-                className={`${
-                  index === 0 ? "h-[153px]" : "flex-1 grow"
-                } pl-0 pr-[15px] ${index === 0 ? "py-[15px]" : "py-0"} ${
+                className={`flex-1 pl-0 pr-[15px] ${index === 0 ? "pt-[15px]" : "pb-[15px]"} ${
                   index === 0
                     ? "rounded-[0px_15px_0px_0px]"
                     : "rounded-[0px_0px_15px_0px]"
                 } flex flex-col items-start gap-[5px] relative self-stretch w-full min-w-0 bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
               >
                 <div
-                  className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
+                  className="flex-1 p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
                   style={{ backgroundImage: `url(${item.coverImage})` }}
                 >
                   <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
@@ -248,9 +246,7 @@ export const TreasuryCard = ({
                 </div>
 
                 <div
-                  className={`flex flex-col items-start gap-[15px] ${
-                    index === 0 ? "mb-[-4.00px]" : ""
-                  } relative self-stretch w-full flex-[0_0_auto] min-w-0 overflow-hidden`}
+                  className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] min-w-0 overflow-hidden"
                 >
                   <h3 className="relative w-full mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 truncate">
                     {item.title}
@@ -263,7 +259,7 @@ export const TreasuryCard = ({
       </div>
 
       <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-7 whitespace-nowrap">
+        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-[18px] tracking-[0] leading-7 whitespace-nowrap">
           {title}
         </h2>
         <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">

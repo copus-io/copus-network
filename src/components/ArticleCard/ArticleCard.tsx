@@ -292,14 +292,14 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[22px] tracking-[0] leading-[33px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden min-h-[54px]"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[16px] tracking-[0] leading-[24px] overflow-hidden min-h-[48px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -467,14 +467,14 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[22px] tracking-[0] leading-[33px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden min-h-[54px]"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[16px] tracking-[0] leading-[24px] overflow-hidden min-h-[48px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
