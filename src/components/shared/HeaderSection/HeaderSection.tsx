@@ -12,8 +12,18 @@ import searchIcon from "../../../assets/images/icon-search.svg";
 import { ArticleCard, ArticleData } from "../../ArticleCard";
 import { TreasuryCard, SpaceData } from "../../ui/TreasuryCard";
 import { getIconUrl } from "../../../config/icons";
+import {
+  searchAll,
+  searchArticles,
+  searchSpaces,
+  searchUsers,
+  SearchArticleItem,
+  SearchSpaceItem,
+  SearchUserItem,
+  SearchResult as SearchResultData,
+} from "../../../services/searchService";
 
-interface SearchResult {
+interface SearchResultItem {
   id: string;
   title: string;
   type: 'article' | 'user' | 'treasury';
@@ -62,8 +72,11 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [suggestions, setSuggestions] = useState<SearchResultItem[]>([]);
+  // Separate state for each search category
+  const [articleResults, setArticleResults] = useState<SearchResultData<SearchArticleItem>>({ items: [], totalCount: 0, pageIndex: 1, pageSize: 10, hasMore: false });
+  const [spaceResults, setSpaceResults] = useState<SearchResultData<SearchSpaceItem>>({ items: [], totalCount: 0, pageIndex: 1, pageSize: 10, hasMore: false });
+  const [userResults, setUserResults] = useState<SearchResultData<SearchUserItem>>({ items: [], totalCount: 0, pageIndex: 1, pageSize: 10, hasMore: false });
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<SearchTab>('all');
@@ -129,169 +142,95 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
     setShowUserMenu(false);
   };
 
-  // Mock search function - replace with actual API call
+  // Fetch suggestions - disabled for now, can be enabled with a separate API
   const fetchSuggestions = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSuggestions([]);
       return;
     }
-
-    // TODO: Replace with actual API call
-    // Simulating API delay
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    // Mock suggestions
-    const mockSuggestions: SearchResult[] = [
-      { id: '1', title: `Article about "${query}"`, type: 'article', subtitle: 'By John Doe' },
-      { id: '2', title: `${query} tutorials`, type: 'article', subtitle: 'By Jane Smith' },
-      { id: '3', title: `User: ${query}`, type: 'user', subtitle: '@username' },
-    ];
-
-    setSuggestions(mockSuggestions);
+    // Suggestions disabled - search on submit only
+    setSuggestions([]);
   }, []);
 
-  // Mock search function - replace with actual API call
-  const performSearch = useCallback(async (query: string) => {
+  // Perform search with real API calls
+  const performSearch = useCallback(async (query: string, tab: SearchTab = activeTab) => {
     if (!query.trim()) return;
 
     addToSearchHistory(query);
     setIsSearching(true);
     setShowResults(true);
 
-    // TODO: Replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      if (tab === 'all') {
+        // Call all three APIs in parallel
+        const results = await searchAll({ keyword: query, pageSize: 10 });
+        setArticleResults(results.articles);
+        setSpaceResults(results.spaces);
+        setUserResults(results.users);
+      } else if (tab === 'works') {
+        const results = await searchArticles({ keyword: query, pageSize: 20 });
+        setArticleResults(results);
+      } else if (tab === 'treasuries') {
+        const results = await searchSpaces({ keyword: query, pageSize: 20 });
+        setSpaceResults(results);
+      } else if (tab === 'users') {
+        const results = await searchUsers({ keyword: query, pageSize: 20 });
+        setUserResults(results);
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+    } finally {
+      setIsSearching(false);
+      setSuggestions([]);
+    }
+  }, [activeTab, addToSearchHistory]);
 
-    // Mock results
-    const mockResults: SearchResult[] = [
-      // Works (articles) - matching ArticleData format
-      { id: '1', title: `Pets Love Art Images`, type: 'article', coverImage: 'https://picsum.photos/seed/1/400/300', description: 'Love art style images of pets', userName: 'zentrocool', userAvatar: 'https://picsum.photos/seed/u1/50/50', namespace: 'zentrocool', category: 'Art', categoryColor: '#4CAF50', treasureCount: 42, visitCount: '156', date: '2024-12-20', website: 'example.com' },
-      { id: '2', title: `【Gallavich】Summer Love`, type: 'article', coverImage: 'https://picsum.photos/seed/2/400/300', description: '这是我2月看完，却拖到3月发后才算完成的故事', userName: 'agallavich', userAvatar: 'https://picsum.photos/seed/u2/50/50', namespace: 'agallavich', category: 'Life', categoryColor: '#E91E63', treasureCount: 64, visitCount: '230', date: '2024-12-18' },
-      { id: '3', title: `Love Cat`, type: 'article', coverImage: 'https://picsum.photos/seed/3/400/300', description: 'Adorable cat photos collection', userName: 'zentrocool', userAvatar: 'https://picsum.photos/seed/u1/50/50', namespace: 'zentrocool', category: 'Art', categoryColor: '#4CAF50', treasureCount: 28, visitCount: '89', date: '2024-12-15' },
-      { id: '4', title: `My Love My Lord My Destiny`, type: 'article', coverImage: 'https://picsum.photos/seed/4/400/300', description: 'Puppet in a box and doll images', userName: 'zentrocool', userAvatar: 'https://picsum.photos/seed/u1/50/50', namespace: 'zentrocool', category: 'Art', categoryColor: '#4CAF50', treasureCount: 15, visitCount: '67', date: '2024-12-10' },
-      // Treasuries (with SpaceData)
-      {
-        id: '5',
-        title: `${query} Collection`,
-        type: 'treasury',
-        namespace: 'treasurehunter',
-        spaceData: {
-          id: 5,
-          namespace: 'treasurehunter',
-          spaceType: 1,
-          articleCount: 24,
-          ownerInfo: { username: 'treasurehunter', namespace: 'treasurehunter' },
-          data: [
-            { uuid: 't1-1', title: 'Amazing Discovery', coverUrl: 'https://picsum.photos/seed/t1a/400/300', targetUrl: 'https://example.com/1' },
-            { uuid: 't1-2', title: 'Hidden Gems', coverUrl: 'https://picsum.photos/seed/t1b/400/300', targetUrl: 'https://medium.com/2' },
-            { uuid: 't1-3', title: 'Best Finds', coverUrl: 'https://picsum.photos/seed/t1c/400/300', targetUrl: 'https://blog.com/3' },
-          ]
-        }
-      },
-      {
-        id: '6',
-        title: `Best of ${query}`,
-        type: 'treasury',
-        namespace: 'curator',
-        spaceData: {
-          id: 6,
-          namespace: 'curator',
-          spaceType: 1,
-          articleCount: 18,
-          ownerInfo: { username: 'curator', namespace: 'curator' },
-          data: [
-            { uuid: 't2-1', title: 'Top Picks 2024', coverUrl: 'https://picsum.photos/seed/t2a/400/300', targetUrl: 'https://news.com/1' },
-            { uuid: 't2-2', title: 'Must Read', coverUrl: 'https://picsum.photos/seed/t2b/400/300', targetUrl: 'https://tech.com/2' },
-            { uuid: 't2-3', title: 'Community Favorites', coverUrl: 'https://picsum.photos/seed/t2c/400/300', targetUrl: 'https://art.com/3' },
-          ]
-        }
-      },
-      {
-        id: '9',
-        title: `${query} Favorites`,
-        type: 'treasury',
-        namespace: 'artlover',
-        spaceData: {
-          id: 9,
-          namespace: 'artlover',
-          spaceType: 1,
-          articleCount: 36,
-          ownerInfo: { username: 'artlover', namespace: 'artlover' },
-          data: [
-            { uuid: 't3-1', title: 'Art Inspiration', coverUrl: 'https://picsum.photos/seed/t3a/400/300', targetUrl: 'https://art.com/1' },
-            { uuid: 't3-2', title: 'Creative Works', coverUrl: 'https://picsum.photos/seed/t3b/400/300', targetUrl: 'https://design.com/2' },
-            { uuid: 't3-3', title: 'Visual Stories', coverUrl: 'https://picsum.photos/seed/t3c/400/300', targetUrl: 'https://gallery.com/3' },
-          ]
-        }
-      },
-      {
-        id: '10',
-        title: `My ${query} Journey`,
-        type: 'treasury',
-        namespace: 'explorer',
-        spaceData: {
-          id: 10,
-          namespace: 'explorer',
-          spaceType: 1,
-          articleCount: 42,
-          ownerInfo: { username: 'explorer', namespace: 'explorer' },
-          data: [
-            { uuid: 't4-1', title: 'Adventures', coverUrl: 'https://picsum.photos/seed/t4a/400/300', targetUrl: 'https://travel.com/1' },
-            { uuid: 't4-2', title: 'Discoveries', coverUrl: 'https://picsum.photos/seed/t4b/400/300', targetUrl: 'https://explore.com/2' },
-            { uuid: 't4-3', title: 'Hidden Places', coverUrl: 'https://picsum.photos/seed/t4c/400/300', targetUrl: 'https://world.com/3' },
-          ]
-        }
-      },
-      {
-        id: '11',
-        title: `${query} Essentials`,
-        type: 'treasury',
-        namespace: 'collector',
-        spaceData: {
-          id: 11,
-          namespace: 'collector',
-          spaceType: 1,
-          articleCount: 29,
-          ownerInfo: { username: 'collector', namespace: 'collector' },
-          data: [
-            { uuid: 't5-1', title: 'Must Haves', coverUrl: 'https://picsum.photos/seed/t5a/400/300', targetUrl: 'https://shop.com/1' },
-            { uuid: 't5-2', title: 'Top Rated', coverUrl: 'https://picsum.photos/seed/t5b/400/300', targetUrl: 'https://review.com/2' },
-            { uuid: 't5-3', title: 'Editor Picks', coverUrl: 'https://picsum.photos/seed/t5c/400/300', targetUrl: 'https://picks.com/3' },
-          ]
-        }
-      },
-      {
-        id: '12',
-        title: `Ultimate ${query}`,
-        type: 'treasury',
-        namespace: 'master',
-        spaceData: {
-          id: 12,
-          namespace: 'master',
-          spaceType: 1,
-          articleCount: 55,
-          ownerInfo: { username: 'master', namespace: 'master' },
-          data: [
-            { uuid: 't6-1', title: 'Best Ever', coverUrl: 'https://picsum.photos/seed/t6a/400/300', targetUrl: 'https://best.com/1' },
-            { uuid: 't6-2', title: 'All Time Greats', coverUrl: 'https://picsum.photos/seed/t6b/400/300', targetUrl: 'https://great.com/2' },
-            { uuid: 't6-3', title: 'Legendary', coverUrl: 'https://picsum.photos/seed/t6c/400/300', targetUrl: 'https://legend.com/3' },
-          ]
-        }
-      },
-      // Users
-      { id: '7', title: `${query}master`, type: 'user', image: 'https://picsum.photos/seed/u5/200/200', subtitle: 'Digital artist & content creator', namespace: 'lovemaster', followersCount: 1250, articlesCount: 45 },
-      { id: '8', title: `i_love_${query}`, type: 'user', image: 'https://picsum.photos/seed/u6/200/200', subtitle: 'Passionate about sharing knowledge', namespace: 'ilovelove', followersCount: 892, articlesCount: 32 },
-      { id: '13', title: `${query}_fan`, type: 'user', image: 'https://picsum.photos/seed/u7/200/200', subtitle: 'Enthusiast', namespace: 'lovefan', followersCount: 567, articlesCount: 28 },
-      { id: '14', title: `the_${query}_guy`, type: 'user', image: 'https://picsum.photos/seed/u8/200/200', subtitle: 'Content creator', namespace: 'theloveguy', followersCount: 2340, articlesCount: 67 },
-      { id: '15', title: `${query}seeker`, type: 'user', image: 'https://picsum.photos/seed/u9/200/200', subtitle: 'Explorer', namespace: 'loveseeker', followersCount: 445, articlesCount: 19 },
-      { id: '16', title: `daily_${query}`, type: 'user', image: 'https://picsum.photos/seed/u10/200/200', subtitle: 'Daily updates', namespace: 'dailylove', followersCount: 3200, articlesCount: 156 },
-      { id: '17', title: `${query}_addict`, type: 'user', image: 'https://picsum.photos/seed/u11/200/200', subtitle: 'Obsessed', namespace: 'loveaddict', followersCount: 780, articlesCount: 41 },
-      { id: '18', title: `pure_${query}`, type: 'user', image: 'https://picsum.photos/seed/u12/200/200', subtitle: 'Authentic content', namespace: 'purelove', followersCount: 1890, articlesCount: 73 },
-    ];
+  // Load more results for a specific category
+  const loadMore = useCallback(async (category: 'works' | 'treasuries' | 'users') => {
+    if (!searchQuery.trim()) return;
 
-    setSearchResults(mockResults);
-    setIsSearching(false);
-    setSuggestions([]);
-  }, []);
+    setIsSearching(true);
+
+    try {
+      if (category === 'works') {
+        const nextPage = articleResults.pageIndex + 1;
+        const results = await searchArticles({ keyword: searchQuery, pageIndex: nextPage, pageSize: 20 });
+        setArticleResults(prev => ({
+          ...results,
+          items: [...prev.items, ...results.items],
+        }));
+      } else if (category === 'treasuries') {
+        const nextPage = spaceResults.pageIndex + 1;
+        const results = await searchSpaces({ keyword: searchQuery, pageIndex: nextPage, pageSize: 20 });
+        setSpaceResults(prev => ({
+          ...results,
+          items: [...prev.items, ...results.items],
+        }));
+      } else if (category === 'users') {
+        const nextPage = userResults.pageIndex + 1;
+        const results = await searchUsers({ keyword: searchQuery, pageIndex: nextPage, pageSize: 20 });
+        setUserResults(prev => ({
+          ...results,
+          items: [...prev.items, ...results.items],
+        }));
+      }
+    } catch (error) {
+      console.error('Load more failed:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchQuery, articleResults.pageIndex, spaceResults.pageIndex, userResults.pageIndex]);
+
+  // Handle tab change - refetch if switching to a new category
+  const handleTabChange = useCallback((newTab: SearchTab) => {
+    setActiveTab(newTab);
+    if (searchQuery.trim()) {
+      // When switching to a specific tab from 'all', fetch more results for that category
+      if (newTab !== 'all') {
+        performSearch(searchQuery, newTab);
+      }
+    }
+  }, [searchQuery, performSearch]);
 
   // Debounced search for suggestions
   useEffect(() => {
@@ -347,7 +286,9 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
     setIsSearchOpen(false);
     setSearchQuery("");
     setSuggestions([]);
-    setSearchResults([]);
+    setArticleResults({ items: [], totalCount: 0, pageIndex: 1, pageSize: 10, hasMore: false });
+    setSpaceResults({ items: [], totalCount: 0, pageIndex: 1, pageSize: 10, hasMore: false });
+    setUserResults({ items: [], totalCount: 0, pageIndex: 1, pageSize: 10, hasMore: false });
     setShowResults(false);
     setActiveTab('all');
   };
@@ -359,20 +300,12 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
     { key: 'users', label: 'Users' },
   ];
 
-  const filteredResults = searchResults.filter(result => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'works') return result.type === 'article';
-    if (activeTab === 'treasuries') return result.type === 'treasury';
-    if (activeTab === 'users') return result.type === 'user';
-    return true;
-  });
-
-  const handleSuggestionClick = (suggestion: SearchResult) => {
+  const handleSuggestionClick = (suggestion: SearchResultItem) => {
     setSearchQuery(suggestion.title);
     performSearch(suggestion.title);
   };
 
-  const handleResultClick = (result: SearchResult) => {
+  const handleResultClick = (result: SearchResultItem) => {
     if (result.type === 'article') {
       navigate(`/work/${result.id}`);
     } else if (result.type === 'user') {
@@ -502,7 +435,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 {searchTabs.map((tab) => (
                   <button
                     key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
+                    onClick={() => handleTabChange(tab.key)}
                     className={`text-sm [font-family:'Lato',Helvetica] px-4 py-1.5 rounded-full border transition-colors ${
                       activeTab === tab.key
                         ? 'text-red border-red bg-[#F23A001A] font-bold'
@@ -539,7 +472,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             {/* Search Results */}
             {showResults && (
               <div className="search-results-container flex-1 overflow-y-auto px-[30px] pt-2 pb-4">
-                {isSearching ? (
+                {isSearching && articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 ? (
                   <div className="py-8 text-center">
                     <div className="animate-spin w-6 h-6 border-2 border-red border-t-transparent rounded-full mx-auto mb-2"></div>
                     <p className="text-gray-500">Searching...</p>
@@ -548,41 +481,41 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   /* All Tab - Sectioned Layout */
                   <div className="space-y-10">
                     {/* Works Section */}
-                    {searchResults.filter(r => r.type === 'article').length > 0 && (
+                    {articleResults.items.length > 0 && (
                       <div>
                         <button
-                          onClick={() => setActiveTab('works')}
+                          onClick={() => handleTabChange('works')}
                           className="flex items-center mb-3 hover:opacity-80 transition-opacity"
                         >
                           <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px]">
                             Works
                           </span>
                           <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[14px] ml-4 flex items-center gap-1">
-                            Show all
+                            Show all ({articleResults.totalCount})
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
                           </span>
                         </button>
                         <div className="flex flex-col sm:flex-row gap-4 overflow-x-clip overflow-y-visible pt-2 pb-2 -mt-2 -mb-2">
-                          {searchResults.filter(r => r.type === 'article').slice(0, 4).map((result) => (
-                            <div key={result.id} className="w-full sm:w-[calc(25%-12px)] sm:min-w-[280px] flex-shrink-0 transform origin-top scale-100 sm:scale-[0.85] xl:scale-100">
+                          {articleResults.items.slice(0, 4).map((article) => (
+                            <div key={article.uuid} className="w-full sm:w-[calc(25%-12px)] sm:min-w-[280px] flex-shrink-0 transform origin-top scale-100 sm:scale-[0.85] xl:scale-100">
                               <ArticleCard
                                 article={{
-                                  id: result.id,
-                                  title: result.title,
-                                  description: result.description || '',
-                                  coverImage: result.coverImage || '',
-                                  category: result.category || '',
-                                  categoryColor: result.categoryColor,
-                                  userName: result.userName || '',
-                                  userAvatar: result.userAvatar || '',
-                                  namespace: result.namespace,
-                                  date: result.date || '',
-                                  treasureCount: result.treasureCount || 0,
-                                  visitCount: result.visitCount || '0',
-                                  isLiked: result.isLiked,
-                                  website: result.website,
+                                  id: article.uuid,
+                                  title: article.title,
+                                  description: article.content || '',
+                                  coverImage: article.coverUrl || '',
+                                  category: article.categoryInfo?.name || '',
+                                  categoryColor: article.categoryInfo?.color,
+                                  userName: article.authorInfo?.username || '',
+                                  userAvatar: article.authorInfo?.faceUrl || '',
+                                  namespace: article.authorInfo?.namespace,
+                                  date: article.createAt ? new Date(article.createAt * 1000).toLocaleDateString() : '',
+                                  treasureCount: article.likeCount || 0,
+                                  visitCount: String(article.viewCount || 0),
+                                  isLiked: article.isLiked,
+                                  website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : '',
                                 }}
                                 layout="discovery"
                                 actions={{ showTreasure: true, showVisits: true }}
@@ -594,73 +527,71 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     )}
 
                     {/* Treasuries Section */}
-                    {searchResults.filter(r => r.type === 'treasury').length > 0 && (
+                    {spaceResults.items.length > 0 && (
                       <div>
                         <button
-                          onClick={() => setActiveTab('treasuries')}
+                          onClick={() => handleTabChange('treasuries')}
                           className="flex items-center mb-3 hover:opacity-80 transition-opacity"
                         >
                           <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px]">
                             Treasuries
                           </span>
                           <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[14px] ml-4 flex items-center gap-1">
-                            Show all
+                            Show all ({spaceResults.totalCount})
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
                           </span>
                         </button>
                         <div className="flex flex-col sm:flex-row gap-4 overflow-x-clip overflow-y-visible pt-2 pb-2 -mt-2 -mb-2">
-                          {searchResults.filter(r => r.type === 'treasury').slice(0, 5).map((result) => (
-                            result.spaceData && (
-                              <div key={result.id} className="w-full sm:w-[calc(25%-12px)] sm:min-w-[280px] flex-shrink-0" onClick={() => handleResultClick(result)}>
-                                <TreasuryCard space={result.spaceData} />
-                              </div>
-                            )
+                          {spaceResults.items.slice(0, 5).map((space) => (
+                            <div key={space.id} className="w-full sm:w-[calc(25%-12px)] sm:min-w-[280px] flex-shrink-0" onClick={() => navigate(`/treasury/${space.namespace}`)}>
+                              <TreasuryCard space={space as SpaceData} />
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
 
                     {/* Users Section */}
-                    {searchResults.filter(r => r.type === 'user').length > 0 && (
+                    {userResults.items.length > 0 && (
                       <div>
                         <button
-                          onClick={() => setActiveTab('users')}
+                          onClick={() => handleTabChange('users')}
                           className="flex items-center mb-3 hover:opacity-80 transition-opacity"
                         >
                           <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px]">
                             Users
                           </span>
                           <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[14px] ml-4 flex items-center gap-1">
-                            Show all
+                            Show all ({userResults.totalCount})
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="9 18 15 12 9 6"></polyline>
                             </svg>
                           </span>
                         </button>
                         <div className="flex flex-col sm:flex-row gap-4 overflow-x-clip overflow-y-visible pt-2 pb-2 -mt-2 -mb-2">
-                          {searchResults.filter(r => r.type === 'user').slice(0, 6).map((result) => (
+                          {userResults.items.slice(0, 6).map((user) => (
                             <button
-                              key={result.id}
-                              onClick={() => handleResultClick(result)}
+                              key={user.id}
+                              onClick={() => navigate(`/user/${user.namespace}`)}
                               className="w-full sm:w-[calc((100%-80px)/6)] sm:min-w-[150px] flex-shrink-0 bg-white rounded-lg overflow-hidden hover:shadow-[1px_1px_10px_#c5c5c5] transition-all duration-200 text-left"
                             >
                               <div className="p-4 flex flex-col items-center text-center">
                                 <div className="w-14 h-14 rounded-full overflow-hidden mb-2 ring-2 ring-gray-100">
                                   <img
-                                    src={result.image || 'https://via.placeholder.com/80'}
-                                    alt={result.title}
+                                    src={user.faceUrl || profileDefaultAvatar}
+                                    alt={user.username}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
                                 <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base mb-1">
-                                  {result.title}
+                                  {user.username}
                                 </h3>
-                                <p className="text-sm text-gray-400 mb-2">@{result.namespace}</p>
-                                {result.articlesCount !== undefined && (
+                                <p className="text-sm text-gray-400 mb-2">@{user.namespace}</p>
+                                {user.articleCount !== undefined && (
                                   <div className="text-xs text-gray-500">
-                                    <strong className="text-dark-grey text-sm">{result.articlesCount}</strong> works
+                                    <strong className="text-dark-grey text-sm">{user.articleCount}</strong> works
                                   </div>
                                 )}
                               </div>
@@ -670,86 +601,117 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       </div>
                     )}
 
-                    {searchResults.length === 0 && (
+                    {articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 && !isSearching && (
                       <div className="py-8 text-center">
                         <p className="text-gray-500">No results found for "{searchQuery}"</p>
                       </div>
                     )}
                   </div>
-                ) : filteredResults.length > 0 ? (
-                  /* Individual Tab Layout */
-                  <div className={`grid gap-4 ${
-                    activeTab === 'users'
-                      ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7'
-                      : activeTab === 'treasuries'
-                        ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
-                        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                  }`}>
-                    {filteredResults.map((result) => (
-                      <div key={result.id}>
-                        {/* Article/Work Card - Using ArticleCard component */}
-                        {result.type === 'article' && (
-                          <div className="transform origin-top scale-[0.85] xl:scale-100">
-                            <ArticleCard
-                              article={{
-                                id: result.id,
-                                title: result.title,
-                                description: result.description || '',
-                                coverImage: result.coverImage || '',
-                                category: result.category || '',
-                                categoryColor: result.categoryColor,
-                                userName: result.userName || '',
-                                userAvatar: result.userAvatar || '',
-                                namespace: result.namespace,
-                                date: result.date || '',
-                                treasureCount: result.treasureCount || 0,
-                                visitCount: result.visitCount || '0',
-                                isLiked: result.isLiked,
-                                website: result.website,
-                              }}
-                              layout="discovery"
-                              actions={{ showTreasure: true, showVisits: true }}
-                            />
-                          </div>
-                        )}
-
-                        {/* Treasury Card - Using TreasuryCard component */}
-                        {result.type === 'treasury' && result.spaceData && (
-                          <div onClick={() => handleResultClick(result)}>
-                            <TreasuryCard
-                              space={result.spaceData}
-                            />
-                          </div>
-                        )}
-
-                        {/* User Card */}
-                        {result.type === 'user' && (
-                          <button
-                            onClick={() => handleResultClick(result)}
-                            className="w-full max-w-[200px] mx-auto bg-white rounded-lg overflow-hidden hover:shadow-[1px_1px_10px_#c5c5c5] transition-all duration-200 text-left"
-                          >
-                            <div className="p-4 flex flex-col items-center text-center">
-                              <div className="w-14 h-14 rounded-full overflow-hidden mb-2 ring-2 ring-gray-100">
-                                <img
-                                  src={result.image || 'https://via.placeholder.com/80'}
-                                  alt={result.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base mb-1">
-                                {result.title}
-                              </h3>
-                              <p className="text-sm text-gray-400 mb-2">@{result.namespace}</p>
-                              {result.articlesCount !== undefined && (
-                                <div className="text-xs text-gray-500">
-                                  <strong className="text-dark-grey text-sm">{result.articlesCount}</strong> works
-                                </div>
-                              )}
-                            </div>
-                          </button>
-                        )}
+                ) : activeTab === 'works' && articleResults.items.length > 0 ? (
+                  /* Works Tab */
+                  <div>
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {articleResults.items.map((article) => (
+                        <div key={article.uuid} className="transform origin-top scale-[0.85] xl:scale-100">
+                          <ArticleCard
+                            article={{
+                              id: article.uuid,
+                              title: article.title,
+                              description: article.content || '',
+                              coverImage: article.coverUrl || '',
+                              category: article.categoryInfo?.name || '',
+                              categoryColor: article.categoryInfo?.color,
+                              userName: article.authorInfo?.username || '',
+                              userAvatar: article.authorInfo?.faceUrl || '',
+                              namespace: article.authorInfo?.namespace,
+                              date: article.createAt ? new Date(article.createAt * 1000).toLocaleDateString() : '',
+                              treasureCount: article.likeCount || 0,
+                              visitCount: String(article.viewCount || 0),
+                              isLiked: article.isLiked,
+                              website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : '',
+                            }}
+                            layout="discovery"
+                            actions={{ showTreasure: true, showVisits: true }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {articleResults.hasMore && (
+                      <div className="flex justify-center mt-6">
+                        <button
+                          onClick={() => loadMore('works')}
+                          disabled={isSearching}
+                          className="px-6 py-2 text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
+                        >
+                          {isSearching ? 'Loading...' : 'Load more'}
+                        </button>
                       </div>
-                    ))}
+                    )}
+                  </div>
+                ) : activeTab === 'treasuries' && spaceResults.items.length > 0 ? (
+                  /* Treasuries Tab */
+                  <div>
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                      {spaceResults.items.map((space) => (
+                        <div key={space.id} onClick={() => navigate(`/treasury/${space.namespace}`)}>
+                          <TreasuryCard space={space as SpaceData} />
+                        </div>
+                      ))}
+                    </div>
+                    {spaceResults.hasMore && (
+                      <div className="flex justify-center mt-6">
+                        <button
+                          onClick={() => loadMore('treasuries')}
+                          disabled={isSearching}
+                          className="px-6 py-2 text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
+                        >
+                          {isSearching ? 'Loading...' : 'Load more'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : activeTab === 'users' && userResults.items.length > 0 ? (
+                  /* Users Tab */
+                  <div>
+                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+                      {userResults.items.map((user) => (
+                        <button
+                          key={user.id}
+                          onClick={() => navigate(`/user/${user.namespace}`)}
+                          className="w-full max-w-[200px] mx-auto bg-white rounded-lg overflow-hidden hover:shadow-[1px_1px_10px_#c5c5c5] transition-all duration-200 text-left"
+                        >
+                          <div className="p-4 flex flex-col items-center text-center">
+                            <div className="w-14 h-14 rounded-full overflow-hidden mb-2 ring-2 ring-gray-100">
+                              <img
+                                src={user.faceUrl || profileDefaultAvatar}
+                                alt={user.username}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base mb-1">
+                              {user.username}
+                            </h3>
+                            <p className="text-sm text-gray-400 mb-2">@{user.namespace}</p>
+                            {user.articleCount !== undefined && (
+                              <div className="text-xs text-gray-500">
+                                <strong className="text-dark-grey text-sm">{user.articleCount}</strong> works
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {userResults.hasMore && (
+                      <div className="flex justify-center mt-6">
+                        <button
+                          onClick={() => loadMore('users')}
+                          disabled={isSearching}
+                          className="px-6 py-2 text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
+                        >
+                          {isSearching ? 'Loading...' : 'Load more'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="py-8 text-center">
