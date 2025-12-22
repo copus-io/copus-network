@@ -409,6 +409,172 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     setResizeHandle(null);
   };
 
+  // Touch event handlers for mobile support
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    const handle = getResizeHandle(x, y);
+    if (handle) {
+      setResizeHandle(handle);
+      setIsDragging(true);
+      setDragStart({ x, y });
+      setOriginalCropArea({ ...cropArea });
+    } else {
+      // If not clicking on resize handle, start image dragging
+      setIsDragging(true);
+      setDragStart({ x, y });
+      setResizeHandle(null);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    // If no resize handle, handle image dragging
+    if (!resizeHandle) {
+      const dx = x - dragStart.x;
+      const dy = y - dragStart.y;
+
+      setOffset(prev => ({
+        x: prev.x + dx,
+        y: prev.y + dy
+      }));
+
+      setDragStart({ x, y });
+
+      // Redraw canvas using cached image
+      const ctx = canvas.getContext('2d');
+      if (!ctx || !loadedImageRef.current) return;
+
+      drawCanvas(ctx, loadedImageRef.current, cropArea);
+      return;
+    }
+
+    const dx = x - dragStart.x;
+    const dy = y - dragStart.y;
+
+    let newCropArea = { ...originalCropArea };
+
+    // Adjust crop area based on drag handle type
+    switch (resizeHandle) {
+      case 'move':
+        newCropArea.x = Math.max(0, Math.min(originalCropArea.x + dx, imgDimensions.width - originalCropArea.width));
+        newCropArea.y = Math.max(0, Math.min(originalCropArea.y + dy, imgDimensions.height - originalCropArea.height));
+        break;
+
+      case 'nw':
+        newCropArea.x = Math.max(0, originalCropArea.x + dx);
+        newCropArea.y = Math.max(0, originalCropArea.y + dy);
+        newCropArea.width = Math.max(50, originalCropArea.width - dx);
+        newCropArea.height = Math.max(50, originalCropArea.height - dy);
+        break;
+
+      case 'n':
+        newCropArea.y = Math.max(0, originalCropArea.y + dy);
+        newCropArea.height = Math.max(50, originalCropArea.height - dy);
+        break;
+
+      case 'ne':
+        newCropArea.y = Math.max(0, originalCropArea.y + dy);
+        newCropArea.width = Math.max(50, Math.min(originalCropArea.width + dx, imgDimensions.width - originalCropArea.x));
+        newCropArea.height = Math.max(50, originalCropArea.height - dy);
+        break;
+
+      case 'e':
+        newCropArea.width = Math.max(50, Math.min(originalCropArea.width + dx, imgDimensions.width - originalCropArea.x));
+        break;
+
+      case 'se':
+        newCropArea.width = Math.max(50, Math.min(originalCropArea.width + dx, imgDimensions.width - originalCropArea.x));
+        newCropArea.height = Math.max(50, Math.min(originalCropArea.height + dy, imgDimensions.height - originalCropArea.y));
+        break;
+
+      case 's':
+        newCropArea.height = Math.max(50, Math.min(originalCropArea.height + dy, imgDimensions.height - originalCropArea.y));
+        break;
+
+      case 'sw':
+        newCropArea.x = Math.max(0, originalCropArea.x + dx);
+        newCropArea.width = Math.max(50, originalCropArea.width - dx);
+        newCropArea.height = Math.max(50, Math.min(originalCropArea.height + dy, imgDimensions.height - originalCropArea.y));
+        break;
+
+      case 'w':
+        newCropArea.x = Math.max(0, originalCropArea.x + dx);
+        newCropArea.width = Math.max(50, originalCropArea.width - dx);
+        break;
+    }
+
+    // If aspect ratio is locked, adjust size to maintain proportions
+    if (aspectRatio && resizeHandle !== 'move') {
+      if (['nw', 'ne', 'se', 'sw'].includes(resizeHandle)) {
+        const widthChange = Math.abs(dx);
+        const heightChange = Math.abs(dy);
+
+        if (widthChange > heightChange) {
+          newCropArea.height = newCropArea.width / aspectRatio;
+        } else {
+          newCropArea.width = newCropArea.height * aspectRatio;
+        }
+
+        if (['nw', 'sw'].includes(resizeHandle)) {
+          const widthDiff = newCropArea.width - originalCropArea.width;
+          newCropArea.x = originalCropArea.x - widthDiff;
+        }
+
+        if (['nw', 'ne'].includes(resizeHandle)) {
+          const heightDiff = newCropArea.height - originalCropArea.height;
+          newCropArea.y = originalCropArea.y - heightDiff;
+        }
+      } else if (['n', 's'].includes(resizeHandle)) {
+        const newWidth = newCropArea.height * aspectRatio;
+        const widthDiff = newWidth - newCropArea.width;
+        newCropArea.x = Math.max(0, newCropArea.x - widthDiff / 2);
+        newCropArea.width = newWidth;
+      } else if (['e', 'w'].includes(resizeHandle)) {
+        const newHeight = newCropArea.width / aspectRatio;
+        const heightDiff = newHeight - newCropArea.height;
+        newCropArea.y = Math.max(0, newCropArea.y - heightDiff / 2);
+        newCropArea.height = newHeight;
+      }
+    }
+
+    // Ensure crop area stays within image bounds
+    newCropArea.x = Math.max(0, Math.min(newCropArea.x, imgDimensions.width - newCropArea.width));
+    newCropArea.y = Math.max(0, Math.min(newCropArea.y, imgDimensions.height - newCropArea.height));
+    newCropArea.width = Math.min(newCropArea.width, imgDimensions.width - newCropArea.x);
+    newCropArea.height = Math.min(newCropArea.height, imgDimensions.height - newCropArea.y);
+
+    setCropArea(newCropArea);
+
+    // Redraw canvas using cached image
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !loadedImageRef.current) return;
+
+    drawCanvas(ctx, loadedImageRef.current, newCropArea);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    setResizeHandle(null);
+  };
+
   // Handle mouse wheel zoom
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
@@ -613,7 +779,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         <div className="flex justify-center mb-4">
           <canvas
             ref={canvasRef}
-            className="border border-gray-300"
+            className="border border-gray-300 touch-none"
             onMouseDown={handleMouseDown}
             onMouseMove={(e) => {
               handleMouseHover(e);
@@ -622,6 +788,9 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
             onWheel={handleWheel}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
         </div>
 
