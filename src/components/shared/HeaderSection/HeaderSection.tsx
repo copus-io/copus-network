@@ -385,21 +385,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             {/* Search History Bubbles */}
             {!searchQuery && !showResults && searchHistory.length > 0 && (
               <div className="px-[30px] py-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-500 [font-family:'Lato',Helvetica]">Recent searches</span>
-                  <button
-                    onClick={() => saveSearchHistory([])}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    title="Clear all"
-                  >
-                    <img
-                      src={getIconUrl('DELETE')}
-                      alt="Clear all"
-                      className="w-4 h-4 opacity-50 hover:opacity-100"
-                    />
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {searchHistory.map((item, index) => (
                     <div
                       key={index}
@@ -425,6 +411,17 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       </button>
                     </div>
                   ))}
+                  <button
+                    onClick={() => saveSearchHistory([])}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Clear all"
+                  >
+                    <img
+                      src={getIconUrl('DELETE')}
+                      alt="Clear all"
+                      className="w-4 h-4 opacity-50 hover:opacity-100"
+                    />
+                  </button>
                 </div>
               </div>
             )}
