@@ -329,394 +329,271 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
       />
 
       <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[20px] lg:pb-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
-        {/* Search Overlay - 100% on mobile, 80% on desktop */}
-        {isSearchOpen && (
-          <div className={`fixed inset-x-0 top-0 ${showResults ? 'h-screen lg:h-[80vh]' : 'h-auto pb-5'} bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] z-50 flex flex-col shadow-lg lg:rounded-b-2xl`} ref={searchRef}>
-            {/* Search Header */}
-            <div className="flex items-center gap-3 px-[30px] pt-4 pb-1">
-              <button
-                type="button"
-                onClick={handleCloseSearch}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <ChevronLeft className="w-8 h-8" />
-              </button>
-
-              <form onSubmit={handleSearchSubmit} className="flex-1 flex items-center">
-                <div className="flex-1 flex items-center bg-white rounded-[15px] px-4 py-2">
-                  <Search className="w-5 h-5 text-gray-400 mr-3" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      if (!e.target.value) {
-                        setShowResults(false);
-                      }
-                    }}
-                    placeholder="Search..."
-                    className="flex-1 bg-transparent outline-none text-base text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setSuggestions([]);
-                        setShowResults(false);
-                        searchInputRef.current?.focus();
-                      }}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
+        {/* Search Results Dropdown */}
+        {showResults && (
+          <div className="fixed right-[30px] top-[70px] w-[600px] max-h-[70vh] bg-white rounded-2xl shadow-xl border border-gray-200 z-50 flex flex-col overflow-hidden">
+            {/* Tab Filters */}
+            <div className="flex items-center gap-3 px-[20px] py-3 border-b border-gray-100">
+              {searchTabs.map((tab) => (
                 <button
-                  type="submit"
-                  className="ml-4 text-gray-600 hover:text-dark-grey font-medium [font-family:'Lato',Helvetica]"
+                  key={tab.key}
+                  onClick={() => handleTabChange(tab.key)}
+                  className={`text-sm [font-family:'Lato',Helvetica] px-4 py-1.5 rounded-full border transition-colors ${
+                    activeTab === tab.key
+                      ? 'text-red border-red bg-[#F23A001A] font-bold'
+                      : 'text-gray-500 border-gray-300 hover:border-gray-400 hover:text-gray-600 font-medium'
+                  }`}
                 >
-                  Search
+                  {tab.label}
                 </button>
-              </form>
+              ))}
+              <button
+                onClick={handleCloseSearch}
+                className="ml-auto text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Search History Bubbles */}
-            {!searchQuery && !showResults && searchHistory.length > 0 && (
-              <div className="px-[30px] py-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {searchHistory.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
-                    >
-                      <span
-                        onClick={() => {
-                          setSearchQuery(item);
-                          performSearch(item);
-                        }}
-                        className="text-sm text-dark-grey [font-family:'Lato',Helvetica]"
-                      >
-                        {item}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFromSearchHistory(item);
-                        }}
-                        className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => saveSearchHistory([])}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    title="Clear all"
-                  >
-                    <img
-                      src={getIconUrl('DELETE')}
-                      alt="Clear all"
-                      className="w-4 h-4 opacity-50 hover:opacity-100"
-                    />
-                  </button>
+            {/* Search Results Content - Now in dropdown */}
+            <div className="search-results-container flex-1 overflow-y-auto px-[20px] py-4">
+              {isSearching && articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 ? (
+                <div className="py-8 text-center">
+                  <div className="animate-spin w-6 h-6 border-2 border-red border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p className="text-gray-500">Searching...</p>
                 </div>
-              </div>
-            )}
-
-            {/* Tab Filters */}
-            {showResults && (
-              <div className="flex items-center gap-3 px-[30px] py-2">
-                {searchTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => handleTabChange(tab.key)}
-                    className={`text-sm [font-family:'Lato',Helvetica] px-4 py-1.5 rounded-full border transition-colors ${
-                      activeTab === tab.key
-                        ? 'text-red border-red bg-[#F23A001A] font-bold'
-                        : 'text-gray-500 border-gray-300 hover:border-gray-400 hover:text-gray-600 font-medium'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Suggestions */}
-            {suggestions.length > 0 && !showResults && (
-              <div className="flex-1 overflow-y-auto">
-                {suggestions.map((suggestion) => (
-                  <button
-                    key={suggestion.id}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full px-[30px] py-3 flex items-center gap-3 hover:bg-gray-50 text-left"
-                  >
-                    <Search className="w-4 h-4 text-gray-400" />
+              ) : activeTab === 'all' ? (
+                /* All Tab - Sectioned Layout */
+                <div className="space-y-6">
+                  {/* Works Section */}
+                  {articleResults.items.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium text-dark-grey">{suggestion.title}</p>
-                      {suggestion.subtitle && (
-                        <p className="text-xs text-gray-500">{suggestion.subtitle}</p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Search Results */}
-            {showResults && (
-              <div className="search-results-container flex-1 overflow-y-auto px-[30px] pt-2 pb-4">
-                {isSearching && articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <div className="animate-spin w-6 h-6 border-2 border-red border-t-transparent rounded-full mx-auto mb-2"></div>
-                    <p className="text-gray-500">Searching...</p>
-                  </div>
-                ) : activeTab === 'all' ? (
-                  /* All Tab - Sectioned Layout */
-                  <div className="space-y-10">
-                    {/* Works Section */}
-                    {articleResults.items.length > 0 && (
-                      <div>
-                        <button
-                          onClick={() => handleTabChange('works')}
-                          className="flex items-center mb-3 hover:opacity-80 transition-opacity"
-                        >
-                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px]">
-                            Works
-                          </span>
-                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[14px] ml-4 flex items-center gap-1">
-                            Show all ({articleResults.totalCount})
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                          </span>
-                        </button>
-                        <div className="flex flex-col sm:flex-row gap-4 overflow-x-clip overflow-y-visible pt-2 pb-2 -mt-2 -mb-2">
-                          {articleResults.items.slice(0, 4).map((article) => (
-                            <div key={article.uuid} className="w-full sm:w-[calc(25%-12px)] sm:min-w-[280px] flex-shrink-0 transform origin-top scale-100 sm:scale-[0.85] xl:scale-100">
-                              <ArticleCard
-                                article={{
-                                  id: article.uuid,
-                                  title: article.title,
-                                  description: article.content || '',
-                                  coverImage: article.coverUrl || '',
-                                  category: article.categoryInfo?.name || '',
-                                  categoryColor: article.categoryInfo?.color,
-                                  userName: article.authorInfo?.username || '',
-                                  userAvatar: article.authorInfo?.faceUrl || '',
-                                  namespace: article.authorInfo?.namespace,
-                                  date: article.createAt ? new Date(article.createAt * 1000).toLocaleDateString() : '',
-                                  treasureCount: article.likeCount || 0,
-                                  visitCount: String(article.viewCount || 0),
-                                  isLiked: article.isLiked,
-                                  website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : '',
-                                }}
-                                layout="discovery"
-                                actions={{ showTreasure: true, showVisits: true }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Treasuries Section */}
-                    {spaceResults.items.length > 0 && (
-                      <div>
-                        <button
-                          onClick={() => handleTabChange('treasuries')}
-                          className="flex items-center mb-3 hover:opacity-80 transition-opacity"
-                        >
-                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px]">
-                            Treasuries
-                          </span>
-                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[14px] ml-4 flex items-center gap-1">
-                            Show all ({spaceResults.totalCount})
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                          </span>
-                        </button>
-                        <div className="flex flex-col sm:flex-row gap-4 overflow-x-clip overflow-y-visible pt-2 pb-2 -mt-2 -mb-2">
-                          {spaceResults.items.slice(0, 5).map((space) => (
-                            <div key={space.id} className="w-full sm:w-[calc(25%-12px)] sm:min-w-[280px] flex-shrink-0" onClick={() => navigate(`/treasury/${space.namespace}`)}>
-                              <TreasuryCard space={space as SpaceData} />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Users Section */}
-                    {userResults.items.length > 0 && (
-                      <div>
-                        <button
-                          onClick={() => handleTabChange('users')}
-                          className="flex items-center mb-3 hover:opacity-80 transition-opacity"
-                        >
-                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px]">
-                            Users
-                          </span>
-                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[14px] ml-4 flex items-center gap-1">
-                            Show all ({userResults.totalCount})
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                          </span>
-                        </button>
-                        <div className="flex flex-col sm:flex-row gap-4 overflow-x-clip overflow-y-visible pt-2 pb-2 -mt-2 -mb-2">
-                          {userResults.items.slice(0, 6).map((user) => (
-                            <button
-                              key={user.id}
-                              onClick={() => navigate(`/user/${user.namespace}`)}
-                              className="w-full sm:w-[calc((100%-80px)/6)] sm:min-w-[150px] flex-shrink-0 bg-white rounded-lg overflow-hidden hover:shadow-[1px_1px_10px_#c5c5c5] transition-all duration-200 text-left"
-                            >
-                              <div className="p-4 flex flex-col items-center text-center">
-                                <div className="w-14 h-14 rounded-full overflow-hidden mb-2 ring-2 ring-gray-100">
-                                  <img
-                                    src={user.faceUrl || profileDefaultAvatar}
-                                    alt={user.username}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base mb-1">
-                                  {user.username}
-                                </h3>
-                                <p className="text-sm text-gray-400 mb-2">@{user.namespace}</p>
-                                {user.articleCount !== undefined && (
-                                  <div className="text-xs text-gray-500">
-                                    <strong className="text-dark-grey text-sm">{user.articleCount}</strong> works
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 && !isSearching && (
-                      <div className="py-8 text-center">
-                        <p className="text-gray-500">No results found for "{searchQuery}"</p>
-                      </div>
-                    )}
-                  </div>
-                ) : activeTab === 'works' && articleResults.items.length > 0 ? (
-                  /* Works Tab */
-                  <div>
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {articleResults.items.map((article) => (
-                        <div key={article.uuid} className="transform origin-top scale-[0.85] xl:scale-100">
-                          <ArticleCard
-                            article={{
+                      <button
+                        onClick={() => handleTabChange('works')}
+                        className="flex items-center mb-3 hover:opacity-80 transition-opacity"
+                      >
+                        <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[14px]">
+                          Works
+                        </span>
+                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[12px] ml-3 flex items-center gap-1">
+                          Show all ({articleResults.totalCount})
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                          </svg>
+                        </span>
+                      </button>
+                      <div className="grid gap-3 grid-cols-2">
+                        {articleResults.items.slice(0, 4).map((article) => (
+                          <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                            <ArticleCard article={{
                               id: article.uuid,
+                              uuid: article.uuid,
                               title: article.title,
-                              description: article.content || '',
-                              coverImage: article.coverUrl || '',
+                              description: article.content,
+                              coverImage: article.coverUrl,
                               category: article.categoryInfo?.name || '',
                               categoryColor: article.categoryInfo?.color,
                               userName: article.authorInfo?.username || '',
                               userAvatar: article.authorInfo?.faceUrl || '',
-                              namespace: article.authorInfo?.namespace,
-                              date: article.createAt ? new Date(article.createAt * 1000).toLocaleDateString() : '',
-                              treasureCount: article.likeCount || 0,
-                              visitCount: String(article.viewCount || 0),
+                              userId: article.authorInfo?.id,
+                              userNamespace: article.authorInfo?.namespace,
+                              date: new Date(article.createAt).toLocaleDateString(),
+                              treasureCount: article.likeCount,
+                              visitCount: article.viewCount?.toString() || '0',
                               isLiked: article.isLiked,
-                              website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : '',
-                            }}
-                            layout="discovery"
-                            actions={{ showTreasure: true, showVisits: true }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    {articleResults.hasMore && (
-                      <div className="flex justify-center mt-6">
-                        <button
-                          onClick={() => loadMore('works')}
-                          disabled={isSearching}
-                          className="px-6 py-2 text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
-                        >
-                          {isSearching ? 'Loading...' : 'Load more'}
-                        </button>
+                              targetUrl: article.targetUrl,
+                            }} layout="compact" />
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                ) : activeTab === 'treasuries' && spaceResults.items.length > 0 ? (
-                  /* Treasuries Tab */
-                  <div>
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                      {spaceResults.items.map((space) => (
-                        <div key={space.id} onClick={() => navigate(`/treasury/${space.namespace}`)}>
-                          <TreasuryCard space={space as SpaceData} />
-                        </div>
-                      ))}
                     </div>
-                    {spaceResults.hasMore && (
-                      <div className="flex justify-center mt-6">
-                        <button
-                          onClick={() => loadMore('treasuries')}
-                          disabled={isSearching}
-                          className="px-6 py-2 text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
-                        >
-                          {isSearching ? 'Loading...' : 'Load more'}
-                        </button>
+                  )}
+
+                  {/* Treasuries Section */}
+                  {spaceResults.items.length > 0 && (
+                    <div>
+                      <button
+                        onClick={() => handleTabChange('treasuries')}
+                        className="flex items-center mb-3 hover:opacity-80 transition-opacity"
+                      >
+                        <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[14px]">
+                          Treasuries
+                        </span>
+                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[12px] ml-3 flex items-center gap-1">
+                          Show all ({spaceResults.totalCount})
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                          </svg>
+                        </span>
+                      </button>
+                      <div className="grid gap-3 grid-cols-2">
+                        {spaceResults.items.slice(0, 4).map((space) => (
+                          <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                            <TreasuryCard space={space as SpaceData} />
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                ) : activeTab === 'users' && userResults.items.length > 0 ? (
-                  /* Users Tab */
-                  <div>
-                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
-                      {userResults.items.map((user) => (
-                        <button
-                          key={user.id}
-                          onClick={() => navigate(`/user/${user.namespace}`)}
-                          className="w-full max-w-[200px] mx-auto bg-white rounded-lg overflow-hidden hover:shadow-[1px_1px_10px_#c5c5c5] transition-all duration-200 text-left"
-                        >
-                          <div className="p-4 flex flex-col items-center text-center">
-                            <div className="w-14 h-14 rounded-full overflow-hidden mb-2 ring-2 ring-gray-100">
-                              <img
-                                src={user.faceUrl || profileDefaultAvatar}
-                                alt={user.username}
-                                className="w-full h-full object-cover"
-                              />
+                    </div>
+                  )}
+
+                  {/* Users Section */}
+                  {userResults.items.length > 0 && (
+                    <div>
+                      <button
+                        onClick={() => handleTabChange('users')}
+                        className="flex items-center mb-3 hover:opacity-80 transition-opacity"
+                      >
+                        <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[14px]">
+                          Users
+                        </span>
+                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[12px] ml-3 flex items-center gap-1">
+                          Show all ({userResults.totalCount})
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                          </svg>
+                        </span>
+                      </button>
+                      <div className="grid gap-3 grid-cols-3">
+                        {userResults.items.slice(0, 6).map((user) => (
+                          <button
+                            key={user.id}
+                            onClick={() => { navigate(`/user/${user.namespace}`); handleCloseSearch(); }}
+                            className="bg-gray-50 rounded-lg p-3 hover:shadow-md transition-all duration-200 text-left"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-10 h-10 rounded-full overflow-hidden">
+                                <img
+                                  src={user.faceUrl || profileDefaultAvatar}
+                                  alt={user.username}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-sm truncate">
+                                  {user.username}
+                                </h3>
+                                <p className="text-xs text-gray-400 truncate">@{user.namespace}</p>
+                              </div>
                             </div>
-                            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base mb-1">
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 && (
+                    <div className="py-8 text-center">
+                      <p className="text-gray-500">No results found for "{searchQuery}"</p>
+                    </div>
+                  )}
+                </div>
+              ) : activeTab === 'works' && articleResults.items.length > 0 ? (
+                /* Works Tab */
+                <div>
+                  <div className="grid gap-3 grid-cols-2">
+                    {articleResults.items.map((article) => (
+                      <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                        <ArticleCard article={{
+                          id: article.uuid,
+                          uuid: article.uuid,
+                          title: article.title,
+                          description: article.content,
+                          coverImage: article.coverUrl,
+                          category: article.categoryInfo?.name || '',
+                          categoryColor: article.categoryInfo?.color,
+                          userName: article.authorInfo?.username || '',
+                          userAvatar: article.authorInfo?.faceUrl || '',
+                          userId: article.authorInfo?.id,
+                          userNamespace: article.authorInfo?.namespace,
+                          date: new Date(article.createAt).toLocaleDateString(),
+                          treasureCount: article.likeCount,
+                          visitCount: article.viewCount?.toString() || '0',
+                          isLiked: article.isLiked,
+                          targetUrl: article.targetUrl,
+                        }} layout="compact" />
+                      </div>
+                    ))}
+                  </div>
+                  {articleResults.hasMore && (
+                    <div className="flex justify-center mt-4">
+                      <button
+                        onClick={() => loadMore('works')}
+                        disabled={isSearching}
+                        className="px-4 py-1.5 text-sm text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
+                      >
+                        {isSearching ? 'Loading...' : 'Load more'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : activeTab === 'treasuries' && spaceResults.items.length > 0 ? (
+                /* Treasuries Tab */
+                <div>
+                  <div className="grid gap-3 grid-cols-2">
+                    {spaceResults.items.map((space) => (
+                      <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                        <TreasuryCard space={space as SpaceData} />
+                      </div>
+                    ))}
+                  </div>
+                  {spaceResults.hasMore && (
+                    <div className="flex justify-center mt-4">
+                      <button
+                        onClick={() => loadMore('treasuries')}
+                        disabled={isSearching}
+                        className="px-4 py-1.5 text-sm text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
+                      >
+                        {isSearching ? 'Loading...' : 'Load more'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : activeTab === 'users' && userResults.items.length > 0 ? (
+                /* Users Tab */
+                <div>
+                  <div className="grid gap-3 grid-cols-3">
+                    {userResults.items.map((user) => (
+                      <button
+                        key={user.id}
+                        onClick={() => { navigate(`/user/${user.namespace}`); handleCloseSearch(); }}
+                        className="bg-gray-50 rounded-lg p-3 hover:shadow-md transition-all duration-200 text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-10 h-10 rounded-full overflow-hidden">
+                            <img
+                              src={user.faceUrl || profileDefaultAvatar}
+                              alt={user.username}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-sm truncate">
                               {user.username}
                             </h3>
-                            <p className="text-sm text-gray-400 mb-2">@{user.namespace}</p>
-                            {user.articleCount !== undefined && (
-                              <div className="text-xs text-gray-500">
-                                <strong className="text-dark-grey text-sm">{user.articleCount}</strong> works
-                              </div>
-                            )}
+                            <p className="text-xs text-gray-400 truncate">@{user.namespace}</p>
                           </div>
-                        </button>
-                      ))}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  {userResults.hasMore && (
+                    <div className="flex justify-center mt-4">
+                      <button
+                        onClick={() => loadMore('users')}
+                        disabled={isSearching}
+                        className="px-4 py-1.5 text-sm text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
+                      >
+                        {isSearching ? 'Loading...' : 'Load more'}
+                      </button>
                     </div>
-                    {userResults.hasMore && (
-                      <div className="flex justify-center mt-6">
-                        <button
-                          onClick={() => loadMore('users')}
-                          disabled={isSearching}
-                          className="px-6 py-2 text-red border border-red rounded-full hover:bg-[#F23A001A] transition-colors disabled:opacity-50"
-                        >
-                          {isSearching ? 'Loading...' : 'Load more'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="py-8 text-center">
-                    <p className="text-gray-500">No results found for "{searchQuery}"</p>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <p className="text-gray-500">No results found for "{searchQuery}"</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -788,17 +665,71 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               )}
             </Link>
 
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              className="flex items-center cursor-pointer"
-              aria-label="Search"
-            >
-              <img
-                className="w-[30px] h-[30px] hover:scale-110 transition-transform duration-200"
-                alt="Search"
-                src={searchIcon}
-              />
-            </button>
+            <div className="relative flex items-center" ref={searchRef}>
+              {isSearchOpen ? (
+                <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow-md border border-gray-200 transition-all duration-300" style={{ width: '300px' }}>
+                  <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (!e.target.value) {
+                        setShowResults(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim()) {
+                        performSearch(searchQuery);
+                      } else if (e.key === 'Escape') {
+                        setIsSearchOpen(false);
+                        setSearchQuery('');
+                        setShowResults(false);
+                      }
+                    }}
+                    placeholder="Search..."
+                    className="flex-1 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setShowResults(false);
+                        searchInputRef.current?.focus();
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchQuery('');
+                      setShowResults(false);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 ml-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="flex items-center cursor-pointer"
+                  aria-label="Search"
+                >
+                  <img
+                    className="w-[30px] h-[30px] hover:scale-110 transition-transform duration-200"
+                    alt="Search"
+                    src={searchIcon}
+                  />
+                </button>
+              )}
+            </div>
 
             <div className="relative" ref={menuRef}>
               <button
