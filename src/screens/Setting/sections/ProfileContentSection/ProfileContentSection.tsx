@@ -303,7 +303,10 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       console.log('Profile update result with all fields:', success);
 
       if (success) {
-        // Try to fetch latest user data from server to ensure UI is in sync
+        // Immediately update the user context so UI updates instantly
+        updateUser({ faceUrl: imageUrl });
+
+        // Also try to fetch latest user data from server to ensure full sync
         try {
           await fetchUserInfo();
         } catch (fetchError) {
@@ -355,7 +358,10 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       console.log('User profile update result with all fields:', success);
 
       if (success) {
-        // Try to fetch latest user data from server to ensure UI is in sync
+        // Immediately update the user context so UI updates instantly
+        updateUser({ coverUrl: imageUrl });
+
+        // Also try to fetch latest user data from server to ensure full sync
         try {
           await fetchUserInfo();
         } catch (fetchError) {
