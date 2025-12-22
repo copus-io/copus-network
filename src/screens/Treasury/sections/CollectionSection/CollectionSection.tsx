@@ -48,8 +48,8 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
         {/* Main item on the left */}
         <article className="inline-flex flex-col items-start justify-center gap-[5px] px-[15px] py-0 relative self-stretch flex-[0_0_auto] rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <div
-            className="flex flex-col w-[259px] h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
-            style={{ backgroundImage: `url(${mainItem.coverImage})` }}
+            className="flex flex-col w-[259px] items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
+            style={{ backgroundImage: `url(${mainItem.coverImage})`, aspectRatio: '4 / 3' }}
           >
             {mainItem.website && (
             <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
@@ -84,8 +84,8 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
                 } flex flex-col items-start gap-[5px] relative self-stretch w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
               >
                 <div
-                  className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
-                  style={{ backgroundImage: `url(${item.coverImage})` }}
+                  className="p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
+                  style={{ backgroundImage: `url(${item.coverImage})`, aspectRatio: '16 / 9' }}
                 >
                   <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
                     <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white/80 rounded-[15px] overflow-hidden relative flex-[0_0_auto]">
