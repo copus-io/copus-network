@@ -15,6 +15,7 @@ import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { CollectTreasureModal } from "../../components/CollectTreasureModal";
 import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
+import { CommentSection } from "../../components/CommentSection";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
@@ -1776,8 +1777,10 @@ export const Content = (): JSX.Element => {
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection articleAuthorId={content?.userId} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[120px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
-          <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
+        <main className="flex flex-col lg:flex-row items-start pt-[70px] lg:pt-[120px] pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow">
+          {/* Main Content Column */}
+          <div className="flex-1 w-full">
+            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b [border-bottom-style:solid] border-[#E0E0E0]">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
@@ -1811,7 +1814,7 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <div className="relative w-full lg:w-[364px] h-[205px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
+                <div className="relative w-full lg:w-[280px] h-[158px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
                      style={{
                        backgroundImage: `url(${getValidDetailImageUrl(content.coverImage)})`
                      }}
@@ -1871,7 +1874,7 @@ export const Content = (): JSX.Element => {
                     src="https://c.animaapp.com/5EW1c9Rn/img/ic-view.svg"
                   />
 
-                  <span className="mt-[-1.00px] relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg text-center tracking-[0] leading-5 whitespace-nowrap">
+                  <span className="mt-[-1.00px] relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm text-center tracking-[0] leading-5 whitespace-nowrap">
                     {article?.viewCount || 0}
                   </span>
                 </div>
@@ -1898,24 +1901,36 @@ export const Content = (): JSX.Element => {
                 </div>
               </div>
             </div>
-          </article>
+            </article>
 
-          {/* Collected in Section */}
+            {/* Comment Section */}
+            {article && (
+              <CommentSection
+                targetType="article"
+                targetId={article.uuid}
+                className="w-full mt-8"
+              />
+            )}
+          </div>
+
+          {/* Right Sidebar - Collected in Section */}
           {collectedInData.length > 0 && (
-            <section className="flex flex-col items-start gap-[15px] w-full pt-[15px]">
-              <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px]">
-                Collected in
-              </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full">
-                {collectedInData.map((space) => (
-                  <TreasuryCard
-                    key={space.namespace || space.id?.toString()}
-                    space={space}
-                    onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
-                  />
-                ))}
+            <aside className="w-full lg:w-[250px] xl:w-[290px] lg:ml-[20px] xl:ml-[50px] lg:flex-shrink-0 lg:border-l lg:border-[#D3D3D3] lg:pl-[30px] lg:sticky lg:top-[70px] lg:self-start lg:h-[calc(100vh-70px)] lg:overflow-y-auto">
+              <div className="flex flex-col items-start gap-[15px] pb-4">
+                <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px]">
+                  Collected in
+                </h2>
+                <div className="flex flex-col gap-4 w-full pb-[100px]">
+                  {collectedInData.map((space) => (
+                    <TreasuryCard
+                      key={space.namespace || space.id?.toString()}
+                      space={space}
+                      onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
+                    />
+                  ))}
+                </div>
               </div>
-            </section>
+            </aside>
           )}
         </main>
 
@@ -2102,6 +2117,7 @@ export const Content = (): JSX.Element => {
             }}
           />
         )}
+
       </div>
     </div>
   );

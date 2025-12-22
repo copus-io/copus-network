@@ -168,6 +168,7 @@ export interface ArticleDetailResponse {
   title: string;
   uuid: string;
   viewCount: number;
+  commentCount: number; // Total number of comments for this article
   /**
    * Arweave chain ID for onchain content storage
    * @see https://arseed.web3infra.dev/
