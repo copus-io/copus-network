@@ -77,6 +77,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [isSaving, setIsSaving] = useState(false);
   const [showCoverUploader, setShowCoverUploader] = useState(false);
   const [showAvatarUploader, setShowAvatarUploader] = useState(false);
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [isCoverSaving, setIsCoverSaving] = useState(false);
 
   // 消息通知设置状态
   const [notificationSettings, setNotificationSettings] = useState<Array<{ isOpen: boolean; msgType: number }>>([]);
@@ -272,112 +274,68 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   };
 
   const handleProfileImageUploaded = async (imageUrl: string) => {
+    setIsAvatarSaving(true);
     try {
-      console.log('Avatar uploaded successfully, updating user profile:', imageUrl);
-
-      // Update local state
-      setProfileImage(imageUrl);
-
-      // Prepare data to send - ALL 4 fields
-      const updateData = {
+      // Call API to update user profile
+      const success = await AuthService.updateUserInfo({
         userName: formUsername || user?.username || '',
         bio: formBio || user?.bio || '',
         faceUrl: imageUrl,
         coverUrl: bannerImage || user?.coverUrl || ''
-      };
-
-      console.log('🔥 Sending ALL 4 fields to API:', {
-        userName: updateData.userName,
-        bio: updateData.bio,
-        faceUrl: updateData.faceUrl ? `${updateData.faceUrl.substring(0, 50)}...` : 'empty',
-        coverUrl: updateData.coverUrl ? `${updateData.coverUrl.substring(0, 50)}...` : 'empty',
-        formUsernameValue: formUsername,
-        userContextUsername: user?.username,
-        formBioValue: formBio,
-        userContextBio: user?.bio
       });
 
-      // Call API to update user profile - send ALL 4 fields to prevent data loss
-      const success = await AuthService.updateUserInfo(updateData);
-
-      console.log('Profile update result with all fields:', success);
-
-      if (success) {
-        // Immediately update the user context so UI updates instantly
-        updateUser({ faceUrl: imageUrl });
-
-        // Also try to fetch latest user data from server to ensure full sync
-        try {
-          await fetchUserInfo();
-        } catch (fetchError) {
-          console.warn('Failed to refresh user info after avatar update, but update was successful:', fetchError);
-          // Don't throw - the update was successful even if we can't refresh
-        }
-
-        // Close upload modal
-        setShowAvatarUploader(false);
-        showToast('Avatar updated successfully!', 'success');
-      } else {
-        throw new Error('Failed to update user avatar');
+      if (!success) {
+        throw new Error('API returned failure');
       }
+
+      // Update user context and local state
+      updateUser({ faceUrl: imageUrl });
+      setProfileImage(imageUrl);
+
+      // Fetch fresh data from server to ensure sync
+      await fetchUserInfo();
+
+      // Now close modal and show success
+      setShowAvatarUploader(false);
+      showToast('Avatar updated successfully!', 'success');
     } catch (error) {
       console.error('Failed to update avatar:', error);
       showToast('Failed to update avatar, please try again', 'error');
+    } finally {
+      setIsAvatarSaving(false);
     }
   };
 
   const handleBannerImageUploaded = async (imageUrl: string) => {
+    setIsCoverSaving(true);
     try {
-      console.log('Cover image uploaded successfully, updating user profile:', imageUrl);
-
-      // Update local state
-      setBannerImage(imageUrl);
-
-      // Prepare data to send - ALL 4 fields
-      const updateData = {
+      // Call API to update user profile
+      const success = await AuthService.updateUserInfo({
         userName: formUsername || user?.username || '',
         bio: formBio || user?.bio || '',
         faceUrl: profileImage === profileDefaultAvatar ? '' : (profileImage || user?.faceUrl || ''),
         coverUrl: imageUrl
-      };
-
-      console.log('🔥 Sending ALL 4 fields to API:', {
-        userName: updateData.userName,
-        bio: updateData.bio,
-        faceUrl: updateData.faceUrl ? `${updateData.faceUrl.substring(0, 50)}...` : 'empty',
-        coverUrl: updateData.coverUrl ? `${updateData.coverUrl.substring(0, 50)}...` : 'empty',
-        formUsernameValue: formUsername,
-        userContextUsername: user?.username,
-        formBioValue: formBio,
-        userContextBio: user?.bio
       });
 
-      // Call API to update user profile - send ALL 4 fields to prevent data loss
-      const success = await AuthService.updateUserInfo(updateData);
-
-      console.log('User profile update result with all fields:', success);
-
-      if (success) {
-        // Immediately update the user context so UI updates instantly
-        updateUser({ coverUrl: imageUrl });
-
-        // Also try to fetch latest user data from server to ensure full sync
-        try {
-          await fetchUserInfo();
-        } catch (fetchError) {
-          console.warn('Failed to refresh user info after cover update, but update was successful:', fetchError);
-          // Don't throw - the update was successful even if we can't refresh
-        }
-
-        // Close upload modal
-        setShowCoverUploader(false);
-        showToast('Cover image updated successfully!', 'success');
-      } else {
-        throw new Error('Failed to update user profile');
+      if (!success) {
+        throw new Error('API returned failure');
       }
+
+      // Update user context and local state
+      updateUser({ coverUrl: imageUrl });
+      setBannerImage(imageUrl);
+
+      // Fetch fresh data from server to ensure sync
+      await fetchUserInfo();
+
+      // Now close modal and show success
+      setShowCoverUploader(false);
+      showToast('Cover image updated successfully!', 'success');
     } catch (error) {
       console.error('Failed to update cover image:', error);
       showToast('Failed to update cover image, please try again', 'error');
+    } finally {
+      setIsCoverSaving(false);
     }
   };
 
@@ -893,7 +851,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       {/* Cover image upload modal */}
       {showCoverUploader && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 relative">
+            {isCoverSaving && (
+              <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-red border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-gray-600 font-medium">Saving cover image...</span>
+                </div>
+              </div>
+            )}
             <h3 className="text-xl font-semibold mb-4 text-center">Change Cover Image</h3>
             <ImageUploader
               type="banner"
@@ -903,7 +869,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             />
             <button
               onClick={() => setShowCoverUploader(false)}
-              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={isCoverSaving}
+              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
@@ -914,7 +881,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       {/* Avatar upload modal */}
       {showAvatarUploader && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 relative">
+            {isAvatarSaving && (
+              <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-red border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-gray-600 font-medium">Saving avatar...</span>
+                </div>
+              </div>
+            )}
             <h3 className="text-xl font-semibold mb-4 text-center">Change Avatar</h3>
             <ImageUploader
               type="avatar"
@@ -924,7 +899,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             />
             <button
               onClick={() => setShowAvatarUploader(false)}
-              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={isAvatarSaving}
+              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
