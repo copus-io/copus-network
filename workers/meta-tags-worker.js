@@ -134,16 +134,23 @@ export default {
     // Only process /work/:id routes for bots
     const workId = getWorkId(url.pathname);
 
+    console.log(`[Meta Worker] Path: ${url.pathname}, WorkId: ${workId}, IsBot: ${isBot(userAgent)}, UA: ${userAgent.substring(0, 50)}`);
+
     if (workId && isBot(userAgent)) {
       // Determine API base URL based on hostname
       const apiBaseUrl = url.hostname.includes('test')
         ? 'https://api-test.copus.network'
         : 'https://api-prod.copus.network';
 
+      console.log(`[Meta Worker] Fetching article from: ${apiBaseUrl}/client/reader/article/info?uuid=${workId}`);
+
       const article = await fetchArticleData(workId, apiBaseUrl);
+
+      console.log(`[Meta Worker] Article fetched: ${article ? 'YES' : 'NO'}`);
 
       if (article) {
         const html = generateMetaTagsHtml(article, url.toString());
+        console.log(`[Meta Worker] Returning custom HTML with title: ${article.title}`);
         return new Response(html, {
           headers: {
             'Content-Type': 'text/html;charset=UTF-8',
@@ -154,6 +161,7 @@ export default {
     }
 
     // For non-bot requests or if article not found, pass through to origin
+    console.log(`[Meta Worker] Passing through to origin`);
     return fetch(request);
   },
 };
