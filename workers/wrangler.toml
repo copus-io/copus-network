@@ -1,0 +1,13 @@
+name = "copus-meta-tags"
+main = "meta-tags-worker.js"
+compatibility_date = "2024-01-01"
+
+# Production route
+# Uncomment and configure after setting up in Cloudflare dashboard
+# routes = [
+#   { pattern = "copus.network/work/*", zone_name = "copus.network" }
+# ]
+
+# For testing locally
+# [dev]
+# port = 8787
