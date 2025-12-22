@@ -288,14 +288,12 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         throw new Error('API returned failure');
       }
 
-      // Update user context and local state
+      // Update user context with new image URL
+      // This must be done AFTER API success to ensure UI shows new avatar
       updateUser({ faceUrl: imageUrl });
       setProfileImage(imageUrl);
 
-      // Fetch fresh data from server to ensure sync
-      await fetchUserInfo();
-
-      // Now close modal and show success
+      // Close modal and show success
       setShowAvatarUploader(false);
       showToast('Avatar updated successfully!', 'success');
     } catch (error) {
@@ -321,14 +319,11 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         throw new Error('API returned failure');
       }
 
-      // Update user context and local state
+      // Update user context with new image URL
       updateUser({ coverUrl: imageUrl });
       setBannerImage(imageUrl);
 
-      // Fetch fresh data from server to ensure sync
-      await fetchUserInfo();
-
-      // Now close modal and show success
+      // Close modal and show success
       setShowCoverUploader(false);
       showToast('Cover image updated successfully!', 'success');
     } catch (error) {
