@@ -349,7 +349,7 @@ export const IncomeDetailsSection = ({
   };
 
   return (
-    <section className="flex flex-col items-center px-4 sm:px-8 lg:pl-[60px] lg:pr-0 py-0 relative flex-1 grow">
+    <section className="flex flex-col items-center px-4 sm:px-8 lg:px-0 py-0 relative flex-1 grow w-full">
       {/* Stats Cards */}
       <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 lg:gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
         {/* Total Income Card */}
