@@ -331,7 +331,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
       <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[20px] lg:pb-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
         {/* Search Results Dropdown */}
         {showResults && (
-          <div className="fixed right-[30px] top-[70px] w-[600px] max-h-[70vh] bg-white rounded-2xl shadow-xl border border-gray-200 z-50 flex flex-col overflow-hidden">
+          <div className="fixed right-[30px] top-[70px] w-[900px] max-h-[80vh] bg-white rounded-2xl shadow-xl border border-gray-200 z-50 flex flex-col overflow-hidden">
             {/* Tab Filters */}
             <div className="flex items-center gap-3 px-[20px] py-3 border-b border-gray-100">
               {searchTabs.map((tab) => (
@@ -691,31 +691,49 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     placeholder="Search..."
                     className="flex-1 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
                   />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setShowResults(false);
-                        searchInputRef.current?.focus();
-                      }}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => {
-                      setIsSearchOpen(false);
-                      setSearchQuery('');
-                      setShowResults(false);
+                      if (searchQuery) {
+                        setSearchQuery('');
+                        setShowResults(false);
+                        searchInputRef.current?.focus();
+                      } else {
+                        setIsSearchOpen(false);
+                      }
                     }}
-                    className="text-gray-400 hover:text-gray-600 ml-1"
+                    className="text-gray-400 hover:text-gray-600"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
+                {/* Search History Dropdown */}
+                {!searchQuery && !showResults && searchHistory.length > 0 && (
+                  <div className="absolute top-full right-0 mt-2 w-[300px] bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="flex items-center justify-between px-3 py-1 mb-1">
+                      <span className="text-xs text-gray-500">Recent searches</span>
+                      <button
+                        onClick={() => saveSearchHistory([])}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                    {searchHistory.map((item, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSearchQuery(item);
+                          performSearch(item);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-dark-grey hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Search className="w-3.5 h-3.5 text-gray-400" />
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                )}
               ) : (
                 <button
                   onClick={() => setIsSearchOpen(true)}
