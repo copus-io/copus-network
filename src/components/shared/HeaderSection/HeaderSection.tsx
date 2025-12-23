@@ -678,10 +678,10 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 </div>
               ) : activeTab === 'all' ? (
                 /* All Tab - Sectioned Layout */
-                <div className="space-y-6">
+                <div className="divide-y divide-gray-200">
                   {/* Works Section */}
                   {articleResults.items.length > 0 && (
-                    <div>
+                    <div className="pb-6">
                       <button
                         onClick={() => handleTabChange('works')}
                         className="flex items-center mb-3 hover:opacity-80 transition-opacity"
@@ -725,7 +725,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
                   {/* Treasuries Section */}
                   {spaceResults.items.length > 0 && (
-                    <div>
+                    <div className="pt-6 pb-6">
                       <button
                         onClick={() => handleTabChange('treasuries')}
                         className="flex items-center mb-3 hover:opacity-80 transition-opacity"
@@ -752,7 +752,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
                   {/* Users Section */}
                   {userResults.items.length > 0 && (
-                    <div>
+                    <div className="pt-6">
                       <button
                         onClick={() => handleTabChange('users')}
                         className="flex items-center mb-3 hover:opacity-80 transition-opacity"
