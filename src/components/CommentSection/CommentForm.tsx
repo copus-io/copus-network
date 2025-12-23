@@ -305,21 +305,24 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     onCancel?.();
   };
 
-  // 决定显示的占位符和回复信息
+  // Determine placeholder text
   const getPlaceholderText = () => {
+    // When in modal (hideReplyCancel is true), use simple placeholder
+    if (hideReplyCancel) {
+      return placeholder;
+    }
+
     const activeParentId = currentReplyInfo.parentId || parentId;
     const activeReplyUser = currentReplyInfo.replyToUser || replyToUser;
 
     if (activeParentId) {
       if (activeReplyUser) {
-        // 3级评论：回复特定用户
         let displayName = activeReplyUser;
         if (typeof activeReplyUser === 'object') {
           displayName = getUserDisplayName(activeReplyUser);
         }
         return `Reply to @${displayName}...`;
       } else {
-        // 2级评论：直接回复主评论
         return 'Reply to this comment...';
       }
     }
@@ -461,22 +464,19 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
               `,
             }}
           >
-            {/* Reply indicator */}
-            {isReplying && (
+            {/* Reply indicator - only show when not in modal */}
+            {isReplying && !hideReplyCancel && (
               <div className="px-6 pt-4 pb-2">
                 <div className="px-2 py-1 text-sm text-blue-700 [font-family:'Lato',Helvetica] bg-blue-50 rounded-lg border-l-4 border-blue-400 flex items-center justify-between">
-                  <span>💬 回复 {getReplyDisplayText()}</span>
-                  {/* 只有在非弹窗模式下才显示取消按钮 */}
-                  {!hideReplyCancel && (
-                    <button
-                      onClick={handleCancel}
-                      className="ml-2 hover:scale-110 transition-transform duration-200"
-                      style={{ color: 'rgba(59, 130, 246, 0.7)' }}
-                      type="button"
-                    >
-                      ✕
-                    </button>
-                  )}
+                  <span>Replying to {getReplyDisplayText()}</span>
+                  <button
+                    onClick={handleCancel}
+                    className="ml-2 hover:scale-110 transition-transform duration-200"
+                    style={{ color: 'rgba(59, 130, 246, 0.7)' }}
+                    type="button"
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
             )}
@@ -486,23 +486,19 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
               value={content}
               onChange={(e) => {
                 setContent(e.target.value);
-                // 清除错误状态
                 if (formError) setFormError('');
                 if (imageUploadError) setImageUploadError('');
               }}
               placeholder={getPlaceholderText()}
-              className="w-full px-6 py-4 bg-transparent border-0 resize-none [font-family:'Lato',Helvetica] text-base transition-colors duration-200 rounded-2xl"
+              className="w-full px-6 py-3 bg-transparent border-0 resize-none [font-family:'Lato',Helvetica] text-base transition-colors duration-200 rounded-2xl"
               style={{
                 outline: 'none',
                 color: 'rgba(0, 0, 0, 0.9)',
                 fontSize: '16px',
                 lineHeight: '1.5',
-                minHeight: '80px',
+                minHeight: '60px',
               }}
-              placeholder-style={{
-                color: 'rgba(0, 0, 0, 0.5)',
-              }}
-              rows={3}
+              rows={2}
               disabled={isSubmitting}
             />
 
@@ -561,7 +557,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    图片
+                    Image
                   </button>
                 )}
 
@@ -580,10 +576,10 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                         >
                           <img
                             src={image.previewUrl}
-                            alt="预览"
+                            alt="Preview"
                             className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                             onClick={() => {
-                              openPreview(image.previewUrl, '图片预览');
+                              openPreview(image.previewUrl, 'Image preview');
                             }}
                           />
 
@@ -603,7 +599,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                               handleImagesChange(updatedImages);
                             }}
                             className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10"
-                            title="删除图片"
+                            title="Delete image"
                           >
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -629,7 +625,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                           <svg className="w-4 h-4 text-gray-500 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
-                          <span className="text-xs text-gray-600 font-medium">添加</span>
+                          <span className="text-xs text-gray-600 font-medium">Add</span>
                         </button>
                       )}
                     </div>
@@ -653,47 +649,27 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="px-5 py-2.5 text-sm font-medium rounded-full transition-all duration-200 [font-family:'Lato',Helvetica] hover:scale-105 active:scale-95 hover:bg-opacity-80"
-                    style={{
-                      outline: 'none',
-                      color: 'rgba(71, 85, 105, 0.75)',
-                      background: 'transparent',
-                      border: '1px solid rgba(203, 213, 225, 0.5)',
-                      boxShadow: 'none',
-                    }}
+                    className="px-5 py-2 text-base rounded-[100px] transition-all duration-200 [font-family:'Lato',Helvetica] hover:bg-gray-100 active:scale-95 bg-transparent text-[#454545]"
                     disabled={isSubmitting}
                   >
-                    {isReplying ? 'Cancel Reply' : 'Cancel'}
+                    Cancel
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={(!content.trim() && images.length === 0) || isSubmitting || content.length > 500}
-                  className="px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 [font-family:'Lato',Helvetica] hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="px-5 py-2 text-base rounded-[100px] transition-all duration-200 [font-family:'Lato',Helvetica] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 border border-[#f23a00] text-white"
                   style={{
-                    outline: 'none',
-                    background: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
-                      ? 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(120, 113, 108, 0.3) 100%)'
-                      : 'linear-gradient(135deg, #ff7849 0%, #f23a00 85%, #e03200 100%)',
-                    color: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
-                      ? 'rgba(100, 116, 139, 0.7)'
-                      : 'rgba(255, 255, 255, 0.98)',
-                    boxShadow: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
-                      ? '0 1px 2px rgba(0, 0, 0, 0.05)'
-                      : `0 4px 14px rgba(242, 58, 0, 0.25),
-                         0 2px 6px rgba(242, 58, 0, 0.15),
-                         inset 0 1px 0 rgba(255, 255, 255, 0.3),
-                         inset 0 -1px 0 rgba(0, 0, 0, 0.1)`,
-                    border: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
-                      ? '1px solid rgba(203, 213, 225, 0.4)'
-                      : '1px solid rgba(239, 68, 68, 0.3)',
-                    textShadow: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
-                      ? 'none'
-                      : '0 1px 2px rgba(0, 0, 0, 0.2)',
+                    backgroundColor: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
+                      ? '#ccc'
+                      : '#f23a00',
+                    borderColor: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
+                      ? '#ccc'
+                      : '#f23a00',
                   }}
                 >
-                  {isSubmitting ? 'Posting...' : 'Post comment'}
+                  {isSubmitting ? 'Commenting...' : 'Comment'}
                 </button>
               </div>
             </div>

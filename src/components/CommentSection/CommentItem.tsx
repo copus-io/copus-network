@@ -711,7 +711,8 @@ const ReplyItemComponent: React.FC<{
         <div className="flex items-center gap-2 mb-2">
           <span
             onClick={() => handleUserClick(reply)}
-            className="font-medium text-gray-900 text-lg [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+            className="text-gray-900 [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+            style={{ fontSize: '16px', fontWeight: 450 }}
           >
             {reply.authorName}
           </span>
@@ -1042,7 +1043,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           <div className="flex items-center gap-2 mb-2">
             <span
               onClick={() => handleUserClick(comment)}
-              className="font-medium text-gray-900 text-lg [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+              className="text-gray-900 [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+              style={{ fontSize: '16px', fontWeight: 450 }}
             >
               {comment.authorName}
             </span>
@@ -1052,7 +1054,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 12a9 9 0 11-6.219-8.56"/>
                   </svg>
-                  发布中...
+                  Posting...
                 </span>
               ) : isNew ? (
                 <span className="inline-flex items-center gap-1 text-green-500 font-medium">
@@ -1186,6 +1188,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
                 style={{ outline: 'none' }}
               >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
                 <span>Edit</span>
               </button>
             )}
@@ -1194,7 +1200,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <button
                 onClick={handleDelete}
                 disabled={deleteCommentMutation.isPending}
-                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
+                className="inline-flex items-center text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
                 style={{ outline: 'none' }}
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1203,7 +1209,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   <line x1="10" y1="11" x2="10" y2="17"></line>
                   <line x1="14" y1="11" x2="14" y2="17"></line>
                 </svg>
-                <span>Delete</span>
               </button>
             )}
           </div>
