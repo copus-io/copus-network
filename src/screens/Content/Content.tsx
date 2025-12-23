@@ -1957,7 +1957,7 @@ export const Content = (): JSX.Element => {
 
             {/* Collected in spaces section - moved back to article content */}
             {collectedInData.length > 0 && (
-              <section className="mt-[50px] border-t border-[#D3D3D3] pt-[30px]">
+              <section className="mt-[50px] pt-[30px]">
                 <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-[28px] mb-[20px]">
                   Collected in
                 </h2>
