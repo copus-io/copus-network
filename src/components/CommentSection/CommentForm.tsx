@@ -86,12 +86,22 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
   // 响应外部回复状态变化
   useEffect(() => {
     if (replyState?.isReplying) {
+      console.log('🔄 开始回复模式:', {
+        parentId: replyState.parentId,
+        replyToId: replyState.replyToId,
+        replyToUser: replyState.replyToUser,
+        currentImagesCount: images.length
+      });
       setCurrentReplyInfo({
         parentId: replyState.parentId,
         replyToId: replyState.replyToId,
         replyToUser: replyState.replyToUser
       });
+      // 清除图片状态，确保回复时从干净状态开始
+      setImages([]);
+      setImageUploadError('');
     } else {
+      console.log('🔄 退出回复模式');
       setCurrentReplyInfo({});
     }
   }, [replyState]);
@@ -111,6 +121,15 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
 
   // 处理图片变化
   const handleImagesChange = (newImages: CommentImage[]) => {
+    console.log('📸 图片状态变化:', {
+      oldCount: images.length,
+      newCount: newImages.length,
+      isReply: !!(currentReplyInfo.parentId || parentId),
+      replyInfo: {
+        parentId: currentReplyInfo.parentId || parentId,
+        replyToId: currentReplyInfo.replyToId || replyToId
+      }
+    });
     setImages(newImages);
     setImageUploadError('');
   };
@@ -132,9 +151,22 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     // 上传图片到服务器
     let imageUrls: string[] = [];
     if (images.length > 0) {
+      console.log('📸 开始上传图片:', {
+        imageCount: images.length,
+        isReply: !!(currentReplyInfo.parentId || parentId),
+        replyInfo: {
+          parentId: currentReplyInfo.parentId || parentId,
+          replyToId: currentReplyInfo.replyToId || replyToId
+        }
+      });
+
       try {
         const files = images.map(img => img.file);
         imageUrls = await AuthService.uploadCommentImages(files);
+        console.log('📸 图片上传成功:', {
+          uploadedUrls: imageUrls,
+          count: imageUrls.length
+        });
       } catch (error) {
         console.error('📸 图片上传失败:', error);
         setImageUploadError('图片上传失败，请重试');
@@ -192,9 +224,18 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     }
 
     try {
-      console.log('📝 Submitting comment:', commentData);
-      await createCommentMutation.mutateAsync(commentData);
-      console.log('✅ Comment submitted successfully');
+      console.log('📝 Submitting comment:', {
+        ...commentData,
+        hasImages: !!imageUrls.length,
+        imageUrlsCount: imageUrls.length,
+        isReply: isReplyComment
+      });
+      const result = await createCommentMutation.mutateAsync(commentData);
+      console.log('✅ Comment submitted successfully:', {
+        commentId: result?.id,
+        hasImages: !!result?.images?.length,
+        imagesCount: result?.images?.length || 0
+      });
       setContent('');
       setImages([]); // 清除图片
       setImageUploadError('');

@@ -63,15 +63,16 @@ export const CommentImageUploader = forwardRef<CommentImageUploaderRef, CommentI
 
     setIsProcessing(true);
     const newImages: CommentImage[] = [];
+    const errors: string[] = [];
 
     // 并行处理所有文件
-    await Promise.all(files.map(async (file, index) => {
+    const results = await Promise.allSettled(files.map(async (file, index) => {
       try {
         // 验证文件
         const validation = validateImageFile(file);
         if (!validation.isValid) {
-          onError?.(validation.error || '文件格式不支持');
-          return;
+          errors.push(`${file.name}: ${validation.error || '文件格式不支持'}`);
+          return null;
         }
 
         // 压缩图片 - 评论图片使用更小的尺寸
@@ -103,23 +104,39 @@ export const CommentImageUploader = forwardRef<CommentImageUploaderRef, CommentI
           { type: 'image/webp', lastModified: Date.now() }
         );
 
-        newImages.push({
+        return {
           id: imageId,
           file: compressedFileWithCorrectName, // 使用重命名后的压缩文件
           previewUrl,
           isUploading: false
-        });
+        };
 
       } catch (error) {
         console.error(`🖼️ 图片处理失败 ${index + 1}:`, error);
-        onError?.(`图片处理失败: ${file.name}`);
+        errors.push(`${file.name}: 图片处理失败`);
+        return null;
       }
     }));
 
+    // 收集成功处理的图片
+    results.forEach(result => {
+      if (result.status === 'fulfilled' && result.value) {
+        newImages.push(result.value);
+      } else if (result.status === 'rejected') {
+        errors.push('图片处理失败');
+      }
+    });
+
+    // 更新图片列表
     if (newImages.length > 0) {
       const updatedImages = [...images, ...newImages];
       setImages(updatedImages);
       onImagesChange(updatedImages);
+    }
+
+    // 显示错误信息（如果有）
+    if (errors.length > 0) {
+      onError?.(errors.join('\n'));
     }
 
     // 重置文件输入
