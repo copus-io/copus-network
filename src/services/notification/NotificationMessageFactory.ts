@@ -81,7 +81,7 @@ export class NotificationTemplates {
     },
     [NotificationType.TREASURY]: {
       title: '收藏提醒',
-      messageTemplate: (data) => `${data.senderUsername} 将你的作品「${data.targetTitle}」加入了收藏`,
+      messageTemplate: (data) => `${data.senderUsername} commented on your treasure ${data.targetTitle}`,
       actionUrl: (data) => `/article/${data.targetUuid || data.targetId}`
     },
     [NotificationType.MENTION]: {
