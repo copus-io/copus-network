@@ -28,6 +28,7 @@ interface CommentImageUploaderProps {
 
 export interface CommentImageUploaderRef {
   triggerFileSelect: () => void;
+  clearImages: () => void;
 }
 
 export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, CommentImageUploaderProps>(({
@@ -45,11 +46,36 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { openPreview } = useImagePreview();
 
+  // 清理所有图片和状态
+  const clearAllImages = () => {
+    // 清理所有预览URL，防止内存泄漏
+    images.forEach(image => {
+      if (image.previewUrl) {
+        revokeImagePreview(image.previewUrl);
+      }
+    });
+
+    // 重置状态
+    setImages([]);
+    setIsProcessing(false);
+
+    // 重置文件输入
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    // 通知父组件
+    onImagesChange([]);
+
+    console.log('🧹 图片缓存已清理');
+  };
+
   useImperativeHandle(ref, () => ({
     triggerFileSelect: () => {
       fileInputRef.current?.click();
-    }
-  }), []);
+    },
+    clearImages: clearAllImages
+  }), [images, onImagesChange]);
 
   // 🎯 智能文件预处理
   const preprocessFiles = (files: File[]) => {

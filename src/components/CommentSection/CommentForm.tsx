@@ -99,6 +99,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
       });
       // 清除图片状态，确保回复时从干净状态开始
       setImages([]);
+      imageUploaderRef.current?.clearImages(); // 清除组件内部的图片缓存
       setImageUploadError('');
     } else {
       console.log('🔄 退出回复模式');
@@ -111,6 +112,10 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     focusAndSetReply: (replyInfo) => {
       console.log('🎯 CommentForm focusAndSetReply called:', replyInfo);
       setCurrentReplyInfo(replyInfo);
+      // 开始回复时清理图片状态
+      setImages([]);
+      imageUploaderRef.current?.clearImages();
+      setImageUploadError('');
       // 聚焦到文本框
       setTimeout(() => {
         textareaRef.current?.focus();
@@ -237,7 +242,8 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
         imagesCount: result?.images?.length || 0
       });
       setContent('');
-      setImages([]); // 清除图片
+      setImages([]); // 清除CommentForm的图片状态
+      imageUploaderRef.current?.clearImages(); // 清除组件内部的图片缓存
       setImageUploadError('');
       setCurrentReplyInfo({}); // 清除回复状态
       onReplyComplete?.(); // 通知父组件回复完成
