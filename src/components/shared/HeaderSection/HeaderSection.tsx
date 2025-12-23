@@ -96,19 +96,14 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
     if (savedHistory) {
       try {
         const parsed = JSON.parse(savedHistory);
-        if (parsed.length > 0) {
-          setSearchHistory(parsed);
-        } else {
-          // Add some default history items for demo
-          setSearchHistory(['art', 'technology', 'love', 'design']);
-        }
+        setSearchHistory(parsed);
       } catch (e) {
         console.error('Failed to parse search history');
-        setSearchHistory(['art', 'technology', 'love', 'design']);
+        setSearchHistory([]);
       }
     } else {
-      // Add some default history items for demo
-      setSearchHistory(['art', 'technology', 'love', 'design']);
+      // No default history - start with empty
+      setSearchHistory([]);
     }
   }, []);
 
