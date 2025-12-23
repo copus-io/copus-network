@@ -6,6 +6,7 @@ import { Comment } from '../../types/comment';
 import { useToggleCommentLike, useDeleteComment, useUpdateComment, useLoadCommentReplies } from '../../hooks/queries/useComments';
 import { CommentForm } from './CommentForm';
 import { useUser } from '../../contexts/UserContext';
+import CommentImageGallery from './CommentImageGallery';
 
 // Edit comment form component
 interface EditCommentFormProps {
@@ -581,6 +582,11 @@ const ReplyItemComponent: React.FC<{
           {formatReplyContent()}
         </div>
 
+        {/* Reply images */}
+        {reply.images && reply.images.length > 0 && (
+          <CommentImageGallery images={reply.images} className="mb-3" />
+        )}
+
         {/* Reply actions */}
         <div className="flex items-center gap-3">
           <button
@@ -923,8 +929,18 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 {index < comment.content.split('\n').length - 1 && <br />}
               </React.Fragment>
             ))}
-
           </div>
+
+          {/* Comment images */}
+          {comment.images && comment.images.length > 0 && (
+            <CommentImageGallery images={comment.images} className="mb-3" />
+          )}
+          {/* 调试信息 */}
+          {comment.images && console.log('🖼️ CommentItem图片数据:', {
+            commentId: comment.id,
+            images: comment.images,
+            imageCount: comment.images.length
+          })}
 
           {/* Action buttons */}
           <div className="flex items-center gap-4">

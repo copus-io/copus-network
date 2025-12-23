@@ -91,9 +91,22 @@ export class CommentService {
 
       // 权限控制 (TODO: 从用户权限计算)
       canEdit: false,
-      canDelete: false
+      canDelete: false,
+
+      // 图片支持 - 将逗号分隔的字符串转换为数组
+      images: apiComment.imageUrls && apiComment.imageUrls.trim()
+        ? apiComment.imageUrls.split(',').map(url => url.trim()).filter(url => url)
+        : undefined
     };
 
+    // 调试信息
+    if (apiComment.imageUrls) {
+      console.log('🔍 API评论图片数据:', {
+        originalImageUrls: apiComment.imageUrls,
+        convertedImages: finalComment.images,
+        commentId: apiComment.id
+      });
+    }
 
     return finalComment;
   }
@@ -347,7 +360,10 @@ export class CommentService {
       articleId: data.articleId ? parseInt(data.articleId) : parseInt(data.targetId),
       content: data.content,
       id: 0, // 创建新评论时使用0
-      ...(data.parentId && { parentId: parseInt(data.parentId) })
+      ...(data.parentId && { parentId: parseInt(data.parentId) }),
+      // 图片支持 - 检查两种可能的字段名
+      ...(data.imageUrls && { imageUrls: data.imageUrls }), // 如果已经是字符串格式
+      ...(data.images && data.images.length > 0 && { imageUrls: data.images.join(',') }) // 如果是数组格式
     };
 
 
@@ -360,21 +376,25 @@ export class CommentService {
         requiresAuth: true
       });
 
-      // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
-      if (response.status !== 1) {
+      // 根据API文档，后端应该使用 {success: true, comment: {...}} 格式
+      // 但实际可能仍使用 {status: 1, msg: 'success'} 格式，两种都支持
+      const isNewFormat = 'success' in response;
+      const isOldFormat = 'status' in response;
+
+      if (isNewFormat && !response.success) {
+        throw new Error(response.errorMessage || 'Failed to create comment');
+      } else if (isOldFormat && response.status !== 1) {
         throw new Error(response.msg || 'Failed to create comment');
       }
 
-      // 检查API返回的评论数据结构
-      const commentData = response.data?.comment || response.data;
+      // 检查API返回的评论数据结构 - 支持两种格式
+      const commentData = response.comment || response.data?.comment || response.data;
 
-      console.log('🏗️ CommentService: Raw API response:', response);
-      console.log('🏗️ CommentService: Extracted comment data:', commentData);
-      console.log('🏗️ CommentService: Create request data was:', requestData);
-      console.log('🏗️ CommentService: About to convert comment with:', {
-        targetType: data.targetType,
-        targetId: data.targetId,
-        parentId: data.parentId
+      // 调试信息（生产环境可移除）
+      console.log('🏗️ CommentService: Comment created successfully:', {
+        commentId: commentData?.id,
+        hasImageUrls: !!commentData?.imageUrls,
+        requestImageUrls: requestData.imageUrls
       });
 
       const convertedComment = CommentService.convertApiCommentToComment(
@@ -384,33 +404,20 @@ export class CommentService {
         data.parentId
       );
 
-      // 🔧 重要修复：如果前端请求包含replyToId，手动设置到转换后的评论中
-      // 这样可以正确显示引用关系，即使后端API不支持replyToId
-      console.log('🔧 CommentService: Checking replyToId data:', {
-        hasReplyToId: !!data.replyToId,
-        replyToId: data.replyToId,
-        hasReplyToUser: !!data.replyToUser,
-        replyToUser: data.replyToUser,
-        convertedCommentBefore: convertedComment
-      });
+      // 🔧 临时修复：确保图片数据显示（直到后端API修复）
+      if (!convertedComment.images && data.imageUrls) {
+        convertedComment.images = data.imageUrls.split(',').map(url => url.trim()).filter(url => url);
+        console.log('🔧 Client-side image fallback applied for comment:', convertedComment.id);
+      }
+
+      // 🔧 设置回复信息（如果存在）
 
       if (data.replyToId) {
-        console.log('🔧 CommentService: Setting replyToId manually');
         convertedComment.replyToId = data.replyToId;
-        // 从前端请求中获取replyToUser信息
-        // 注意：这里我们需要从CommentForm传入的数据中获取
         if (data.replyToUser) {
           convertedComment.replyToUser = data.replyToUser;
         }
-        console.log('🔧 CommentService: Final comment with replyToId:', {
-          id: convertedComment.id,
-          replyToId: convertedComment.replyToId,
-          replyToUser: convertedComment.replyToUser,
-          parentId: convertedComment.parentId
-        });
       }
-
-      console.log('🏗️ CommentService: Final converted comment:', convertedComment);
 
       return convertedComment;
     } catch (error) {

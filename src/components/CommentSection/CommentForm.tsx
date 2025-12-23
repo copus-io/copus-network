@@ -6,6 +6,20 @@ import { useCreateComment } from '../../hooks/queries/useComments';
 import { useUser } from '../../contexts/UserContext';
 import { getUserDisplayName } from './utils';
 import { CreateCommentRequest } from '../../types/comment';
+import CommentImageUploader, { CommentImageUploaderRef } from './CommentImageUploader';
+import { AuthService } from '../../services/authService';
+import { useImagePreview } from '../../contexts/ImagePreviewContext';
+import { revokeImagePreview } from '../../utils/imageUtils';
+
+// 评论图片接口
+interface CommentImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  uploadUrl?: string;
+  isUploading?: boolean;
+  error?: string;
+}
 
 interface CommentFormProps {
   targetType: 'article' | 'treasury' | 'user' | 'space';
@@ -60,8 +74,12 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     replyToId?: string;
     replyToUser?: string;
   }>({});
+  const [images, setImages] = useState<CommentImage[]>([]);
+  const [imageUploadError, setImageUploadError] = useState<string>('');
+  const { openPreview } = useImagePreview();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageUploaderRef = useRef<CommentImageUploaderRef>(null);
   const { user } = useUser();
   const createCommentMutation = useCreateComment();
 
@@ -91,14 +109,39 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     }
   }), []);
 
+  // 处理图片变化
+  const handleImagesChange = (newImages: CommentImage[]) => {
+    setImages(newImages);
+    setImageUploadError('');
+  };
+
+  // 处理图片上传错误
+  const handleImageUploadError = (error: string) => {
+    setImageUploadError(error);
+  };
+
   const handleSubmit = async () => {
-    if (!content.trim()) return;
+    if (!content.trim() && images.length === 0) return;
     if (!user) {
       alert('Please log in first');
       return;
     }
 
     setIsSubmitting(true);
+
+    // 上传图片到服务器
+    let imageUrls: string[] = [];
+    if (images.length > 0) {
+      try {
+        const files = images.map(img => img.file);
+        imageUrls = await AuthService.uploadCommentImages(files);
+      } catch (error) {
+        console.error('📸 图片上传失败:', error);
+        setImageUploadError('图片上传失败，请重试');
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     // 使用当前回复信息或props传入的信息
     const activeReplyInfo = {
@@ -107,15 +150,6 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
       replyToUser: currentReplyInfo.replyToUser || replyToUser
     };
 
-    console.log('🔥🔥🔥 CommentForm 提交数据检查:', {
-      activeReplyInfo,
-      hasParentId: !!activeReplyInfo.parentId,
-      hasReplyToId: !!activeReplyInfo.replyToId,
-      hasReplyToUser: !!activeReplyInfo.replyToUser,
-      replyToUserValue: activeReplyInfo.replyToUser,
-      parentIdValue: activeReplyInfo.parentId,
-      replyToIdValue: activeReplyInfo.replyToId
-    });
 
     // 📝 新的parentId逻辑处理
     // - 如果没有parentId或replyToId，说明是1级评论，不传parentId（或传0）
@@ -132,10 +166,11 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
       // 📝 重要：对于2级评论（直接回复1级），replyToUser 应该是 undefined/null
       // 只有3级评论（回复2级）才传递 replyToUser
       ...(activeReplyInfo.replyToUser && { replyToUser: activeReplyInfo.replyToUser }),
+      // 添加图片URLs - 转换为后端需要的格式（逗号分隔的字符串）
+      ...(imageUrls.length > 0 && { imageUrls: imageUrls.join(',') }),
     };
 
     // 🔧 存储引用信息到localStorage，页面刷新后可以恢复
-    console.log('🔥🔥🔥 最终发送给后端的commentData:', commentData);
 
     if (activeReplyInfo.replyToId && activeReplyInfo.replyToUser) {
       const replyContext = {
@@ -146,8 +181,6 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
         timestamp: Date.now()
       };
       localStorage.setItem('pendingReplyContext', JSON.stringify(replyContext));
-      console.log('💾 Stored reply context to localStorage:', replyContext);
-
       // 验证存储是否成功
       const verifyStored = localStorage.getItem('pendingReplyContext');
       console.log('✅ Verified localStorage storage:', {
@@ -163,6 +196,8 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
       await createCommentMutation.mutateAsync(commentData);
       console.log('✅ Comment submitted successfully');
       setContent('');
+      setImages([]); // 清除图片
+      setImageUploadError('');
       setCurrentReplyInfo({}); // 清除回复状态
       onReplyComplete?.(); // 通知父组件回复完成
       onSubmitSuccess?.();
@@ -177,6 +212,8 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
 
   const handleCancel = () => {
     setContent('');
+    setImages([]); // 清除图片
+    setImageUploadError('');
     setCurrentReplyInfo({}); // 清除回复状态
     onReplyComplete?.(); // 通知父组件回复取消
     onCancel?.();
@@ -384,6 +421,24 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
               disabled={isSubmitting}
             />
 
+            {/* 图片上传组件 */}
+            <div className="px-6 pb-2">
+              <CommentImageUploader
+                ref={imageUploaderRef}
+                maxImages={9}
+                onImagesChange={handleImagesChange}
+                onError={handleImageUploadError}
+                disabled={isSubmitting}
+              />
+
+              {/* 图片上传错误提示 */}
+              {imageUploadError && (
+                <div className="mt-2 text-sm text-red-500 [font-family:'Lato',Helvetica]">
+                  {imageUploadError}
+                </div>
+              )}
+            </div>
+
             {/* Apple-style action bar */}
             <div
               className="flex items-center justify-between px-6 py-4 rounded-b-[20px]"
@@ -391,15 +446,108 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                 background: 'transparent',
               }}
             >
-              <div
-                className="text-sm [font-family:'Lato',Helvetica] font-medium"
-                style={{ color: 'rgba(0, 0, 0, 0.6)' }}
-              >
-                {content.length > 0 && (
-                  <span className={content.length > 500 ? 'text-red' : ''}>
-                    {content.length}/500
-                  </span>
+              <div className="flex items-center gap-3">
+                {/* 图片上传按钮 - 无图片时显示 */}
+                {images.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // 触发CommentImageUploader的文件选择
+                      imageUploaderRef.current?.triggerFileSelect();
+                    }}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-full transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.6) 100%)',
+                      border: '1px solid rgba(203, 213, 225, 0.6)',
+                      backdropFilter: 'blur(8px)',
+                      color: 'rgba(100, 116, 139, 0.8)'
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    图片
+                  </button>
                 )}
+
+                {/* 图片网格 - 有图片时显示 */}
+                {images.length > 0 && (
+                  <div className="flex items-center">
+                    <div className="grid grid-cols-4 gap-1.5 w-fit">
+                      {images.map((image) => (
+                        <div
+                          key={image.id}
+                          className="relative w-16 h-16 rounded-md overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-200"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(248, 250, 252, 1) 0%, rgba(241, 245, 249, 1) 100%)',
+                            border: '1px solid rgba(226, 232, 240, 0.6)'
+                          }}
+                        >
+                          <img
+                            src={image.previewUrl}
+                            alt="预览"
+                            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                            onClick={() => {
+                              openPreview(image.previewUrl, '图片预览');
+                            }}
+                          />
+
+                          {/* 删除按钮 */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const imageToRemove = images.find(img => img.id === image.id);
+                              if (imageToRemove?.previewUrl) {
+                                revokeImagePreview(imageToRemove.previewUrl);
+                              }
+                              const updatedImages = images.filter(img => img.id !== image.id);
+                              setImages(updatedImages);
+                            }}
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10"
+                            title="删除图片"
+                          >
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* 添加按钮 - 在网格中 */}
+                      {images.length < 9 && !isSubmitting && (
+                        <button
+                          onClick={() => {
+                            imageUploaderRef.current?.triggerFileSelect();
+                          }}
+                          disabled={isSubmitting}
+                          className="w-16 h-16 rounded-md flex flex-col items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.7) 100%)',
+                            border: '2px dashed rgba(156, 163, 175, 0.5)',
+                            backdropFilter: 'blur(8px)'
+                          }}
+                        >
+                          <svg className="w-4 h-4 text-gray-500 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          <span className="text-xs text-gray-600 font-medium">添加</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className="text-sm [font-family:'Lato',Helvetica] font-medium flex items-center gap-2"
+                  style={{ color: 'rgba(0, 0, 0, 0.6)' }}
+                >
+                  {content.length > 0 && (
+                    <span className={content.length > 500 ? 'text-red' : ''}>
+                      {content.length}/500
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3">
@@ -423,26 +571,26 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={!content.trim() || isSubmitting || content.length > 500}
+                  disabled={(!content.trim() && images.length === 0) || isSubmitting || content.length > 500}
                   className="px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 [font-family:'Lato',Helvetica] hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:hover:scale-100"
                   style={{
                     outline: 'none',
-                    background: !content.trim() || isSubmitting || content.length > 500
+                    background: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
                       ? 'linear-gradient(135deg, rgba(148, 163, 184, 0.4) 0%, rgba(120, 113, 108, 0.3) 100%)'
                       : 'linear-gradient(135deg, #ff7849 0%, #f23a00 85%, #e03200 100%)',
-                    color: !content.trim() || isSubmitting || content.length > 500
+                    color: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
                       ? 'rgba(100, 116, 139, 0.7)'
                       : 'rgba(255, 255, 255, 0.98)',
-                    boxShadow: !content.trim() || isSubmitting || content.length > 500
+                    boxShadow: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
                       ? '0 1px 2px rgba(0, 0, 0, 0.05)'
                       : `0 4px 14px rgba(242, 58, 0, 0.25),
                          0 2px 6px rgba(242, 58, 0, 0.15),
                          inset 0 1px 0 rgba(255, 255, 255, 0.3),
                          inset 0 -1px 0 rgba(0, 0, 0, 0.1)`,
-                    border: !content.trim() || isSubmitting || content.length > 500
+                    border: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
                       ? '1px solid rgba(203, 213, 225, 0.4)'
                       : '1px solid rgba(239, 68, 68, 0.3)',
-                    textShadow: !content.trim() || isSubmitting || content.length > 500
+                    textShadow: (!content.trim() && images.length === 0) || isSubmitting || content.length > 500
                       ? 'none'
                       : '0 1px 2px rgba(0, 0, 0, 0.2)',
                   }}

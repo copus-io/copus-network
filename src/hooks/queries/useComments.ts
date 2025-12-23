@@ -169,6 +169,11 @@ export const useCreateComment = () => {
     },
     onSuccess: (newComment, variables, context) => {
       console.log('✅ Comment created successfully:', { newComment, variables });
+      console.log('🔍 检查新评论的图片数据:', {
+        commentId: newComment?.id,
+        images: newComment?.images,
+        hasImages: newComment?.images && newComment.images.length > 0
+      });
 
       showToast('Comment posted successfully', 'success');
 

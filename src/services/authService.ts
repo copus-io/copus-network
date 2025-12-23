@@ -876,6 +876,61 @@ export class AuthService {
   }
 
   /**
+   * 批量上传评论图片
+   * @param files 图片文件数组
+   * @returns Promise<string[]> 图片URL数组
+   */
+  static async uploadCommentImages(files: File[]): Promise<string[]> {
+    console.log('🔥 AuthService.uploadCommentImages starting batch upload:', {
+      fileCount: files.length,
+      files: files.map(file => ({
+        name: file.name,
+        size: (file.size / 1024).toFixed(2) + 'KB',
+        type: file.type
+      }))
+    });
+
+    if (files.length === 0) {
+      return [];
+    }
+
+    try {
+      // 并行上传所有图片
+      const uploadPromises = files.map(async (file, index) => {
+        console.log(`🔥 Uploading image ${index + 1}/${files.length}:`, {
+          name: file.name,
+          size: (file.size / 1024).toFixed(2) + 'KB'
+        });
+
+        const result = await this.uploadImage(file);
+
+        console.log(`🔥 Image ${index + 1} uploaded successfully:`, {
+          name: file.name,
+          url: result.url,
+          size: (file.size / 1024).toFixed(2) + 'KB'
+        });
+
+        return result.url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      console.log('🔥 All images uploaded successfully:', {
+        count: urls.length,
+        totalSize: (totalSize / 1024 / 1024).toFixed(2) + 'MB',
+        urls: urls
+      });
+
+      return urls;
+
+    } catch (error) {
+      console.error('🔥 Batch image upload failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create article
    */
   static async createArticle(params: {
