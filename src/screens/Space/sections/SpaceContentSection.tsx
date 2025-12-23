@@ -831,7 +831,7 @@ export const SpaceContentSection = (): JSX.Element => {
           </div>
         ) : (
           <>
-            <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-8">
+            <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-8">
               {articles.map((article) => renderCard(article))}
             </div>
 

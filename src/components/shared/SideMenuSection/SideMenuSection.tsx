@@ -64,7 +64,7 @@ const getMenuItems = (userNamespace?: string) => [
   {
     icon: IncomeIcon,
     label: "Earnings",
-    href: "/withdrawal",
+    href: "/earning",
     key: "income",
   },
 ];

@@ -21,15 +21,15 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
   const sizeStyles = {
     small: {
       container: 'gap-1 p-1',
-      icon: 'w-[11px] h-4',
-      text: 'text-sm',
-      background: 'w-[11px] h-4'
+      icon: 'w-[10px] h-[14px]',
+      text: 'text-[12px]',
+      background: 'w-[10px] h-[14px]'
     },
     medium: {
-      container: 'gap-2 p-1',
-      icon: 'w-[13px] h-5',
-      text: 'text-base',
-      background: 'w-[13px] h-5'
+      container: 'gap-1.5 p-1',
+      icon: 'w-[11px] h-4',
+      text: 'text-[13px]',
+      background: 'w-[11px] h-4'
     },
     large: {
       container: 'gap-[10px] px-[15px] py-2',
@@ -125,7 +125,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       {/* Like count text */}
       <span
         className={`
-          [font-family:'Lato',Helvetica] font-normal text-center tracking-[0] leading-[20.8px]
+          [font-family:'Lato',Helvetica] font-normal text-center tracking-[0] leading-[16px]
           ${currentSize.text}
           ${size === 'large'
             ? (isLiked ? 'text-white group-hover:text-white' : 'text-[#e19e1d] group-hover:text-white')
@@ -133,7 +133,6 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
           }
           transition-colors duration-200
         `}
-        style={{ fontSize: '1rem' }}
       >
         {formatCount(likesCount)}
       </span>
