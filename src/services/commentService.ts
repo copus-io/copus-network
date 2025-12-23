@@ -435,10 +435,18 @@ export class CommentService {
       const requestData: ApiCreateCommentRequest = {
         articleId: data.articleId ? parseInt(data.articleId) : 0,
         content: data.content,
-        id: parseInt(commentId)
+        id: parseInt(commentId),
+        // 图片支持 - 添加图片数据传递
+        ...(data.images && data.images.length > 0 && { imageUrls: data.images.join(',') })
       };
 
-      console.log('Update comment request data:', requestData);
+      console.log('📝 Update comment request data:', {
+        commentId,
+        content: requestData.content,
+        images: data.images,
+        imageUrls: requestData.imageUrls,
+        hasImages: !!requestData.imageUrls
+      });
 
       const response: any = await apiRequest('/client/reader/article/comment/createOrEdit', {
         method: 'POST',

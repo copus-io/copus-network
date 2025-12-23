@@ -10,6 +10,7 @@ import CommentImageUploaderV2, { CommentImageUploaderRef } from './CommentImageU
 import { AuthService } from '../../services/authService';
 import { useImagePreview } from '../../contexts/ImagePreviewContext';
 import { revokeImagePreview } from '../../utils/imageUtils';
+import { useToast } from '../ui/toast'; // Toast hook for notifications
 
 // 评论图片接口
 interface CommentImage {
@@ -39,6 +40,7 @@ interface CommentFormProps {
     replyToUser?: string;
   };
   onReplyComplete?: () => void;
+  hideReplyCancel?: boolean; // 新增：隐藏回复指示器中的取消按钮
 }
 
 // 暴露给父组件的方法
@@ -63,7 +65,8 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     placeholder = 'Share your thoughts on this link...',
     className = '',
     replyState,
-    onReplyComplete
+    onReplyComplete,
+    hideReplyCancel = false
   },
   ref
 ) => {
@@ -76,11 +79,13 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
   }>({});
   const [images, setImages] = useState<CommentImage[]>([]);
   const [imageUploadError, setImageUploadError] = useState<string>('');
+  const [formError, setFormError] = useState<string>(''); // 新增：表单验证错误
   const { openPreview } = useImagePreview();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageUploaderRef = useRef<CommentImageUploaderRef>(null);
   const { user } = useUser();
+  const { showToast } = useToast();
   const createCommentMutation = useCreateComment();
 
   // 响应外部回复状态变化
@@ -137,6 +142,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     });
     setImages(newImages);
     setImageUploadError('');
+    setFormError(''); // 清除表单错误
   };
 
   // 处理图片上传错误
@@ -145,9 +151,31 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
   };
 
   const handleSubmit = async () => {
-    if (!content.trim() && images.length === 0) return;
+    // 清除之前的错误
+    setFormError('');
+    setImageUploadError('');
+
+    // 前端验证：检查内容和图片
+    if (!content.trim() && images.length === 0) {
+      const errorMsg = '请添加评论内容或图片';
+      setFormError(errorMsg);
+      showToast('Please add some text or images to your comment', 'error');
+      return;
+    }
+
     if (!user) {
-      alert('Please log in first');
+      const errorMsg = '请先登录';
+      setFormError(errorMsg);
+      showToast('Please log in to post comments', 'error');
+      return;
+    }
+
+    // 检查是否有图片上传错误
+    const hasImageErrors = images.some(img => img.error || img.status === 'error');
+    if (hasImageErrors) {
+      const errorMsg = '请先处理图片上传错误';
+      setFormError(errorMsg);
+      showToast('Please fix image upload errors first', 'error');
       return;
     }
 
@@ -174,7 +202,15 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
         });
       } catch (error) {
         console.error('📸 图片上传失败:', error);
-        setImageUploadError('图片上传失败，请重试');
+        const errorMsg = error instanceof Error ? error.message : '';
+        if (errorMsg.includes('size') || errorMsg.includes('large')) {
+          showToast('Images are too large. Please use smaller images', 'error');
+        } else if (errorMsg.includes('format') || errorMsg.includes('type')) {
+          showToast('Invalid image format. Please use JPG, PNG, or WebP', 'error');
+        } else {
+          showToast('Image upload failed. Please try again', 'error');
+        }
+        setImageUploadError('Image upload failed');
         setIsSubmitting(false);
         return;
       }
@@ -245,6 +281,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
       setImages([]); // 清除CommentForm的图片状态
       imageUploaderRef.current?.clearImages(); // 清除组件内部的图片缓存
       setImageUploadError('');
+      setFormError(''); // 清除表单错误
       setCurrentReplyInfo({}); // 清除回复状态
       onReplyComplete?.(); // 通知父组件回复完成
       onSubmitSuccess?.();
@@ -261,7 +298,9 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     setContent('');
     setImages([]); // 清除图片
     setImageUploadError('');
+    setFormError(''); // 清除表单错误
     setCurrentReplyInfo({}); // 清除回复状态
+    imageUploaderRef.current?.clearImages(); // 清除图片组件状态
     onReplyComplete?.(); // 通知父组件回复取消
     onCancel?.();
   };
@@ -422,28 +461,22 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
               `,
             }}
           >
-            {/* Apple-style reply indicator */}
+            {/* Reply indicator */}
             {isReplying && (
               <div className="px-6 pt-4 pb-2">
-                <div
-                  className="flex items-center gap-2 text-sm rounded-full px-4 py-2 w-fit transition-all duration-200"
-                  style={{
-                    color: 'rgba(0, 122, 255, 0.9)',
-                    background: 'linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.12) 100%)',
-                    border: '1px solid rgba(0, 122, 255, 0.15)',
-                    boxShadow: '0 1px 3px rgba(0, 122, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
-                  }}
-                >
-                  <span>💬</span>
-                  <span>Replying to {getReplyDisplayText()}</span>
-                  <button
-                    onClick={handleCancel}
-                    className="ml-1 hover:scale-110 transition-transform duration-200"
-                    style={{ color: 'rgba(0, 122, 255, 0.7)' }}
-                    type="button"
-                  >
-                    ✕
-                  </button>
+                <div className="px-2 py-1 text-sm text-blue-700 [font-family:'Lato',Helvetica] bg-blue-50 rounded-lg border-l-4 border-blue-400 flex items-center justify-between">
+                  <span>💬 回复 {getReplyDisplayText()}</span>
+                  {/* 只有在非弹窗模式下才显示取消按钮 */}
+                  {!hideReplyCancel && (
+                    <button
+                      onClick={handleCancel}
+                      className="ml-2 hover:scale-110 transition-transform duration-200"
+                      style={{ color: 'rgba(59, 130, 246, 0.7)' }}
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -451,7 +484,12 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
             <textarea
               ref={textareaRef}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                setContent(e.target.value);
+                // 清除错误状态
+                if (formError) setFormError('');
+                if (imageUploadError) setImageUploadError('');
+              }}
               placeholder={getPlaceholderText()}
               className="w-full px-6 py-4 bg-transparent border-0 resize-none [font-family:'Lato',Helvetica] text-base transition-colors duration-200 rounded-2xl"
               style={{
@@ -478,10 +516,19 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                 disabled={isSubmitting}
               />
 
-              {/* 图片上传错误提示 */}
-              {imageUploadError && (
-                <div className="mt-2 text-sm text-red-500 [font-family:'Lato',Helvetica]">
-                  {imageUploadError}
+              {/* 错误提示 */}
+              {(imageUploadError || formError) && (
+                <div className="mt-2 space-y-1">
+                  {formError && (
+                    <div className="text-sm text-red-500 [font-family:'Lato',Helvetica] bg-red-50 px-3 py-2 rounded-md border-l-3 border-red-400">
+                      {formError}
+                    </div>
+                  )}
+                  {imageUploadError && (
+                    <div className="text-sm text-red-500 [font-family:'Lato',Helvetica] bg-red-50 px-3 py-2 rounded-md border-l-3 border-red-400">
+                      {imageUploadError}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -544,12 +591,16 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              console.log('🗑️ 删除图片:', image.id);
                               const imageToRemove = images.find(img => img.id === image.id);
                               if (imageToRemove?.previewUrl) {
                                 revokeImagePreview(imageToRemove.previewUrl);
                               }
                               const updatedImages = images.filter(img => img.id !== image.id);
                               setImages(updatedImages);
+
+                              // 同步通知图片上传组件状态变化（如果有内部状态需要同步）
+                              handleImagesChange(updatedImages);
                             }}
                             className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 z-10"
                             title="删除图片"

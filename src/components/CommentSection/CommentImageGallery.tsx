@@ -38,7 +38,7 @@ export const CommentImageGallery: React.FC<CommentImageGalleryProps> = ({
     openPreview(images[index], `图片 ${index + 1}`);
   };
 
-  // 根据图片数量决定布局
+  // 根据图片数量决定布局 - 参考小红书/微信朋友圈布局
   const getGridLayout = () => {
     const count = images.length;
 
@@ -49,9 +49,11 @@ export const CommentImageGallery: React.FC<CommentImageGalleryProps> = ({
     } else if (count === 3) {
       return 'grid-cols-3';
     } else if (count === 4) {
-      return 'grid-cols-2';
+      return 'grid-cols-2'; // 2x2
+    } else if (count <= 6) {
+      return 'grid-cols-3'; // 3x2 或 3x1
     } else {
-      return 'grid-cols-3';
+      return 'grid-cols-3'; // 3x3
     }
   };
 
@@ -59,20 +61,40 @@ export const CommentImageGallery: React.FC<CommentImageGalleryProps> = ({
   const getImageStyle = (index: number) => {
     const count = images.length;
 
-    // 单图：适中尺寸，不要太大
+    // 单图：适中尺寸，保持长宽比
     if (count === 1) {
       return {
-        aspectRatio: '4/3',
-        maxWidth: '280px',
-        maxHeight: '210px'
+        aspectRatio: '16/10', // 更协调的比例
+        maxWidth: '320px',
+        maxHeight: '200px',
+        minWidth: '240px',
+        minHeight: '150px'
       };
     }
 
-    // 多图：较小的正方形
+    // 2张图：适中的正方形，电脑端更舒适
+    if (count === 2) {
+      return {
+        aspectRatio: '1/1',
+        width: '140px',
+        height: '140px'
+      };
+    }
+
+    // 3张图：正方形，电脑端友好尺寸
+    if (count === 3) {
+      return {
+        aspectRatio: '1/1',
+        width: '120px',
+        height: '120px'
+      };
+    }
+
+    // 4张及以上：保持紧凑但提升视觉效果
     return {
       aspectRatio: '1/1',
-      width: '120px',
-      height: '120px'
+      width: '110px',
+      height: '110px'
     };
   };
 
@@ -82,17 +104,22 @@ export const CommentImageGallery: React.FC<CommentImageGalleryProps> = ({
     if (remaining <= 1) return null;
 
     return (
-      <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-        <span className="text-white text-lg font-semibold [font-family:'Lato',Helvetica]">
-          +{remaining - 1}
-        </span>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20 backdrop-blur-[1px] flex items-center justify-center">
+        <div className="text-center">
+          <span className="text-white text-xl font-bold [font-family:'Lato',Helvetica] drop-shadow-lg">
+            +{remaining - 1}
+          </span>
+          <div className="text-white text-xs mt-1 opacity-90">
+            更多
+          </div>
+        </div>
       </div>
     );
   };
 
   return (
     <div className={`mt-3 ${className}`}>
-      <div className={`grid gap-1 ${getGridLayout()}`}>
+      <div className={`grid gap-2 ${getGridLayout()} w-fit`}>
         {images.slice(0, 9).map((imageUrl, index) => {
           const isLoading = loadingImages.has(index);
           const isLoaded = loadedImages.has(index);
@@ -101,7 +128,7 @@ export const CommentImageGallery: React.FC<CommentImageGalleryProps> = ({
           return (
             <div
               key={index}
-              className="relative overflow-hidden rounded-lg cursor-pointer group transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="relative overflow-hidden rounded-md cursor-pointer group transition-all duration-300 hover:scale-[1.03] hover:shadow-lg active:scale-[0.97] bg-gray-100"
               style={getImageStyle(index)}
               onClick={() => handleImageClick(index)}
             >
@@ -132,15 +159,15 @@ export const CommentImageGallery: React.FC<CommentImageGalleryProps> = ({
               />
 
               {/* 悬停效果 */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200"></div>
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-5 transition-all duration-300"></div>
 
               {/* 更多图片指示器 */}
               {showMoreIndicator && renderMoreIndicator(index)}
 
-              {/* 放大图标 */}
-              <div className="absolute top-2 right-2 w-6 h-6 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+              {/* 放大图标 - 更优雅的设计 */}
+              <div className="absolute top-2 right-2 w-7 h-7 bg-black bg-opacity-40 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-opacity-60">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
@@ -150,8 +177,11 @@ export const CommentImageGallery: React.FC<CommentImageGalleryProps> = ({
 
       {/* 图片数量提示 */}
       {images.length > 1 && (
-        <div className="mt-2 text-xs text-gray-500 [font-family:'Lato',Helvetica]">
-          {images.length} 张图片
+        <div className="mt-2.5 text-xs text-gray-500 [font-family:'Lato',Helvetica] flex items-center gap-1">
+          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span>{images.length} 张图片</span>
         </div>
       )}
     </div>

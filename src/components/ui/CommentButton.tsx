@@ -15,6 +15,8 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
   onClick,
   isExpanded = false
 }) => {
+  const [isHovered, setIsHovered] = React.useState(false);
+
   const getCommentsText = () => {
     if (isLoading) return '...';
     if (commentCount === 0) return '0';
@@ -24,6 +26,8 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={`
         inline-flex items-center relative overflow-hidden group
         h-[42px] rounded-[21px] gap-[8px] px-5 py-2
@@ -34,21 +38,34 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
         transform: isExpanded ? 'scale(1.05)' : 'scale(1)',
         background: isExpanded
           ? 'linear-gradient(135deg, #ff7849 0%, #f23a00 85%, #e03200 100%)'
+          : isHovered
+          ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.92) 50%, rgba(243, 244, 246, 0.88) 100%)'
           : 'linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(249, 250, 251, 0.88) 50%, rgba(243, 244, 246, 0.85) 100%)',
         backdropFilter: isExpanded
           ? 'blur(25px) brightness(1.05) saturate(1.3) contrast(1.1)'
+          : isHovered
+          ? 'blur(25px) brightness(1.18) saturate(1.2) contrast(1.05)'
           : 'blur(25px) brightness(1.12) saturate(1.15) contrast(1.03)',
         WebkitBackdropFilter: isExpanded
           ? 'blur(25px) brightness(1.05) saturate(1.3) contrast(1.1)'
+          : isHovered
+          ? 'blur(25px) brightness(1.18) saturate(1.2) contrast(1.05)'
           : 'blur(25px) brightness(1.12) saturate(1.15) contrast(1.03)',
         border: isExpanded
           ? '1px solid rgba(255, 255, 255, 0.5)'
+          : isHovered
+          ? '1px solid rgba(255, 255, 255, 0.8)'
           : '1px solid rgba(255, 255, 255, 0.7)',
         boxShadow: isExpanded
           ? `0 6px 20px rgba(242, 58, 0, 0.2),
              0 2px 8px rgba(242, 58, 0, 0.12),
              inset 0 1px 0 rgba(255, 255, 255, 0.35),
              inset 0 -1px 0 rgba(0, 0, 0, 0.08)`
+          : isHovered
+          ? `0 6px 20px rgba(0, 0, 0, 0.08),
+             0 2px 6px rgba(0, 0, 0, 0.06),
+             inset 0 1px 0 rgba(255, 255, 255, 0.95),
+             inset 0 0 25px rgba(255, 255, 255, 0.25)`
           : `0 4px 16px rgba(0, 0, 0, 0.06),
              0 1px 4px rgba(0, 0, 0, 0.04),
              inset 0 1px 0 rgba(255, 255, 255, 0.9),
@@ -92,12 +109,16 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
           strokeWidth={2.5}
           style={{
             transition: 'all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-            transform: isExpanded ? 'scale(1.1) rotate(5deg)' : 'scale(1) rotate(0deg)',
+            transform: isExpanded ? 'scale(1.1) rotate(5deg)' : isHovered ? 'scale(1.05)' : 'scale(1) rotate(0deg)',
             color: isExpanded
               ? 'rgba(255, 255, 255, 0.98)'
+              : isHovered
+              ? 'rgba(71, 85, 105, 0.9)'
               : 'rgba(71, 85, 105, 0.8)',
             filter: isExpanded
               ? 'drop-shadow(0 1px 3px rgba(0, 0, 0, 0.25))'
+              : isHovered
+              ? 'drop-shadow(0 1px 2px rgba(255, 255, 255, 0.9))'
               : 'drop-shadow(0 0.5px 1px rgba(255, 255, 255, 0.8))',
           }}
         >
@@ -116,11 +137,15 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
           transition: 'all 500ms cubic-bezier(0.4, 0.0, 0.2, 1)',
           color: isExpanded
             ? 'rgba(255, 255, 255, 0.98)'
+            : isHovered
+            ? 'rgba(71, 85, 105, 0.92)'
             : 'rgba(71, 85, 105, 0.85)',
           textShadow: isExpanded
             ? '0 1px 3px rgba(0, 0, 0, 0.25)'
+            : isHovered
+            ? '0 1px 2px rgba(255, 255, 255, 0.95)'
             : '0 0.5px 1px rgba(255, 255, 255, 0.9)',
-          fontWeight: isExpanded ? '600' : '500',
+          fontWeight: isExpanded ? '600' : isHovered ? '550' : '500',
         }}
       >
         {getCommentsText()}

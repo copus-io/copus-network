@@ -138,6 +138,7 @@ export interface UpdateCommentRequest {
   content: string;
   contentType?: 'text' | 'markdown';
   articleId?: string; // 编辑时需要的articleId
+  images?: string[]; // 评论中的图片URL数组
 }
 
 // 评论列表响应类型

@@ -23,8 +23,10 @@ export const useComments = (
   const result = useQuery({
     queryKey: ['comments', targetType, targetId, queryOptions],
     queryFn: () => CommentService.getComments(targetType, targetId, queryOptions),
-    staleTime: 1000 * 60 * 2, // 2分钟内认为数据新鲜
+    staleTime: 1000 * 60 * 5, // 5分钟内认为数据新鲜，减少重复请求
+    gcTime: 1000 * 60 * 10, // 缓存时间10分钟
     enabled: enabled && !!(targetType && targetId), // 只有在启用且有target信息时才启用查询
+    refetchOnWindowFocus: false, // 减少不必要的重新获取
   });
 
   return result;
@@ -49,8 +51,16 @@ export const useOptimizedComments = (
       ...queryOptions,
       loadReplies: false // 改为 false，使用懒加载模式
     }),
-    staleTime: 0, // 设置为0确保新评论立即显示
+    staleTime: 1000 * 30, // 30秒内认为数据新鲜，平衡实时性和性能
+    gcTime: 1000 * 60 * 5, // 缓存时间5分钟
     enabled: enabled && !!(targetType && targetId),
+    refetchOnWindowFocus: false, // 减少不必要的重新获取
+    retry: (failureCount, error) => {
+      // 优化重试逻辑
+      if (failureCount >= 2) return false;
+      return true;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // 指数退避，最大5秒
   });
 
   return result;
@@ -235,7 +245,22 @@ export const useCreateComment = () => {
         queryClient.setQueryData(['optimizedComments', variables.targetType, variables.targetId], context.previousCommentsData);
       }
 
-      showToast('Failed to post comment, please try again', 'error');
+      // 提供更友好的错误提示
+      const errorMessage = error instanceof Error ? error.message : '';
+      let toastMessage = 'Failed to post comment, please try again';
+
+      // 根据错误类型提供更具体的提示
+      if (errorMessage.includes('content') || errorMessage.includes('required')) {
+        toastMessage = 'Please add some text or images to your comment';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        toastMessage = 'Network error. Please check your connection and try again';
+      } else if (errorMessage.includes('auth') || errorMessage.includes('unauthorized')) {
+        toastMessage = 'Please log in to post comments';
+      } else if (errorMessage.includes('image') || errorMessage.includes('upload')) {
+        toastMessage = 'Image upload failed. Please try again or use smaller images';
+      }
+
+      showToast(toastMessage, 'error');
     },
   });
 };
@@ -268,7 +293,13 @@ export const useUpdateComment = () => {
           ...old,
           comments: old.comments?.map((comment: Comment) =>
             comment.id.toString() === commentId.toString()
-              ? { ...comment, content: data.content, isEdited: true, updatedAt: new Date().toISOString() }
+              ? {
+                  ...comment,
+                  content: data.content,
+                  images: data.images, // 包含图片数据
+                  isEdited: true,
+                  updatedAt: new Date().toISOString()
+                }
               : comment
           ),
         };
@@ -589,7 +620,11 @@ export const useLoadCommentReplies = (
         totalCount: replies.length
       };
     },
-    staleTime: 1000 * 60 * 5, // 5分钟缓存
+    staleTime: 1000 * 60 * 10, // 10分钟缓存，回复变化较少
+    gcTime: 1000 * 60 * 15, // 缓存时间15分钟
     enabled: enabled && !!commentId && !!targetId,
+    refetchOnWindowFocus: false, // 减少不必要的重新获取
+    retry: 1, // 回复失败只重试1次
+    retryDelay: 1000, // 固定1秒延迟
   });
 };

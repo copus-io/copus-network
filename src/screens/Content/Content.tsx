@@ -2083,7 +2083,7 @@ export const Content = (): JSX.Element => {
 
                         <div className="flex items-center gap-2">
                           <h3
-                            className="[font-family:'Lato',Helvetica] font-semibold text-lg"
+                            className="[font-family:'Lato',Helvetica] font-semibold text-xl"
                             style={{ color: 'rgba(0, 0, 0, 0.9)' }}
                           >
                             Comments

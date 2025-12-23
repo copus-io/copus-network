@@ -7,26 +7,112 @@ import { useToggleCommentLike, useDeleteComment, useUpdateComment, useLoadCommen
 import { CommentForm } from './CommentForm';
 import { useUser } from '../../contexts/UserContext';
 import CommentImageGallery from './CommentImageGallery';
+import CommentImageUploaderV2, { CommentImageUploaderRef } from './CommentImageUploaderV2';
+
+// 评论图片接口 (和CommentForm保持一致)
+interface CommentImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  uploadUrl?: string;
+  isUploading?: boolean;
+  error?: string;
+}
+
+// 编辑评论图片接口
+interface EditCommentImage {
+  id: string;
+  file?: File; // 新上传的文件
+  previewUrl: string;
+  uploadUrl?: string;
+  isUploading?: boolean;
+  error?: string;
+  isExisting?: boolean; // 是否为已存在的图片
+}
 
 // Edit comment form component
 interface EditCommentFormProps {
   initialContent: string;
-  onSubmit: (content: string) => void;
+  initialImages?: string[]; // 初始图片URL数组
+  onSubmit: (content: string, images: string[]) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
 }
 
 const EditCommentForm: React.FC<EditCommentFormProps> = ({
   initialContent,
+  initialImages = [],
   onSubmit,
   onCancel,
   isSubmitting = false
 }) => {
   const [content, setContent] = useState(initialContent);
+  const [images, setImages] = useState<EditCommentImage[]>([]);
+  const [imageUploadError, setImageUploadError] = useState<string>('');
+  const imageUploaderRef = useRef<CommentImageUploaderRef>(null);
+
+  // 初始化现有图片
+  useEffect(() => {
+    if (initialImages.length > 0) {
+      const existingImages: EditCommentImage[] = initialImages.map((url, index) => ({
+        id: `existing-${index}`,
+        previewUrl: url,
+        uploadUrl: url,
+        isExisting: true
+      }));
+      setImages(existingImages);
+    }
+  }, [initialImages]);
 
   const handleSubmit = () => {
     if (!content.trim()) return;
-    onSubmit(content.trim());
+
+    // 提取所有成功上传的图片URL
+    const imageUrls = images
+      .filter(img => img.uploadUrl && !img.error)
+      .map(img => img.uploadUrl!);
+
+    onSubmit(content.trim(), imageUrls);
+  };
+
+  // 处理图片变化
+  const handleImagesChange = (newImages: CommentImage[]) => {
+    console.log('📸 编辑模式图片变化:', {
+      oldCount: images.length,
+      newCount: newImages.length
+    });
+
+    // 转换为编辑用的图片格式
+    const editImages: EditCommentImage[] = newImages.map(img => ({
+      id: img.id,
+      file: img.file,
+      previewUrl: img.previewUrl,
+      uploadUrl: img.uploadUrl,
+      isUploading: img.isUploading,
+      error: img.error,
+      isExisting: false
+    }));
+
+    // 合并现有图片和新图片
+    const existingImages = images.filter(img => img.isExisting);
+    setImages([...existingImages, ...editImages]);
+    setImageUploadError('');
+  };
+
+  // 处理图片上传错误
+  const handleImageUploadError = (error: string) => {
+    setImageUploadError(error);
+  };
+
+  // 删除图片
+  const handleRemoveImage = (imageId: string) => {
+    setImages(prev => prev.filter(img => img.id !== imageId));
+
+    // 如果删除的是新上传的图片，也要从上传组件中移除
+    const imageToRemove = images.find(img => img.id === imageId);
+    if (imageToRemove && !imageToRemove.isExisting) {
+      imageUploaderRef.current?.removeImage(imageId);
+    }
   };
 
   return (
@@ -39,6 +125,63 @@ const EditCommentForm: React.FC<EditCommentFormProps> = ({
         rows={3}
         disabled={isSubmitting}
       />
+
+      {/* 图片编辑区域 */}
+      <div className="mt-3">
+        {/* 已有图片预览 */}
+        {images.length > 0 && (
+          <div className="mb-3">
+            <div className="flex flex-wrap gap-2">
+              {images.map((image) => (
+                <div key={image.id} className="relative">
+                  <img
+                    src={image.previewUrl}
+                    alt="Comment image"
+                    className="w-20 h-20 object-cover rounded-lg border"
+                  />
+                  {/* 删除按钮 */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(image.id)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    ×
+                  </button>
+                  {/* 上传状态指示器 */}
+                  {image.isUploading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  {image.error && (
+                    <div className="absolute inset-0 bg-red-500 bg-opacity-80 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-xs">!</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 图片上传组件 */}
+        <CommentImageUploaderV2
+          ref={imageUploaderRef}
+          onImagesChange={handleImagesChange}
+          onUploadError={handleImageUploadError}
+          disabled={isSubmitting}
+          maxImages={9 - images.filter(img => img.isExisting).length} // 减去已有图片数量
+        />
+
+        {/* 图片上传错误提示 */}
+        {imageUploadError && (
+          <div className="mt-2 text-red-500 text-sm">
+            {imageUploadError}
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-end gap-2 mt-3">
         <button
           onClick={onCancel}
@@ -609,6 +752,9 @@ const ReplyItemComponent: React.FC<{
             className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium text-gray-500 hover:text-red hover:bg-red-50 transition-all duration-200 [font-family:'Lato',Helvetica]"
             style={{ outline: 'none' }}
           >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+            </svg>
             <span>Reply</span>
           </button>
 
@@ -827,9 +973,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     setShowEditForm(!showEditForm);
   };
 
-  const handleEditSubmit = (content: string) => {
+  const handleEditSubmit = (content: string, images: string[]) => {
     updateCommentMutation.mutate(
-      { commentId: comment.id, data: { content, articleId: targetId } },
+      { commentId: comment.id, data: { content, articleId: targetId, images } },
       {
         onSuccess: () => {
           setShowEditForm(false);
@@ -1068,6 +1214,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <div className="mt-4">
               <EditCommentForm
                 initialContent={comment.content}
+                initialImages={comment.images}
                 onSubmit={handleEditSubmit}
                 onCancel={() => setShowEditForm(false)}
                 isSubmitting={updateCommentMutation.isPending}

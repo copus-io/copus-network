@@ -185,8 +185,9 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
     }
 
     // 🎨 创建临时预览项，显示处理进度
+    const baseTimestamp = Date.now(); // 统一时间戳，避免ID不匹配
     const tempImages: CommentImage[] = allValidFiles.map((file, index) => ({
-      id: `temp-${Date.now()}-${index}`,
+      id: `temp-${baseTimestamp}-${index}`,
       file,
       previewUrl: '',
       status: 'pending',
@@ -202,17 +203,19 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
 
     for (let i = 0; i < allValidFiles.length; i++) {
       const file = allValidFiles[i];
-      const tempImageId = `temp-${Date.now()}-${i}`;
+      const tempImageId = `temp-${baseTimestamp}-${i}`; // 使用统一的时间戳
 
       try {
-        // 更新状态为处理中
-        const processingImages = updatedTempImages.map(img =>
-          img.id === tempImageId
-            ? { ...img, status: 'processing' as const }
-            : img
-        );
-        setImages(processingImages);
-        onImagesChange(processingImages);
+        // 更新状态为处理中 - 基于当前状态
+        setImages(currentImages => {
+          const processingImages = currentImages.map(img =>
+            img.id === tempImageId
+              ? { ...img, status: 'processing' as const }
+              : img
+          );
+          onImagesChange(processingImages);
+          return processingImages;
+        });
 
         const strategy = getCompressionStrategy(file);
         console.log(`🖼️ 开始${strategy.description}图片 ${i + 1}/${allValidFiles.length}:`, {
@@ -228,7 +231,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
           compressionRatio: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%'
         });
 
-        const imageId = `${Date.now()}-${i}`;
+        const imageId = `${baseTimestamp}-processed-${i}`;
         const previewUrl = createImagePreview(compressedFile);
 
         // 创建重命名的文件
@@ -250,26 +253,30 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
 
         finalImages.push(processedImage);
 
-        // 更新为成功状态
-        const successImages = updatedTempImages.map(img =>
-          img.id === tempImageId
-            ? processedImage
-            : img
-        );
-        setImages(successImages);
-        onImagesChange(successImages);
+        // 更新为成功状态 - 基于当前状态而不是固定的 updatedTempImages
+        setImages(currentImages => {
+          const successImages = currentImages.map(img =>
+            img.id === tempImageId
+              ? processedImage
+              : img
+          );
+          onImagesChange(successImages);
+          return successImages;
+        });
 
       } catch (error) {
         console.error(`🖼️ 图片处理失败:`, error);
 
-        // 更新为错误状态
-        const errorImages = updatedTempImages.map(img =>
-          img.id === tempImageId
-            ? { ...img, status: 'error' as const, error: '处理失败' }
-            : img
-        );
-        setImages(errorImages);
-        onImagesChange(errorImages);
+        // 更新为错误状态 - 基于当前状态
+        setImages(currentImages => {
+          const errorImages = currentImages.map(img =>
+            img.id === tempImageId
+              ? { ...img, status: 'error' as const, error: '处理失败' }
+              : img
+          );
+          onImagesChange(errorImages);
+          return errorImages;
+        });
       }
     }
 
@@ -330,7 +337,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
   };
 
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={className}>
       {/* 隐藏的文件输入 */}
       <input
         ref={fileInputRef}
@@ -342,53 +349,11 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
         className="hidden"
       />
 
-      {/* 图片网格 */}
-      {images.length > 0 && (
-        <div className="grid grid-cols-4 gap-1.5 w-fit">
-          {images.map((image) => (
-            <div
-              key={image.id}
-              className="relative w-16 h-16 rounded-md overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-200"
-            >
-              {image.previewUrl ? (
-                <img
-                  src={image.previewUrl}
-                  alt="预览"
-                  className="w-full h-full object-cover"
-                  onClick={() => handleImageClick(image)}
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              )}
-
-              {/* 状态覆盖层 */}
-              {renderStatusIndicator(image)}
-
-              {/* 删除按钮 */}
-              {image.status !== 'processing' && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveImage(image.id);
-                  }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors duration-200 opacity-0 group-hover:opacity-100"
-                >
-                  ×
-                </button>
-              )}
-
-              {/* 压缩信息提示 */}
-              {image.status === 'success' && image.originalSize && image.finalSize && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-[8px] px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  压缩 {((1 - image.finalSize / image.originalSize) * 100).toFixed(0)}%
-                </div>
-              )}
-            </div>
-          ))}
+      {/* 处理状态提示 */}
+      {isProcessing && (
+        <div className="text-xs text-gray-500 mb-2 flex items-center gap-2">
+          <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+          <span>正在处理图片...</span>
         </div>
       )}
     </div>
