@@ -1833,7 +1833,7 @@ export const Content = (): JSX.Element => {
         <main className="flex flex-col lg:flex-row items-start pt-[70px] lg:pt-[120px] pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow">
           {/* Main Content Column */}
           <div className="flex-1 w-full">
-            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b [border-bottom-style:solid] border-[#E0E0E0]">
+            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
@@ -1957,7 +1957,7 @@ export const Content = (): JSX.Element => {
 
             {/* Collected in spaces section - moved back to article content */}
             {collectedInData.length > 0 && (
-              <section className="mt-[50px] pt-[30px]">
+              <section className="mt-[50px] border-t border-[#D3D3D3] pt-[30px]">
                 <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-[28px] mb-[20px]">
                   Collected in
                 </h2>
