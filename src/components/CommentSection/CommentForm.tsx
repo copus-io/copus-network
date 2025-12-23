@@ -6,7 +6,7 @@ import { useCreateComment } from '../../hooks/queries/useComments';
 import { useUser } from '../../contexts/UserContext';
 import { getUserDisplayName } from './utils';
 import { CreateCommentRequest } from '../../types/comment';
-import CommentImageUploader, { CommentImageUploaderRef } from './CommentImageUploader';
+import CommentImageUploaderV2, { CommentImageUploaderRef } from './CommentImageUploaderV2';
 import { AuthService } from '../../services/authService';
 import { useImagePreview } from '../../contexts/ImagePreviewContext';
 import { revokeImagePreview } from '../../utils/imageUtils';
@@ -464,7 +464,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
 
             {/* 图片上传组件 */}
             <div className="px-6 pb-2">
-              <CommentImageUploader
+              <CommentImageUploaderV2
                 ref={imageUploaderRef}
                 maxImages={9}
                 onImagesChange={handleImagesChange}
@@ -493,7 +493,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                   <button
                     type="button"
                     onClick={() => {
-                      // 触发CommentImageUploader的文件选择
+                      // 触发CommentImageUploaderV2的文件选择
                       imageUploaderRef.current?.triggerFileSelect();
                     }}
                     disabled={isSubmitting}
