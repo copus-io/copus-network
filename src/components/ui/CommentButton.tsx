@@ -86,15 +86,13 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
       <div className="relative z-10">
         <svg
           className="w-4 h-4"
-          style={{
-            transition: 'all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-            transform: isExpanded ? 'scale(1.1) rotate(5deg)' : 'scale(1) rotate(0deg)'
-          }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
           strokeWidth={2.5}
           style={{
+            transition: 'all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+            transform: isExpanded ? 'scale(1.1) rotate(5deg)' : 'scale(1) rotate(0deg)',
             color: isExpanded
               ? 'rgba(255, 255, 255, 0.98)'
               : 'rgba(71, 85, 105, 0.8)',

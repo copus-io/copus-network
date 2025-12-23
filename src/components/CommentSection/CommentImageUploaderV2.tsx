@@ -1,6 +1,6 @@
 // Comment Image Uploader V2 - 改进的用户体验版本
 
-import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from '../../utils/imageUtils';
 import { useImagePreview } from '../../contexts/ImagePreviewContext';
 
@@ -69,6 +69,18 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
 
     console.log('🧹 图片缓存已清理');
   };
+
+  // 组件卸载时清理所有图片URL，防止内存泄漏
+  useEffect(() => {
+    return () => {
+      // 清理所有预览URL
+      images.forEach(image => {
+        if (image.previewUrl) {
+          revokeImagePreview(image.previewUrl);
+        }
+      });
+    };
+  }, []);
 
   useImperativeHandle(ref, () => ({
     triggerFileSelect: () => {

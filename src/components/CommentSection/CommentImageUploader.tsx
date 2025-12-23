@@ -1,6 +1,6 @@
 // Comment Image Uploader - 小红书风格的评论图片上传组件
 
-import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from '../../utils/imageUtils';
 import { useImagePreview } from '../../contexts/ImagePreviewContext';
 
@@ -41,6 +41,18 @@ export const CommentImageUploader = forwardRef<CommentImageUploaderRef, CommentI
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { openPreview } = useImagePreview();
+
+  // 组件卸载时清理所有图片URL，防止内存泄漏
+  useEffect(() => {
+    return () => {
+      // 清理所有预览URL
+      images.forEach(image => {
+        if (image.previewUrl) {
+          revokeImagePreview(image.previewUrl);
+        }
+      });
+    };
+  }, []);
 
   // 暴露给父组件的方法
   useImperativeHandle(ref, () => ({
