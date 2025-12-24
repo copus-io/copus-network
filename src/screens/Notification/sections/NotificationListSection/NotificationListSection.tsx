@@ -211,7 +211,7 @@ export const NotificationListSection = (): JSX.Element => {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none [font-family:'Lato',Helvetica] font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black data-[state=active]:font-bold"
+              className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none [font-family:'Lato',Helvetica] font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
             >
               <span className="relative z-10">{tab.label}</span>
               <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
