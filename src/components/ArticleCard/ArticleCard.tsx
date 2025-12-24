@@ -344,7 +344,24 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
 
             {/* Action buttons area */}
             <div className="flex items-center justify-between mt-auto -mx-[30px] px-[30px]">
-              {/* Left side: Treasure button and visit count */}
+              {/* Left side: View count */}
+              <div className="flex items-center gap-4">
+                {actions.showVisits && (
+                  <div className="flex items-center gap-1.5">
+                    <img
+                      className="w-4 h-4"
+                      alt="Ic view"
+                      src={getIconUrl('VIEW')}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
+                      {article.visitCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right side: Treasure button, comment count, and Edit/Delete buttons */}
               <div className="flex items-center gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
@@ -361,19 +378,6 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     disabled={!onLike} // Disable when no onLike callback (user not logged in)
                   />
                 )}
-                {actions.showVisits && (
-                  <div className="flex items-center gap-1.5">
-                    <img
-                      className="w-4 h-4"
-                      alt="Ic view"
-                      src={getIconUrl('VIEW')}
-                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
-                    />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
-                      {article.visitCount}
-                    </span>
-                  </div>
-                )}
                 {/* Comment count */}
                 <div className="flex items-center gap-1.5">
                   <img
@@ -386,10 +390,6 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     {article.commentCount || 0}
                   </span>
                 </div>
-              </div>
-
-              {/* Right side: Edit/Delete buttons and Branch It */}
-              <div className="flex items-center gap-2">
                 {/* Edit and delete buttons area */}
                 {(actions.showEdit || actions.showDelete) && (
                   <div className="flex items-center gap-2 min-h-[24px]">
@@ -614,7 +614,24 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
 
             {/* Action buttons area */}
             <div className="flex items-center justify-between -mx-[20px] px-[20px]">
-              {/* Left side: Treasure button and visit count */}
+              {/* Left side: View count */}
+              <div className="flex items-center gap-4">
+                {actions.showVisits && (
+                  <div className="inline-flex items-center gap-1.5">
+                    <img
+                      className="w-4 h-4"
+                      alt="Ic view"
+                      src={getIconUrl('VIEW')}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
+                      {article.visitCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right side: Treasure button, comment count, and Edit/Delete buttons */}
               <div className="flex items-center gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
@@ -631,19 +648,6 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     disabled={!onLike} // Disable when no onLike callback (user not logged in)
                   />
                 )}
-                {actions.showVisits && (
-                  <div className="inline-flex items-center gap-1.5">
-                    <img
-                      className="w-4 h-4"
-                      alt="Ic view"
-                      src={getIconUrl('VIEW')}
-                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
-                    />
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
-                      {article.visitCount}
-                    </span>
-                  </div>
-                )}
                 {/* Comment count */}
                 <div className="inline-flex items-center gap-1.5">
                   <img
@@ -656,10 +660,6 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     {article.commentCount || 0}
                   </span>
                 </div>
-              </div>
-
-              {/* Right side: Edit/Delete buttons */}
-              <div className="flex items-center gap-4">
                 {(actions.showEdit || actions.showDelete) && (
                   <div className="flex items-center gap-2">
                     {actions.showEdit && (
