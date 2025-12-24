@@ -207,20 +207,20 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <div className="mt-6">
           {isLoading ? (
             <div className="space-y-0">
-              {/* 优化的加载状态 */}
+              {/* Loading state */}
               <div className="flex items-center justify-center py-8 mb-6">
                 <div className="flex items-center gap-3 text-gray-500">
                   <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
                   <span className="text-sm font-medium [font-family:'Lato',Helvetica]">
-                    加载评论中...
+                    Loading comments...
                   </span>
                 </div>
               </div>
 
-              {/* 骨架屏 - 第一个带回复 */}
+              {/* Skeleton - first with replies */}
               <CommentSkeleton withReplies={true} />
 
-              {/* 其他骨架屏 */}
+              {/* Other skeletons */}
               {Array.from({ length: 2 }, (_, i) => (
                 <CommentSkeleton key={i} />
               ))}
@@ -238,11 +238,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           )}
         </div>
 
-        {/* 底部安全边距 - 避免被底部导航栏遮挡 */}
+        {/* Bottom safe margin */}
         <div className="h-24 md:h-8"></div>
       </div>
 
-      {/* 回复弹窗 */}
+      {/* Reply modal */}
       <ReplyModal
         isOpen={replyState.isReplying}
         onClose={() => setReplyState({ isReplying: false })}

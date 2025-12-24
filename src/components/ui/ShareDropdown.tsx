@@ -66,20 +66,22 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
         onClick={handleShareClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0"
-        style={{
-          background: isHovered
-            ? 'linear-gradient(0deg, rgba(33, 145, 251, 0.2) 0%, rgba(33, 145, 251, 0.2) 100%), linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 1) 100%)'
-            : 'transparent'
-        }}
+        className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0"
         aria-label="Share"
         aria-expanded={isOpen}
       >
-        <img
-          className="w-[38px] h-[38px]"
-          alt="Share"
-          src="https://c.animaapp.com/5EW1c9Rn/img/share.svg"
-        />
+        <svg
+          width="38"
+          height="38"
+          viewBox="0 0 38 38"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" fill={isHovered ? 'rgba(33, 145, 251, 0.15)' : 'white'} style={{ transition: 'fill 200ms ease' }} />
+          <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" stroke="#2191FB" />
+          <path d="M12.0243 28H22.96C24.6286 28 25.9843 26.5628 25.9843 24.7946C25.9843 24.5772 25.8186 24.4014 25.6129 24.4014C25.4086 24.4014 25.2414 24.5772 25.2414 24.7946C25.2414 26.1294 24.2186 27.2149 22.9586 27.2149H12.0243C10.7657 27.2149 9.74143 26.1294 9.74143 24.7946V13.2054C9.74143 11.872 10.7657 10.7865 12.0243 10.7865C12.23 10.7865 12.3957 10.6106 12.3957 10.3932C12.3957 10.1758 12.23 10 12.0243 10C10.3571 10 9 11.4372 9 13.2054V24.7946C9 26.5614 10.3571 27.9986 12.0243 27.9986V28Z" fill="#2191FB" />
+          <path d="M21.9586 10.1454V13.3245C17.3929 13.6083 14.4543 16.246 12.9814 21.3829L12.64 22.5695L13.5629 21.808C16.8043 19.1302 19.3343 18.1762 21.9586 18.6649V21.8938L29 16.0203L21.9586 10.1454ZM22.4071 17.9546C19.1471 17.2208 16.3114 18.7314 14.0757 20.4192C15.59 16.2529 18.24 14.2342 22.3414 14.0929L22.7 14.0805V11.764L27.8 16.0203L22.7 20.2752V18.0211L22.4071 17.9546Z" fill="#2191FB" />
+        </svg>
       </button>
 
       {isOpen && (

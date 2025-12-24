@@ -20,6 +20,7 @@ import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
 import { CommentSection } from "../../components/CommentSection";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
+import commentIcon from "../../assets/images/comment.svg";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
 import {
   generateNonce,
@@ -1832,7 +1833,7 @@ export const Content = (): JSX.Element => {
         <main className="flex flex-col lg:flex-row items-start pt-[70px] lg:pt-[120px] pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow">
           {/* Main Content Column */}
           <div className="flex-1 w-full">
-            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b [border-bottom-style:solid] border-[#E0E0E0]">
+            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
@@ -1993,9 +1994,9 @@ export const Content = (): JSX.Element => {
                   }}
                 />
 
-                {/* Apple-style frosted glass modal */}
+                {/* Comment modal */}
                 <div
-                  className="fixed bottom-0 left-0 right-0 z-50"
+                  className="fixed bottom-0 left-0 right-0 z-50 flex justify-center"
                   style={{
                     transition: 'transform 700ms cubic-bezier(0.25, 1.25, 0.45, 0.95), opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1)',
                     transform: isCommentSectionOpen
@@ -2006,21 +2007,11 @@ export const Content = (): JSX.Element => {
                   }}
                 >
                   <div
-                    className="h-[94vh] overflow-hidden"
+                    className="h-[94vh] overflow-hidden w-full max-w-[1250px] mx-4 lg:mx-[30px]"
                     style={{
-                      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.88) 50%, rgba(241, 245, 249, 0.85) 100%)',
-                      backdropFilter: 'blur(45px) brightness(1.12) saturate(1.6) contrast(1.08)',
-                      WebkitBackdropFilter: 'blur(45px) brightness(1.12) saturate(1.6) contrast(1.08)',
+                      background: 'linear-gradient(0deg, rgba(224,224,224,0.18) 0%, rgba(224,224,224,0.18) 100%), linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 100%)',
                       borderRadius: '32px 32px 0 0',
-                      border: '1px solid rgba(255, 255, 255, 0.8)',
-                      borderBottom: 'none',
-                      boxShadow: `
-                        0 -12px 40px rgba(0, 0, 0, 0.08),
-                        0 -4px 16px rgba(0, 0, 0, 0.04),
-                        0 -1px 4px rgba(0, 0, 0, 0.02),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-                        inset 0 0 30px rgba(255, 255, 255, 0.15)
-                      `,
+                      boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)',
                     }}
                     onWheel={(e) => {
                       // Prevent wheel events from bubbling to parent
@@ -2031,56 +2022,17 @@ export const Content = (): JSX.Element => {
                       e.stopPropagation();
                     }}
                   >
-                    {/* Apple-style drag indicator */}
-                    <div className="flex justify-center py-2">
-                      <div
-                        className="w-12 h-1.5 rounded-full"
-                        style={{
-                          background: 'linear-gradient(90deg, rgba(148, 163, 184, 0.6) 0%, rgba(100, 116, 139, 0.7) 50%, rgba(148, 163, 184, 0.6) 100%)',
-                          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-                          transition: 'all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-                          transform: isCommentSectionOpen ? 'scaleX(1)' : 'scaleX(0.7)',
-                          opacity: isCommentSectionOpen ? 1 : 0,
-                          animation: isCommentSectionOpen ? 'gentle-bounce 0.8s ease-out 0.3s' : 'none'
-                        }}
-                      />
-
-                      {/* 添加弹跳动画 */}
-                      <style jsx>{`
-                        @keyframes gentle-bounce {
-                          0% { transform: scaleX(0.7) scaleY(1); }
-                          30% { transform: scaleX(1.1) scaleY(0.8); }
-                          60% { transform: scaleX(0.95) scaleY(1.1); }
-                          100% { transform: scaleX(1) scaleY(1); }
-                        }
-                      `}</style>
-                    </div>
-
-                    {/* Simplified header */}
-                    <div className="flex items-center justify-between px-6 py-3">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="flex items-center justify-center w-9 h-9 rounded-full"
+                        <img
+                          src={commentIcon}
+                          alt="Comments"
+                          className="w-[25px] h-[22px]"
                           style={{
-                            background: 'linear-gradient(135deg, #ff6b35 0%, #f23a00 100%)',
-                            boxShadow: '0 2px 8px rgba(242, 58, 0, 0.2)',
+                            filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(55%) contrast(90%)'
                           }}
-                        >
-                          <svg
-                            className="w-4 h-4 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2.5}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.691 1.109 3.194 2.676 3.741A11.04 11.04 0 0010.5 18a11.04 11.04 0 008.575-4.009c1.567-.547 2.676-2.05 2.676-3.741V6.75A2.25 2.25 0 0019.5 4.5H4.5A2.25 2.25 0 002.25 6.75v4.501z"
-                            />
-                          </svg>
-                        </div>
-
+                        />
                         <div className="flex items-center gap-2">
                           <h3
                             className="[font-family:'Lato',Helvetica] font-semibold text-xl"
@@ -2105,37 +2057,29 @@ export const Content = (): JSX.Element => {
                         </div>
                       </div>
 
-                      {/* Apple-style close button */}
+                      {/* Close button */}
                       <button
                         onClick={() => setIsCommentSectionOpen(false)}
-                        className="flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 group"
-                        style={{
-                          background: 'rgba(0, 0, 0, 0.08)',
-                          backdropFilter: 'blur(20px) brightness(1.2)',
-                          border: '1px solid rgba(255, 255, 255, 0.6)',
-                        }}
+                        className="flex items-center justify-center w-[30px] h-[30px] rounded-full transition-all duration-200 hover:bg-gray-200 active:scale-95"
                       >
                         <svg
-                          className="w-5 h-5 group-hover:scale-110 transition-transform duration-200"
-                          fill="none"
-                          stroke="currentColor"
+                          className="w-[15px] h-[15px]"
                           viewBox="0 0 24 24"
-                          strokeWidth={2.5}
-                          style={{ color: 'rgba(0, 0, 0, 0.7)' }}
+                          fill="none"
+                          stroke="#696969"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
+                          <path d="M18 6L6 18M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
 
-                    {/* Apple-style content area with enhanced readability */}
+                    {/* Content area */}
                     <div
                       ref={commentScrollRef}
-                      className="h-[85vh] overflow-y-auto px-2"
+                      className="h-[85vh] overflow-y-auto px-4"
                       style={{
                         scrollbarWidth: 'thin',
                         scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
@@ -2149,16 +2093,8 @@ export const Content = (): JSX.Element => {
                         e.stopPropagation();
                       }}
                     >
-                      <div
-                        className="mx-2 mb-12 rounded-2xl px-4 py-4"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.6)',
-                          backdropFilter: 'blur(20px) brightness(1.05)',
-                          border: '1px solid rgba(255, 255, 255, 0.8)',
-                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                        }}
-                      >
-                        {/* 懒加载评论 - 只在真正展开时才渲染 */}
+                      <div className="mb-12 px-2">
+                        {/* Lazy load comments - only render when expanded */}
                         {isCommentSectionOpen ? (
                           <CommentSection
                             targetType="article"
@@ -2212,8 +2148,8 @@ export const Content = (): JSX.Element => {
         </main>
 
         {/* Sticky bottom button bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-5 px-4 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <div className="flex justify-between items-center w-full max-w-[1040px] mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-5 px-4 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
               {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
@@ -2277,14 +2213,14 @@ export const Content = (): JSX.Element => {
               // Content has been unlocked via payment - show "Visit" button
               <button
                 onClick={() => window.open(unlockedUrl, '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
+                className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                   Visit
                 </span>
 
                 <img
-                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
+                  className="relative w-[31px] h-[14.73px] mr-[-1.00px] transition-transform duration-200 group-hover:translate-x-1"
                   alt="Arrow"
                   src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
                 />
@@ -2293,14 +2229,14 @@ export const Content = (): JSX.Element => {
               // Content has targetUrl - show "Visit" button regardless of lock status
               <button
                 onClick={() => window.open(article.targetUrl, '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
+                className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                   Visit
                 </span>
 
                 <img
-                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
+                  className="relative w-[31px] h-[14.73px] mr-[-1.00px] transition-transform duration-200 group-hover:translate-x-1"
                   alt="Arrow"
                   src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
                 />
@@ -2391,13 +2327,18 @@ export const Content = (): JSX.Element => {
             articleNumericId={article.id}
             articleTitle={article.title}
             isAlreadyCollected={isLiked}
-            onCollectSuccess={() => {
-              // Update like state when collection is successful
-              if (!isLiked) {
+            onSaveComplete={(isCollected, collectionCount) => {
+              // Update like state based on whether article is now collected or not
+              if (isCollected && !isLiked) {
                 const newLikesCount = likesCount + 1;
                 setIsLiked(true);
                 setLikesCount(newLikesCount);
                 updateArticleLikeState(article.uuid, true, newLikesCount);
+              } else if (!isCollected && isLiked) {
+                const newLikesCount = Math.max(0, likesCount - 1);
+                setIsLiked(false);
+                setLikesCount(newLikesCount);
+                updateArticleLikeState(article.uuid, false, newLikesCount);
               }
             }}
           />

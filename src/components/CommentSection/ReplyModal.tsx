@@ -104,7 +104,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900 [font-family:'Lato',Helvetica]">
-                    💬 回复评论
+                    Reply to comment
                   </h3>
                   <button
                     onClick={onClose}
@@ -117,8 +117,8 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({
                 </div>
               </div>
 
-              {/* 被回复的评论高亮显示 */}
-              <div className="px-6 py-4 bg-blue-50 border-l-4 border-blue-400">
+              {/* Quoted comment */}
+              <div className="px-6 py-4">
                 <div className="flex gap-3">
                   {/* 头像 */}
                   <img
@@ -141,7 +141,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({
                     {/* 评论内容 */}
                     <div className="text-blue-800 text-sm leading-relaxed [font-family:'Lato',Helvetica] font-light">
                       {targetComment.content === '回复的评论' ? (
-                        <span className="italic text-gray-500">回复 @{targetComment.authorName} 的评论</span>
+                        <span className="italic text-gray-500">Replying to @{targetComment.authorName}</span>
                       ) : (
                         targetComment.content.split('\n').map((line, index) => (
                           <React.Fragment key={index}>
@@ -178,7 +178,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({
                   articleId={articleId}
                   replyState={replyState}
                   onReplyComplete={handleReplyComplete}
-                  placeholder={`回复 ${targetComment.authorName}...`}
+                  placeholder={`Replying to ${targetComment.authorName}...`}
                   hideReplyCancel={true}
                 />
               </div>

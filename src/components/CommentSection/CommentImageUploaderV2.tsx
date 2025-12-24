@@ -353,7 +353,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
       {isProcessing && (
         <div className="text-xs text-gray-500 mb-2 flex items-center gap-2">
           <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-          <span>正在处理图片...</span>
+          <span>Processing images...</span>
         </div>
       )}
     </div>

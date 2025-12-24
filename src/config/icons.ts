@@ -8,6 +8,7 @@ export const ICON_CONFIG = {
   EDIT: 'https://c.animaapp.com/w7obk4mX/img/edit-1.svg',
   DELETE: 'https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg',
   BRANCH_IT: 'https://c.animaapp.com/mftam89xRJwsqQ/img/branch-it.svg',
+  CLOSE: 'https://c.animaapp.com/RWdJi6d2/img/close.svg',
 
   // Icon styles
   ICON_FILTER_DARK_GREY: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%)',
