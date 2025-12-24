@@ -55,10 +55,10 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
     return safeCount.toString();
   };
 
-  // Get background color for large size button
-  const largeButtonBg = isLiked
-    ? (isHovered ? '#c98a1a' : '#e19e1d')
-    : (isHovered ? 'rgba(225, 158, 29, 0.2)' : 'white');
+  // Get background color for large size button - use light transparent yellow for both hover and liked states
+  const largeButtonBg = (isLiked || isHovered)
+    ? 'rgba(225, 158, 29, 0.2)'
+    : 'white';
 
   return (
     <button
@@ -95,9 +95,8 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
           src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
           style={
             size === 'large' ? {
-              filter: isLiked
-                ? 'brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(93deg) brightness(103%) contrast(103%)'
-                : 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
+              // Always use yellow icon for large size (both liked and not liked)
+              filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
             } : (isLiked ? {
               filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
             } : {
@@ -127,7 +126,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
           [font-family:'Lato',Helvetica] font-light text-center tracking-[0] leading-[16px]
           ${currentSize.text}
           ${size === 'large'
-            ? (isLiked ? 'text-white' : 'text-[#e19e1d]')
+            ? 'text-[#e19e1d]'
             : 'text-[#696969]'
           }
           transition-colors duration-200

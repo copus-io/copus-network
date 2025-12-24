@@ -32,7 +32,7 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
         transition-all duration-200
         cursor-pointer
         ${isExpanded
-          ? 'bg-[#A9A9A9] border-[#A9A9A9] hover:bg-[#999999]'
+          ? 'bg-gray-100 border-[#A9A9A9]'
           : 'bg-white border-[#A9A9A9] hover:bg-gray-100'
         }
       `}
@@ -45,9 +45,7 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
         alt="Comment"
         className="w-[25px] h-[22px]"
         style={{
-          filter: isExpanded
-            ? 'brightness(0) invert(1)'
-            : 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(55%) contrast(90%)'
+          filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(55%) contrast(90%)'
         }}
       />
 
@@ -55,7 +53,7 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
       <span
         className={`
           [font-family:'Lato',Helvetica] font-light text-lg leading-5
-          ${isExpanded ? 'text-white' : 'text-[#454545]'}
+          text-[#454545]
         `}
       >
         {getCommentsText()}

@@ -2060,10 +2060,10 @@ export const Content = (): JSX.Element => {
                       {/* Close button */}
                       <button
                         onClick={() => setIsCommentSectionOpen(false)}
-                        className="flex items-center justify-center w-[30px] h-[30px] rounded-full transition-all duration-200 hover:bg-gray-200 active:scale-95"
+                        className="flex items-center justify-center w-[36px] h-[36px] rounded-full"
                       >
                         <svg
-                          className="w-[15px] h-[15px]"
+                          className="w-[20px] h-[20px]"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="#696969"
