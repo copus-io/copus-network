@@ -272,7 +272,7 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-5 flex-1">
                         <div className="flex flex-col gap-2.5 flex-1">
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-lg leading-[23px]">
+                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-[22px]">
                             {notification.message}
                           </div>
                         </div>
@@ -356,7 +356,7 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-5 flex-1">
                         <div className="flex flex-col gap-2.5 flex-1">
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-lg leading-[23px]">
+                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-[22px]">
                             {notification.message}
                           </div>
                         </div>
