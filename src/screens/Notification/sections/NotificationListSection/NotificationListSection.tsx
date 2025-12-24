@@ -16,7 +16,6 @@ import { useNotification } from "../../../../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
 
 const notificationTabs = [
-  { value: "all", label: "All" },
   { value: "treasury", label: "Treasury" },
   { value: "comment", label: "Comment" },
   { value: "earning", label: "Earning" },
@@ -204,7 +203,7 @@ export const NotificationListSection = (): JSX.Element => {
       </header>
 
       <Tabs
-        defaultValue="all"
+        defaultValue="treasury"
         className="w-full translate-y-[-1rem] animate-fade-in opacity-0 [--animation-delay:200ms]"
       >
         <TabsList className="flex w-full bg-transparent h-auto p-0 gap-0 border-b border-gray-100">
@@ -212,193 +211,13 @@ export const NotificationListSection = (): JSX.Element => {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className={`group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none ${
-                tab.value === "all"
-                  ? "[font-family:'Lato',Helvetica] font-bold text-gray-700 text-lg leading-tight data-[state=active]:text-black"
-                  : "font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
-              }`}
+              className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none [font-family:'Lato',Helvetica] font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black data-[state=active]:font-bold"
             >
               <span className="relative z-10">{tab.label}</span>
               <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
             </TabsTrigger>
           ))}
         </TabsList>
-
-        <TabsContent value="all" className="mt-5">
-          {isLoading ? (
-            renderLoadingState()
-          ) : notificationList.length === 0 ? (
-            renderEmptyState()
-          ) : (
-            <div className="flex flex-col gap-5 pb-[30px]">
-              {notificationList.map((notification, index) => {
-                const isRead = notification.isRead;
-
-                return (
-                  <Card
-                    key={notification.id}
-                    className={`p-0 border-0 rounded-lg border-b border-white translate-y-[-1rem] animate-fade-in opacity-0 transition-all duration-200 cursor-pointer ${
-                      isRead
-                        ? "bg-white shadow-none"
-                        : "shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
-                    }`}
-                    style={
-                      {
-                        "--animation-delay": `${400 + index * 100}ms`,
-                      } as React.CSSProperties
-                    }
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                  <CardContent className="flex items-start gap-[30px] p-5">
-                    {notification.type === "system" ? (
-                      <img
-                        className="flex-shrink-0"
-                        alt="System notification icon"
-                        src={notification.icon}
-                      />
-                    ) : (
-                      <div
-                        className={`relative ${(notification.namespace || notification.userId) ? 'cursor-pointer hover:opacity-80 transition-opacity duration-200' : ''}`}
-                        onClick={(notification.namespace || notification.userId) ? (e) => handleUserClick(notification, e) : undefined}
-                        title={(notification.namespace || notification.userId) ? "Click to view user profile" : undefined}
-                      >
-                        <Avatar className="w-[45px] h-[45px] flex-shrink-0">
-                          <AvatarImage
-                            src={notification.profileImage}
-                            alt="Profile"
-                            className="object-cover"
-                          />
-                          <AvatarFallback>UN</AvatarFallback>
-                        </Avatar>
-                        {(notification.namespace || notification.userId) && (
-                          <div className="absolute inset-0 rounded-full border-2 border-transparent hover:border-blue-300 transition-colors duration-200" />
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex items-start gap-5 flex-1">
-                      <div className="flex flex-col gap-2.5 flex-1">
-                        <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-lg leading-[23px]">
-                          {notification.type !== "system" ? (
-                            // Parse username and article title for non-system notifications
-                            (() => {
-                              const message = notification.message;
-                              // Extract username: usually at the beginning of the message
-                              const userNameMatch = message.match(/^([^<>\s]+(?:\s+[^<>\s]+)*?)\s+(liked|commented|treasured)/);
-                              // Extract article title: usually in quotes
-                              const postTitleMatch = message.match(/"([^"]+)"/);
-
-                              if (userNameMatch || postTitleMatch) {
-                                let parts = [];
-                                let remainingMessage = message;
-
-                                // Handle username part
-                                if (userNameMatch && (notification.namespace || notification.userId)) {
-                                  const userName = userNameMatch[1];
-                                  const beforeUser = remainingMessage.substring(0, userNameMatch.index);
-                                  parts.push(beforeUser);
-                                  parts.push(
-                                    <span
-                                      key="username"
-                                      className="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200 font-semibold"
-                                      onClick={(e) => handleUserClick(notification, e)}
-                                      title="Click to view user profile"
-                                    >
-                                      {userName}
-                                    </span>
-                                  );
-                                  remainingMessage = remainingMessage.substring(userNameMatch.index + userName.length);
-                                }
-
-                                // Handle article title part
-                                if (postTitleMatch) {
-                                  const fullMatch = postTitleMatch[0]; // 包含引号的完整匹配
-                                  const postTitle = postTitleMatch[1]; // 不含引号的标题
-                                  const matchIndex = remainingMessage.indexOf(fullMatch);
-
-                                  if (matchIndex !== -1) {
-                                    // Add text before title
-                                    parts.push(remainingMessage.substring(0, matchIndex));
-                                    parts.push('"');
-
-                                    // Add clickable title
-                                    if (notification.articleId) {
-                                      parts.push(
-                                        <span
-                                          key="posttitle"
-                                          className="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200 font-bold"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(`/work/${notification.articleId}`);
-                                          }}
-                                          title="Click to view content"
-                                        >
-                                          {postTitle}
-                                        </span>
-                                      );
-                                    } else {
-                                      parts.push(<span key="posttitle" className="font-bold">{postTitle}</span>);
-                                    }
-
-                                    parts.push('"');
-                                    remainingMessage = remainingMessage.substring(matchIndex + fullMatch.length);
-                                  }
-                                }
-
-                                // Add remaining message
-                                parts.push(remainingMessage);
-
-                                return <span>{parts}</span>;
-                              }
-                              return message;
-                            })()
-                          ) : (
-                            notification.message
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end justify-center gap-[5px] flex-shrink-0">
-                        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm leading-[23px]">
-                          {notification.timestamp}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="p-0 h-auto hover:bg-transparent"
-                          onClick={(e) => handleDeleteNotification(notification.id, e)}
-                        >
-                          <img
-                            className={
-                              notification.type === "system" ? "h-[35px]" : "w-4"
-                            }
-                            alt="Delete notification"
-                            src={notification.deleteIcon}
-                          />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Pagination loading indicator */}
-          {isLoading && notificationList.length > 0 && (
-            <div className="flex justify-center items-center py-8">
-              <div className="text-lg text-gray-600">Loading more notifications...</div>
-            </div>
-          )}
-
-          {/* No more content indicator */}
-          {!isLoading && !hasMore && notificationList.length > 0 && (
-            <div className="flex justify-center items-center py-8">
-              <div className="text-gray-500">You've reached the end! No more notifications to load.</div>
-            </div>
-          )}
-        </TabsContent>
 
         <TabsContent value="treasury" className="mt-5">
           {isLoading ? (
