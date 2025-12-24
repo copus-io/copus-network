@@ -906,8 +906,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     }
   }, [comment.id, targetType, targetId]);
 
-  // 设置回复折叠的阈值
-  const REPLY_COLLAPSE_THRESHOLD = 2;
+  // 设置回复折叠的阈值 - 只显示1条回复
+  const REPLY_COLLAPSE_THRESHOLD = 1;
 
   // 按需加载评论回复
   // 仅在用户点击展开按钮时才加载回复，优化性能
@@ -1285,7 +1285,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                                       <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <polyline points="6,9 12,15 18,9"></polyline>
                                       </svg>
-                                      <span>Show {actualReplies.length - REPLY_COLLAPSE_THRESHOLD} more replies</span>
+                                      <span>Expand {actualReplies.length - REPLY_COLLAPSE_THRESHOLD} {actualReplies.length - REPLY_COLLAPSE_THRESHOLD === 1 ? 'comment' : 'comments'}</span>
                                     </>
                                   )}
                                 </button>
