@@ -92,7 +92,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
 
   return (
     <aside className="hidden lg:flex flex-col h-screen w-[300px] fixed left-0 top-0 pt-[110px] px-[30px] pb-[15px]">
-      <nav className="inline-flex items-center gap-2 px-5 py-[30px] bg-[#ffffff] flex-col relative flex-[0_0_auto] rounded-lg w-[240px]">
+      <nav className="inline-flex items-center gap-2.5 px-5 py-[30px] bg-[#ffffff] flex-col relative flex-[0_0_auto] rounded-lg w-[240px]">
         {menuItems.map((item, index) => {
           const isActive = activeItem === item.key;
           const IconComponent = item.icon;

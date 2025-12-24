@@ -213,6 +213,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       date: article.date,
       treasureCount: article.treasureCount,
       visitCount: `${article.visitCount || 0}`,
+      commentCount: article.commentCount || 0,
       isLiked: article.isLiked, // Use actual like status returned from server
       targetUrl: article.url,
       website: article.website,

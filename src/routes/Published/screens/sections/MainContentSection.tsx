@@ -74,7 +74,8 @@ export const MainContentSection = (): JSX.Element => {
       date: card.date,
       treasureCount: parseInt(card.treasures) || 0,
       visitCount: card.visits,
-      isLiked: card.hasLike,
+      commentCount: 0,
+      isLiked: card.hasLiked,
       targetUrl: `https://${card.url}`,
       website: card.url
     };

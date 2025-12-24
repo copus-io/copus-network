@@ -9,6 +9,7 @@ import { ImagePreviewModal } from "../ui/image-preview-modal";
 import { LazyImage } from "../ui/lazy-image";
 import { getCategoryStyle, getCategoryInlineStyle, formatCount, formatDate } from "../../utils/categoryStyles";
 import { getIconUrl, getIconStyle } from "../../config/icons";
+import commentIcon from "../../assets/images/comment.svg";
 
 // Generic article data interface
 export interface ArticleData {
@@ -27,6 +28,7 @@ export interface ArticleData {
   date: string;
   treasureCount: number | string;
   visitCount: string;
+  commentCount?: number;
   isLiked?: boolean;
   targetUrl?: string;
   website?: string;
@@ -372,6 +374,18 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     </span>
                   </div>
                 )}
+                {/* Comment count */}
+                <div className="flex items-center gap-1.5">
+                  <img
+                    className="w-4 h-4"
+                    alt="Comments"
+                    src={commentIcon}
+                    style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                  />
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
+                    {article.commentCount || 0}
+                  </span>
+                </div>
               </div>
 
               {/* Right side: Edit/Delete buttons and Branch It */}
@@ -630,6 +644,18 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     </span>
                   </div>
                 )}
+                {/* Comment count */}
+                <div className="inline-flex items-center gap-1.5">
+                  <img
+                    className="w-4 h-4"
+                    alt="Comments"
+                    src={commentIcon}
+                    style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                  />
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
+                    {article.commentCount || 0}
+                  </span>
+                </div>
               </div>
 
               {/* Right side: Edit/Delete buttons */}
