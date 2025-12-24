@@ -102,6 +102,29 @@ export const NotificationListSection = (): JSX.Element => {
     });
   };
 
+  // Render notification message with bold username
+  const renderMessage = (message: string) => {
+    // Common action words that separate username from the rest of the message
+    const actionWords = [' treasured ', ' commented ', ' liked ', ' replied ', ' mentioned ', ' followed '];
+
+    for (const action of actionWords) {
+      const index = message.toLowerCase().indexOf(action.toLowerCase());
+      if (index > 0) {
+        const username = message.substring(0, index);
+        const rest = message.substring(index);
+        return (
+          <>
+            <span className="font-semibold">{username}</span>
+            <span className="font-normal">{rest}</span>
+          </>
+        );
+      }
+    }
+
+    // If no action word found, return message as is
+    return message;
+  };
+
   // Use real notification data from Context with stable time formatting
   const notificationList = contextNotifications.map(n => ({
     id: parseInt(n.id) || 1,
@@ -272,8 +295,8 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-5 flex-1">
                         <div className="flex flex-col gap-2.5 flex-1">
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-[22px]">
-                            {notification.message}
+                          <div className="[font-family:'Lato',Helvetica] text-off-black text-base leading-[22px]">
+                            {renderMessage(notification.message)}
                           </div>
                         </div>
 
@@ -356,8 +379,8 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-5 flex-1">
                         <div className="flex flex-col gap-2.5 flex-1">
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-[22px]">
-                            {notification.message}
+                          <div className="[font-family:'Lato',Helvetica] text-off-black text-base leading-[22px]">
+                            {renderMessage(notification.message)}
                           </div>
                         </div>
 
