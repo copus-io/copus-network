@@ -277,8 +277,8 @@ export const NotificationListSection = (): JSX.Element => {
                 const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
                 if (articleId) {
                   if (isCommentContent && notification.metadata?.commentId) {
-                    // 点击评论内容，定位到具体评论
-                    navigate(`/work/${articleId}#comment-${notification.metadata.commentId}`);
+                    // 点击评论内容，使用URL参数和hash确保评论区打开
+                    navigate(`/work/${articleId}?openComments=true&commentId=${notification.metadata.commentId}#comment-${notification.metadata.commentId}`);
                   } else {
                     // 点击作品名，跳转到作品页面
                     navigate(`/work/${articleId}`);

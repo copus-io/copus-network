@@ -82,8 +82,12 @@ export class NotificationTemplates {
       messageTemplate: (data) => `[${data.senderUsername}] commented on your treasure [${data.targetTitle}]${data.commentContent ? ` [${data.commentContent}]` : ''}`,
       actionUrl: (data) => {
         const baseUrl = `/work/${data.targetUuid || data.targetId}`;
-        // 如果有评论ID，定位到具体评论；否则定位到评论区
-        return data.commentId ? `${baseUrl}#comment-${data.commentId}` : `${baseUrl}#comments`;
+        // 使用URL参数和hash双重保证评论区打开和定位
+        if (data.commentId) {
+          return `${baseUrl}?openComments=true&commentId=${data.commentId}#comment-${data.commentId}`;
+        } else {
+          return `${baseUrl}?openComments=true#comments`;
+        }
       }
     },
     [NotificationType.COMMENT]: {
