@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -14,6 +14,8 @@ import {
 } from "../../../../components/ui/tabs";
 import { useNotification } from "../../../../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
+import { ReplyModal } from "../../../../components/CommentSection/ReplyModal";
+import { Comment } from "../../../../types/comment";
 
 const notificationTabs = [
   { value: "all", label: "All" },
@@ -34,6 +36,21 @@ export const NotificationListSection = (): JSX.Element => {
     markAllAsRead,
     deleteNotification
   } = useNotification();
+
+  // 回复弹窗状态管理
+  const [replyModalState, setReplyModalState] = useState<{
+    isOpen: boolean;
+    targetComment: Comment | null;
+    targetType: 'article' | 'treasury' | 'user' | 'space';
+    targetId: string;
+    articleId?: string;
+  }>({
+    isOpen: false,
+    targetComment: null,
+    targetType: 'article',
+    targetId: '',
+    articleId: undefined
+  });
 
   // Fetch notification list on page load - add delay to avoid resource conflicts
   useEffect(() => {
@@ -173,6 +190,62 @@ export const NotificationListSection = (): JSX.Element => {
     await deleteNotification(id.toString());
   };
 
+  // 处理回复按钮点击
+  const handleReplyClick = (notification: any, e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止事件冒泡
+
+    // 从通知数据中构建评论对象
+    const targetComment: Comment = {
+      id: notification.metadata?.commentId || notification.metadata?.extra?.commentId || notification.id.toString(),
+      uuid: notification.metadata?.commentId || notification.metadata?.extra?.commentId || notification.id.toString(),
+      content: notification.metadata?.extra?.commentContent || notification.metadata?.commentContent || '评论内容',
+      contentType: 'text',
+      targetType: 'article', // 默认为文章
+      targetId: notification.articleId || notification.metadata?.targetId || notification.metadata?.targetUuid || '',
+      authorId: Number(notification.userId || notification.metadata?.senderId || 0),
+      authorName: notification.metadata?.senderUsername || 'Unknown User',
+      authorNamespace: notification.metadata?.senderNamespace,
+      authorAvatar: notification.profileImage,
+      depth: 0,
+      likesCount: 0,
+      repliesCount: 0,
+      isLiked: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isEdited: false,
+      isDeleted: false,
+      canEdit: false,
+      canDelete: false,
+      images: []
+    };
+
+    setReplyModalState({
+      isOpen: true,
+      targetComment,
+      targetType: 'article',
+      targetId: notification.articleId || notification.metadata?.targetId || notification.metadata?.targetUuid || '',
+      articleId: notification.articleId || notification.metadata?.targetId || notification.metadata?.targetUuid
+    });
+  };
+
+  // 关闭回复弹窗
+  const handleCloseReplyModal = () => {
+    setReplyModalState({
+      isOpen: false,
+      targetComment: null,
+      targetType: 'article',
+      targetId: '',
+      articleId: undefined
+    });
+  };
+
+  // 回复完成处理
+  const handleReplyComplete = () => {
+    handleCloseReplyModal();
+    // 可以在这里添加刷新通知列表的逻辑
+    console.log('Reply completed');
+  };
+
   // Handle user click to navigate to profile page
   const handleUserClick = (notification: any, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering notification card click event
@@ -309,46 +382,23 @@ export const NotificationListSection = (): JSX.Element => {
             </span>
           );
         } else if (notification.type === 'treasury') {
-          // For treasury messages: 区分作品名和评论内容的点击
+          // For treasury messages: 区分作品名和评论内容的显示
           // 检查是否是评论内容（第三个方括号内的内容）
           const isCommentContent = parts.filter(p => p.startsWith('[') && p.endsWith(']')).indexOf(part) === 2;
 
-          return (
-            <span
-              key={index}
-              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
-              onClick={(e) => {
-                e.stopPropagation();
-                const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
-                if (articleId) {
-                  if (isCommentContent && notification.metadata?.commentId) {
-                    // 点击评论内容，使用URL参数和hash确保评论区打开
-                    navigate(`/work/${articleId}?openComments=true&commentId=${notification.metadata.commentId}#comment-${notification.metadata.commentId}`);
-                  } else {
-                    // 点击作品名，跳转到作品页面
-                    navigate(`/work/${articleId}`);
-                  }
-                }
-              }}
-              title={isCommentContent ? "Click to view comment" : "Click to view content"}
-            >
-              {linkText}
-            </span>
-          );
-        } else if (notification.type === 'comment_reply' || notification.type === 'comment_like') {
-          // For comment messages: [评论内容] - 不需要跳转，只展示评论内容
-          // 检查是否是评论内容（通常不是用户名，且在引号内）
-          const isCommentContent = linkText.length > 10 || (message.includes(`"${linkText}"`) && !isFirstBracket);
-
           if (isCommentContent) {
-            // 这是评论内容 - 实现两行展示和中间折叠，无特殊样式
+            // 评论内容只显示，不支持点击跳转
             return (
-              <span key={index} className="text-gray-600 italic">
-                "{linkText}"
+              <span
+                key={index}
+                className="text-gray-700 font-medium bg-gray-100 px-2 py-1 rounded"
+                title="评论内容"
+              >
+                {linkText}
               </span>
             );
           } else {
-            // 其他内容保持可点击
+            // 作品名等其他内容可以点击跳转
             return (
               <span
                 key={index}
@@ -356,12 +406,63 @@ export const NotificationListSection = (): JSX.Element => {
                 onClick={(e) => {
                   e.stopPropagation();
                   const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
-                  const commentId = notification.metadata?.commentId;
                   if (articleId) {
-                    navigate(`/work/${articleId}${commentId ? `#comment-${commentId}` : '#comments'}`);
+                    navigate(`/work/${articleId}`);
                   }
                 }}
-                title="Click to view comment"
+                title="Click to view content"
+              >
+                {linkText}
+              </span>
+            );
+          }
+        } else if (notification.type === 'comment_reply' || notification.type === 'comment_like') {
+          // For comment messages: 统一的评论内容点击跳转
+          // 检查是否是评论内容（通常不是用户名，且在引号内）
+          const isCommentContent = linkText.length > 10 || (message.includes(`"${linkText}"`) && !isFirstBracket);
+
+          if (isCommentContent) {
+            // 这是评论内容 - 可点击跳转到评论区
+            return (
+              <span
+                key={index}
+                className="text-blue-600 hover:text-blue-800 cursor-pointer font-medium underline decoration-dotted underline-offset-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
+                  const commentId = notification.metadata?.commentId;
+
+                  if (articleId) {
+                    // 区分通知类型的跳转策略
+                    if (notification.type === 'comment_reply') {
+                      // 评论回复：打开评论区并定位到具体评论
+                      navigate(`/work/${articleId}?openComments=true&commentId=${commentId}#comment-${commentId}`);
+                    } else if (notification.type === 'comment_like') {
+                      // 评论点赞：打开评论区，但不特别滚动（让用户看到整体）
+                      navigate(`/work/${articleId}?openComments=true#comments`);
+                    }
+                  }
+                }}
+                title={notification.type === 'comment_like' ? "点击查看完整评论内容" : "点击查看评论回复"}
+              >
+                "{linkText}"
+              </span>
+            );
+          } else {
+            // 其他内容保持可点击（用户名等）
+            return (
+              <span
+                key={index}
+                className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // 这里处理用户名点击，跳转到用户页面
+                  const senderNamespace = notification.metadata?.senderNamespace;
+                  if (senderNamespace) {
+                    navigate(`/u/${senderNamespace}`);
+                  }
+                }}
+                title="点击查看用户主页"
               >
                 {linkText}
               </span>
@@ -444,7 +545,7 @@ export const NotificationListSection = (): JSX.Element => {
                     }
                     onClick={() => handleNotificationClick(notification)}
                   >
-                  <CardContent className="flex items-start gap-[30px] p-5">
+                  <CardContent className="flex items-start gap-3 sm:gap-[30px] p-3 sm:p-5">
                     {notification.type === "system" ? (
                       <img
                         className="flex-shrink-0"
@@ -457,7 +558,7 @@ export const NotificationListSection = (): JSX.Element => {
                         onClick={(notification.namespace || notification.userId) ? (e) => handleUserClick(notification, e) : undefined}
                         title={(notification.namespace || notification.userId) ? "Click to view user profile" : undefined}
                       >
-                        <Avatar className="w-[45px] h-[45px] flex-shrink-0">
+                        <Avatar className="w-8 h-8 sm:w-[45px] sm:h-[45px] flex-shrink-0">
                           <AvatarImage
                             src={notification.profileImage || "data:image/svg+xml,%3csvg%20width='100'%20height='100'%20viewBox='0%200%20100%20100'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='white'/%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='%23E0E0E0'%20fill-opacity='0.4'/%3e%3cpath%20d='M73.9643%2060.6618V60.9375C73.9643%2074.2269%2063.2351%2085%2050%2085C36.7649%2085%2026.0357%2074.2269%2026.0357%2060.9375V60.6618C22.2772%2059.6905%2019.5%2056.2646%2019.5%2052.1875C19.5%2048.1104%2022.2772%2044.6845%2026.0357%2043.7132V39.0625C26.0357%2025.7731%2036.7649%2015%2050%2015C63.2351%2015%2073.9643%2025.7731%2073.9643%2039.0625V43.7132C77.7228%2044.6845%2080.5%2048.1104%2080.5%2052.1875C80.5%2056.2646%2077.7228%2059.6905%2073.9643%2060.6618ZM69.6071%2043.4375H67.2192C62.2208%2043.4375%2057.8638%2040.0217%2056.6515%2035.1527L56.5357%2034.6875L48.85%2038.5461C43.0934%2041.4362%2036.8058%2043.0815%2030.3929%2043.3858V60.9375C30.3929%2071.8106%2039.1713%2080.625%2050%2080.625C60.8287%2080.625%2069.6071%2071.8106%2069.6071%2060.9375V43.4375ZM39.1071%2050C39.1071%2048.7919%2040.0825%2047.8125%2041.2857%2047.8125C42.4889%2047.8125%2043.4643%2048.7919%2043.4643%2050V54.375C43.4643%2055.5831%2042.4889%2056.5625%2041.2857%2056.5625C40.0825%2056.5625%2039.1071%2055.5831%2039.1071%2054.375V50ZM56.5357%2050C56.5357%2048.7919%2057.5111%2047.8125%2058.7143%2047.8125C59.9175%2047.8125%2060.8929%2048.7919%2060.8929%2050V54.375C60.8929%2055.5831%2059.9175%2056.5625%2058.7143%2056.5625C57.5111%2056.5625%2056.5357%2055.5831%2056.5357%2054.375V50ZM41.9964%2071.3039C41.1073%2070.4899%2041.0438%2069.1064%2041.8544%2068.2136C42.6651%2067.3209%2044.0431%2067.2571%2044.9321%2068.0711C46.0649%2069.1081%2047.4581%2069.6875%2048.8886%2069.6875C50.3722%2069.6875%2051.7728%2069.1187%2052.8779%2068.0924C53.7612%2067.2721%2055.1396%2067.3261%2055.9565%2068.2131C56.7735%2069.1%2056.7197%2070.484%2055.8364%2071.3043C53.9384%2073.0668%2051.4869%2074.0625%2048.8886%2074.0625C46.3342%2074.0625%2043.907%2073.0532%2041.9964%2071.3039ZM23.8571%2052.1875C23.8571%2053.8069%2024.7334%2055.2207%2026.0357%2055.9772V48.3978C24.7334%2049.1543%2023.8571%2050.5681%2023.8571%2052.1875ZM76.1429%2052.1875C76.1429%2050.5681%2075.2666%2049.1543%2073.9643%2048.3978V55.9772C75.2666%2055.2207%2076.1429%2053.8069%2076.1429%2052.1875Z'%20fill='black'/%3e%3c/svg%3e"}
                             alt="Profile"
@@ -471,34 +572,71 @@ export const NotificationListSection = (): JSX.Element => {
                       </div>
                     )}
 
-                    <div className="flex items-start gap-5 flex-1">
-                      <div className="flex flex-col gap-2.5 flex-1">
-                        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base leading-[23px]">
+                    <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">
+                      <div className="flex flex-col gap-1 sm:gap-2.5 flex-1 min-w-0">
+                        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm sm:text-base leading-tight sm:leading-[23px]">
                           {notification.category}
                         </div>
-                        <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-lg leading-[23px]">
+                        <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm sm:text-lg leading-tight sm:leading-[23px] break-words">
                           {parseMessageWithLinks(notification.message, notification)}
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end justify-center gap-[5px] flex-shrink-0">
-                        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm leading-[23px]">
+                      <div className="flex flex-col items-end justify-center gap-1 sm:gap-[5px] flex-shrink-0 min-w-0">
+                        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-xs sm:text-sm leading-tight whitespace-nowrap">
                           {notification.timestamp}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="p-0 h-auto hover:bg-transparent"
-                          onClick={(e) => handleDeleteNotification(notification.id, e)}
-                        >
-                          <img
-                            className={
-                              notification.type === "system" ? "h-[35px]" : "w-4"
-                            }
-                            alt="Delete notification"
-                            src={notification.deleteIcon}
-                          />
-                        </Button>
+
+                        {/* 操作按钮区域 */}
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          {/* 回复按钮 - 仅对评论相关通知显示，排除点赞 */}
+                          {(notification.category === 'Comment' ||
+                            notification.category === 'Treasure' ||
+                            notification.type === 'treasury' ||
+                            notification.type === 'comment_reply' ||
+                            notification.type === 'comment' ||
+                            notification.message.includes('commented') ||
+                            notification.message.includes('replied')) &&
+                            !notification.message.includes('liked') && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-0.5 sm:p-1 h-auto hover:bg-blue-50 rounded-full transition-all duration-200"
+                              onClick={(e) => handleReplyClick(notification, e)}
+                              title="回复此评论"
+                            >
+                              <svg
+                                className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                                />
+                              </svg>
+                            </Button>
+                          )}
+
+                          {/* 删除按钮 */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-0 h-auto hover:bg-transparent"
+                            onClick={(e) => handleDeleteNotification(notification.id, e)}
+                          >
+                            <img
+                              className={
+                                notification.type === "system" ? "h-[35px]" : "w-4"
+                              }
+                              alt="Delete notification"
+                              src={notification.deleteIcon}
+                            />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -617,6 +755,23 @@ export const NotificationListSection = (): JSX.Element => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* 回复弹窗 */}
+      <ReplyModal
+        isOpen={replyModalState.isOpen}
+        onClose={handleCloseReplyModal}
+        targetComment={replyModalState.targetComment}
+        targetType={replyModalState.targetType}
+        targetId={replyModalState.targetId}
+        articleId={replyModalState.articleId}
+        replyState={{
+          isReplying: true,
+          parentId: replyModalState.targetComment?.id,
+          replyToId: replyModalState.targetComment?.id,
+          replyToUser: replyModalState.targetComment?.authorName
+        }}
+        onReplyComplete={handleReplyComplete}
+      />
     </section>
   );
 };

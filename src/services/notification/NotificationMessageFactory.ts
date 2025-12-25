@@ -100,22 +100,29 @@ export class NotificationTemplates {
       messageTemplate: (data) => {
         if (data.commentContent && data.commentContent.trim()) {
           const sanitizedComment = MessageContentProcessor.sanitizeCommentContent(data.commentContent);
-          return `[${data.senderUsername}] replied to your comment [${sanitizedComment}]`;
+          return `[${data.senderUsername}] replied to your comment "${sanitizedComment}"`;
         }
         return `[${data.senderUsername}] replied to your comment`;
       },
-      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comment-${data.commentId}`
+      actionUrl: (data) => {
+        const baseUrl = `/work/${data.targetUuid || data.targetId}`;
+        return data.commentId ? `${baseUrl}?openComments=true&commentId=${data.commentId}#comment-${data.commentId}` : `${baseUrl}?openComments=true#comments`;
+      }
     },
     [NotificationType.COMMENT_LIKE]: {
       title: '评论点赞',
       messageTemplate: (data) => {
         if (data.commentContent && data.commentContent.trim()) {
           const sanitizedComment = MessageContentProcessor.sanitizeCommentContent(data.commentContent);
-          return `[${data.senderUsername}] liked your comment [${sanitizedComment}]`;
+          return `[${data.senderUsername}] liked your comment "${sanitizedComment}"`;
         }
         return `[${data.senderUsername}] liked your comment`;
       },
-      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comment-${data.commentId}`
+      actionUrl: (data) => {
+        const baseUrl = `/work/${data.targetUuid || data.targetId}`;
+        // 点赞通知不定位到具体评论，只打开评论区
+        return `${baseUrl}?openComments=true#comments`;
+      }
     },
     [NotificationType.UNLOCK]: {
       title: '付费解锁',
