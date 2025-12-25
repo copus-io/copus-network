@@ -266,19 +266,10 @@ export const NotificationListSection = (): JSX.Element => {
           const isCommentContent = linkText.length > 10 || (message.includes(`"${linkText}"`) && !isFirstBracket);
 
           if (isCommentContent) {
-            // 这是评论内容 - 实现两行展示和中间折叠
+            // 这是评论内容 - 实现两行展示和中间折叠，无特殊样式
             return (
-              <span key={index} className="text-gray-700 bg-gray-50 px-2 py-1 rounded border inline-block max-w-xs">
-                <span className="block overflow-hidden" style={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  textOverflow: 'ellipsis',
-                  lineHeight: '1.4',
-                  maxHeight: '2.8em'
-                }}>
-                  {linkText}
-                </span>
+              <span key={index} className="text-gray-600 italic">
+                "{linkText}"
               </span>
             );
           } else {
