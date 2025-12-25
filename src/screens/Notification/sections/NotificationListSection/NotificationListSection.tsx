@@ -238,6 +238,10 @@ export const NotificationListSection = (): JSX.Element => {
 
                 if (isSpaceName) {
                   // 点击空间名 - 跳转到被关注的空间 (使用 /treasury/ 路径)
+                  console.log('[Follow Click] Full notification object:', notification);
+                  console.log('[Follow Click] Metadata:', notification.metadata);
+                  console.log('[Follow Click] Metadata extra:', notification.metadata?.extra);
+
                   const spaceNamespace = notification.metadata?.extra?.spaceNamespace ||
                                         notification.metadata?.extra?.namespace;
                   console.log('[Follow Click] Space name clicked, namespace:', spaceNamespace);
