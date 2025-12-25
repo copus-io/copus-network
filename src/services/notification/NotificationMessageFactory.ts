@@ -70,7 +70,7 @@ export class NotificationTemplates {
     [NotificationType.FOLLOW]: {
       title: '新关注',
       messageTemplate: (data) => `[${data.senderUsername}] followed your space [${data.targetTitle}]`,
-      actionUrl: (data) => `/u/${data.spaceNamespace || data.senderNamespace || data.senderUsername}`
+      actionUrl: (data) => `/treasury/${data.spaceNamespace || data.senderNamespace || data.senderUsername}`
     },
     [NotificationType.FOLLOW_TREASURY]: {
       title: '关注空间更新',
