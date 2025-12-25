@@ -116,6 +116,7 @@ export const NotificationListSection = (): JSX.Element => {
     userId: n.metadata?.senderId, // Use senderId
     namespace: n.metadata?.senderNamespace, // Add namespace for navigation
     articleId: n.metadata?.targetUuid || n.metadata?.targetId || n.metadata?.articleUuid || n.metadata?.articleId, // Prefer targetUuid for new format
+    metadata: n.metadata, // 传递完整的 metadata 对象！
   }));
 
   // Render empty state component
