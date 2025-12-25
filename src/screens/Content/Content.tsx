@@ -177,6 +177,47 @@ export const Content = (): JSX.Element => {
     };
   }, [isCommentSectionOpen]);
 
+  // Handle URL hash navigation for comments
+  useEffect(() => {
+    const handleHashNavigation = () => {
+      const hash = window.location.hash;
+
+      // Check if hash indicates comment section navigation
+      if (hash === '#comments' || hash.startsWith('#comment-')) {
+        console.log('[Content] Hash navigation detected:', hash);
+
+        // Open comment section
+        setIsCommentSectionOpen(true);
+
+        // If targeting specific comment, scroll to it after a delay
+        if (hash.startsWith('#comment-')) {
+          setTimeout(() => {
+            const commentElement = document.getElementById(hash.substring(1));
+            if (commentElement) {
+              commentElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+              });
+              console.log('[Content] Scrolled to comment:', hash);
+            } else {
+              console.warn('[Content] Comment element not found:', hash);
+            }
+          }, 800); // Wait for modal animation
+        }
+      }
+    };
+
+    // Handle initial load with hash
+    handleHashNavigation();
+
+    // Listen for hash changes (back/forward browser navigation)
+    window.addEventListener('hashchange', handleHashNavigation);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashNavigation);
+    };
+  }, []);
+
   // ========================================
   // Helper Functions (extracted for code reuse)
   // ========================================
