@@ -80,7 +80,11 @@ export class NotificationTemplates {
     [NotificationType.TREASURY]: {
       title: '作品评论',
       messageTemplate: (data) => `[${data.senderUsername}] commented on your treasure [${data.targetTitle}]${data.commentContent ? ` [${data.commentContent}]` : ''}`,
-      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comments`
+      actionUrl: (data) => {
+        const baseUrl = `/work/${data.targetUuid || data.targetId}`;
+        // 如果有评论ID，定位到具体评论；否则定位到评论区
+        return data.commentId ? `${baseUrl}#comment-${data.commentId}` : `${baseUrl}#comments`;
+      }
     },
     [NotificationType.COMMENT]: {
       title: '新评论',

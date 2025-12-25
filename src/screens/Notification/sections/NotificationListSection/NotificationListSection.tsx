@@ -243,7 +243,10 @@ export const NotificationListSection = (): JSX.Element => {
             </span>
           );
         } else if (notification.type === 'treasury') {
-          // For treasury messages: [作品名] should link to work
+          // For treasury messages: 区分作品名和评论内容的点击
+          // 检查是否是评论内容（第三个方括号内的内容）
+          const isCommentContent = parts.filter(p => p.startsWith('[') && p.endsWith(']')).indexOf(part) === 2;
+
           return (
             <span
               key={index}
@@ -252,10 +255,16 @@ export const NotificationListSection = (): JSX.Element => {
                 e.stopPropagation();
                 const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
                 if (articleId) {
-                  navigate(`/work/${articleId}`);
+                  if (isCommentContent && notification.metadata?.commentId) {
+                    // 点击评论内容，定位到具体评论
+                    navigate(`/work/${articleId}#comment-${notification.metadata.commentId}`);
+                  } else {
+                    // 点击作品名，跳转到作品页面
+                    navigate(`/work/${articleId}`);
+                  }
                 }
               }}
-              title="Click to view content"
+              title={isCommentContent ? "Click to view comment" : "Click to view content"}
             >
               {linkText}
             </span>
