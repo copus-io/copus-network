@@ -169,13 +169,13 @@ export const ArticleCardSkeleton: React.FC = () => {
 
 // Article list skeleton - Match current homepage responsive grid layout
 export const ArticleListSkeleton: React.FC = () => {
-  // Create 6 skeleton cards to show loading state
-  const skeletonCards = Array.from({ length: 6 }).map((_, index) => (
+  // Create 8 skeleton cards to better fill the screen on larger displays
+  const skeletonCards = Array.from({ length: 8 }).map((_, index) => (
     <ArticleCardSkeleton key={index} />
   ));
 
   return (
-    <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:px-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8">
+    <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
       {skeletonCards}
     </section>
   );

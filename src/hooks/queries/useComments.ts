@@ -245,19 +245,30 @@ export const useCreateComment = () => {
         queryClient.setQueryData(['optimizedComments', variables.targetType, variables.targetId], context.previousCommentsData);
       }
 
-      // 提供更友好的错误提示
+      // 提供更友好和明确的错误提示
       const errorMessage = error instanceof Error ? error.message : '';
-      let toastMessage = 'Failed to post comment, please try again';
+      const errorStatus = error?.status || error?.response?.status;
+      let toastMessage = 'Comment failed to post. Please try again';
 
-      // 根据错误类型提供更具体的提示
-      if (errorMessage.includes('content') || errorMessage.includes('required')) {
-        toastMessage = 'Please add some text or images to your comment';
-      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        toastMessage = 'Network error. Please check your connection and try again';
-      } else if (errorMessage.includes('auth') || errorMessage.includes('unauthorized')) {
-        toastMessage = 'Please log in to post comments';
+      // 根据HTTP状态码和错误类型提供具体的用户指导
+      if (errorStatus === 429) {
+        toastMessage = 'You are commenting too fast. Please wait a moment and try again';
+      } else if (errorStatus === 401 || errorMessage.includes('auth') || errorMessage.includes('unauthorized')) {
+        toastMessage = 'Your session has expired. Please refresh the page and log in again';
+      } else if (errorStatus === 403) {
+        toastMessage = 'You do not have permission to comment on this article';
+      } else if (errorMessage.includes('content') || errorMessage.includes('required')) {
+        toastMessage = 'Please add some text or images to your comment before posting';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorStatus === 0) {
+        toastMessage = 'Network connection failed. Please check your internet and try again';
       } else if (errorMessage.includes('image') || errorMessage.includes('upload')) {
-        toastMessage = 'Image upload failed. Please try again or use smaller images';
+        toastMessage = 'Image upload failed. Please check your images and try again';
+      } else if (errorStatus === 500 || errorStatus >= 500) {
+        toastMessage = 'Server error occurred. Please try again in a few minutes';
+      } else if (errorMessage.includes('timeout')) {
+        toastMessage = 'Request timed out. Please check your connection and try again';
+      } else if (errorStatus === 400) {
+        toastMessage = 'Invalid comment content. Please check and try again';
       }
 
       showToast(toastMessage, 'error');
@@ -350,7 +361,24 @@ export const useUpdateComment = () => {
         });
       }
 
-      showToast('Failed to update comment, please try again', 'error');
+      // 提供更明确的编辑失败错误提示
+      const errorMessage = error instanceof Error ? error.message : '';
+      const errorStatus = error?.status || error?.response?.status;
+      let toastMessage = 'Failed to update comment. Please try again';
+
+      if (errorStatus === 403) {
+        toastMessage = 'You can only edit your own comments';
+      } else if (errorStatus === 401) {
+        toastMessage = 'Your session has expired. Please refresh and log in again';
+      } else if (errorStatus === 404) {
+        toastMessage = 'Comment not found. It may have been deleted';
+      } else if (errorStatus >= 500) {
+        toastMessage = 'Server error occurred. Please try again in a few minutes';
+      } else if (errorMessage.includes('network') || errorStatus === 0) {
+        toastMessage = 'Network connection failed. Please check your internet and try again';
+      }
+
+      showToast(toastMessage, 'error');
     },
   });
 };
@@ -489,7 +517,24 @@ export const useDeleteComment = () => {
         });
       }
 
-      showToast('Failed to delete comment, please try again', 'error');
+      // 提供更明确的删除失败错误提示
+      const errorMessage = error instanceof Error ? error.message : '';
+      const errorStatus = error?.status || error?.response?.status;
+      let toastMessage = 'Failed to delete comment. Please try again';
+
+      if (errorStatus === 403) {
+        toastMessage = 'You can only delete your own comments';
+      } else if (errorStatus === 401) {
+        toastMessage = 'Your session has expired. Please refresh and log in again';
+      } else if (errorStatus === 404) {
+        toastMessage = 'Comment not found. It may have already been deleted';
+      } else if (errorStatus >= 500) {
+        toastMessage = 'Server error occurred. Please try again in a few minutes';
+      } else if (errorMessage.includes('network') || errorStatus === 0) {
+        toastMessage = 'Network connection failed. Please check your internet and try again';
+      }
+
+      showToast(toastMessage, 'error');
     },
   });
 };

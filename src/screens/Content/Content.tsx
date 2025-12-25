@@ -177,6 +177,60 @@ export const Content = (): JSX.Element => {
     };
   }, [isCommentSectionOpen]);
 
+  // Handle URL parameters and hash navigation for comments
+  useEffect(() => {
+    const handleCommentNavigation = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hash = window.location.hash;
+
+      // Check URL parameters for comment section navigation
+      const openComments = urlParams.get('openComments');
+      const commentId = urlParams.get('commentId');
+
+      // Check if hash indicates comment section navigation
+      const hasCommentHash = hash === '#comments' || hash.startsWith('#comment-');
+
+      if (openComments === 'true' || hasCommentHash) {
+        console.log('[Content] Comment navigation detected:', {
+          openComments,
+          commentId,
+          hash,
+          url: window.location.href
+        });
+
+        // Open comment section
+        setIsCommentSectionOpen(true);
+
+        // If targeting specific comment, scroll to it after a delay
+        const targetCommentId = commentId || (hash.startsWith('#comment-') ? hash.substring('#comment-'.length) : null);
+        if (targetCommentId) {
+          setTimeout(() => {
+            const commentElement = document.getElementById(`comment-${targetCommentId}`);
+            if (commentElement) {
+              commentElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+              });
+              console.log('[Content] Scrolled to comment:', targetCommentId);
+            } else {
+              console.warn('[Content] Comment element not found:', targetCommentId);
+            }
+          }, 800); // Wait for modal animation
+        }
+      }
+    };
+
+    // Handle initial load
+    handleCommentNavigation();
+
+    // Listen for hash changes (back/forward browser navigation)
+    window.addEventListener('hashchange', handleCommentNavigation);
+
+    return () => {
+      window.removeEventListener('hashchange', handleCommentNavigation);
+    };
+  }, []);
+
   // ========================================
   // Helper Functions (extracted for code reuse)
   // ========================================

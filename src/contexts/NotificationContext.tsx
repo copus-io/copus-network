@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Notification, NotificationContextType } from '../types/notification';
 import { notificationService } from '../services/notificationService';
+import { EnhancedNotificationService, NotificationFilters } from '../services/notification/EnhancedNotificationService';
 import { AuthService } from '../services/authService';
 import * as storage from '../utils/storage';
 
@@ -141,7 +142,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const fetchNotifications = async (
     page: number = 1,
     pageSize: number = 20,
-    msgType: number = 0, // Default to fetch all types of messages
+    filters: NotificationFilters = {},
     append: boolean = false // New parameter to control append vs replace
   ): Promise<void> => {
     try {
@@ -150,7 +151,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         dispatch({ type: 'SET_LOADING', payload: true });
       }
 
-      const result = await notificationService.getNotifications(page, pageSize, msgType);
+      console.log(`[NotificationContext] Using EnhancedNotificationService with filters:`, filters);
+      const result = await EnhancedNotificationService.getNotifications(page, pageSize, filters);
 
       if (append) {
         dispatch({
@@ -248,7 +250,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // Record user action time to avoid polling conflicts
       localStorage.setItem('lastNotificationAction', Date.now().toString());
 
-      const success = await notificationService.markAsRead(notificationId);
+      console.log(`[NotificationContext] Using EnhancedNotificationService to mark as read: ${notificationId}`);
+      const success = await EnhancedNotificationService.markAsRead(notificationId);
 
       if (success) {
         dispatch({ type: 'MARK_AS_READ', payload: notificationId });
@@ -317,7 +320,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       dispatch({ type: 'SET_LOADING_MORE', payload: true });
       const nextPage = state.currentPage + 1;
       console.log(`[NotificationContext] Loading more notifications - page ${nextPage}`);
-      await fetchNotifications(nextPage, 20, 0, true);
+      await fetchNotifications(nextPage, 20, {}, true);
     } finally {
       dispatch({ type: 'SET_LOADING_MORE', payload: false });
     }
