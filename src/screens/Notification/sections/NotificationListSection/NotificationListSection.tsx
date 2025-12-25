@@ -261,24 +261,46 @@ export const NotificationListSection = (): JSX.Element => {
             </span>
           );
         } else if (notification.type === 'comment_reply' || notification.type === 'comment_like') {
-          // For comment messages: [评论内容缩写] - could link to specific comment
-          return (
-            <span
-              key={index}
-              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
-              onClick={(e) => {
-                e.stopPropagation();
-                const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
-                const commentId = notification.metadata?.commentId;
-                if (articleId) {
-                  navigate(`/work/${articleId}${commentId ? `#comment-${commentId}` : '#comments'}`);
-                }
-              }}
-              title="Click to view comment"
-            >
-              {linkText}
-            </span>
-          );
+          // For comment messages: [评论内容] - 不需要跳转，只展示评论内容
+          // 检查是否是评论内容（通常不是用户名，且在引号内）
+          const isCommentContent = linkText.length > 10 || (message.includes(`"${linkText}"`) && !isFirstBracket);
+
+          if (isCommentContent) {
+            // 这是评论内容 - 实现两行展示和中间折叠
+            return (
+              <span key={index} className="text-gray-700 bg-gray-50 px-2 py-1 rounded border inline-block max-w-xs">
+                <span className="block overflow-hidden" style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  textOverflow: 'ellipsis',
+                  lineHeight: '1.4',
+                  maxHeight: '2.8em'
+                }}>
+                  {linkText}
+                </span>
+              </span>
+            );
+          } else {
+            // 其他内容保持可点击
+            return (
+              <span
+                key={index}
+                className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
+                  const commentId = notification.metadata?.commentId;
+                  if (articleId) {
+                    navigate(`/work/${articleId}${commentId ? `#comment-${commentId}` : '#comments'}`);
+                  }
+                }}
+                title="Click to view comment"
+              >
+                {linkText}
+              </span>
+            );
+          }
         } else {
           // Default: just make it blue but not necessarily clickable
           return (

@@ -89,12 +89,24 @@ export class NotificationTemplates {
     },
     [NotificationType.COMMENT_REPLY]: {
       title: '评论回复',
-      messageTemplate: (data) => `[${data.senderUsername}] replied to your comment [${data.commentContent}]`,
+      messageTemplate: (data) => {
+        if (data.commentContent && data.commentContent.trim()) {
+          const sanitizedComment = MessageContentProcessor.sanitizeCommentContent(data.commentContent);
+          return `[${data.senderUsername}] replied to your comment [${sanitizedComment}]`;
+        }
+        return `[${data.senderUsername}] replied to your comment`;
+      },
       actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comment-${data.commentId}`
     },
     [NotificationType.COMMENT_LIKE]: {
       title: '评论点赞',
-      messageTemplate: (data) => `[${data.senderUsername}] liked your comment [${data.commentContent}]`,
+      messageTemplate: (data) => {
+        if (data.commentContent && data.commentContent.trim()) {
+          const sanitizedComment = MessageContentProcessor.sanitizeCommentContent(data.commentContent);
+          return `[${data.senderUsername}] liked your comment [${sanitizedComment}]`;
+        }
+        return `[${data.senderUsername}] liked your comment`;
+      },
       actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comment-${data.commentId}`
     },
     [NotificationType.UNLOCK]: {
@@ -238,6 +250,25 @@ export class MessageContentProcessor {
       .replace(/\s+/g, ' ') // 合并多个空白字符
       .trim()
       .substring(0, maxLength) + (text.length > maxLength ? '...' : '');
+  }
+
+  /**
+   * 专门处理评论内容的格式化 - 限制长度用于通知显示
+   */
+  static sanitizeCommentContent(text: string, maxLength: number = 60): string {
+    if (!text) return '';
+
+    const cleaned = text
+      .replace(/\s+/g, ' ') // 合并多个空白字符
+      .trim();
+
+    if (cleaned.length <= maxLength) {
+      return cleaned;
+    }
+
+    // 超长内容进行中间省略处理
+    const halfLength = Math.floor(maxLength / 2) - 2; // 预留 "..." 的空间
+    return cleaned.substring(0, halfLength) + '...' + cleaned.substring(cleaned.length - halfLength);
   }
 }
 
