@@ -224,26 +224,41 @@ export const NotificationListSection = (): JSX.Element => {
 
         // Determine link type and navigation based on context
         if (notification.type === 'follow') {
-          // For follow messages: [空间名] should link to space
+          // For follow messages: 区分用户名和空间名的点击
+          // 第一个方括号是用户名，第二个方括号是空间名
+          const isFirstBracket = index === 1;
+          const isSpaceName = !isFirstBracket; // 空间名是第二个方括号内的内容
+
           return (
             <span
               key={index}
               className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
               onClick={(e) => {
                 e.stopPropagation();
-                // Use spaceNamespace from metadata.extra if available
-                const namespace = notification.metadata?.extra?.spaceNamespace ||
-                                notification.metadata?.spaceNamespace ||
-                                notification.namespace;
-                console.log('[Follow Click] Notification metadata:', notification.metadata);
-                console.log('[Follow Click] Found namespace:', namespace);
-                if (namespace) {
-                  navigate(`/u/${namespace}`);
+
+                if (isSpaceName) {
+                  // 点击空间名 - 跳转到被关注的空间
+                  const spaceNamespace = notification.metadata?.extra?.spaceNamespace ||
+                                        notification.metadata?.extra?.namespace;
+                  console.log('[Follow Click] Space name clicked, namespace:', spaceNamespace);
+                  if (spaceNamespace) {
+                    navigate(`/u/${spaceNamespace}`);
+                  } else {
+                    console.warn('[Follow Click] No space namespace found');
+                  }
                 } else {
-                  console.warn('[Follow Click] No namespace found for navigation');
+                  // 点击用户名 - 跳转到发送者的个人主页
+                  const senderNamespace = notification.metadata?.senderNamespace ||
+                                         notification.namespace;
+                  console.log('[Follow Click] Username clicked, namespace:', senderNamespace);
+                  if (senderNamespace) {
+                    navigate(`/u/${senderNamespace}`);
+                  } else {
+                    console.warn('[Follow Click] No sender namespace found');
+                  }
                 }
               }}
-              title="Click to view space"
+              title={isSpaceName ? "Click to view space" : "Click to view user profile"}
             >
               {linkText}
             </span>
