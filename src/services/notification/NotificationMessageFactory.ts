@@ -185,7 +185,7 @@ export class MessageContentProcessor {
       try {
         const parsed = JSON.parse(content);
 
-        // 处理新的treasury类型数据结构
+        // 处理新的treasury类型数据结构 (评论消息)
         if (parsed.articleInfo && parsed.commentInfo) {
           return {
             targetTitle: parsed.articleInfo.title,
@@ -195,6 +195,23 @@ export class MessageContentProcessor {
               ...parsed,
               commentContent: parsed.commentInfo.content,
               commentId: parsed.commentInfo.id
+            }
+          };
+        }
+
+        // 处理新的follow_treasury类型数据结构 (关注空间的新作品)
+        if (parsed.spaceInfo && parsed.articleInfo) {
+          return {
+            targetTitle: parsed.spaceInfo.name, // 空间名作为目标标题
+            targetId: parsed.spaceInfo.id?.toString(),
+            parsedData: {
+              ...parsed,
+              spaceName: parsed.spaceInfo.name,
+              spaceNamespace: parsed.spaceInfo.namespace,
+              spaceId: parsed.spaceInfo.id,
+              articleTitle: parsed.articleInfo.title,
+              articleId: parsed.articleInfo.id,
+              articleUuid: parsed.articleInfo.uuid
             }
           };
         }

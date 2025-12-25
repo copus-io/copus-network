@@ -268,6 +268,46 @@ export const NotificationListSection = (): JSX.Element => {
               {linkText}
             </span>
           );
+        } else if (notification.type === 'follow_treasury') {
+          // For follow_treasury messages: 区分空间名和文章标题的点击
+          // 第一个方括号是空间名，第二个方括号是文章标题
+          const isFirstBracket = index === 1;
+          const isArticleTitle = !isFirstBracket; // 文章标题是第二个方括号内的内容
+
+          return (
+            <span
+              key={index}
+              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+
+                if (isArticleTitle) {
+                  // 点击文章标题 - 跳转到文章页面
+                  const articleId = notification.metadata?.extra?.articleUuid ||
+                                  notification.metadata?.extra?.articleId ||
+                                  notification.articleId;
+                  console.log('[Follow Treasury Click] Article title clicked, articleId:', articleId);
+                  if (articleId) {
+                    navigate(`/work/${articleId}`);
+                  } else {
+                    console.warn('[Follow Treasury Click] No article ID found');
+                  }
+                } else {
+                  // 点击空间名 - 跳转到空间页面
+                  const spaceNamespace = notification.metadata?.extra?.spaceNamespace;
+                  console.log('[Follow Treasury Click] Space name clicked, namespace:', spaceNamespace);
+                  if (spaceNamespace) {
+                    navigate(`/treasury/${spaceNamespace}`);
+                  } else {
+                    console.warn('[Follow Treasury Click] No space namespace found');
+                  }
+                }
+              }}
+              title={isArticleTitle ? "Click to view article" : "Click to view space"}
+            >
+              {linkText}
+            </span>
+          );
         } else if (notification.type === 'treasury') {
           // For treasury messages: 区分作品名和评论内容的点击
           // 检查是否是评论内容（第三个方括号内的内容）
