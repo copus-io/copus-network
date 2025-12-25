@@ -231,10 +231,16 @@ export const NotificationListSection = (): JSX.Element => {
               className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
               onClick={(e) => {
                 e.stopPropagation();
-                // Use spaceNamespace from metadata if available
-                const namespace = notification.metadata?.spaceNamespace || notification.namespace;
+                // Use spaceNamespace from metadata.extra if available
+                const namespace = notification.metadata?.extra?.spaceNamespace ||
+                                notification.metadata?.spaceNamespace ||
+                                notification.namespace;
+                console.log('[Follow Click] Notification metadata:', notification.metadata);
+                console.log('[Follow Click] Found namespace:', namespace);
                 if (namespace) {
                   navigate(`/u/${namespace}`);
+                } else {
+                  console.warn('[Follow Click] No namespace found for navigation');
                 }
               }}
               title="Click to view space"
