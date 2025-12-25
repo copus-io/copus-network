@@ -34,12 +34,15 @@ export interface ProcessedNotification {
 }
 
 export enum NotificationType {
-  LIKE = 'like',
   COMMENT = 'comment',
   FOLLOW = 'follow',
   SYSTEM = 'system',
   TREASURY = 'treasury',
-  MENTION = 'mention'
+  MENTION = 'mention',
+  FOLLOW_TREASURY = 'follow_treasury',
+  COMMENT_REPLY = 'comment_reply',
+  COMMENT_LIKE = 'comment_like',
+  UNLOCK = 'unlock'
 }
 
 export interface NotificationMetadata {
@@ -64,30 +67,45 @@ export class NotificationTemplates {
     messageTemplate: (data: any) => string;
     actionUrl?: (data: any) => string;
   }> = {
-    [NotificationType.LIKE]: {
-      title: '获得点赞',
-      messageTemplate: (data) => `${data.senderUsername} 赞了你的作品「${data.targetTitle}」`,
-      actionUrl: (data) => `/article/${data.targetUuid || data.targetId}`
+    [NotificationType.FOLLOW]: {
+      title: '新关注',
+      messageTemplate: (data) => `[${data.senderUsername}] followed your space [${data.targetTitle}]`,
+      actionUrl: (data) => `/u/${data.spaceNamespace || data.senderNamespace || data.senderUsername}`
+    },
+    [NotificationType.FOLLOW_TREASURY]: {
+      title: '关注空间更新',
+      messageTemplate: (data) => `[${data.targetTitle}] you follow has listed a new treasure [${data.articleTitle}]`,
+      actionUrl: (data) => `/work/${data.articleUuid || data.articleId}`
+    },
+    [NotificationType.TREASURY]: {
+      title: '作品评论',
+      messageTemplate: (data) => `[${data.senderUsername}] commented on your treasure [${data.targetTitle}]${data.commentContent ? ` [${data.commentContent}]` : ''}`,
+      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comments`
     },
     [NotificationType.COMMENT]: {
       title: '新评论',
-      messageTemplate: (data) => `${data.senderUsername} 评论了你的作品「${data.targetTitle}」`,
-      actionUrl: (data) => `/article/${data.targetUuid || data.targetId}#comments`
+      messageTemplate: (data) => `[${data.senderUsername}] 评论了你的作品 [${data.targetTitle}]`,
+      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comments`
     },
-    [NotificationType.FOLLOW]: {
-      title: '新关注',
-      messageTemplate: (data) => `${data.senderUsername} 关注了你`,
-      actionUrl: (data) => `/u/${data.senderNamespace || data.senderUsername}`
+    [NotificationType.COMMENT_REPLY]: {
+      title: '评论回复',
+      messageTemplate: (data) => `[${data.senderUsername}] replied to your comment [${data.commentContent}]`,
+      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comment-${data.commentId}`
     },
-    [NotificationType.TREASURY]: {
-      title: '收藏提醒',
-      messageTemplate: (data) => `${data.senderUsername} commented on your treasure ${data.targetTitle}`,
-      actionUrl: (data) => `/article/${data.targetUuid || data.targetId}`
+    [NotificationType.COMMENT_LIKE]: {
+      title: '评论点赞',
+      messageTemplate: (data) => `[${data.senderUsername}] liked your comment [${data.commentContent}]`,
+      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comment-${data.commentId}`
+    },
+    [NotificationType.UNLOCK]: {
+      title: '付费解锁',
+      messageTemplate: (data) => `[${data.senderUsername}] unlocked your treasure [${data.targetTitle}] with ${data.price} USD`,
+      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}`
     },
     [NotificationType.MENTION]: {
       title: '提及提醒',
-      messageTemplate: (data) => `${data.senderUsername} 在评论中提到了你`,
-      actionUrl: (data) => `/article/${data.targetUuid || data.targetId}#comment-${data.targetId}`
+      messageTemplate: (data) => `[${data.senderUsername}] 在评论中提到了你`,
+      actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comment-${data.targetId}`
     },
     [NotificationType.SYSTEM]: {
       title: '系统通知',
@@ -146,6 +164,36 @@ export class MessageContentProcessor {
     if (content.startsWith('{') && content.endsWith('}')) {
       try {
         const parsed = JSON.parse(content);
+
+        // 处理新的treasury类型数据结构
+        if (parsed.articleInfo && parsed.commentInfo) {
+          return {
+            targetTitle: parsed.articleInfo.title,
+            targetId: parsed.articleInfo.id?.toString(),
+            targetUuid: parsed.articleInfo.uuid,
+            parsedData: {
+              ...parsed,
+              commentContent: parsed.commentInfo.content,
+              commentId: parsed.commentInfo.id
+            }
+          };
+        }
+
+        // 处理新的follow类型数据结构（空间信息）
+        if (parsed.id && parsed.name && parsed.namespace) {
+          return {
+            targetTitle: parsed.name,
+            targetId: parsed.id?.toString(),
+            parsedData: {
+              ...parsed,
+              spaceName: parsed.name,
+              spaceNamespace: parsed.namespace,
+              spaceId: parsed.id
+            }
+          };
+        }
+
+        // 兼容旧格式
         return {
           targetTitle: parsed.title || parsed.content || parsed.message,
           targetId: parsed.id?.toString(),
@@ -155,6 +203,14 @@ export class MessageContentProcessor {
       } catch (error) {
         console.warn('Failed to parse JSON content:', error);
       }
+    }
+
+    // 处理treasury类型消息：提取作品名称
+    const treasuryMatch = content.match(/commented on your treasure\s+(.+)$/);
+    if (treasuryMatch) {
+      return {
+        targetTitle: treasuryMatch[1].trim()
+      };
     }
 
     // 处理HTML内容
@@ -169,7 +225,6 @@ export class MessageContentProcessor {
 
       return { targetTitle: cleanContent };
     }
-
     return { targetTitle: content };
   }
 
@@ -195,19 +250,24 @@ export class MessageTypeDetector {
    */
   static detectType(apiMessageType: number, content?: string): NotificationType {
     switch (apiMessageType) {
-      case 1:
-        return NotificationType.LIKE;
       case 2:
-        return NotificationType.COMMENT;
-      case 3:
         return NotificationType.FOLLOW;
+      case 3:
+        return NotificationType.FOLLOW_TREASURY;
       case 4:
         return NotificationType.TREASURY;
       case 5:
         return NotificationType.MENTION;
+      case 6:
+        return NotificationType.COMMENT_REPLY;
+      case 7:
+        return NotificationType.COMMENT_LIKE;
+      case 8:
+        return NotificationType.UNLOCK;
       case 999:
         return NotificationType.SYSTEM;
       case 0:
+      case 1: // Type 1 不再使用，归类为系统消息
       default:
         // 智能检测：基于内容判断类型
         return this.detectByContent(content);
@@ -222,9 +282,6 @@ export class MessageTypeDetector {
 
     const lowerContent = content.toLowerCase();
 
-    if (lowerContent.includes('like') || lowerContent.includes('赞')) {
-      return NotificationType.LIKE;
-    }
     if (lowerContent.includes('comment') || lowerContent.includes('评论')) {
       return NotificationType.COMMENT;
     }
@@ -258,12 +315,17 @@ export class NotificationMessageFactory {
 
     // 3. 准备模板数据
     const templateData = {
-      senderUsername: rawMessage.senderInfo?.username || '用户',
+      senderUsername: rawMessage.senderInfo?.username || 'Anonymous',
       senderNamespace: rawMessage.senderInfo?.namespace,
       targetTitle: MessageContentProcessor.sanitizeText(contentData.targetTitle || '作品'),
       targetId: contentData.targetId,
       targetUuid: contentData.targetUuid,
       content: rawMessage.content,
+      commentContent: contentData.parsedData?.commentContent,
+      commentId: contentData.parsedData?.commentId,
+      spaceName: contentData.parsedData?.spaceName,
+      spaceNamespace: contentData.parsedData?.spaceNamespace,
+      spaceId: contentData.parsedData?.spaceId,
       ...contentData.parsedData
     };
 
@@ -288,7 +350,7 @@ export class NotificationMessageFactory {
       type,
       title: formattedMessage.title,
       message: formattedMessage.message,
-      avatar: rawMessage.senderInfo?.faceUrl || '/default-avatar.svg',
+      avatar: rawMessage.senderInfo?.faceUrl || "data:image/svg+xml,%3csvg%20width='100'%20height='100'%20viewBox='0%200%20100%20100'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='white'/%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='%23E0E0E0'%20fill-opacity='0.4'/%3e%3cpath%20d='M73.9643%2060.6618V60.9375C73.9643%2074.2269%2063.2351%2085%2050%2085C36.7649%2085%2026.0357%2074.2269%2026.0357%2060.9375V60.6618C22.2772%2059.6905%2019.5%2056.2646%2019.5%2052.1875C19.5%2048.1104%2022.2772%2044.6845%2026.0357%2043.7132V39.0625C26.0357%2025.7731%2036.7649%2015%2050%2015C63.2351%2015%2073.9643%2025.7731%2073.9643%2039.0625V43.7132C77.7228%2044.6845%2080.5%2048.1104%2080.5%2052.1875C80.5%2056.2646%2077.7228%2059.6905%2073.9643%2060.6618ZM69.6071%2043.4375H67.2192C62.2208%2043.4375%2057.8638%2040.0217%2056.6515%2035.1527L56.5357%2034.6875L48.85%2038.5461C43.0934%2041.4362%2036.8058%2043.0815%2030.3929%2043.3858V60.9375C30.3929%2071.8106%2039.1713%2080.625%2050%2080.625C60.8287%2080.625%2069.6071%2071.8106%2069.6071%2060.9375V43.4375ZM39.1071%2050C39.1071%2048.7919%2040.0825%2047.8125%2041.2857%2047.8125C42.4889%2047.8125%2043.4643%2048.7919%2043.4643%2050V54.375C43.4643%2055.5831%2042.4889%2056.5625%2041.2857%2056.5625C40.0825%2056.5625%2039.1071%2055.5831%2039.1071%2054.375V50ZM56.5357%2050C56.5357%2048.7919%2057.5111%2047.8125%2058.7143%2047.8125C59.9175%2047.8125%2060.8929%2048.7919%2060.8929%2050V54.375C60.8929%2055.5831%2059.9175%2056.5625%2058.7143%2056.5625C57.5111%2056.5625%2056.5357%2055.5831%2056.5357%2054.375V50ZM41.9964%2071.3039C41.1073%2070.4899%2041.0438%2069.1064%2041.8544%2068.2136C42.6651%2067.3209%2044.0431%2067.2571%2044.9321%2068.0711C46.0649%2069.1081%2047.4581%2069.6875%2048.8886%2069.6875C50.3722%2069.6875%2051.7728%2069.1187%2052.8779%2068.0924C53.7612%2067.2721%2055.1396%2067.3261%2055.9565%2068.2131C56.7735%2069.1%2056.7197%2070.484%2055.8364%2071.3043C53.9384%2073.0668%2051.4869%2074.0625%2048.8886%2074.0625C46.3342%2074.0625%2043.907%2073.0532%2041.9964%2071.3039ZM23.8571%2052.1875C23.8571%2053.8069%2024.7334%2055.2207%2026.0357%2055.9772V48.3978C24.7334%2049.1543%2023.8571%2050.5681%2023.8571%2052.1875ZM76.1429%2052.1875C76.1429%2050.5681%2075.2666%2049.1543%2073.9643%2048.3978V55.9772C75.2666%2055.2207%2076.1429%2053.8069%2076.1429%2052.1875Z'%20fill='black'/%3e%3c/svg%3e",
       timestamp: rawMessage.createdAt * 1000, // 转换为毫秒
       isRead: rawMessage.isRead,
       actionUrl: formattedMessage.actionUrl,

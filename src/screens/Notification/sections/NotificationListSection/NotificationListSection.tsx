@@ -115,7 +115,7 @@ export const NotificationListSection = (): JSX.Element => {
     deleteIcon: n.type === "system" ? "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete.svg" : "https://c.animaapp.com/mft4oqz6uyUKY7/img/delete-1.svg",
     userId: n.metadata?.senderId, // Use senderId
     namespace: n.metadata?.senderNamespace, // Add namespace for navigation
-    articleId: n.metadata?.articleUuid || n.metadata?.articleId, // Prefer UUID as work routes use UUID
+    articleId: n.metadata?.targetUuid || n.metadata?.targetId || n.metadata?.articleUuid || n.metadata?.articleId, // Prefer targetUuid for new format
   }));
 
   // Render empty state component
@@ -184,6 +184,114 @@ export const NotificationListSection = (): JSX.Element => {
       // Fallback: use userId
       navigate(`/user/${notification.userId}/treasury`);
     }
+  };
+
+  // Parse message with clickable elements in square brackets
+  const parseMessageWithLinks = (message: string, notification: any) => {
+    // Split message by square brackets pattern: [content]
+    const parts = message.split(/(\[[^\]]+\])/g);
+
+    return parts.map((part, index) => {
+      // Check if this part is in square brackets
+      if (part.startsWith('[') && part.endsWith(']')) {
+        const linkText = part.slice(1, -1); // Remove brackets
+
+        // Check if this is a username (first bracket in most messages)
+        const isFirstBracket = index === 1; // Usually username is the first bracketed content
+        const isUsername = isFirstBracket && (notification.namespace || notification.userId || notification.metadata?.senderUsername === linkText);
+
+        if (isUsername) {
+          // This is a username - make it clickable to user profile
+          return (
+            <span
+              key={index}
+              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                const namespace = notification.namespace || notification.metadata?.senderNamespace;
+                if (namespace) {
+                  navigate(`/u/${namespace}`);
+                } else if (notification.userId) {
+                  navigate(`/user/${notification.userId}/treasury`);
+                }
+              }}
+              title="Click to view user profile"
+            >
+              {linkText}
+            </span>
+          );
+        }
+
+        // Determine link type and navigation based on context
+        if (notification.type === 'follow') {
+          // For follow messages: [空间名] should link to space
+          return (
+            <span
+              key={index}
+              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Use spaceNamespace from metadata if available
+                const namespace = notification.metadata?.spaceNamespace || notification.namespace;
+                if (namespace) {
+                  navigate(`/u/${namespace}`);
+                }
+              }}
+              title="Click to view space"
+            >
+              {linkText}
+            </span>
+          );
+        } else if (notification.type === 'treasury') {
+          // For treasury messages: [作品名] should link to work
+          return (
+            <span
+              key={index}
+              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
+                if (articleId) {
+                  navigate(`/work/${articleId}`);
+                }
+              }}
+              title="Click to view content"
+            >
+              {linkText}
+            </span>
+          );
+        } else if (notification.type === 'comment_reply' || notification.type === 'comment_like') {
+          // For comment messages: [评论内容缩写] - could link to specific comment
+          return (
+            <span
+              key={index}
+              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
+                const commentId = notification.metadata?.commentId;
+                if (articleId) {
+                  navigate(`/work/${articleId}${commentId ? `#comment-${commentId}` : '#comments'}`);
+                }
+              }}
+              title="Click to view comment"
+            >
+              {linkText}
+            </span>
+          );
+        } else {
+          // Default: just make it blue but not necessarily clickable
+          return (
+            <span key={index} className="text-blue-600 font-medium">
+              {linkText}
+            </span>
+          );
+        }
+      }
+
+      // Regular text part
+      return part;
+    });
   };
 
   return (
@@ -263,11 +371,11 @@ export const NotificationListSection = (): JSX.Element => {
                       >
                         <Avatar className="w-[45px] h-[45px] flex-shrink-0">
                           <AvatarImage
-                            src={notification.profileImage}
+                            src={notification.profileImage || "data:image/svg+xml,%3csvg%20width='100'%20height='100'%20viewBox='0%200%20100%20100'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='white'/%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='%23E0E0E0'%20fill-opacity='0.4'/%3e%3cpath%20d='M73.9643%2060.6618V60.9375C73.9643%2074.2269%2063.2351%2085%2050%2085C36.7649%2085%2026.0357%2074.2269%2026.0357%2060.9375V60.6618C22.2772%2059.6905%2019.5%2056.2646%2019.5%2052.1875C19.5%2048.1104%2022.2772%2044.6845%2026.0357%2043.7132V39.0625C26.0357%2025.7731%2036.7649%2015%2050%2015C63.2351%2015%2073.9643%2025.7731%2073.9643%2039.0625V43.7132C77.7228%2044.6845%2080.5%2048.1104%2080.5%2052.1875C80.5%2056.2646%2077.7228%2059.6905%2073.9643%2060.6618ZM69.6071%2043.4375H67.2192C62.2208%2043.4375%2057.8638%2040.0217%2056.6515%2035.1527L56.5357%2034.6875L48.85%2038.5461C43.0934%2041.4362%2036.8058%2043.0815%2030.3929%2043.3858V60.9375C30.3929%2071.8106%2039.1713%2080.625%2050%2080.625C60.8287%2080.625%2069.6071%2071.8106%2069.6071%2060.9375V43.4375ZM39.1071%2050C39.1071%2048.7919%2040.0825%2047.8125%2041.2857%2047.8125C42.4889%2047.8125%2043.4643%2048.7919%2043.4643%2050V54.375C43.4643%2055.5831%2042.4889%2056.5625%2041.2857%2056.5625C40.0825%2056.5625%2039.1071%2055.5831%2039.1071%2054.375V50ZM56.5357%2050C56.5357%2048.7919%2057.5111%2047.8125%2058.7143%2047.8125C59.9175%2047.8125%2060.8929%2048.7919%2060.8929%2050V54.375C60.8929%2055.5831%2059.9175%2056.5625%2058.7143%2056.5625C57.5111%2056.5625%2056.5357%2055.5831%2056.5357%2054.375V50ZM41.9964%2071.3039C41.1073%2070.4899%2041.0438%2069.1064%2041.8544%2068.2136C42.6651%2067.3209%2044.0431%2067.2571%2044.9321%2068.0711C46.0649%2069.1081%2047.4581%2069.6875%2048.8886%2069.6875C50.3722%2069.6875%2051.7728%2069.1187%2052.8779%2068.0924C53.7612%2067.2721%2055.1396%2067.3261%2055.9565%2068.2131C56.7735%2069.1%2056.7197%2070.484%2055.8364%2071.3043C53.9384%2073.0668%2051.4869%2074.0625%2048.8886%2074.0625C46.3342%2074.0625%2043.907%2073.0532%2041.9964%2071.3039ZM23.8571%2052.1875C23.8571%2053.8069%2024.7334%2055.2207%2026.0357%2055.9772V48.3978C24.7334%2049.1543%2023.8571%2050.5681%2023.8571%2052.1875ZM76.1429%2052.1875C76.1429%2050.5681%2075.2666%2049.1543%2073.9643%2048.3978V55.9772C75.2666%2055.2207%2076.1429%2053.8069%2076.1429%2052.1875Z'%20fill='black'/%3e%3c/svg%3e"}
                             alt="Profile"
                             className="object-cover"
                           />
-                          <AvatarFallback>UN</AvatarFallback>
+                          <AvatarFallback>AN</AvatarFallback>
                         </Avatar>
                         {(notification.namespace || notification.userId) && (
                           <div className="absolute inset-0 rounded-full border-2 border-transparent hover:border-blue-300 transition-colors duration-200" />
@@ -281,82 +389,7 @@ export const NotificationListSection = (): JSX.Element => {
                           {notification.category}
                         </div>
                         <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-lg leading-[23px]">
-                          {notification.type !== "system" ? (
-                            // Parse username and article title for non-system notifications
-                            (() => {
-                              const message = notification.message;
-                              // Extract username: usually at the beginning of the message
-                              const userNameMatch = message.match(/^([^<>\s]+(?:\s+[^<>\s]+)*?)\s+(liked|commented|treasured)/);
-                              // Extract article title: usually in quotes
-                              const postTitleMatch = message.match(/"([^"]+)"/);
-
-                              if (userNameMatch || postTitleMatch) {
-                                let parts = [];
-                                let remainingMessage = message;
-
-                                // Handle username part
-                                if (userNameMatch && (notification.namespace || notification.userId)) {
-                                  const userName = userNameMatch[1];
-                                  const beforeUser = remainingMessage.substring(0, userNameMatch.index);
-                                  parts.push(beforeUser);
-                                  parts.push(
-                                    <span
-                                      key="username"
-                                      className="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200 font-semibold"
-                                      onClick={(e) => handleUserClick(notification, e)}
-                                      title="Click to view user profile"
-                                    >
-                                      {userName}
-                                    </span>
-                                  );
-                                  remainingMessage = remainingMessage.substring(userNameMatch.index + userName.length);
-                                }
-
-                                // Handle article title part
-                                if (postTitleMatch) {
-                                  const fullMatch = postTitleMatch[0]; // 包含引号的完整匹配
-                                  const postTitle = postTitleMatch[1]; // 不含引号的标题
-                                  const matchIndex = remainingMessage.indexOf(fullMatch);
-
-                                  if (matchIndex !== -1) {
-                                    // Add text before title
-                                    parts.push(remainingMessage.substring(0, matchIndex));
-                                    parts.push('"');
-
-                                    // Add clickable title
-                                    if (notification.articleId) {
-                                      parts.push(
-                                        <span
-                                          key="posttitle"
-                                          className="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200 font-bold"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(`/work/${notification.articleId}`);
-                                          }}
-                                          title="Click to view content"
-                                        >
-                                          {postTitle}
-                                        </span>
-                                      );
-                                    } else {
-                                      parts.push(<span key="posttitle" className="font-bold">{postTitle}</span>);
-                                    }
-
-                                    parts.push('"');
-                                    remainingMessage = remainingMessage.substring(matchIndex + fullMatch.length);
-                                  }
-                                }
-
-                                // Add remaining message
-                                parts.push(remainingMessage);
-
-                                return <span>{parts}</span>;
-                              }
-                              return message;
-                            })()
-                          ) : (
-                            notification.message
-                          )}
+                          {parseMessageWithLinks(notification.message, notification)}
                         </div>
                       </div>
 

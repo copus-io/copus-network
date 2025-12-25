@@ -1,6 +1,6 @@
 export interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'follow' | 'system' | 'treasury' | 'mention';
+  type: 'comment' | 'follow' | 'system' | 'treasury' | 'mention' | 'follow_treasury' | 'comment_reply' | 'comment_like' | 'unlock';
   title: string;
   message: string;
   avatar?: string;

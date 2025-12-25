@@ -159,14 +159,14 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     if (!content.trim() && images.length === 0) {
       const errorMsg = '请添加评论内容或图片';
       setFormError(errorMsg);
-      showToast('Please add some text or images to your comment', 'error');
+      showToast('Please add some text or images to your comment before posting', 'error');
       return;
     }
 
     if (!user) {
       const errorMsg = '请先登录';
       setFormError(errorMsg);
-      showToast('Please log in to post comments', 'error');
+      showToast('Please log in to post comments. Refresh the page if already logged in', 'error');
       return;
     }
 
@@ -204,11 +204,11 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
         console.error('📸 图片上传失败:', error);
         const errorMsg = error instanceof Error ? error.message : '';
         if (errorMsg.includes('size') || errorMsg.includes('large')) {
-          showToast('Images are too large. Please use smaller images', 'error');
+          showToast('Images are too large. Please use images smaller than 10MB', 'error');
         } else if (errorMsg.includes('format') || errorMsg.includes('type')) {
-          showToast('Invalid image format. Please use JPG, PNG, or WebP', 'error');
+          showToast('Invalid image format. Please use JPG, PNG, GIF, or WebP images', 'error');
         } else {
-          showToast('Image upload failed. Please try again', 'error');
+          showToast('Image upload failed. Please check your images and try again', 'error');
         }
         setImageUploadError('Image upload failed');
         setIsSubmitting(false);
