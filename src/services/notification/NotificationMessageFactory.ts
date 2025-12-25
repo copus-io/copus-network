@@ -191,6 +191,19 @@ export class MessageContentProcessor {
           };
         }
 
+        // 处理评论点赞/回复数据结构 - 仅包含评论信息
+        if (parsed.id && parsed.content && !parsed.articleInfo) {
+          return {
+            targetTitle: '评论', // 默认标题
+            targetId: parsed.id?.toString(),
+            parsedData: {
+              ...parsed,
+              commentContent: parsed.content,
+              commentId: parsed.id
+            }
+          };
+        }
+
         // 处理新的follow类型数据结构（空间信息）
         if (parsed.id && parsed.name && parsed.namespace) {
           return {
