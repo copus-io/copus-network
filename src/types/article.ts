@@ -78,6 +78,7 @@ export interface BackendArticle {
   title: string;
   viewCount: number;
   likeCount: number;
+  commentCount: number; // Total number of comments
   isLiked: boolean;
   categoryInfo: BackendCategoryInfo;
   /**
@@ -116,6 +117,7 @@ export interface Article {
   date: string;
   treasureCount: number;
   visitCount: number;
+  commentCount: number; // Total number of comments
   isLiked: boolean; // Like status field
   website: string;
   url?: string;

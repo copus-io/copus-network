@@ -82,6 +82,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
+    commentCount: backendArticle.commentCount || 0, // Total number of comments
     isLiked: backendArticle.isLiked, // Preserve like status returned from server
     website: getWebsiteFromUrl(backendArticle.targetUrl),
     url: backendArticle.targetUrl,
