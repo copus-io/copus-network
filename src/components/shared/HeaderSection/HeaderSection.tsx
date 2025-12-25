@@ -961,7 +961,20 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
           </Button>
         )}
 
-            <Link to="/notification" className="flex items-center cursor-pointer relative">
+            <button
+              onClick={() => {
+                if (location.pathname === '/notification') {
+                  // 在通知页面时，刷新通知数据
+                  console.log('[HeaderSection] Refreshing notifications on current page');
+                  window.location.reload();
+                } else {
+                  // 在其他页面时，正常跳转到通知页面
+                  navigate('/notification');
+                }
+              }}
+              className="flex items-center cursor-pointer relative focus:outline-none"
+              title={location.pathname === '/notification' ? "刷新通知" : "前往通知页面"}
+            >
               <img
                 className="w-[35px] h-[35px] rotate-[12deg] hover:rotate-[17deg] transition-transform duration-200"
                 alt="Notification"
@@ -972,7 +985,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   {unreadCount > 99 ? '99' : unreadCount}
                 </div>
               )}
-            </Link>
+            </button>
 
             <div className="relative flex items-center" ref={searchRef}>
               {isSearchOpen ? (
