@@ -35,9 +35,9 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
     },
     large: {
       container: 'gap-[10px] px-[15px] py-2',
-      icon: 'w-3.5 h-[22px]',
+      icon: 'w-[18px] h-[22px]',
       text: 'text-lg',
-      background: 'w-3.5 h-[22px]'
+      background: 'w-[18px] h-[22px]'
     }
   };
 

@@ -1891,33 +1891,31 @@ export const Content = (): JSX.Element => {
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
-                  {/* Title with x402 payment badge inline */}
+                  {/* Title with x402 payment badge above on mobile, inline on desktop */}
                   <div className="flex flex-col gap-2 w-full">
-                    <div className="flex items-center gap-2 w-full">
-                      {/* Payment badge - show if content is locked */}
-                      {article?.targetUrlIsLocked && article?.priceInfo && (
-                        <div className="h-[34px] px-2.5 py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
-                          <img
-                            className="relative w-[22px] h-5 aspect-[1.11]"
-                            alt="x402 icon"
-                            src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
-                          />
-                          <span className="[font-family:'Lato',Helvetica] font-semibold text-[#0052ff] text-xl tracking-[0] leading-5 whitespace-nowrap">
-                            {article.priceInfo.price}
-                          </span>
-                        </div>
-                      )}
+                    {/* Payment badge - show above title on mobile */}
+                    {article?.targetUrlIsLocked && article?.priceInfo && (
+                      <div className="h-[30px] lg:h-[34px] px-2 lg:px-2.5 py-1 lg:py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] self-start">
+                        <img
+                          className="relative w-[18px] h-[16px] lg:w-[22px] lg:h-5 aspect-[1.11]"
+                          alt="x402 icon"
+                          src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
+                        />
+                        <span className="[font-family:'Lato',Helvetica] font-semibold text-[#0052ff] text-base lg:text-xl tracking-[0] leading-5 whitespace-nowrap">
+                          {article.priceInfo.price}
+                        </span>
+                      </div>
+                    )}
 
-                      <h1
-                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
-                        style={{
-                          wordBreak: 'break-word',
-                          overflowWrap: 'break-word'
-                        }}
-                      >
-                        {content.title}
-                      </h1>
-                    </div>
+                    <h1
+                      className="relative w-full [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
+                      style={{
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
+                    >
+                      {content.title}
+                    </h1>
                   </div>
                 </div>
 
@@ -1928,14 +1926,14 @@ export const Content = (): JSX.Element => {
                 />
               </div>
 
-              <blockquote className="flex flex-col items-start gap-5 p-5 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] rounded-lg">
-                <div className="flex items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex items-start justify-center w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
+              <blockquote className="flex flex-col items-start gap-4 lg:gap-5 p-4 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] rounded-lg">
+                <div className="flex items-start gap-2 lg:gap-4 relative self-stretch w-full flex-[0_0_auto]">
+                  <div className="flex items-start justify-center w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[40px] lg:text-[50px] tracking-[0] leading-[60px] lg:leading-[80.0px]">
                     &quot;
                   </div>
 
                   <p
-                    className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-xl tracking-[0] leading-[32.0px]"
+                    className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-lg lg:text-xl tracking-[0] leading-[28px] lg:leading-[32.0px]"
                     style={{
                       wordBreak: 'break-word',
                       overflowWrap: 'break-word',
@@ -1945,7 +1943,7 @@ export const Content = (): JSX.Element => {
                     {content.description}
                   </p>
 
-                  <div className="flex items-end justify-center self-stretch w-5 relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
+                  <div className="flex items-end justify-center self-stretch w-5 relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[40px] lg:text-[50px] tracking-[0] leading-[60px] lg:leading-[80.0px]">
                     &quot;
                   </div>
                 </div>
@@ -2061,7 +2059,7 @@ export const Content = (): JSX.Element => {
                   }}
                 >
                   <div
-                    className="h-[94vh] overflow-hidden w-full max-w-[1250px] mx-4 lg:mx-[30px]"
+                    className="h-[85vh] lg:h-[94vh] overflow-hidden w-full max-w-[1250px] mx-4 lg:mx-[30px]"
                     style={{
                       background: 'linear-gradient(0deg, rgba(224,224,224,0.18) 0%, rgba(224,224,224,0.18) 100%), linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 100%)',
                       borderRadius: '32px 32px 0 0',
@@ -2133,7 +2131,7 @@ export const Content = (): JSX.Element => {
                     {/* Content area */}
                     <div
                       ref={commentScrollRef}
-                      className="h-[85vh] overflow-y-auto px-4"
+                      className="h-[75vh] lg:h-[85vh] overflow-y-auto px-4"
                       style={{
                         scrollbarWidth: 'thin',
                         scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
@@ -2202,9 +2200,9 @@ export const Content = (): JSX.Element => {
         </main>
 
         {/* Sticky bottom button bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-5 px-4 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-3 lg:py-5 px-4 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto">
-            <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
+            <div className="inline-flex items-center gap-2 lg:gap-5 relative flex-[0_0_auto]">
               {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
                 isLiked={isLiked}
@@ -2228,7 +2226,7 @@ export const Content = (): JSX.Element => {
               />
             </div>
 
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-2 lg:gap-5">
               {/* Edit button - only visible to author */}
               {(() => {
                 // Use namespace for comparison (more reliable) with id as fallback
@@ -2299,15 +2297,15 @@ export const Content = (): JSX.Element => {
               // Content is locked and requires payment - show "Unlock now" button
               <button
                 onClick={handleUnlock}
-                className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,255,255,1)_100%)] transition-all active:scale-95"
+                className="h-[38px] lg:h-[46px] gap-1.5 lg:gap-2.5 px-3 lg:px-5 py-1.5 lg:py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,255,255,1)_100%)] transition-all active:scale-95"
               >
-                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
+                <span className="inline-flex items-center gap-1 lg:gap-2 relative flex-[0_0_auto]">
                   <img
-                    className="relative w-[27px] h-[25px] aspect-[1.09]"
+                    className="relative w-[20px] h-[18px] lg:w-[27px] lg:h-[25px] aspect-[1.09]"
                     alt="x402 icon"
                     src="https://c.animaapp.com/2ALjTCkW/img/x402-icon-blue-1@2x.png"
                   />
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap">
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-base lg:text-xl tracking-[0] leading-5 whitespace-nowrap">
                     Unlock now
                   </span>
                 </span>
