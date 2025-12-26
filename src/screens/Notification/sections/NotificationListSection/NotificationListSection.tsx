@@ -391,13 +391,13 @@ export const NotificationListSection = (): JSX.Element => {
           );
         } else if (notification.type === 'treasury' || notification.type === 'comment') {
           if (isCommentContent) {
-            // Comment content - light weight, with quotes, no background
+            // Comment content - light weight, with quotes, no background, colon before
             return (
               <span
                 key={index}
                 className="font-light text-gray-600"
               >
-                "{linkText}"
+                : "{linkText}"
               </span>
             );
           } else if (isContentTitle) {
@@ -439,7 +439,7 @@ export const NotificationListSection = (): JSX.Element => {
           }
         } else if (notification.type === 'comment_reply' || notification.type === 'comment_like') {
           if (isCommentContent || (linkText.length > 10 && !isFirstBracket)) {
-            // Comment content - light weight, with quotes, no background
+            // Comment content - light weight, with quotes, no background, colon before
             return (
               <span
                 key={index}
@@ -459,7 +459,7 @@ export const NotificationListSection = (): JSX.Element => {
                 }}
                 title="Click to view comment"
               >
-                "{linkText}"
+                : "{linkText}"
               </span>
             );
           } else if (isContentTitle) {
