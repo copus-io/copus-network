@@ -23,8 +23,10 @@ export const useComments = (
   const result = useQuery({
     queryKey: ['comments', targetType, targetId, queryOptions],
     queryFn: () => CommentService.getComments(targetType, targetId, queryOptions),
-    staleTime: 1000 * 60 * 2, // 2分钟内认为数据新鲜
+    staleTime: 1000 * 60 * 5, // 5分钟内认为数据新鲜，减少重复请求
+    gcTime: 1000 * 60 * 10, // 缓存时间10分钟
     enabled: enabled && !!(targetType && targetId), // 只有在启用且有target信息时才启用查询
+    refetchOnWindowFocus: false, // 减少不必要的重新获取
   });
 
   return result;
@@ -49,8 +51,16 @@ export const useOptimizedComments = (
       ...queryOptions,
       loadReplies: false // 改为 false，使用懒加载模式
     }),
-    staleTime: 0, // 设置为0确保新评论立即显示
+    staleTime: 1000 * 30, // 30秒内认为数据新鲜，平衡实时性和性能
+    gcTime: 1000 * 60 * 5, // 缓存时间5分钟
     enabled: enabled && !!(targetType && targetId),
+    refetchOnWindowFocus: false, // 减少不必要的重新获取
+    retry: (failureCount, error) => {
+      // 优化重试逻辑
+      if (failureCount >= 2) return false;
+      return true;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000), // 指数退避，最大5秒
   });
 
   return result;
@@ -169,6 +179,11 @@ export const useCreateComment = () => {
     },
     onSuccess: (newComment, variables, context) => {
       console.log('✅ Comment created successfully:', { newComment, variables });
+      console.log('🔍 检查新评论的图片数据:', {
+        commentId: newComment?.id,
+        images: newComment?.images,
+        hasImages: newComment?.images && newComment.images.length > 0
+      });
 
       showToast('Comment posted successfully', 'success');
 
@@ -230,7 +245,33 @@ export const useCreateComment = () => {
         queryClient.setQueryData(['optimizedComments', variables.targetType, variables.targetId], context.previousCommentsData);
       }
 
-      showToast('Failed to post comment, please try again', 'error');
+      // 提供更友好和明确的错误提示
+      const errorMessage = error instanceof Error ? error.message : '';
+      const errorStatus = error?.status || error?.response?.status;
+      let toastMessage = 'Comment failed to post. Please try again';
+
+      // 根据HTTP状态码和错误类型提供具体的用户指导
+      if (errorStatus === 429) {
+        toastMessage = 'You are commenting too fast. Please wait a moment and try again';
+      } else if (errorStatus === 401 || errorMessage.includes('auth') || errorMessage.includes('unauthorized')) {
+        toastMessage = 'Your session has expired. Please refresh the page and log in again';
+      } else if (errorStatus === 403) {
+        toastMessage = 'You do not have permission to comment on this article';
+      } else if (errorMessage.includes('content') || errorMessage.includes('required')) {
+        toastMessage = 'Please add some text or images to your comment before posting';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorStatus === 0) {
+        toastMessage = 'Network connection failed. Please check your internet and try again';
+      } else if (errorMessage.includes('image') || errorMessage.includes('upload')) {
+        toastMessage = 'Image upload failed. Please check your images and try again';
+      } else if (errorStatus === 500 || errorStatus >= 500) {
+        toastMessage = 'Server error occurred. Please try again in a few minutes';
+      } else if (errorMessage.includes('timeout')) {
+        toastMessage = 'Request timed out. Please check your connection and try again';
+      } else if (errorStatus === 400) {
+        toastMessage = 'Invalid comment content. Please check and try again';
+      }
+
+      showToast(toastMessage, 'error');
     },
   });
 };
@@ -263,7 +304,13 @@ export const useUpdateComment = () => {
           ...old,
           comments: old.comments?.map((comment: Comment) =>
             comment.id.toString() === commentId.toString()
-              ? { ...comment, content: data.content, isEdited: true, updatedAt: new Date().toISOString() }
+              ? {
+                  ...comment,
+                  content: data.content,
+                  images: data.images, // 包含图片数据
+                  isEdited: true,
+                  updatedAt: new Date().toISOString()
+                }
               : comment
           ),
         };
@@ -314,7 +361,24 @@ export const useUpdateComment = () => {
         });
       }
 
-      showToast('Failed to update comment, please try again', 'error');
+      // 提供更明确的编辑失败错误提示
+      const errorMessage = error instanceof Error ? error.message : '';
+      const errorStatus = error?.status || error?.response?.status;
+      let toastMessage = 'Failed to update comment. Please try again';
+
+      if (errorStatus === 403) {
+        toastMessage = 'You can only edit your own comments';
+      } else if (errorStatus === 401) {
+        toastMessage = 'Your session has expired. Please refresh and log in again';
+      } else if (errorStatus === 404) {
+        toastMessage = 'Comment not found. It may have been deleted';
+      } else if (errorStatus >= 500) {
+        toastMessage = 'Server error occurred. Please try again in a few minutes';
+      } else if (errorMessage.includes('network') || errorStatus === 0) {
+        toastMessage = 'Network connection failed. Please check your internet and try again';
+      }
+
+      showToast(toastMessage, 'error');
     },
   });
 };
@@ -453,7 +517,24 @@ export const useDeleteComment = () => {
         });
       }
 
-      showToast('Failed to delete comment, please try again', 'error');
+      // 提供更明确的删除失败错误提示
+      const errorMessage = error instanceof Error ? error.message : '';
+      const errorStatus = error?.status || error?.response?.status;
+      let toastMessage = 'Failed to delete comment. Please try again';
+
+      if (errorStatus === 403) {
+        toastMessage = 'You can only delete your own comments';
+      } else if (errorStatus === 401) {
+        toastMessage = 'Your session has expired. Please refresh and log in again';
+      } else if (errorStatus === 404) {
+        toastMessage = 'Comment not found. It may have already been deleted';
+      } else if (errorStatus >= 500) {
+        toastMessage = 'Server error occurred. Please try again in a few minutes';
+      } else if (errorMessage.includes('network') || errorStatus === 0) {
+        toastMessage = 'Network connection failed. Please check your internet and try again';
+      }
+
+      showToast(toastMessage, 'error');
     },
   });
 };
@@ -584,7 +665,11 @@ export const useLoadCommentReplies = (
         totalCount: replies.length
       };
     },
-    staleTime: 1000 * 60 * 5, // 5分钟缓存
+    staleTime: 1000 * 60 * 10, // 10分钟缓存，回复变化较少
+    gcTime: 1000 * 60 * 15, // 缓存时间15分钟
     enabled: enabled && !!commentId && !!targetId,
+    refetchOnWindowFocus: false, // 减少不必要的重新获取
+    retry: 1, // 回复失败只重试1次
+    retryDelay: 1000, // 固定1秒延迟
   });
 };

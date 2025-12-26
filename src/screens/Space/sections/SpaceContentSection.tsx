@@ -15,7 +15,7 @@ console.log('📍 SpaceContentSection module loaded');
 interface SpaceFetchCacheEntry {
   timestamp: number;
   inProgress: boolean;
-  data?: { spaceInfo: any; articles: any[]; totalCount: number; spaceId: number | null };
+  data?: { spaceInfo: any; articles: any[]; totalCount: number; spaceId: number | null; isFollowing: boolean };
 }
 const spaceFetchCache: Map<string, SpaceFetchCacheEntry> = new Map();
 const SPACE_CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles
@@ -254,6 +254,7 @@ export const SpaceContentSection = (): JSX.Element => {
         setArticles(cached.data.articles);
         setTotalArticleCount(cached.data.totalCount);
         if (cached.data.spaceId) setSpaceId(cached.data.spaceId);
+        if (cached.data.isFollowing !== undefined) setIsFollowing(cached.data.isFollowing);
         setLoading(false);
         return;
       }
@@ -317,6 +318,11 @@ export const SpaceContentSection = (): JSX.Element => {
           // Store the total article count from space info
           fetchedTotalCount = spaceData?.articleCount || 0;
 
+          // Set follow status from space data
+          const followStatus = spaceData?.isFollowed || spaceData?.followed || false;
+          setIsFollowing(followStatus);
+          console.log('[Space] Setting follow status:', followStatus);
+
           // Fetch articles using spaceId from the space info
           if (fetchedSpaceId) {
             console.log('[Space] Fetching articles for spaceId:', fetchedSpaceId, 'page:', 1, 'pageSize:', PAGE_SIZE);
@@ -343,7 +349,7 @@ export const SpaceContentSection = (): JSX.Element => {
           spaceFetchCache.set(cacheKey, {
             timestamp: Date.now(),
             inProgress: false,
-            data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: fetchedTotalCount, spaceId: fetchedSpaceId }
+            data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: fetchedTotalCount, spaceId: fetchedSpaceId, isFollowing: followStatus }
           });
         } else {
           // Old category-based route (for backwards compatibility)
@@ -353,6 +359,9 @@ export const SpaceContentSection = (): JSX.Element => {
             authorAvatar: user?.faceUrl || profileDefaultAvatar,
             authorNamespace: user?.namespace,
           });
+
+          // For old routes, assume not following (since no API to check)
+          setIsFollowing(false);
 
           // Fetch articles for this category/space
           const userId = user?.id;
@@ -457,6 +466,7 @@ export const SpaceContentSection = (): JSX.Element => {
       date: (article.createAt || article.publishAt) ? new Date((article.createAt || article.publishAt) * 1000).toISOString() : '',
       treasureCount: article.likeCount || 0,
       visitCount: article.viewCount || 0,
+      commentCount: article.commentCount || 0,
       isLiked: article.isLiked || false,
       targetUrl: article.targetUrl,
       website,
@@ -525,6 +535,16 @@ export const SpaceContentSection = (): JSX.Element => {
       await AuthService.followSpace(spaceId);
       setIsFollowing(true);
       showToast('Following space', 'success');
+
+      // Update cache with new follow status
+      const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
+      const cached = spaceFetchCache.get(cacheKey);
+      if (cached && cached.data) {
+        spaceFetchCache.set(cacheKey, {
+          ...cached,
+          data: { ...cached.data, isFollowing: true }
+        });
+      }
     } catch (err) {
       console.error('Failed to follow space:', err);
       showToast('Failed to follow space', 'error');
@@ -545,6 +565,16 @@ export const SpaceContentSection = (): JSX.Element => {
       await AuthService.followSpace(spaceId); // Same API toggles follow/unfollow
       setIsFollowing(false);
       showToast('Unfollowed space', 'success');
+
+      // Update cache with new follow status
+      const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
+      const cached = spaceFetchCache.get(cacheKey);
+      if (cached && cached.data) {
+        spaceFetchCache.set(cacheKey, {
+          ...cached,
+          data: { ...cached.data, isFollowing: false }
+        });
+      }
     } catch (err) {
       console.error('Failed to unfollow space:', err);
       showToast('Failed to unfollow space', 'error');
@@ -833,7 +863,7 @@ export const SpaceContentSection = (): JSX.Element => {
           </div>
         ) : (
           <>
-            <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-8">
+            <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-8">
               {articles.map((article) => renderCard(article))}
             </div>
 

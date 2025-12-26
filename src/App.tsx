@@ -98,7 +98,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/withdrawal",
+    path: "/earning",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
         <Withdrawal />

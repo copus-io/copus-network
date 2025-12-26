@@ -6,26 +6,117 @@ import { Comment } from '../../types/comment';
 import { useToggleCommentLike, useDeleteComment, useUpdateComment, useLoadCommentReplies } from '../../hooks/queries/useComments';
 import { CommentForm } from './CommentForm';
 import { useUser } from '../../contexts/UserContext';
+import CommentImageGallery from './CommentImageGallery';
+import CommentImageUploaderV2, { CommentImageUploaderRef } from './CommentImageUploaderV2';
+
+// 评论图片接口 (和CommentForm保持一致)
+interface CommentImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  uploadUrl?: string;
+  isUploading?: boolean;
+  error?: string;
+}
+
+// 编辑评论图片接口
+interface EditCommentImage {
+  id: string;
+  file?: File; // 新上传的文件
+  previewUrl: string;
+  uploadUrl?: string;
+  isUploading?: boolean;
+  error?: string;
+  isExisting?: boolean; // 是否为已存在的图片
+}
 
 // Edit comment form component
 interface EditCommentFormProps {
   initialContent: string;
-  onSubmit: (content: string) => void;
+  initialImages?: string[]; // 初始图片URL数组
+  onSubmit: (content: string, images: string[]) => void;
   onCancel: () => void;
+  onDelete?: () => void;
   isSubmitting?: boolean;
+  isDeleting?: boolean;
 }
 
 const EditCommentForm: React.FC<EditCommentFormProps> = ({
   initialContent,
+  initialImages = [],
   onSubmit,
   onCancel,
-  isSubmitting = false
+  onDelete,
+  isSubmitting = false,
+  isDeleting = false
 }) => {
   const [content, setContent] = useState(initialContent);
+  const [images, setImages] = useState<EditCommentImage[]>([]);
+  const [imageUploadError, setImageUploadError] = useState<string>('');
+  const imageUploaderRef = useRef<CommentImageUploaderRef>(null);
+
+  // 初始化现有图片
+  useEffect(() => {
+    if (initialImages.length > 0) {
+      const existingImages: EditCommentImage[] = initialImages.map((url, index) => ({
+        id: `existing-${index}`,
+        previewUrl: url,
+        uploadUrl: url,
+        isExisting: true
+      }));
+      setImages(existingImages);
+    }
+  }, [initialImages]);
 
   const handleSubmit = () => {
     if (!content.trim()) return;
-    onSubmit(content.trim());
+
+    // 提取所有成功上传的图片URL
+    const imageUrls = images
+      .filter(img => img.uploadUrl && !img.error)
+      .map(img => img.uploadUrl!);
+
+    onSubmit(content.trim(), imageUrls);
+  };
+
+  // 处理图片变化
+  const handleImagesChange = (newImages: CommentImage[]) => {
+    console.log('📸 编辑模式图片变化:', {
+      oldCount: images.length,
+      newCount: newImages.length
+    });
+
+    // 转换为编辑用的图片格式
+    const editImages: EditCommentImage[] = newImages.map(img => ({
+      id: img.id,
+      file: img.file,
+      previewUrl: img.previewUrl,
+      uploadUrl: img.uploadUrl,
+      isUploading: img.isUploading,
+      error: img.error,
+      isExisting: false
+    }));
+
+    // 合并现有图片和新图片
+    const existingImages = images.filter(img => img.isExisting);
+    setImages([...existingImages, ...editImages]);
+    setImageUploadError('');
+  };
+
+  // 处理图片上传错误
+  const handleImageUploadError = (error: string) => {
+    setImageUploadError(error);
+  };
+
+  // 删除图片
+  const handleRemoveImage = (imageId: string) => {
+    setImages(prev => prev.filter(img => img.id !== imageId));
+
+    // 如果删除的是新上传的图片，也要从上传组件中移除
+    const imageToRemove = images.find(img => img.id === imageId);
+    if (imageToRemove && !imageToRemove.isExisting) {
+      imageUploaderRef.current?.removeImage(imageId);
+    }
   };
 
   return (
@@ -38,21 +129,99 @@ const EditCommentForm: React.FC<EditCommentFormProps> = ({
         rows={3}
         disabled={isSubmitting}
       />
-      <div className="flex justify-end gap-2 mt-3">
-        <button
-          onClick={onCancel}
+
+      {/* 图片编辑区域 */}
+      <div className="mt-3">
+        {/* 已有图片预览 */}
+        {images.length > 0 && (
+          <div className="mb-3">
+            <div className="flex flex-wrap gap-2">
+              {images.map((image) => (
+                <div key={image.id} className="relative">
+                  <img
+                    src={image.previewUrl}
+                    alt="Comment image"
+                    className="w-20 h-20 object-cover rounded-lg border"
+                  />
+                  {/* 删除按钮 */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(image.id)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    ×
+                  </button>
+                  {/* 上传状态指示器 */}
+                  {image.isUploading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  {image.error && (
+                    <div className="absolute inset-0 bg-red-500 bg-opacity-80 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-xs">!</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 图片上传组件 */}
+        <CommentImageUploaderV2
+          ref={imageUploaderRef}
+          onImagesChange={handleImagesChange}
+          onUploadError={handleImageUploadError}
           disabled={isSubmitting}
-          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 [font-family:'Lato',Helvetica]"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !content.trim()}
-          className="px-4 py-2 bg-red text-white rounded-lg hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 [font-family:'Lato',Helvetica]"
-        >
-          {isSubmitting ? 'Updating...' : 'Update'}
-        </button>
+          maxImages={9 - images.filter(img => img.isExisting).length} // 减去已有图片数量
+        />
+
+        {/* 图片上传错误提示 */}
+        {imageUploadError && (
+          <div className="mt-2 text-red-500 text-sm">
+            {imageUploadError}
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-between items-center mt-3">
+        {/* Delete button on the left */}
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            disabled={isSubmitting || isDeleting}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-red hover:opacity-80 transition-colors duration-200 [font-family:'Lato',Helvetica]"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3,6 5,6 21,6"></polyline>
+              <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
+          </button>
+        )}
+        {!onDelete && <div></div>}
+
+        {/* Cancel and Save buttons on the right */}
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 [font-family:'Lato',Helvetica]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !content.trim()}
+            className="px-5 py-2 bg-red text-white rounded-[100px] hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200 [font-family:'Lato',Helvetica]"
+          >
+            {isSubmitting ? 'Saving...' : 'Save'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -81,9 +250,14 @@ const ReplyItemComponent: React.FC<{
 }> = ({ reply, toggleLikeMutation, targetId, targetType, parentComment, allReplies, articleId, onReplyClick }) => {
   const navigate = useNavigate();
   const deleteCommentMutation = useDeleteComment();
+  const updateCommentMutation = useUpdateComment();
   const { user } = useUser();
   const [replyIsLiked, setReplyIsLiked] = useState(reply.isLiked);
   const [replyLikesCount, setReplyLikesCount] = useState(reply.likesCount);
+  const [showEditForm, setShowEditForm] = useState(false);
+
+  // Check if current user is the reply author
+  const isReplyAuthor = user && user.id === reply.authorId;
 
   // Handle user click to navigate to profile page
   const handleUserClick = (comment: Comment) => {
@@ -120,6 +294,25 @@ const ReplyItemComponent: React.FC<{
     if (window.confirm('Are you sure you want to delete this reply?')) {
       deleteCommentMutation.mutate({ commentId: reply.id, articleId: articleId || targetId });
     }
+  };
+
+  const handleReplyEdit = () => {
+    if (!user) {
+      alert('Please log in first');
+      return;
+    }
+    setShowEditForm(!showEditForm);
+  };
+
+  const handleReplyEditSubmit = (content: string, images: string[]) => {
+    updateCommentMutation.mutate(
+      { commentId: reply.id, data: { content, articleId: targetId, images } },
+      {
+        onSuccess: () => {
+          setShowEditForm(false);
+        }
+      }
+    );
   };
 
   // Check if current user can delete this reply
@@ -567,7 +760,8 @@ const ReplyItemComponent: React.FC<{
         <div className="flex items-center gap-2 mb-2">
           <span
             onClick={() => handleUserClick(reply)}
-            className="font-medium text-gray-900 text-lg [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+            className="text-gray-900 [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+            style={{ fontSize: '16px', fontWeight: 450 }}
           >
             {reply.authorName}
           </span>
@@ -580,6 +774,11 @@ const ReplyItemComponent: React.FC<{
         <div className="text-gray-800 text-base leading-relaxed mb-3 [font-family:'Lato',Helvetica] font-light">
           {formatReplyContent()}
         </div>
+
+        {/* Reply images */}
+        {reply.images && reply.images.length > 0 && (
+          <CommentImageGallery images={reply.images} className="mb-3" />
+        )}
 
         {/* Reply actions */}
         <div className="flex items-center gap-3">
@@ -603,26 +802,42 @@ const ReplyItemComponent: React.FC<{
             className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium text-gray-500 hover:text-red hover:bg-red-50 transition-all duration-200 [font-family:'Lato',Helvetica]"
             style={{ outline: 'none' }}
           >
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+            </svg>
             <span>Reply</span>
           </button>
 
-          {canDeleteReply && (
+          {/* Edit button - only for reply author */}
+          {isReplyAuthor && (
             <button
-              onClick={handleReplyDelete}
-              disabled={deleteCommentMutation.isPending}
+              onClick={handleReplyEdit}
               className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium text-gray-500 hover:text-red hover:bg-red-50 transition-all duration-200 [font-family:'Lato',Helvetica]"
               style={{ outline: 'none' }}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3,6 5,6 21,6"></polyline>
-                <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
-              <span>Delete</span>
+              <span>Edit</span>
             </button>
           )}
         </div>
+
+        {/* Edit form for reply */}
+        {showEditForm && (
+          <div className="mt-3">
+            <EditCommentForm
+              initialContent={reply.content}
+              initialImages={reply.images}
+              onSubmit={handleReplyEditSubmit}
+              onCancel={() => setShowEditForm(false)}
+              onDelete={canDeleteReply ? handleReplyDelete : undefined}
+              isSubmitting={updateCommentMutation.isPending}
+              isDeleting={deleteCommentMutation.isPending}
+            />
+          </div>
+        )}
 
       </div>
     </div>
@@ -643,7 +858,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   const [isLiked, setIsLiked] = useState(comment.isLiked);
   const [likesCount, setLikesCount] = useState(comment.likesCount);
   const [repliesExpanded, setRepliesExpanded] = useState(false); // 控制回复展开/折叠
-  const [repliesVisible, setRepliesVisible] = useState(false); // 控制回复是否可见
+  const [repliesVisible, setRepliesVisible] = useState(true); // 默认显示回复
   const commentRef = useRef<HTMLDivElement>(null);
   const toggleLikeMutation = useToggleCommentLike();
   const deleteCommentMutation = useDeleteComment();
@@ -753,8 +968,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     }
   }, [comment.id, targetType, targetId]);
 
-  // 设置回复折叠的阈值
-  const REPLY_COLLAPSE_THRESHOLD = 2;
+  // 设置回复折叠的阈值 - 只显示1条回复
+  const REPLY_COLLAPSE_THRESHOLD = 1;
 
   // 按需加载评论回复
   // 仅在用户点击展开按钮时才加载回复，优化性能
@@ -821,9 +1036,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     setShowEditForm(!showEditForm);
   };
 
-  const handleEditSubmit = (content: string) => {
+  const handleEditSubmit = (content: string, images: string[]) => {
     updateCommentMutation.mutate(
-      { commentId: comment.id, data: { content, articleId: targetId } },
+      { commentId: comment.id, data: { content, articleId: targetId, images } },
       {
         onSuccess: () => {
           setShowEditForm(false);
@@ -890,7 +1105,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           <div className="flex items-center gap-2 mb-2">
             <span
               onClick={() => handleUserClick(comment)}
-              className="font-medium text-gray-900 text-lg [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+              className="text-gray-900 [font-family:'Lato',Helvetica] cursor-pointer hover:text-blue-600 transition-colors"
+              style={{ fontSize: '16px', fontWeight: 450 }}
             >
               {comment.authorName}
             </span>
@@ -900,7 +1116,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 12a9 9 0 11-6.219-8.56"/>
                   </svg>
-                  发布中...
+                  Posting...
                 </span>
               ) : isNew ? (
                 <span className="inline-flex items-center gap-1 text-green-500 font-medium">
@@ -923,8 +1139,18 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 {index < comment.content.split('\n').length - 1 && <br />}
               </React.Fragment>
             ))}
-
           </div>
+
+          {/* Comment images */}
+          {comment.images && comment.images.length > 0 && (
+            <CommentImageGallery images={comment.images} className="mb-3" />
+          )}
+          {/* 调试信息 */}
+          {comment.images && console.log('🖼️ CommentItem图片数据:', {
+            commentId: comment.id,
+            images: comment.images,
+            imageCount: comment.images.length
+          })}
 
           {/* Action buttons */}
           <div className="flex items-center gap-4">
@@ -966,55 +1192,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <span>Reply</span>
             </button>
 
-            {/* View replies button - 专门用于展开/折叠回复列表 */}
-            {(() => {
-              const propsRepliesCount = replies?.length || 0;
-              const loadedRepliesCount = repliesData?.replies?.length || 0;
-              const backendCount = comment.repliesCount || 0;
-              const hasAnyReplies = propsRepliesCount > 0 || loadedRepliesCount > 0 || backendCount > 0;
-
-              // 只有当有回复时才显示此按钮
-              if (!hasAnyReplies) return null;
-
-              const displayCount = propsRepliesCount > 0 ? propsRepliesCount
-                                 : loadedRepliesCount > 0 ? loadedRepliesCount
-                                 : backendCount;
-
-              return (
-                <button
-                  onClick={() => {
-                    if (!repliesVisible) {
-                      // 首次点击展开 - 触发加载回复
-                      console.log('🔄 User clicked to view replies, triggering API call...');
-                      setRepliesVisible(true);
-                    } else {
-                      // 再次点击 - 折叠回复
-                      setRepliesVisible(false);
-                    }
-                  }}
-                  className={`inline-flex items-center gap-1 text-sm transition-all duration-200 [font-family:'Lato',Helvetica] ${
-                    repliesVisible
-                      ? 'text-blue-600 hover:text-blue-700'
-                      : 'text-gray-400 hover:text-blue-600'
-                  }`}
-                  style={{ outline: 'none' }}
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 12h6M9 16h6M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H6l-2 2V7a1 1 0 011-1z"/>
-                  </svg>
-                  <span>{displayCount} {displayCount === 1 ? 'reply' : 'replies'}</span>
-                  {repliesVisible ? (
-                    <svg className="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="18,15 12,9 6,15"></polyline>
-                    </svg>
-                  ) : (
-                    <svg className="w-3 h-3 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="6,9 12,15 18,9"></polyline>
-                    </svg>
-                  )}
-                </button>
-              );
-            })()}
 
 
             {/* Edit button - only for comment author */}
@@ -1024,27 +1201,15 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
                 style={{ outline: 'none' }}
               >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
                 <span>Edit</span>
               </button>
             )}
 
-            {canDelete && (
-              <button
-                onClick={handleDelete}
-                disabled={deleteCommentMutation.isPending}
-                className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-red transition-all duration-200 [font-family:'Lato',Helvetica]"
-                style={{ outline: 'none' }}
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3,6 5,6 21,6"></polyline>
-                  <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
-                  <line x1="10" y1="11" x2="10" y2="17"></line>
-                  <line x1="14" y1="11" x2="14" y2="17"></line>
-                </svg>
-                <span>Delete</span>
-              </button>
-            )}
-          </div>
+                      </div>
 
 
           {/* Edit form */}
@@ -1052,9 +1217,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             <div className="mt-4">
               <EditCommentForm
                 initialContent={comment.content}
+                initialImages={comment.images}
                 onSubmit={handleEditSubmit}
                 onCancel={() => setShowEditForm(false)}
+                onDelete={canDelete ? handleDelete : undefined}
                 isSubmitting={updateCommentMutation.isPending}
+                isDeleting={deleteCommentMutation.isPending}
               />
             </div>
           )}
@@ -1099,10 +1267,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
                             {/* 展开/折叠按钮 - 简洁现代风格 */}
                             {shouldCollapse && (
-                              <div className="pt-3">
+                              <div className="">
                                 <button
                                   onClick={() => setRepliesExpanded(!repliesExpanded)}
-                                  className="group inline-flex items-center gap-2 py-2 text-sm text-gray-500 hover:text-blue-600 transition-colors duration-200 [font-family:'Lato',Helvetica] font-medium"
+                                  className="group inline-flex items-center gap-2 py-1 text-sm text-gray-500 hover:text-blue-600 transition-colors duration-200 [font-family:'Lato',Helvetica] font-medium"
                                   style={{ outline: 'none' }}
                                 >
                                   {repliesExpanded ? (
@@ -1117,7 +1285,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                                       <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <polyline points="6,9 12,15 18,9"></polyline>
                                       </svg>
-                                      <span>Show {actualReplies.length - REPLY_COLLAPSE_THRESHOLD} more replies</span>
+                                      <span>Expand {actualReplies.length - REPLY_COLLAPSE_THRESHOLD} {actualReplies.length - REPLY_COLLAPSE_THRESHOLD === 1 ? 'comment' : 'comments'}</span>
                                     </>
                                   )}
                                 </button>

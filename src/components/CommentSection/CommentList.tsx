@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import { Comment } from '../../types/comment';
 import { CommentItem } from './CommentItem';
-import { useQuery } from '@tanstack/react-query';
-import { CommentService } from '../../services/commentService';
 
 interface CommentListProps {
   comments: Comment[];
@@ -60,15 +58,17 @@ export const CommentList: React.FC<CommentListProps> = ({
       {/* Comments list */}
       <div className="space-y-0">
         {topLevelComments.map((comment, index) => (
-          <div key={comment.id} className="pt-5 pb-10 border-b border-[#D3D3D3] last:border-b-0 last:pb-0">
-            <CommentItem
-              comment={comment}
-              replies={getRepliesForComment(comment.id)}
-              targetType={targetType}
-              targetId={targetId}
-              articleId={articleId}
-              onReplyClick={onReplyClick}
-            />
+          <div key={comment.id}>
+            <div className="py-6 border-b border-[#E0E0E0] last:border-b-0">
+              <CommentItem
+                comment={comment}
+                replies={getRepliesForComment(comment.id)}
+                targetType={targetType}
+                targetId={targetId}
+                articleId={articleId}
+                onReplyClick={onReplyClick}
+              />
+            </div>
           </div>
         ))}
       </div>

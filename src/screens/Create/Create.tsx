@@ -667,6 +667,12 @@ export const Create = (): JSX.Element => {
       };
 
       console.log('📤 Sending article params:', articleParams);
+      console.log('📤 Payment settings:', {
+        payToUnlock_state: payToUnlock,
+        paymentAmount_state: paymentAmount,
+        targetUrlIsLocked: articleParams.targetUrlIsLocked,
+        priceInfo: articleParams.priceInfo || 'not included'
+      });
       console.log('📤 Detailed params:', {
         title: `"${articleParams.title}" (${articleParams.title.length} chars)`,
         content: `"${articleParams.content}" (${articleParams.content.length} chars)`,

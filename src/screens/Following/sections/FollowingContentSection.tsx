@@ -201,6 +201,7 @@ export const FollowingContentSection = (): JSX.Element => {
       date: (article.createAt || article.publishAt) ? new Date((article.createAt || article.publishAt) * 1000).toISOString() : '',
       treasureCount: article.likeCount || 0,
       visitCount: article.viewCount || 0,
+      commentCount: article.commentCount || 0,
       isLiked: article.isLiked || false,
       targetUrl: article.targetUrl,
       website: article.targetUrl ? (() => { try { return new URL(article.targetUrl).hostname; } catch { return undefined; } })() : undefined,

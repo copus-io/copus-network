@@ -82,6 +82,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
+    commentCount: backendArticle.commentCount || 0, // Total number of comments
     isLiked: backendArticle.isLiked, // Preserve like status returned from server
     website: getWebsiteFromUrl(backendArticle.targetUrl),
     url: backendArticle.targetUrl,
@@ -383,6 +384,11 @@ export const publishArticle = async (articleData: {
 
   try {
     console.log('📤 Calling publishArticle API with data:', articleData);
+    console.log('📤 Payment fields being sent to API:', {
+      targetUrlIsLocked: articleData.targetUrlIsLocked,
+      priceInfo: articleData.priceInfo || 'undefined/not included',
+      fullPayload: JSON.stringify(articleData)
+    });
     const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),

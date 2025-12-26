@@ -1,10 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-
-// Debug logging - only enabled in development
-const DEBUG = import.meta.env.MODE === 'development';
-const debugLog = (...args: any[]) => {
-  if (DEBUG) debugLog(...args);
-};
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
@@ -26,6 +20,7 @@ import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
 import { CommentSection } from "../../components/CommentSection";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
+import commentIcon from "../../assets/images/comment.svg";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
 import {
   generateNonce,
@@ -144,20 +139,98 @@ export const Content = (): JSX.Element => {
   // Comment section modal state
   const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
   const [shouldShowModal, setShouldShowModal] = useState(false);
+  const commentScrollRef = useRef<HTMLDivElement>(null);
 
-  // Handle modal animation timing
+  // Handle modal animation timing and body scroll lock
   useEffect(() => {
     if (isCommentSectionOpen) {
       // Show modal immediately when opening
       setShouldShowModal(true);
+      // Prevent background scroll
+      document.body.style.overflow = 'hidden';
+
+      // Auto-scroll to top of comment area after modal is fully open
+      const scrollTimer = setTimeout(() => {
+        if (commentScrollRef.current) {
+          commentScrollRef.current.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }
+      }, 750); // Wait for modal animation to complete (700ms + buffer)
+
+      return () => {
+        clearTimeout(scrollTimer);
+      };
     } else {
+      // Allow background scroll
+      document.body.style.overflow = 'unset';
       // Delay hiding modal until animation completes
       const timer = setTimeout(() => {
         setShouldShowModal(false);
       }, 500); // Match the transition duration
       return () => clearTimeout(timer);
     }
+
+    // Cleanup on component unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
   }, [isCommentSectionOpen]);
+
+  // Handle URL parameters and hash navigation for comments
+  useEffect(() => {
+    const handleCommentNavigation = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hash = window.location.hash;
+
+      // Check URL parameters for comment section navigation
+      const openComments = urlParams.get('openComments');
+      const commentId = urlParams.get('commentId');
+
+      // Check if hash indicates comment section navigation
+      const hasCommentHash = hash === '#comments' || hash.startsWith('#comment-');
+
+      if (openComments === 'true' || hasCommentHash) {
+        console.log('[Content] Comment navigation detected:', {
+          openComments,
+          commentId,
+          hash,
+          url: window.location.href
+        });
+
+        // Open comment section
+        setIsCommentSectionOpen(true);
+
+        // If targeting specific comment, scroll to it after a delay
+        const targetCommentId = commentId || (hash.startsWith('#comment-') ? hash.substring('#comment-'.length) : null);
+        if (targetCommentId) {
+          setTimeout(() => {
+            const commentElement = document.getElementById(`comment-${targetCommentId}`);
+            if (commentElement) {
+              commentElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+              });
+              console.log('[Content] Scrolled to comment:', targetCommentId);
+            } else {
+              console.warn('[Content] Comment element not found:', targetCommentId);
+            }
+          }, 800); // Wait for modal animation
+        }
+      }
+    };
+
+    // Handle initial load
+    handleCommentNavigation();
+
+    // Listen for hash changes (back/forward browser navigation)
+    window.addEventListener('hashchange', handleCommentNavigation);
+
+    return () => {
+      window.removeEventListener('hashchange', handleCommentNavigation);
+    };
+  }, []);
 
   // ========================================
   // Helper Functions (extracted for code reuse)
@@ -1845,7 +1918,7 @@ export const Content = (): JSX.Element => {
         <main className="flex flex-col lg:flex-row items-start pt-[70px] lg:pt-[120px] pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow">
           {/* Main Content Column */}
           <div className="flex-1 w-full">
-            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b [border-bottom-style:solid] border-[#E0E0E0]">
+            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
@@ -2006,169 +2079,107 @@ export const Content = (): JSX.Element => {
                   }}
                 />
 
-                {/* Apple-style frosted glass modal */}
+                {/* Comment modal */}
                 <div
-                  className="fixed bottom-0 left-0 right-0 z-50"
+                  className="fixed bottom-0 left-0 right-0 z-50 flex justify-center"
                   style={{
-                    transition: 'transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 400ms cubic-bezier(0.4, 0.0, 0.2, 1), scale 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transition: 'transform 700ms cubic-bezier(0.25, 1.25, 0.45, 0.95), opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1)',
                     transform: isCommentSectionOpen
-                      ? 'translateY(0%) scale(1)'
-                      : 'translateY(100%) scale(0.95)',
+                      ? 'translateY(0%)'
+                      : 'translateY(100%)',
                     opacity: isCommentSectionOpen ? 1 : 0,
                     transformOrigin: 'center bottom'
                   }}
                 >
                   <div
-                    className="max-h-[85vh] overflow-hidden"
+                    className="h-[94vh] overflow-hidden w-full max-w-[1250px] mx-4 lg:mx-[30px]"
                     style={{
-                      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.88) 50%, rgba(241, 245, 249, 0.85) 100%)',
-                      backdropFilter: 'blur(45px) brightness(1.12) saturate(1.6) contrast(1.08)',
-                      WebkitBackdropFilter: 'blur(45px) brightness(1.12) saturate(1.6) contrast(1.08)',
+                      background: 'linear-gradient(0deg, rgba(224,224,224,0.18) 0%, rgba(224,224,224,0.18) 100%), linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 100%)',
                       borderRadius: '32px 32px 0 0',
-                      border: '1px solid rgba(255, 255, 255, 0.8)',
-                      borderBottom: 'none',
-                      boxShadow: `
-                        0 -12px 40px rgba(0, 0, 0, 0.08),
-                        0 -4px 16px rgba(0, 0, 0, 0.04),
-                        0 -1px 4px rgba(0, 0, 0, 0.02),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-                        inset 0 0 30px rgba(255, 255, 255, 0.15)
-                      `,
+                      boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)',
+                    }}
+                    onWheel={(e) => {
+                      // Prevent wheel events from bubbling to parent
+                      e.stopPropagation();
+                    }}
+                    onTouchMove={(e) => {
+                      // Prevent touch move events from bubbling to parent
+                      e.stopPropagation();
                     }}
                   >
-                    {/* Apple-style drag indicator */}
-                    <div className="flex justify-center py-4">
-                      <div
-                        className="w-12 h-1.5 rounded-full"
-                        style={{
-                          background: 'linear-gradient(90deg, rgba(148, 163, 184, 0.6) 0%, rgba(100, 116, 139, 0.7) 50%, rgba(148, 163, 184, 0.6) 100%)',
-                          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-                          transition: 'all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-                          transform: isCommentSectionOpen ? 'scaleX(1)' : 'scaleX(0.7)',
-                          opacity: isCommentSectionOpen ? 1 : 0,
-                          animation: isCommentSectionOpen ? 'gentle-bounce 0.8s ease-out 0.3s' : 'none'
-                        }}
-                      />
-
-                      {/* 添加弹跳动画 */}
-                      <style jsx>{`
-                        @keyframes gentle-bounce {
-                          0% { transform: scaleX(0.7) scaleY(1); }
-                          30% { transform: scaleX(1.1) scaleY(0.8); }
-                          60% { transform: scaleX(0.95) scaleY(1.1); }
-                          100% { transform: scaleX(1) scaleY(1); }
-                        }
-                      `}</style>
-                    </div>
-
-                    {/* Apple-style header with enhanced contrast */}
-                    <div className="flex items-center justify-between px-6 pb-6">
-                      <div className="flex items-center gap-4">
-                        {/* Icon with enhanced visual hierarchy */}
-                        <div
-                          className="flex items-center justify-center w-12 h-12 rounded-full shadow-lg"
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={commentIcon}
+                          alt="Comments"
+                          className="w-[25px] h-[22px]"
                           style={{
-                            background: 'linear-gradient(135deg, #ff6b35 0%, #f23a00 100%)',
-                            boxShadow: '0 4px 12px rgba(242, 58, 0, 0.3), 0 2px 4px rgba(242, 58, 0, 0.2)',
+                            filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(55%) contrast(90%)'
                           }}
-                        >
-                          <svg
-                            className="w-6 h-6 text-white filter drop-shadow-sm"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2.5}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.691 1.109 3.194 2.676 3.741A11.04 11.04 0 0010.5 18a11.04 11.04 0 008.575-4.009c1.567-.547 2.676-2.05 2.676-3.741V6.75A2.25 2.25 0 0019.5 4.5H4.5A2.25 2.25 0 002.25 6.75v4.501z"
-                            />
-                          </svg>
-                        </div>
-
-                        <div className="flex flex-col">
+                        />
+                        <div className="flex items-center gap-2">
                           <h3
-                            className="[font-family:'Lato',Helvetica] font-bold text-2xl mb-1"
-                            style={{
-                              color: 'rgba(0, 0, 0, 0.9)',
-                              textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)',
-                            }}
+                            className="[font-family:'Lato',Helvetica] font-semibold text-xl"
+                            style={{ color: 'rgba(0, 0, 0, 0.9)' }}
                           >
                             Comments
                           </h3>
                           {!isCommentsLoading && (
-                            <div className="flex items-center gap-2">
+                            <>
+                              <div
+                                className="w-1 h-1 rounded-full"
+                                style={{ background: 'rgba(0, 0, 0, 0.3)' }}
+                              />
                               <span
-                                className="[font-family:'Lato',Helvetica] text-sm font-medium"
-                                style={{ color: 'rgba(0, 0, 0, 0.65)' }}
+                                className="[font-family:'Lato',Helvetica] text-sm"
+                                style={{ color: 'rgba(0, 0, 0, 0.6)' }}
                               >
                                 {totalComments === 0 ? 'No comments yet' : `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`}
                               </span>
-                              {totalComments > 0 && (
-                                <>
-                                  <div
-                                    className="w-1 h-1 rounded-full"
-                                    style={{ background: 'rgba(0, 0, 0, 0.3)' }}
-                                  />
-                                  <span
-                                    className="[font-family:'Lato',Helvetica] text-xs font-medium"
-                                    style={{ color: 'rgba(0, 0, 0, 0.5)' }}
-                                  >
-                                    Join the discussion
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                            </>
                           )}
                         </div>
                       </div>
 
-                      {/* Apple-style close button */}
+                      {/* Close button */}
                       <button
                         onClick={() => setIsCommentSectionOpen(false)}
-                        className="flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 group"
-                        style={{
-                          background: 'rgba(0, 0, 0, 0.08)',
-                          backdropFilter: 'blur(20px) brightness(1.2)',
-                          border: '1px solid rgba(255, 255, 255, 0.6)',
-                        }}
+                        className="flex items-center justify-center w-[36px] h-[36px] rounded-full"
                       >
                         <svg
-                          className="w-5 h-5 group-hover:scale-110 transition-transform duration-200"
-                          fill="none"
-                          stroke="currentColor"
+                          className="w-[20px] h-[20px]"
                           viewBox="0 0 24 24"
-                          strokeWidth={2.5}
-                          style={{ color: 'rgba(0, 0, 0, 0.7)' }}
+                          fill="none"
+                          stroke="#696969"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
+                          <path d="M18 6L6 18M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
 
-                    {/* Apple-style content area with enhanced readability */}
+                    {/* Content area */}
                     <div
-                      className="max-h-[72vh] overflow-y-auto px-2"
+                      ref={commentScrollRef}
+                      className="h-[85vh] overflow-y-auto px-4"
                       style={{
                         scrollbarWidth: 'thin',
                         scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
                       }}
+                      onWheel={(e) => {
+                        // Ensure scroll events stay within the comment area
+                        e.stopPropagation();
+                      }}
+                      onTouchMove={(e) => {
+                        // Prevent touch scroll from bubbling to parent
+                        e.stopPropagation();
+                      }}
                     >
-                      <div
-                        className="mx-2 mb-4 rounded-2xl px-6 py-4"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.6)',
-                          backdropFilter: 'blur(20px) brightness(1.05)',
-                          border: '1px solid rgba(255, 255, 255, 0.8)',
-                          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                        }}
-                      >
-                        {/* 懒加载评论 - 只在真正展开时才渲染 */}
+                      <div className="mb-12 px-2">
+                        {/* Lazy load comments - only render when expanded */}
                         {isCommentSectionOpen ? (
                           <CommentSection
                             targetType="article"
@@ -2178,7 +2189,7 @@ export const Content = (): JSX.Element => {
                         ) : (
                           <div className="flex items-center justify-center py-12">
                             <div className="text-gray-500 [font-family:'Lato',Helvetica] text-sm">
-                              评论加载中...
+                              Loading comments...
                             </div>
                           </div>
                         )}
@@ -2190,28 +2201,29 @@ export const Content = (): JSX.Element => {
                 {/* Apple-style animations and scrollbar */}
                 <style jsx>{`
                   /* Apple-style scrollbar */
-                  .max-h-\\[72vh\\]::-webkit-scrollbar {
-                    width: 4px;
+                  .h-\\[85vh\\]::-webkit-scrollbar {
+                    width: 6px;
+                    height: 6px;
                   }
-                  .max-h-\\[72vh\\]::-webkit-scrollbar-track {
+                  .h-\\[85vh\\]::-webkit-scrollbar-track {
                     background: transparent;
                   }
-                  .max-h-\\[72vh\\]::-webkit-scrollbar-thumb {
-                    background: rgba(0, 0, 0, 0.15);
-                    border-radius: 2px;
-                    transition: background 0.3s ease, width 0.3s ease;
-                  }
-                  .max-h-\\[72vh\\]::-webkit-scrollbar-thumb:hover {
+                  .h-\\[85vh\\]::-webkit-scrollbar-thumb {
                     background: rgba(0, 0, 0, 0.25);
-                    width: 6px;
+                    border-radius: 3px;
+                    transition: background 0.2s ease;
+                    min-height: 20px;
                   }
-                  .max-h-\\[72vh\\]::-webkit-scrollbar-thumb:active {
-                    background: rgba(0, 0, 0, 0.35);
+                  .h-\\[85vh\\]::-webkit-scrollbar-thumb:hover {
+                    background: rgba(0, 0, 0, 0.4);
+                  }
+                  .h-\\[85vh\\]::-webkit-scrollbar-thumb:active {
+                    background: rgba(0, 0, 0, 0.5);
                   }
                   /* Hide scrollbar on non-hover */
-                  .max-h-\\[72vh\\] {
+                  .h-\\[85vh\\] {
                     scrollbar-width: thin;
-                    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+                    scrollbar-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.05);
                   }
                 `}</style>
               </>
@@ -2221,8 +2233,8 @@ export const Content = (): JSX.Element => {
         </main>
 
         {/* Sticky bottom button bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-5 px-4 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <div className="flex justify-between items-center w-full max-w-[1040px] mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-5 px-4 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
               {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
@@ -2286,14 +2298,14 @@ export const Content = (): JSX.Element => {
               // Content has been unlocked via payment - show "Visit" button
               <button
                 onClick={() => window.open(unlockedUrl, '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
+                className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                   Visit
                 </span>
 
                 <img
-                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
+                  className="relative w-[31px] h-[14.73px] mr-[-1.00px] transition-transform duration-200 group-hover:translate-x-1"
                   alt="Arrow"
                   src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
                 />
@@ -2302,14 +2314,14 @@ export const Content = (): JSX.Element => {
               // Content has targetUrl - show "Visit" button regardless of lock status
               <button
                 onClick={() => window.open(article.targetUrl, '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
+                className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                   Visit
                 </span>
 
                 <img
-                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
+                  className="relative w-[31px] h-[14.73px] mr-[-1.00px] transition-transform duration-200 group-hover:translate-x-1"
                   alt="Arrow"
                   src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
                 />
@@ -2400,13 +2412,18 @@ export const Content = (): JSX.Element => {
             articleNumericId={article.id}
             articleTitle={article.title}
             isAlreadyCollected={isLiked}
-            onCollectSuccess={async () => {
-              // Optimistic update for immediate feedback
-              if (!isLiked) {
+            onSaveComplete={(isCollected, collectionCount) => {
+              // Update like state based on whether article is now collected or not
+              if (isCollected && !isLiked) {
                 const newLikesCount = likesCount + 1;
                 setIsLiked(true);
                 setLikesCount(newLikesCount);
                 updateArticleLikeState(article.uuid, true, newLikesCount);
+              } else if (!isCollected && isLiked) {
+                const newLikesCount = Math.max(0, likesCount - 1);
+                setIsLiked(false);
+                setLikesCount(newLikesCount);
+                updateArticleLikeState(article.uuid, false, newLikesCount);
               }
               // Refresh "Collected in" section to show the new treasury
               fetchCollectedInData();

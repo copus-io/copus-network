@@ -18,6 +18,8 @@ export interface ApiComment {
   commentCount: number; // 回复数量
   userInfo: UserInfo;
   replyToUser?: UserInfo;
+  imageUrls?: string; // 图片URL字符串，多张图片用逗号分隔
+  targetContent?: string; // 目标内容
 }
 
 // API创建评论请求
@@ -26,6 +28,7 @@ export interface ApiCreateCommentRequest {
   content: string;
   id?: number; // 编辑时使用
   parentId?: number; // 回复时使用
+  imageUrls?: string; // 图片URL字符串，多张图片用逗号分隔
 }
 
 // API删除评论请求
@@ -112,6 +115,9 @@ export interface Comment {
   // 权限控制
   canEdit: boolean;
   canDelete: boolean;
+
+  // 图片支持
+  images?: string[]; // 评论中的图片URL数组
 }
 
 // 创建评论的请求类型 (前端使用)
@@ -124,6 +130,7 @@ export interface CreateCommentRequest {
   replyToId?: string; // @回复特定用户的评论ID
   replyToUser?: string; // @回复特定用户的用户名
   contentType?: 'text' | 'markdown';
+  images?: string[]; // 评论中的图片URL数组
 }
 
 // 更新评论的请求类型
@@ -131,6 +138,7 @@ export interface UpdateCommentRequest {
   content: string;
   contentType?: 'text' | 'markdown';
   articleId?: string; // 编辑时需要的articleId
+  images?: string[]; // 评论中的图片URL数组
 }
 
 // 评论列表响应类型

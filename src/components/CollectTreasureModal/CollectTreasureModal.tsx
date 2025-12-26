@@ -13,6 +13,7 @@ interface CollectTreasureModalProps {
   articleTitle: string;
   isAlreadyCollected?: boolean;
   onCollectSuccess?: () => void; // Callback after successful collection
+  onSaveComplete?: (isCollected: boolean, collectionCount: number) => void; // Callback with collection state
 }
 
 interface BindableSpace {
@@ -50,6 +51,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   articleTitle,
   isAlreadyCollected = false,
   onCollectSuccess,
+  onSaveComplete,
 }) => {
   const { user } = useUser();
   const { showToast } = useToast();
@@ -230,14 +232,21 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       // Count only user-selected spaces (excluding auto-included Curations)
       const userSelectedCount = collections.filter(c => c.isSelected).length;
-      if (userSelectedCount > 0) {
+      const isNowCollected = userSelectedCount > 0;
+
+      if (isNowCollected) {
         showToast(`Saved to ${userSelectedCount} treasury${userSelectedCount > 1 ? 's' : ''}`, 'success');
       } else {
         showToast('Removed from all treasuries', 'success');
       }
 
-      // Call success callback if provided
-      if (onCollectSuccess) {
+      // Call new callback with collection state
+      if (onSaveComplete) {
+        onSaveComplete(isNowCollected, userSelectedCount);
+      }
+
+      // Call legacy success callback if provided (for backward compatibility)
+      if (onCollectSuccess && isNowCollected) {
         onCollectSuccess();
       }
 

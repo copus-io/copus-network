@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { HeaderSection } from "../../components/shared/HeaderSection/HeaderSection";
-import { SideMenuSection } from "../../components/shared/SideMenuSection/SideMenuSection";
+import { PageWrapper } from "../../components/layout/PageWrapper";
 import { IncomeDetailsSection } from "./sections/IncomeDetailsSection";
 import { AuthService } from "../../services/authService";
 import { WithdrawalService } from "../../services/withdrawalService";
@@ -143,20 +142,14 @@ export const Withdrawal = (): JSX.Element => {
 
 
   return (
-    <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] scroll-smooth" style={{scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch'}}>
-      <HeaderSection />
-      <SideMenuSection activeItem="income" />
-      <div className="lg:ml-[360px] lg:mr-[40px] min-h-screen overflow-y-auto overflow-x-visible pt-[70px] lg:pt-[110px] pb-[100px] scroll-smooth transition-all duration-300 ease-in-out" style={{scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch', scrollPaddingTop: '110px'}}>
-        <div className="flex h-full items-center justify-center px-[30px] py-0 relative w-full transition-all duration-500 ease-in-out animate-in fade-in-0 slide-in-from-bottom-4" style={{willChange: 'transform, opacity'}}>
-          <IncomeDetailsSection
-            userInfo={userInfo}
-            accountInfo={accountInfo}
-            loading={loading}
-            refreshUserInfo={fetchUserInfo}
-            transactions={transactions}
-          />
-        </div>
-      </div>
-    </div>
+    <PageWrapper activeMenuItem="income" requireAuth={true}>
+      <IncomeDetailsSection
+        userInfo={userInfo}
+        accountInfo={accountInfo}
+        loading={loading}
+        refreshUserInfo={fetchUserInfo}
+        transactions={transactions}
+      />
+    </PageWrapper>
   );
 };
