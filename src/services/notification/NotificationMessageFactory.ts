@@ -217,33 +217,33 @@ export class MessageContentProcessor {
 
         // 处理新的follow_treasury类型数据结构 (关注空间的新作品)
         if (parsed.spaceInfo && parsed.articleInfo) {
-          // Transform default space name: "username's Collections" -> "username's Treasury"
-          // Note: "Curations" stays as is - it's a different type
-          let spaceName = parsed.spaceInfo.name || '';
-          if (spaceName.endsWith("'s Collections")) {
-            spaceName = spaceName.replace("'s Collections", "'s Treasury");
-          }
+          // Keep default space name as "Username's Collections" for follow_treasury
+          // Do NOT transform to "Treasury" - user prefers "Collections"
+          const spaceName = parsed.spaceInfo.name || '';
 
           console.log('[extractContentData] follow_treasury spaceInfo details:', {
             spaceId: parsed.spaceInfo.id,
-            originalSpaceName: parsed.spaceInfo.name,
-            transformedSpaceName: spaceName,
+            spaceName: spaceName,
             spaceNamespace: parsed.spaceInfo.namespace,
             hasNamespace: !!parsed.spaceInfo.namespace,
-            allSpaceInfoKeys: Object.keys(parsed.spaceInfo)
+            articleCoverUrl: parsed.articleInfo.coverUrl,
+            allSpaceInfoKeys: Object.keys(parsed.spaceInfo),
+            allArticleInfoKeys: Object.keys(parsed.articleInfo)
           });
           return {
             targetTitle: spaceName, // 空间名作为目标标题
             targetId: parsed.spaceInfo.id?.toString(),
             parsedData: {
               ...parsed,
-              spaceName: spaceName, // Use transformed name
+              spaceName: spaceName,
               spaceNamespace: parsed.spaceInfo.namespace,
               spaceId: parsed.spaceInfo.id,
               articleTitle: parsed.articleInfo.title,
               articleId: parsed.articleInfo.id,
               articleUuid: parsed.articleInfo.uuid,
-              // Extract author info for avatar
+              // Use article cover as avatar for follow_treasury notifications
+              articleCoverUrl: parsed.articleInfo.coverUrl,
+              // Keep author info for reference
               authorFaceUrl: parsed.articleInfo.authorInfo?.faceUrl || parsed.spaceInfo.faceUrl,
               authorUsername: parsed.articleInfo.authorInfo?.username,
               authorNamespace: parsed.articleInfo.authorInfo?.namespace
@@ -507,9 +507,10 @@ export class NotificationMessageFactory {
 
     let avatar = rawMessage.senderInfo?.faceUrl || defaultAvatar;
 
-    // For follow_treasury, use author's avatar from parsed content
-    if (type === NotificationType.FOLLOW_TREASURY && contentData.parsedData?.authorFaceUrl) {
-      avatar = contentData.parsedData.authorFaceUrl;
+    // For follow_treasury, use the article cover image as avatar (shows content of the collection)
+    if (type === NotificationType.FOLLOW_TREASURY && contentData.parsedData?.articleCoverUrl) {
+      avatar = contentData.parsedData.articleCoverUrl;
+      console.log('[createNotification] FOLLOW_TREASURY using article cover as avatar:', avatar);
     }
 
     return {
