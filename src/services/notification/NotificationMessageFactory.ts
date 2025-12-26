@@ -240,7 +240,23 @@ export class MessageContentProcessor {
           };
         }
 
-        // 处理新的follow类型数据结构（空间信息）
+        // 处理新的follow类型数据结构（空间信息）- 支持嵌套和扁平结构
+        // Handle nested spaceInfo structure (without articleInfo)
+        if (parsed.spaceInfo && !parsed.articleInfo) {
+          return {
+            targetTitle: parsed.spaceInfo.name,
+            targetId: parsed.spaceInfo.id?.toString(),
+            parsedData: {
+              ...parsed,
+              spaceName: parsed.spaceInfo.name,
+              spaceNamespace: parsed.spaceInfo.namespace,
+              spaceId: parsed.spaceInfo.id,
+              spaceFaceUrl: parsed.spaceInfo.faceUrl
+            }
+          };
+        }
+
+        // Handle flat space info structure
         if (parsed.id && parsed.name && parsed.namespace) {
           return {
             targetTitle: parsed.name,
@@ -249,7 +265,8 @@ export class MessageContentProcessor {
               ...parsed,
               spaceName: parsed.name,
               spaceNamespace: parsed.namespace,
-              spaceId: parsed.id
+              spaceId: parsed.id,
+              spaceFaceUrl: parsed.faceUrl
             }
           };
         }
