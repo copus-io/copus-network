@@ -298,9 +298,8 @@ export const NotificationListSection = (): JSX.Element => {
         const linkText = part.slice(1, -1); // Remove brackets
         const bracketIndex = bracketedParts.indexOf(part);
 
-        // Check if this is a username (first bracket in most messages)
+        // Check bracket position
         const isFirstBracket = bracketIndex === 0;
-        const isUsername = isFirstBracket && (notification.namespace || notification.userId || notification.metadata?.senderUsername === linkText);
 
         // Check if this is content title (second bracket, typically the work/article title)
         const isContentTitle = bracketIndex === 1;
@@ -308,29 +307,68 @@ export const NotificationListSection = (): JSX.Element => {
         // Check if this is comment content (third bracket or later)
         const isCommentContent = bracketIndex >= 2;
 
-        if (isUsername) {
-          // Username - bold, no underline, clickable
+        // IMPORTANT: Check notification type FIRST before generic isUsername check
+        // Different notification types have different bracket meanings
+
+        // Handle follow_treasury: [Space Name] you follow has listed a new treasure [Article Title]
+        if (notification.type === 'follow_treasury') {
+          const isSpaceName = isFirstBracket;  // First bracket is space name
+          const isArticleTitle = !isFirstBracket;
+
           return (
             <span
               key={index}
               className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation();
-                const namespace = notification.namespace || notification.metadata?.senderNamespace;
-                if (namespace) {
-                  navigate(`/u/${namespace}`);
-                } else if (notification.userId) {
-                  navigate(`/user/${notification.userId}/treasury`);
+
+                console.log('[Follow Treasury Click Debug]', {
+                  isSpaceName,
+                  isArticleTitle,
+                  linkText,
+                  metadata: notification.metadata,
+                  extra: notification.metadata?.extra,
+                  spaceNamespace: notification.metadata?.extra?.spaceNamespace,
+                  spaceId: notification.metadata?.extra?.spaceId,
+                  allExtraKeys: notification.metadata?.extra ? Object.keys(notification.metadata.extra) : 'no extra'
+                });
+
+                if (isArticleTitle) {
+                  const articleId = notification.metadata?.extra?.articleUuid ||
+                                  notification.metadata?.extra?.articleId ||
+                                  notification.articleId;
+                  console.log('[Follow Treasury Click] Navigating to article:', articleId);
+                  if (articleId) {
+                    navigate(`/work/${articleId}`);
+                  }
+                } else {
+                  // First bracket is space name - navigate to the space
+                  const spaceNamespace = notification.metadata?.extra?.spaceNamespace;
+                  const spaceId = notification.metadata?.extra?.spaceId;
+                  // Try to get article info for fallback navigation
+                  const articleUuid = notification.metadata?.extra?.articleUuid;
+                  const articleId = notification.metadata?.extra?.articleId;
+                  console.log('[Follow Treasury Click] Space info:', { spaceNamespace, spaceId, articleUuid, articleId });
+
+                  if (spaceNamespace) {
+                    navigate(`/treasury/${spaceNamespace}`);
+                  } else if (articleUuid || articleId) {
+                    // Fallback: if no space namespace, navigate to the article which shows the space
+                    console.log('[Follow Treasury Click] No namespace, navigating to article instead');
+                    navigate(`/work/${articleUuid || articleId}`);
+                  } else {
+                    console.warn('[Follow Treasury Click] No space namespace or article found! Extra:', notification.metadata?.extra);
+                  }
                 }
               }}
-              title="Click to view user profile"
+              title={isArticleTitle ? "Click to view article" : "Click to view space"}
             >
               {linkText}
             </span>
           );
         }
 
-        // Determine link type and navigation based on context
+        // Handle follow: [Username] followed your space [Space Name]
         if (notification.type === 'follow') {
           const isSpaceName = !isFirstBracket;
 
@@ -383,36 +421,10 @@ export const NotificationListSection = (): JSX.Element => {
               {linkText}
             </span>
           );
-        } else if (notification.type === 'follow_treasury') {
-          const isArticleTitle = !isFirstBracket;
+        }
 
-          return (
-            <span
-              key={index}
-              className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-
-                if (isArticleTitle) {
-                  const articleId = notification.metadata?.extra?.articleUuid ||
-                                  notification.metadata?.extra?.articleId ||
-                                  notification.articleId;
-                  if (articleId) {
-                    navigate(`/work/${articleId}`);
-                  }
-                } else {
-                  const spaceNamespace = notification.metadata?.extra?.spaceNamespace;
-                  if (spaceNamespace) {
-                    navigate(`/treasury/${spaceNamespace}`);
-                  }
-                }
-              }}
-              title={isArticleTitle ? "Click to view article" : "Click to view space"}
-            >
-              {linkText}
-            </span>
-          );
-        } else if (notification.type === 'treasury' || notification.type === 'comment') {
+        // Handle treasury and comment notifications
+        if (notification.type === 'treasury' || notification.type === 'comment') {
           if (isCommentContent) {
             // Comment content - light weight, with quotes, no background, colon before
             return (

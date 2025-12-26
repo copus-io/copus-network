@@ -69,7 +69,7 @@ export class NotificationTemplates {
   }> = {
     [NotificationType.FOLLOW]: {
       title: '新关注',
-      messageTemplate: (data) => `[${data.senderUsername}] followed your space [${data.targetTitle}]`,
+      messageTemplate: (data) => `[${data.senderUsername}] followed your treasury [${data.targetTitle}]`,
       actionUrl: (data) => `/treasury/${data.spaceNamespace || data.senderNamespace || data.senderUsername}`
     },
     [NotificationType.FOLLOW_TREASURY]: {
@@ -217,12 +217,27 @@ export class MessageContentProcessor {
 
         // 处理新的follow_treasury类型数据结构 (关注空间的新作品)
         if (parsed.spaceInfo && parsed.articleInfo) {
+          // Transform default space name: "username's Collections" -> "username's Treasury"
+          // Note: "Curations" stays as is - it's a different type
+          let spaceName = parsed.spaceInfo.name || '';
+          if (spaceName.endsWith("'s Collections")) {
+            spaceName = spaceName.replace("'s Collections", "'s Treasury");
+          }
+
+          console.log('[extractContentData] follow_treasury spaceInfo details:', {
+            spaceId: parsed.spaceInfo.id,
+            originalSpaceName: parsed.spaceInfo.name,
+            transformedSpaceName: spaceName,
+            spaceNamespace: parsed.spaceInfo.namespace,
+            hasNamespace: !!parsed.spaceInfo.namespace,
+            allSpaceInfoKeys: Object.keys(parsed.spaceInfo)
+          });
           return {
-            targetTitle: parsed.spaceInfo.name, // 空间名作为目标标题
+            targetTitle: spaceName, // 空间名作为目标标题
             targetId: parsed.spaceInfo.id?.toString(),
             parsedData: {
               ...parsed,
-              spaceName: parsed.spaceInfo.name,
+              spaceName: spaceName, // Use transformed name
               spaceNamespace: parsed.spaceInfo.namespace,
               spaceId: parsed.spaceInfo.id,
               articleTitle: parsed.articleInfo.title,
@@ -252,12 +267,18 @@ export class MessageContentProcessor {
         // 处理新的follow类型数据结构（空间信息）- 支持嵌套和扁平结构
         // Handle nested spaceInfo structure (without articleInfo)
         if (parsed.spaceInfo && !parsed.articleInfo) {
+          // Transform default space name: "username's Collections" -> "username's Treasury"
+          // Note: "Curations" stays as is - it's a different type
+          let spaceName = parsed.spaceInfo.name || '';
+          if (spaceName.endsWith("'s Collections")) {
+            spaceName = spaceName.replace("'s Collections", "'s Treasury");
+          }
           return {
-            targetTitle: parsed.spaceInfo.name,
+            targetTitle: spaceName,
             targetId: parsed.spaceInfo.id?.toString(),
             parsedData: {
               ...parsed,
-              spaceName: parsed.spaceInfo.name,
+              spaceName: spaceName,
               spaceNamespace: parsed.spaceInfo.namespace,
               spaceId: parsed.spaceInfo.id,
               spaceFaceUrl: parsed.spaceInfo.faceUrl
@@ -267,12 +288,18 @@ export class MessageContentProcessor {
 
         // Handle flat space info structure
         if (parsed.id && parsed.name && parsed.namespace) {
+          // Transform default space name: "username's Collections" -> "username's Treasury"
+          // Note: "Curations" stays as is - it's a different type
+          let spaceName = parsed.name || '';
+          if (spaceName.endsWith("'s Collections")) {
+            spaceName = spaceName.replace("'s Collections", "'s Treasury");
+          }
           return {
-            targetTitle: parsed.name,
+            targetTitle: spaceName,
             targetId: parsed.id?.toString(),
             parsedData: {
               ...parsed,
-              spaceName: parsed.name,
+              spaceName: spaceName,
               spaceNamespace: parsed.namespace,
               spaceId: parsed.id,
               spaceFaceUrl: parsed.faceUrl
