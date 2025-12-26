@@ -146,7 +146,10 @@ export const NotificationListSection = (): JSX.Element => {
   const notificationList = contextNotifications.map(n => ({
     id: parseInt(n.id) || 1,
     type: n.type,
-    category: n.type === "system" ? "System" : n.type === "like" ? "Treasure" : n.type === "comment" ? "Comment" : "Treasury",
+    category: n.type === "system" ? "System" :
+              n.type === "treasury" || n.type === "follow_treasury" ? "Treasury" :
+              n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" ? "Comment" :
+              n.type === "unlock" ? "Earning" : "Notification",
     message: n.message || n.title,
     timestamp: formatTimestamp(n.timestamp),
     isRead: n.isRead,
@@ -542,7 +545,7 @@ export const NotificationListSection = (): JSX.Element => {
         <TabsContent value="treasury" className="mt-5">
           {isLoading ? (
             renderLoadingState()
-          ) : notificationList.filter(n => n.type === "like").length === 0 ? (
+          ) : notificationList.filter(n => n.type === "treasury" || n.type === "follow_treasury").length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-5">
               <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-amber-50 to-yellow-100 flex items-center justify-center">
                 <svg className="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -557,7 +560,7 @@ export const NotificationListSection = (): JSX.Element => {
           ) : (
             <div className="flex flex-col gap-5 pb-[30px]">
               {notificationList
-                .filter((notification) => notification.type === "like")
+                .filter((notification) => notification.type === "treasury" || notification.type === "follow_treasury")
                 .map((notification, index) => {
                   const isRead = notification.isRead;
                   return (
@@ -599,7 +602,7 @@ export const NotificationListSection = (): JSX.Element => {
                           <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm sm:text-base leading-tight sm:leading-[23px]">
                             {notification.category}
                           </div>
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm sm:text-lg leading-tight sm:leading-[23px] break-words">
+                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-tight sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
                         </div>
@@ -609,41 +612,8 @@ export const NotificationListSection = (): JSX.Element => {
                             {notification.timestamp}
                           </div>
 
-                          {/* 操作按钮区域 */}
+                          {/* Delete button */}
                           <div className="flex items-center gap-1 sm:gap-2">
-                            {/* 回复按钮 - 仅对评论相关通知显示，排除点赞 */}
-                            {(notification.category === 'Comment' ||
-                              notification.category === 'Treasure' ||
-                              notification.type === 'treasury' ||
-                              notification.type === 'comment_reply' ||
-                              notification.type === 'comment' ||
-                              notification.message.includes('commented') ||
-                              notification.message.includes('replied')) &&
-                              !notification.message.includes('liked') && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="p-0.5 sm:p-1 h-auto hover:bg-blue-50 rounded-full transition-all duration-200"
-                                onClick={(e) => handleReplyClick(notification, e)}
-                                title="回复此评论"
-                              >
-                                <svg
-                                  className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                                  />
-                                </svg>
-                              </Button>
-                            )}
-
-                            {/* 删除按钮 */}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -670,7 +640,7 @@ export const NotificationListSection = (): JSX.Element => {
         <TabsContent value="comment" className="mt-5">
           {isLoading ? (
             renderLoadingState()
-          ) : notificationList.filter(n => n.type === "comment").length === 0 ? (
+          ) : notificationList.filter(n => n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like").length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-5">
               <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 <svg className="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -685,7 +655,7 @@ export const NotificationListSection = (): JSX.Element => {
           ) : (
             <div className="flex flex-col gap-5 pb-[30px]">
               {notificationList
-                .filter((notification) => notification.type === "comment")
+                .filter((notification) => notification.type === "comment" || notification.type === "comment_reply" || notification.type === "comment_like")
                 .map((notification, index) => {
                   const isRead = notification.isRead;
                   return (
@@ -727,7 +697,7 @@ export const NotificationListSection = (): JSX.Element => {
                           <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm sm:text-base leading-tight sm:leading-[23px]">
                             {notification.category}
                           </div>
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-sm sm:text-lg leading-tight sm:leading-[23px] break-words">
+                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-tight sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
                         </div>
@@ -737,14 +707,11 @@ export const NotificationListSection = (): JSX.Element => {
                             {notification.timestamp}
                           </div>
 
-                          {/* 操作按钮区域 */}
+                          {/* Reply and delete buttons */}
                           <div className="flex items-center gap-1 sm:gap-2">
-                            {/* 回复按钮 - 仅对评论相关通知显示，排除点赞 */}
-                            {(notification.category === 'Comment' ||
-                              notification.category === 'Treasure' ||
-                              notification.type === 'treasury' ||
+                            {/* Reply button - only show for comment-related notifications */}
+                            {(notification.type === 'comment' ||
                               notification.type === 'comment_reply' ||
-                              notification.type === 'comment' ||
                               notification.message.includes('commented') ||
                               notification.message.includes('replied')) &&
                               !notification.message.includes('liked') && (
@@ -753,7 +720,7 @@ export const NotificationListSection = (): JSX.Element => {
                                 size="sm"
                                 className="p-0.5 sm:p-1 h-auto hover:bg-blue-50 rounded-full transition-all duration-200"
                                 onClick={(e) => handleReplyClick(notification, e)}
-                                title="回复此评论"
+                                title="Reply to comment"
                               >
                                 <svg
                                   className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600"
@@ -771,7 +738,7 @@ export const NotificationListSection = (): JSX.Element => {
                               </Button>
                             )}
 
-                            {/* 删除按钮 */}
+                            {/* Delete button */}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -796,17 +763,86 @@ export const NotificationListSection = (): JSX.Element => {
         </TabsContent>
 
         <TabsContent value="earning" className="mt-5">
-          <div className="flex flex-col items-center justify-center py-20 px-5">
-            <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
-              <svg className="w-12 h-12 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          {isLoading ? (
+            renderLoadingState()
+          ) : notificationList.filter(n => n.type === "unlock").length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 px-5">
+              <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+                <svg className="w-12 h-12 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-medium text-gray-800 mb-2">No earning notifications</h3>
+              <p className="text-gray-500 text-center max-w-sm leading-relaxed">
+                Your earning updates will appear here.
+              </p>
             </div>
-            <h3 className="text-xl font-medium text-gray-800 mb-2">No earning notifications</h3>
-            <p className="text-gray-500 text-center max-w-sm leading-relaxed">
-              Your earning updates will appear here.
-            </p>
-          </div>
+          ) : (
+            <div className="flex flex-col gap-5 pb-[30px]">
+              {notificationList
+                .filter((notification) => notification.type === "unlock")
+                .map((notification, index) => {
+                  const isRead = notification.isRead;
+                  return (
+                    <Card
+                      key={notification.id}
+                      className={`p-0 border-0 rounded-lg border-b border-white translate-y-[-1rem] animate-fade-in opacity-0 transition-all duration-200 cursor-pointer ${
+                        isRead
+                          ? "bg-white shadow-none"
+                          : "shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
+                      }`}
+                      style={
+                        {
+                          "--animation-delay": `${400 + index * 100}ms`,
+                        } as React.CSSProperties
+                      }
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                    <CardContent className="flex items-start gap-3 sm:gap-[30px] p-3 sm:p-5">
+                      <div className="w-8 h-8 sm:w-[45px] sm:h-[45px] flex-shrink-0 rounded-full bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+
+                      <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">
+                        <div className="flex flex-col gap-1 sm:gap-2.5 flex-1 min-w-0">
+                          <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm sm:text-base leading-tight sm:leading-[23px]">
+                            {notification.category}
+                          </div>
+                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-tight sm:leading-[23px] break-words">
+                            {parseMessageWithLinks(notification.message, notification)}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end justify-center gap-1 sm:gap-[5px] flex-shrink-0 min-w-0">
+                          <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-xs sm:text-sm leading-tight whitespace-nowrap">
+                            {notification.timestamp}
+                          </div>
+
+                          {/* Delete button */}
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-0 h-auto hover:bg-transparent"
+                              onClick={(e) => handleDeleteNotification(notification.id, e)}
+                            >
+                              <img
+                                className="w-4"
+                                alt="Delete notification"
+                                src={notification.deleteIcon}
+                              />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
