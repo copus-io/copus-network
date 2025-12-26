@@ -2410,7 +2410,7 @@ export const Content = (): JSX.Element => {
             articleNumericId={article.id}
             articleTitle={article.title}
             isAlreadyCollected={isLiked}
-            onSaveComplete={(isCollected, collectionCount) => {
+            onSaveComplete={async (isCollected, collectionCount) => {
               // Update like state based on whether article is now collected or not
               if (isCollected && !isLiked) {
                 const newLikesCount = likesCount + 1;
