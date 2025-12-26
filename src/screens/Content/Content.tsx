@@ -2009,7 +2009,7 @@ export const Content = (): JSX.Element => {
 
             {/* Collected in spaces section - moved back to article content */}
             {collectedInData.length > 0 && (
-              <section className="mt-[50px] border-t border-[#D3D3D3] pt-[30px]">
+              <section className="mt-[50px] border-t border-[#D3D3D3] pt-[30px] w-full self-stretch">
                 <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-[28px] mb-[20px]">
                   Collected in
                 </h2>
@@ -2200,9 +2200,9 @@ export const Content = (): JSX.Element => {
         </main>
 
         {/* Sticky bottom button bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-3 lg:py-5 px-4 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-3 lg:py-5 px-3 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto">
-            <div className="inline-flex items-center gap-2 lg:gap-5 relative flex-[0_0_auto]">
+            <div className="inline-flex items-center gap-1.5 lg:gap-5 relative flex-[0_0_auto]">
               {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
                 isLiked={isLiked}
@@ -2226,7 +2226,7 @@ export const Content = (): JSX.Element => {
               />
             </div>
 
-            <div className="flex items-center gap-2 lg:gap-5">
+            <div className="flex items-center gap-1.5 lg:gap-5">
               {/* Edit button - only visible to author */}
               {(() => {
                 // Use namespace for comparison (more reliable) with id as fallback
