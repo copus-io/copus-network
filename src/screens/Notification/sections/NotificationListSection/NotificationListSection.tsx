@@ -147,8 +147,8 @@ export const NotificationListSection = (): JSX.Element => {
     id: parseInt(n.id) || 1,
     type: n.type,
     category: n.type === "system" ? "System" :
-              n.type === "treasury" || n.type === "follow_treasury" || n.type === "follow" ? "Treasury" :
-              n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" ? "Comment" :
+              n.type === "follow" || n.type === "follow_treasury" ? "Treasury" :
+              n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury" ? "Comment" :
               n.type === "unlock" ? "Earning" : "Notification",
     message: n.message || n.title,
     timestamp: formatTimestamp(n.timestamp),
@@ -568,7 +568,7 @@ export const NotificationListSection = (): JSX.Element => {
         <TabsContent value="treasury" className="mt-5">
           {isLoading ? (
             renderLoadingState()
-          ) : notificationList.filter(n => n.type === "treasury" || n.type === "follow_treasury" || n.type === "follow").length === 0 ? (
+          ) : notificationList.filter(n => n.type === "follow" || n.type === "follow_treasury").length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-5">
               <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-amber-50 to-yellow-100 flex items-center justify-center">
                 <svg className="w-12 h-12 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -583,7 +583,7 @@ export const NotificationListSection = (): JSX.Element => {
           ) : (
             <div className="flex flex-col gap-5 pb-[30px]">
               {notificationList
-                .filter((notification) => notification.type === "treasury" || notification.type === "follow_treasury" || notification.type === "follow")
+                .filter((notification) => notification.type === "follow" || notification.type === "follow_treasury")
                 .map((notification, index) => {
                   const isRead = notification.isRead;
                   return (
@@ -660,7 +660,7 @@ export const NotificationListSection = (): JSX.Element => {
         <TabsContent value="comment" className="mt-5">
           {isLoading ? (
             renderLoadingState()
-          ) : notificationList.filter(n => n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like").length === 0 ? (
+          ) : notificationList.filter(n => n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury").length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-5">
               <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 <svg className="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -675,7 +675,7 @@ export const NotificationListSection = (): JSX.Element => {
           ) : (
             <div className="flex flex-col gap-5 pb-[30px]">
               {notificationList
-                .filter((notification) => notification.type === "comment" || notification.type === "comment_reply" || notification.type === "comment_like")
+                .filter((notification) => notification.type === "comment" || notification.type === "comment_reply" || notification.type === "comment_like" || notification.type === "treasury")
                 .map((notification, index) => {
                   const isRead = notification.isRead;
                   return (
