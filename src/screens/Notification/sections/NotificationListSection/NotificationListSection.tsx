@@ -341,11 +341,34 @@ export const NotificationListSection = (): JSX.Element => {
               onClick={(e) => {
                 e.stopPropagation();
 
+                console.log('[Follow Click Debug] Full notification object:', notification);
+                console.log('[Follow Click Debug] Details:', {
+                  isSpaceName,
+                  linkText,
+                  notificationType: notification.type,
+                  metadata: notification.metadata,
+                  extra: notification.metadata?.extra,
+                  extraSpaceInfo: notification.metadata?.extra?.spaceInfo,
+                  spaceNamespace: notification.metadata?.extra?.spaceNamespace,
+                  namespace: notification.metadata?.extra?.namespace,
+                  senderNamespace: notification.metadata?.senderNamespace,
+                  // Check if namespace exists at root level of extra
+                  allExtraKeys: notification.metadata?.extra ? Object.keys(notification.metadata.extra) : 'no extra'
+                });
+
                 if (isSpaceName) {
+                  // For "follow" notifications, the space that was followed is YOUR space
+                  // The spaceNamespace should come from the notification content
+                  // Try multiple possible locations for the space namespace
                   const spaceNamespace = notification.metadata?.extra?.spaceNamespace ||
+                                        notification.metadata?.extra?.spaceInfo?.namespace ||
                                         notification.metadata?.extra?.namespace;
+                  console.log('[Follow Click] Using space namespace:', spaceNamespace);
                   if (spaceNamespace) {
                     navigate(`/treasury/${spaceNamespace}`);
+                  } else {
+                    console.warn('[Follow Click] No space namespace found in metadata. Checking alternative locations...');
+                    console.log('[Follow Click] Full extra object:', JSON.stringify(notification.metadata?.extra, null, 2));
                   }
                 } else {
                   const senderNamespace = notification.metadata?.senderNamespace ||
