@@ -290,22 +290,30 @@ export const NotificationListSection = (): JSX.Element => {
   const parseMessageWithLinks = (message: string, notification: any) => {
     // Split message by square brackets pattern: [content]
     const parts = message.split(/(\[[^\]]+\])/g);
+    const bracketedParts = parts.filter(p => p.startsWith('[') && p.endsWith(']'));
 
     return parts.map((part, index) => {
       // Check if this part is in square brackets
       if (part.startsWith('[') && part.endsWith(']')) {
         const linkText = part.slice(1, -1); // Remove brackets
+        const bracketIndex = bracketedParts.indexOf(part);
 
         // Check if this is a username (first bracket in most messages)
-        const isFirstBracket = index === 1; // Usually username is the first bracketed content
+        const isFirstBracket = bracketIndex === 0;
         const isUsername = isFirstBracket && (notification.namespace || notification.userId || notification.metadata?.senderUsername === linkText);
 
+        // Check if this is content title (second bracket, typically the work/article title)
+        const isContentTitle = bracketIndex === 1;
+
+        // Check if this is comment content (third bracket or later)
+        const isCommentContent = bracketIndex >= 2;
+
         if (isUsername) {
-          // This is a username - make it clickable to user profile
+          // Username - bold, no underline, clickable
           return (
             <span
               key={index}
-              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+              className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation();
                 const namespace = notification.namespace || notification.metadata?.senderNamespace;
@@ -324,41 +332,26 @@ export const NotificationListSection = (): JSX.Element => {
 
         // Determine link type and navigation based on context
         if (notification.type === 'follow') {
-          // For follow messages: 区分用户名和空间名的点击
-          // 第一个方括号是用户名，第二个方括号是空间名
-          const isFirstBracket = index === 1;
-          const isSpaceName = !isFirstBracket; // 空间名是第二个方括号内的内容
+          const isSpaceName = !isFirstBracket;
 
           return (
             <span
               key={index}
-              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+              className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation();
 
                 if (isSpaceName) {
-                  // 点击空间名 - 跳转到被关注的空间 (使用 /treasury/ 路径)
-                  console.log('[Follow Click] Full notification object:', notification);
-                  console.log('[Follow Click] Metadata:', notification.metadata);
-                  console.log('[Follow Click] Metadata extra:', notification.metadata?.extra);
-
                   const spaceNamespace = notification.metadata?.extra?.spaceNamespace ||
                                         notification.metadata?.extra?.namespace;
-                  console.log('[Follow Click] Space name clicked, namespace:', spaceNamespace);
                   if (spaceNamespace) {
                     navigate(`/treasury/${spaceNamespace}`);
-                  } else {
-                    console.warn('[Follow Click] No space namespace found');
                   }
                 } else {
-                  // 点击用户名 - 跳转到发送者的个人主页
                   const senderNamespace = notification.metadata?.senderNamespace ||
                                          notification.namespace;
-                  console.log('[Follow Click] Username clicked, namespace:', senderNamespace);
                   if (senderNamespace) {
                     navigate(`/u/${senderNamespace}`);
-                  } else {
-                    console.warn('[Follow Click] No sender namespace found');
                   }
                 }
               }}
@@ -368,37 +361,26 @@ export const NotificationListSection = (): JSX.Element => {
             </span>
           );
         } else if (notification.type === 'follow_treasury') {
-          // For follow_treasury messages: 区分空间名和文章标题的点击
-          // 第一个方括号是空间名，第二个方括号是文章标题
-          const isFirstBracket = index === 1;
-          const isArticleTitle = !isFirstBracket; // 文章标题是第二个方括号内的内容
+          const isArticleTitle = !isFirstBracket;
 
           return (
             <span
               key={index}
-              className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+              className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation();
 
                 if (isArticleTitle) {
-                  // 点击文章标题 - 跳转到文章页面
                   const articleId = notification.metadata?.extra?.articleUuid ||
                                   notification.metadata?.extra?.articleId ||
                                   notification.articleId;
-                  console.log('[Follow Treasury Click] Article title clicked, articleId:', articleId);
                   if (articleId) {
                     navigate(`/work/${articleId}`);
-                  } else {
-                    console.warn('[Follow Treasury Click] No article ID found');
                   }
                 } else {
-                  // 点击空间名 - 跳转到空间页面
                   const spaceNamespace = notification.metadata?.extra?.spaceNamespace;
-                  console.log('[Follow Treasury Click] Space name clicked, namespace:', spaceNamespace);
                   if (spaceNamespace) {
                     navigate(`/treasury/${spaceNamespace}`);
-                  } else {
-                    console.warn('[Follow Treasury Click] No space namespace found');
                   }
                 }
               }}
@@ -407,28 +389,23 @@ export const NotificationListSection = (): JSX.Element => {
               {linkText}
             </span>
           );
-        } else if (notification.type === 'treasury') {
-          // For treasury messages: 区分作品名和评论内容的显示
-          // 检查是否是评论内容（第三个方括号内的内容）
-          const isCommentContent = parts.filter(p => p.startsWith('[') && p.endsWith(']')).indexOf(part) === 2;
-
+        } else if (notification.type === 'treasury' || notification.type === 'comment') {
           if (isCommentContent) {
-            // 评论内容只显示，不支持点击跳转
+            // Comment content - light weight, with quotes, no background
             return (
               <span
                 key={index}
-                className="text-gray-700 font-medium bg-gray-100 px-2 py-1 rounded"
-                title="评论内容"
+                className="font-light text-gray-600"
               >
-                {linkText}
+                "{linkText}"
               </span>
             );
-          } else {
-            // 作品名等其他内容可以点击跳转
+          } else if (isContentTitle) {
+            // Content title - bold, no underline, clickable
             return (
               <span
                 key={index}
-                className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+                className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
                 onClick={(e) => {
                   e.stopPropagation();
                   const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
@@ -441,63 +418,109 @@ export const NotificationListSection = (): JSX.Element => {
                 {linkText}
               </span>
             );
-          }
-        } else if (notification.type === 'comment_reply' || notification.type === 'comment_like') {
-          // For comment messages: 统一的评论内容点击跳转
-          // 检查是否是评论内容（通常不是用户名，且在引号内）
-          const isCommentContent = linkText.length > 10 || (message.includes(`"${linkText}"`) && !isFirstBracket);
-
-          if (isCommentContent) {
-            // 这是评论内容 - 可点击跳转到评论区
+          } else {
+            // Username - bold, no underline
             return (
               <span
                 key={index}
-                className="text-blue-600 hover:text-blue-800 cursor-pointer font-medium underline decoration-dotted underline-offset-2"
+                className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const namespace = notification.namespace || notification.metadata?.senderNamespace;
+                  if (namespace) {
+                    navigate(`/u/${namespace}`);
+                  }
+                }}
+                title="Click to view user profile"
+              >
+                {linkText}
+              </span>
+            );
+          }
+        } else if (notification.type === 'comment_reply' || notification.type === 'comment_like') {
+          if (isCommentContent || (linkText.length > 10 && !isFirstBracket)) {
+            // Comment content - light weight, with quotes, no background
+            return (
+              <span
+                key={index}
+                className="font-light text-gray-600 cursor-pointer hover:opacity-70 transition-opacity"
                 onClick={(e) => {
                   e.stopPropagation();
                   const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
                   const commentId = notification.metadata?.commentId;
 
                   if (articleId) {
-                    // 区分通知类型的跳转策略
                     if (notification.type === 'comment_reply') {
-                      // 评论回复：打开评论区并定位到具体评论
                       navigate(`/work/${articleId}?openComments=true&commentId=${commentId}#comment-${commentId}`);
                     } else if (notification.type === 'comment_like') {
-                      // 评论点赞：打开评论区，但不特别滚动（让用户看到整体）
                       navigate(`/work/${articleId}?openComments=true#comments`);
                     }
                   }
                 }}
-                title={notification.type === 'comment_like' ? "点击查看完整评论内容" : "点击查看评论回复"}
+                title="Click to view comment"
               >
                 "{linkText}"
               </span>
             );
-          } else {
-            // 其他内容保持可点击（用户名等）
+          } else if (isContentTitle) {
+            // Content title - bold, no underline
             return (
               <span
                 key={index}
-                className="text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium"
+                className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // 这里处理用户名点击，跳转到用户页面
+                  const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
+                  if (articleId) {
+                    navigate(`/work/${articleId}`);
+                  }
+                }}
+                title="Click to view content"
+              >
+                {linkText}
+              </span>
+            );
+          } else {
+            // Username - bold, no underline
+            return (
+              <span
+                key={index}
+                className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
                   const senderNamespace = notification.metadata?.senderNamespace;
                   if (senderNamespace) {
                     navigate(`/u/${senderNamespace}`);
                   }
                 }}
-                title="点击查看用户主页"
+                title="Click to view user profile"
               >
                 {linkText}
               </span>
             );
           }
-        } else {
-          // Default: just make it blue but not necessarily clickable
+        } else if (notification.type === 'unlock') {
+          // For unlock/earning notifications - content title is bold
           return (
-            <span key={index} className="text-blue-600 font-medium">
+            <span
+              key={index}
+              className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
+                if (articleId) {
+                  navigate(`/work/${articleId}`);
+                }
+              }}
+              title="Click to view content"
+            >
+              {linkText}
+            </span>
+          );
+        } else {
+          // Default: bold, no underline
+          return (
+            <span key={index} className="font-semibold">
               {linkText}
             </span>
           );
@@ -599,10 +622,7 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">
                         <div className="flex flex-col gap-1 sm:gap-2.5 flex-1 min-w-0">
-                          <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm sm:text-base leading-tight sm:leading-[23px]">
-                            {notification.category}
-                          </div>
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-tight sm:leading-[23px] break-words">
+                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-tight sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
                         </div>
@@ -694,10 +714,7 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">
                         <div className="flex flex-col gap-1 sm:gap-2.5 flex-1 min-w-0">
-                          <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm sm:text-base leading-tight sm:leading-[23px]">
-                            {notification.category}
-                          </div>
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-tight sm:leading-[23px] break-words">
+                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-tight sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
                         </div>
@@ -807,10 +824,7 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">
                         <div className="flex flex-col gap-1 sm:gap-2.5 flex-1 min-w-0">
-                          <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm sm:text-base leading-tight sm:leading-[23px]">
-                            {notification.category}
-                          </div>
-                          <div className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base leading-tight sm:leading-[23px] break-words">
+                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-tight sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
                         </div>
