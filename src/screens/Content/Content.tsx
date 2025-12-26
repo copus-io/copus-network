@@ -34,6 +34,13 @@ import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
 import { SEO, ArticleSchema } from '../../components/SEO/SEO';
 
+// Debug logging helper - only logs in development mode
+const debugLog = (...args: any[]) => {
+  if (import.meta.env.DEV) {
+    console.log(...args);
+  }
+};
+
 // Helper function to get token information for payment requests
 const getTokenInfo = (tokenType: TokenType): TokenInfo => {
   return SUPPORTED_TOKENS[tokenType];
