@@ -384,6 +384,11 @@ export const publishArticle = async (articleData: {
 
   try {
     console.log('📤 Calling publishArticle API with data:', articleData);
+    console.log('📤 Payment fields being sent to API:', {
+      targetUrlIsLocked: articleData.targetUrlIsLocked,
+      priceInfo: articleData.priceInfo || 'undefined/not included',
+      fullPayload: JSON.stringify(articleData)
+    });
     const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),
