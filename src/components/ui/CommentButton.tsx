@@ -26,7 +26,7 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
     <button
       onClick={onClick}
       className={`
-        inline-flex items-center gap-[10px] px-5 py-2
+        inline-flex items-center gap-1.5 lg:gap-[10px] px-3 lg:px-5 py-2
         h-[38px] rounded-[100px]
         border border-solid
         transition-all duration-200

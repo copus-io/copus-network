@@ -35,9 +35,9 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
     },
     large: {
       container: 'gap-[10px] px-[15px] py-2',
-      icon: 'w-3.5 h-[22px]',
+      icon: 'w-[18px] h-[22px]',
       text: 'text-lg',
-      background: 'w-3.5 h-[22px]'
+      background: 'w-[18px] h-[22px]'
     }
   };
 
@@ -65,7 +65,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       className={`
         inline-flex items-center transition-all duration-200 group
         ${size === 'large'
-          ? 'h-[38px] rounded-[100px] gap-[10px] px-5 py-2 border border-solid border-[#e19e1d]'
+          ? 'h-[38px] rounded-[100px] gap-1.5 lg:gap-[10px] px-3 lg:px-5 py-2 border border-solid border-[#e19e1d]'
           : `rounded-lg hover:bg-gray-100 ${currentSize.container}`
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

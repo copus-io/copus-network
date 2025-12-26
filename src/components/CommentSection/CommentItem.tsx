@@ -1231,7 +1231,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           {actualReplies.length > 0 && repliesVisible && (
             <div className="mt-4">
               {/* 显示回复内容 */}
-              <div className="ml-8 space-y-4 pl-6 border-l border-[#f0f0f0]">
+              <div className="ml-0 lg:ml-8 space-y-4 pl-3 lg:pl-6 border-l border-[#f0f0f0]">
                   {repliesLoading ? (
                     // 加载状态 - 简洁风格
                     <div className="py-8 text-center">
