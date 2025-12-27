@@ -328,8 +328,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
       {isSearchOpen && (
         <div className="mobile-search-overlay fixed inset-0 bg-white z-50 lg:hidden flex flex-col">
           {/* Mobile Search Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-            <div className="flex-1 flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] w-full max-w-full overflow-hidden">
+            <div className="flex-1 min-w-0 flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200">
               <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
@@ -346,7 +346,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   }
                 }}
                 placeholder="Search..."
-                className="flex-1 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
+                className="flex-1 min-w-0 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
                 autoFocus
               />
               {searchQuery && (
@@ -355,7 +355,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     setSearchQuery('');
                     setShowResults(false);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -363,7 +363,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             </div>
             <button
               onClick={handleCloseSearch}
-              className="text-gray-500 text-sm font-medium"
+              className="text-gray-500 text-sm font-medium flex-shrink-0 whitespace-nowrap"
             >
               Cancel
             </button>
