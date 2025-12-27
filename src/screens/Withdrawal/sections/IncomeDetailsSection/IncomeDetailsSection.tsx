@@ -418,13 +418,13 @@ export const IncomeDetailsSection = ({
 
       {/* History Table Header */}
       <div className="flex items-start gap-4 px-3 sm:px-5 py-2 sm:py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-100">
-        <div className="relative flex items-start flex-1 min-w-0 font-normal text-gray-600 text-xs sm:text-sm">
+        <div className="relative flex items-start w-[40%] sm:w-[50%] min-w-0 font-normal text-gray-600 text-xs sm:text-sm">
           Description
         </div>
-        <div className="relative flex items-start w-20 font-normal text-gray-600 text-xs sm:text-sm">
+        <div className="relative flex items-start flex-1 font-normal text-gray-600 text-xs sm:text-sm">
           Amount
         </div>
-        <div className="relative flex items-start w-24 font-normal text-gray-600 text-xs sm:text-sm">
+        <div className="relative flex items-start w-28 sm:w-32 font-normal text-gray-600 text-xs sm:text-sm text-right justify-end">
           Date
         </div>
       </div>
@@ -444,7 +444,7 @@ export const IncomeDetailsSection = ({
                 key={item.id}
                 className="flex items-center gap-4 p-3 sm:p-5 relative self-stretch w-full flex-[0_0_auto] min-h-[80px] sm:min-h-[100px] border-b border-[#e0e0e0] last:border-b-0"
               >
-                <div className="flex flex-col flex-1 min-w-0 items-start justify-center gap-1 sm:gap-[5px] relative self-stretch">
+                <div className="flex flex-col w-[40%] sm:w-[50%] min-w-0 items-start justify-center gap-1 sm:gap-[5px] relative self-stretch">
                   <h3 className="font-medium text-gray-900 text-base sm:text-lg lg:text-xl truncate max-w-full">
                     {item.type}
                   </h3>
@@ -455,7 +455,7 @@ export const IncomeDetailsSection = ({
                   )}
                 </div>
 
-                <div className="flex w-20 items-center justify-start">
+                <div className="flex flex-1 items-center justify-start">
                   <span
                     className={`font-medium text-sm sm:text-base ${
                       item.isPositive ? "text-blue-600" : "text-gray-900"
@@ -465,8 +465,8 @@ export const IncomeDetailsSection = ({
                   </span>
                 </div>
 
-                <div className="flex w-24 items-center justify-start">
-                  <time className="text-gray-600 text-xs sm:text-sm">
+                <div className="flex w-28 sm:w-32 items-center justify-end">
+                  <time className="text-gray-600 text-xs sm:text-sm text-right">
                     {item.date}
                   </time>
                 </div>
