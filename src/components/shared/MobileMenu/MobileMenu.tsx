@@ -172,9 +172,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
       >
         {/* Header with Profile (logged in) or just Close Button */}
         <div className="relative self-stretch w-full flex-[0_0_auto] p-2.5 flex items-start justify-between">
-          {/* Profile Image and Search - only show when logged in */}
-          {isLoggedIn ? (
-            <div className="flex items-center gap-3">
+          {/* Profile Image, Search, and Login - show based on login status */}
+          <div className="flex items-center gap-3">
+            {isLoggedIn && (
               <button
                 onClick={() => {
                   navigate('/setting');
@@ -188,43 +188,37 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   className="w-9 h-9 rounded-full object-cover border border-gray-200"
                 />
               </button>
-              {onSearchClick && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onSearchClick();
-                  }}
-                  className="flex items-center justify-center"
-                  aria-label="Search"
-                >
-                  <img
-                    className="w-7 h-7"
-                    alt="Search"
-                    src={searchIcon}
-                  />
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              {onSearchClick && (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onSearchClick();
-                  }}
-                  className="flex items-center justify-center"
-                  aria-label="Search"
-                >
-                  <img
-                    className="w-7 h-7"
-                    alt="Search"
-                    src={searchIcon}
-                  />
-                </button>
-              )}
-            </div>
-          )}
+            )}
+            {onSearchClick && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onSearchClick();
+                }}
+                className="flex items-center justify-center"
+                aria-label="Search"
+              >
+                <img
+                  className="w-7 h-7"
+                  alt="Search"
+                  src={searchIcon}
+                />
+              </button>
+            )}
+            {!isLoggedIn && (
+              <button
+                onClick={() => {
+                  navigate('/login');
+                  onClose();
+                }}
+                className="inline-flex items-center justify-center gap-2 px-4 h-[32px] bg-white rounded-[50px] border border-solid border-[#454545] hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[14px] leading-5 whitespace-nowrap">
+                  Log in
+                </span>
+              </button>
+            )}
+          </div>
 
           {/* Close Button */}
           <button
@@ -237,23 +231,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
         </div>
 
         <div className="flex flex-col items-start relative flex-1 self-stretch w-full">
-          {/* Login Button - Bubble style for non-logged-in users */}
-          {!isLoggedIn && (
-            <div className="w-full px-5 pt-2.5 pb-5">
-              <button
-                onClick={() => {
-                  navigate('/login');
-                  onClose();
-                }}
-                className="inline-flex items-center justify-center gap-[15px] px-5 h-[35px] bg-white rounded-[50px] border border-solid border-[#454545] hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px] leading-5 whitespace-nowrap">
-                  Log in / Sign up
-                </span>
-              </button>
-            </div>
-          )}
-
           {/* Main Navigation */}
           <nav className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] border-b border-solid border-light-grey">
             {menuItems.filter(item => item.id !== 'login').map((item, index, filteredItems) => {

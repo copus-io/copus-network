@@ -485,10 +485,10 @@ export const IncomeDetailsSection = ({
             <p className="text-gray-600 mb-4 sm:mb-6 max-w-md leading-relaxed text-sm sm:text-base">
               You haven't made any transactions yet. When you earn income from content curation or make withdrawals, they will appear here.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={() => navigate('/curate')}
-                className="px-4 sm:px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base w-full sm:w-auto"
+                className="px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base"
               >
                 Start Curating
               </Button>
