@@ -214,7 +214,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                 className="inline-flex items-center justify-center gap-2 px-4 h-[32px] bg-white rounded-[50px] border border-solid border-[#454545] hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[14px] leading-5 whitespace-nowrap">
-                  Log in
+                  Log in / Sign up
                 </span>
               </button>
             )}
