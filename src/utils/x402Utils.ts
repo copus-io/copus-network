@@ -153,7 +153,7 @@ const NETWORK_EIP712_DOMAINS: Record<number, any> = {
       verifyingContract: '0x74b7F16337b8972027F6196A17a631aC6dE26d22'
     },
     usdt: {
-      name: 'USD₮',
+      name: 'USD₮0',
       version: '1',
       chainId: 196,
       verifyingContract: '0x779ded0c9e1022225f8e0630b35a9b54be713736'
@@ -168,7 +168,7 @@ const NETWORK_EIP712_DOMAINS: Record<number, any> = {
       verifyingContract: '0xcb8bf24c6ce16ad21d707c9505421a17f2bec79d'
     },
     usdt: {
-      name: 'USD₮',
+      name: 'USD₮0',
       version: '1',
       chainId: 1952,
       verifyingContract: null // X Layer testnet USDT contract not available
@@ -620,7 +620,7 @@ export async function signTransferWithAuthorizationOKXBrowser(
 
   // Get the correct domain name and version based on the contract address
   const isUSDTContract = contractAddress.toLowerCase() === '0x779ded0c9e1022225f8e0630b35a9b54be713736';
-  const domainName = isUSDTContract ? 'USD₮' : 'USD Coin';
+  const domainName = isUSDTContract ? 'USD₮0' : 'USD Coin';
 
   // Get correct version from network configuration
   const networkConfig = NETWORK_EIP712_DOMAINS[chainId];

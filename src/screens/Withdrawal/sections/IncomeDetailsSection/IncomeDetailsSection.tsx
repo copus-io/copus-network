@@ -13,7 +13,6 @@ interface DisplayTransaction {
   type: string;
   description?: string;
   amount: string;
-  status: string;
   date: string;
   isPositive?: boolean;
 }
@@ -181,7 +180,6 @@ export const IncomeDetailsSection = ({
       type: getTransactionTitle(transaction.transactionType),
       description: transaction.description || '',
       amount: formatAmount(transaction.amount, isPositive),
-      status: transaction.status === 0 ? "Completed" : "Pending",
       date: formatDate(transaction),
       isPositive
     };
@@ -426,9 +424,6 @@ export const IncomeDetailsSection = ({
         <div className="relative flex items-start w-20 font-normal text-gray-600 text-xs sm:text-sm">
           Amount
         </div>
-        <div className="relative flex items-start w-20 font-normal text-gray-600 text-xs sm:text-sm">
-          Status
-        </div>
         <div className="relative flex items-start w-24 font-normal text-gray-600 text-xs sm:text-sm">
           Date
         </div>
@@ -467,12 +462,6 @@ export const IncomeDetailsSection = ({
                     }`}
                   >
                     {item.amount}
-                  </span>
-                </div>
-
-                <div className="flex w-20 items-center justify-start">
-                  <span className="font-normal text-gray-900 text-sm sm:text-base">
-                    {item.status}
                   </span>
                 </div>
 

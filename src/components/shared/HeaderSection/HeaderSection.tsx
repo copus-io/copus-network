@@ -1124,6 +1124,96 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
           </>
         ) : (
           <div className="flex items-center gap-[15px]">
+            {/* Search icon for non-logged-in users */}
+            <div className="relative flex items-center" ref={searchRef}>
+              {isSearchOpen ? (
+                <>
+                <div className="flex items-center gap-2 bg-white rounded-full px-3 shadow-md border border-gray-200 transition-all duration-300" style={{ width: '240px', height: '35px' }}>
+                  <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (!e.target.value) {
+                        setShowResults(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim()) {
+                        performSearch(searchQuery);
+                      } else if (e.key === 'Escape') {
+                        setIsSearchOpen(false);
+                        setSearchQuery('');
+                        setShowResults(false);
+                      }
+                    }}
+                    placeholder="Search..."
+                    className="flex-1 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (searchQuery) {
+                        setSearchQuery('');
+                        setShowResults(false);
+                        searchInputRef.current?.focus();
+                      } else {
+                        setIsSearchOpen(false);
+                      }
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {/* Search History Dropdown */}
+                {!searchQuery && !showResults && searchHistory.length > 0 && (
+                  <div className="absolute top-full right-0 mt-2 w-[240px] bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="flex items-center justify-between px-3 py-1 mb-1">
+                      <span className="text-xs text-gray-500">Recent searches</span>
+                      <button
+                        onClick={() => {
+                          setSearchHistory([]);
+                          localStorage.removeItem('copus_search_history');
+                        }}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                    {searchHistory.map((item, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSearchQuery(item);
+                          performSearch(item);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-dark-grey hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Search className="w-3.5 h-3.5 text-gray-400" />
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="flex items-center cursor-pointer"
+                  aria-label="Search"
+                >
+                  <img
+                    className="w-[30px] h-[30px] hover:scale-110 transition-transform duration-200"
+                    alt="Search"
+                    src={searchIcon}
+                  />
+                </button>
+              )}
+            </div>
+
             {showDiscoverNow && (
               <Link to="/" className="inline-flex items-center justify-end relative flex-[0_0_auto] rounded-[10px_10px_0px_0px]">
                 <div className="relative flex items-center justify-center w-fit font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] text-center tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
