@@ -718,8 +718,8 @@ export const NotificationListSection = (): JSX.Element => {
   };
 
   return (
-    <section className="flex flex-col items-start gap-2.5 py-5 min-h-screen px-5">
-      <header className="flex items-start justify-between w-full">
+    <section className="flex flex-col items-start gap-2.5 sm:gap-2.5 py-5 min-h-screen px-5">
+      <header className="flex items-start justify-between w-full mb-2 sm:mb-0">
         <h1 className="font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
           Notifications
         </h1>
@@ -735,7 +735,7 @@ export const NotificationListSection = (): JSX.Element => {
 
       <Tabs
         defaultValue="treasury"
-        className="w-full translate-y-[-1rem] animate-fade-in opacity-0 [--animation-delay:200ms]"
+        className="w-full mt-2 sm:mt-0 sm:translate-y-[-1rem] animate-fade-in opacity-0 [--animation-delay:200ms]"
       >
         <TabsList className="flex w-full bg-transparent h-auto p-0 gap-0 border-b border-gray-100">
           {notificationTabs.map((tab) => (
@@ -809,12 +809,12 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">
                         <div className="flex flex-col gap-1 sm:gap-2.5 flex-1 min-w-0">
-                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-tight sm:leading-[23px] break-words">
+                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-6 sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end justify-center gap-1 sm:gap-[5px] flex-shrink-0 min-w-0">
+                        <div className="flex flex-col items-end justify-center gap-2 sm:gap-[5px] flex-shrink-0 min-w-0">
                           <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-xs sm:text-sm leading-tight whitespace-nowrap">
                             {notification.timestamp}
                           </div>
@@ -896,12 +896,12 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">
                         <div className="flex flex-col gap-1 sm:gap-2.5 flex-1 min-w-0">
-                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-tight sm:leading-[23px] break-words">
+                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-6 sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end justify-center gap-1 sm:gap-[5px] flex-shrink-0 min-w-0">
+                        <div className="flex flex-col items-end justify-center gap-2 sm:gap-[5px] flex-shrink-0 min-w-0">
                           <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-xs sm:text-sm leading-tight whitespace-nowrap">
                             {notification.timestamp}
                           </div>
@@ -1013,12 +1013,12 @@ export const NotificationListSection = (): JSX.Element => {
 
                       <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">
                         <div className="flex flex-col gap-1 sm:gap-2.5 flex-1 min-w-0">
-                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-tight sm:leading-[23px] break-words">
+                          <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-6 sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end justify-center gap-1 sm:gap-[5px] flex-shrink-0 min-w-0">
+                        <div className="flex flex-col items-end justify-center gap-2 sm:gap-[5px] flex-shrink-0 min-w-0">
                           <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-xs sm:text-sm leading-tight whitespace-nowrap">
                             {notification.timestamp}
                           </div>

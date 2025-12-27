@@ -117,7 +117,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
     {
       id: "earnings",
       label: "Earnings",
-      path: "/withdrawal",
+      path: "/earning",
     },
     {
       id: "notification",
@@ -245,9 +245,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   navigate('/login');
                   onClose();
                 }}
-                className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 bg-white rounded-[50px] border border-solid border-[#454545] hover:bg-gray-50 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center gap-[15px] px-5 h-[35px] bg-white rounded-[50px] border border-solid border-[#454545] hover:bg-gray-50 transition-colors cursor-pointer"
               >
-                <span className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+                <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px] leading-5 whitespace-nowrap">
                   Log in / Sign up
                 </span>
               </button>

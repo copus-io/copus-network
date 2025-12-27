@@ -1224,7 +1224,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             {!hideLoginButton && (
               <Button
                 variant="outline"
-                className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 h-auto bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap hover:bg-gray-50"
+                className="inline-flex items-center justify-center gap-[15px] px-5 h-[35px] bg-white rounded-[50px] border border-solid border-[#454545] [font-family:'Lato',Helvetica] font-bold text-dark-grey text-[16px] leading-5 whitespace-nowrap hover:bg-gray-50"
                 asChild
               >
                 <Link to="/login">Log in / Sign up</Link>
