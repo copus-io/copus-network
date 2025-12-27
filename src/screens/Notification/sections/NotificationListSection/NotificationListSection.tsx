@@ -231,8 +231,25 @@ export const NotificationListSection = (): JSX.Element => {
         }
       }
     }
-    // 类型8：根据senderInfo判断显示系统图标还是用户头像
-    else if (notification.type === 8 || notification.type === 'system') {
+    // unlock类型：显示付费用户的头像
+    else if (notification.type === 'unlock' || notification.type === 8) {
+      // 检查是否有senderInfo数据，如果有则显示用户头像
+      const avatarUrl = notification.metadata?.senderInfo?.faceUrl ||
+                       notification.metadata?.extra?.senderInfo?.faceUrl ||
+                       notification.profileImage;
+      return (
+        <>
+          <AvatarImage
+            src={avatarUrl || "data:image/svg+xml,%3csvg%20width='100'%20height='100'%20viewBox='0%200%20100%20100'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='white'/%3e%3crect%20width='100'%20height='100'%20rx='50'%20fill='%23E0E0E0'%20fill-opacity='0.4'/%3e%3cpath%20d='M73.9643%2060.6618V60.9375C73.9643%2074.2269%2063.2351%2085%2050%2085C36.7649%2085%2026.0357%2074.2269%2026.0357%2060.9375V60.6618C22.2772%2059.6905%2019.5%2056.2646%2019.5%2052.1875C19.5%2048.1104%2022.2772%2044.6845%2026.0357%2043.7132V39.0625C26.0357%2025.7731%2036.7649%2015%2050%2015C63.2351%2015%2073.9643%2025.7731%2073.9643%2039.0625V43.7132C77.7228%2044.6845%2080.5%2048.1104%2080.5%2052.1875C80.5%2056.2646%2077.7228%2059.6905%2073.9643%2060.6618ZM69.6071%2043.4375H67.2192C62.2208%2043.4375%2057.8638%2040.0217%2056.6515%2035.1527L56.5357%2034.6875L48.85%2038.5461C43.0934%2041.4362%2036.8058%2043.0815%2030.3929%2043.3858V60.9375C30.3929%2071.8106%2039.1713%2080.625%2050%2080.625C60.8287%2080.625%2069.6071%2071.8106%2069.6071%2060.9375V43.4375ZM39.1071%2050C39.1071%2048.7919%2040.0825%2047.8125%2041.2857%2047.8125C42.4889%2047.8125%2043.4643%2048.7919%2043.4643%2050V54.375C43.4643%2055.5831%2042.4889%2056.5625%2041.2857%2056.5625C40.0825%2056.5625%2039.1071%2055.5831%2039.1071%2054.375V50ZM56.5357%2050C56.5357%2048.7919%2057.5111%2047.8125%2058.7143%2047.8125C59.9175%2047.8125%2060.8929%2048.7919%2060.8929%2050V54.375C60.8929%2055.5831%2059.9175%2056.5625%2058.7143%2056.5625C57.5111%2056.5625%2056.5357%2055.5831%2056.5357%2054.375V50ZM41.9964%2071.3039C41.1073%2070.4899%2041.0438%2069.1064%2041.8544%2068.2136C42.6651%2067.3209%2044.0431%2067.2571%2044.9321%2068.0711C46.0649%2069.1081%2047.4581%2069.6875%2048.8886%2069.6875C50.3722%2069.6875%2051.7728%2069.1187%2052.8779%2068.0924C53.7612%2067.2721%2055.1396%2067.3261%2055.9565%2068.2131C56.7735%2069.1%2056.7197%2070.484%2055.8364%2071.3043C53.9384%2073.0668%2051.4869%2074.0625%2048.8886%2074.0625C46.3342%2074.0625%2043.907%2073.0532%2041.9964%2071.3039ZM23.8571%2052.1875C23.8571%2053.8069%2024.7334%2055.2207%2026.0357%2055.9772V48.3978C24.7334%2049.1543%2023.8571%2050.5681%2023.8571%2052.1875ZM76.1429%2052.1875C76.1429%2050.5681%2075.2666%2049.1543%2073.9643%2048.3978V55.9772C75.2666%2055.2207%2076.1429%2053.8069%2076.1429%2052.1875Z'%20fill='black'/%3e%3c/svg%3e"}
+            alt="Profile"
+            className="object-cover"
+          />
+          <AvatarFallback>AN</AvatarFallback>
+        </>
+      );
+    }
+    // 类型8系统消息：根据senderInfo判断显示系统图标还是用户头像
+    else if (notification.type === 'system') {
       // 检查是否有senderInfo数据，如果有则显示用户头像
       if (notification.metadata?.senderInfo || notification.metadata?.senderId) {
         const avatarUrl = notification.metadata?.senderInfo?.faceUrl || notification.profileImage;
@@ -981,10 +998,17 @@ export const NotificationListSection = (): JSX.Element => {
                       onClick={() => handleNotificationClick(notification)}
                     >
                     <CardContent className="flex items-start gap-3 sm:gap-[30px] p-3 sm:p-5">
-                      <div className="w-8 h-8 sm:w-[45px] sm:h-[45px] flex-shrink-0 rounded-full bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                      <div
+                        className={`relative ${(notification.namespace || notification.userId) ? 'cursor-pointer hover:opacity-80 transition-opacity duration-200' : ''}`}
+                        onClick={(notification.namespace || notification.userId) ? (e) => handleUserClick(notification, e) : undefined}
+                        title={(notification.namespace || notification.userId) ? "Click to view user profile" : undefined}
+                      >
+                        <Avatar className="w-8 h-8 sm:w-[45px] sm:h-[45px] flex-shrink-0">
+                          {renderNotificationAvatar(notification)}
+                        </Avatar>
+                        {(notification.namespace || notification.userId) && (
+                          <div className="absolute inset-0 rounded-full border-2 border-transparent hover:border-blue-300 transition-colors duration-200" />
+                        )}
                       </div>
 
                       <div className="flex items-start gap-2 sm:gap-5 flex-1 min-w-0">

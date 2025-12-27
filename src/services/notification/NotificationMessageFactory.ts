@@ -55,6 +55,12 @@ export interface NotificationMetadata {
   targetTitle?: string;
   actionType?: string;
   extra?: Record<string, any>;
+  senderInfo?: {
+    id: number | string;
+    username: string;
+    namespace?: string;
+    faceUrl?: string;
+  };
 }
 
 /**
@@ -488,7 +494,9 @@ export class NotificationMessageFactory {
       targetType: rawMessage.targetInfo?.type,
       targetTitle: contentData.targetTitle,
       actionType: type,
-      extra: contentData.parsedData
+      extra: contentData.parsedData,
+      // Include full senderInfo for avatar display
+      senderInfo: rawMessage.senderInfo
     };
 
     // Log for follow notifications to debug space namespace issue
