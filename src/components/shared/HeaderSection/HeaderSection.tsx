@@ -326,11 +326,11 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
       {/* Mobile Full-Screen Search Overlay */}
       {isSearchOpen && (
-        <div className="mobile-search-overlay fixed inset-0 bg-white z-50 lg:hidden flex flex-col">
+        <div className="mobile-search-overlay fixed inset-0 bg-white z-50 lg:hidden flex flex-col w-screen max-w-[100vw] overflow-x-hidden">
           {/* Mobile Search Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] w-full max-w-full overflow-hidden">
-            <div className="flex-1 min-w-0 flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200">
-              <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] w-full max-w-[100vw] overflow-hidden box-border">
+            <div className="flex-1 min-w-0 flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200 overflow-hidden">
+              <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
@@ -346,7 +346,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   }
                 }}
                 placeholder="Search..."
-                className="flex-1 min-w-0 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
+                className="flex-1 min-w-0 w-full bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
                 autoFocus
               />
               {searchQuery && (
@@ -370,10 +370,10 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
           </div>
 
           {/* Mobile Search Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden w-full max-w-[100vw]">
             {/* Tab Filters */}
             {showResults && (
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto max-w-full">
                 {searchTabs.map((tab) => (
                   <button
                     key={tab.key}
