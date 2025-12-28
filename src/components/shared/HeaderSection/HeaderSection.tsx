@@ -263,36 +263,11 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
     };
   }, [showUserMenu, isSearchOpen]);
 
-  // Focus input when search opens and lock body scroll
+  // Focus input when search opens
   useEffect(() => {
-    if (isSearchOpen) {
-      // Lock body scroll and reset any horizontal scroll
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.top = `-${window.scrollY}px`;
-      window.scrollTo(0, 0);
-
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-      }
-    } else {
-      // Restore body scroll
-      const scrollY = document.body.style.top;
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    if (isSearchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
     }
-
-    return () => {
-      // Cleanup on unmount
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-    };
   }, [isSearchOpen]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -351,11 +326,11 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
       {/* Mobile Full-Screen Search Overlay */}
       {isSearchOpen && (
-        <div className="mobile-search-overlay fixed top-0 left-0 w-full h-full bg-white z-50 lg:hidden flex flex-col overflow-hidden">
+        <div className="mobile-search-overlay lg:hidden" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', backgroundColor: 'white', zIndex: 50, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Mobile Search Header */}
-          <div className="flex items-center gap-2 px-2.5 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] w-full">
-            <div className="flex-1 min-w-0 flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200 overflow-hidden">
-              <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 px-2.5 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]" style={{ width: '100%', flexShrink: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white', borderRadius: '9999px', padding: '8px 12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+              <Search className="w-4 h-4 text-gray-400" style={{ flexShrink: 0 }} />
               <input
                 type="text"
                 value={searchQuery}
@@ -371,7 +346,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   }
                 }}
                 placeholder="Search..."
-                className="flex-1 min-w-0 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
+                className="[font-family:'Lato',Helvetica]"
+                style={{ flex: 1, minWidth: 0, width: '100%', backgroundColor: 'transparent', outline: 'none', fontSize: '14px', color: '#454545', border: 'none' }}
                 autoFocus
               />
               {searchQuery && (
@@ -380,7 +356,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     setSearchQuery('');
                     setShowResults(false);
                   }}
-                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                  style={{ flexShrink: 0, color: '#9ca3af' }}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -388,14 +364,14 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             </div>
             <button
               onClick={handleCloseSearch}
-              className="text-gray-500 text-sm font-medium flex-shrink-0"
+              style={{ flexShrink: 0, color: '#6b7280', fontSize: '14px', fontWeight: 500 }}
             >
               Cancel
             </button>
           </div>
 
           {/* Mobile Search Content */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden w-full">
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', width: '100%' }}>
             {/* Tab Filters */}
             {showResults && (
               <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto max-w-full">
@@ -662,7 +638,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         </div>
       )}
 
-      <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[20px] lg:pb-[20px] bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 z-40 overflow-hidden" style={{ right: 0, width: '100%', maxWidth: '100%' }}>
+      <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[20px] lg:pb-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
         {/* Search Results Dropdown - Desktop only */}
         {showResults && (
           <div className="hidden lg:flex fixed right-[30px] top-[70px] w-[900px] max-h-[80vh] bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] rounded-2xl shadow-xl border border-gray-200 z-50 flex-col overflow-hidden">
