@@ -762,7 +762,7 @@ export const NotificationListSection = (): JSX.Element => {
                 <span className="relative z-10">
                   {tab.label}
                   {hasUnread && (
-                    <span className="absolute -top-1 -right-2 w-2 h-2 bg-red rounded-full"></span>
+                    <span className="absolute -top-1.5 -right-2.5 w-3 h-3 bg-red rounded-full"></span>
                   )}
                 </span>
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
