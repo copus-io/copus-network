@@ -326,10 +326,10 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
       {/* Mobile Full-Screen Search Overlay */}
       {isSearchOpen && (
-        <div className="mobile-search-overlay fixed inset-0 bg-white z-50 lg:hidden flex flex-col" style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+        <div className="mobile-search-overlay fixed top-0 left-0 w-full h-full bg-white z-50 lg:hidden flex flex-col overflow-hidden">
           {/* Mobile Search Header */}
-          <div className="flex items-center gap-2 px-2.5 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]" style={{ width: '100%', maxWidth: '100%' }}>
-            <div className="flex-1 min-w-0 flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200">
+          <div className="flex items-center gap-2 px-2.5 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] w-full">
+            <div className="flex-1 min-w-0 flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200 overflow-hidden">
               <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
@@ -347,7 +347,6 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 }}
                 placeholder="Search..."
                 className="flex-1 min-w-0 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
-                style={{ width: '100%' }}
                 autoFocus
               />
               {searchQuery && (
@@ -371,7 +370,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
           </div>
 
           {/* Mobile Search Content */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ width: '100%', maxWidth: '100%' }}>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden w-full">
             {/* Tab Filters */}
             {showResults && (
               <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto max-w-full">
@@ -922,10 +921,10 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
           <Separator
             orientation="vertical"
-            className="hidden sm:block h-6 bg-[#a8a8a8] mx-1.5 lg:mx-[8px]"
+            className="h-6 bg-[#a8a8a8] mx-1.5 lg:mx-[8px]"
           />
 
-          <div className="hidden sm:block [font-family:'Lato',Helvetica] font-light text-dark-grey text-lg leading-[27px] whitespace-nowrap">
+          <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-lg leading-[27px] whitespace-nowrap">
             Internet Treasure Map
           </div>
         </div>
