@@ -163,6 +163,19 @@ export const NotificationListSection = (): JSX.Element => {
     metadata: n.metadata, // 传递完整的 metadata 对象！
   }));
 
+  // Calculate unread counts per category
+  const unreadCounts = {
+    treasury: notificationList.filter(n =>
+      (n.type === "follow" || n.type === "follow_treasury") && !n.isRead
+    ).length,
+    comment: notificationList.filter(n =>
+      (n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury") && !n.isRead
+    ).length,
+    earning: notificationList.filter(n =>
+      n.type === "unlock" && !n.isRead
+    ).length,
+  };
+
   // Render notification avatar based on type and senderInfo data
   const renderNotificationAvatar = (notification: any) => {
     // 类型3：空间相关消息优先显示coverurl，否则显示空间图标
@@ -738,16 +751,24 @@ export const NotificationListSection = (): JSX.Element => {
         className="w-full mt-2 sm:mt-0 sm:translate-y-[-1rem] animate-fade-in opacity-0 [--animation-delay:200ms]"
       >
         <TabsList className="flex w-full bg-transparent h-auto p-0 gap-0 border-b border-gray-100">
-          {notificationTabs.map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none [font-family:'Lato',Helvetica] font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
-            >
-              <span className="relative z-10">{tab.label}</span>
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
-            </TabsTrigger>
-          ))}
+          {notificationTabs.map((tab) => {
+            const hasUnread = unreadCounts[tab.value as keyof typeof unreadCounts] > 0;
+            return (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="group flex-1 justify-center px-6 py-4 bg-transparent rounded-none border-0 transition-all duration-200 relative hover:bg-gray-50/50 data-[state=active]:bg-transparent data-[state=active]:shadow-none [font-family:'Lato',Helvetica] font-medium text-gray-600 text-base leading-tight data-[state=active]:text-black"
+              >
+                <span className="relative z-10">
+                  {tab.label}
+                  {hasUnread && (
+                    <span className="absolute -top-1 -right-2 w-2 h-2 bg-red rounded-full"></span>
+                  )}
+                </span>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 group-data-[state=active]:w-12 h-0.5 bg-black transition-all duration-300 ease-out"></div>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         <TabsContent value="treasury" className="mt-5">
