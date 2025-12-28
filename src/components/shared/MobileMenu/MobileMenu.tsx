@@ -166,7 +166,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 
       {/* Side Menu */}
       <aside
-        className="w-[310px] h-full pt-2.5 pb-5 px-0 fixed top-0 right-0 bg-white border-l border-solid border-light-grey flex flex-col items-start z-50 lg:hidden"
+        className="w-[280px] h-full pt-2.5 pb-5 px-0 fixed top-0 right-0 bg-white border-l border-solid border-light-grey flex flex-col items-start z-50 lg:hidden overflow-y-auto"
         role="navigation"
         aria-label="Mobile menu"
       >
@@ -240,7 +240,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleMenuItemClick(item)}
-                  className={`flex items-center gap-5 px-5 py-[25px] relative self-stretch w-full flex-[0_0_auto] cursor-pointer hover:bg-gray-50 transition-colors ${
+                  className={`flex items-center gap-4 px-4 py-4 relative self-stretch w-full flex-[0_0_auto] cursor-pointer hover:bg-gray-50 transition-colors ${
                     isActive ? "bg-gray-50" : ""
                   } ${
                     index < filteredItems.length - 1
@@ -250,12 +250,12 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   aria-label={item.label}
                   aria-current={isActive ? "page" : undefined}
                 >
-                  <div className="w-[30px] h-[30px] flex items-center justify-center">
+                  <div className="w-6 h-6 flex items-center justify-center">
                     {renderIcon(item.id, isActive)}
                   </div>
 
                   <span
-                    className={`relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap ${
+                    className={`relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] text-lg tracking-[0] leading-6 whitespace-nowrap ${
                       item.id === "curate"
                         ? `text-red ${isActive ? "font-bold" : "font-normal"}`
                         : `text-off-black ${isActive ? "font-bold" : "font-normal"}`
