@@ -906,25 +906,25 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
           </div>
         )}
 
-        <div className="flex items-center gap-2.5 lg:gap-[15px]">
-          <Link to="/" className="flex w-[25px] h-[25px] lg:w-[35px] lg:h-[35px] items-center justify-center rounded-full bg-red">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-[15px]">
+          <Link to="/" className="flex w-[22px] h-[22px] sm:w-[25px] sm:h-[25px] lg:w-[35px] lg:h-[35px] items-center justify-center rounded-full bg-red flex-shrink-0">
             <img
-              className="w-[15px] h-[15px] lg:w-[22px] lg:h-[22px]"
+              className="w-[13px] h-[13px] sm:w-[15px] sm:h-[15px] lg:w-[22px] lg:h-[22px]"
               alt="Ic fractopus open"
               src="https://c.animaapp.com/mft9nppdGctUh1/img/ic-fractopus-open.svg"
             />
           </Link>
 
-          <Link to="/" className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-lg tracking-[0.90px] leading-[27px] whitespace-nowrap">
+          <Link to="/" className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[15px] sm:text-lg tracking-[0.90px] leading-[22px] sm:leading-[27px] whitespace-nowrap">
             Copus
           </Link>
 
           <Separator
             orientation="vertical"
-            className="h-6 bg-[#a8a8a8] mx-1.5 lg:mx-[8px]"
+            className="h-4 sm:h-6 bg-[#a8a8a8] mx-1 sm:mx-1.5 lg:mx-[8px]"
           />
 
-          <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-lg leading-[27px] whitespace-nowrap">
+          <div className="[font-family:'Lato',Helvetica] font-light text-dark-grey text-[13px] sm:text-lg leading-[18px] sm:leading-[27px] whitespace-nowrap">
             Internet Treasure Map
           </div>
         </div>
