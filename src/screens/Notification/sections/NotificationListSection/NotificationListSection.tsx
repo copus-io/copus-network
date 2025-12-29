@@ -147,7 +147,7 @@ export const NotificationListSection = (): JSX.Element => {
     id: parseInt(n.id) || 1,
     type: n.type,
     category: n.type === "system" ? "System" :
-              n.type === "follow" || n.type === "follow_treasury" ? "Treasury" :
+              n.type === "follow" || n.type === "follow_treasury" || n.type === "collect" ? "Treasury" :
               n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury" ? "Comment" :
               n.type === "unlock" ? "Earning" : "Notification",
     message: n.message || n.title,
@@ -166,7 +166,7 @@ export const NotificationListSection = (): JSX.Element => {
   // Calculate unread counts per category
   const unreadCounts = {
     treasury: notificationList.filter(n =>
-      (n.type === "follow" || n.type === "follow_treasury") && !n.isRead
+      (n.type === "follow" || n.type === "follow_treasury" || n.type === "collect") && !n.isRead
     ).length,
     comment: notificationList.filter(n =>
       (n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury") && !n.isRead
@@ -531,6 +531,44 @@ export const NotificationListSection = (): JSX.Element => {
           );
         }
 
+        // Handle collect: [Username] collected [Article Title] in [Space Names]
+        if (notification.type === 'collect') {
+          const isFirstBracket = bracketIndex === 0;  // Username
+          const isArticleTitle = bracketIndex === 1;  // Article title
+          const isSpaceNames = bracketIndex >= 2;     // Space names (can be multiple)
+
+          return (
+            <span
+              key={index}
+              className="font-semibold cursor-pointer hover:opacity-70 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+
+                if (isArticleTitle) {
+                  // Click on article title - navigate to article
+                  const articleId = notification.metadata?.extra?.articleUuid ||
+                                  notification.metadata?.extra?.articleId ||
+                                  notification.articleId;
+                  if (articleId) {
+                    navigate(`/work/${articleId}`);
+                  }
+                } else if (isFirstBracket) {
+                  // Click on username - navigate to user profile
+                  const senderNamespace = notification.metadata?.senderNamespace ||
+                                         notification.namespace;
+                  if (senderNamespace) {
+                    navigate(`/u/${senderNamespace}`);
+                  }
+                }
+                // For space names, we could navigate to specific spaces, but for now just navigate to article
+              }}
+              title={isArticleTitle ? "Click to view article" : isFirstBracket ? "Click to view user profile" : "Space name"}
+            >
+              {linkText}
+            </span>
+          );
+        }
+
         // Handle follow: [Username] followed your space [Space Name]
         if (notification.type === 'follow') {
           const isSpaceName = !isFirstBracket;
@@ -774,7 +812,7 @@ export const NotificationListSection = (): JSX.Element => {
         <TabsContent value="treasury" className="mt-5">
           {isLoading ? (
             renderLoadingState()
-          ) : notificationList.filter(n => n.type === "follow" || n.type === "follow_treasury").length === 0 ? (
+          ) : notificationList.filter(n => n.type === "follow" || n.type === "follow_treasury" || n.type === "collect").length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-5">
               <div className="w-24 h-24 mb-6 flex items-center justify-center">
                 <img
@@ -794,7 +832,7 @@ export const NotificationListSection = (): JSX.Element => {
           ) : (
             <div className="flex flex-col gap-5 pb-[30px]">
               {notificationList
-                .filter((notification) => notification.type === "follow" || notification.type === "follow_treasury")
+                .filter((notification) => notification.type === "follow" || notification.type === "follow_treasury" || notification.type === "collect")
                 .map((notification, index) => {
                   const isRead = notification.isRead;
                   return (
