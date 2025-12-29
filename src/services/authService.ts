@@ -1636,9 +1636,14 @@ export class AuthService {
   }
 
   /**
-   * Get unread message count
+   * Get detailed unread message counts from API
    */
-  static async getUnreadMessageCount(): Promise<number> {
+  static async getUnreadMessageCounts(): Promise<{
+    commentCount: number;
+    earningCount: number;
+    totalCount: number;
+    treasureCount: number;
+  }> {
 
     try {
       // Note: requiresAuth is true so that 403 errors will clear the stale token and log out the user
@@ -1648,24 +1653,55 @@ export class AuthService {
         requiresAuth: true,
       });
 
+      // Handle new detailed response format
+      if (response && typeof response === 'object') {
+        // New format: { commentCount, earningCount, totalCount, treasureCount }
+        if ('commentCount' in response && 'earningCount' in response &&
+            'totalCount' in response && 'treasureCount' in response) {
+          return {
+            commentCount: response.commentCount || 0,
+            earningCount: response.earningCount || 0,
+            totalCount: response.totalCount || 0,
+            treasureCount: response.treasureCount || 0,
+          };
+        }
 
-      // Handle different API response formats
-      if (typeof response === 'number') {
-        // Return number directly
-        return response;
-      } else if (response.data !== undefined && typeof response.data === 'number') {
-        // Data wrapped in data field
-        return response.data;
-      } else if (response.status === 1 && response.data !== undefined) {
-        // Standard response format: {status: 1, data: number, msg: "..."}
-        return typeof response.data === 'number' ? response.data : 0;
-      } else if (response.count !== undefined && typeof response.count === 'number') {
-        // Possible field name: count
-        return response.count;
+        // Handle wrapped response format
+        if (response.data && typeof response.data === 'object' && 'commentCount' in response.data) {
+          const data = response.data;
+          return {
+            commentCount: data.commentCount || 0,
+            earningCount: data.earningCount || 0,
+            totalCount: data.totalCount || 0,
+            treasureCount: data.treasureCount || 0,
+          };
+        }
+
+        // Legacy format handling: single number
+        if (typeof response === 'number') {
+          return {
+            commentCount: 0,
+            earningCount: 0,
+            totalCount: response,
+            treasureCount: 0,
+          };
+        } else if (response.data !== undefined && typeof response.data === 'number') {
+          return {
+            commentCount: 0,
+            earningCount: 0,
+            totalCount: response.data,
+            treasureCount: 0,
+          };
+        }
       }
 
-      // If none match, return 0
-      return 0;
+      // Default empty counts
+      return {
+        commentCount: 0,
+        earningCount: 0,
+        totalCount: 0,
+        treasureCount: 0,
+      };
     } catch (error) {
       console.error('❌ Failed to get unread message count:', error);
       
@@ -1680,8 +1716,21 @@ export class AuthService {
         }
       }
       
-      return 0; // Return 0 on error, don't affect normal page display
+      return {
+        commentCount: 0,
+        earningCount: 0,
+        totalCount: 0,
+        treasureCount: 0,
+      }; // Return empty counts on error, don't affect normal page display
     }
+  }
+
+  /**
+   * Get total unread message count (backward compatibility)
+   */
+  static async getUnreadMessageCount(): Promise<number> {
+    const counts = await this.getUnreadMessageCounts();
+    return counts.totalCount;
   }
 
   /**

@@ -1,6 +1,6 @@
 export interface Notification {
   id: string;
-  type: 'comment' | 'follow' | 'system' | 'treasury' | 'mention' | 'follow_treasury' | 'comment_reply' | 'comment_like' | 'unlock';
+  type: 'comment' | 'follow' | 'system' | 'treasury' | 'mention' | 'follow_treasury' | 'comment_reply' | 'comment_like' | 'unlock' | 'collect';
   title: string;
   message: string;
   avatar?: string;
@@ -28,6 +28,12 @@ export interface Notification {
 export interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
+  unreadCounts: {
+    commentCount: number;
+    earningCount: number;
+    totalCount: number;
+    treasureCount: number;
+  };
   isLoading: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;

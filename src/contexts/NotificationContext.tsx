@@ -8,6 +8,12 @@ import * as storage from '../utils/storage';
 interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
+  unreadCounts: {
+    commentCount: number;
+    earningCount: number;
+    totalCount: number;
+    treasureCount: number;
+  };
   isLoading: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
@@ -20,6 +26,7 @@ type NotificationAction =
   | { type: 'SET_NOTIFICATIONS'; payload: Notification[] }
   | { type: 'APPEND_NOTIFICATIONS'; payload: { notifications: Notification[]; hasMore: boolean; page: number } }
   | { type: 'SET_UNREAD_COUNT'; payload: number }
+  | { type: 'SET_UNREAD_COUNTS'; payload: { commentCount: number; earningCount: number; totalCount: number; treasureCount: number } }
   | { type: 'ADD_NOTIFICATION'; payload: Notification }
   | { type: 'MARK_AS_READ'; payload: string }
   | { type: 'MARK_ALL_AS_READ' }
@@ -29,6 +36,12 @@ type NotificationAction =
 const initialState: NotificationState = {
   notifications: [],
   unreadCount: 0,
+  unreadCounts: {
+    commentCount: 0,
+    earningCount: 0,
+    totalCount: 0,
+    treasureCount: 0,
+  },
   isLoading: false,
   isLoadingMore: false,
   hasMore: true,
@@ -72,6 +85,13 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
       return {
         ...state,
         unreadCount: action.payload,
+      };
+
+    case 'SET_UNREAD_COUNTS':
+      return {
+        ...state,
+        unreadCounts: action.payload,
+        unreadCount: action.payload.totalCount,
       };
 
     case 'ADD_NOTIFICATION':
@@ -198,7 +218,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
 
-      const unreadCount = await AuthService.getUnreadMessageCount();
+      const unreadCounts = await AuthService.getUnreadMessageCounts();
+      const unreadCount = unreadCounts.totalCount;
 
       // Check if we recently marked all as read
       const markedAllReadTime = localStorage.getItem('lastMarkedAllReadTime');
@@ -227,7 +248,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
       }
 
-      dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount });
+      dispatch({ type: 'SET_UNREAD_COUNTS', payload: unreadCounts });
     } catch (error) {
       // If authentication error, handle silently and set unread count to 0
       if (error instanceof Error && (error.message.includes('Valid authentication token not found') || 
@@ -391,6 +412,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const contextValue: NotificationContextType = {
     notifications: state.notifications,
     unreadCount: state.unreadCount,
+    unreadCounts: state.unreadCounts,
     isLoading: state.isLoading,
     isLoadingMore: state.isLoadingMore,
     hasMore: state.hasMore,

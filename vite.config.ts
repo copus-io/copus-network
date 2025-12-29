@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => ({
   publicDir: "./static",
   base: "/",
   server: {
-    port: 5177,
+    port: 5173,
   },
   css: {
     postcss: {

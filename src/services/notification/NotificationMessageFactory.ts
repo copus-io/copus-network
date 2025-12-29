@@ -42,7 +42,8 @@ export enum NotificationType {
   FOLLOW_TREASURY = 'follow_treasury',
   COMMENT_REPLY = 'comment_reply',
   COMMENT_LIKE = 'comment_like',
-  UNLOCK = 'unlock'
+  UNLOCK = 'unlock',
+  COLLECT = 'collect'
 }
 
 export interface NotificationMetadata {
@@ -140,6 +141,14 @@ export class NotificationTemplates {
       messageTemplate: (data) => `[${data.senderUsername}] 在评论中提到了你`,
       actionUrl: (data) => `/work/${data.targetUuid || data.targetId}#comment-${data.targetId}`
     },
+    [NotificationType.COLLECT]: {
+      title: '收藏通知',
+      messageTemplate: (data) => {
+        const spaceNames = data.spaces?.map((space: any) => space.name).join('，') || '空间';
+        return `[${data.senderUsername}] collected [${data.articleTitle}] in ${spaceNames}`;
+      },
+      actionUrl: (data) => `/work/${data.articleUuid || data.articleId}`
+    },
     [NotificationType.SYSTEM]: {
       title: '系统通知',
       messageTemplate: (data) => data.content || '系统消息',
@@ -206,6 +215,22 @@ export class MessageContentProcessor {
           spaceInfo: parsed.spaceInfo,
           parsed: parsed
         });
+
+        // 处理新的collect类型数据结构 (收藏消息)
+        if (parsed.spaces && parsed.articleInfo) {
+          return {
+            targetTitle: parsed.articleInfo.title,
+            targetId: parsed.articleInfo.id?.toString(),
+            targetUuid: parsed.articleInfo.uuid,
+            parsedData: {
+              ...parsed,
+              spaces: parsed.spaces,
+              articleTitle: parsed.articleInfo.title,
+              articleId: parsed.articleInfo.id,
+              articleUuid: parsed.articleInfo.uuid
+            }
+          };
+        }
 
         // 处理新的treasury类型数据结构 (评论消息)
         if (parsed.articleInfo && parsed.commentInfo) {
@@ -403,6 +428,8 @@ export class MessageTypeDetector {
         return NotificationType.COMMENT_LIKE;
       case 8:
         return NotificationType.UNLOCK;
+      case 9:
+        return NotificationType.COLLECT;
       case 999:
         return NotificationType.SYSTEM;
       case 0:
