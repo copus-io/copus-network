@@ -531,11 +531,11 @@ export const NotificationListSection = (): JSX.Element => {
           );
         }
 
-        // Handle collect: [Username] collected [Article Title] in [Space Names]
+        // Handle collect: [Username] collected [Article Title] in [Space1]，[Space2]
         if (notification.type === 'collect') {
           const isFirstBracket = bracketIndex === 0;  // Username
           const isArticleTitle = bracketIndex === 1;  // Article title
-          const isSpaceNames = bracketIndex >= 2;     // Space names (can be multiple)
+          const isSpaceName = bracketIndex >= 2;      // Space names (each in own brackets)
 
           return (
             <span
@@ -559,10 +559,26 @@ export const NotificationListSection = (): JSX.Element => {
                   if (senderNamespace) {
                     navigate(`/u/${senderNamespace}`);
                   }
+                } else if (isSpaceName) {
+                  // Click on space name - find the corresponding space and navigate
+                  const spaces = notification.metadata?.extra?.spaces || [];
+                  const clickedSpace = spaces.find((space: any) => space.name === linkText);
+
+                  if (clickedSpace && clickedSpace.namespace) {
+                    navigate(`/treasury/${clickedSpace.namespace}`);
+                  } else {
+                    console.warn('Could not find space namespace for:', linkText, spaces);
+                    // Fallback to article
+                    const articleId = notification.metadata?.extra?.articleUuid ||
+                                    notification.metadata?.extra?.articleId ||
+                                    notification.articleId;
+                    if (articleId) {
+                      navigate(`/work/${articleId}`);
+                    }
+                  }
                 }
-                // For space names, we could navigate to specific spaces, but for now just navigate to article
               }}
-              title={isArticleTitle ? "Click to view article" : isFirstBracket ? "Click to view user profile" : "Space name"}
+              title={isArticleTitle ? "Click to view article" : isFirstBracket ? "Click to view user profile" : "Click to view space"}
             >
               {linkText}
             </span>

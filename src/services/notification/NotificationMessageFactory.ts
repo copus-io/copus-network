@@ -144,7 +144,7 @@ export class NotificationTemplates {
     [NotificationType.COLLECT]: {
       title: '收藏通知',
       messageTemplate: (data) => {
-        const spaceNames = data.spaces?.map((space: any) => space.name).join('，') || '空间';
+        const spaceNames = data.spaces?.map((space: any) => `[${space.name}]`).join('，') || '[空间]';
         return `[${data.senderUsername}] collected [${data.articleTitle}] in ${spaceNames}`;
       },
       actionUrl: (data) => `/work/${data.articleUuid || data.articleId}`
