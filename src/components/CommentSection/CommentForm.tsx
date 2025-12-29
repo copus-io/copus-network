@@ -531,7 +531,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
 
             {/* Apple-style action bar */}
             <div
-              className="flex items-center justify-between px-6 py-4 rounded-b-[20px]"
+              className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 rounded-b-[20px]"
               style={{
                 background: 'transparent',
               }}

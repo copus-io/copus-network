@@ -1037,6 +1037,36 @@ export const NotificationListSection = (): JSX.Element => {
                           <div className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base leading-6 sm:leading-[23px] break-words">
                             {parseMessageWithLinks(notification.message, notification)}
                           </div>
+
+                          {/* Reply button - left aligned below content */}
+                          {(notification.type === 'comment' ||
+                            notification.type === 'comment_reply' ||
+                            notification.message.includes('commented') ||
+                            notification.message.includes('replied')) &&
+                            !notification.message.includes('liked') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-fit mt-1 px-3 py-1 h-auto border border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-full transition-all duration-200 flex items-center gap-1.5"
+                              onClick={(e) => handleReplyClick(notification, e)}
+                              title="Reply to comment"
+                            >
+                              <svg
+                                className="w-3.5 h-3.5 text-gray-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                                />
+                              </svg>
+                              <span className="text-xs text-gray-600 font-medium">Reply</span>
+                            </Button>
+                          )}
                         </div>
 
                         <div className="flex flex-col items-end justify-center gap-2 sm:gap-[5px] flex-shrink-0 min-w-0">
@@ -1044,38 +1074,8 @@ export const NotificationListSection = (): JSX.Element => {
                             {notification.timestamp}
                           </div>
 
-                          {/* Reply and delete buttons */}
+                          {/* Delete button */}
                           <div className="flex items-center gap-1 sm:gap-2">
-                            {/* Reply button - only show for comment-related notifications */}
-                            {(notification.type === 'comment' ||
-                              notification.type === 'comment_reply' ||
-                              notification.message.includes('commented') ||
-                              notification.message.includes('replied')) &&
-                              !notification.message.includes('liked') && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="p-0.5 sm:p-1 h-auto hover:bg-blue-50 rounded-full transition-all duration-200"
-                                onClick={(e) => handleReplyClick(notification, e)}
-                                title="Reply to comment"
-                              >
-                                <svg
-                                  className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                                  />
-                                </svg>
-                              </Button>
-                            )}
-
-                            {/* Delete button */}
                             <Button
                               variant="ghost"
                               size="sm"

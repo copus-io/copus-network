@@ -1089,6 +1089,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       profileDefaultAvatar
                     }
                     alt="Avatar"
+                    className="object-cover w-full h-full"
                   />
                 </Avatar>
               </button>

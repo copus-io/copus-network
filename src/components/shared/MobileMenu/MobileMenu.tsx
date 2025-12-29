@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useToast } from '../../ui/toast';
+import { useNotification } from '../../../contexts/NotificationContext';
 import profileDefaultAvatar from '../../../assets/images/profile-default.svg';
 import searchIcon from '../../../assets/images/icon-search.svg';
 
@@ -75,6 +76,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
 }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { unreadCount } = useNotification();
 
   const handleContactClick = async () => {
     const email = 'handuo@server31.io';
@@ -118,11 +120,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
       id: "earnings",
       label: "Earnings",
       path: "/earning",
-    },
-    {
-      id: "notification",
-      label: "Notifications",
-      path: "/notification",
     },
   ];
 
@@ -203,6 +200,23 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   alt="Search"
                   src={searchIcon}
                 />
+              </button>
+            )}
+            {isLoggedIn && (
+              <button
+                onClick={() => {
+                  navigate('/notification');
+                  onClose();
+                }}
+                className="flex items-center justify-center relative"
+                aria-label="Notifications"
+              >
+                <NotificationIcon className="w-6 h-6 text-dark-grey" />
+                {unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red text-white text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
+                    {unreadCount > 99 ? '99' : unreadCount}
+                  </div>
+                )}
               </button>
             )}
             {!isLoggedIn && (

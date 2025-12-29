@@ -124,7 +124,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
       };
 
       setCropArea(initialCrop);
-      drawCanvas(ctx, img, initialCrop);
+      drawCanvas(ctx, img, initialCrop, 1, { x: 0, y: 0 });
     };
 
     img.src = url;
@@ -132,7 +132,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     return () => URL.revokeObjectURL(url);
   }, [image, aspectRatio]);
 
-  const drawCanvas = useCallback((ctx: CanvasRenderingContext2D, img: HTMLImageElement, crop: CropArea) => {
+  const drawCanvas = useCallback((ctx: CanvasRenderingContext2D, img: HTMLImageElement, crop: CropArea, currentScale: number = 1, currentOffset: { x: number; y: number } = { x: 0, y: 0 }) => {
     const canvas = ctx.canvas;
 
     // Clear canvas
@@ -141,9 +141,9 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     // Save current state
     ctx.save();
 
-    // Apply scale and offset
-    ctx.translate(offset.x, offset.y);
-    ctx.scale(scale, scale);
+    // Apply scale and offset (use passed parameters, not closure values)
+    ctx.translate(currentOffset.x, currentOffset.y);
+    ctx.scale(currentScale, currentScale);
 
     // Draw image
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -236,7 +236,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
       });
     }
-  }, [cropShape, scale, offset]);
+  }, [cropShape]);
 
   // Detect which resize handle was clicked
   const getResizeHandle = (x: number, y: number): ResizeHandle | null => {
@@ -282,16 +282,17 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const y = e.clientY - rect.top;
 
     const handle = getResizeHandle(x, y);
-    if (handle) {
+    if (handle && handle !== 'move') {
+      // Only allow resize handles for rect mode, not 'move'
       setResizeHandle(handle);
       setIsDragging(true);
       setDragStart({ x, y });
       setOriginalCropArea({ ...cropArea });
     } else {
-      // If not clicking on resize handle, start image dragging
+      // For clicking inside crop area or anywhere else, enable image panning
       setIsDragging(true);
       setDragStart({ x, y });
-      setResizeHandle(null);
+      setResizeHandle(null); // null means image panning mode
     }
   };
 
@@ -419,7 +420,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx || !loadedImageRef.current) return;
 
-    drawCanvas(ctx, loadedImageRef.current, newCropArea);
+    drawCanvas(ctx, loadedImageRef.current, newCropArea, scale, offset);
   };
 
   const handleMouseUp = () => {
@@ -433,11 +434,8 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Handle pinch-to-zoom with 2 fingers
+    // Pinch-to-zoom disabled - only use slider for zoom
     if (e.touches.length === 2) {
-      const distance = getTouchDistance(e.touches);
-      setLastPinchDistance(distance);
-      setIsDragging(false); // Stop any single-finger drag
       return;
     }
 
@@ -447,16 +445,17 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const y = touch.clientY - rect.top;
 
     const handle = getResizeHandle(x, y);
-    if (handle) {
+    if (handle && handle !== 'move') {
+      // Only allow resize handles for rect mode, not 'move'
       setResizeHandle(handle);
       setIsDragging(true);
       setDragStart({ x, y });
       setOriginalCropArea({ ...cropArea });
     } else {
-      // If not clicking on resize handle, start image dragging
+      // For clicking inside crop area or anywhere else, enable image panning
       setIsDragging(true);
       setDragStart({ x, y });
-      setResizeHandle(null);
+      setResizeHandle(null); // null means image panning mode
     }
   };
 
@@ -465,33 +464,8 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Handle pinch-to-zoom with 2 fingers
-    if (e.touches.length === 2 && lastPinchDistance !== null) {
-      const currentDistance = getTouchDistance(e.touches);
-      const rect = canvas.getBoundingClientRect();
-      const center = getTouchCenter(e.touches, rect);
-
-      // Calculate scale change
-      const scaleChange = currentDistance / lastPinchDistance;
-      const newScale = Math.max(0.5, Math.min(3, scale * scaleChange));
-
-      if (newScale !== scale) {
-        // Adjust offset to zoom towards the pinch center
-        const scaleRatio = newScale / scale;
-        setOffset(prev => ({
-          x: center.x - (center.x - prev.x) * scaleRatio,
-          y: center.y - (center.y - prev.y) * scaleRatio
-        }));
-        setScale(newScale);
-
-        // Redraw canvas
-        const ctx = canvas.getContext('2d');
-        if (ctx && loadedImageRef.current) {
-          drawCanvas(ctx, loadedImageRef.current, cropArea);
-        }
-      }
-
-      setLastPinchDistance(currentDistance);
+    // Pinch-to-zoom disabled - only use slider for zoom
+    if (e.touches.length === 2) {
       return;
     }
 
@@ -507,18 +481,18 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
       const dx = x - dragStart.x;
       const dy = y - dragStart.y;
 
-      setOffset(prev => ({
-        x: prev.x + dx,
-        y: prev.y + dy
-      }));
-
+      const newOffset = {
+        x: offset.x + dx,
+        y: offset.y + dy
+      };
+      setOffset(newOffset);
       setDragStart({ x, y });
 
-      // Redraw canvas using cached image
+      // Redraw canvas using cached image with new offset
       const ctx = canvas.getContext('2d');
       if (!ctx || !loadedImageRef.current) return;
 
-      drawCanvas(ctx, loadedImageRef.current, cropArea);
+      drawCanvas(ctx, loadedImageRef.current, cropArea, scale, newOffset);
       return;
     }
 
@@ -623,7 +597,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx || !loadedImageRef.current) return;
 
-    drawCanvas(ctx, loadedImageRef.current, newCropArea);
+    drawCanvas(ctx, loadedImageRef.current, newCropArea, scale, offset);
   };
 
   const handleTouchEnd = () => {
@@ -632,39 +606,10 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     setLastPinchDistance(null);
   };
 
-  // Handle mouse wheel zoom
+  // Handle mouse wheel - disabled, only use slider for zoom
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    // Zoom step size
-    const zoomStep = 0.1;
-    const newScale = e.deltaY > 0
-      ? Math.max(0.5, scale - zoomStep)  // Zoom out, minimum 0.5x
-      : Math.min(3, scale + zoomStep);   // Zoom in, maximum 3x
-
-    if (newScale !== scale) {
-      // Calculate offset adjustment for zoom center point
-      const scaleChange = newScale / scale;
-
-      setScale(newScale);
-      setOffset(prev => ({
-        x: mouseX - (mouseX - prev.x) * scaleChange,
-        y: mouseY - (mouseY - prev.y) * scaleChange
-      }));
-
-      // Redraw canvas using cached image
-      const ctx = canvas.getContext('2d');
-      if (!ctx || !loadedImageRef.current) return;
-
-      drawCanvas(ctx, loadedImageRef.current, cropArea);
-    }
+    // Zoom disabled - only use the slider below
   };
 
   // Handle image dragging (when not on a resize handle)
@@ -681,18 +626,18 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const dx = x - dragStart.x;
     const dy = y - dragStart.y;
 
-    setOffset(prev => ({
-      x: prev.x + dx,
-      y: prev.y + dy
-    }));
-
+    const newOffset = {
+      x: offset.x + dx,
+      y: offset.y + dy
+    };
+    setOffset(newOffset);
     setDragStart({ x, y });
 
-    // Redraw canvas using cached image
+    // Redraw canvas using cached image with new offset
     const ctx = canvas.getContext('2d');
     if (!ctx || !loadedImageRef.current) return;
 
-    drawCanvas(ctx, loadedImageRef.current, cropArea);
+    drawCanvas(ctx, loadedImageRef.current, cropArea, scale, newOffset);
   };
 
   // Set cursor style based on mouse position
@@ -726,7 +671,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
       'move': 'move'
     };
 
-    canvas.style.cursor = handle ? cursors[handle] : 'grab';
+    canvas.style.cursor = handle ? (handle === 'move' ? 'grab' : cursors[handle]) : 'grab';
   };
 
   const handleCrop = async () => {
@@ -879,16 +824,17 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
               const centerY = canvas.height / 2;
               const scaleRatio = newScale / scale;
 
-              setOffset(prev => ({
-                x: centerX - (centerX - prev.x) * scaleRatio,
-                y: centerY - (centerY - prev.y) * scaleRatio
-              }));
+              const newOffset = {
+                x: centerX - (centerX - offset.x) * scaleRatio,
+                y: centerY - (centerY - offset.y) * scaleRatio
+              };
+              setOffset(newOffset);
               setScale(newScale);
 
-              // Redraw canvas
+              // Redraw canvas with new scale and offset
               const ctx = canvas.getContext('2d');
               if (ctx && loadedImageRef.current) {
-                drawCanvas(ctx, loadedImageRef.current, cropArea);
+                drawCanvas(ctx, loadedImageRef.current, cropArea, newScale, newOffset);
               }
             }}
             className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red"
@@ -897,7 +843,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         </div>
 
         <p className="text-xs text-gray-400 text-center mb-4">
-          Drag to move image • Use slider or scroll to zoom
+          Drag to move image • Use slider to zoom
         </p>
 
         <div className="flex justify-end gap-5">
