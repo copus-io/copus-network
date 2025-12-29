@@ -361,7 +361,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
             {/* Action buttons area */}
             <div className="flex items-center justify-between mt-auto -mx-[30px] px-[30px]">
               {/* Left side: Treasure button, comment count, and view count */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {actions.showTreasure && (
                   <TreasureButton
                     isLiked={(() => {
@@ -379,7 +379,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 )}
                 {/* Comment count */}
                 <div
-                  className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg px-2 py-1 transition-all duration-200"
+                  className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg transition-all duration-200"
                   onClick={handleCommentClick}
                   title="View comments"
                 >
@@ -410,15 +410,15 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
               </div>
 
               {/* Right side: Edit/Delete buttons */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {/* Edit and delete buttons area */}
                 {(actions.showEdit || actions.showDelete) && (
-                  <div className="flex items-center gap-4 min-h-[24px]">
+                  <div className="flex items-center gap-3 min-h-[24px]">
                     {actions.showEdit && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-1.5 h-auto hover:bg-gray-100 transition-colors"
+                        className="p-0 h-auto hover:bg-gray-100 transition-colors"
                         onClick={handleEdit}
                       >
                         <img
@@ -434,7 +434,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-1.5 h-auto hover:bg-gray-100 transition-colors"
+                        className="p-0 h-auto hover:bg-gray-100 transition-colors"
                         onClick={handleDelete}
                       >
                         <img
@@ -636,7 +636,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
             {/* Action buttons area */}
             <div className="flex items-center justify-between -mx-[20px] px-[20px]">
               {/* Left side: Treasure button, comment count, and view count */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {actions.showTreasure && (
                   <TreasureButton
                     isLiked={(() => {
@@ -654,7 +654,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 )}
                 {/* Comment count */}
                 <div
-                  className="inline-flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg px-2 py-1 transition-all duration-200"
+                  className="inline-flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg transition-all duration-200"
                   onClick={handleCommentClick}
                   title="View comments"
                 >
@@ -685,14 +685,14 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
               </div>
 
               {/* Right side: Edit/Delete buttons */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {(actions.showEdit || actions.showDelete) && (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     {actions.showEdit && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-1.5 h-auto hover:bg-gray-100 transition-colors"
+                        className="p-0 h-auto hover:bg-gray-100 transition-colors"
                         onClick={handleEdit}
                       >
                         <img
@@ -708,7 +708,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-1.5 h-auto hover:bg-gray-100 transition-colors"
+                        className="p-0 h-auto hover:bg-gray-100 transition-colors"
                         onClick={handleDelete}
                       >
                         <img
