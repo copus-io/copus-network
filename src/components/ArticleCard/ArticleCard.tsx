@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -57,6 +57,7 @@ export interface ArticleCardProps {
   actions?: ActionConfig;
   isHovered?: boolean;
   onLike?: (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => Promise<void>; // Now optional for backward compatibility
+  onComment?: (articleId: string, articleUuid?: string) => void; // Comment button callback
   onEdit?: (articleId: string) => void;
   onDelete?: (articleId: string) => void;
   onUserClick?: (userId: number | undefined, userNamespace?: string) => void;
@@ -75,6 +76,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
   },
   isHovered = false,
   onLike,
+  onComment,
   onEdit,
   onDelete,
   onUserClick,
@@ -82,6 +84,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
   onMouseLeave,
   className = ""
 }) => {
+  const navigate = useNavigate();
   const categoryStyle = getCategoryStyle(article.category, article.categoryColor);
   const categoryInlineStyle = getCategoryInlineStyle(article.categoryColor);
 
@@ -116,6 +119,19 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
       : article.treasureCount;
     await onLike(article.uuid || article.id, article.isLiked || false, currentCount);
   }, [onLike, article.uuid, article.id, article.isLiked, article.treasureCount]);
+
+  // Handle comment click
+  const handleCommentClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (onComment) {
+      onComment(article.uuid || article.id, article.uuid);
+    } else {
+      // Fallback: navigate directly to the article with comment parameter
+      navigate(`/work/${article.uuid || article.id}?comments=open`);
+    }
+  }, [onComment, article.uuid, article.id, navigate]);
 
   // Handle user click
   const handleUserClick = useCallback((e: React.MouseEvent) => {
@@ -362,14 +378,18 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                   />
                 )}
                 {/* Comment count */}
-                <div className="flex items-center gap-1.5">
+                <div
+                  className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg px-2 py-1 transition-all duration-200"
+                  onClick={handleCommentClick}
+                  title="View comments"
+                >
                   <img
-                    className="w-4 h-4"
+                    className="w-4 h-4 transition-all duration-200"
                     alt="Comments"
                     src={commentIcon}
                     style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                   />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
                     {article.commentCount || 0}
                   </span>
                 </div>
@@ -633,14 +653,18 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                   />
                 )}
                 {/* Comment count */}
-                <div className="inline-flex items-center gap-1.5">
+                <div
+                  className="inline-flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg px-2 py-1 transition-all duration-200"
+                  onClick={handleCommentClick}
+                  title="View comments"
+                >
                   <img
-                    className="w-4 h-4"
+                    className="w-4 h-4 transition-all duration-200"
                     alt="Comments"
                     src={commentIcon}
                     style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                   />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px]">
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
                     {article.commentCount || 0}
                   </span>
                 </div>

@@ -278,6 +278,11 @@ export const DiscoveryContentSection = (): JSX.Element => {
     }
   };
 
+  // Handle comment navigation
+  const handleComment = (articleId: string, articleUuid?: string) => {
+    navigate(`/work/${articleUuid || articleId}?comments=open`);
+  };
+
   const renderPostCard = (post: Article, index: number) => {
     const articleData = transformArticleToCardData(post);
 
@@ -306,6 +311,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             showVisits: true
           }}
           onLike={handleLike}
+          onComment={handleComment}
           onUserClick={handleUserClick}
         />
       </div>
