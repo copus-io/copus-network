@@ -977,7 +977,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               title={location.pathname === '/notification' ? "刷新通知" : "前往通知页面"}
             >
               <img
-                className="w-[35px] h-[35px] rotate-[12deg] hover:rotate-[17deg] transition-transform duration-200"
+                className="w-[40px] h-[40px] rotate-[12deg] hover:rotate-[17deg] transition-transform duration-200 translate-y-[-2px]"
                 alt="Notification"
                 src="https://c.animaapp.com/mft4oqz6uyUKY7/img/notification.svg"
               />
@@ -1066,7 +1066,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   aria-label="Search"
                 >
                   <img
-                    className="w-[30px] h-[30px] hover:scale-110 transition-transform duration-200"
+                    className="w-[32px] h-[32px] rotate-[0deg] hover:rotate-[12deg] transition-transform duration-200"
                     alt="Search"
                     src={searchIcon}
                   />
@@ -1081,7 +1081,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 className="focus:outline-none"
                 title="Click to show menu, double-click to go to settings"
               >
-                <Avatar className="w-[35px] h-[35px] hover:ring-2 hover:ring-red hover:scale-110 transition-all duration-200 cursor-pointer">
+                <Avatar className="w-[35px] h-[35px] hover:opacity-70 transition-all duration-200 cursor-pointer translate-y-[2px]">
                   <AvatarImage
                     key={user?.faceUrl || 'default'}
                     src={
@@ -1207,7 +1207,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   aria-label="Search"
                 >
                   <img
-                    className="w-[30px] h-[30px] hover:scale-110 transition-transform duration-200"
+                    className="w-[32px] h-[32px] rotate-[0deg] hover:rotate-[12deg] transition-transform duration-200"
                     alt="Search"
                     src={searchIcon}
                   />
