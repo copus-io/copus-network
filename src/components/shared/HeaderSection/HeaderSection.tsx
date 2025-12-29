@@ -1080,7 +1080,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 className="focus:outline-none"
                 title="Click to show menu, double-click to go to settings"
               >
-                <Avatar className="w-[35px] h-[35px] hover:opacity-70 transition-all duration-200 cursor-pointer translate-y-[1px]">
+                <Avatar className="w-[35px] h-[35px] hover:opacity-70 transition-all duration-200 cursor-pointer translate-y-[4px]">
                   <AvatarImage
                     key={user?.faceUrl || 'default'}
                     src={
