@@ -859,6 +859,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   const [likesCount, setLikesCount] = useState(comment.likesCount);
   const [repliesExpanded, setRepliesExpanded] = useState(false); // 控制回复展开/折叠
   const [repliesVisible, setRepliesVisible] = useState(true); // 默认显示回复
+  const [smallRepliesHidden, setSmallRepliesHidden] = useState(false); // 控制少量回复的隐藏/显示
   const commentRef = useRef<HTMLDivElement>(null);
   const toggleLikeMutation = useToggleCommentLike();
   const deleteCommentMutation = useDeleteComment();
@@ -968,8 +969,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     }
   }, [comment.id, targetType, targetId]);
 
-  // 设置回复折叠的阈值 - 只显示1条回复
-  const REPLY_COLLAPSE_THRESHOLD = 1;
+  // 设置回复折叠的阈值 - 当回复超过此数量时显示展开/折叠按钮
+  const REPLY_COLLAPSE_THRESHOLD = 3;
 
   // 按需加载评论回复
   // 仅在用户点击展开按钮时才加载回复，优化性能
@@ -1245,9 +1246,17 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                       {/* 决定显示哪些回复 */}
                       {(() => {
                         const shouldCollapse = actualReplies.length > REPLY_COLLAPSE_THRESHOLD;
-                        const visibleReplies = shouldCollapse && !repliesExpanded
-                          ? actualReplies.slice(0, REPLY_COLLAPSE_THRESHOLD)
-                          : actualReplies;
+                        let visibleReplies;
+
+                        if (shouldCollapse) {
+                          // 多条回复：使用展开/折叠逻辑
+                          visibleReplies = repliesExpanded
+                            ? actualReplies
+                            : actualReplies.slice(0, REPLY_COLLAPSE_THRESHOLD);
+                        } else {
+                          // 少量回复：使用隐藏/显示逻辑
+                          visibleReplies = smallRepliesHidden ? [] : actualReplies;
+                        }
 
                         return (
                           <>
@@ -1265,28 +1274,48 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                               />
                             ))}
 
-                            {/* 展开/折叠按钮 - 简洁现代风格 */}
-                            {shouldCollapse && (
+                            {/* 展开/折叠按钮或隐藏回复按钮 */}
+                            {actualReplies.length > 0 && (
                               <div className="">
                                 <button
-                                  onClick={() => setRepliesExpanded(!repliesExpanded)}
+                                  onClick={shouldCollapse ? () => setRepliesExpanded(!repliesExpanded) : () => setSmallRepliesHidden(!smallRepliesHidden)}
                                   className="group inline-flex items-center gap-2 py-1 text-sm text-gray-500 hover:text-blue-600 transition-colors duration-200 [font-family:'Lato',Helvetica] font-medium"
                                   style={{ outline: 'none' }}
                                 >
-                                  {repliesExpanded ? (
-                                    <>
-                                      <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <polyline points="18,15 12,9 6,15"></polyline>
-                                      </svg>
-                                      <span>Show less</span>
-                                    </>
+                                  {shouldCollapse ? (
+                                    // 对于多条回复：显示展开/折叠逻辑
+                                    repliesExpanded ? (
+                                      <>
+                                        <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <polyline points="18,15 12,9 6,15"></polyline>
+                                        </svg>
+                                        <span>Show less</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <polyline points="6,9 12,15 18,9"></polyline>
+                                        </svg>
+                                        <span>Expand {actualReplies.length - REPLY_COLLAPSE_THRESHOLD} {actualReplies.length - REPLY_COLLAPSE_THRESHOLD === 1 ? 'comment' : 'comments'}</span>
+                                      </>
+                                    )
                                   ) : (
-                                    <>
-                                      <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <polyline points="6,9 12,15 18,9"></polyline>
-                                      </svg>
-                                      <span>Expand {actualReplies.length - REPLY_COLLAPSE_THRESHOLD} {actualReplies.length - REPLY_COLLAPSE_THRESHOLD === 1 ? 'comment' : 'comments'}</span>
-                                    </>
+                                    // 对于少量回复：显示隐藏/显示回复逻辑
+                                    smallRepliesHidden ? (
+                                      <>
+                                        <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <polyline points="6,9 12,15 18,9"></polyline>
+                                        </svg>
+                                        <span>Show {actualReplies.length === 1 ? 'reply' : 'replies'}</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <polyline points="18,15 12,9 6,15"></polyline>
+                                        </svg>
+                                        <span>Hide {actualReplies.length === 1 ? 'reply' : 'replies'}</span>
+                                      </>
+                                    )
                                   )}
                                 </button>
                               </div>

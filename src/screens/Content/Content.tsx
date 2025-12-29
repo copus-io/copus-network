@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -83,6 +84,7 @@ export const Content = (): JSX.Element => {
   const location = useLocation();
   const { user, getArticleLikeState, updateArticleLikeState, login, fetchUserInfo } = useUser();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
@@ -184,6 +186,15 @@ export const Content = (): JSX.Element => {
       document.body.style.overflow = 'unset';
     };
   }, [isCommentSectionOpen]);
+
+  // Refresh comment data when comment section opens
+  useEffect(() => {
+    if (isCommentSectionOpen && id) {
+      // Invalidate comment queries to force refresh
+      queryClient.invalidateQueries({ queryKey: ['optimizedComments'] });
+      queryClient.invalidateQueries({ queryKey: ['articleWithComments'] });
+    }
+  }, [isCommentSectionOpen, id, queryClient]);
 
   // Handle URL parameters for comments
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -37,6 +37,18 @@ export const NotificationListSection = (): JSX.Element => {
     deleteNotification
   } = useNotification();
 
+  // Tab 状态管理
+  const [activeTab, setActiveTab] = useState("treasury");
+  const previousTabRef = useRef("treasury");
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 处理 tab 切换 - 使用 useCallback 来稳定函数引用
+  const handleTabChange = useCallback((tabValue: string) => {
+    if (tabValue !== activeTab) {
+      setActiveTab(tabValue);
+    }
+  }, [activeTab]);
+
   // 回复弹窗状态管理
   const [replyModalState, setReplyModalState] = useState<{
     isOpen: boolean;
@@ -60,6 +72,54 @@ export const NotificationListSection = (): JSX.Element => {
 
     return () => clearTimeout(timer);
   }, []); // Remove fetchNotifications dependency, only execute on first component load
+
+  // Handle tab change and fetch data with filters - with debouncing
+  useEffect(() => {
+    // Only fetch if tab actually changed
+    if (activeTab && activeTab !== previousTabRef.current) {
+      previousTabRef.current = activeTab;
+
+      // Clear any existing timeout
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+
+      // Debounce API calls to prevent rapid successive calls
+      fetchTimeoutRef.current = setTimeout(() => {
+        // Map tab values to notification type filters
+        // Note: API only supports single type filtering, so we only use it for single-type tabs
+        let filters = {};
+        switch (activeTab) {
+          case 'treasury':
+            // Treasury tab includes follow, follow_treasury, collect notifications
+            // API doesn't support multi-type filtering, so fetch all and rely on client-side filtering
+            filters = {};
+            break;
+          case 'comment':
+            // Comment tab includes comment, comment_reply, comment_like, treasury notifications
+            // API doesn't support multi-type filtering, so fetch all and rely on client-side filtering
+            filters = {};
+            break;
+          case 'earning':
+            // Earning tab includes unlock notifications - can use API filtering for performance
+            // Note: 'unlock' maps to a specific API type, need to check the mapping
+            filters = {};
+            break;
+          default:
+            filters = {};
+        }
+
+        fetchNotifications(1, 20, filters, false);
+      }, 300); // 300ms debounce
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, [activeTab]); // Only depend on activeTab
 
   // Infinite scroll effect with scroll position preservation
   useEffect(() => {
@@ -798,7 +858,8 @@ export const NotificationListSection = (): JSX.Element => {
       </header>
 
       <Tabs
-        defaultValue="treasury"
+        value={activeTab}
+        onValueChange={handleTabChange}
         className="w-full mt-2 sm:mt-0 sm:translate-y-[-1rem] animate-fade-in opacity-0 [--animation-delay:200ms]"
       >
         <TabsList className="flex w-full bg-transparent h-auto p-0 gap-0 border-b border-gray-100">

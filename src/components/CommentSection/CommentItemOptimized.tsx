@@ -156,6 +156,10 @@ export const CommentItemOptimized: React.FC<CommentItemProps> = ({
     setRepliesExpanded(prev => !prev);
   }, []);
 
+  const toggleRepliesVisibility = useCallback(() => {
+    setRepliesVisible(prev => !prev);
+  }, []);
+
   // Render helpers
   const renderReplies = () => {
     if (!repliesVisible) return null;
@@ -197,16 +201,21 @@ export const CommentItemOptimized: React.FC<CommentItemProps> = ({
           />
         ))}
 
-        {/* Show more/less button */}
-        {actualReplies.length > REPLY_COLLAPSE_THRESHOLD && (
+        {/* Show more/less button or hide replies button */}
+        {actualReplies.length > 0 && (
           <button
-            onClick={toggleRepliesExpanded}
+            onClick={actualReplies.length > REPLY_COLLAPSE_THRESHOLD ? toggleRepliesExpanded : toggleRepliesVisibility}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
           >
-            {repliesExpanded
-              ? `Show less`
-              : `Show ${actualReplies.length - REPLY_COLLAPSE_THRESHOLD} more replies`
-            }
+            {actualReplies.length > REPLY_COLLAPSE_THRESHOLD ? (
+              // For many replies: show "Show more"/"Show less" logic
+              repliesExpanded
+                ? `Show less`
+                : `Show ${actualReplies.length - REPLY_COLLAPSE_THRESHOLD} more replies`
+            ) : (
+              // For few replies (including 1 reply): show "Hide replies" logic
+              `Hide ${actualReplies.length === 1 ? 'reply' : 'replies'}`
+            )}
           </button>
         )}
       </div>
