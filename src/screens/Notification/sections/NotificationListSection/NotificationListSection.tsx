@@ -559,10 +559,33 @@ export const NotificationListSection = (): JSX.Element => {
                   if (senderNamespace) {
                     navigate(`/u/${senderNamespace}`);
                   }
+                } else if (isSpaceNames) {
+                  // Click on space name - navigate to space
+                  const spaces = notification.metadata?.extra?.spaces || [];
+
+                  // Find the space that matches the clicked text
+                  const clickedSpace = spaces.find((space: any) => space.name === linkText);
+
+                  if (clickedSpace && clickedSpace.namespace) {
+                    navigate(`/treasury/${clickedSpace.namespace}`);
+                  } else {
+                    // Fallback: if no specific space found, navigate to the first space or article
+                    const firstSpace = spaces[0];
+                    if (firstSpace && firstSpace.namespace) {
+                      navigate(`/treasury/${firstSpace.namespace}`);
+                    } else {
+                      // Last fallback: navigate to article
+                      const articleId = notification.metadata?.extra?.articleUuid ||
+                                      notification.metadata?.extra?.articleId ||
+                                      notification.articleId;
+                      if (articleId) {
+                        navigate(`/work/${articleId}`);
+                      }
+                    }
+                  }
                 }
-                // For space names, we could navigate to specific spaces, but for now just navigate to article
               }}
-              title={isArticleTitle ? "Click to view article" : isFirstBracket ? "Click to view user profile" : "Space name"}
+              title={isArticleTitle ? "Click to view article" : isFirstBracket ? "Click to view user profile" : "Click to view space"}
             >
               {linkText}
             </span>
