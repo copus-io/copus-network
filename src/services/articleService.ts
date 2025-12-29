@@ -75,7 +75,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     category: backendArticle.categoryInfo?.name || '',
     categoryColor: backendArticle.categoryInfo?.color, // Save category color returned from backend
     coverImage: processImageUrl(backendArticle.coverUrl),
-    userName: backendArticle.authorInfo?.username || 'Unknown',
+    userName: backendArticle.authorInfo?.username || 'Anonymous',
     userId: backendArticle.authorInfo?.id,
     namespace: backendArticle.authorInfo?.namespace, // Add namespace field
     userAvatar: getUserAvatar(), // Two states only: user's real uploaded image or default image - no generated avatars
