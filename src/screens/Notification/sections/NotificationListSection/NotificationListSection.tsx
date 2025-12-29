@@ -702,11 +702,8 @@ export const NotificationListSection = (): JSX.Element => {
                   const commentId = notification.metadata?.commentId;
 
                   if (articleId) {
-                    if (notification.type === 'comment_reply') {
-                      navigate(`/work/${articleId}?openComments=true&commentId=${commentId}#comment-${commentId}`);
-                    } else if (notification.type === 'comment_like') {
-                      navigate(`/work/${articleId}?openComments=true#comments`);
-                    }
+                    // 使用新的评论参数格式打开评论区
+                    navigate(`/work/${articleId}?comments=open`);
                   }
                 }}
                 title="Click to view comment"

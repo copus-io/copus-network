@@ -89,12 +89,8 @@ export class NotificationTemplates {
       messageTemplate: (data) => `[${data.senderUsername}] commented on your treasure [${data.targetTitle}]${data.commentContent ? ` [${data.commentContent}]` : ''}`,
       actionUrl: (data) => {
         const baseUrl = `/work/${data.targetUuid || data.targetId}`;
-        // 使用URL参数和hash双重保证评论区打开和定位
-        if (data.commentId) {
-          return `${baseUrl}?openComments=true&commentId=${data.commentId}#comment-${data.commentId}`;
-        } else {
-          return `${baseUrl}?openComments=true#comments`;
-        }
+        // 使用新的评论参数格式打开评论区
+        return `${baseUrl}?comments=open`;
       }
     },
     [NotificationType.COMMENT]: {
@@ -113,7 +109,8 @@ export class NotificationTemplates {
       },
       actionUrl: (data) => {
         const baseUrl = `/work/${data.targetUuid || data.targetId}`;
-        return data.commentId ? `${baseUrl}?openComments=true&commentId=${data.commentId}#comment-${data.commentId}` : `${baseUrl}?openComments=true#comments`;
+        // 使用新的评论参数格式打开评论区
+        return `${baseUrl}?comments=open`;
       }
     },
     [NotificationType.COMMENT_LIKE]: {
@@ -127,8 +124,8 @@ export class NotificationTemplates {
       },
       actionUrl: (data) => {
         const baseUrl = `/work/${data.targetUuid || data.targetId}`;
-        // 点赞通知不定位到具体评论，只打开评论区
-        return `${baseUrl}?openComments=true#comments`;
+        // 使用新的评论参数格式打开评论区
+        return `${baseUrl}?comments=open`;
       }
     },
     [NotificationType.UNLOCK]: {
