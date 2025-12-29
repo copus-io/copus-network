@@ -192,7 +192,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       {/* Simplified layout - header info is handled by parent component */}
       <div className="px-0 pt-0 pb-0">
         {/* Comment form - 始终显示主评论输入框 */}
-        <div className="comment-form-container">
+        <div className="comment-form-container px-3 sm:px-0">
           <CommentForm
             ref={commentFormRef}
             targetType={targetType}
@@ -204,7 +204,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         </div>
 
         {/* Comment list */}
-        <div className="mt-6">
+        <div className="mt-6 px-3 sm:px-0">
           {isLoading ? (
             <div className="space-y-0">
               {/* Loading state */}

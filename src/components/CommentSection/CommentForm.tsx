@@ -444,7 +444,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
         {/* Apple-style comment input with enhanced contrast */}
         <div className="flex-1">
           <div
-            className="rounded-none sm:rounded-[20px] transition-all duration-300 ease-out ring-1 ring-black/[0.02] hover:ring-black/[0.04] focus-within:ring-2 focus-within:ring-blue-500/25 -mx-6 sm:mx-0"
+            className="rounded-[20px] transition-all duration-300 ease-out ring-1 ring-black/[0.02] hover:ring-black/[0.04] focus-within:ring-2 focus-within:ring-blue-500/25"
             style={{
               background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.9) 100%)',
               backdropFilter: 'blur(20px) brightness(1.08) saturate(1.1) contrast(1.02)',
@@ -466,7 +466,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
           >
             {/* Reply indicator - only show when not in modal */}
             {isReplying && !hideReplyCancel && (
-              <div className="px-6 pt-4 pb-2">
+              <div className="px-3 sm:px-6 pt-4 pb-2">
                 <div className="px-2 py-1 text-sm text-blue-700 [font-family:'Lato',Helvetica] bg-blue-50 rounded-lg border-l-4 border-blue-400 flex items-center justify-between">
                   <span>Replying to {getReplyDisplayText()}</span>
                   <button
@@ -490,7 +490,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
                 if (imageUploadError) setImageUploadError('');
               }}
               placeholder={getPlaceholderText()}
-              className="w-full px-6 py-3 bg-transparent border-0 resize-none [font-family:'Lato',Helvetica] text-base transition-colors duration-200 rounded-2xl"
+              className="w-full px-3 sm:px-6 py-3 bg-transparent border-0 resize-none [font-family:'Lato',Helvetica] text-base transition-colors duration-200 rounded-2xl"
               style={{
                 outline: 'none',
                 color: 'rgba(0, 0, 0, 0.9)',
@@ -503,7 +503,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
             />
 
             {/* 图片上传组件 */}
-            <div className="px-6 pb-2">
+            <div className="px-3 sm:px-6 pb-2">
               <CommentImageUploaderV2
                 ref={imageUploaderRef}
                 maxImages={9}

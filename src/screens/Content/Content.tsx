@@ -1918,6 +1918,29 @@ export const Content = (): JSX.Element => {
                 <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
                   {/* Title with x402 payment badge above on mobile, inline on desktop */}
                   <div className="flex flex-col gap-2 w-full">
+                    {/* Edit button - only visible to author, positioned above title */}
+                    {(() => {
+                      const isAuthor = (user && article?.authorInfo) && (
+                        (user.namespace && user.namespace === article.authorInfo.namespace) ||
+                        (user.id && user.id === article.authorInfo.id)
+                      );
+                      return isAuthor;
+                    })() && (
+                      <button
+                        onClick={() => navigate(`/curate?edit=${article.uuid}`)}
+                        className="w-[32px] h-[32px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0 border border-solid border-[#686868] hover:bg-gray-100 self-start"
+                        aria-label="Edit"
+                        title="Edit"
+                      >
+                        <img
+                          className="w-[18px] h-[18px]"
+                          alt="Edit"
+                          src={getIconUrl('EDIT')}
+                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                        />
+                      </button>
+                    )}
+
                     {/* Payment badge - show above title on mobile */}
                     {article?.targetUrlIsLocked && article?.priceInfo && (
                       <div className="h-[30px] lg:h-[34px] px-2 lg:px-2.5 py-1 lg:py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] self-start">
@@ -2084,10 +2107,10 @@ export const Content = (): JSX.Element => {
                   }}
                 >
                   <div
-                    className="h-[85vh] lg:h-[94vh] overflow-hidden w-full max-w-[1250px] mx-4 lg:mx-[30px]"
+                    className="h-[85vh] lg:h-[94vh] overflow-hidden w-full max-w-[1250px] mx-0 lg:mx-[30px]"
                     style={{
                       background: 'linear-gradient(0deg, rgba(224,224,224,0.18) 0%, rgba(224,224,224,0.18) 100%), linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 100%)',
-                      borderRadius: '32px 32px 0 0',
+                      borderRadius: window.innerWidth >= 1024 ? '32px 32px 0 0' : '24px 24px 0 0',
                       boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)',
                     }}
                     onWheel={(e) => {
@@ -2156,7 +2179,7 @@ export const Content = (): JSX.Element => {
                     {/* Content area */}
                     <div
                       ref={commentScrollRef}
-                      className="h-[75vh] lg:h-[85vh] overflow-y-auto px-4"
+                      className="h-[75vh] lg:h-[85vh] overflow-y-auto px-0 lg:px-4"
                       style={{
                         scrollbarWidth: 'thin',
                         scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
@@ -2170,7 +2193,7 @@ export const Content = (): JSX.Element => {
                         e.stopPropagation();
                       }}
                     >
-                      <div className="mb-12 px-2">
+                      <div className="mb-12 px-0 lg:px-2">
                         {/* Lazy load comments - only render when expanded */}
                         {isCommentSectionOpen ? (
                           <CommentSection
@@ -2252,39 +2275,6 @@ export const Content = (): JSX.Element => {
             </div>
 
             <div className="flex items-center gap-1.5 lg:gap-5">
-              {/* Edit button - only visible to author */}
-              {(() => {
-                // Use namespace for comparison (more reliable) with id as fallback
-                const isAuthor = (user && article?.authorInfo) && (
-                  (user.namespace && user.namespace === article.authorInfo.namespace) ||
-                  (user.id && user.id === article.authorInfo.id)
-                );
-
-                debugLog('Edit button check:', {
-                  userId: user?.id,
-                  userNamespace: user?.namespace,
-                  authorId: article?.authorInfo?.id,
-                  authorNamespace: article?.authorInfo?.namespace,
-                  isAuthor
-                });
-
-                return isAuthor;
-              })() && (
-                <button
-                  onClick={() => navigate(`/curate?edit=${article.uuid}`)}
-                  className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0 border border-solid border-[#686868] hover:bg-gray-100"
-                  aria-label="Edit"
-                  title="Edit"
-                >
-                  <img
-                    className="w-[22px] h-[22px]"
-                    alt="Edit"
-                    src={getIconUrl('EDIT')}
-                    style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
-                  />
-                </button>
-              )}
-
 {/* Conditional button - "Visit" for unlocked/targetUrl content, "Unlock now" for locked content without targetUrl */}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button

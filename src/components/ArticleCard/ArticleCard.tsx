@@ -389,7 +389,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     src={commentIcon}
                     style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                   />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
                     {article.commentCount || 0}
                   </span>
                 </div>
@@ -664,7 +664,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     src={commentIcon}
                     style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
                   />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
                     {article.commentCount || 0}
                   </span>
                 </div>

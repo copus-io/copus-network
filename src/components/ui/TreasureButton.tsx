@@ -123,7 +123,7 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       {/* Like count text */}
       <span
         className={`
-          [font-family:'Lato',Helvetica] font-light text-center tracking-[0] leading-[16px]
+          [font-family:'Lato',Helvetica] font-bold text-center tracking-[0] leading-[16px]
           ${currentSize.text}
           ${size === 'large'
             ? 'text-[#e19e1d]'
