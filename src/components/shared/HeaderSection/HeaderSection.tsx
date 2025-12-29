@@ -324,54 +324,52 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         onSearchClick={() => setIsSearchOpen(true)}
       />
 
-      {/* Mobile Full-Screen Search Overlay */}
+      {/* Mobile Search Dropdown */}
       {isSearchOpen && (
-        <div className="mobile-search-overlay lg:hidden" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', backgroundColor: 'white', zIndex: 50, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Mobile Search Header */}
-          <div className="flex items-center gap-2 px-2.5 py-3 border-b border-gray-200 bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]" style={{ width: '100%', flexShrink: 0 }}>
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white', borderRadius: '9999px', padding: '8px 12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-              <Search className="w-4 h-4 text-gray-400" style={{ flexShrink: 0 }} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (!e.target.value) {
-                    setShowResults(false);
-                  }
+        <div className="lg:hidden fixed top-[50px] left-0 right-0 z-50 px-2.5">
+          {/* Search Input Box */}
+          <div className="flex items-center gap-2 bg-white rounded-2xl px-3 py-2 shadow-lg border border-gray-200" style={{ maxWidth: '280px' }}>
+            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (!e.target.value) {
+                  setShowResults(false);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  performSearch(searchQuery);
+                }
+              }}
+              placeholder="Search..."
+              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
+              autoFocus
+            />
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowResults(false);
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery.trim()) {
-                    performSearch(searchQuery);
-                  }
-                }}
-                placeholder="Search..."
-                className="[font-family:'Lato',Helvetica]"
-                style={{ flex: 1, minWidth: 0, width: '100%', backgroundColor: 'transparent', outline: 'none', fontSize: '14px', color: '#454545', border: 'none' }}
-                autoFocus
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setShowResults(false);
-                  }}
-                  style={{ flexShrink: 0, color: '#9ca3af' }}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+                className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={handleCloseSearch}
-              style={{ flexShrink: 0, color: '#6b7280', fontSize: '14px', fontWeight: 500 }}
+              className="text-gray-500 text-xs font-medium flex-shrink-0 ml-1"
             >
               Cancel
             </button>
           </div>
 
-          {/* Mobile Search Content */}
-          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', width: '100%' }}>
+          {/* Mobile Search Results Dropdown */}
+          {(showResults || (!searchQuery && searchHistory.length > 0)) && (
+            <div className="mt-2 bg-white rounded-2xl shadow-lg border border-gray-200 max-h-[70vh] overflow-y-auto" style={{ maxWidth: '350px' }}>
             {/* Tab Filters */}
             {showResults && (
               <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto max-w-full">
@@ -635,6 +633,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               </div>
             )}
           </div>
+        )}
         </div>
       )}
 
@@ -943,25 +942,6 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         <div className="hidden lg:flex items-center gap-3">
         {isLoggedIn ? (
           <>
-        {!hideCreateButton && (
-          <Button
-            variant="outline"
-            className="flex items-center gap-[15px] px-5 h-[35px] rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
-            asChild
-          >
-            <Link to="/curate">
-              <img
-                className="w-4 h-4"
-                alt="Vector"
-                src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
-              />
-              <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5 text-red">
-                Curate
-              </span>
-            </Link>
-          </Button>
-        )}
-
             <button
               onClick={() => {
                 if (location.pathname === '/notification') {
@@ -1074,6 +1054,25 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               )}
             </div>
 
+            {!hideCreateButton && (
+              <Button
+                variant="outline"
+                className="flex items-center gap-[15px] px-5 h-[35px] rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+                asChild
+              >
+                <Link to="/curate">
+                  <img
+                    className="w-4 h-4"
+                    alt="Vector"
+                    src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+                  />
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5 text-red">
+                    Curate
+                  </span>
+                </Link>
+              </Button>
+            )}
+
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -1081,7 +1080,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 className="focus:outline-none"
                 title="Click to show menu, double-click to go to settings"
               >
-                <Avatar className="w-[35px] h-[35px] hover:opacity-70 transition-all duration-200 cursor-pointer translate-y-[2px]">
+                <Avatar className="w-[35px] h-[35px] hover:opacity-70 transition-all duration-200 cursor-pointer translate-y-[1px]">
                   <AvatarImage
                     key={user?.faceUrl || 'default'}
                     src={

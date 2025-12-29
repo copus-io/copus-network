@@ -799,7 +799,14 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         'Ratio Match': Math.abs(aspectRatio - (outputWidth / outputHeight)) < 0.01 ? '✅' : '❌'
       });
 
+      // Clear canvas with transparent background
+      outputCtx.clearRect(0, 0, outputWidth, outputHeight);
+
       if (cropShape === 'circle') {
+        // For circle crop, fill with white background first to avoid black edges
+        outputCtx.fillStyle = '#ffffff';
+        outputCtx.fillRect(0, 0, outputWidth, outputHeight);
+
         // Circle crop
         outputCtx.beginPath();
         outputCtx.arc(outputWidth / 2, outputHeight / 2, Math.min(outputWidth, outputHeight) / 2, 0, 2 * Math.PI);
@@ -813,16 +820,18 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         0, 0, outputWidth, outputHeight
       );
 
-      // Convert to File object
+      // Convert to File object - use JPEG for better compatibility
+      const outputType = 'image/jpeg';
       outputCanvas.toBlob((blob) => {
         if (blob) {
-          const croppedFile = new File([blob], image.name, {
-            type: image.type,
+          const fileName = image.name.replace(/\.[^/.]+$/, '.jpg');
+          const croppedFile = new File([blob], fileName, {
+            type: outputType,
             lastModified: Date.now(),
           });
           onCrop(croppedFile);
         }
-      }, image.type, 0.95); // Improved compression quality
+      }, outputType, 0.95);
     };
 
     img.src = imageUrl;
@@ -850,6 +859,46 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
             onTouchEnd={handleTouchEnd}
           />
         </div>
+
+        {/* Zoom Slider */}
+        <div className="flex items-center gap-3 mb-4 px-2">
+          <span className="text-sm text-gray-500">−</span>
+          <input
+            type="range"
+            min="0.5"
+            max="3"
+            step="0.1"
+            value={scale}
+            onChange={(e) => {
+              const newScale = parseFloat(e.target.value);
+              const canvas = canvasRef.current;
+              if (!canvas) return;
+
+              // Zoom towards center
+              const centerX = canvas.width / 2;
+              const centerY = canvas.height / 2;
+              const scaleRatio = newScale / scale;
+
+              setOffset(prev => ({
+                x: centerX - (centerX - prev.x) * scaleRatio,
+                y: centerY - (centerY - prev.y) * scaleRatio
+              }));
+              setScale(newScale);
+
+              // Redraw canvas
+              const ctx = canvas.getContext('2d');
+              if (ctx && loadedImageRef.current) {
+                drawCanvas(ctx, loadedImageRef.current, cropArea);
+              }
+            }}
+            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red"
+          />
+          <span className="text-sm text-gray-500">+</span>
+        </div>
+
+        <p className="text-xs text-gray-400 text-center mb-4">
+          Drag to move image • Use slider or scroll to zoom
+        </p>
 
         <div className="flex justify-end gap-5">
           <button
