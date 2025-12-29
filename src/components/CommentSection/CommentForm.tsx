@@ -444,7 +444,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
         {/* Apple-style comment input with enhanced contrast */}
         <div className="flex-1">
           <div
-            className="rounded-[20px] transition-all duration-300 ease-out ring-1 ring-black/[0.02] hover:ring-black/[0.04] focus-within:ring-2 focus-within:ring-blue-500/25"
+            className="rounded-none sm:rounded-[20px] transition-all duration-300 ease-out ring-1 ring-black/[0.02] hover:ring-black/[0.04] focus-within:ring-2 focus-within:ring-blue-500/25 -mx-6 sm:mx-0"
             style={{
               background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 250, 251, 0.9) 100%)',
               backdropFilter: 'blur(20px) brightness(1.08) saturate(1.1) contrast(1.02)',

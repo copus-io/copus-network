@@ -932,10 +932,13 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         {/* Mobile: Hamburger Menu */}
         <button
           onClick={() => setIsMobileMenuOpen(true)}
-          className="lg:hidden flex items-center justify-center h-[43px] cursor-pointer"
+          className="lg:hidden flex items-center justify-center h-[43px] cursor-pointer relative"
           aria-label="Open menu"
         >
           <Menu className="w-6 h-6 text-dark-grey" />
+          {unreadCount > 0 && (
+            <div className="absolute top-2.5 -right-0.5 w-3 h-3 bg-red rounded-full" />
+          )}
         </button>
 
         {/* Desktop: Full Navigation */}
