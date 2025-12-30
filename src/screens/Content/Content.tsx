@@ -153,10 +153,40 @@ export const Content = (): JSX.Element => {
   // Handle modal animation timing and body scroll lock
   useEffect(() => {
     if (isCommentSectionOpen) {
+      console.log('🔒 CommentSection: Locking body scroll');
       // Show modal immediately when opening
       setShouldShowModal(true);
-      // Prevent background scroll
+
+      // Save original styles
+      const originalOverflow = window.getComputedStyle(document.body).overflow;
+      const originalPosition = window.getComputedStyle(document.body).position;
+      console.log('🔒 Original styles:', { overflow: originalOverflow, position: originalPosition });
+
+      // Prevent background scroll with multiple approaches
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+
+      // Prevent touch scrolling on iOS, but allow scrolling within the comment section
+      const preventTouchMove = (e: TouchEvent) => {
+        const target = e.target as Element;
+
+        // Find comment section container (look for elements with overflow-y-auto or similar)
+        const commentContainer = target.closest('[class*="overflow-y"]') ||
+                                target.closest('.comment-section') ||
+                                target.closest('[data-comment-section]');
+
+        if (commentContainer) {
+          // Allow touch events within the comment section
+          return;
+        }
+
+        // Prevent touch events outside the comment section
+        e.preventDefault();
+      };
+
+      document.addEventListener('touchmove', preventTouchMove, { passive: false });
 
       // Auto-scroll to top of comment area after modal is fully open
       const scrollTimer = setTimeout(() => {
@@ -170,21 +200,24 @@ export const Content = (): JSX.Element => {
 
       return () => {
         clearTimeout(scrollTimer);
+        console.log('🔓 CommentSection: Restoring body scroll');
+        // Restore original styles
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.width = '';
+        document.body.style.height = '';
+
+        document.removeEventListener('touchmove', preventTouchMove);
       };
     } else {
-      // Allow background scroll
-      document.body.style.overflow = 'unset';
       // Delay hiding modal until animation completes
       const timer = setTimeout(() => {
         setShouldShowModal(false);
       }, 500); // Match the transition duration
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+      };
     }
-
-    // Cleanup on component unmount
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isCommentSectionOpen]);
 
   // Refresh comment data when comment section opens
@@ -2180,6 +2213,7 @@ export const Content = (): JSX.Element => {
                     <div
                       ref={commentScrollRef}
                       className="h-[75vh] lg:h-[85vh] overflow-y-auto px-0 lg:px-4"
+                      data-comment-section="true"
                       style={{
                         scrollbarWidth: 'thin',
                         scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',

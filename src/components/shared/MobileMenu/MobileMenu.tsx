@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useToast } from '../../ui/toast';
@@ -150,6 +150,55 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
         return null;
     }
   };
+
+  // Prevent background scroll when menu is open
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🔒 MobileMenu: Locking body scroll');
+
+      // Save original styles
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      const originalPosition = window.getComputedStyle(document.body).position;
+
+      console.log('🔒 Original styles:', { overflow: originalStyle, position: originalPosition });
+
+      // Prevent body scroll with multiple approaches
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+
+      console.log('🔒 Body scroll locked');
+
+      // Prevent touch scrolling on iOS, but allow scrolling within the menu
+      const preventTouchMove = (e: TouchEvent) => {
+        // Allow scrolling within the mobile menu
+        const target = e.target as Element;
+        const menuElement = document.querySelector('[role="navigation"][aria-label="Mobile menu"]');
+
+        if (menuElement && menuElement.contains(target)) {
+          // Allow touch events within the menu
+          return;
+        }
+
+        // Prevent touch events outside the menu
+        e.preventDefault();
+      };
+
+      document.addEventListener('touchmove', preventTouchMove, { passive: false });
+
+      return () => {
+        // Restore original styles
+        console.log('🔓 MobileMenu: Restoring body scroll');
+        document.body.style.overflow = originalStyle;
+        document.body.style.position = originalPosition;
+        document.body.style.width = '';
+        document.body.style.height = '';
+
+        document.removeEventListener('touchmove', preventTouchMove);
+      };
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
