@@ -324,60 +324,61 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         onSearchClick={() => setIsSearchOpen(true)}
       />
 
-      {/* Mobile Search Dropdown */}
+      {/* Mobile Search Full Screen */}
       {isSearchOpen && (
-        <div className="lg:hidden fixed top-[50px] left-0 right-0 z-50 px-2.5">
-          {/* Search Input Box */}
-          <div className="flex items-center gap-2 bg-white rounded-2xl px-3 py-2 shadow-lg border border-gray-200" style={{ maxWidth: '280px' }}>
-            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (!e.target.value) {
-                  setShowResults(false);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && searchQuery.trim()) {
-                  performSearch(searchQuery);
-                }
-              }}
-              placeholder="Search..."
-              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
-              autoFocus
-            />
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setShowResults(false);
-                }}
-                className="text-gray-400 hover:text-gray-600 flex-shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+        <div className="lg:hidden fixed inset-0 z-50 bg-white flex flex-col mobile-search-overlay">
+          {/* Search Header */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
             <button
               onClick={handleCloseSearch}
-              className="text-gray-500 text-xs font-medium flex-shrink-0 ml-1"
+              className="text-gray-500 flex-shrink-0"
             >
-              Cancel
+              <ChevronLeft className="w-6 h-6" />
             </button>
+            <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+              <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (!e.target.value) {
+                    setShowResults(false);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    performSearch(searchQuery);
+                  }
+                }}
+                placeholder="Search works, treasuries, users..."
+                className="flex-1 min-w-0 bg-transparent outline-none text-sm text-dark-grey placeholder-gray-400 [font-family:'Lato',Helvetica]"
+                autoFocus
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setShowResults(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Mobile Search Results Dropdown */}
-          {(showResults || (!searchQuery && searchHistory.length > 0)) && (
-            <div className="mt-2 bg-white rounded-2xl shadow-lg border border-gray-200 max-h-[70vh] overflow-y-auto" style={{ maxWidth: '350px' }}>
+          {/* Mobile Search Results - Full Screen */}
+          <div className="flex-1 overflow-y-auto">
             {/* Tab Filters */}
             {showResults && (
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto max-w-full">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto">
                 {searchTabs.map((tab) => (
                   <button
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`text-[13px] [font-family:'Lato',Helvetica] px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
+                    className={`text-[14px] [font-family:'Lato',Helvetica] px-4 py-2 rounded-full border transition-colors whitespace-nowrap ${
                       activeTab === tab.key
                         ? 'text-red border-red bg-[#F23A001A] font-bold'
                         : 'text-gray-500 border-gray-300 font-medium'
@@ -389,14 +390,24 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               </div>
             )}
 
-            {/* Search History (when no query) */}
-            {!searchQuery && !showResults && searchHistory.length > 0 && (
-              <div className="px-4 py-3">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-500 font-medium">Recent searches</span>
+            {/* Empty state - when no history and no results */}
+            {!showResults && searchHistory.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <Search className="w-12 h-12 text-gray-300 mb-4" />
+                <p className="text-gray-500 text-center [font-family:'Lato',Helvetica]">
+                  Search for works, treasuries, and users
+                </p>
+              </div>
+            )}
+
+            {/* Search History (when no query) - show when search is open but no query */}
+            {!showResults && searchHistory.length > 0 && (
+              <div className="px-4 py-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-base text-gray-600 font-medium">Recent searches</span>
                   <button
                     onClick={() => saveSearchHistory([])}
-                    className="text-xs text-gray-400 hover:text-gray-600"
+                    className="text-sm text-gray-400 hover:text-gray-600"
                   >
                     Clear all
                   </button>
@@ -409,10 +420,10 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       // Call performSearch directly with the item
                       await performSearch(item);
                     }}
-                    className="w-full px-3 py-3 text-left text-sm text-dark-grey hover:bg-gray-50 flex items-center justify-between border-b border-gray-100 cursor-pointer"
+                    className="w-full px-3 py-4 text-left text-base text-dark-grey hover:bg-gray-50 flex items-center justify-between border-b border-gray-100 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <Search className="w-4 h-4 text-gray-400" />
+                      <Search className="w-5 h-5 text-gray-400" />
                       <span>{item}</span>
                     </div>
                     <button
@@ -423,7 +434,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       }}
                       className="text-gray-400 hover:text-gray-600 p-1"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 ))}
@@ -432,25 +443,30 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
             {/* Mobile Search Results */}
             {showResults && (
-              <div className="px-3 py-3">
+              <div className="px-4 py-4">
                 {isSearching && articleResults.items.length === 0 && spaceResults.items.length === 0 && userResults.items.length === 0 ? (
                   <div className="py-8 text-center">
                     <div className="animate-spin w-6 h-6 border-2 border-red border-t-transparent rounded-full mx-auto mb-2"></div>
                     <p className="text-gray-500">Searching...</p>
                   </div>
                 ) : activeTab === 'all' ? (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {/* Works Section */}
                     {articleResults.items.length > 0 && (
                       <div>
                         <button
                           onClick={() => handleTabChange('works')}
-                          className="flex items-center mb-2"
+                          className="flex items-center mb-3"
                         >
-                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[13px]">Works</span>
-                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[11px] ml-2">({articleResults.totalCount})</span>
+                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[15px]">Works</span>
+                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[12px] ml-2 flex items-center gap-1">
+                            Show all ({articleResults.totalCount})
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                          </span>
                         </button>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {articleResults.items.slice(0, 3).map((article) => (
                             <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
                               <ArticleCard article={{
@@ -482,12 +498,17 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       <div>
                         <button
                           onClick={() => handleTabChange('treasuries')}
-                          className="flex items-center mb-2"
+                          className="flex items-center mb-3"
                         >
-                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[13px]">Treasuries</span>
-                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[11px] ml-2">({spaceResults.totalCount})</span>
+                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[15px]">Treasuries</span>
+                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[12px] ml-2 flex items-center gap-1">
+                            Show all ({spaceResults.totalCount})
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                          </span>
                         </button>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {spaceResults.items.slice(0, 3).map((space) => (
                             <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                               <TreasuryCard space={space as SpaceData} />
@@ -502,12 +523,17 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       <div>
                         <button
                           onClick={() => handleTabChange('users')}
-                          className="flex items-center mb-2"
+                          className="flex items-center mb-3"
                         >
-                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[13px]">Users</span>
-                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[11px] ml-2">({userResults.totalCount})</span>
+                          <span className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-[15px]">Users</span>
+                          <span className="[font-family:'Lato',Helvetica] text-gray-500 text-[12px] ml-2 flex items-center gap-1">
+                            Show all ({userResults.totalCount})
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                          </span>
                         </button>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-3">
                           {userResults.items.slice(0, 6).map((user) => (
                             <button
                               key={user.id}
@@ -523,10 +549,10 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                                   />
                                 </div>
                                 <div className="text-center min-w-0 w-full">
-                                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[11px] truncate">
+                                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[12px] truncate">
                                     {user.username}
                                   </h3>
-                                  <p className="text-[9px] text-gray-400 truncate">@{user.namespace}</p>
+                                  <p className="text-[10px] text-gray-400 truncate">@{user.namespace}</p>
                                 </div>
                               </div>
                             </button>
@@ -542,7 +568,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     )}
                   </div>
                 ) : activeTab === 'works' ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {articleResults.items.map((article) => (
                       <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
                         <ArticleCard article={{
@@ -569,14 +595,14 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       <button
                         onClick={() => loadMore('works')}
                         disabled={isSearching}
-                        className="w-full py-2 text-sm text-red border border-red rounded-full"
+                        className="w-full py-3 text-sm text-red border border-red rounded-full font-medium"
                       >
                         {isSearching ? 'Loading...' : 'Load more'}
                       </button>
                     )}
                   </div>
                 ) : activeTab === 'treasuries' ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {spaceResults.items.map((space) => (
                       <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                         <TreasuryCard space={space as SpaceData} />
@@ -586,14 +612,14 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       <button
                         onClick={() => loadMore('treasuries')}
                         disabled={isSearching}
-                        className="w-full py-2 text-sm text-red border border-red rounded-full"
+                        className="w-full py-3 text-sm text-red border border-red rounded-full font-medium"
                       >
                         {isSearching ? 'Loading...' : 'Load more'}
                       </button>
                     )}
                   </div>
                 ) : activeTab === 'users' ? (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-3">
                     {userResults.items.map((user) => (
                       <button
                         key={user.id}
@@ -609,10 +635,10 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                             />
                           </div>
                           <div className="text-center min-w-0 w-full">
-                            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[11px] truncate">
+                            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[12px] truncate">
                               {user.username}
                             </h3>
-                            <p className="text-[9px] text-gray-400 truncate">@{user.namespace}</p>
+                            <p className="text-[10px] text-gray-400 truncate">@{user.namespace}</p>
                           </div>
                         </div>
                       </button>
@@ -622,7 +648,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         <button
                           onClick={() => loadMore('users')}
                           disabled={isSearching}
-                          className="w-full py-2 text-sm text-red border border-red rounded-full"
+                          className="w-full py-3 text-sm text-red border border-red rounded-full font-medium"
                         >
                           {isSearching ? 'Loading...' : 'Load more'}
                         </button>
@@ -633,7 +659,6 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               </div>
             )}
           </div>
-        )}
         </div>
       )}
 
