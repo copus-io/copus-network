@@ -57,19 +57,22 @@ export const NotificationListSection = (): JSX.Element => {
       }
 
       .animate-sticky-note-peel {
-        animation: sticky-note-peel 0.3s ease-out forwards;
+        animation: sticky-note-peel 0.25s ease-out forwards;
         transform-origin: bottom left;
         position: relative;
         z-index: 1000;
       }
 
-      /* 优化删除后列表重排速度 */
+      /* 大幅优化删除后列表重排速度 */
       .notification-list {
-        transition: all 0.1s ease-out;
+        transition: all 0.04s ease-out;
       }
 
       .notification-item {
-        transition: transform 0.08s ease-out, opacity 0.08s ease-out;
+        transition: transform 0.04s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                   opacity 0.04s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                   margin 0.04s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                   height 0.04s cubic-bezier(0.25, 0.46, 0.45, 0.94);
       }
     `;
     document.head.appendChild(style);
@@ -102,12 +105,50 @@ export const NotificationListSection = (): JSX.Element => {
     timer: NodeJS.Timeout;
   }>>(new Map());
 
-  // 处理 tab 切换 - 使用 useCallback 来稳定函数引用
-  const handleTabChange = useCallback((tabValue: string) => {
-    if (tabValue !== activeTab) {
-      setActiveTab(tabValue);
+  // 将特定类别的消息标记为已读
+  const markCategoryAsRead = useCallback(async (category: string) => {
+    try {
+      // 根据类别筛选出未读的消息
+      const categoryNotifications = contextNotifications.filter(n => {
+        if (!n.isRead) {
+          switch (category) {
+            case 'treasury':
+              return n.type === "follow" || n.type === "follow_treasury" || n.type === "collect";
+            case 'comment':
+              return n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury";
+            case 'earning':
+              return n.type === "unlock";
+            default:
+              return false;
+          }
+        }
+        return false;
+      });
+
+      // 批量标记该类别的消息为已读
+      for (const notification of categoryNotifications) {
+        await markAsRead(notification.id);
+      }
+    } catch (error) {
+      console.error(`Failed to mark ${category} notifications as read:`, error);
     }
-  }, [activeTab]);
+  }, [contextNotifications, markAsRead]);
+
+  // 处理 tab 切换 - 使用 useCallback 来稳定函数引用
+  const handleTabChange = useCallback(async (tabValue: string) => {
+    if (tabValue !== activeTab) {
+      // 切换tab前，先将该类别的消息标记为已读
+      if (tabValue !== 'treasury' && tabValue !== 'comment' && tabValue !== 'earning') {
+        // 如果不是这三个主要分类，直接切换
+        setActiveTab(tabValue);
+      } else {
+        // 对于主要分类，先标记为已读再切换
+        setActiveTab(tabValue);
+        // 异步标记该类别消息为已读，不阻塞UI切换
+        markCategoryAsRead(tabValue);
+      }
+    }
+  }, [activeTab, markCategoryAsRead]);
 
   // 回复弹窗状态管理
   const [replyModalState, setReplyModalState] = useState<{
@@ -526,7 +567,7 @@ export const NotificationListSection = (): JSX.Element => {
           });
           showToast('Failed to delete notification', 'error');
         }
-      }, 300); // 等待撕下动画完成
+      }, 250); // 等待撕下动画完成（0.25s）
 
       // 保存待删除状态
       setPendingDeletions(prev => new Map(prev).set(id, {
