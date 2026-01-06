@@ -1083,22 +1083,116 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             </div>
 
             {!hideCreateButton && (
-              <Button
-                variant="outline"
-                className="flex items-center gap-[15px] px-5 h-[35px] rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
-                asChild
-              >
-                <Link to="/curate">
-                  <img
-                    className="w-4 h-4"
-                    alt="Vector"
-                    src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
-                  />
-                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5 text-red">
-                    Curate
-                  </span>
-                </Link>
-              </Button>
+              <div className="relative group curate-container">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-[15px] px-5 h-[35px] rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-all duration-300 relative overflow-hidden"
+                  asChild
+                >
+                  <Link to="/curate" className="relative">
+                    {/* 涟漪发现动效 */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      {/* 第一层涟漪 */}
+                      <div className="absolute top-1/2 left-1/2 w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red/30 opacity-0 group-hover:animate-[ripple-1_1.5s_ease-out]"></div>
+                      {/* 第二层涟漪 */}
+                      <div className="absolute top-1/2 left-1/2 w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red/20 opacity-0 group-hover:animate-[ripple-2_1.5s_ease-out_0.3s]"></div>
+                      {/* 第三层涟漪 */}
+                      <div className="absolute top-1/2 left-1/2 w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red/15 opacity-0 group-hover:animate-[ripple-3_1.5s_ease-out_0.6s]"></div>
+                      {/* 发现光点 */}
+                      <div className="absolute w-1 h-1 bg-red/40 rounded-full opacity-0 group-hover:animate-[discover-1_1.2s_ease-out_0.2s]" style={{ top: '20%', left: '80%' }}></div>
+                      <div className="absolute w-1 h-1 bg-red/30 rounded-full opacity-0 group-hover:animate-[discover-2_1.2s_ease-out_0.5s]" style={{ bottom: '25%', left: '15%' }}></div>
+                      <div className="absolute w-1 h-1 bg-red/25 rounded-full opacity-0 group-hover:animate-[discover-3_1.2s_ease-out_0.8s]" style={{ top: '70%', right: '20%' }}></div>
+                    </div>
+
+                    <img
+                      className="w-4 h-4 transition-all duration-300 group-hover:scale-110 relative z-10"
+                      alt="Vector"
+                      src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5 text-red transition-all duration-300 relative z-10">
+                      Curate
+                    </span>
+                  </Link>
+                </Button>
+
+                {/* 涟漪发现动效CSS */}
+                <style dangerouslySetInnerHTML={{
+                  __html: `
+                    @keyframes ripple-1 {
+                      0% {
+                        transform: translate(-50%, -50%) scale(0.5);
+                        opacity: 0.8;
+                      }
+                      100% {
+                        transform: translate(-50%, -50%) scale(8);
+                        opacity: 0;
+                      }
+                    }
+                    @keyframes ripple-2 {
+                      0% {
+                        transform: translate(-50%, -50%) scale(0.5);
+                        opacity: 0.6;
+                      }
+                      100% {
+                        transform: translate(-50%, -50%) scale(6);
+                        opacity: 0;
+                      }
+                    }
+                    @keyframes ripple-3 {
+                      0% {
+                        transform: translate(-50%, -50%) scale(0.5);
+                        opacity: 0.4;
+                      }
+                      100% {
+                        transform: translate(-50%, -50%) scale(4);
+                        opacity: 0;
+                      }
+                    }
+                    @keyframes discover-1 {
+                      0% {
+                        opacity: 0;
+                        transform: scale(0);
+                      }
+                      50% {
+                        opacity: 1;
+                        transform: scale(1.5);
+                      }
+                      100% {
+                        opacity: 0;
+                        transform: scale(0.5);
+                      }
+                    }
+                    @keyframes discover-2 {
+                      0% {
+                        opacity: 0;
+                        transform: scale(0);
+                      }
+                      50% {
+                        opacity: 1;
+                        transform: scale(1.2);
+                      }
+                      100% {
+                        opacity: 0;
+                        transform: scale(0.8);
+                      }
+                    }
+                    @keyframes discover-3 {
+                      0% {
+                        opacity: 0;
+                        transform: scale(0);
+                      }
+                      50% {
+                        opacity: 1;
+                        transform: scale(1);
+                      }
+                      100% {
+                        opacity: 0;
+                        transform: scale(0.3);
+                      }
+                    }
+                  `
+                }} />
+              </div>
             )}
 
             <div className="relative" ref={menuRef}>

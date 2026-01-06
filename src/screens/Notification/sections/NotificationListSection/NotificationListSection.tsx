@@ -16,6 +16,8 @@ import { useNotification } from "../../../../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import { ReplyModal } from "../../../../components/CommentSection/ReplyModal";
 import { Comment } from "../../../../types/comment";
+import { useToast } from "../../../../components/ui/toast";
+import { Trash2, Loader2 } from "lucide-react";
 
 const notificationTabs = [
   { value: "treasury", label: "Treasury" },
@@ -25,6 +27,60 @@ const notificationTabs = [
 
 export const NotificationListSection = (): JSX.Element => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  // 添加撕下便利贴动画的CSS样式
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes sticky-note-peel {
+        0% {
+          transform: translateY(-1rem) rotate(0deg) scale(1);
+          opacity: 1;
+          box-shadow: 1px 1px 10px #c5c5c5;
+        }
+        30% {
+          transform: translateY(-2rem) translateX(2rem) rotate(8deg) scale(0.95);
+          opacity: 0.7;
+          box-shadow: 4px 4px 20px rgba(197, 197, 197, 0.6);
+        }
+        60% {
+          transform: translateY(-3rem) translateX(4rem) rotate(15deg) scale(0.8);
+          opacity: 0.3;
+          box-shadow: 6px 6px 25px rgba(197, 197, 197, 0.3);
+        }
+        100% {
+          transform: translateY(-4rem) translateX(6rem) rotate(20deg) scale(0.6);
+          opacity: 0;
+          box-shadow: 8px 8px 30px rgba(197, 197, 197, 0.1);
+        }
+      }
+
+      .animate-sticky-note-peel {
+        animation: sticky-note-peel 0.25s ease-out forwards;
+        transform-origin: bottom left;
+        position: relative;
+        z-index: 1000;
+      }
+
+      /* 大幅优化删除后列表重排速度 */
+      .notification-list {
+        transition: all 0.04s ease-out;
+      }
+
+      .notification-item {
+        transition: transform 0.04s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                   opacity 0.04s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                   margin 0.04s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                   height 0.04s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   const {
     notifications: contextNotifications,
     isLoading,
@@ -42,12 +98,57 @@ export const NotificationListSection = (): JSX.Element => {
   const previousTabRef = useRef("treasury");
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 处理 tab 切换 - 使用 useCallback 来稳定函数引用
-  const handleTabChange = useCallback((tabValue: string) => {
-    if (tabValue !== activeTab) {
-      setActiveTab(tabValue);
+  // 删除动画状态管理
+  const [deletedNotifications, setDeletedNotifications] = useState<Set<string>>(new Set());
+  const [pendingDeletions, setPendingDeletions] = useState<Map<string, {
+    notification: any;
+    timer: NodeJS.Timeout;
+  }>>(new Map());
+
+  // 将特定类别的消息标记为已读
+  const markCategoryAsRead = useCallback(async (category: string) => {
+    try {
+      // 根据类别筛选出未读的消息
+      const categoryNotifications = contextNotifications.filter(n => {
+        if (!n.isRead) {
+          switch (category) {
+            case 'treasury':
+              return n.type === "follow" || n.type === "follow_treasury" || n.type === "collect";
+            case 'comment':
+              return n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury";
+            case 'earning':
+              return n.type === "unlock";
+            default:
+              return false;
+          }
+        }
+        return false;
+      });
+
+      // 批量标记该类别的消息为已读
+      for (const notification of categoryNotifications) {
+        await markAsRead(notification.id);
+      }
+    } catch (error) {
+      console.error(`Failed to mark ${category} notifications as read:`, error);
     }
-  }, [activeTab]);
+  }, [contextNotifications, markAsRead]);
+
+  // 处理 tab 切换 - 使用 useCallback 来稳定函数引用
+  const handleTabChange = useCallback(async (tabValue: string) => {
+    if (tabValue !== activeTab) {
+      // 切换tab前，先将该类别的消息标记为已读
+      if (tabValue !== 'treasury' && tabValue !== 'comment' && tabValue !== 'earning') {
+        // 如果不是这三个主要分类，直接切换
+        setActiveTab(tabValue);
+      } else {
+        // 对于主要分类，先标记为已读再切换
+        setActiveTab(tabValue);
+        // 异步标记该类别消息为已读，不阻塞UI切换
+        markCategoryAsRead(tabValue);
+      }
+    }
+  }, [activeTab, markCategoryAsRead]);
 
   // 回复弹窗状态管理
   const [replyModalState, setReplyModalState] = useState<{
@@ -120,6 +221,16 @@ export const NotificationListSection = (): JSX.Element => {
       }
     };
   }, [activeTab]); // Only depend on activeTab
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      // 组件卸载时清理所有定时器
+      pendingDeletions.forEach(({ timer }) => {
+        clearTimeout(timer);
+      });
+    };
+  }, [pendingDeletions]);
 
   // Infinite scroll effect with scroll position preservation
   useEffect(() => {
@@ -415,10 +526,62 @@ export const NotificationListSection = (): JSX.Element => {
     await markAllAsRead();
   };
 
-  const handleDeleteNotification = async (id: string | number, e: React.MouseEvent) => {
+  const handleDeleteNotification = async (notification: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    await deleteNotification(id.toString());
+
+    const id = notification.id.toString();
+
+    // 如果已经在删除中，直接返回
+    if (deletedNotifications.has(id)) {
+      return;
+    }
+
+    try {
+      // 立即开始撕下动画
+      setDeletedNotifications(prev => new Set(prev).add(id));
+
+      // 动画播放期间（0.3秒）后执行真正删除
+      const timer = setTimeout(async () => {
+        try {
+          await deleteNotification(id);
+
+          // 清理状态
+          setDeletedNotifications(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+          });
+          setPendingDeletions(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(id);
+            return newMap;
+          });
+
+        } catch (error) {
+          console.error('Delete failed:', error);
+          // 恢复显示
+          setDeletedNotifications(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(id);
+            return newSet;
+          });
+          showToast('Failed to delete notification', 'error');
+        }
+      }, 250); // 等待撕下动画完成（0.25s）
+
+      // 保存待删除状态
+      setPendingDeletions(prev => new Map(prev).set(id, {
+        notification,
+        timer
+      }));
+
+    } catch (error) {
+      console.error('Delete operation failed:', error);
+      showToast('Failed to delete notification', 'error');
+    }
   };
+
+  // 移除撤销功能 - 现在使用直接撕下动画
 
   // 处理回复按钮点击
   const handleReplyClick = (notification: any, e: React.MouseEvent) => {
@@ -904,7 +1067,7 @@ export const NotificationListSection = (): JSX.Element => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-5 pb-[30px]">
+            <div className="flex flex-col gap-5 pb-[30px] notification-list">
               {notificationList
                 .filter((notification) => notification.type === "follow" || notification.type === "follow_treasury" || notification.type === "collect")
                 .map((notification, index) => {
@@ -912,7 +1075,11 @@ export const NotificationListSection = (): JSX.Element => {
                   return (
                     <Card
                       key={notification.id}
-                      className={`p-0 border-0 rounded-lg border-b border-white translate-y-[-1rem] animate-fade-in opacity-0 transition-all duration-200 cursor-pointer ${
+                      className={`p-0 border-0 rounded-lg border-b border-white translate-y-[-1rem] animate-fade-in opacity-0 cursor-pointer notification-item ${
+                        deletedNotifications.has(notification.id.toString())
+                          ? "animate-sticky-note-peel pointer-events-none"
+                          : "transition-all duration-75"
+                      } ${
                         isRead
                           ? "bg-white shadow-none"
                           : "shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
@@ -962,19 +1129,21 @@ export const NotificationListSection = (): JSX.Element => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-0 h-auto hover:bg-transparent"
-                              onClick={(e) => handleDeleteNotification(notification.id, e)}
+                              className="p-0 h-auto hover:bg-transparent group"
+                              onClick={(e) => handleDeleteNotification(notification, e)}
+                              disabled={deletedNotifications.has(notification.id.toString())}
                             >
-                              <img
-                                className="w-4"
-                                alt="Delete notification"
-                                src={notification.deleteIcon}
-                              />
+                              {deletedNotifications.has(notification.id.toString()) ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                              ) : (
+                                <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors duration-200" />
+                              )}
                             </Button>
                           </div>
                         </div>
                       </div>
                     </CardContent>
+
                     </Card>
                   );
                 })}
@@ -998,7 +1167,7 @@ export const NotificationListSection = (): JSX.Element => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-5 pb-[30px]">
+            <div className="flex flex-col gap-5 pb-[30px] notification-list">
               {notificationList
                 .filter((notification) => notification.type === "comment" || notification.type === "comment_reply" || notification.type === "comment_like" || notification.type === "treasury")
                 .map((notification, index) => {
@@ -1006,7 +1175,11 @@ export const NotificationListSection = (): JSX.Element => {
                   return (
                     <Card
                       key={notification.id}
-                      className={`p-0 border-0 rounded-lg border-b border-white translate-y-[-1rem] animate-fade-in opacity-0 transition-all duration-200 cursor-pointer ${
+                      className={`p-0 border-0 rounded-lg border-b border-white translate-y-[-1rem] animate-fade-in opacity-0 cursor-pointer notification-item ${
+                        deletedNotifications.has(notification.id.toString())
+                          ? "animate-sticky-note-peel pointer-events-none"
+                          : "transition-all duration-75"
+                      } ${
                         isRead
                           ? "bg-white shadow-none"
                           : "shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
@@ -1079,19 +1252,21 @@ export const NotificationListSection = (): JSX.Element => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-0 h-auto hover:bg-transparent"
-                              onClick={(e) => handleDeleteNotification(notification.id, e)}
+                              className="p-0 h-auto hover:bg-transparent group"
+                              onClick={(e) => handleDeleteNotification(notification, e)}
+                              disabled={deletedNotifications.has(notification.id.toString())}
                             >
-                              <img
-                                className="w-4"
-                                alt="Delete notification"
-                                src={notification.deleteIcon}
-                              />
+                              {deletedNotifications.has(notification.id.toString()) ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                              ) : (
+                                <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors duration-200" />
+                              )}
                             </Button>
                           </div>
                         </div>
                       </div>
                     </CardContent>
+
                     </Card>
                   );
                 })}
@@ -1115,7 +1290,7 @@ export const NotificationListSection = (): JSX.Element => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-5 pb-[30px]">
+            <div className="flex flex-col gap-5 pb-[30px] notification-list">
               {notificationList
                 .filter((notification) => notification.type === "unlock")
                 .map((notification, index) => {
@@ -1123,7 +1298,11 @@ export const NotificationListSection = (): JSX.Element => {
                   return (
                     <Card
                       key={notification.id}
-                      className={`p-0 border-0 rounded-lg border-b border-white translate-y-[-1rem] animate-fade-in opacity-0 transition-all duration-200 cursor-pointer ${
+                      className={`p-0 border-0 rounded-lg border-b border-white translate-y-[-1rem] animate-fade-in opacity-0 cursor-pointer notification-item ${
+                        deletedNotifications.has(notification.id.toString())
+                          ? "animate-sticky-note-peel pointer-events-none"
+                          : "transition-all duration-75"
+                      } ${
                         isRead
                           ? "bg-white shadow-none"
                           : "shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
@@ -1166,19 +1345,21 @@ export const NotificationListSection = (): JSX.Element => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="p-0 h-auto hover:bg-transparent"
-                              onClick={(e) => handleDeleteNotification(notification.id, e)}
+                              className="p-0 h-auto hover:bg-transparent group"
+                              onClick={(e) => handleDeleteNotification(notification, e)}
+                              disabled={deletedNotifications.has(notification.id.toString())}
                             >
-                              <img
-                                className="w-4"
-                                alt="Delete notification"
-                                src={notification.deleteIcon}
-                              />
+                              {deletedNotifications.has(notification.id.toString()) ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                              ) : (
+                                <Trash2 className="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors duration-200" />
+                              )}
                             </Button>
                           </div>
                         </div>
                       </div>
                     </CardContent>
+
                     </Card>
                   );
                 })}
