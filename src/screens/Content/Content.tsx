@@ -1909,7 +1909,7 @@ export const Content = (): JSX.Element => {
   // ========================================
   return (
     <>
-      {/* Dynamic SEO meta tags for article pages */}
+      {/* Original SEO meta tags */}
       {content && (
         <>
           <SEO
@@ -1923,6 +1923,7 @@ export const Content = (): JSX.Element => {
               author: content.userName,
               section: content.category,
             }}
+            noIndex={false}
           />
           <ArticleSchema
             title={content.title}
@@ -1935,6 +1936,8 @@ export const Content = (): JSX.Element => {
           />
         </>
       )}
+
+
       <div
         className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
         data-model-id="9091:54529"
