@@ -690,7 +690,7 @@ export const Create = (): JSX.Element => {
       // Note: Treasury bindings are now handled in ChooseTreasuriesModal
       // when the user clicks Save - no need to call bindArticles here
 
-      showToast(isEditMode ? 'Updated successfully!' : 'Published successfully!', 'success');
+      showToast(isEditMode ? 'Updated successfully!' : 'Done! You just surfaced an internet gem!', 'success');
 
       // Invalidate article caches to ensure fresh data is loaded
       // This is especially important for edit mode to show updated content

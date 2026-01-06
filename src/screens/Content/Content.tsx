@@ -150,6 +150,17 @@ export const Content = (): JSX.Element => {
   const [shouldShowModal, setShouldShowModal] = useState(false);
   const commentScrollRef = useRef<HTMLDivElement>(null);
 
+  // Show success toast when arriving from browser extension after publishing
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('published') === 'true') {
+      showToast('Done! You just surfaced an internet gem!', 'success');
+      // Remove the query param from URL without reload
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search, showToast]);
+
   // Handle modal animation timing and body scroll lock
   useEffect(() => {
     if (isCommentSectionOpen) {
