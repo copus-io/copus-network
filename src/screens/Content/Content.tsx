@@ -34,6 +34,7 @@ import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, To
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
 import { SEO, ArticleSchema } from '../../components/SEO/SEO';
+import SEOTester from '../../components/SEOTester/SEOTester';
 
 // Debug logging helper - only logs in development mode
 const debugLog = (...args: any[]) => {
@@ -650,6 +651,21 @@ export const Content = (): JSX.Element => {
   // Convert API data to format needed by page - memoized to prevent recomputation
   const content = useMemo(() => {
     if (!article) return null;
+
+    // Parse SEO data from JSON string
+    let seoDescription = '';
+    let seoKeywords = '';
+
+    if (article.seoData) {
+      try {
+        const seoSettings = JSON.parse(article.seoData);
+        seoDescription = seoSettings.description || '';
+        seoKeywords = seoSettings.keywords || '';
+      } catch (error) {
+        console.warn('Failed to parse SEO data:', error);
+      }
+    }
+
     return {
       id: article.uuid,
       title: article.title,
@@ -670,6 +686,9 @@ export const Content = (): JSX.Element => {
       likes: article.likeCount || 0,
       isLiked: article.isLiked || false,
       website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
+      // SEO fields
+      seoDescription: seoDescription,
+      seoKeywords: seoKeywords,
     };
   }, [article]);
 
@@ -1914,7 +1933,8 @@ export const Content = (): JSX.Element => {
         <>
           <SEO
             title={content.title}
-            description={content.description?.substring(0, 160) || content.title}
+            description={content.seoDescription?.trim() || content.description?.substring(0, 160) || content.title}
+            keywords={content.seoKeywords?.trim() || undefined}
             image={content.coverImage || 'https://copus.network/og-image.jpg'}
             url={`https://copus.network/work/${id}`}
             type="article"
@@ -1926,7 +1946,7 @@ export const Content = (): JSX.Element => {
           />
           <ArticleSchema
             title={content.title}
-            description={content.description?.substring(0, 300) || content.title}
+            description={content.seoDescription?.trim() || content.description?.substring(0, 300) || content.title}
             image={content.coverImage || 'https://copus.network/og-image.jpg'}
             url={`https://copus.network/work/${id}`}
             datePublished={article?.createAt ? new Date(article.createAt * 1000).toISOString() : new Date().toISOString()}
@@ -2451,6 +2471,10 @@ export const Content = (): JSX.Element => {
 
       </div>
     </div>
+
+    {/* SEO功能测试组件 - 仅在开发环境显示 */}
+    <SEOTester />
+
     </>
   );
 };

@@ -87,6 +87,15 @@ export interface BackendArticle {
    */
   targetUrlIsLocked?: boolean;
   priceInfo?: PriceInfo;
+  /**
+   * AR Chain ID - Arweave blockchain identifier for content storage
+   */
+  arChainId?: string;
+  /**
+   * SEO settings - custom meta description and keywords
+   */
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 export interface BackendApiResponse {
@@ -123,9 +132,14 @@ export interface Article {
   url?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Arweave chain ID for content storage
+  arChainId?: string;
   // x402 payment fields
   paymentPrice?: string; // Price in USDC (e.g., "0.01")
   isPaymentRequired?: boolean; // Whether content requires payment
+  // SEO fields
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 export interface PageArticleResponse {
@@ -182,6 +196,10 @@ export interface ArticleDetailResponse {
    */
   targetUrlIsLocked?: boolean;
   priceInfo?: PriceInfo;
+  /**
+   * SEO data - JSON string containing custom SEO settings
+   */
+  seoData?: string;
 }
 
 // My created articles API parameters
@@ -213,4 +231,24 @@ export interface MyUnlockedArticleResponse {
   pageIndex: number;
   pageSize: number;
   totalCount: number;
+}
+
+// SEO settings for articles
+export interface SEOSettings {
+  description: string;
+  keywords: string;
+  uuid: string;
+}
+
+// SEO settings with JSON string format for API
+export interface SEOSettingsRequest {
+  uuid: string;
+  seoData: string; // JSON string containing {"keywords": "", "description": ""}
+}
+
+// SEO settings API response
+export interface SEOSettingsResponse {
+  status: number;
+  msg: string;
+  data: boolean;
 }

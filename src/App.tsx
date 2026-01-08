@@ -33,6 +33,7 @@ const Treasury = lazy(() => import("./screens/Treasury/Treasury").then(m => ({ d
 const Create = lazy(() => import("./screens/Create/Create").then(m => ({ default: m.Create })));
 const UserProfile = lazy(() => import("./screens/UserProfile/UserProfile").then(m => ({ default: m.UserProfile })));
 const Space = lazy(() => import("./screens/Space/Space").then(m => ({ default: m.Space })));
+const SEOSet = lazy(() => import("./screens/SEOSet/SEOSet").then(m => ({ default: m.SEOSet })));
 
 // Lazy loaded route modules
 const NotLogIn = lazy(() => import("./routes/NotLogIn/screens/NotLogIn").then(m => ({ default: m.NotLogIn })));
@@ -189,6 +190,14 @@ const router = createBrowserRouter([
   {
     path: "/signup",
     element: <LazyRoute><SignUp /></LazyRoute>,
+  },
+  {
+    path: "/seoSet",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <LazyRoute><SEOSet /></LazyRoute>
+      </AuthGuard>
+    ),
   },
   // 404 catch-all route - must be last
   {

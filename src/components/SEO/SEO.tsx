@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 interface SEOProps {
   title?: string;
   description?: string;
+  keywords?: string;
   image?: string;
   url?: string;
   type?: 'website' | 'article';
@@ -24,6 +25,7 @@ const TWITTER_HANDLE = '@copus_network';
 export const SEO = ({
   title,
   description = DEFAULT_DESCRIPTION,
+  keywords,
   image = DEFAULT_IMAGE,
   url,
   type = 'website',
@@ -38,6 +40,7 @@ export const SEO = ({
       {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
+      {keywords && <meta name="keywords" content={keywords} />}
       {noIndex && <meta name="robots" content="noindex,nofollow" />}
       <link rel="canonical" href={canonicalUrl} />
 
