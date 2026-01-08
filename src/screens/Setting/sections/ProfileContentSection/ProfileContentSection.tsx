@@ -17,9 +17,14 @@ import profileDefaultAvatar from "../../../../assets/images/profile-default.svg"
 
 // Message type mapping - matches API msgType values
 const MESSAGE_TYPE_MAP = {
-  0: { label: "Show all notifications", id: "all-notifications" },
-  1: { label: "Show treasured notifications", id: "like-notifications" },
-  999: { label: "Show system notifications", id: "system-notifications" },
+  1: { label: "Receive daily email summaries from Copus", id: "email-summaries" },
+  2: { label: "Show new treasure collections", id: "treasure-collections" },
+  3: { label: "Show new followers of your treasury", id: "treasury-followers" },
+  4: { label: "Show new treasures from followed treasuries", id: "followed-treasures" },
+  5: { label: "Show new comments", id: "new-comments" },
+  6: { label: "Show new comment replies", id: "comment-replies" },
+  7: { label: "Show new comment likes", id: "comment-likes" },
+  8: { label: "Show new earnings", id: "new-earnings" },
 } as const;
 
 interface ProfileContentSectionProps {
@@ -155,17 +160,17 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         setNotificationLoading(true);
         const settings = await AuthService.getMessageNotificationSettings();
 
-        // Use the API response directly - it returns the msgTypes that are available
-        // If API returns empty, use default msgTypes from MESSAGE_TYPE_MAP
-        if (settings && settings.length > 0) {
-          setNotificationSettings(settings);
-        } else {
-          // Default fallback: all notification types ON
-          const defaultMessageTypes = Object.keys(MESSAGE_TYPE_MAP).map(Number);
-          setNotificationSettings(
-            defaultMessageTypes.map(msgType => ({ msgType, isOpen: true }))
-          );
-        }
+        // Always show all 8 notification types from MESSAGE_TYPE_MAP
+        // Merge with API response - use API values where available, default to ON for missing
+        const allMessageTypes = Object.keys(MESSAGE_TYPE_MAP).map(Number);
+        const settingsMap = new Map(settings?.map(s => [s.msgType, s.isOpen]) || []);
+
+        const mergedSettings = allMessageTypes.map(msgType => ({
+          msgType,
+          isOpen: settingsMap.has(msgType) ? settingsMap.get(msgType)! : true
+        }));
+
+        setNotificationSettings(mergedSettings);
       } catch (error) {
         console.error('❌ Failed to get notification settings:', error);
         showToast('Failed to get notification settings, please try again', 'error');

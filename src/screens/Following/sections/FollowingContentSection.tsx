@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
+import { ArticleCardSkeleton } from "../../../components/ui/skeleton";
 import { AuthService } from "../../../services/authService";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
@@ -339,11 +340,61 @@ export const FollowingContentSection = (): JSX.Element => {
         </div>
       </section>
 
+      {/* Selected Treasury Info Header */}
+      {selectedTab !== "all" && (() => {
+        const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
+        if (!selectedSpace) return null;
+
+        // Get display name and owner name - check multiple possible fields
+        const isDefaultSpace = selectedSpace.spaceType === 1 || selectedSpace.spaceType === 2 || selectedSpace.name?.toLowerCase().includes('default');
+        const ownerName = selectedSpace.ownerInfo?.username
+          || selectedSpace.authorInfo?.username
+          || (selectedSpace as any).userInfo?.username
+          || (selectedSpace as any).userName
+          || (selectedSpace as any).ownerName
+          || (selectedSpace as any).creator?.username
+          || (selectedSpace as any).user?.username;
+        const ownerNamespace = selectedSpace.ownerInfo?.namespace
+          || (selectedSpace as any).userInfo?.namespace
+          || (selectedSpace as any).creator?.namespace
+          || (selectedSpace as any).user?.namespace;
+        const displayName = (isDefaultSpace && selectedSpace.resolvedUsername) ? selectedSpace.resolvedUsername : selectedSpace.name;
+
+        return (
+          <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
+            <button
+              onClick={() => navigate(`/space/${selectedSpace.namespace}`)}
+              className="flex items-center gap-2 cursor-pointer group"
+            >
+              <h2 className="[font-family:'Lato',Helvetica] font-semibold text-xl text-off-black">
+                {displayName}
+              </h2>
+              {ownerName && (
+                <>
+                  <span className="text-gray-400">·</span>
+                  <span className="[font-family:'Lato',Helvetica] text-base text-medium-dark-grey">
+                    by {ownerName}
+                  </span>
+                </>
+              )}
+              <img
+                className="w-[20px] h-[10px] transition-transform duration-200 group-hover:translate-x-1"
+                alt="Arrow"
+                src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
+                style={{ filter: 'brightness(0) saturate(100%) invert(25%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%)' }}
+              />
+            </button>
+          </section>
+        );
+      })()}
+
       {/* Content Cards Section */}
       <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
         {loadingArticles ? (
-          <div className="flex items-center justify-center w-full py-20">
-            <div className="text-gray-500">Loading articles...</div>
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+            {Array.from({ length: 15 }).map((_, index) => (
+              <ArticleCardSkeleton key={index} />
+            ))}
           </div>
         ) : displayedArticles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
@@ -359,7 +410,7 @@ export const FollowingContentSection = (): JSX.Element => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
             {displayedArticles.map((article) => {
               const card = transformArticleToCard(article);
               const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
