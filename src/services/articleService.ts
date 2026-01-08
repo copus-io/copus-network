@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams } from '../types/article';
+import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
@@ -86,9 +86,14 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     isLiked: backendArticle.isLiked, // Preserve like status returned from server
     website: getWebsiteFromUrl(backendArticle.targetUrl),
     url: backendArticle.targetUrl,
+    // Arweave chain ID for content storage
+    arChainId: backendArticle.arChainId,
     // x402 payment fields
     isPaymentRequired: backendArticle.targetUrlIsLocked || false,
     paymentPrice: backendArticle.priceInfo?.price?.toString() || undefined,
+    // SEO fields
+    seoDescription: backendArticle.seoDescription,
+    seoKeywords: backendArticle.seoKeywords,
   };
 
   return transformedArticle;
@@ -404,5 +409,42 @@ export const publishArticle = async (articleData: {
   } catch (error) {
     console.error('❌ Failed to publish article:', error);
     throw new Error(`Failed to publish article: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Set SEO settings for an article
+export const setSEOSettings = async (seoData: SEOSettings): Promise<boolean> => {
+  const endpoint = '/client/author/article/setSeo';
+
+  // Use direct format as per original API spec: {description, keywords, uuid}
+  const requestData = {
+    uuid: seoData.uuid,
+    description: seoData.description,
+    keywords: seoData.keywords
+  };
+
+  try {
+    console.log('📤 Setting SEO for article:', {
+      uuid: seoData.uuid,
+      description: seoData.description?.substring(0, 50) + '...',
+      keywords: seoData.keywords,
+      requestData: requestData
+    });
+
+    const response = await apiRequest<SEOSettingsResponse>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+
+    console.log('📥 SEO settings API response:', response);
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'Failed to set SEO settings');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Failed to set SEO settings:', error);
+    throw new Error(`Failed to set SEO settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

@@ -1,0 +1,1 @@
+export { SEOSettingsModal } from './SEOSettingsModal';
