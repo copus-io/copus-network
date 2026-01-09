@@ -2020,7 +2020,7 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <div className="relative w-full lg:w-[360px] h-[200px] lg:h-[203px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
+                <div className="relative w-full lg:w-[400px] h-[200px] lg:h-[225px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
                      style={{
                        backgroundImage: `url(${getValidDetailImageUrl(content.coverImage)})`
                      }}
