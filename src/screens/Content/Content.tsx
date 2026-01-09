@@ -1982,7 +1982,7 @@ export const Content = (): JSX.Element => {
             <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
-                <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
+                <div className="flex flex-col lg:h-[250px] items-start justify-start relative flex-1 grow gap-6">
                   {/* Title with x402 payment badge above on mobile, inline on desktop */}
                   <div className="flex flex-col gap-2 w-full">
                     {/* Edit button - only visible to author, positioned above title */}
@@ -1995,7 +1995,7 @@ export const Content = (): JSX.Element => {
                     })() && (
                       <button
                         onClick={() => navigate(`/curate?edit=${article.uuid}`)}
-                        className="w-[32px] h-[32px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0 border border-solid border-[#686868] hover:bg-gray-100 self-start"
+                        className="w-[32px] h-[32px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0 border border-solid border-[#686868] bg-transparent hover:bg-gray-100 self-start"
                         aria-label="Edit"
                         title="Edit"
                       >
@@ -2034,7 +2034,7 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <div className="relative w-full lg:w-[280px] h-[158px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
+                <div className="relative w-full lg:w-[400px] h-[200px] lg:h-[225px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
                      style={{
                        backgroundImage: `url(${getValidDetailImageUrl(content.coverImage)})`
                      }}

@@ -53,6 +53,30 @@ const SpaceInfoSection = ({
   // Hide edit button for default treasuries (spaceType 1 = Collections, 2 = Curations)
   const canEdit = isOwner && spaceType !== 1 && spaceType !== 2;
   const [showUnfollowDropdown, setShowUnfollowDropdown] = useState(false);
+  const [showShareDropdown, setShowShareDropdown] = useState(false);
+  const { showToast } = useToast();
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast('Link copied to clipboard!', 'success');
+      setShowShareDropdown(false);
+    } catch (error) {
+      showToast('Failed to copy link', 'error');
+    }
+  };
+
+  const handleShareOnX = () => {
+    const encodedUrl = encodeURIComponent(window.location.href);
+    const encodedText = encodeURIComponent(spaceName);
+    window.open(
+      `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+    setShowShareDropdown(false);
+  };
+
   return (
     <section className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto] px-4 lg:px-0">
       <header className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
@@ -107,15 +131,15 @@ const SpaceInfoSection = ({
         ) : !isOwner && (
           // Follow/Following button for non-owner
           isFollowing ? (
-            // Following state with dropdown - white background
+            // Following state with dropdown - transparent background
             <div className="relative">
               <button
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-white"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-transparent"
                 aria-label="Following options"
                 type="button"
                 onClick={() => setShowUnfollowDropdown(!showUnfollowDropdown)}
               >
-                <svg width="22" height="22" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
+                <svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
                   <path d="M12.6967 13.0467C15.1618 13.0467 17.1671 11.0411 17.1671 8.57603C17.1671 6.11099 15.1618 4.10566 12.6967 4.10566C10.2317 4.10566 8.22603 6.11099 8.22603 8.57603C8.22603 11.0411 10.2317 13.0467 12.6967 13.0467ZM12.6967 4.80566C14.7759 4.80566 16.4671 6.49688 16.4671 8.57603C16.4671 10.6552 14.7759 12.3467 12.6967 12.3467C10.6176 12.3467 8.92603 10.6552 8.92603 8.57603C8.92603 6.49688 10.6176 4.80566 12.6967 4.80566Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
                   <path d="M25.2021 14.8904C25.3276 14.1689 25.3935 13.432 25.3935 12.6967C25.3935 5.6957 19.6978 0 12.6967 0C5.6957 0 0 5.6957 0 12.6967C0 19.6978 5.6957 25.3935 12.6967 25.3935C13.4323 25.3935 14.1695 25.328 14.8906 25.2024C16.238 26.9034 18.3166 28 20.65 28C24.7027 28 28 24.7027 28 20.65C28 18.3165 26.9033 16.2378 25.2021 14.8904ZM12.6967 0.7C19.3119 0.7 24.6935 6.08159 24.6935 12.6967C24.6935 13.2802 24.6495 13.8647 24.5657 14.4409C23.4305 13.7224 22.09 13.3 20.65 13.3C18.8694 13.3 17.2353 13.9372 15.962 14.9946C14.9104 14.6529 13.8131 14.4754 12.6967 14.4754C8.76307 14.4754 5.13302 16.7004 3.32408 20.1724C1.68397 18.1203 0.7 15.522 0.7 12.6967C0.7 6.08159 6.08159 0.7 12.6967 0.7ZM12.6967 24.6935C9.17831 24.6935 6.00907 23.1709 3.81268 20.7502C5.45388 17.3611 8.92765 15.1754 12.6967 15.1754C13.6074 15.1754 14.5029 15.306 15.3694 15.5496C14.0911 16.8727 13.3 18.6694 13.3 20.65C13.3 22.0899 13.7223 23.4303 14.4408 24.5655C13.8649 24.6492 13.2804 24.6935 12.6967 24.6935ZM20.65 27.3C16.9832 27.3 14 24.3168 14 20.65C14 16.9832 16.9832 14 20.65 14C24.3168 14 27.3 16.9832 27.3 20.65C27.3 24.3168 24.3168 27.3 20.65 27.3Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
                   <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
@@ -137,9 +161,9 @@ const SpaceInfoSection = ({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowUnfollowDropdown(false)}
                   />
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-[50px] shadow-lg z-20 w-full">
                     <button
-                      className="w-full px-4 py-2 text-left text-red hover:bg-gray-50 rounded-lg [font-family:'Lato',Helvetica] font-medium text-base"
+                      className="w-full px-4 py-2 text-center text-red hover:bg-gray-50 rounded-[50px] [font-family:'Lato',Helvetica] font-medium text-base"
                       onClick={() => {
                         setShowUnfollowDropdown(false);
                         onUnfollow();
@@ -160,7 +184,7 @@ const SpaceInfoSection = ({
               type="button"
               onClick={onFollow}
             >
-              <svg width="22" height="22" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
+              <svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
                 <path d="M12.6967 13.0467C15.1618 13.0467 17.1671 11.0411 17.1671 8.57603C17.1671 6.11099 15.1618 4.10566 12.6967 4.10566C10.2317 4.10566 8.22603 6.11099 8.22603 8.57603C8.22603 11.0411 10.2317 13.0467 12.6967 13.0467ZM12.6967 4.80566C14.7759 4.80566 16.4671 6.49688 16.4671 8.57603C16.4671 10.6552 14.7759 12.3467 12.6967 12.3467C10.6176 12.3467 8.92603 10.6552 8.92603 8.57603C8.92603 6.49688 10.6176 4.80566 12.6967 4.80566Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
                 <path d="M25.2021 14.8904C25.3276 14.1689 25.3935 13.432 25.3935 12.6967C25.3935 5.6957 19.6978 0 12.6967 0C5.6957 0 0 5.6957 0 12.6967C0 19.6978 5.6957 25.3935 12.6967 25.3935C13.4323 25.3935 14.1695 25.328 14.8906 25.2024C16.238 26.9034 18.3166 28 20.65 28C24.7027 28 28 24.7027 28 20.65C28 18.3165 26.9033 16.2378 25.2021 14.8904ZM12.6967 0.7C19.3119 0.7 24.6935 6.08159 24.6935 12.6967C24.6935 13.2802 24.6495 13.8647 24.5657 14.4409C23.4305 13.7224 22.09 13.3 20.65 13.3C18.8694 13.3 17.2353 13.9372 15.962 14.9946C14.9104 14.6529 13.8131 14.4754 12.6967 14.4754C8.76307 14.4754 5.13302 16.7004 3.32408 20.1724C1.68397 18.1203 0.7 15.522 0.7 12.6967C0.7 6.08159 6.08159 0.7 12.6967 0.7ZM12.6967 24.6935C9.17831 24.6935 6.00907 23.1709 3.81268 20.7502C5.45388 17.3611 8.92765 15.1754 12.6967 15.1754C13.6074 15.1754 14.5029 15.306 15.3694 15.5496C14.0911 16.8727 13.3 18.6694 13.3 20.65C13.3 22.0899 13.7223 23.4303 14.4408 24.5655C13.8649 24.6492 13.2804 24.6935 12.6967 24.6935ZM20.65 27.3C16.9832 27.3 14 24.3168 14 20.65C14 16.9832 16.9832 14 20.65 14C24.3168 14 27.3 16.9832 27.3 20.65C27.3 24.3168 24.3168 27.3 20.65 27.3Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
                 <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
@@ -172,18 +196,56 @@ const SpaceInfoSection = ({
           )
         )}
 
-        <button
-          className="relative w-[38px] h-[38px] cursor-pointer hover:opacity-80 transition-opacity"
-          aria-label="Share space"
-          type="button"
-          onClick={onShare}
-        >
-          <img
-            className="w-full h-full"
-            alt="Share"
-            src="https://c.animaapp.com/iU3q4Rrw/img/share-1.svg"
-          />
-        </button>
+        <div className="relative">
+          <button
+            className="relative w-[38px] h-[38px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center p-0"
+            aria-label="Share space"
+            type="button"
+            onClick={() => setShowShareDropdown(!showShareDropdown)}
+          >
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" fill="transparent" />
+              <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" stroke="#2191FB" />
+              <g transform="translate(19, 19) scale(0.8) translate(-19, -19)">
+                <path d="M12.0243 28H22.96C24.6286 28 25.9843 26.5628 25.9843 24.7946C25.9843 24.5772 25.8186 24.4014 25.6129 24.4014C25.4086 24.4014 25.2414 24.5772 25.2414 24.7946C25.2414 26.1294 24.2186 27.2149 22.9586 27.2149H12.0243C10.7657 27.2149 9.74143 26.1294 9.74143 24.7946V13.2054C9.74143 11.872 10.7657 10.7865 12.0243 10.7865C12.23 10.7865 12.3957 10.6106 12.3957 10.3932C12.3957 10.1758 12.23 10 12.0243 10C10.3571 10 9 11.4372 9 13.2054V24.7946C9 26.5614 10.3571 27.9986 12.0243 27.9986V28Z" fill="#2191FB" />
+                <path d="M21.9586 10.1454V13.3245C17.3929 13.6083 14.4543 16.246 12.9814 21.3829L12.64 22.5695L13.5629 21.808C16.8043 19.1302 19.3343 18.1762 21.9586 18.6649V21.8938L29 16.0203L21.9586 10.1454ZM22.4071 17.9546C19.1471 17.2208 16.3114 18.7314 14.0757 20.4192C15.59 16.2529 18.24 14.2342 22.3414 14.0929L22.7 14.0805V11.764L27.8 16.0203L22.7 20.2752V18.0211L22.4071 17.9546Z" fill="#2191FB" />
+              </g>
+            </svg>
+          </button>
+
+          {/* Share dropdown menu */}
+          {showShareDropdown && (
+            <>
+              {/* Backdrop to close dropdown when clicking outside */}
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowShareDropdown(false)}
+              />
+              <div className="absolute top-full right-0 mt-1 w-[183px] bg-white rounded-[15px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] z-20">
+                <button
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-4 pl-5 pr-5 py-5 w-full text-left rounded-t-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)]"
+                >
+                  <svg className="w-[18px] h-[18px]" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.5 10.5C7.89782 11.0052 8.40206 11.4133 8.97664 11.6955C9.55121 11.9777 10.1815 12.1267 10.8214 12.1321C11.4613 12.1375 12.094 12.0992 12.6729 11.8202C13.2518 11.5412 13.7627 11.1286 14.1675 10.6125L16.4175 8.3625C17.1977 7.53784 17.6309 6.44599 17.6221 5.31271C17.6133 4.17943 17.163 3.09441 16.3705 2.28195C15.578 1.46948 14.503 1.01919 13.3797 1.01039C12.2564 1.00159 11.1746 1.43483 10.35 2.215L9.1125 3.4525" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10.5 7.5C10.1022 6.99475 9.59794 6.58669 9.02336 6.30453C8.44879 6.02237 7.81854 5.87331 7.17863 5.86789C6.53872 5.86247 5.90598 5.90083 5.32709 6.17978C4.7482 6.45873 4.23726 6.87144 3.8325 7.3875L1.5825 9.6375C0.802299 10.4622 0.369062 11.554 0.377857 12.6873C0.386652 13.8206 0.836948 14.9056 1.62948 15.718C2.422 16.5305 3.49702 16.9808 4.62031 16.9896C5.74359 16.9984 6.82543 16.5652 7.65 15.785L8.8875 14.5475" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Copy link</span>
+                </button>
+
+                <button
+                  onClick={handleShareOnX}
+                  className="flex items-center gap-4 pl-5 pr-5 py-5 w-full text-left rounded-b-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)] border-t border-[#e0e0e0]"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#454545"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Share on X</span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </section>
   );
