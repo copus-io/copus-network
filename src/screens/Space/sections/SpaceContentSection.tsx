@@ -53,6 +53,30 @@ const SpaceInfoSection = ({
   // Hide edit button for default treasuries (spaceType 1 = Collections, 2 = Curations)
   const canEdit = isOwner && spaceType !== 1 && spaceType !== 2;
   const [showUnfollowDropdown, setShowUnfollowDropdown] = useState(false);
+  const [showShareDropdown, setShowShareDropdown] = useState(false);
+  const { showToast } = useToast();
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast('Link copied to clipboard!', 'success');
+      setShowShareDropdown(false);
+    } catch (error) {
+      showToast('Failed to copy link', 'error');
+    }
+  };
+
+  const handleShareOnX = () => {
+    const encodedUrl = encodeURIComponent(window.location.href);
+    const encodedText = encodeURIComponent(spaceName);
+    window.open(
+      `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+    setShowShareDropdown(false);
+  };
+
   return (
     <section className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto] px-4 lg:px-0">
       <header className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
@@ -172,21 +196,56 @@ const SpaceInfoSection = ({
           )
         )}
 
-        <button
-          className="relative w-[38px] h-[38px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center p-0"
-          aria-label="Share space"
-          type="button"
-          onClick={onShare}
-        >
-          <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" fill="transparent" />
-            <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" stroke="#2191FB" />
-            <g transform="translate(19, 19) scale(0.8) translate(-19, -19)">
-              <path d="M12.0243 28H22.96C24.6286 28 25.9843 26.5628 25.9843 24.7946C25.9843 24.5772 25.8186 24.4014 25.6129 24.4014C25.4086 24.4014 25.2414 24.5772 25.2414 24.7946C25.2414 26.1294 24.2186 27.2149 22.9586 27.2149H12.0243C10.7657 27.2149 9.74143 26.1294 9.74143 24.7946V13.2054C9.74143 11.872 10.7657 10.7865 12.0243 10.7865C12.23 10.7865 12.3957 10.6106 12.3957 10.3932C12.3957 10.1758 12.23 10 12.0243 10C10.3571 10 9 11.4372 9 13.2054V24.7946C9 26.5614 10.3571 27.9986 12.0243 27.9986V28Z" fill="#2191FB" />
-              <path d="M21.9586 10.1454V13.3245C17.3929 13.6083 14.4543 16.246 12.9814 21.3829L12.64 22.5695L13.5629 21.808C16.8043 19.1302 19.3343 18.1762 21.9586 18.6649V21.8938L29 16.0203L21.9586 10.1454ZM22.4071 17.9546C19.1471 17.2208 16.3114 18.7314 14.0757 20.4192C15.59 16.2529 18.24 14.2342 22.3414 14.0929L22.7 14.0805V11.764L27.8 16.0203L22.7 20.2752V18.0211L22.4071 17.9546Z" fill="#2191FB" />
-            </g>
-          </svg>
-        </button>
+        <div className="relative">
+          <button
+            className="relative w-[38px] h-[38px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center p-0"
+            aria-label="Share space"
+            type="button"
+            onClick={() => setShowShareDropdown(!showShareDropdown)}
+          >
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" fill="transparent" />
+              <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" stroke="#2191FB" />
+              <g transform="translate(19, 19) scale(0.8) translate(-19, -19)">
+                <path d="M12.0243 28H22.96C24.6286 28 25.9843 26.5628 25.9843 24.7946C25.9843 24.5772 25.8186 24.4014 25.6129 24.4014C25.4086 24.4014 25.2414 24.5772 25.2414 24.7946C25.2414 26.1294 24.2186 27.2149 22.9586 27.2149H12.0243C10.7657 27.2149 9.74143 26.1294 9.74143 24.7946V13.2054C9.74143 11.872 10.7657 10.7865 12.0243 10.7865C12.23 10.7865 12.3957 10.6106 12.3957 10.3932C12.3957 10.1758 12.23 10 12.0243 10C10.3571 10 9 11.4372 9 13.2054V24.7946C9 26.5614 10.3571 27.9986 12.0243 27.9986V28Z" fill="#2191FB" />
+                <path d="M21.9586 10.1454V13.3245C17.3929 13.6083 14.4543 16.246 12.9814 21.3829L12.64 22.5695L13.5629 21.808C16.8043 19.1302 19.3343 18.1762 21.9586 18.6649V21.8938L29 16.0203L21.9586 10.1454ZM22.4071 17.9546C19.1471 17.2208 16.3114 18.7314 14.0757 20.4192C15.59 16.2529 18.24 14.2342 22.3414 14.0929L22.7 14.0805V11.764L27.8 16.0203L22.7 20.2752V18.0211L22.4071 17.9546Z" fill="#2191FB" />
+              </g>
+            </svg>
+          </button>
+
+          {/* Share dropdown menu */}
+          {showShareDropdown && (
+            <>
+              {/* Backdrop to close dropdown when clicking outside */}
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowShareDropdown(false)}
+              />
+              <div className="absolute top-full right-0 mt-1 w-[183px] bg-white rounded-[15px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] z-20">
+                <button
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-4 pl-5 pr-5 py-5 w-full text-left rounded-t-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)]"
+                >
+                  <svg className="w-[18px] h-[18px]" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.5 10.5C7.89782 11.0052 8.40206 11.4133 8.97664 11.6955C9.55121 11.9777 10.1815 12.1267 10.8214 12.1321C11.4613 12.1375 12.094 12.0992 12.6729 11.8202C13.2518 11.5412 13.7627 11.1286 14.1675 10.6125L16.4175 8.3625C17.1977 7.53784 17.6309 6.44599 17.6221 5.31271C17.6133 4.17943 17.163 3.09441 16.3705 2.28195C15.578 1.46948 14.503 1.01919 13.3797 1.01039C12.2564 1.00159 11.1746 1.43483 10.35 2.215L9.1125 3.4525" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10.5 7.5C10.1022 6.99475 9.59794 6.58669 9.02336 6.30453C8.44879 6.02237 7.81854 5.87331 7.17863 5.86789C6.53872 5.86247 5.90598 5.90083 5.32709 6.17978C4.7482 6.45873 4.23726 6.87144 3.8325 7.3875L1.5825 9.6375C0.802299 10.4622 0.369062 11.554 0.377857 12.6873C0.386652 13.8206 0.836948 14.9056 1.62948 15.718C2.422 16.5305 3.49702 16.9808 4.62031 16.9896C5.74359 16.9984 6.82543 16.5652 7.65 15.785L8.8875 14.5475" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Copy link</span>
+                </button>
+
+                <button
+                  onClick={handleShareOnX}
+                  className="flex items-center gap-4 pl-5 pr-5 py-5 w-full text-left rounded-b-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)] border-t border-[#e0e0e0]"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#454545"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Share on X</span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </section>
   );
