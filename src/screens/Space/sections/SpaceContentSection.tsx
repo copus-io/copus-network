@@ -173,12 +173,12 @@ const SpaceInfoSection = ({
         )}
 
         <button
-          className="relative w-[38px] h-[38px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center p-0"
+          className="relative w-[30px] h-[30px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center p-0"
           aria-label="Share space"
           type="button"
           onClick={onShare}
         >
-          <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="30" height="30" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" fill="transparent" />
             <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" stroke="#2191FB" />
             <path d="M12.0243 28H22.96C24.6286 28 25.9843 26.5628 25.9843 24.7946C25.9843 24.5772 25.8186 24.4014 25.6129 24.4014C25.4086 24.4014 25.2414 24.5772 25.2414 24.7946C25.2414 26.1294 24.2186 27.2149 22.9586 27.2149H12.0243C10.7657 27.2149 9.74143 26.1294 9.74143 24.7946V13.2054C9.74143 11.872 10.7657 10.7865 12.0243 10.7865C12.23 10.7865 12.3957 10.6106 12.3957 10.3932C12.3957 10.1758 12.23 10 12.0243 10C10.3571 10 9 11.4372 9 13.2054V24.7946C9 26.5614 10.3571 27.9986 12.0243 27.9986V28Z" fill="#2191FB" />
