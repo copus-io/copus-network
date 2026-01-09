@@ -137,9 +137,9 @@ const SpaceInfoSection = ({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowUnfollowDropdown(false)}
                   />
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-[50px] shadow-lg z-20 w-full">
                     <button
-                      className="w-full px-4 py-2 text-left text-red hover:bg-gray-50 rounded-lg [font-family:'Lato',Helvetica] font-medium text-base"
+                      className="w-full px-4 py-2 text-center text-red hover:bg-gray-50 rounded-[50px] [font-family:'Lato',Helvetica] font-medium text-base"
                       onClick={() => {
                         setShowUnfollowDropdown(false);
                         onUnfollow();
@@ -178,10 +178,11 @@ const SpaceInfoSection = ({
           type="button"
           onClick={onShare}
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13.5 6.75H11.25C10.6533 6.75 10.081 6.98705 9.65901 7.40901C9.23705 7.83097 9 8.40326 9 9V15.75" stroke="#2191FB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M11.25 4.5L13.5 6.75L11.25 9" stroke="#2191FB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M6.75 6.75H5.25C4.85218 6.75 4.47064 6.90804 4.18934 7.18934C3.90804 7.47064 3.75 7.85218 3.75 8.25V14.25C3.75 14.6478 3.90804 15.0294 4.18934 15.3107C4.47064 15.592 4.85218 15.75 5.25 15.75H12.75C13.1478 15.75 13.5294 15.592 13.8107 15.3107C14.092 15.0294 14.25 14.6478 14.25 14.25V12" stroke="#2191FB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="15" cy="3.333" r="2.5" stroke="#2191FB" strokeWidth="1.5"/>
+            <circle cx="5" cy="10" r="2.5" stroke="#2191FB" strokeWidth="1.5"/>
+            <circle cx="15" cy="16.667" r="2.5" stroke="#2191FB" strokeWidth="1.5"/>
+            <path d="M7.158 11.258l5.684 3.317M12.842 5.425L7.158 8.742" stroke="#2191FB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
       </div>
