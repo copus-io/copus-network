@@ -17,14 +17,15 @@ import profileDefaultAvatar from "../../../../assets/images/profile-default.svg"
 
 // Message type mapping - matches API msgType values
 const MESSAGE_TYPE_MAP = {
-  1: { label: "Receive daily email summaries from Copus", id: "email-summaries" },
-  2: { label: "Show new treasure collections", id: "treasure-collections" },
-  3: { label: "Show new followers of your treasury", id: "treasury-followers" },
-  4: { label: "Show new treasures from followed treasuries", id: "followed-treasures" },
-  5: { label: "Show new comments", id: "new-comments" },
+  2: { label: "Show new followers of your treasury", id: "treasury-followers" },
+  3: { label: "Show new treasures from followed treasuries", id: "followed-treasures" },
+  4: { label: "Show new comments", id: "new-comments" },
   6: { label: "Show new comment replies", id: "comment-replies" },
   7: { label: "Show new comment likes", id: "comment-likes" },
   8: { label: "Show new earnings", id: "new-earnings" },
+  9: { label: "Show new treasure collections", id: "treasure-collections" },
+  998: { label: "Receive daily email summaries from Copus", id: "email-summaries" },
+  999: { label: "Show system notifications", id: "system-notifications" },
 } as const;
 
 interface ProfileContentSectionProps {
