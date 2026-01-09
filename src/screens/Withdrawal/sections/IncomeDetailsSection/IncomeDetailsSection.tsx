@@ -417,7 +417,7 @@ export const IncomeDetailsSection = ({
       </div>
 
       {/* History Table Header */}
-      <div className="flex items-start gap-4 px-3 sm:px-5 py-2 sm:py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-100">
+      <div className="flex items-start gap-4 px-3 sm:px-5 py-2 sm:py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[#e0e0e0]/40">
         <div className="relative flex items-start w-[50%] sm:w-[60%] min-w-0 font-normal text-gray-600 text-xs sm:text-sm">
           Description
         </div>
