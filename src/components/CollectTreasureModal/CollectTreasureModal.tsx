@@ -339,21 +339,12 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         {/* Close button */}
         <button
           onClick={handleCancel}
-          className="absolute top-[20px] right-[20px] p-2.5 cursor-pointer hover:opacity-70 transition-opacity z-20"
+          className="absolute top-[20px] right-[20px] cursor-pointer hover:opacity-70 transition-opacity z-20"
           aria-label="Close dialog"
           type="button"
         >
-          <svg
-            className="w-3 h-3"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#686868"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
+            <path d="M3 3L15 15M3 15L15 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
@@ -464,21 +455,21 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               </div>
             </div>
 
-            {/* Collections List - scrollbar hidden until hover */}
+            {/* Collections List - scrollbar hidden until hover, fixed height */}
             <div
-              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex flex-col items-start gap-0 relative self-stretch w-full h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
               onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
             >
               {loading ? (
                 <div className="flex items-center justify-center w-full py-8">
-                  <div className="text-gray-500">Loading collections...</div>
+                  <div className="text-gray-500">Loading treasuries...</div>
                 </div>
               ) : filteredCollections.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 w-full text-center">
                   <p className="text-gray-500 text-sm">
-                    {searchQuery ? 'No collections found' : 'No collections yet'}
+                    No treasuries found
                   </p>
                 </div>
               ) : (

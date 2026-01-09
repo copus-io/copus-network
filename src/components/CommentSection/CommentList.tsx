@@ -46,7 +46,7 @@ export const CommentList: React.FC<CommentListProps> = ({
   if (comments.length === 0) {
     return (
       <div className={`py-16 text-center ${className}`}>
-        <p className="text-gray-500 text-base [font-family:'Lato',Helvetica]">No comment yet</p>
+        <p className="text-gray-500 text-base [font-family:'Lato',Helvetica]">No comments yet</p>
       </div>
     );
   }

@@ -2100,13 +2100,13 @@ export const Content = (): JSX.Element => {
                 </div>
 
                 {/* Arweave onchain storage link - Always show as clickable */}
-                <div
-                  className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity"
+                <button
+                  type="button"
+                  className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-none p-0"
                   title={article?.arChainId ? "View on Arweave" : "Arweave storage not available"}
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
                     if (!article?.arChainId) {
-                      console.warn('No arChainId available for this article');
+                      showToast('Arweave storage not available for this article', 'info');
                     } else {
                       const arweaveUrl = `https://arseed.web3infra.dev/${article.arChainId}`;
                       window.open(arweaveUrl, '_blank', 'noopener,noreferrer');
@@ -2114,11 +2114,11 @@ export const Content = (): JSX.Element => {
                   }}
                 >
                   <img
-                    className="w-full h-full"
+                    className="w-full h-full pointer-events-none"
                     alt="Arweave ar logo"
                     src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
                   />
-                </div>
+                </button>
               </div>
             </div>
 
@@ -2200,9 +2200,9 @@ export const Content = (): JSX.Element => {
                             filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(55%) contrast(90%)'
                           }}
                         />
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-end gap-2">
                           <h3
-                            className="[font-family:'Lato',Helvetica] font-semibold text-xl"
+                            className="[font-family:'Lato',Helvetica] font-semibold text-xl leading-none"
                             style={{ color: 'rgba(0, 0, 0, 0.9)' }}
                           >
                             Comments
@@ -2210,11 +2210,11 @@ export const Content = (): JSX.Element => {
                           {!isCommentsLoading && (
                             <>
                               <div
-                                className="w-1 h-1 rounded-full"
+                                className="w-1 h-1 rounded-full mb-1"
                                 style={{ background: 'rgba(0, 0, 0, 0.3)' }}
                               />
                               <span
-                                className="[font-family:'Lato',Helvetica] text-sm"
+                                className="[font-family:'Lato',Helvetica] text-sm leading-none"
                                 style={{ color: 'rgba(0, 0, 0, 0.6)' }}
                               >
                                 {totalComments === 0 ? 'No comments yet' : `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`}

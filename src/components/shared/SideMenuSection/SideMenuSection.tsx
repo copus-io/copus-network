@@ -52,7 +52,7 @@ const getMenuItems = (userNamespace?: string) => [
   {
     icon: FollowingIcon,
     label: "Following",
-    href: "/following",
+    href: userNamespace ? "/following" : "/login",
     key: "following",
   },
   {
@@ -64,7 +64,7 @@ const getMenuItems = (userNamespace?: string) => [
   {
     icon: IncomeIcon,
     label: "Earnings",
-    href: "/earning",
+    href: userNamespace ? "/earning" : "/login",
     key: "income",
   },
 ];
