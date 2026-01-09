@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
-import { ArticleCardSkeleton } from "../../../components/ui/skeleton";
 import { AuthService } from "../../../services/authService";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
@@ -35,11 +34,9 @@ export const FollowingContentSection = (): JSX.Element => {
   const { showToast } = useToast();
   const { user, getArticleLikeState, toggleLike } = useUser();
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState("all");
   const [followedSpaces, setFollowedSpaces] = useState<FollowedSpaceWithUsername[]>([]);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
   const [allArticles, setAllArticles] = useState<any[]>([]); // All followed articles
-  const [spaceArticles, setSpaceArticles] = useState<any[]>([]); // Articles for selected space
   const [loadingArticles, setLoadingArticles] = useState(true);
 
   // Collect Treasure Modal state
@@ -142,49 +139,6 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedArticles();
   }, [user]);
 
-  // Fetch articles for selected space when tab changes
-  useEffect(() => {
-    const fetchSpaceArticles = async () => {
-      // If "all" tab selected, use allArticles
-      if (selectedTab === "all") {
-        setSpaceArticles([]);
-        return;
-      }
-
-      // Find the selected space
-      const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
-      if (!selectedSpace) {
-        setSpaceArticles([]);
-        return;
-      }
-
-      try {
-        setLoadingArticles(true);
-        const response = await AuthService.getSpaceArticles(selectedSpace.id, 1, 50);
-        console.log('Space articles response:', response);
-
-        // Parse the response
-        let articlesArray: any[] = [];
-        if (response?.data?.data && Array.isArray(response.data.data)) {
-          articlesArray = response.data.data;
-        } else if (response?.data && Array.isArray(response.data)) {
-          articlesArray = response.data;
-        } else if (Array.isArray(response)) {
-          articlesArray = response;
-        }
-
-        setSpaceArticles(articlesArray);
-      } catch (err) {
-        console.error('Failed to fetch space articles:', err);
-        setSpaceArticles([]);
-      } finally {
-        setLoadingArticles(false);
-      }
-    };
-
-    fetchSpaceArticles();
-  }, [selectedTab, followedSpaces]);
-
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
     return {
@@ -212,9 +166,8 @@ export const FollowingContentSection = (): JSX.Element => {
     };
   };
 
-  // Get articles to display based on selected tab
-  // For "all" tab, use allArticles; for specific space, use spaceArticles (fetched per space)
-  const displayedArticles = selectedTab === "all" ? allArticles : spaceArticles;
+  // Get articles to display - all followed articles
+  const displayedArticles = allArticles;
 
   // Handle like action - opens the collect modal
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -289,14 +242,9 @@ export const FollowingContentSection = (): JSX.Element => {
       {/* Followed Spaces Bubbles Section */}
       <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
         <div className="flex items-center gap-3 flex-wrap">
-          {/* All button */}
+          {/* All button - always active since this page shows all followed content */}
           <button
-            onClick={() => setSelectedTab("all")}
-            className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
-              selectedTab === "all"
-                ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
-                : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
-            }`}
+            className="h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
           >
             All
           </button>
@@ -317,15 +265,14 @@ export const FollowingContentSection = (): JSX.Element => {
                 ? space.resolvedUsername
                 : space.name;
 
+              // Navigate to treasury page using space namespace
+              const navPath = `/treasury/${space.namespace}`;
+
               return (
                 <button
                   key={space.id}
-                  onClick={() => setSelectedTab(space.id.toString())}
-                  className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
-                    selectedTab === space.id.toString()
-                      ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
-                      : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
-                  }`}
+                  onClick={() => navigate(navPath)}
+                  className="h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
                 >
                   {displayName}
                 </button>
@@ -340,105 +287,62 @@ export const FollowingContentSection = (): JSX.Element => {
         </div>
       </section>
 
-      {/* Selected Treasury Info Header */}
-      {selectedTab !== "all" && (() => {
-        const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
-        if (!selectedSpace) return null;
-
-        // Get display name and owner name - check multiple possible fields
-        const isDefaultSpace = selectedSpace.spaceType === 1 || selectedSpace.spaceType === 2 || selectedSpace.name?.toLowerCase().includes('default');
-        const ownerName = selectedSpace.ownerInfo?.username
-          || selectedSpace.authorInfo?.username
-          || (selectedSpace as any).userInfo?.username
-          || (selectedSpace as any).userName
-          || (selectedSpace as any).ownerName
-          || (selectedSpace as any).creator?.username
-          || (selectedSpace as any).user?.username;
-        const ownerNamespace = selectedSpace.ownerInfo?.namespace
-          || (selectedSpace as any).userInfo?.namespace
-          || (selectedSpace as any).creator?.namespace
-          || (selectedSpace as any).user?.namespace;
-        const displayName = (isDefaultSpace && selectedSpace.resolvedUsername) ? selectedSpace.resolvedUsername : selectedSpace.name;
-
-        return (
-          <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
-            <button
-              onClick={() => navigate(`/space/${selectedSpace.namespace}`)}
-              className="flex items-center gap-2 cursor-pointer group"
-            >
-              <h2 className="[font-family:'Lato',Helvetica] font-semibold text-xl text-off-black">
-                {displayName}
-              </h2>
-              {ownerName && (
-                <>
-                  <span className="text-gray-400">·</span>
-                  <span className="[font-family:'Lato',Helvetica] text-base text-medium-dark-grey">
-                    by {ownerName}
-                  </span>
-                </>
-              )}
-              <img
-                className="w-[20px] h-[10px] transition-transform duration-200 group-hover:translate-x-1"
-                alt="Arrow"
-                src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
-                style={{ filter: 'brightness(0) saturate(100%) invert(25%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%)' }}
-              />
-            </button>
-          </section>
-        );
-      })()}
-
       {/* Content Cards Section */}
-      <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
-        {loadingArticles ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-            {Array.from({ length: 15 }).map((_, index) => (
-              <ArticleCardSkeleton key={index} />
-            ))}
-          </div>
-        ) : displayedArticles.length === 0 ? (
+      {loadingArticles ? (
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+          {Array.from({ length: 15 }).map((_, index) => (
+            <div key={index} className="w-full bg-white rounded-lg animate-pulse">
+              <div className="p-4">
+                <div className="w-full aspect-video bg-gray-200 rounded-lg mb-4" />
+                <div className="h-6 bg-gray-200 rounded mb-2 w-3/4" />
+                <div className="h-4 bg-gray-200 rounded mb-4 w-full" />
+                <div className="h-4 bg-gray-200 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : displayedArticles.length === 0 ? (
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
-            <p className="text-gray-500 mb-4">{selectedTab === "all" ? "Follow spaces to see their articles here" : "No articles from this space yet"}</p>
-            {selectedTab === "all" && (
-              <button
-                onClick={() => navigate('/')}
-                className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
-              >
-                Discover Spaces
-              </button>
-            )}
+            <p className="text-gray-500 mb-4">Follow spaces to see their articles here</p>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
+            >
+              Discover Spaces
+            </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-            {displayedArticles.map((article) => {
-              const card = transformArticleToCard(article);
-              const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+        </section>
+      ) : (
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+          {displayedArticles.map((article) => {
+            const card = transformArticleToCard(article);
+            const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
-              const articleData = {
-                ...card,
-                isLiked: articleLikeState.isLiked,
-                treasureCount: articleLikeState.likeCount
-              };
+            const articleData = {
+              ...card,
+              isLiked: articleLikeState.isLiked,
+              treasureCount: articleLikeState.likeCount
+            };
 
-              return (
-                <div key={article.uuid}>
-                  <ArticleCard
-                    article={articleData}
-                    layout="discovery"
-                    actions={{
-                      showTreasure: true,
-                      showVisits: true
-                    }}
-                    onLike={handleLike}
-                    onUserClick={handleUserClick}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+            return (
+              <div key={article.uuid}>
+                <ArticleCard
+                  article={articleData}
+                  layout="discovery"
+                  actions={{
+                    showTreasure: true,
+                    showVisits: true
+                  }}
+                  onLike={handleLike}
+                  onUserClick={handleUserClick}
+                />
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {/* Collect Treasure Modal */}
       {selectedArticle && (

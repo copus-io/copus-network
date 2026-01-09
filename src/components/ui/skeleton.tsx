@@ -85,7 +85,7 @@ export const ContentPageSkeleton: React.FC = () => {
 export const ArticleCardSkeleton: React.FC = () => {
   return (
     <div className="w-full bg-white rounded-lg border-0 shadow-none transition-all duration-200 cursor-wait animate-pulse">
-      <div className="flex flex-col gap-[25px] py-5 px-[30px] flex-1">
+      <div className="flex flex-col gap-[20px] py-4 px-4 lg:px-5 flex-1">
         <div className="flex flex-col gap-5 flex-1">
           {/* Cover image skeleton - match discovery layout style */}
           <div
