@@ -173,16 +173,16 @@ const SpaceInfoSection = ({
         )}
 
         <button
-          className="relative w-[38px] h-[38px] cursor-pointer hover:opacity-80 transition-opacity"
+          className="relative w-[38px] h-[38px] cursor-pointer hover:opacity-80 transition-opacity rounded-full border border-[#2191FB] bg-transparent flex items-center justify-center"
           aria-label="Share space"
           type="button"
           onClick={onShare}
         >
-          <img
-            className="w-full h-full"
-            alt="Share"
-            src="https://c.animaapp.com/iU3q4Rrw/img/share-1.svg"
-          />
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13.5 6.75H11.25C10.6533 6.75 10.081 6.98705 9.65901 7.40901C9.23705 7.83097 9 8.40326 9 9V15.75" stroke="#2191FB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M11.25 4.5L13.5 6.75L11.25 9" stroke="#2191FB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6.75 6.75H5.25C4.85218 6.75 4.47064 6.90804 4.18934 7.18934C3.90804 7.47064 3.75 7.85218 3.75 8.25V14.25C3.75 14.6478 3.90804 15.0294 4.18934 15.3107C4.47064 15.592 4.85218 15.75 5.25 15.75H12.75C13.1478 15.75 13.5294 15.592 13.8107 15.3107C14.092 15.0294 14.25 14.6478 14.25 14.25V12" stroke="#2191FB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
       </div>
     </section>
