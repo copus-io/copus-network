@@ -107,10 +107,10 @@ const SpaceInfoSection = ({
         ) : !isOwner && (
           // Follow/Following button for non-owner
           isFollowing ? (
-            // Following state with dropdown - white background
+            // Following state with dropdown - transparent background
             <div className="relative">
               <button
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-white"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-transparent"
                 aria-label="Following options"
                 type="button"
                 onClick={() => setShowUnfollowDropdown(!showUnfollowDropdown)}
