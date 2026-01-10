@@ -26,15 +26,11 @@ export const CommentButton: React.FC<CommentButtonProps> = ({
     <button
       onClick={onClick}
       className={`
-        inline-flex items-center gap-1.5 lg:gap-[10px] px-3 lg:px-5 py-2
-        h-[38px] rounded-[100px]
-        border border-solid
+        inline-flex items-center gap-1.5 lg:gap-[10px] py-2
+        h-[38px]
         transition-all duration-200
         cursor-pointer
-        ${isExpanded
-          ? 'bg-gray-100 border-[#A9A9A9]'
-          : 'bg-white border-[#A9A9A9] hover:bg-gray-100'
-        }
+        hover:opacity-70
       `}
       aria-label={`Comments, ${commentCount} comments`}
       title={`View comments (${commentCount})`}
