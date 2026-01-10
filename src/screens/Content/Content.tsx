@@ -1985,29 +1985,6 @@ export const Content = (): JSX.Element => {
                 <div className="flex flex-col lg:h-[250px] items-start justify-start relative flex-1 grow gap-6">
                   {/* Title with x402 payment badge above on mobile, inline on desktop */}
                   <div className="flex flex-col gap-2 w-full">
-                    {/* Edit button - only visible to author, positioned above title */}
-                    {(() => {
-                      const isAuthor = (user && article?.authorInfo) && (
-                        (user.namespace && user.namespace === article.authorInfo.namespace) ||
-                        (user.id && user.id === article.authorInfo.id)
-                      );
-                      return isAuthor;
-                    })() && (
-                      <button
-                        onClick={() => navigate(`/curate?edit=${article.uuid}`)}
-                        className="w-[32px] h-[32px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0 border border-solid border-[#686868] bg-transparent hover:bg-gray-100 self-start"
-                        aria-label="Edit"
-                        title="Edit"
-                      >
-                        <img
-                          className="w-[18px] h-[18px]"
-                          alt="Edit"
-                          src={getIconUrl('EDIT')}
-                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
-                        />
-                      </button>
-                    )}
-
                     {/* Payment badge - show above title on mobile */}
                     {article?.targetUrlIsLocked && article?.priceInfo && (
                       <div className="h-[30px] lg:h-[34px] px-2 lg:px-2.5 py-1 lg:py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] self-start">
@@ -2342,7 +2319,30 @@ export const Content = (): JSX.Element => {
               />
             </div>
 
-            <div className="flex items-center gap-1.5 lg:gap-5">
+            <div className="flex items-center gap-5">
+              {/* Edit button - only visible to author */}
+              {(() => {
+                const isAuthor = (user && article?.authorInfo) && (
+                  (user.namespace && user.namespace === article.authorInfo.namespace) ||
+                  (user.id && user.id === article.authorInfo.id)
+                );
+                return isAuthor;
+              })() && (
+                <button
+                  onClick={() => navigate(`/curate?edit=${article.uuid}`)}
+                  className="cursor-pointer transition-all duration-200 flex items-center justify-center p-0 hover:opacity-70"
+                  aria-label="Edit"
+                  title="Edit"
+                >
+                  <img
+                    className="w-[25px] h-[25px]"
+                    alt="Edit"
+                    src={getIconUrl('EDIT')}
+                    style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                  />
+                </button>
+              )}
+
 {/* Conditional button - "Visit" for unlocked/targetUrl content, "Unlock now" for locked content without targetUrl */}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
