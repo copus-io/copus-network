@@ -252,3 +252,22 @@ export interface SEOSettingsResponse {
   msg: string;
   data: boolean;
 }
+
+// Bind articles to spaces API types
+export interface BindArticlesRequest {
+  articleId: number;
+  spaceIds: number[];
+}
+
+export interface BindArticlesResponse {
+  isLiked: boolean;
+  likeCount: number;
+  state: boolean;
+}
+
+// Bind articles API response wrapper
+export interface BindArticlesApiResponse {
+  status: number;
+  msg: string;
+  data: BindArticlesResponse;
+}

@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest } from '../types/article';
+import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest, BindArticlesRequest, BindArticlesApiResponse } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
@@ -446,5 +446,34 @@ export const setSEOSettings = async (seoData: SEOSettings): Promise<boolean> => 
   } catch (error) {
     console.error('❌ Failed to set SEO settings:', error);
     throw new Error(`Failed to set SEO settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Bind articles to spaces
+export const bindArticles = async (bindData: BindArticlesRequest): Promise<BindArticlesApiResponse> => {
+  const endpoint = '/client/article/bind/bindArticles';
+
+  try {
+    console.log('📤 Binding article to spaces:', {
+      articleId: bindData.articleId,
+      spaceIds: bindData.spaceIds,
+      requestData: bindData
+    });
+
+    const response = await apiRequest<BindArticlesApiResponse>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(bindData),
+    });
+
+    console.log('📥 Bind articles API response:', response);
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'Failed to bind articles');
+    }
+
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to bind articles:', error);
+    throw new Error(`Failed to bind articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
