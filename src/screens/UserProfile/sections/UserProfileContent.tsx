@@ -447,7 +447,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             </div>
           </div>
 
-          {/* Follow button or account status (only shown when viewing other users) */}
+          {/* Subscribe button or account status (only shown when viewing other users) */}
           {user && user.namespace !== namespace && (
             <button
               className={`px-6 py-2 rounded-full transition-colors ${
@@ -457,7 +457,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               }`}
               disabled={!accountExists}
             >
-              {accountExists ? 'Follow' : "This account doesn't exist"}
+              {accountExists ? 'Subscribe' : "This account doesn't exist"}
             </button>
           )}
           </div>

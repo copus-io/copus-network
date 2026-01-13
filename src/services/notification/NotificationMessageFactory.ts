@@ -76,12 +76,12 @@ export class NotificationTemplates {
   }> = {
     [NotificationType.FOLLOW]: {
       title: '新关注',
-      messageTemplate: (data) => `[${data.senderUsername}] followed your treasury [${data.targetTitle}]`,
+      messageTemplate: (data) => `[${data.senderUsername}] subscribed to your treasury [${data.targetTitle}]`,
       actionUrl: (data) => `/treasury/${data.spaceNamespace || data.senderNamespace || data.senderUsername}`
     },
     [NotificationType.FOLLOW_TREASURY]: {
       title: '关注空间更新',
-      messageTemplate: (data) => `[${data.targetTitle}] you follow has listed a new treasure [${data.articleTitle}]`,
+      messageTemplate: (data) => `[${data.targetTitle}] you subscribe to has listed a new treasure [${data.articleTitle}]`,
       actionUrl: (data) => `/work/${data.articleUuid || data.articleId}`
     },
     [NotificationType.TREASURY]: {

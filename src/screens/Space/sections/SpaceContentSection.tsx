@@ -129,13 +129,13 @@ const SpaceInfoSection = ({
             </span>
           </button>
         ) : !isOwner && (
-          // Follow/Following button for non-owner
+          // Subscribe/Subscribed button for non-owner
           isFollowing ? (
-            // Following state with dropdown - transparent background
+            // Subscribed state with dropdown - transparent background
             <div className="relative">
               <button
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-transparent"
-                aria-label="Following options"
+                aria-label="Subscription options"
                 type="button"
                 onClick={() => setShowUnfollowDropdown(!showUnfollowDropdown)}
               >
@@ -145,7 +145,7 @@ const SpaceInfoSection = ({
                   <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
                 </svg>
                 <span className="[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
-                  Following
+                  Subscribed
                 </span>
                 {/* Down arrow */}
                 <svg width="16" height="16" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
@@ -169,18 +169,18 @@ const SpaceInfoSection = ({
                         onUnfollow();
                       }}
                     >
-                      Unfollow
+                      Unsubscribe
                     </button>
                   </div>
                 </>
               )}
             </div>
           ) : (
-            // Follow button - #2b8649 10% over white background
+            // Subscribe button - #2b8649 10% over white background
             <button
               className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all"
               style={{ background: 'linear-gradient(0deg, rgba(43, 134, 73, 0.1) 0%, rgba(43, 134, 73, 0.1) 100%), #FFFFFF' }}
-              aria-label="Follow space"
+              aria-label="Subscribe to space"
               type="button"
               onClick={onFollow}
             >
@@ -190,7 +190,7 @@ const SpaceInfoSection = ({
                 <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
               </svg>
               <span className="[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
-                Follow
+                Subscribe
               </span>
             </button>
           )
@@ -583,10 +583,10 @@ export const SpaceContentSection = (): JSX.Element => {
     }
   };
 
-  // Handle follow
+  // Handle subscribe
   const handleFollow = async () => {
     if (!user) {
-      showToast('Please login to follow', 'error');
+      showToast('Please login to subscribe', 'error');
       return;
     }
     if (!spaceId) {
@@ -596,9 +596,9 @@ export const SpaceContentSection = (): JSX.Element => {
     try {
       await AuthService.followSpace(spaceId);
       setIsFollowing(true);
-      showToast('Following space', 'success');
+      showToast('Subscribed to space', 'success');
 
-      // Update cache with new follow status
+      // Update cache with new subscription status
       const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
       const cached = spaceFetchCache.get(cacheKey);
       if (cached && cached.data) {
@@ -608,15 +608,15 @@ export const SpaceContentSection = (): JSX.Element => {
         });
       }
     } catch (err) {
-      console.error('Failed to follow space:', err);
-      showToast('Failed to follow space', 'error');
+      console.error('Failed to subscribe to space:', err);
+      showToast('Failed to subscribe to space', 'error');
     }
   };
 
-  // Handle unfollow
+  // Handle unsubscribe
   const handleUnfollow = async () => {
     if (!user) {
-      showToast('Please login to unfollow', 'error');
+      showToast('Please login to unsubscribe', 'error');
       return;
     }
     if (!spaceId) {
@@ -624,11 +624,11 @@ export const SpaceContentSection = (): JSX.Element => {
       return;
     }
     try {
-      await AuthService.followSpace(spaceId); // Same API toggles follow/unfollow
+      await AuthService.followSpace(spaceId); // Same API toggles subscribe/unsubscribe
       setIsFollowing(false);
-      showToast('Unfollowed space', 'success');
+      showToast('Unsubscribed from space', 'success');
 
-      // Update cache with new follow status
+      // Update cache with new subscription status
       const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
       const cached = spaceFetchCache.get(cacheKey);
       if (cached && cached.data) {
@@ -638,8 +638,8 @@ export const SpaceContentSection = (): JSX.Element => {
         });
       }
     } catch (err) {
-      console.error('Failed to unfollow space:', err);
-      showToast('Failed to unfollow space', 'error');
+      console.error('Failed to unsubscribe from space:', err);
+      showToast('Failed to unsubscribe from space', 'error');
     }
   };
 

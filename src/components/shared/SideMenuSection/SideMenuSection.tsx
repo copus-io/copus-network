@@ -51,7 +51,7 @@ const getMenuItems = (userNamespace?: string) => [
   },
   {
     icon: FollowingIcon,
-    label: "Following",
+    label: "Subscriptions",
     href: userNamespace ? "/following" : "/login",
     key: "following",
   },

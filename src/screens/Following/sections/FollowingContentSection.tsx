@@ -221,10 +221,10 @@ export const FollowingContentSection = (): JSX.Element => {
       <main className="flex flex-col items-center justify-center gap-6 py-20 relative flex-1">
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-semibold text-dark-grey mb-4">
-            Follow Spaces to See Content Here
+            Subscribe to Spaces to See Content Here
           </h2>
           <p className="text-gray-500 mb-6">
-            Log in to follow your favorite spaces and creators. Their latest content will appear here.
+            Log in to subscribe to your favorite spaces and creators. Their latest content will appear here.
           </p>
           <button
             onClick={() => navigate('/login')}
@@ -280,9 +280,9 @@ export const FollowingContentSection = (): JSX.Element => {
             })
           )}
 
-          {/* Show message if no followed spaces */}
+          {/* Show message if no subscribed spaces */}
           {!loadingSpaces && followedSpaces.length === 0 && (
-            <span className="text-gray-400 text-sm ml-2">No spaces followed yet</span>
+            <span className="text-gray-400 text-sm ml-2">No subscriptions yet</span>
           )}
         </div>
       </section>
@@ -305,7 +305,7 @@ export const FollowingContentSection = (): JSX.Element => {
         <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
-            <p className="text-gray-500 mb-4">Follow spaces to see their articles here</p>
+            <p className="text-gray-500 mb-4">Subscribe to spaces to see their articles here</p>
             <button
               onClick={() => navigate('/')}
               className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
