@@ -107,6 +107,17 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
     }
   }, []);
 
+  // Auto-open search if ?search=true is in URL (triggered from browser extension)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('search') === 'true') {
+      setIsSearchOpen(true);
+      // Clean up the URL by removing the search param
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search]);
+
   // Save search history to localStorage
   const saveSearchHistory = useCallback((history: string[]) => {
     localStorage.setItem('copus_search_history', JSON.stringify(history));
