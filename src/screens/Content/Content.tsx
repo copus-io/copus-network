@@ -2189,7 +2189,7 @@ export const Content = (): JSX.Element => {
                 {/* Apple-style frosted glass backdrop */}
                 <div
                   className="fixed inset-0 z-40"
-                  onClick={() => setIsCommentSectionOpen(false)}
+                  onClick={() => { setIsCommentSectionOpen(false); refetchArticle(); }}
                   style={{
                     transition: 'opacity 600ms cubic-bezier(0.4, 0.0, 0.2, 1), backdrop-filter 800ms cubic-bezier(0.4, 0.0, 0.2, 1)',
                     opacity: isCommentSectionOpen ? 1 : 0,
@@ -2268,7 +2268,7 @@ export const Content = (): JSX.Element => {
 
                       {/* Close button */}
                       <button
-                        onClick={() => setIsCommentSectionOpen(false)}
+                        onClick={() => { setIsCommentSectionOpen(false); refetchArticle(); }}
                         className="flex items-center justify-center w-[36px] h-[36px] rounded-full"
                       >
                         <svg
