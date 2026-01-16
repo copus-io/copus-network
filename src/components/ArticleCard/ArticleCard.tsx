@@ -550,10 +550,10 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
       case 'discovery':
       default:
         return (
-          <CardContent className="flex flex-col gap-[15px] py-4 px-[20px] flex-1">
-            <div className="flex flex-col gap-3 flex-1">
+          <CardContent className="flex flex-col gap-[15px] 3xl:gap-[18px] 4xl:gap-[20px] py-4 px-[20px] 3xl:px-[24px] 4xl:px-[28px] flex-1">
+            <div className="flex flex-col gap-3 3xl:gap-3.5 4xl:gap-4 flex-1">
               <div
-                className="flex flex-col w-full justify-end p-2.5 rounded-lg bg-cover bg-center bg-no-repeat"
+                className="flex flex-col w-full justify-end p-2.5 3xl:p-3 4xl:p-4 rounded-lg bg-cover bg-center bg-no-repeat"
                 style={{
                   backgroundImage: article.coverImage
                     ? `url(${article.coverImage})`
@@ -564,8 +564,8 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 {/* Website link - hide for paid content */}
                 <div className="flex justify-end">
                   {article.website && !article.isPaymentRequired && (
-                    <div className="inline-flex items-start gap-[5px] px-2 py-1 bg-[#ffffffcc] rounded-[12px] overflow-hidden">
-                      <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-xs text-right tracking-[0] leading-[16px]">
+                    <div className="inline-flex items-start gap-[5px] px-2 py-1 3xl:px-2.5 3xl:py-1.5 4xl:px-3 4xl:py-2 bg-[#ffffffcc] rounded-[12px] overflow-hidden">
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-xs 3xl:text-sm 4xl:text-base text-right tracking-[0] leading-[16px] 3xl:leading-[18px] 4xl:leading-[20px]">
                         {article.website}
                       </span>
                     </div>
@@ -573,29 +573,29 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2.5 flex-1">
+              <div className="flex flex-col gap-2.5 3xl:gap-3 4xl:gap-3.5 flex-1">
                 {/* Title with x402 payment badge */}
-                <div className="relative min-h-[52px] overflow-hidden">
+                <div className="relative min-h-[52px] 3xl:min-h-[58px] 4xl:min-h-[64px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="float-left h-[28px] px-1.5 mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[28px] 3xl:h-[32px] 4xl:h-[36px] px-1.5 3xl:px-2 4xl:px-2.5 mr-[5px] mb-[5px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="w-[16px] h-[15px] flex-shrink-0"
+                        className="w-[16px] h-[15px] 3xl:w-[18px] 3xl:h-[17px] 4xl:w-[20px] 4xl:h-[19px] flex-shrink-0"
                         alt="x402 payment"
                         src={getIconUrl('X402_PAYMENT')}
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-[13px] tracking-[0] leading-[13px] whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-[13px] 3xl:text-[14px] 4xl:text-[15px] tracking-[0] leading-[13px] 3xl:leading-[14px] 4xl:leading-[15px] whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] tracking-[0] leading-[27px] break-words line-clamp-2">
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] 3xl:text-[20px] 4xl:text-[22px] tracking-[0] leading-[27px] 3xl:leading-[30px] 4xl:leading-[33px] break-words line-clamp-2">
                     {article.title}
                   </h3>
                 </div>
 
-                <div className="flex flex-col gap-2 px-2 py-2.5 rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
+                <div className="flex flex-col gap-2 3xl:gap-2.5 4xl:gap-3 px-2 py-2.5 3xl:px-2.5 3xl:py-3 4xl:px-3 4xl:py-3.5 rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[14px] tracking-[0] leading-[21px] overflow-hidden min-h-[42px]"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-[14px] 3xl:text-[15px] 4xl:text-[16px] tracking-[0] leading-[21px] 3xl:leading-[22px] 4xl:leading-[24px] overflow-hidden min-h-[42px] 3xl:min-h-[44px] 4xl:min-h-[48px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -619,13 +619,13 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                         <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
                       </Avatar>
                       <span
-                        className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-[16px] cursor-pointer hover:text-blue-600 transition-colors"
+                        className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] 3xl:text-[13px] 4xl:text-[14px] tracking-[0] leading-[16px] 3xl:leading-[17px] 4xl:leading-[18px] cursor-pointer hover:text-blue-600 transition-colors"
                         onClick={handleUserClick}
                       >
                         {(article.userName && article.userName.trim() !== '') ? article.userName : 'Anonymous'}
                       </span>
                     </div>
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-[16px]">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] 3xl:text-[13px] 4xl:text-[14px] tracking-[0] leading-[16px] 3xl:leading-[17px] 4xl:leading-[18px]">
                       {formatDate(article.date)}
                     </span>
                   </div>
@@ -634,9 +634,9 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
             </div>
 
             {/* Action buttons area */}
-            <div className="flex items-center justify-between -mx-[20px] px-[20px]">
+            <div className="flex items-center justify-between -mx-[20px] 3xl:-mx-[24px] 4xl:-mx-[28px] px-[20px] 3xl:px-[24px] 4xl:px-[28px]">
               {/* Left side: Treasure button, comment count, and view count */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 3xl:gap-3.5 4xl:gap-4">
                 {actions.showTreasure && (
                   <TreasureButton
                     isLiked={(() => {

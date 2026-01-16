@@ -394,7 +394,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
           </div>
         </section>
       ) : (
-        <section className="w-full pt-0 pb-[30px] min-h-screen px-4 lg:pl-[15px] lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8 relative z-10">
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-4 lg:pl-[15px] lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] 3xl:grid-cols-[repeat(auto-fill,minmax(320px,1fr))] 4xl:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] 5xl:grid-cols-[repeat(auto-fill,minmax(420px,1fr))] gap-4 lg:gap-6 3xl:gap-8 4xl:gap-10 5xl:gap-12 relative z-10">
           {localArticles.map((post, index) => renderPostCard(post, index))}
         </section>
       )}
