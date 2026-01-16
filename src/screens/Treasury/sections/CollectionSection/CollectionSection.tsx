@@ -28,11 +28,11 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
         <div className="flex h-[300px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <p className="text-gray-500">No items in this collection</p>
         </div>
-        <header className="justify-between flex items-start relative self-stretch w-full flex-[0_0_auto]">
-          <h2 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+        <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
             {title}
           </h2>
-          <p className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+          <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
             {treasureCount} treasures
           </p>
         </header>
@@ -111,11 +111,11 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
         )}
       </div>
 
-      <header className="justify-between flex items-start relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+      <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
           {title}
         </h2>
-        <p className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+        <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
           {treasureCount} treasures
         </p>
       </header>

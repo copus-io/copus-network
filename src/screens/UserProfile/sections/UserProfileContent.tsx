@@ -447,7 +447,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   }
 
   return (
-    <main className="flex flex-col gap-10 px-5 py-0 relative">
+    <main className="flex flex-col gap-8 px-5 pt-5 pb-0 relative">
       {/* User info header */}
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cover image */}
@@ -509,8 +509,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
               onClick={handleAvatarClick}
             />
-          <div className="flex-1">
-            <div className="flex items-center gap-4 mb-2">
+          <div className="flex-1 pt-16">
+            <div className="flex items-center gap-4 mb-1">
               <h1 className="text-3xl font-bold text-gray-900">{userInfo.username}</h1>
               <button
                 type="button"
@@ -518,12 +518,14 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
                 className="relative flex-[0_0_auto] hover:opacity-70 transition-opacity"
                 onClick={handleShare}
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 6.667a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM5 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM15 18.333a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7.158 11.258l5.692 3.317M12.842 5.425l-5.684 3.317" stroke="#686868" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <img
+                  alt="Share"
+                  src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
+                  className="w-5 h-5"
+                />
               </button>
             </div>
-            <p className="text-gray-600 mb-4">@{userInfo.namespace}</p>
+            <p className="text-sm text-gray-400 mb-4">@{userInfo.namespace}</p>
             <p className="text-gray-700 mb-6">{userInfo.bio}</p>
 
             <div className="flex gap-8">
@@ -560,7 +562,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       </section>
 
       {/* Category tabs */}
-      <section className="flex gap-4">
+      <section className="flex gap-4 mt-10">
         <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
           All Articles
         </button>
@@ -571,7 +573,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
 
       {/* Articles list */}
       <section
-        className="w-full"
+        className="w-full mt-5"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',

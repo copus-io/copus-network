@@ -85,53 +85,18 @@ const SpaceInfoSection = ({
   };
 
   return (
-    <section className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto] px-4 lg:px-0">
-      <header className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
-        <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
+    <section className="flex flex-col items-start gap-2 relative self-stretch w-full flex-[0_0_auto] px-4 lg:px-0">
+      {/* Title row with edit/share buttons */}
+      <div className="flex items-center gap-4 relative self-stretch w-full flex-wrap">
+        <h1 className="relative w-fit [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
           {spaceName}
         </h1>
-      </header>
 
-      <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
-        <p className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-          {treasureCount} treasures
-        </p>
-
-        <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto]">
-          <span className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-            By
-          </span>
-
-          <button
-            onClick={onAuthorClick}
-            className="inline-flex items-center gap-[5px] relative flex-[0_0_auto] hover:opacity-70 transition-opacity cursor-pointer"
-          >
-            <img
-              className="relative w-5 h-5 rounded-full object-cover"
-              alt={`${authorName}'s profile`}
-              src={authorAvatar || profileDefaultAvatar}
-            />
-            <span className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-lg tracking-[0] leading-[25.2px] whitespace-nowrap hover:text-dark-grey">
-              {authorName}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Space Description */}
-      {spaceDescription && spaceDescription.trim() && (
-        <div className="relative self-stretch w-full">
-          <p className="[font-family:'Lato',Helvetica] font-normal text-gray-700 text-base tracking-[0] leading-[24px]">
-            {spaceDescription}
-          </p>
-        </div>
-      )}
-
-      <div className="inline-flex items-center gap-5 pt-2.5 pb-0 px-0 relative flex-[0_0_auto]">
+        <div className="inline-flex items-center gap-3">
         {canEdit ? (
           // Edit button for space owner to customize name, description, and cover
           <button
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-medium-grey cursor-pointer hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 px-0 py-0 cursor-pointer hover:opacity-70 transition-opacity"
             aria-label="Edit space"
             type="button"
             onClick={onEdit}
@@ -214,19 +179,16 @@ const SpaceInfoSection = ({
 
         <div className="relative">
           <button
-            className="relative w-[38px] h-[38px] cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-center p-0"
+            className="relative cursor-pointer hover:opacity-70 transition-opacity flex items-center justify-center p-0"
             aria-label="Share space"
             type="button"
             onClick={() => setShowShareDropdown(!showShareDropdown)}
           >
-            <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" fill="transparent" />
-              <rect x="0.5" y="0.5" width="37" height="37" rx="18.5" stroke="#2191FB" />
-              <g transform="translate(19, 19) scale(0.8) translate(-19, -19)">
-                <path d="M12.0243 28H22.96C24.6286 28 25.9843 26.5628 25.9843 24.7946C25.9843 24.5772 25.8186 24.4014 25.6129 24.4014C25.4086 24.4014 25.2414 24.5772 25.2414 24.7946C25.2414 26.1294 24.2186 27.2149 22.9586 27.2149H12.0243C10.7657 27.2149 9.74143 26.1294 9.74143 24.7946V13.2054C9.74143 11.872 10.7657 10.7865 12.0243 10.7865C12.23 10.7865 12.3957 10.6106 12.3957 10.3932C12.3957 10.1758 12.23 10 12.0243 10C10.3571 10 9 11.4372 9 13.2054V24.7946C9 26.5614 10.3571 27.9986 12.0243 27.9986V28Z" fill="#2191FB" />
-                <path d="M21.9586 10.1454V13.3245C17.3929 13.6083 14.4543 16.246 12.9814 21.3829L12.64 22.5695L13.5629 21.808C16.8043 19.1302 19.3343 18.1762 21.9586 18.6649V21.8938L29 16.0203L21.9586 10.1454ZM22.4071 17.9546C19.1471 17.2208 16.3114 18.7314 14.0757 20.4192C15.59 16.2529 18.24 14.2342 22.3414 14.0929L22.7 14.0805V11.764L27.8 16.0203L22.7 20.2752V18.0211L22.4071 17.9546Z" fill="#2191FB" />
-              </g>
-            </svg>
+            <img
+              alt="Share"
+              src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
+              className="w-5 h-5"
+            />
           </button>
 
           {/* Share dropdown menu */}
@@ -261,6 +223,46 @@ const SpaceInfoSection = ({
               </div>
             </>
           )}
+        </div>
+        </div>
+      </div>
+
+      {/* Space Description */}
+      {spaceDescription && spaceDescription.trim() && (
+        <div className="relative self-stretch w-full">
+          <p className="[font-family:'Lato',Helvetica] font-normal text-gray-700 text-base tracking-[0] leading-[24px]">
+            {spaceDescription}
+          </p>
+        </div>
+      )}
+
+      <div className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
+        <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
+          {treasureCount} treasures
+        </p>
+
+        <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
+          ·
+        </span>
+
+        <div className="inline-flex items-center gap-1.5 relative flex-[0_0_auto]">
+          <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
+            By
+          </span>
+
+          <button
+            onClick={onAuthorClick}
+            className="inline-flex items-center gap-1 relative flex-[0_0_auto] hover:opacity-70 transition-opacity cursor-pointer"
+          >
+            <img
+              className="relative w-4 h-4 rounded-full object-cover"
+              alt={`${authorName}'s profile`}
+              src={authorAvatar || profileDefaultAvatar}
+            />
+            <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] hover:text-dark-grey">
+              {authorName}
+            </span>
+          </button>
         </div>
       </div>
     </section>

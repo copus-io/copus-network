@@ -533,7 +533,6 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         >
           {bannerImage ? (
             <>
-              {/* Background div for display - always visible */}
               <div
                 className="w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-200"
                 style={{
@@ -541,7 +540,6 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                   backgroundColor: '#f3f4f6'
                 }}
               />
-              {/* Loading placeholder - only shows after delay and when needed */}
               {showLoadingSpinner && (
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
@@ -567,7 +565,6 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </div>
           )}
 
-          {/* Show upload icon on hover when banner exists and not showing loading spinner */}
           {bannerImage && !showLoadingSpinner && (
             <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-20">
               <div className="flex flex-col items-center gap-2 text-white">
@@ -602,7 +599,6 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             title="Click to change avatar"
             aria-label="Click to change avatar"
           >
-            {/* Avatar image - key forces re-render when URL changes */}
             <img
               key={user?.faceUrl || 'default'}
               src={(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar}
@@ -612,8 +608,6 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 e.currentTarget.src = profileDefaultAvatar;
               }}
             />
-
-            {/* Show upload icon on hover */}
             <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
               <svg
                 className="w-8 h-8 text-white"
@@ -634,30 +628,33 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
           {/* User info on the right */}
           <div className="flex flex-col items-start gap-3 relative flex-1">
-            {/* Username at the top */}
-            <div className="flex items-center gap-2.5">
-              <h1 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl lg:text-3xl tracking-[0] leading-[1.4]">
-                {formData.name || (!user ? "Loading..." : "Anonymous")}
-              </h1>
+            {/* Username and handle grouped together */}
+            <div className="flex flex-col items-start gap-0.5">
+              {/* Username at the top */}
+              <div className="flex items-center gap-2.5">
+                <h1 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[1.4]">
+                  {formData.name || (!user ? "Loading..." : "Anonymous")}
+                </h1>
 
-              {/* Edit button next to username */}
-              <button
-                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                aria-label="Edit personal information"
-                onClick={() => setShowPersonalInfoPopup(true)}
-                title="Edit username, bio and other personal information"
-              >
-                <img
-                  className="w-4 h-4"
-                  alt="Edit"
-                  src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                />
-              </button>
-            </div>
+                {/* Edit button next to username */}
+                <button
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  aria-label="Edit personal information"
+                  onClick={() => setShowPersonalInfoPopup(true)}
+                  title="Edit username, bio and other personal information"
+                >
+                  <img
+                    className="w-4 h-4"
+                    alt="Edit"
+                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                  />
+                </button>
+              </div>
 
-            {/* Handle/namespace */}
-            <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[1.4]">
-              {formData.username || (!user ? "Loading..." : "@unknown")}
+              {/* Handle/namespace */}
+              <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[1.4]">
+                {formData.username || (!user ? "Loading..." : "@unknown")}
+              </div>
             </div>
 
             {/* Bio */}

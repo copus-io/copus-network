@@ -103,43 +103,38 @@ const TreasuryHeaderSection = ({
 
 
   return (
-    <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
-      {/* Cover image */}
-      <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative">
-        {coverUrl || defaultBanner ? (
-          <>
-            <div
-              className={`w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-300 ${
-                bannerImageLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                backgroundImage: `url(${coverUrl || defaultBanner})`,
-                backgroundColor: '#f3f4f6'
-              }}
-            />
-            {showBannerLoadingSpinner && (
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="w-full h-full bg-gradient-to-r from-blue-100 to-purple-100">
-          </div>
-        )}
-      </div>
+    <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] pb-5">
+      {/* Cover image - only show if user has a cover */}
+      {coverUrl && (
+        <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative">
+          <div
+            className={`w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-300 ${
+              bannerImageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              backgroundImage: `url(${coverUrl})`,
+              backgroundColor: '#f3f4f6'
+            }}
+          />
+          {showBannerLoadingSpinner && (
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className="gap-6 lg:gap-10 px-4 lg:pl-5 lg:pr-10 py-8 flex flex-col lg:flex-row items-start relative self-stretch w-full flex-[0_0_auto] mt-[-60px]">
+      <div className={`gap-4 lg:gap-6 px-0 py-0 flex flex-row items-start relative self-stretch w-full flex-[0_0_auto] ${coverUrl ? 'mt-[-60px] px-4 lg:pl-5 lg:pr-10 py-8' : ''}`}>
         <img
-          className="relative w-20 h-20 rounded-full border-4 border-white object-cover shadow-lg z-10"
+          className={`relative w-20 h-20 rounded-full object-cover shadow-lg z-10 ${coverUrl ? 'border-4 border-white' : ''}`}
           src={avatarUrl || profileDefaultAvatar}
           alt={`${username} profile`}
         />
 
         <div className="flex flex-col items-start gap-2.5 relative flex-1 grow">
-          <div className="inline-flex flex-col items-start justify-center relative flex-[0_0_auto]">
+          <div className={`inline-flex flex-col items-start justify-center relative flex-[0_0_auto] gap-0.5 ${coverUrl ? 'pt-8' : 'pt-0'}`}>
             <div className="inline-flex items-center gap-[15px] relative flex-[0_0_auto]">
-              <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
+              <h1 className="relative w-fit [font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[1.4] whitespace-nowrap">
                 {username}
               </h1>
 
@@ -159,9 +154,9 @@ const TreasuryHeaderSection = ({
               )}
             </div>
 
-            <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
+            <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[1.4]">
               @{namespace}
-            </p>
+            </div>
           </div>
 
           <div className="flex-col gap-[5px] flex items-start relative self-stretch w-full flex-[0_0_auto]">
@@ -467,7 +462,7 @@ export const MainContentSection = (): JSX.Element => {
 
   if (loading) {
     return (
-      <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
+      <main className="flex flex-col items-start px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex items-center justify-center w-full h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -477,7 +472,7 @@ export const MainContentSection = (): JSX.Element => {
 
   if (error) {
     return (
-      <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
+      <main className="flex flex-col items-start px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
           <div className="text-red-500">{error}</div>
           <Button
@@ -531,7 +526,7 @@ export const MainContentSection = (): JSX.Element => {
   };
 
   return (
-    <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
+    <main className="flex flex-col items-start px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
       {/* Header Section */}
       <TreasuryHeaderSection
         username={displayUser?.username || 'Anonymous'}

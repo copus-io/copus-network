@@ -70,7 +70,7 @@ export const TreasuryHeaderSection = ({
               )}
             </div>
 
-            <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
+            <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[20px] whitespace-nowrap">
               @{namespace}
             </p>
           </div>
