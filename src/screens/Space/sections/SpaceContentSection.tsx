@@ -7,6 +7,10 @@ import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
+import { devLog } from "../../../utils/devLogger";
+import { ErrorHandler } from "../../../utils/errorHandler";
+import { API_ENDPOINTS } from "../../../config/apiEndpoints";
+import { spaceShortcuts, eventHandlers } from "../../../utils/devShortcuts";
 
 // Add debug logging for Space component
 console.log('📍 SpaceContentSection module loaded');
@@ -291,11 +295,9 @@ export const SpaceContentSection = (): JSX.Element => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSpaceName, setEditSpaceName] = useState("");
   const [editSpaceDescription, setEditSpaceDescription] = useState("");
-  const [editSpaceCoverUrl, setEditSpaceCoverUrl] = useState("");
   const [displaySpaceName, setDisplaySpaceName] = useState("");
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
@@ -747,21 +749,40 @@ export const SpaceContentSection = (): JSX.Element => {
   };
 
   // Handle edit space
+  // 🔍 SEARCH: space-edit-restrictions-logic-rapid
+  // Use rapid development system for space permissions (2-second modification)
+  const spaceSetup = spaceShortcuts.setupSpaceEdit(spaceInfo, user?.id);
+  const { canEditName: canEditSpaceName, canDelete: canDeleteSpace } = spaceSetup.permissions;
+  const spaceHandlers = eventHandlers.createSpaceEditHandler(spaceInfo, 'SpaceContentSection');
+
   const handleEditSpace = () => {
     const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
     const currentDescription = spaceInfo?.description || '';
-    const currentCoverUrl = spaceInfo?.coverUrl || '';
-
     setEditSpaceName(currentName);
     setEditSpaceDescription(currentDescription);
-    setEditSpaceCoverUrl(currentCoverUrl);
     setShowEditModal(true);
+
+    // 🔍 SEARCH: dev-log-space-edit-modal
+    devLog.userAction('open-space-edit-modal', {
+      spaceType: spaceInfo?.spaceType,
+      canEditName: canEditSpaceName,
+      canDelete: canDeleteSpace
+    }, {
+      component: 'SpaceContentSection',
+      action: 'edit-modal-open'
+    });
   };
 
-  // Handle save space details
+  // 🔍 SEARCH: space-save-function-with-restrictions
+  // Handle save space details - with name editing restrictions for default spaces
   const handleSaveSpaceName = async () => {
-    if (!editSpaceName.trim()) {
+    // Only validate space name if name editing is allowed
+    if (canEditSpaceName && !editSpaceName.trim()) {
       showToast('Please enter a space name', 'error');
+      devLog.userAction('save-space-validation-failed', { reason: 'empty-name' }, {
+        component: 'SpaceContentSection',
+        action: 'validation-error'
+      });
       return;
     }
 
@@ -775,12 +796,28 @@ export const SpaceContentSection = (): JSX.Element => {
 
       // Prepare optional fields
       const description = editSpaceDescription.trim() || undefined;
-      const coverUrl = editSpaceCoverUrl.trim() || undefined;
+
+      // 🔍 SEARCH: space-name-handling-for-restricted-spaces
+      // Use current displayed name if name editing is not allowed
+      const nameToUse = canEditSpaceName ? editSpaceName.trim() : (displaySpaceName || spaceInfo?.name || '');
+
+      devLog.apiCall(API_ENDPOINTS.SPACE.UPDATE, {
+        spaceId,
+        name: nameToUse,
+        description,
+        canEditName: canEditSpaceName
+      }, {
+        component: 'SpaceContentSection',
+        action: 'update-space-with-restrictions'
+      });
 
       // Call API to update space with all fields
-      await AuthService.updateSpace(spaceId, editSpaceName.trim(), description, coverUrl);
+      await AuthService.updateSpace(spaceId, nameToUse, description);
 
-      setDisplaySpaceName(editSpaceName.trim());
+      // Only update display name if name editing was allowed
+      if (canEditSpaceName) {
+        setDisplaySpaceName(nameToUse);
+      }
       showToast('Space updated successfully', 'success');
       setShowEditModal(false);
 
@@ -795,8 +832,13 @@ export const SpaceContentSection = (): JSX.Element => {
         window.location.reload();
       }, 500); // Small delay to allow toast to show
     } catch (err) {
-      console.error('Failed to update space:', err);
-      showToast('Failed to update space', 'error');
+      const errorMessage = ErrorHandler.handleApiError(err, {
+        component: 'SpaceContentSection',
+        action: 'update-space',
+        endpoint: API_ENDPOINTS.SPACE.UPDATE,
+        additionalData: { spaceId, canEditName: canEditSpaceName }
+      }, 'Failed to update space');
+      showToast(errorMessage, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -1039,11 +1081,12 @@ export const SpaceContentSection = (): JSX.Element => {
                       id="edit-space-name-input"
                       type="text"
                       value={editSpaceName}
-                      onChange={(e) => setEditSpaceName(e.target.value)}
-                      placeholder="Enter space name"
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
-                      aria-required="true"
-                      autoFocus
+                      onChange={canEditSpaceName ? (e) => setEditSpaceName(e.target.value) : undefined}
+                      placeholder={canEditSpaceName ? "Enter space name" : "Space name cannot be edited (default space)"}
+                      disabled={!canEditSpaceName}
+                      className={`flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-base tracking-[0] leading-[23px] outline-none ${!canEditSpaceName ? 'text-gray-500 cursor-not-allowed' : 'text-medium-dark-grey placeholder:text-medium-dark-grey'}`}
+                      aria-required={canEditSpaceName}
+                      autoFocus={canEditSpaceName}
                     />
                   </div>
                 </div>
@@ -1073,53 +1116,18 @@ export const SpaceContentSection = (): JSX.Element => {
                   </span>
                 </div>
 
-                {/* Cover Image URL */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="edit-space-cover-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Cover Image URL (Optional)
-                  </label>
-
-                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                    <input
-                      id="edit-space-cover-input"
-                      type="url"
-                      value={editSpaceCoverUrl}
-                      onChange={(e) => setEditSpaceCoverUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
-                    />
-                  </div>
-                  {editSpaceCoverUrl && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="w-16 h-10 rounded bg-gray-100 overflow-hidden">
-                        <img
-                          src={editSpaceCoverUrl}
-                          alt="Cover preview"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png';
-                          }}
-                        />
-                      </div>
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-gray-600 text-sm">
-                        Cover preview
-                      </span>
-                    </div>
-                  )}
-                </div>
               </div>
 
               <div className="flex items-center justify-between relative self-stretch w-full flex-[0_0_auto]">
-                {/* Delete button on the left */}
-                <button
-                  className="inline-flex items-center gap-2 px-3 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-red/10 transition-colors"
-                  onClick={handleDeleteSpace}
-                  type="button"
-                  aria-label="Delete treasury"
-                >
+                {/* 🔍 SEARCH: space-delete-button-conditional */}
+                {/* Delete button on the left - only show for custom spaces (spaceType === 0 or undefined) */}
+                {canDeleteSpace && (
+                  <button
+                    className="inline-flex items-center gap-2 px-3 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-red/10 transition-colors"
+                    onClick={handleDeleteSpace}
+                    type="button"
+                    aria-label="Delete treasury"
+                  >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M3 6H5H21" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1129,7 +1137,15 @@ export const SpaceContentSection = (): JSX.Element => {
                   <span className="[font-family:'Lato',Helvetica] font-normal text-red text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
                     Delete
                   </span>
-                </button>
+                  </button>
+                )}
+
+                {/* Show message when delete is not allowed */}
+                {!canDeleteSpace && (
+                  <div className="text-xs text-gray-500 px-3 py-2">
+                    Delete unavailable (default space)
+                  </div>
+                )}
 
                 {/* Cancel and Save buttons on the right */}
                 <div className="flex items-center gap-2.5">
@@ -1151,7 +1167,7 @@ export const SpaceContentSection = (): JSX.Element => {
                   <button
                     className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
                     onClick={handleSaveSpaceName}
-                    disabled={!editSpaceName.trim() || isSaving}
+                    disabled={isSaving || (canEditSpaceName && !editSpaceName.trim())}
                     type="button"
                   >
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">

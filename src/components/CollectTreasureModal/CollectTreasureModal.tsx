@@ -61,6 +61,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [newTreasuryName, setNewTreasuryName] = useState("");
+  const [newTreasuryDescription, setNewTreasuryDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedArticleId, setResolvedArticleId] = useState<number | null>(null);
   const [curationsSpaceId, setCurationsSpaceId] = useState<number | null>(null); // Store Curations space ID to always include in save
@@ -194,6 +195,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setSearchQuery("");
       setShowCreateNew(false);
       setNewTreasuryName("");
+      setNewTreasuryDescription("");
       setIsSubmitting(false);
     }
   }, [isOpen]);
@@ -274,7 +276,10 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setIsSubmitting(true);
 
       // Call the createSpace API to create a new treasury
-      const createResponse = await AuthService.createSpace(newTreasuryName.trim());
+      const createResponse = await AuthService.createSpace(
+        newTreasuryName.trim(),
+        newTreasuryDescription.trim() || undefined
+      );
       logger.log('Create space response:', createResponse);
 
       // Extract the created space from response
@@ -303,6 +308,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       setShowCreateNew(false);
       setNewTreasuryName("");
+      setNewTreasuryDescription("");
     } catch (err) {
       logger.error('Failed to create treasury:', err);
       showToast('Failed to create treasury', 'error');
@@ -379,6 +385,30 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                     autoFocus
                   />
                 </div>
+              </div>
+
+              {/* Description Field */}
+              <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                <label
+                  htmlFor="treasury-description"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                >
+                  Description (Optional)
+                </label>
+                <div className="flex items-start px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                  <textarea
+                    id="treasury-description"
+                    value={newTreasuryDescription}
+                    onChange={(e) => setNewTreasuryDescription(e.target.value)}
+                    placeholder="Describe your space (optional)"
+                    className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
+                    rows={3}
+                    maxLength={200}
+                  />
+                </div>
+                <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                  {newTreasuryDescription.length}/200 characters
+                </span>
               </div>
             </div>
 

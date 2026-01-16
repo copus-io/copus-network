@@ -13,6 +13,7 @@ import { useArticleDetail } from "../../hooks/queries";
 import { useArticleWithComments } from "../../hooks/queries/useArticleWithComments";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
+import { devLog } from "../../utils/devLogger";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { CommentButton } from "../../components/ui/CommentButton";
@@ -754,7 +755,8 @@ export const Content = (): JSX.Element => {
     fetchCollectedInData();
   }, [article?.id]); // Only depend on article.id, not the full article object
 
-  // 获取用户空间数据
+  // 🔍 SEARCH: user-card-spaces-fetch
+  // Fetch user spaces for user hover card display (limited to 2 for UI optimization)
   useEffect(() => {
     const fetchUserSpaces = async () => {
       if (!article?.authorInfo?.id) {
@@ -762,19 +764,43 @@ export const Content = (): JSX.Element => {
         return;
       }
 
-      try {
-        const response = await AuthService.getMySpaces(article.authorInfo.id, 1, 10);
+      const startTime = performance.now();
+      const endpoint = '/client/userHome/pageMySpaces';
+      const authorId = article.authorInfo.id;
 
-        // 解析嵌套的API响应结构
+      devLog.apiCall(endpoint, { targetUserId: authorId, pageSize: 2 }, {
+        component: 'Content',
+        action: 'fetch-user-spaces',
+        userId: authorId
+      });
+
+      try {
+        // 🔍 SEARCH: pageMySpaces-api-call-user-card
+        const response = await AuthService.getMySpaces(authorId, 1, 2);
+        const duration = performance.now() - startTime;
+
+        // 🔍 SEARCH: spaces-response-parsing
+        // Parse nested API response structure from pageMySpaces endpoint
         const spacesData = response?.data?.data && Array.isArray(response.data.data)
           ? response.data.data
           : response?.data && Array.isArray(response.data)
           ? response.data
           : [];
 
+        devLog.apiResponse(endpoint, { count: spacesData.length }, duration, {
+          component: 'Content',
+          userId: authorId
+        });
+
         setUserSpaces(spacesData);
       } catch (error) {
-        console.error('Failed to fetch user spaces:', error);
+        const duration = performance.now() - startTime;
+        devLog.apiError(endpoint, error, {
+          component: 'Content',
+          action: 'fetch-user-spaces-error',
+          userId: authorId
+        });
+        console.error('🚨 Failed to fetch user spaces:', error);
         setUserSpaces([]);
       }
     };
