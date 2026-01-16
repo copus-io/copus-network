@@ -1985,25 +1985,38 @@ export class AuthService {
   /**
    * Create a new space/treasury
    * @param name - The name of the new space
+   * @param description - Optional description for the space
+   * @param coverUrl - Optional cover image URL for the space
    * @returns The created space object with id, name, namespace, spaceType, userId, etc.
    */
-  static async createSpace(name: string): Promise<any> {
+  static async createSpace(name: string, description?: string, coverUrl?: string): Promise<any> {
     return apiRequest(`/client/article/space/create`, {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({
+        name,
+        ...(description && { description }),
+        ...(coverUrl && { coverUrl })
+      }),
     });
   }
 
   /**
-   * Update a space/treasury name
+   * Update a space/treasury
    * API: POST /client/article/space/update
    * @param id - The space ID
    * @param name - The new name for the space
+   * @param description - Optional new description for the space
+   * @param coverUrl - Optional new cover image URL for the space
    */
-  static async updateSpace(id: number, name: string): Promise<any> {
+  static async updateSpace(id: number, name: string, description?: string, coverUrl?: string): Promise<any> {
     return apiRequest(`/client/article/space/update`, {
       method: 'POST',
-      body: JSON.stringify({ id, name }),
+      body: JSON.stringify({
+        id,
+        name,
+        ...(description !== undefined && { description }),
+        ...(coverUrl !== undefined && { coverUrl })
+      }),
     });
   }
 

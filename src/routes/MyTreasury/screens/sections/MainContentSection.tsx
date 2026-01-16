@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { AuthService } from "../../../../services/authService";
 import { Button } from "../../../../components/ui/button";
 import { TreasuryCard } from "../../../../components/ui/TreasuryCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
+import defaultBanner from "../../../../assets/images/default-banner.svg";
 import { useToast } from "../../../../components/ui/toast";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
@@ -35,21 +36,102 @@ const TreasuryHeaderSection = ({
   namespace,
   bio,
   avatarUrl,
+  coverUrl,
   socialLinks,
   onShare,
+  isOwnProfile = false,
+  onCoverUpload,
 }: {
   username: string;
   namespace: string;
   bio?: string;
   avatarUrl?: string;
+  coverUrl?: string;
   socialLinks: SocialLink[];
   onShare?: () => void;
+  isOwnProfile?: boolean;
+  onCoverUpload?: (imageUrl: string) => void;
 }): JSX.Element => {
+  const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
+  const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
+
+  // 智能Banner图片加载检测
+  const checkBannerImageLoad = useCallback((imageUrl: string) => {
+    if (!imageUrl || imageUrl === defaultBanner) {
+      setBannerImageLoaded(true);
+      setShowBannerLoadingSpinner(false);
+      return;
+    }
+
+    setBannerImageLoaded(false);
+    setShowBannerLoadingSpinner(false);
+
+    let isLoaded = false;
+
+    // 延迟300ms显示loading，如果图片快速加载完成就不显示loading
+    const loadingTimer = setTimeout(() => {
+      if (!isLoaded) {
+        setShowBannerLoadingSpinner(true);
+      }
+    }, 300);
+
+    // 创建新图片对象检测加载
+    const img = new Image();
+    img.onload = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true);
+      setShowBannerLoadingSpinner(false);
+    };
+    img.onerror = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true); // 即使加载失败也显示，避免持续loading
+      setShowBannerLoadingSpinner(false);
+    };
+    img.src = imageUrl;
+
+    // 清理函数
+    return () => clearTimeout(loadingTimer);
+  }, []);
+
+  // 检测封面图片加载
+  useEffect(() => {
+    const bannerUrl = coverUrl || defaultBanner;
+    checkBannerImageLoad(bannerUrl);
+  }, [coverUrl, checkBannerImageLoad]);
+
+
   return (
     <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
-      <div className="gap-6 lg:gap-10 px-4 lg:pl-5 lg:pr-10 py-0 flex flex-col lg:flex-row items-start relative self-stretch w-full flex-[0_0_auto]">
+      {/* Cover image */}
+      <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative">
+        {coverUrl || defaultBanner ? (
+          <>
+            <div
+              className={`w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-300 ${
+                bannerImageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                backgroundImage: `url(${coverUrl || defaultBanner})`,
+                backgroundColor: '#f3f4f6'
+              }}
+            />
+            {showBannerLoadingSpinner && (
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-r from-blue-100 to-purple-100">
+          </div>
+        )}
+      </div>
+
+      <div className="gap-6 lg:gap-10 px-4 lg:pl-5 lg:pr-10 py-8 flex flex-col lg:flex-row items-start relative self-stretch w-full flex-[0_0_auto] mt-[-60px]">
         <img
-          className="relative w-20 h-20 rounded-full border-2 border-solid border-white object-cover"
+          className="relative w-20 h-20 rounded-full border-4 border-white object-cover shadow-lg z-10"
           src={avatarUrl || profileDefaultAvatar}
           alt={`${username} profile`}
         />
@@ -123,6 +205,7 @@ const TreasuryHeaderSection = ({
           </div>
         </div>
       </div>
+
     </header>
   );
 };
@@ -131,7 +214,7 @@ const TreasuryHeaderSection = ({
 export const MainContentSection = (): JSX.Element => {
   const navigate = useNavigate();
   const { namespace } = useParams<{ namespace?: string }>();
-  const { user, socialLinks: socialLinksData, fetchSocialLinks } = useUser();
+  const { user, socialLinks: socialLinksData, fetchSocialLinks, updateUser } = useUser();
   const { showToast } = useToast();
 
   // Determine if viewing other user early
@@ -411,6 +494,42 @@ export const MainContentSection = (): JSX.Element => {
   const displayUser = isViewingOtherUser ? treasuryUserInfo : user;
   const displaySocialLinks = isViewingOtherUser ? (treasuryUserInfo?.socialLinks || []) : (socialLinksData || []);
 
+  // Handle cover image upload
+  const handleCoverUpload = async (imageUrl: string) => {
+    if (!user) return;
+
+    try {
+      // Call API to update user cover image
+      await AuthService.updateUserInfo({
+        coverUrl: imageUrl,
+        bio: user.bio,
+        faceUrl: user.faceUrl,
+        userName: user.username
+      });
+
+      // Update local state
+      if (isViewingOtherUser) {
+        setTreasuryUserInfo({
+          ...treasuryUserInfo,
+          coverUrl: imageUrl
+        });
+      }
+
+      // Update user info in UserContext if viewing own profile
+      if (!isViewingOtherUser && user && updateUser) {
+        updateUser({
+          ...user,
+          coverUrl: imageUrl
+        });
+      }
+
+      showToast('Cover image updated successfully!', 'success');
+    } catch (error) {
+      console.error('Failed to update cover image:', error);
+      showToast('Failed to update cover image, please try again', 'error');
+    }
+  };
+
   return (
     <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
       {/* Header Section */}
@@ -419,8 +538,11 @@ export const MainContentSection = (): JSX.Element => {
         namespace={displayUser?.namespace || 'user'}
         bio={displayUser?.bio || ''}
         avatarUrl={displayUser?.faceUrl || profileDefaultAvatar}
+        coverUrl={displayUser?.coverUrl}
         socialLinks={displaySocialLinks}
         onShare={handleShare}
+        isOwnProfile={!isViewingOtherUser}
+        onCoverUpload={handleCoverUpload}
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}

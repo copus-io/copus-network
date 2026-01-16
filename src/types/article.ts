@@ -57,6 +57,7 @@ export interface BackendAuthorInfo {
   namespace: string;
   username: string;
   faceUrl: string;
+  bio?: string; // 作者个人简介，60字符限制
 }
 
 export interface BackendCategoryInfo {
@@ -167,6 +168,7 @@ export interface ArticleDetailResponse {
     id: number;
     namespace: string;
     username: string;
+    bio?: string; // 作者个人简介
   };
   categoryInfo: {
     articleCount: number;

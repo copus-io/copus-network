@@ -17,6 +17,8 @@ export interface SpaceData {
   namespace?: string;
   name?: string;
   title?: string;
+  description?: string; // 空间描述
+  coverUrl?: string; // 空间封面图
   spaceType?: number; // 1 = Collections, 2 = Curations
   articleCount?: number;
   treasureCount?: number;
