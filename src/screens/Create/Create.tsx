@@ -1013,8 +1013,8 @@ export const Create = (): JSX.Element => {
               )}
             </div>
 
-            {/* x402 Pay-to-unlock section */}
-            <div className="flex flex-col items-start gap-5 w-full pt-5">
+            {/* x402 Pay-to-unlock section - Hidden for now */}
+            <div className="hidden flex flex-col items-start gap-5 w-full pt-5">
 
               {/* Toggle section */}
               <div className="flex items-center justify-between w-full">
