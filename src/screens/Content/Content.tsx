@@ -34,7 +34,7 @@ import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, To
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
 import { SEO, ArticleSchema } from '../../components/SEO/SEO';
-import SEOTester from '../../components/SEOTester/SEOTester';
+import { UserCard } from '../../components/ui/UserCard';
 
 // Debug logging helper - only logs in development mode
 const debugLog = (...args: any[]) => {
@@ -91,6 +91,9 @@ export const Content = (): JSX.Element => {
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
+
+  // User spaces state for hover card
+  const [userSpaces, setUserSpaces] = useState<SpaceData[]>([]);
 
   // ========================================
   // x402 Payment Protocol State Management
@@ -150,6 +153,17 @@ export const Content = (): JSX.Element => {
   const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
   const [shouldShowModal, setShouldShowModal] = useState(false);
   const commentScrollRef = useRef<HTMLDivElement>(null);
+
+  // Show success toast when arriving from browser extension after publishing
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('published') === 'true') {
+      showToast('Done! You just surfaced an internet gem!', 'success');
+      // Remove the query param from URL without reload
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search, showToast]);
 
   // Handle modal animation timing and body scroll lock
   useEffect(() => {
@@ -680,6 +694,7 @@ export const Content = (): JSX.Element => {
       userId: article.authorInfo?.id,
       userNamespace: article.authorInfo?.namespace,
       userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
+      userBio: article.authorInfo?.bio || '', // 作者个人简介
       date: new Date(article.createAt * 1000).toLocaleDateString(),
       treasureCount: article.likeCount || 0,
       visitCount: `${article.viewCount || 0} Visits`,
@@ -705,41 +720,70 @@ export const Content = (): JSX.Element => {
   }, [content, article, updateArticleLikeState]);
 
   // Fetch "Collected in" data - get spaces that contain this article
-  // Wrapped in useCallback to prevent unnecessary re-creations
-  const fetchCollectedInData = useCallback(async () => {
-    if (!article || !article.id) {
-      return;
-    }
-
-    try {
-      // Fetch spaces that contain this article using the article's id field
-      const spacesResponse = await AuthService.getSpacesByArticleId(article.id);
-      debugLog('Spaces by article ID response:', spacesResponse);
-
-      // Parse the response - handle different possible formats
-      let spacesArray: SpaceData[] = [];
-      if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
-        spacesArray = spacesResponse.data.data;
-      } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
-        spacesArray = spacesResponse.data;
-      } else if (Array.isArray(spacesResponse)) {
-        spacesArray = spacesResponse;
+  // Use article.id directly in useEffect to avoid callback recreation on every article change
+  useEffect(() => {
+    const fetchCollectedInData = async () => {
+      if (!article?.id) {
+        setCollectedInData([]);
+        return;
       }
 
-      // Use space data directly from API response
-      setCollectedInData(spacesArray);
-    } catch (err) {
-      console.error('Failed to fetch collected in data:', err);
-      setCollectedInData([]);
-    }
-  }, [article]);
+      try {
+        // Fetch spaces that contain this article using the article's id field
+        const spacesResponse = await AuthService.getSpacesByArticleId(article.id);
+        debugLog('Spaces by article ID response:', spacesResponse);
 
-  useEffect(() => {
+        // Parse the response - handle different possible formats
+        let spacesArray: SpaceData[] = [];
+        if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
+          spacesArray = spacesResponse.data.data;
+        } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
+          spacesArray = spacesResponse.data;
+        } else if (Array.isArray(spacesResponse)) {
+          spacesArray = spacesResponse;
+        }
+
+        // Use space data directly from API response
+        setCollectedInData(spacesArray);
+      } catch (err) {
+        console.error('Failed to fetch collected in data:', err);
+        setCollectedInData([]);
+      }
+    };
+
     fetchCollectedInData();
-  }, [fetchCollectedInData]);
+  }, [article?.id]); // Only depend on article.id, not the full article object
+
+  // 获取用户空间数据
+  useEffect(() => {
+    const fetchUserSpaces = async () => {
+      if (!article?.authorInfo?.id) {
+        setUserSpaces([]);
+        return;
+      }
+
+      try {
+        const response = await AuthService.getMySpaces(article.authorInfo.id, 1, 10);
+
+        // 解析嵌套的API响应结构
+        const spacesData = response?.data?.data && Array.isArray(response.data.data)
+          ? response.data.data
+          : response?.data && Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        setUserSpaces(spacesData);
+      } catch (error) {
+        console.error('Failed to fetch user spaces:', error);
+        setUserSpaces([]);
+      }
+    };
+
+    fetchUserSpaces();
+  }, [article?.authorInfo?.id]);
 
   // ========================================
-  // Event Handlers
+  // Early Returns (After All Hooks)
   // ========================================
 
   if (loading) {
@@ -786,7 +830,7 @@ export const Content = (): JSX.Element => {
                 {!isArticleDeleted && (
                   <button
                     onClick={() => window.location.reload()}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors font-medium"
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors font-button"
                   >
                     Reload Page
                   </button>
@@ -826,6 +870,19 @@ export const Content = (): JSX.Element => {
     } else {
       // Navigate to the user's profile page using short link format
       navigate(`/u/${content.userNamespace}`);
+    }
+  };
+
+  // 处理空间点击事件 - 导航到对应的空间页面
+  const handleSpaceClick = (space: SpaceData) => {
+    if (space.namespace) {
+      // 使用 /treasury/:namespace 格式导航到空间页面
+      navigate(`/treasury/${space.namespace}`);
+    } else if (space.id) {
+      // 如果没有namespace，使用旧版 /space/:id 格式
+      navigate(`/space/${space.id}`);
+    } else {
+      console.warn('Space missing both namespace and id:', space);
     }
   };
 
@@ -1928,7 +1985,7 @@ export const Content = (): JSX.Element => {
   // ========================================
   return (
     <>
-      {/* Dynamic SEO meta tags for article pages */}
+      {/* Original SEO meta tags */}
       {content && (
         <>
           <SEO
@@ -1943,6 +2000,7 @@ export const Content = (): JSX.Element => {
               author: content.userName,
               section: content.category,
             }}
+            noIndex={false}
           />
           <ArticleSchema
             title={content.title}
@@ -1955,6 +2013,8 @@ export const Content = (): JSX.Element => {
           />
         </>
       )}
+
+
       <div
         className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
         data-model-id="9091:54529"
@@ -2026,21 +2086,39 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <cite
-                  className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                  onClick={handleUserClick}
-                  title={`View ${content.userName}'s profile`}
+                <UserCard
+                  userId={content.userId}
+                  userName={content.userName}
+                  userNamespace={content.userNamespace}
+                  userAvatar={content.userAvatar}
+                  userBio={content.userBio}
+                  userSpaces={userSpaces}
+                  onUserClick={handleUserClick}
+                  onSpaceClick={handleSpaceClick}
                 >
-                  <img
-                    className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
-                    alt="Profile image"
-                    src={content.userAvatar}
-                  />
+                  <cite
+                    className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                    onClick={handleUserClick}
+                    title={`View ${content.userName}'s profile`}
+                  >
+                    <img
+                      className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
+                      alt="Profile image"
+                      src={content.userAvatar}
+                    />
 
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
-                    {content.userName}
-                  </span>
-                </cite>
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
+                      {content.userName}
+                    </span>
+                  </cite>
+                </UserCard>
+
+                {/* 作者简介 - 显示在作者头像下方 */}
+                {content.userBio && content.userBio.trim() && (
+                  <p className="[font-family:'Lato',Helvetica] text-gray-500 text-xs leading-relaxed italic">
+                    {content.userBio}
+                  </p>
+                )}
               </blockquote>
             </div>
 
@@ -2102,6 +2180,7 @@ export const Content = (): JSX.Element => {
                 </div>
               </section>
             )}
+
             </article>
 
             {/* Comment Section Modal - NetEase Music Style */}
@@ -2472,8 +2551,6 @@ export const Content = (): JSX.Element => {
       </div>
     </div>
 
-    {/* SEO功能测试组件 - 仅在开发环境显示 */}
-    <SEOTester />
 
     </>
   );

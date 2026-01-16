@@ -57,6 +57,7 @@ export interface BackendAuthorInfo {
   namespace: string;
   username: string;
   faceUrl: string;
+  bio?: string; // 作者个人简介，60字符限制
 }
 
 export interface BackendCategoryInfo {
@@ -167,6 +168,7 @@ export interface ArticleDetailResponse {
     id: number;
     namespace: string;
     username: string;
+    bio?: string; // 作者个人简介
   };
   categoryInfo: {
     articleCount: number;
@@ -251,4 +253,23 @@ export interface SEOSettingsResponse {
   status: number;
   msg: string;
   data: boolean;
+}
+
+// Bind articles to spaces API types
+export interface BindArticlesRequest {
+  articleId: number;
+  spaceIds: number[];
+}
+
+export interface BindArticlesResponse {
+  isLiked: boolean;
+  likeCount: number;
+  state: boolean;
+}
+
+// Bind articles API response wrapper
+export interface BindArticlesApiResponse {
+  status: number;
+  msg: string;
+  data: BindArticlesResponse;
 }

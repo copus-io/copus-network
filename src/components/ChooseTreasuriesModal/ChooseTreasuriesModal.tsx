@@ -106,9 +106,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           // For default spaces, show "Username's Treasury" or "Username's Curations"
           let displayName: string;
           if (spaceTypeNum === 1) {
-            displayName = `${user.username || 'User'}'s Treasury`;
+            displayName = `${user.username || 'Anonymous'}'s Treasury`;
           } else if (spaceTypeNum === 2) {
-            displayName = `${user.username || 'User'}'s Curations`;
+            displayName = `${user.username || 'Anonymous'}'s Curations`;
           } else {
             displayName = space.name || 'Untitled Treasury';
           }

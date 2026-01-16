@@ -9,6 +9,7 @@ import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
+import defaultBanner from "../../../assets/images/default-banner.svg";
 
 interface UserProfileContentProps {
   namespace: string;
@@ -29,10 +30,52 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [hasMoreArticles, setHasMoreArticles] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const isLoadingMoreRef = useRef(false); // Ref to prevent race conditions in scroll handler
+  const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
+  const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
+
+  // 智能Banner图片加载检测
+  const checkBannerImageLoad = React.useCallback((imageUrl: string) => {
+    if (!imageUrl || imageUrl === defaultBanner) {
+      setBannerImageLoaded(true);
+      setShowBannerLoadingSpinner(false);
+      return;
+    }
+
+    setBannerImageLoaded(false);
+    setShowBannerLoadingSpinner(false);
+
+    let isLoaded = false;
+
+    // 延迟300ms显示loading，如果图片快速加载完成就不显示loading
+    const loadingTimer = setTimeout(() => {
+      if (!isLoaded) {
+        setShowBannerLoadingSpinner(true);
+      }
+    }, 300);
+
+    // 创建新图片对象检测加载
+    const img = new Image();
+    img.onload = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true);
+      setShowBannerLoadingSpinner(false);
+    };
+    img.onerror = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true); // 即使加载失败也显示，避免持续loading
+      setShowBannerLoadingSpinner(false);
+    };
+    img.src = imageUrl;
+
+    // 清理函数
+    return () => clearTimeout(loadingTimer);
+  }, []);
 
   // Fetch user info and articles list
   useEffect(() => {
@@ -91,6 +134,10 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             coverUrl: userData.coverUrl,
             walletAddress: userData.walletAddress
           });
+
+          // 检测banner图片加载
+          const bannerUrl = userData.coverUrl || defaultBanner;
+          checkBannerImageLoad(bannerUrl);
         }
 
         console.log('[UserProfile] User info set successfully, now fetching liked articles...');
@@ -396,14 +443,41 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cover image */}
         <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
-          <img
-            src={userInfo.coverUrl || 'https://c.animaapp.com/w7obk4mX/img/banner.png'}
-            alt="Cover"
-            className={`w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 ${
-              isOwnProfile ? 'cursor-pointer' : ''
-            }`}
-            onClick={handleCoverClick}
-          />
+          {userInfo.coverUrl || defaultBanner ? (
+            <>
+              <div
+                className={`w-full h-full bg-cover bg-center bg-no-repeat hover:scale-105 transition-all duration-300 ${
+                  isOwnProfile ? 'cursor-pointer' : ''
+                } ${
+                  bannerImageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{
+                  backgroundImage: `url(${userInfo.coverUrl || defaultBanner})`,
+                  backgroundColor: '#f3f4f6'
+                }}
+                onClick={handleCoverClick}
+              />
+              {showBannerLoadingSpinner && (
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div
+              className={`w-full h-full bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center ${
+                isOwnProfile ? 'cursor-pointer' : ''
+              }`}
+              onClick={isOwnProfile ? handleCoverClick : undefined}
+            >
+              <div className="flex flex-col items-center gap-3 text-gray-500">
+                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span className="text-sm font-medium">Add cover image</span>
+              </div>
+            </div>
+          )}
           {/* Edit overlay - only shown on own profile */}
           {isOwnProfile && (
             <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -447,7 +521,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             </div>
           </div>
 
-          {/* Follow button or account status (only shown when viewing other users) */}
+          {/* Subscribe button or account status (only shown when viewing other users) */}
           {user && user.namespace !== namespace && (
             <button
               className={`px-6 py-2 rounded-full transition-colors ${
@@ -457,7 +531,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               }`}
               disabled={!accountExists}
             >
-              {accountExists ? 'Follow' : "This account doesn't exist"}
+              {accountExists ? 'Subscribe' : "This account doesn't exist"}
             </button>
           )}
           </div>

@@ -17,6 +17,8 @@ export interface SpaceData {
   namespace?: string;
   name?: string;
   title?: string;
+  description?: string; // 空间描述
+  coverUrl?: string; // 空间封面图
   spaceType?: number; // 1 = Collections, 2 = Curations
   articleCount?: number;
   treasureCount?: number;
@@ -62,7 +64,7 @@ export interface TreasuryCardProps {
  */
 export const getSpaceDisplayName = (space: SpaceData): string => {
   // Get username from various possible fields in API response
-  // Falls back to namespace (always available) before generic 'User'
+  // Falls back to namespace (always available) before generic 'Anonymous'
   const username = space.ownerInfo?.username
     || space.userInfo?.username
     || space.user?.username
@@ -73,7 +75,7 @@ export const getSpaceDisplayName = (space: SpaceData): string => {
     || space.username
     || space.ownerInfo?.namespace
     || space.namespace
-    || 'User';
+    || 'Anonymous';
 
   // spaceType 1 = Treasury (default), spaceType 2 = Curations
   if (space.spaceType === 1) {

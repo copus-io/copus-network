@@ -61,6 +61,43 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     }
   }, [user, fetchSocialLinks]);
 
+  // 智能图片加载检测
+  const checkImageLoad = React.useCallback((imageUrl: string) => {
+    if (!imageUrl) return;
+
+    setBannerImageLoaded(false);
+    setShowLoadingSpinner(false);
+
+    let isLoaded = false;
+
+    // 延迟300ms显示loading，如果图片快速加载完成就不显示loading
+    const loadingTimer = setTimeout(() => {
+      if (!isLoaded) {
+        setShowLoadingSpinner(true);
+      }
+    }, 300);
+
+    // 创建新图片对象检测加载
+    const img = new Image();
+    img.onload = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true);
+      setShowLoadingSpinner(false);
+    };
+    img.onerror = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImage('');
+      setBannerImageLoaded(false);
+      setShowLoadingSpinner(false);
+    };
+    img.src = imageUrl;
+
+    // 清理函数
+    return () => clearTimeout(loadingTimer);
+  }, []);
+
   // 初始化图片状态和表单数据
   React.useEffect(() => {
     // Set profile image - use faceUrl if available, otherwise use default
@@ -68,6 +105,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
     if (user?.coverUrl) {
       setBannerImage(user.coverUrl);
+      checkImageLoad(user.coverUrl);
     }
     if (user?.username) {
       setFormUsername(user.username);
@@ -87,6 +125,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [showAvatarUploader, setShowAvatarUploader] = useState(false);
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
   const [isCoverSaving, setIsCoverSaving] = useState(false);
+  const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
+  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
 
   // 消息通知设置状态
   const [notificationSettings, setNotificationSettings] = useState<Array<{ isOpen: boolean; msgType: number }>>([]);
@@ -329,6 +369,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       // Update user context with new image URL
       updateUser({ coverUrl: imageUrl });
       setBannerImage(imageUrl);
+      checkImageLoad(imageUrl);
 
       // Close modal and show success
       setShowCoverUploader(false);
@@ -355,6 +396,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const handleBannerImageLocalUpdate = (imageUrl: string) => {
     console.log('Banner image updated locally (will save on click Save):', imageUrl);
     setBannerImage(imageUrl);
+    if (imageUrl) {
+      checkImageLoad(imageUrl);
+    }
   };
 
   const handleLogout = async () => {
@@ -445,6 +489,10 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
         showToast('Personal information updated successfully', 'success');
         setShowPersonalInfoPopup(false);
+        // 延迟刷新页面让用户看到成功消息
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         showToast('Update failed, please try again', 'error');
       }
@@ -475,6 +523,75 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
   return (
     <main className="flex flex-col items-start gap-[30px] px-4 lg:pl-[60px] lg:pr-10 pt-5 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
+      {/* Banner section */}
+      <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+        <button
+          onClick={handleCoverClick}
+          className="w-full h-[200px] lg:h-[250px] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border border-gray-200 flex items-center justify-center"
+          title="Click to change cover image"
+          aria-label="Click to change cover image"
+        >
+          {bannerImage ? (
+            <>
+              {/* Background div for display - always visible */}
+              <div
+                className="w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-200"
+                style={{
+                  backgroundImage: `url(${bannerImage})`,
+                  backgroundColor: '#f3f4f6'
+                }}
+              />
+              {/* Loading placeholder - only shows after delay and when needed */}
+              {showLoadingSpinner && (
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-3 text-gray-500">
+              <svg
+                className="w-12 h-12"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <span className="text-sm font-medium">Add cover image</span>
+            </div>
+          )}
+
+          {/* Show upload icon on hover when banner exists and not showing loading spinner */}
+          {bannerImage && !showLoadingSpinner && (
+            <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-20">
+              <div className="flex flex-col items-center gap-2 text-white">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89L8.65 4.54A2 2 0 0110.314 4h3.372a2 2 0 011.664.54L16.41 6.11A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-sm font-medium">Change cover</span>
+              </div>
+            </div>
+          )}
+        </button>
+      </section>
+
       <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
         {/* Profile section - avatar on left, info on right */}
         <div className="gap-4 lg:gap-6 flex flex-row items-start relative self-stretch w-full flex-[0_0_auto]">
@@ -784,23 +901,31 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                   </label>
                 </div>
 
-                <div className="flex flex-col h-[120px] items-start justify-between px-2.5 py-[15px] relative self-stretch w-full bg-monowhite rounded-lg overflow-hidden border border-solid border-gray-300 shadow-inputs">
-                  <textarea
+                <div className={`flex items-center justify-between px-4 py-3 relative self-stretch w-full bg-monowhite rounded-lg overflow-hidden border border-solid transition-all duration-200 shadow-inputs ${
+                  formBio.length >= 50 ? 'border-orange-400' : formBio.length > 0 ? 'border-green-400' : 'border-gray-300'
+                }`}>
+                  <input
                     id="bio-textarea"
+                    type="text"
                     value={formBio}
                     onChange={(e) => setFormBio(e.target.value)}
-                    placeholder="Write something about yourself"
-                    className="relative w-full flex-1 mt-[-2.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[normal] bg-transparent border-none outline-none resize-none placeholder:text-medium-dark-grey"
-                    maxLength={140}
+                    placeholder="A short bio about yourself"
+                    className="relative w-full [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[normal] bg-transparent border-none outline-none placeholder:text-medium-dark-grey transition-colors duration-200"
+                    maxLength={60}
                     aria-describedby="bio-counter"
                   />
 
                   <div
                     id="bio-counter"
-                    className="relative self-stretch [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm text-right tracking-[0] leading-[normal]"
+                    className={`relative ml-3 flex-shrink-0 [font-family:'Lato',Helvetica] font-medium text-sm tracking-[0] leading-[normal] transition-colors duration-200 ${
+                      formBio.length >= 55 ? 'text-red-500' :
+                      formBio.length >= 50 ? 'text-orange-500' :
+                      formBio.length > 0 ? 'text-green-600' :
+                      'text-medium-dark-grey'
+                    }`}
                     aria-live="polite"
                   >
-                    {formBio.length}/140
+                    {formBio.length}/60
                   </div>
                 </div>
               </div>

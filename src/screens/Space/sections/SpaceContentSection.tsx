@@ -27,6 +27,7 @@ const SpaceInfoSection = ({
   authorName,
   authorAvatar,
   authorNamespace,
+  spaceDescription,
   isFollowing,
   isOwner,
   spaceType,
@@ -41,6 +42,7 @@ const SpaceInfoSection = ({
   authorName: string;
   authorAvatar?: string;
   authorNamespace?: string;
+  spaceDescription?: string;
   isFollowing: boolean;
   isOwner: boolean;
   spaceType?: number;
@@ -50,8 +52,9 @@ const SpaceInfoSection = ({
   onAuthorClick: () => void;
   onEdit?: () => void;
 }): JSX.Element => {
-  // Hide edit button for default treasuries (spaceType 1 = Collections, 2 = Curations)
-  const canEdit = isOwner && spaceType !== 1 && spaceType !== 2;
+  // Allow space owners to edit all types of spaces (including default Collections/Curations)
+  // Now that we support descriptions and covers, owners should be able to customize their spaces
+  const canEdit = isOwner;
   const [showUnfollowDropdown, setShowUnfollowDropdown] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const { showToast } = useToast();
@@ -111,9 +114,18 @@ const SpaceInfoSection = ({
         </div>
       </div>
 
+      {/* Space Description */}
+      {spaceDescription && spaceDescription.trim() && (
+        <div className="relative self-stretch w-full">
+          <p className="[font-family:'Lato',Helvetica] font-normal text-gray-700 text-base tracking-[0] leading-[24px]">
+            {spaceDescription}
+          </p>
+        </div>
+      )}
+
       <div className="inline-flex items-center gap-5 pt-2.5 pb-0 px-0 relative flex-[0_0_auto]">
         {canEdit ? (
-          // Edit button for owner (hidden for default Collections/Curations spaces)
+          // Edit button for space owner to customize name, description, and cover
           <button
             className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-medium-grey cursor-pointer hover:bg-gray-50 transition-colors"
             aria-label="Edit space"
@@ -129,13 +141,13 @@ const SpaceInfoSection = ({
             </span>
           </button>
         ) : !isOwner && (
-          // Follow/Following button for non-owner
+          // Subscribe/Subscribed button for non-owner
           isFollowing ? (
-            // Following state with dropdown - transparent background
+            // Subscribed state with dropdown - transparent background
             <div className="relative">
               <button
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-transparent"
-                aria-label="Following options"
+                aria-label="Subscription options"
                 type="button"
                 onClick={() => setShowUnfollowDropdown(!showUnfollowDropdown)}
               >
@@ -145,7 +157,7 @@ const SpaceInfoSection = ({
                   <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
                 </svg>
                 <span className="[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
-                  Following
+                  Subscribed
                 </span>
                 {/* Down arrow */}
                 <svg width="16" height="16" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
@@ -169,18 +181,18 @@ const SpaceInfoSection = ({
                         onUnfollow();
                       }}
                     >
-                      Unfollow
+                      Unsubscribe
                     </button>
                   </div>
                 </>
               )}
             </div>
           ) : (
-            // Follow button - #2b8649 10% over white background
+            // Subscribe button - #2b8649 10% over white background
             <button
               className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all"
               style={{ background: 'linear-gradient(0deg, rgba(43, 134, 73, 0.1) 0%, rgba(43, 134, 73, 0.1) 100%), #FFFFFF' }}
-              aria-label="Follow space"
+              aria-label="Subscribe to space"
               type="button"
               onClick={onFollow}
             >
@@ -190,7 +202,7 @@ const SpaceInfoSection = ({
                 <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
               </svg>
               <span className="[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
-                Follow
+                Subscribe
               </span>
             </button>
           )
@@ -278,9 +290,12 @@ export const SpaceContentSection = (): JSX.Element => {
   // Edit space modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSpaceName, setEditSpaceName] = useState("");
+  const [editSpaceDescription, setEditSpaceDescription] = useState("");
+  const [editSpaceCoverUrl, setEditSpaceCoverUrl] = useState("");
   const [displaySpaceName, setDisplaySpaceName] = useState("");
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
@@ -372,6 +387,8 @@ export const SpaceContentSection = (): JSX.Element => {
             authorAvatar: spaceData?.userInfo?.faceUrl || profileDefaultAvatar,
             authorNamespace: spaceData?.userInfo?.namespace,
             spaceType: spaceData?.spaceType,
+            description: spaceData?.description, // Add space description
+            coverUrl: spaceData?.coverUrl, // Add space cover image
           };
 
           // Store spaceId for later use (edit functionality)
@@ -420,6 +437,8 @@ export const SpaceContentSection = (): JSX.Element => {
             authorName: user?.username || 'Anonymous',
             authorAvatar: user?.faceUrl || profileDefaultAvatar,
             authorNamespace: user?.namespace,
+            description: undefined, // No description available for old category routes
+            coverUrl: undefined, // No cover available for old category routes
           });
 
           // For old routes, assume not following (since no API to check)
@@ -583,10 +602,10 @@ export const SpaceContentSection = (): JSX.Element => {
     }
   };
 
-  // Handle follow
+  // Handle subscribe
   const handleFollow = async () => {
     if (!user) {
-      showToast('Please login to follow', 'error');
+      showToast('Please login to subscribe', 'error');
       return;
     }
     if (!spaceId) {
@@ -596,9 +615,9 @@ export const SpaceContentSection = (): JSX.Element => {
     try {
       await AuthService.followSpace(spaceId);
       setIsFollowing(true);
-      showToast('Following space', 'success');
+      showToast('Subscribed to space', 'success');
 
-      // Update cache with new follow status
+      // Update cache with new subscription status
       const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
       const cached = spaceFetchCache.get(cacheKey);
       if (cached && cached.data) {
@@ -608,15 +627,15 @@ export const SpaceContentSection = (): JSX.Element => {
         });
       }
     } catch (err) {
-      console.error('Failed to follow space:', err);
-      showToast('Failed to follow space', 'error');
+      console.error('Failed to subscribe to space:', err);
+      showToast('Failed to subscribe to space', 'error');
     }
   };
 
-  // Handle unfollow
+  // Handle unsubscribe
   const handleUnfollow = async () => {
     if (!user) {
-      showToast('Please login to unfollow', 'error');
+      showToast('Please login to unsubscribe', 'error');
       return;
     }
     if (!spaceId) {
@@ -624,11 +643,11 @@ export const SpaceContentSection = (): JSX.Element => {
       return;
     }
     try {
-      await AuthService.followSpace(spaceId); // Same API toggles follow/unfollow
+      await AuthService.followSpace(spaceId); // Same API toggles subscribe/unsubscribe
       setIsFollowing(false);
-      showToast('Unfollowed space', 'success');
+      showToast('Unsubscribed from space', 'success');
 
-      // Update cache with new follow status
+      // Update cache with new subscription status
       const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
       const cached = spaceFetchCache.get(cacheKey);
       if (cached && cached.data) {
@@ -638,8 +657,8 @@ export const SpaceContentSection = (): JSX.Element => {
         });
       }
     } catch (err) {
-      console.error('Failed to unfollow space:', err);
-      showToast('Failed to unfollow space', 'error');
+      console.error('Failed to unsubscribe from space:', err);
+      showToast('Failed to unsubscribe from space', 'error');
     }
   };
 
@@ -730,11 +749,16 @@ export const SpaceContentSection = (): JSX.Element => {
   // Handle edit space
   const handleEditSpace = () => {
     const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
+    const currentDescription = spaceInfo?.description || '';
+    const currentCoverUrl = spaceInfo?.coverUrl || '';
+
     setEditSpaceName(currentName);
+    setEditSpaceDescription(currentDescription);
+    setEditSpaceCoverUrl(currentCoverUrl);
     setShowEditModal(true);
   };
 
-  // Handle save space name
+  // Handle save space details
   const handleSaveSpaceName = async () => {
     if (!editSpaceName.trim()) {
       showToast('Please enter a space name', 'error');
@@ -749,16 +773,30 @@ export const SpaceContentSection = (): JSX.Element => {
     try {
       setIsSaving(true);
 
-      // Call API to update space name
-      await AuthService.updateSpace(spaceId, editSpaceName.trim());
+      // Prepare optional fields
+      const description = editSpaceDescription.trim() || undefined;
+      const coverUrl = editSpaceCoverUrl.trim() || undefined;
+
+      // Call API to update space with all fields
+      await AuthService.updateSpace(spaceId, editSpaceName.trim(), description, coverUrl);
 
       setDisplaySpaceName(editSpaceName.trim());
-      showToast(`Space renamed to "${editSpaceName.trim()}"`, 'success');
+      showToast('Space updated successfully', 'success');
       setShowEditModal(false);
+
+      // Reset form fields
       setEditSpaceName("");
+      setEditSpaceDescription("");
+      setEditSpaceCoverUrl("");
+
+      // Force refresh the page to show all updated changes immediately
+      // This ensures users see the updated description, cover, and name
+      setTimeout(() => {
+        window.location.reload();
+      }, 500); // Small delay to allow toast to show
     } catch (err) {
-      console.error('Failed to update space name:', err);
-      showToast('Failed to update space name', 'error');
+      console.error('Failed to update space:', err);
+      showToast('Failed to update space', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -901,6 +939,7 @@ export const SpaceContentSection = (): JSX.Element => {
         authorName={spaceInfo?.authorName || 'Anonymous'}
         authorAvatar={spaceInfo?.authorAvatar}
         authorNamespace={spaceInfo?.authorNamespace}
+        spaceDescription={spaceInfo?.description}
         isFollowing={isFollowing}
         isOwner={isOwner}
         spaceType={spaceInfo?.spaceType}
@@ -948,6 +987,8 @@ export const SpaceContentSection = (): JSX.Element => {
             onClick={() => {
               setShowEditModal(false);
               setEditSpaceName("");
+              setEditSpaceDescription("");
+              setEditSpaceCoverUrl("");
             }}
           />
 
@@ -981,9 +1022,10 @@ export const SpaceContentSection = (): JSX.Element => {
                   id="edit-space-title"
                   className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
                 >
-                  Edit treasury
+                  Edit Space
                 </h2>
 
+                {/* Space Name */}
                 <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
                   <label
                     htmlFor="edit-space-name-input"
@@ -998,17 +1040,75 @@ export const SpaceContentSection = (): JSX.Element => {
                       type="text"
                       value={editSpaceName}
                       onChange={(e) => setEditSpaceName(e.target.value)}
-                      placeholder="Enter treasury name"
+                      placeholder="Enter space name"
                       className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
                       aria-required="true"
                       autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSaveSpaceName();
-                        }
-                      }}
                     />
                   </div>
+                </div>
+
+                {/* Space Description */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="edit-space-description-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Description (Optional)
+                  </label>
+
+                  <div className="flex items-start px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                    <textarea
+                      id="edit-space-description-input"
+                      value={editSpaceDescription}
+                      onChange={(e) => setEditSpaceDescription(e.target.value)}
+                      placeholder="Describe your space (optional)"
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
+                      rows={3}
+                      maxLength={200}
+                    />
+                  </div>
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                    {editSpaceDescription.length}/200 characters
+                  </span>
+                </div>
+
+                {/* Cover Image URL */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="edit-space-cover-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Cover Image URL (Optional)
+                  </label>
+
+                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                    <input
+                      id="edit-space-cover-input"
+                      type="url"
+                      value={editSpaceCoverUrl}
+                      onChange={(e) => setEditSpaceCoverUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
+                    />
+                  </div>
+                  {editSpaceCoverUrl && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-16 h-10 rounded bg-gray-100 overflow-hidden">
+                        <img
+                          src={editSpaceCoverUrl}
+                          alt="Cover preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png';
+                          }}
+                        />
+                      </div>
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-gray-600 text-sm">
+                        Cover preview
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1038,6 +1138,8 @@ export const SpaceContentSection = (): JSX.Element => {
                     onClick={() => {
                       setShowEditModal(false);
                       setEditSpaceName("");
+                      setEditSpaceDescription("");
+                      setEditSpaceCoverUrl("");
                     }}
                     type="button"
                   >
