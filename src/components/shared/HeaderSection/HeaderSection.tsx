@@ -973,7 +973,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         >
           <Menu className="w-6 h-6 text-dark-grey" />
           {unreadCount > 0 && (
-            <div className="absolute top-2.5 -right-0.5 w-3 h-3 bg-red rounded-full" />
+            <div className="absolute top-2.5 -right-0.5 w-2 h-2 bg-red rounded-full" />
           )}
         </button>
 
@@ -1001,7 +1001,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 src="https://c.animaapp.com/mft4oqz6uyUKY7/img/notification.svg"
               />
               {unreadCount > 0 && (
-                <div className="absolute -top-1 -right-1 bg-red text-white text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1">
+                <div className="absolute -top-0.5 -right-0.5 bg-red text-white text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5">
                   {unreadCount > 99 ? '99' : unreadCount}
                 </div>
               )}
