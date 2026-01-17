@@ -2123,28 +2123,28 @@ export const Content = (): JSX.Element => {
                   onSpaceClick={handleSpaceClick}
                 >
                   <cite
-                    className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                    className="inline-flex items-center gap-3 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
                     onClick={handleUserClick}
                     title={`View ${content.userName}'s profile`}
                   >
                     <img
-                      className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
+                      className="w-10 h-10 object-cover relative aspect-[1] rounded-full"
                       alt="Profile image"
                       src={content.userAvatar}
                     />
 
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
-                      {content.userName}
-                    </span>
+                    <div className="flex flex-col items-start gap-0.5">
+                      <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
+                        {content.userName}
+                      </span>
+                      {content.userBio && content.userBio.trim() && (
+                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-sm leading-relaxed">
+                          {content.userBio}
+                        </span>
+                      )}
+                    </div>
                   </cite>
                 </UserCard>
-
-                {/* 作者简介 - 显示在作者头像下方 */}
-                {content.userBio && content.userBio.trim() && (
-                  <p className="[font-family:'Lato',Helvetica] text-gray-500 text-xs leading-relaxed italic">
-                    {content.userBio}
-                  </p>
-                )}
               </blockquote>
             </div>
 
@@ -2195,7 +2195,7 @@ export const Content = (): JSX.Element => {
                 <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-[28px] mb-[20px]">
                   Collected in
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {collectedInData.map((space) => (
                     <TreasuryCard
                       key={space.namespace || space.id?.toString()}

@@ -103,7 +103,7 @@ const TreasuryHeaderSection = ({
 
 
   return (
-    <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] pb-5">
+    <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto] py-5">
       {/* Cover image - only show if user has a cover */}
       {coverUrl && (
         <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative">

@@ -47,7 +47,7 @@ export const UserCard: React.FC<UserCardProps> = ({
   }, []);
 
   const calculatePosition = useCallback((rect: DOMRect) => {
-    const x = rect.right + 10;
+    const x = rect.right + 5;
     const y = rect.top;
     const cardWidth = 320;
     const cardHeight = 200;
@@ -59,7 +59,7 @@ export const UserCard: React.FC<UserCardProps> = ({
 
     // 如果右侧空间不够，显示在左侧
     if (x + cardWidth > viewportWidth) {
-      adjustedX = rect.left - cardWidth - 10;
+      adjustedX = rect.left - cardWidth - 5;
     }
 
     // 如果下方空间不够，向上调整
@@ -120,7 +120,7 @@ export const UserCard: React.FC<UserCardProps> = ({
   const hasMoreSpaces = useMemo(() => (userSpaces?.length || 0) > 3, [userSpaces]);
 
   return (
-    <>
+    <div className="relative inline-block">
       {/* 触发元素 */}
       <div
         ref={triggerRef}
@@ -134,11 +134,7 @@ export const UserCard: React.FC<UserCardProps> = ({
       {/* 名片弹窗 */}
       {isVisible && (
         <div
-          className="fixed z-50 pointer-events-auto"
-          style={{
-            left: `${position.x}px`,
-            top: `${position.y}px`,
-          }}
+          className="absolute z-50 pointer-events-auto left-0 top-full mt-2"
         >
           <Card
             ref={cardRef}
@@ -146,21 +142,21 @@ export const UserCard: React.FC<UserCardProps> = ({
             onMouseLeave={handleCardMouseLeave}
             className="w-80 bg-white border border-gray-200 shadow-lg animate-in fade-in-0 zoom-in-95 duration-200"
           >
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
                 {/* 用户头像 */}
                 <img
                   src={userAvatar}
                   alt={`${userName}'s avatar`}
-                  className="w-16 h-16 rounded-full object-cover flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
+                  className="w-12 h-12 rounded-full object-cover flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
                   onClick={handleCardUserClick}
                 />
 
                 <div className="flex-1 min-w-0">
                   {/* 用户名和namespace */}
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <h4
-                      className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-lg cursor-pointer hover:text-blue-600 transition-colors duration-200 truncate"
+                      className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-base cursor-pointer hover:text-blue-600 transition-colors duration-200 truncate"
                       onClick={handleCardUserClick}
                       title={userName}
                     >
@@ -175,7 +171,7 @@ export const UserCard: React.FC<UserCardProps> = ({
 
                   {/* 用户简介 */}
                   {userBio && userBio.trim() && (
-                    <p className="[font-family:'Lato',Helvetica] text-gray-700 text-sm leading-relaxed mb-2 overflow-hidden"
+                    <p className="[font-family:'Lato',Helvetica] text-gray-600 text-sm leading-snug overflow-hidden"
                        style={{
                          display: '-webkit-box',
                          WebkitLineClamp: 2,
@@ -184,28 +180,15 @@ export const UserCard: React.FC<UserCardProps> = ({
                       {userBio}
                     </p>
                   )}
-
-                  {/* 操作按钮 */}
-                  <div className="flex items-center">
-                    <button
-                      onClick={handleCardUserClick}
-                      className="[font-family:'Lato',Helvetica] bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors duration-200 font-medium"
-                    >
-                      查看资料
-                    </button>
-                  </div>
                 </div>
               </div>
 
               {/* 用户空间列表 - 横向排列 */}
               {userSpaces && userSpaces.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg className="w-3 h-3 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4z" clipRule="evenodd" />
-                    </svg>
+                  <div className="flex items-start gap-2 mb-2">
                     <span className="[font-family:'Lato',Helvetica] text-xs font-medium text-gray-700">
-                      空间 ({userSpaces.length})
+                      Treasuries ({userSpaces.length})
                     </span>
                   </div>
                   <div className="flex gap-1 flex-wrap">
@@ -235,7 +218,7 @@ export const UserCard: React.FC<UserCardProps> = ({
           </Card>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
