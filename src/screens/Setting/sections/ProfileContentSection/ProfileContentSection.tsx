@@ -522,12 +522,108 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
 
   return (
-    <main className="flex flex-col items-start gap-[30px] px-4 lg:pl-[60px] lg:pr-10 pt-5 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
-      {/* Banner section */}
-      <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
-        <button
-          onClick={handleCoverClick}
-          className="w-full h-[200px] lg:h-[250px] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border border-gray-200 flex items-center justify-center"
+    <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-5 pb-5 relative flex-1 self-stretch grow bg-transparent">
+      {/* Identity section */}
+      <section className="flex flex-col items-start gap-3 relative self-stretch w-full flex-[0_0_auto] pb-8 border-b border-[#E0E0E0]">
+        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
+          <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
+            Identity
+          </h2>
+        </div>
+
+        {/* Username and Bio */}
+        <div className="flex flex-col items-start gap-2 relative w-full">
+          {/* Username */}
+          <div className="flex items-center gap-2.5">
+            <h1 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[1.4]">
+              {formData.name || (!user ? "Loading..." : "Anonymous")}
+            </h1>
+
+            {/* Edit button next to username */}
+            <button
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+              aria-label="Edit personal information"
+              onClick={() => setShowPersonalInfoPopup(true)}
+              title="Edit username, bio and other personal information"
+            >
+              <img
+                className="w-4 h-4"
+                alt="Edit"
+                src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+              />
+            </button>
+          </div>
+
+          {/* Bio */}
+          <div className="flex items-center gap-2.5">
+            <p className="font-p-l font-[number:var(--p-l-font-weight)] text-off-black text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)]">
+              {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
+            </p>
+
+            {/* Edit button next to bio */}
+            <button
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+              aria-label="Edit bio"
+              onClick={() => setShowPersonalInfoPopup(true)}
+              title="Edit bio"
+            >
+              <img
+                className="w-4 h-4"
+                alt="Edit"
+                src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Profile and Cover images in one row on desktop, stacked on mobile */}
+        <div className="flex flex-col lg:flex-row items-start gap-5 lg:gap-8 relative w-full mt-3">
+          {/* Profile image */}
+          <div className="flex flex-col items-start gap-2">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Profile image</h3>
+            <button
+              onClick={handleAvatarClick}
+              className="w-[50px] h-[50px] lg:w-[60px] lg:h-[60px] rounded-full border-2 border-solid border-light-grey relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100 flex-shrink-0"
+              title="Click to change avatar"
+              aria-label="Click to change avatar"
+            >
+              <img
+                key={user?.faceUrl || 'default'}
+                src={(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar}
+                alt="Profile avatar"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = profileDefaultAvatar;
+                }}
+              />
+              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89L8.65 4.54A2 2 0 0110.314 4h3.372a2 2 0 011.664.54L16.41 6.11A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+            </button>
+          </div>
+
+          {/* Divider - hidden on mobile */}
+          <div className="hidden lg:block w-px h-[100px] bg-[#E0E0E0] self-center"></div>
+
+          {/* Cover image */}
+          <div className="flex flex-col items-start gap-2">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Cover image</h3>
+            <button
+              onClick={handleCoverClick}
+              className="w-[200px] lg:w-[300px] aspect-[3/1] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border border-gray-200 flex items-center justify-center"
           title="Click to change cover image"
           aria-label="Click to change cover image"
         >
@@ -547,9 +643,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               )}
             </>
           ) : (
-            <div className="flex flex-col items-center gap-3 text-gray-500">
+            <div className="flex flex-col items-center gap-0 text-gray-500">
               <svg
-                className="w-12 h-12"
+                className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -586,152 +682,22 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               </div>
             </div>
           )}
-        </button>
-      </section>
-
-      <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
-        {/* Profile section - avatar on left, info on right */}
-        <div className="gap-4 lg:gap-6 flex flex-row items-start relative self-stretch w-full flex-[0_0_auto]">
-          {/* Avatar on the left */}
-          <button
-            onClick={handleAvatarClick}
-            className="w-[80px] h-[80px] lg:w-[100px] lg:h-[100px] rounded-full border-2 border-solid border-light-grey relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100 flex-shrink-0"
-            title="Click to change avatar"
-            aria-label="Click to change avatar"
-          >
-            <img
-              key={user?.faceUrl || 'default'}
-              src={(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar}
-              alt="Profile avatar"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = profileDefaultAvatar;
-              }}
-            />
-            <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89L8.65 4.54A2 2 0 0110.314 4h3.372a2 2 0 011.664.54L16.41 6.11A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-          </button>
-
-          {/* User info on the right */}
-          <div className="flex flex-col items-start gap-3 relative flex-1">
-            {/* Username and handle grouped together */}
-            <div className="flex flex-col items-start gap-0.5">
-              {/* Username at the top */}
-              <div className="flex items-center gap-2.5">
-                <h1 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[1.4]">
-                  {formData.name || (!user ? "Loading..." : "Anonymous")}
-                </h1>
-
-                {/* Edit button next to username */}
-                <button
-                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                  aria-label="Edit personal information"
-                  onClick={() => setShowPersonalInfoPopup(true)}
-                  title="Edit username, bio and other personal information"
-                >
-                  <img
-                    className="w-4 h-4"
-                    alt="Edit"
-                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                  />
-                </button>
-              </div>
-
-              {/* Handle/namespace */}
-              <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[1.4]">
-                {formData.username || (!user ? "Loading..." : "@unknown")}
-              </div>
-            </div>
-
-            {/* Bio */}
-            <p className="font-p-l font-[number:var(--p-l-font-weight)] text-off-black text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)]">
-              {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
-            </p>
-
-            {/* Social links */}
-            <div className="flex items-start gap-4 flex-wrap mt-1">
-              {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).map((link) => {
-                // Update old YouTube icons to new one
-                const NEW_YOUTUBE_ICON = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNMTkuNjE1IDcuNjU0Yy0uMTg4LS43MDYtLjczNi0xLjI2Mi0xLjQzOC0xLjQ1MkMxNi45MDYgNiAxMiA2IDEyIDZzLTQuOTA2IDAtNi4xNzcuMzQ4Yy0uNzAyLjE5LTEuMjUuNzQ2LTEuNDM4IDEuNDUyQzQgOC45MjggNCA5LjI5OCA0IDEyYzAgMi43MDIgMCAzLjA3Mi4zODUgNC4zNDYuMTg4LjcwNi43MzYgMS4yNjIgMS40MzggMS40NTJDNy4wOTQgMTggMTIgMTggMTIgMThzNC45MDYgMCA2LjE3Ny0uMzQ4Yy43MDItLjE5IDEuMjUtLjc0NiAxLjQzOC0xLjQ1MkMyMCAxNS4wNzIgMjAgMTQuNzAyIDIwIDEyYzAtMi43MDIgMC0zLjA3Mi0uMzg1LTQuMzQ2eiIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNOS45ODUgMTQuOTY1VjkuMDM1TDE1LjIxMyAxMmwtNS4yMjggMi45NjV6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=';
-                const displayIconUrl = (link.title === 'YouTube' && link.iconUrl?.includes('M19.293'))
-                  ? NEW_YOUTUBE_ICON
-                  : link.iconUrl;
-
-                return (
-                  <button
-                    key={link.id}
-                    className="inline-flex items-center gap-2 relative flex-[0_0_auto] py-1 rounded-lg hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                    onClick={() => setShowSocialLinksPopup(true)}
-                    title={`Edit ${link.title}`}
-                  >
-                    <img
-                      className="w-5 h-5"
-                      alt={`${link.title} logo`}
-                      src={displayIconUrl || 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg'}
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg';
-                      }}
-                    />
-                    <span className="text-sm text-medium-dark-grey max-w-[100px] overflow-hidden text-ellipsis">
-                      {link.title}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {/* Edit social links button */}
-              <button
-                className="inline-flex items-center gap-1.5 px-2 py-1 relative flex-[0_0_auto] rounded-lg border border-dashed border-medium-grey hover:border-dark-grey hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                onClick={() => setShowSocialLinksPopup(true)}
-                title="Manage social links"
-              >
-                <svg
-                  className="w-4 h-4 text-medium-dark-grey"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                <span className="text-sm text-medium-dark-grey">
-                  {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).length > 0 ? 'Edit' : 'Add Links'}
-                </span>
-              </button>
-            </div>
+            </button>
           </div>
         </div>
       </section>
 
-      <section className="flex flex-col items-start gap-5 pt-5 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
-        <div className="pt-0 pb-2.5 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
+      <section className="flex flex-col items-start gap-5 pt-0 pb-5 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
+        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
           <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
             Account
           </h2>
         </div>
 
         <div className="flex flex-col items-start gap-5 relative w-full">
-          <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
+          <div className="inline-flex flex-col items-start justify-center gap-1.5 relative flex-[0_0_auto]">
             <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap" style={{ fontWeight: 450 }}>
+              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] whitespace-nowrap">
                 {user?.walletAddress ? 'Wallet address' : 'Email address'}
               </h3>
             </div>
@@ -743,9 +709,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
           {/* Only show password section if user logged in via email/password */}
           {!isPasswordlessAuth && (
-            <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
+            <div className="inline-flex flex-col items-start justify-center gap-1.5 relative flex-[0_0_auto]">
               <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap" style={{ fontWeight: 450 }}>
+                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] whitespace-nowrap">
                   Password
                 </h3>
               </div>
@@ -764,14 +730,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
       </section>
 
-      <section className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-        <div className="pt-0 pb-2.5 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
+      <section className="flex flex-col items-start gap-5 pt-0 relative self-stretch w-full flex-[0_0_auto]">
+        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
           <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
             Notification
           </h2>
         </div>
 
-        <div className="flex flex-col items-start gap-5 pt-0 pb-[25px] px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
+        <div className="flex flex-col items-start gap-5 pt-0 pb-5 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
           {!user ? (
             <div className="flex justify-center items-center py-4">
               <div className="text-sm text-gray-500">Please log in to view notification settings</div>

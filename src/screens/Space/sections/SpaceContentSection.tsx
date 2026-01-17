@@ -105,9 +105,6 @@ const SpaceInfoSection = ({
               <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="[font-family:'Lato',Helvetica] font-medium text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-              Edit
-            </span>
           </button>
         ) : !isOwner && (
           // Subscribe/Subscribed button for non-owner
@@ -115,7 +112,7 @@ const SpaceInfoSection = ({
             // Subscribed state with dropdown - transparent background
             <div className="relative">
               <button
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-transparent"
+                className="inline-flex items-center gap-2 px-3 h-[35px] rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-transparent"
                 aria-label="Subscription options"
                 type="button"
                 onClick={() => setShowUnfollowDropdown(!showUnfollowDropdown)}
@@ -159,7 +156,7 @@ const SpaceInfoSection = ({
           ) : (
             // Subscribe button - #2b8649 10% over white background
             <button
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all"
+              className="inline-flex items-center gap-2 px-3 h-[35px] rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all"
               style={{ background: 'linear-gradient(0deg, rgba(43, 134, 73, 0.1) 0%, rgba(43, 134, 73, 0.1) 100%), #FFFFFF' }}
               aria-label="Subscribe to space"
               type="button"
@@ -975,7 +972,7 @@ export const SpaceContentSection = (): JSX.Element => {
   }
 
   return (
-    <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
+    <main className="flex flex-col items-start gap-2 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
       {/* Space Info Section */}
       <SpaceInfoSection
         spaceName={displaySpaceName || spaceInfo?.name || category || 'Space'}
@@ -995,7 +992,7 @@ export const SpaceContentSection = (): JSX.Element => {
       />
 
       {/* Articles Grid */}
-      <div className="w-full mt-5">
+      <div className="w-full mt-2">
         {articles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
             <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">No treasures yet — this collection is just getting started.</h3>

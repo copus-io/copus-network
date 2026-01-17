@@ -447,7 +447,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   }
 
   return (
-    <main className="flex flex-col gap-8 px-5 pt-5 pb-0 relative">
+    <main className="flex flex-col gap-8 px-5 pt-0 pb-0 relative">
       {/* User info header */}
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cover image */}
