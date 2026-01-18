@@ -126,7 +126,7 @@ const TreasuryHeaderSection = ({
         </div>
       )}
 
-      <div className={`gap-4 lg:gap-6 px-0 py-0 flex flex-row items-start relative self-stretch w-full flex-[0_0_auto] ${coverUrl ? 'mt-[-60px] px-4 lg:pl-5 lg:pr-10 py-8' : ''}`}>
+      <div className={`gap-4 lg:gap-6 px-0 py-0 flex flex-row items-start relative self-stretch w-full flex-[0_0_auto] ${coverUrl ? 'mt-[-60px] px-4 lg:pl-5 lg:pr-10 pt-8 pb-0' : ''}`}>
         <img
           className={`relative w-20 h-20 rounded-full object-cover shadow-lg z-10 ${coverUrl ? 'border-4 border-white' : ''}`}
           src={avatarUrl || profileDefaultAvatar}

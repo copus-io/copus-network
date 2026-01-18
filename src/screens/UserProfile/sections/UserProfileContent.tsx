@@ -447,7 +447,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   }
 
   return (
-    <main className="flex flex-col gap-8 px-5 pt-0 pb-0 relative">
+    <main className="flex flex-col gap-5 px-5 pt-0 pb-0 relative">
       {/* User info header */}
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cover image */}
@@ -509,7 +509,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
               onClick={handleAvatarClick}
             />
-          <div className="flex-1 pt-16">
+          <div className="flex-1 pt-8">
             <div className="flex items-center gap-4 mb-1">
               <h1 className="text-3xl font-bold text-gray-900">{userInfo.username}</h1>
               <button
@@ -562,7 +562,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       </section>
 
       {/* Category tabs */}
-      <section className="flex gap-4 mt-10">
+      <section className="flex gap-4">
         <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
           All Articles
         </button>
@@ -573,7 +573,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
 
       {/* Articles list */}
       <section
-        className="w-full mt-5"
+        className="w-full"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',

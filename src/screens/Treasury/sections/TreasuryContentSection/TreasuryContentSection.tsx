@@ -299,7 +299,7 @@ export const TreasuryContentSection = (): JSX.Element => {
   const collections = getCollectionsByCategory();
 
   return (
-    <main className="flex flex-col gap-10 px-5 py-0 relative">
+    <main className="flex flex-col gap-5 px-5 py-0 relative">
       {/* User info header - matching UserProfileContent layout */}
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cover image */}
@@ -355,7 +355,7 @@ export const TreasuryContentSection = (): JSX.Element => {
               className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
               onClick={handleAvatarClick}
             />
-            <div className="flex-1 pt-20">
+            <div className="flex-1 pt-8">
               <div className="flex items-center gap-4 mb-1">
                 <h1 className="text-3xl font-bold text-gray-900">{user?.username || 'Anonymous'}</h1>
                 <button
