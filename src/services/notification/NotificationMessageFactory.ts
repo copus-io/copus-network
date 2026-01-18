@@ -141,7 +141,16 @@ export class NotificationTemplates {
     [NotificationType.COLLECT]: {
       title: '收藏通知',
       messageTemplate: (data) => {
-        const spaceNames = data.spaces?.map((space: any) => `[${space.name}]`).join('，') || '[空间]';
+        const spaceNames = data.spaces?.map((space: any) => {
+          // Transform "Default Collections Space" to "Username's Treasury"
+          let spaceName = space.name;
+          if (spaceName === 'Default Collections Space') {
+            // Use the space owner's username if available, otherwise use sender's username
+            const username = space.username || space.ownerUsername || data.senderUsername;
+            spaceName = `${username}'s Treasury`;
+          }
+          return `[${spaceName}]`;
+        }).join('，') || '[空间]';
         return `[${data.senderUsername}] collected [${data.articleTitle}] in ${spaceNames}`;
       },
       actionUrl: (data) => `/work/${data.articleUuid || data.articleId}`
@@ -215,13 +224,23 @@ export class MessageContentProcessor {
 
         // 处理新的collect类型数据结构 (收藏消息)
         if (parsed.spaces && parsed.articleInfo) {
+          // Transform space names: "Default Collections Space" -> "Username's Treasury"
+          const transformedSpaces = parsed.spaces.map((space: any) => {
+            if (space.name === 'Default Collections Space') {
+              return {
+                ...space,
+                name: `${space.username || space.ownerUsername || 'User'}'s Treasury`
+              };
+            }
+            return space;
+          });
           return {
             targetTitle: parsed.articleInfo.title,
             targetId: parsed.articleInfo.id?.toString(),
             targetUuid: parsed.articleInfo.uuid,
             parsedData: {
               ...parsed,
-              spaces: parsed.spaces,
+              spaces: transformedSpaces,
               articleTitle: parsed.articleInfo.title,
               articleId: parsed.articleInfo.id,
               articleUuid: parsed.articleInfo.uuid
