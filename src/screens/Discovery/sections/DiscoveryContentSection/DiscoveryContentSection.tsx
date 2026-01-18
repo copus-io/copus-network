@@ -109,75 +109,35 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Render different guide content based on user login status
   const renderGuideContent = () => {
-    if (user) {
-      // Logged-in users: functional guidance
-      return (
-        <>
-          <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus!
-          </h1>
-          <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                Discover Internet gems hand-picked by people. No algorithmic feeds here.
-              </span>
-            </p>
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                Click "Curate" (top-right) to share your finds.
-              </span>
-            </p>
-            {!isExtensionInstalled && (
-              <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-                <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                  <a
-                    href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb?authuser=5&hl=en"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#2191FB] hover:underline cursor-pointer font-normal"
-                  >
-                    Install our browser extension
-                  </a>{' '}
-                  to easily save and share content while browsing.
-                </span>
-              </p>
-            )}
-          </div>
-        </>
-      );
-    } else {
-      // Guest users: platform introduction (using English, maintaining same styling)
-      return (
-        <>
-          <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus!
-          </h1>
-          <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                Today's internet is noisy. Finding what's truly worth your time is more valuable than ever.
-              </span>
-            </p>
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                We value human taste and power it with an economic engine that rewards quality sharing and creation.
-              </span>
-            </p>
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                <button
-                  onClick={() => navigate('/login')}
-                  className="text-[#2191FB] hover:underline cursor-pointer font-normal"
-                >
-                  Join us
-                </button>{' '}
-                in weaving a new internet: our collective opus. :)
-              </span>
-            </p>
-          </div>
-        </>
-      );
-    }
+    // Same welcome content for both logged-in and guest users
+    return (
+      <>
+        <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+          Welcome to Copus!
+        </h1>
+        <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
+          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+              Copus is an open curation space where people share links to meaningful content they find online, along with a short reflection.
+            </span>
+          </p>
+          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+              You can subscribe to people whose taste you trust, or use the{' '}
+              <a
+                href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#2191FB] hover:underline cursor-pointer font-normal"
+              >
+                browser extension
+              </a>{' '}
+              to collect and share as you browse :)
+            </span>
+          </p>
+        </div>
+      </>
+    );
   };
 
   // Sync local article state and like status
