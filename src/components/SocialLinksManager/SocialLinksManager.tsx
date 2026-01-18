@@ -318,184 +318,31 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
 
   return (
     <div className="w-full">
-      {/* Close button on its own row - 30px from top and right, no padding around icon */}
+      {/* Close button on its own row */}
       {onClose && (
-        <div className="flex justify-end pt-[30px] pr-[30px]">
+        <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="hover:opacity-70 transition-opacity"
             title="Close"
+            aria-label="Close dialog"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
+              <path d="M3 3L15 15M3 15L15 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         </div>
       )}
 
       {/* Content with spacing */}
-      <div className="space-y-5 mt-[10px] px-[30px]">
+      <div className="space-y-5 mt-2">
         {/* Title */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Social Links Management</h3>
-          <p className="text-sm text-gray-500 mt-1">Connect your digital world, let more people find you</p>
+          <h3 className="text-lg font-semibold text-gray-900">Add link</h3>
         </div>
 
-      {/* Loading state */}
-      {socialLinksLoading && (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-3 text-gray-500">Loading...</p>
-        </div>
-      )}
-
-      {/* Links list */}
+      {/* Add new link form - show directly */}
       {!socialLinksLoading && (
-        <div className="space-y-3">
-          {socialLinks.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-              <div className="flex flex-col items-center">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No links added yet</h4>
-                <p className="text-gray-500">Add your social media accounts to let more people follow you</p>
-              </div>
-            </div>
-          ) : (
-            socialLinks.map((link) => (
-              <div key={link.id}>
-                {editingLink?.id === link.id ? (
-                  /* Inline Edit Mode */
-                  <div className="p-4 bg-gray-50 border border-gray-300 rounded-xl space-y-4">
-                    {/* Header with icon and title */}
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center border border-gray-200">
-                        <img
-                          src={link.iconUrl}
-                          alt={link.title}
-                          className="w-7 h-7"
-                          onError={(e) => {
-                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDEzYTUgNSAwIDAgMCA3LjU0LjU0bDMtM2E1IDUgMCAwIDAtNy4wNy03LjA3bC0xLjcyIDEuNzEiIHN0cm9rZT0iIzZiNzI4MCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0ibTE0IDExYTUgNSAwIDAgMC03LjU0LS41NGwtMy0zYTUgNSAwIDAgMCA3LjA3LTcuMDdsMS43MS0xLjcxIiBzdHJva2U9IiM2YjcyODAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=';
-                          }}
-                        />
-                      </div>
-                      <span className="font-medium text-gray-700">Edit Link</span>
-                    </div>
-
-                    {/* Title input */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                      <input
-                        type="text"
-                        value={customTitle}
-                        onChange={(e) => setCustomTitle(e.target.value)}
-                        placeholder="Link title"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f23a00]/20 focus:border-[#f23a00] transition-all text-sm"
-                        disabled={isSaving}
-                      />
-                    </div>
-
-                    {/* URL input */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
-                      <input
-                        type="url"
-                        value={linkUrl}
-                        onChange={(e) => setLinkUrl(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f23a00]/20 focus:border-[#f23a00] transition-all text-sm"
-                        disabled={isSaving}
-                      />
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex items-center justify-end space-x-2 pt-2">
-                      <button
-                        onClick={handleCancelEdit}
-                        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors rounded-[50px] border border-gray-300 hover:bg-gray-50"
-                        disabled={isSaving}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleUpdateLink}
-                        disabled={!linkUrl.trim() || isSaving}
-                        className={`px-4 py-2 text-sm font-medium rounded-[50px] transition-all ${
-                          !linkUrl.trim() || isSaving
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-[#f23a00] text-white hover:bg-[#d63300]'
-                        }`}
-                      >
-                        {isSaving ? 'Saving...' : 'Save'}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* Normal Display Mode */
-                  <div className="group flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all duration-200">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-gray-100 transition-colors">
-                        <img
-                          src={link.iconUrl}
-                          alt={link.title}
-                          className="w-7 h-7"
-                          onError={(e) => {
-                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDEzYTUgNSAwIDAgMCA3LjU0LjU0bDMtM2E1IDUgMCAwIDAtNy4wNy03LjA3bC0xLjcyIDEuNzEiIHN0cm9rZT0iIzZiNzI4MCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0ibTE0IDExYTUgNSAwIDAgMC03LjU0LS41NGwtMy0zYTUgNSAwIDAgMCA3LjA3LTcuMDdsMS43MS0xLjcxIiBzdHJva2U9IiM2YjcyODAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=';
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900">{link.title}</p>
-                        <p className="text-sm text-gray-500 truncate max-w-xs">
-                          {link.linkUrl}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <a
-                        href={link.linkUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-gray-400 hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-50"
-                        title="Open link"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                      <button
-                        onClick={() => handleEditLink(link)}
-                        className="p-2 text-gray-400 hover:text-green-500 transition-colors rounded-lg hover:bg-green-50"
-                        title={`Edit ${link.title}`}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteLink(link.id, link.title)}
-                        className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
-                        title={`Delete ${link.title}`}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* Add new link section - integrated inline */}
-      {!socialLinksLoading && (
-        showAddPopup ? (
           /* Inline Add Form */
           <div className="p-4 bg-gray-50 border border-gray-300 rounded-xl space-y-4">
             {/* Platform selection */}
@@ -569,7 +416,7 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
             {/* Action buttons */}
             <div className="flex items-center justify-end space-x-2 pt-2">
               <button
-                onClick={resetForm}
+                onClick={onClose}
                 className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors rounded-[50px] border border-gray-300 hover:bg-gray-50"
                 disabled={isSaving}
               >
@@ -584,22 +431,10 @@ export const SocialLinksManager: React.FC<SocialLinksManagerProps> = ({ onClose 
                     : 'bg-[#f23a00] text-white hover:bg-[#d63300]'
                 }`}
               >
-                {isSaving || isUploadingIcon ? 'Saving...' : isLoadingTitle ? 'Loading...' : 'Save'}
+                {isSaving || isUploadingIcon ? 'Adding...' : isLoadingTitle ? 'Loading...' : 'Add'}
               </button>
             </div>
           </div>
-        ) : (
-          /* Add button */
-          <button
-            onClick={() => setShowAddPopup(true)}
-            className="w-full py-4 px-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#f23a00] hover:bg-[#f23a00]/5 transition-all duration-200 text-gray-600 hover:text-[#f23a00] font-medium flex items-center justify-center space-x-2 group"
-          >
-            <svg className="w-5 h-5 text-gray-400 group-hover:text-[#f23a00] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>Add Social Link</span>
-          </button>
-        )
       )}
       </div>
 

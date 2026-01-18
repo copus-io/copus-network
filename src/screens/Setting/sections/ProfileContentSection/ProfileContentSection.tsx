@@ -52,7 +52,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   });
 
   // 使用 UserContext 中的社交链接数据
-  const { socialLinks: socialLinksData, socialLinksLoading, fetchSocialLinks } = useUser();
+  const { socialLinks: socialLinksData, socialLinksLoading, fetchSocialLinks, deleteSocialLink } = useUser();
 
   // Fetch social links when page loads (since we don't fetch them globally anymore)
   React.useEffect(() => {
@@ -121,6 +121,12 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [formUsername, setFormUsername] = useState<string>('');
   const [formBio, setFormBio] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState<string>('');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState<string>('');
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [showCoverUploader, setShowCoverUploader] = useState(false);
   const [showAvatarUploader, setShowAvatarUploader] = useState(false);
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
@@ -519,7 +525,103 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     setShowCoverUploader(true);
   };
 
+  // Handle inline name editing
+  const handleStartEditingName = () => {
+    setEditedName(formData.name || user?.username || '');
+    setIsEditingName(true);
+  };
 
+  const handleSaveName = async () => {
+    if (!editedName.trim()) {
+      showToast('Name cannot be empty', 'error');
+      return;
+    }
+
+    setIsSavingName(true);
+    try {
+      const success = await AuthService.updateUserInfo({
+        userName: editedName.trim(),
+        bio: formBio || user?.bio || '',
+        faceUrl: profileImage === profileDefaultAvatar ? '' : profileImage,
+        coverUrl: bannerImage || ''
+      });
+
+      if (success) {
+        updateUser({ username: editedName.trim() });
+        setFormUsername(editedName.trim());
+        setFormData(prev => ({ ...prev, name: editedName.trim() }));
+        setIsEditingName(false);
+        showToast('Name updated successfully', 'success');
+      } else {
+        showToast('Update failed, please try again', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to update name:', error);
+      showToast('Update failed, please try again', 'error');
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const handleCancelEditingName = () => {
+    setIsEditingName(false);
+    setEditedName('');
+  };
+
+  // Handle inline description editing
+  const handleStartEditingDescription = () => {
+    setEditedDescription(formData.bio || user?.bio || '');
+    setIsEditingDescription(true);
+  };
+
+  const handleSaveDescription = async () => {
+    setIsSavingDescription(true);
+    try {
+      const success = await AuthService.updateUserInfo({
+        userName: formUsername || user?.username || '',
+        bio: editedDescription.trim(),
+        faceUrl: profileImage === profileDefaultAvatar ? '' : profileImage,
+        coverUrl: bannerImage || ''
+      });
+
+      if (success) {
+        updateUser({ bio: editedDescription.trim() });
+        setFormBio(editedDescription.trim());
+        setFormData(prev => ({ ...prev, bio: editedDescription.trim() }));
+        setIsEditingDescription(false);
+        showToast('Description updated successfully', 'success');
+      } else {
+        showToast('Update failed, please try again', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to update description:', error);
+      showToast('Update failed, please try again', 'error');
+    } finally {
+      setIsSavingDescription(false);
+    }
+  };
+
+  const handleCancelEditingDescription = () => {
+    setIsEditingDescription(false);
+    setEditedDescription('');
+  };
+
+  // Handle deleting social link
+  const handleDeleteSocialLink = async (linkId: number, linkTitle: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${linkTitle}" link?`)) return;
+
+    try {
+      const success = await deleteSocialLink(linkId);
+      if (success) {
+        showToast(`${linkTitle} link deleted successfully`, 'success');
+      } else {
+        showToast('Failed to delete link, please try again', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to delete link:', error);
+      showToast('Failed to delete link, please try again', 'error');
+    }
+  };
 
   return (
     <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-5 pb-5 relative flex-1 self-stretch grow bg-transparent">
@@ -532,47 +634,129 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
 
         {/* Username and Bio */}
-        <div className="flex flex-col items-start gap-2 relative w-full">
-          {/* Username */}
-          <div className="flex items-center gap-2.5">
-            <h1 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[1.4]">
-              {formData.name || (!user ? "Loading..." : "Anonymous")}
-            </h1>
+        <div className="flex flex-col items-start gap-3 relative w-full">
+          {/* Name */}
+          <div className="flex flex-col items-start gap-1">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Name</h3>
+            {isEditingName ? (
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="[font-family:'Lato',Helvetica] font-medium text-off-black text-[18px] tracking-[0] leading-[1.4] px-4 py-2 border border-gray-300 rounded-[20px] focus:outline-none focus:border-blue-500 w-[280px]"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName();
+                    if (e.key === 'Escape') handleCancelEditingName();
+                  }}
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={isSavingName}
+                  className="px-4 py-2 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                >
+                  {isSavingName ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={handleCancelEditingName}
+                  disabled={isSavingName}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <h1 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-[18px] tracking-[0] leading-[1.4]">
+                  {formData.name || (!user ? "Loading..." : "Anonymous")}
+                </h1>
 
-            {/* Edit button next to username */}
-            <button
-              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-              aria-label="Edit personal information"
-              onClick={() => setShowPersonalInfoPopup(true)}
-              title="Edit username, bio and other personal information"
-            >
-              <img
-                className="w-4 h-4"
-                alt="Edit"
-                src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-              />
-            </button>
+                {/* Edit button next to username */}
+                <button
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  aria-label="Edit name"
+                  onClick={handleStartEditingName}
+                  title="Edit name"
+                >
+                  <img
+                    className="w-4 h-4"
+                    alt="Edit"
+                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                  />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Bio */}
-          <div className="flex items-center gap-2.5">
-            <p className="font-p-l font-[number:var(--p-l-font-weight)] text-off-black text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)]">
-              {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
-            </p>
+          {/* Description */}
+          <div className="flex flex-col items-start gap-1">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Description</h3>
+            {isEditingDescription ? (
+              <div className="flex items-end gap-3">
+                <div className="relative">
+                  <textarea
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    className={`[font-family:'Lato',Helvetica] font-normal text-off-black text-[18px] tracking-[0] leading-[1.4] px-4 py-3 pr-16 border rounded-[20px] focus:outline-none focus:border-blue-500 w-[450px] h-[80px] resize-none transition-colors ${
+                      editedDescription.length >= 55 ? 'border-orange-400' : editedDescription.length > 0 ? 'border-gray-300' : 'border-gray-300'
+                    }`}
+                    autoFocus
+                    maxLength={60}
+                    placeholder="A short bio about yourself"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSaveDescription();
+                      }
+                      if (e.key === 'Escape') handleCancelEditingDescription();
+                    }}
+                  />
+                  <span className={`absolute right-4 bottom-3 text-sm font-medium transition-colors ${
+                    editedDescription.length >= 55 ? 'text-red-500' :
+                    editedDescription.length >= 50 ? 'text-orange-500' :
+                    editedDescription.length > 0 ? 'text-gray-400' :
+                    'text-gray-400'
+                  }`}>
+                    {editedDescription.length}/60
+                  </span>
+                </div>
+                <button
+                  onClick={handleSaveDescription}
+                  disabled={isSavingDescription}
+                  className="px-4 py-2 mb-3 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                >
+                  {isSavingDescription ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={handleCancelEditingDescription}
+                  disabled={isSavingDescription}
+                  className="px-4 py-2 mb-3 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-[18px] tracking-[0] leading-[1.4]">
+                  {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
+                </p>
 
-            {/* Edit button next to bio */}
-            <button
-              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-              aria-label="Edit bio"
-              onClick={() => setShowPersonalInfoPopup(true)}
-              title="Edit bio"
-            >
-              <img
-                className="w-4 h-4"
-                alt="Edit"
-                src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-              />
-            </button>
+                {/* Edit button next to bio */}
+                <button
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  aria-label="Edit bio"
+                  onClick={handleStartEditingDescription}
+                  title="Edit bio"
+                >
+                  <img
+                    className="w-4 h-4"
+                    alt="Edit"
+                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                  />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -685,6 +869,76 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </button>
           </div>
         </div>
+
+        {/* Social links - below profile and cover */}
+        <div className="flex flex-col items-start gap-2 mt-3">
+          <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Social links</h3>
+
+          {/* Display existing social links */}
+          {socialLinksData && socialLinksData.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              {socialLinksData.map((link) => (
+                <div
+                  key={link.id}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full group"
+                >
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    title={link.title || link.url}
+                  >
+                    {link.iconUrl && (
+                      <img
+                        src={link.iconUrl}
+                        alt=""
+                        className="w-5 h-5 rounded-sm object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-sm text-off-black max-w-[150px] truncate">
+                      {link.title || new URL(link.url).hostname}
+                    </span>
+                  </a>
+                  <button
+                    onClick={() => handleDeleteSocialLink(link.id, link.title || 'Link')}
+                    className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete link"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowSocialLinksPopup(true)}
+            className="flex items-center gap-2 px-5 h-[35px] rounded-[50px] border border-solid border-dark-grey text-dark-grey hover:bg-gray-100 transition-all duration-300 cursor-pointer"
+            title="Manage social links"
+            aria-label="Manage social links"
+          >
+            <svg
+              className="w-4 h-4 text-dark-grey"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+            <span className="[font-family:'Lato',Helvetica] font-normal text-[16px] leading-5">Add links</span>
+          </button>
+        </div>
       </section>
 
       <section className="flex flex-col items-start gap-5 pt-0 pb-5 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
@@ -719,9 +973,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               <Button
                 onClick={() => setShowChangePasswordModal(true)}
                 variant="outline"
-                className="inline-flex items-center justify-center gap-2.5 px-4 py-2 h-auto rounded-lg border border-solid border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+                className="flex items-center gap-2 px-5 h-[35px] rounded-[50px] border border-solid border-dark-grey text-dark-grey hover:bg-gray-100 transition-all duration-300"
               >
-                <span className="[font-family:'Lato',Helvetica] font-normal text-base leading-5">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-[16px] leading-5">
                   Change Password
                 </span>
               </Button>
@@ -804,7 +1058,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       {/* Social Links Management Popup */}
       {showSocialLinksPopup && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
-          <div className="flex flex-col w-[600px] max-h-[90vh] items-center justify-center gap-5 pt-0 pb-[30px] px-0 bg-white rounded-[15px] shadow-lg overflow-y-auto">
+          <div className="flex flex-col w-[600px] max-h-[90vh] items-center justify-center gap-5 p-[30px] bg-white rounded-[15px] shadow-lg overflow-y-auto">
             <SocialLinksManager onClose={() => setShowSocialLinksPopup(false)} />
           </div>
         </div>
