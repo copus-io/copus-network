@@ -579,7 +579,7 @@ export const MainContentSection = (): JSX.Element => {
               space={{
                 ...space,
                 // Add owner username for display name generation
-                ownerInfo: space.ownerInfo || { username: displayUser?.username || 'User' },
+                ownerInfo: space.ownerInfo || { username: displayUser?.username || 'Anonymous' },
               }}
               onClick={() => handleSpaceClick(space)}
               isEditable={!isViewingOtherUser}

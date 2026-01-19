@@ -367,9 +367,21 @@ export const SpaceContentSection = (): JSX.Element => {
           // Extract space info from response.data
           const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
 
-          // Get author username for display name
-          // Note: Do NOT fall back to logged-in user's username - use API data or 'User' as default
-          const authorUsername = spaceData?.userInfo?.username || 'User';
+          // Get author username for display name with comprehensive fallback chain
+          // Note: Do NOT fall back to logged-in user's username - use API data only
+          const authorUsername = spaceData?.userInfo?.username
+            || spaceData?.ownerInfo?.username
+            || spaceData?.authorInfo?.username
+            || spaceData?.user?.username
+            || spaceData?.author?.username
+            || spaceData?.creator?.username
+            || spaceData?.ownerName
+            || spaceData?.userName
+            || spaceData?.username
+            || spaceData?.userInfo?.namespace
+            || spaceData?.ownerInfo?.namespace
+            || spaceData?.namespace
+            || 'Anonymous';
 
           // Determine display name based on spaceType (same logic as Treasury list)
           // spaceType 1 = Treasury, spaceType 2 = Curations

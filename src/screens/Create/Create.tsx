@@ -114,7 +114,7 @@ export const Create = (): JSX.Element => {
           // Get display name using the same logic as TreasuryCard
           const displayName = getSpaceDisplayName({
             ...space,
-            ownerInfo: { username: user.username || 'User' },
+            ownerInfo: { username: user.username || 'Anonymous' },
           });
 
           return {

@@ -351,7 +351,7 @@ export const TreasuryContentSection = (): JSX.Element => {
           <div className="flex items-start gap-8">
             <img
               src={user?.faceUrl || profileDefaultAvatar}
-              alt={user?.username || 'User'}
+              alt={user?.username || 'Anonymous'}
               className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
               onClick={handleAvatarClick}
             />

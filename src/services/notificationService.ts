@@ -256,7 +256,7 @@ export class NotificationService {
     }
 
     // Get sender information
-    const senderName = apiMessage.senderInfo?.username || 'User';
+    const senderName = apiMessage.senderInfo?.username || apiMessage.senderInfo?.namespace || 'Anonymous';
 
     // Process message content, generate user-friendly format
     let processedMessage = apiMessage.content || 'No content';
