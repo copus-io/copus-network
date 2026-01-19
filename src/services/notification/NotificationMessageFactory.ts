@@ -223,24 +223,14 @@ export class MessageContentProcessor {
         });
 
         // 处理新的collect类型数据结构 (收藏消息)
+        // Note: Don't transform space names here - let the template do it with senderUsername
         if (parsed.spaces && parsed.articleInfo) {
-          // Transform space names: "Default Collections Space" -> "Username's Treasury"
-          const transformedSpaces = parsed.spaces.map((space: any) => {
-            if (space.name === 'Default Collections Space') {
-              return {
-                ...space,
-                name: `${space.username || space.ownerUsername || 'User'}'s Treasury`
-              };
-            }
-            return space;
-          });
           return {
             targetTitle: parsed.articleInfo.title,
             targetId: parsed.articleInfo.id?.toString(),
             targetUuid: parsed.articleInfo.uuid,
             parsedData: {
               ...parsed,
-              spaces: transformedSpaces,
               articleTitle: parsed.articleInfo.title,
               articleId: parsed.articleInfo.id,
               articleUuid: parsed.articleInfo.uuid
