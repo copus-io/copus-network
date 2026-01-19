@@ -127,6 +127,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState<string>('');
   const [isSavingDescription, setIsSavingDescription] = useState(false);
+  const [isEditingCustomId, setIsEditingCustomId] = useState(false);
+  const [editedCustomId, setEditedCustomId] = useState<string>('');
+  const [isSavingCustomId, setIsSavingCustomId] = useState(false);
   const [showCoverUploader, setShowCoverUploader] = useState(false);
   const [showAvatarUploader, setShowAvatarUploader] = useState(false);
   const [isAvatarSaving, setIsAvatarSaving] = useState(false);
@@ -606,6 +609,59 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     setEditedDescription('');
   };
 
+  // Handle inline custom ID editing
+  const handleStartEditingCustomId = () => {
+    setEditedCustomId(user?.namespace || '');
+    setIsEditingCustomId(true);
+  };
+
+  const validateCustomId = (id: string): string | null => {
+    if (!id.trim()) {
+      return 'Custom ID cannot be empty';
+    }
+    if (id.length < 3) {
+      return 'Custom ID must be at least 3 characters';
+    }
+    if (id.length > 20) {
+      return 'Custom ID cannot exceed 20 characters';
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      return 'Custom ID can only contain letters, numbers, underscores and hyphens';
+    }
+    return null;
+  };
+
+  const handleSaveCustomId = async () => {
+    const validationError = validateCustomId(editedCustomId);
+    if (validationError) {
+      showToast(validationError, 'error');
+      return;
+    }
+
+    setIsSavingCustomId(true);
+    try {
+      const success = await AuthService.updateUserNamespace(editedCustomId.trim());
+      if (success) {
+        updateUser({ namespace: editedCustomId.trim() });
+        setFormData(prev => ({ ...prev, username: `@${editedCustomId.trim()}` }));
+        setIsEditingCustomId(false);
+        showToast('Custom ID updated successfully!', 'success');
+      } else {
+        showToast('Update failed, please try again', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to update custom ID:', error);
+      showToast('Failed to update custom ID, please try again', 'error');
+    } finally {
+      setIsSavingCustomId(false);
+    }
+  };
+
+  const handleCancelEditingCustomId = () => {
+    setIsEditingCustomId(false);
+    setEditedCustomId('');
+  };
+
   // Handle deleting social link
   const handleDeleteSocialLink = async (linkId: number, linkTitle: string) => {
     if (!window.confirm(`Are you sure you want to delete "${linkTitle}" link?`)) return;
@@ -757,6 +813,64 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Custom ID */}
+          <div className="flex flex-col items-start gap-1">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Custom ID</h3>
+            {isEditingCustomId ? (
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={editedCustomId}
+                  onChange={(e) => setEditedCustomId(e.target.value)}
+                  className="[font-family:'Lato',Helvetica] font-normal text-off-black text-[18px] tracking-[0] leading-[1.4] px-4 py-2 border border-gray-300 rounded-[20px] focus:outline-none focus:border-blue-500 w-[280px]"
+                  autoFocus
+                  placeholder="Enter 3-20 characters"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveCustomId();
+                    if (e.key === 'Escape') handleCancelEditingCustomId();
+                  }}
+                />
+                <button
+                  onClick={handleSaveCustomId}
+                  disabled={isSavingCustomId}
+                  className="px-4 py-2 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                >
+                  {isSavingCustomId ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={handleCancelEditingCustomId}
+                  disabled={isSavingCustomId}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-[18px] tracking-[0] leading-[1.4]">
+                  @{user?.namespace || (!user ? "Loading..." : "Not set")}
+                </p>
+
+                {/* Edit button next to custom ID */}
+                <button
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  aria-label="Edit custom ID"
+                  onClick={handleStartEditingCustomId}
+                  title="Edit custom ID"
+                >
+                  <img
+                    className="w-4 h-4"
+                    alt="Edit"
+                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                  />
+                </button>
+              </div>
+            )}
+            <p className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-sm tracking-[0] leading-[1.4]">
+              Set a unique custom ID for easy sharing and promotion
+            </p>
           </div>
         </div>
 

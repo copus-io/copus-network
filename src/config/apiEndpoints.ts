@@ -34,6 +34,7 @@ export const API_ENDPOINTS = {
     REGISTER: '/client/user/register',              // 🔍 SEARCH: user-register-endpoint
     PROFILE: '/client/user/profile',                // 🔍 SEARCH: user-profile-endpoint
     UPDATE_PROFILE: '/client/user/updateProfile',   // 🔍 SEARCH: user-update-profile-endpoint
+    UPDATE_NAMESPACE: '/client/user/updateUserNamespace', // 🔍 SEARCH: user-update-namespace-endpoint
     LOGOUT: '/client/user/logout',                  // 🔍 SEARCH: user-logout-endpoint
     INFO: '/client/user/info',                      // 🔍 SEARCH: user-info-endpoint
     FOLLOW: '/client/user/follow',                  // 🔍 SEARCH: user-follow-endpoint
