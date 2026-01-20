@@ -64,7 +64,7 @@ export interface TreasuryCardProps {
  */
 export const getSpaceDisplayName = (space: SpaceData): string => {
   // Get username from various possible fields in API response
-  // Falls back to namespace (always available) before generic 'Anonymous'
+  // Display 'Anonymous' when username is empty instead of namespace
   const username = space.ownerInfo?.username
     || space.userInfo?.username
     || space.user?.username
@@ -73,8 +73,6 @@ export const getSpaceDisplayName = (space: SpaceData): string => {
     || space.ownerName
     || space.userName
     || space.username
-    || space.ownerInfo?.namespace
-    || space.namespace
     || 'Anonymous';
 
   // spaceType 1 = Treasury (default), spaceType 2 = Curations
