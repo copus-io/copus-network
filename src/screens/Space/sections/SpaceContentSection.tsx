@@ -369,6 +369,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
           // Get author username for display name with comprehensive fallback chain
           // Note: Do NOT fall back to logged-in user's username - use API data only
+          // Display 'Anonymous' when username is empty instead of namespace
           const authorUsername = spaceData?.userInfo?.username
             || spaceData?.ownerInfo?.username
             || spaceData?.authorInfo?.username
@@ -378,9 +379,6 @@ export const SpaceContentSection = (): JSX.Element => {
             || spaceData?.ownerName
             || spaceData?.userName
             || spaceData?.username
-            || spaceData?.userInfo?.namespace
-            || spaceData?.ownerInfo?.namespace
-            || spaceData?.namespace
             || 'Anonymous';
 
           // Determine display name based on spaceType (same logic as Treasury list)
