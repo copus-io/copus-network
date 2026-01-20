@@ -418,7 +418,7 @@ const ReplyItemComponent: React.FC<{
         // 🔧 3级评论逻辑：只有当 replyToUser 有值时才显示引用（表示3级评论）
         // 2级评论（直接回复1级）的 replyToUser 为空，不显示引用信息
         const shouldShowReply = reply.replyToUser &&
-                               (reply.replyToUser.username || reply.replyToUser.namespace);
+                               (reply.replyToUser.username || 'Anonymous');
 
         return (
           <div>
@@ -518,7 +518,7 @@ const ReplyItemComponent: React.FC<{
         // 🔧 3级评论逻辑：只有当 replyToUser 有值时才显示引用（表示3级评论）
         // 2级评论（直接回复1级）的 replyToUser 为空，不显示引用信息
         const shouldShowReply = reply.replyToUser &&
-                               (reply.replyToUser.username || reply.replyToUser.namespace);
+                               (reply.replyToUser.username || 'Anonymous');
 
         return (
           <div>
@@ -560,7 +560,7 @@ const ReplyItemComponent: React.FC<{
         // 🔧 3级评论逻辑：只有当 replyToUser 有值时才显示引用（表示3级评论）
         // 2级评论（直接回复1级）的 replyToUser 为空，不显示引用信息
         const shouldShowReply = reply.replyToUser &&
-                               (reply.replyToUser.username || reply.replyToUser.namespace);
+                               (reply.replyToUser.username || 'Anonymous');
 
         return (
           <div className="space-y-1">
@@ -635,14 +635,14 @@ const ReplyItemComponent: React.FC<{
 
       // 🔧 检查是否应该显示引用信息：如果 replyToUser 对象为空则完全不显示引用信息
       const shouldShowReply = reply.replyToUser &&
-                             (reply.replyToUser.username || reply.replyToUser.namespace);
+                             (reply.replyToUser.username || 'Anonymous');
 
       return (
         <div className="space-y-1">
           <div>{reply.content}</div>
           {shouldShowReply && (
             <div className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 border-l-2 border-blue-200">
-              <span className="text-blue-600 font-medium">@{reply.replyToUser.username || reply.replyToUser.namespace}</span>
+              <span className="text-blue-600 font-medium">@{reply.replyToUser.username || 'Anonymous'}</span>
               <span className="text-gray-500 mx-1">：</span>
               <span className="italic">{targetContent}</span>
             </div>
