@@ -2245,7 +2245,7 @@ export const Content = (): JSX.Element => {
                           >
                             Comments
                           </h3>
-                          {!isCommentsLoading && (
+                          {!loading && (
                             <>
                               <div
                                 className="w-1 h-1 rounded-full mb-1"
@@ -2368,7 +2368,7 @@ export const Content = (): JSX.Element => {
               {/* Comment button */}
               <CommentButton
                 commentCount={totalComments || 0}
-                isLoading={isCommentsLoading}
+                isLoading={loading}
                 onClick={() => setIsCommentSectionOpen(prev => !prev)}
                 isExpanded={isCommentSectionOpen}
               />
