@@ -1,4 +1,4 @@
-// SEO Worker - Phase 2: Fetch article data and inject real meta tags
+// SEO Worker - Phase 3: Correct field mappings from API response
 
 const SITE_NAME = 'Copus'
 const DEFAULT_IMAGE = 'https://copus.network/og-image.jpg'
@@ -8,6 +8,16 @@ function getConfig(hostname) {
   return {
     apiBase: isTest ? 'https://api-test.copus.network' : 'https://api-prod.copus.network',
     siteUrl: isTest ? 'https://test.copus.network' : 'https://copus.network'
+  }
+}
+
+// Parse the content JSON string to extract fields like detailCover, description
+function parseContent(contentString) {
+  if (!contentString) return {}
+  try {
+    return typeof contentString === 'string' ? JSON.parse(contentString) : contentString
+  } catch {
+    return {}
   }
 }
 
@@ -28,6 +38,7 @@ export async function onRequest(context) {
 
   // Fetch article data
   let article = null
+  let content = {}
   try {
     const apiUrl = `${config.apiBase}/client/reader/article/info?uuid=${articleId}`
     const apiResponse = await fetch(apiUrl, {
@@ -38,6 +49,7 @@ export async function onRequest(context) {
       const json = await apiResponse.json()
       if (json.status === 1 && json.data) {
         article = json.data
+        content = parseContent(article.content)
       }
     }
   } catch (e) {
@@ -57,8 +69,8 @@ export async function onRequest(context) {
 
   // Inject real meta tags
   return new HTMLRewriter()
-    .on('head', new HeadInjector(article, config.siteUrl))
-    .on('body', new BodyInjector(article, config.siteUrl))
+    .on('head', new HeadInjector(article, content, config.siteUrl))
+    .on('body', new BodyInjector(article, content, config.siteUrl))
     .transform(response)
 }
 
@@ -84,19 +96,25 @@ function formatDate(timestamp) {
 }
 
 class HeadInjector {
-  constructor(article, siteUrl) {
+  constructor(article, content, siteUrl) {
     this.article = article
+    this.content = content
     this.siteUrl = siteUrl
   }
 
   element(element) {
-    const { article, siteUrl } = this
+    const { article, content, siteUrl } = this
 
-    const title = escapeHtml(article.title || '')
-    const description = escapeHtml(article.description || article.title || '')
-    const image = article.detailCover || article.coverImage || DEFAULT_IMAGE
+    // Use correct field mappings
+    const title = escapeHtml(article.title || content.title || '')
+    const description = escapeHtml(content.description || article.description || article.title || '')
+    const image = content.detailCover || content.cover || article.coverImage || DEFAULT_IMAGE
     const articleUrl = `${siteUrl}/work/${article.uuid}`
-    const authorName = escapeHtml(article.userName || '')
+
+    // Author info is nested in article.authorInfo
+    const authorInfo = article.authorInfo || {}
+    const authorName = escapeHtml(authorInfo.username || '')
+
     const publishedTime = formatDate(article.createAt)
     const modifiedTime = formatDate(article.updateAt)
 
@@ -131,18 +149,31 @@ class HeadInjector {
 }
 
 class BodyInjector {
-  constructor(article, siteUrl) {
+  constructor(article, content, siteUrl) {
     this.article = article
+    this.content = content
     this.siteUrl = siteUrl
   }
 
   element(element) {
-    const { article, siteUrl } = this
+    const { article, content, siteUrl } = this
+
+    // Author info is nested in article.authorInfo
+    const authorInfo = article.authorInfo || {}
+    const authorName = authorInfo.username || 'Unknown'
+    const authorId = authorInfo.id
+    const authorNamespace = authorInfo.namespace
 
     const articleUrl = `${siteUrl}/work/${article.uuid}`
-    const authorUrl = article.namespace
-      ? `${siteUrl}/u/${article.namespace}`
-      : `${siteUrl}/user/${article.userId}/treasury`
+    const authorUrl = authorNamespace
+      ? `${siteUrl}/u/${authorNamespace}`
+      : authorId
+        ? `${siteUrl}/user/${authorId}/treasury`
+        : siteUrl
+
+    const image = content.detailCover || content.cover || article.coverImage || DEFAULT_IMAGE
+    const description = content.description || article.description || article.title || ''
+
     const publishedTime = formatDate(article.createAt)
     const modifiedTime = formatDate(article.updateAt) || publishedTime
 
@@ -150,12 +181,12 @@ class BodyInjector {
       "@context": "https://schema.org",
       "@type": "Article",
       "headline": article.title,
-      "description": article.description || article.title,
-      "image": article.detailCover || article.coverImage || DEFAULT_IMAGE,
+      "description": description,
+      "image": image,
       "url": articleUrl,
       "author": {
         "@type": "Person",
-        "name": article.userName,
+        "name": authorName,
         "url": authorUrl
       },
       "publisher": {
