@@ -236,11 +236,22 @@ class BodyInjector {
     const modifiedTime = formatDate(article.updateAt || article.createAt) || publishedTime
 
     // Use AI-determined schemaType or default to Article
-    const schemaType = seoData.schemaType || 'Article'
+    // Note: SoftwareApplication requires extra fields, so we default to Article for safety
+    let schemaType = seoData.schemaType || 'Article'
+
+    // For types that require special fields, fall back to Article if we don't have them
+    const specialTypes = ['SoftwareApplication', 'HowTo']
+    if (specialTypes.includes(schemaType)) {
+      // SoftwareApplication needs: name + (2 of: offers, aggregateRating, applicationCategory, operatingSystem)
+      // HowTo needs: name + step
+      // Since we're a curation platform (recommendations), Article/Review is more appropriate anyway
+      schemaType = 'Article'
+    }
 
     const schema = {
       "@context": "https://schema.org",
       "@type": schemaType,
+      "name": article.title,
       "headline": article.title,
       "description": description,
       "image": image,
