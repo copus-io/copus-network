@@ -10,7 +10,6 @@ import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
 import { useArticleDetail } from "../../hooks/queries";
-import { useArticleWithComments } from "../../hooks/queries/useArticleWithComments";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { devLog } from "../../utils/devLogger";
@@ -136,16 +135,11 @@ export const Content = (): JSX.Element => {
   // Payment progress state to prevent duplicate submissions
   const [isPaymentInProgress, setIsPaymentInProgress] = useState(false);
 
-  // Use new article detail API hook
+  // Use new article detail API hook (includes commentCount)
   const { article, loading, error, refetch: refetchArticle } = useArticleDetail(id || '');
 
-  // Get comment count for the comment button
-  const { totalComments, isLoading: isCommentsLoading } = useArticleWithComments(
-    id || '',
-    {
-      commentsEnabled: false // Only get comment count, not the full comments
-    }
-  );
+  // Comment count is already in article data - no need for separate hook
+  const totalComments = article?.commentCount || 0;
 
   // State for "Collected in" section - stores spaces directly
   const [collectedInData, setCollectedInData] = useState<SpaceData[]>([]);
