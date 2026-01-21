@@ -71,11 +71,30 @@ export async function onRequest(context) {
       .transform(response)
   }
 
-  // Inject real meta tags
+  // Remove existing meta tags and inject new ones
+  // This ensures our AI-generated tags are the ONLY ones crawlers see
   return new HTMLRewriter()
+    // Remove existing tags that we'll replace
+    .on('title', new TagRemover())
+    .on('meta[name="description"]', new TagRemover())
+    .on('meta[name="keywords"]', new TagRemover())
+    .on('meta[property^="og:"]', new TagRemover())
+    .on('meta[name^="twitter:"]', new TagRemover())
+    .on('meta[property^="article:"]', new TagRemover())
+    .on('link[rel="canonical"]', new TagRemover())
+    // Remove existing JSON-LD scripts (we'll add our own)
+    .on('script[type="application/ld+json"]', new TagRemover())
+    // Inject our new tags
     .on('head', new HeadInjector(article, seoData, config.siteUrl))
     .on('body', new BodyInjector(article, seoData, config.siteUrl))
     .transform(response)
+}
+
+// Remove elements that we want to replace with our own
+class TagRemover {
+  element(element) {
+    element.remove()
+  }
 }
 
 function escapeHtml(str) {
@@ -141,6 +160,7 @@ class HeadInjector {
     <title>${title} - ${SITE_NAME}</title>
     <meta name="description" content="${description}" />
     ${keywords ? `<meta name="keywords" content="${keywords}" />` : ''}
+    <link rel="canonical" href="${articleUrl}" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="article" />
