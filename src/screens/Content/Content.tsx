@@ -34,7 +34,7 @@ import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils'
 import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
-import { SEO, ArticleSchema } from '../../components/SEO/SEO';
+// SEO meta tags are now handled by Cloudflare Worker - see functions/work/[id].js
 import { UserCard } from '../../components/ui/UserCard';
 
 // Debug logging helper - only logs in development mode
@@ -2011,34 +2011,10 @@ export const Content = (): JSX.Element => {
   // ========================================
   return (
     <>
-      {/* Original SEO meta tags */}
-      {content && (
-        <>
-          <SEO
-            title={content.title}
-            description={content.seoDescription?.trim() || content.description?.substring(0, 160) || content.title}
-            keywords={content.seoKeywords?.trim() || undefined}
-            image={content.coverImage || 'https://copus.network/og-image.jpg'}
-            url={`https://copus.network/work/${id}`}
-            type="article"
-            article={{
-              publishedTime: article?.createAt ? new Date(article.createAt * 1000).toISOString() : undefined,
-              author: content.userName,
-              section: content.category,
-            }}
-            noIndex={false}
-          />
-          <ArticleSchema
-            title={content.title}
-            description={content.seoDescription?.trim() || content.description?.substring(0, 300) || content.title}
-            image={content.coverImage || 'https://copus.network/og-image.jpg'}
-            url={`https://copus.network/work/${id}`}
-            datePublished={article?.createAt ? new Date(article.createAt * 1000).toISOString() : new Date().toISOString()}
-            authorName={content.userName}
-            authorUrl={content.userNamespace ? `https://copus.network/user/${content.userNamespace}` : undefined}
-          />
-        </>
-      )}
+      {/* SEO meta tags are now handled by Cloudflare Worker at the edge.
+          The worker injects AI-generated meta tags before JS loads,
+          so we don't need React Helmet here anymore.
+          See: functions/work/[id].js */}
 
 
       <div
