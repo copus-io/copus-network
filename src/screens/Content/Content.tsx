@@ -2376,7 +2376,6 @@ export const Content = (): JSX.Element => {
               {/* Share dropdown menu */}
               <ShareDropdown
                 title={content.title}
-                url={window.location.href}
               />
             </div>
 
