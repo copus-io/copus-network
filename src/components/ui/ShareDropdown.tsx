@@ -16,7 +16,8 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   // Always use clean URL without query parameters for sharing
-  const shareUrl = url || `${window.location.origin}${window.location.pathname}`;
+  const baseUrl = url || window.location.href;
+  const shareUrl = baseUrl.split('?')[0]; // Strip all query parameters
   const { showToast } = useToast();
 
   // Close dropdown when clicking outside
