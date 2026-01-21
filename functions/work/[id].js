@@ -2,25 +2,19 @@
 // No API calls, just inject a test meta tag to confirm worker runs
 
 export async function onRequest(context) {
-  const { request, params, next } = context
+  const { params, next } = context
   const articleId = params.id
 
-  // Skip static assets
-  const url = new URL(request.url)
-  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2)$/)) {
-    return next()
+  // Get original response first - only call next() once!
+  const response = await next()
+
+  // Skip non-HTML responses
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('text/html')) {
+    return response
   }
 
   try {
-    // Get original response
-    const response = await next()
-
-    // Only transform HTML
-    const contentType = response.headers.get('content-type') || ''
-    if (!contentType.includes('text/html')) {
-      return response
-    }
-
     // Simple transformation - just add a test meta tag
     return new HTMLRewriter()
       .on('head', {
@@ -35,8 +29,10 @@ export async function onRequest(context) {
       .transform(response)
 
   } catch (error) {
-    // On any error, return original page
-    console.error('[SEO Worker] Error:', error)
-    return next()
+    // On error, we can't return original response (already consumed)
+    // Log error and return a basic error indicator
+    console.error('[SEO Worker] Transform error:', error)
+    // Return the response as-is (may be partially consumed)
+    return response
   }
 }
