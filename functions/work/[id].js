@@ -1,4 +1,4 @@
-// SEO Worker - Phase 4: Correct field mappings based on actual API response
+// SEO Worker - Phase 5: Use AI-generated seoDataByAi field
 
 const SITE_NAME = 'Copus'
 const DEFAULT_IMAGE = 'https://copus.network/og-image.jpg'
@@ -11,11 +11,11 @@ function getConfig(hostname) {
   }
 }
 
-// Parse seoData JSON string
-function parseSeoData(seoDataString) {
-  if (!seoDataString) return {}
+// Parse JSON string safely
+function parseJsonString(jsonString) {
+  if (!jsonString) return {}
   try {
-    return JSON.parse(seoDataString)
+    return JSON.parse(jsonString)
   } catch {
     return {}
   }
@@ -49,7 +49,11 @@ export async function onRequest(context) {
       const json = await apiResponse.json()
       if (json.status === 1 && json.data) {
         article = json.data
-        seoData = parseSeoData(article.seoData)
+        // Prefer AI-generated seoDataByAi, fall back to manual seoData
+        const aiSeoData = parseJsonString(article.seoDataByAi)
+        const manualSeoData = parseJsonString(article.seoData)
+        // Merge: AI data takes priority, manual data as fallback
+        seoData = { ...manualSeoData, ...aiSeoData }
       }
     }
   } catch (e) {
@@ -113,7 +117,13 @@ class HeadInjector {
       article.title ||
       ''
     )
-    const keywords = escapeHtml(seoData.keywords || '')
+    // Keywords: use AI keywords string, or join tags array, or empty
+    let keywords = ''
+    if (seoData.keywords) {
+      keywords = escapeHtml(seoData.keywords)
+    } else if (seoData.tags && Array.isArray(seoData.tags)) {
+      keywords = escapeHtml(seoData.tags.join(', '))
+    }
     // Image is directly on article.coverUrl
     const image = article.coverUrl || DEFAULT_IMAGE
     const articleUrl = `${siteUrl}/work/${article.uuid}`
@@ -190,9 +200,12 @@ class BodyInjector {
     const publishedTime = formatDate(article.createAt)
     const modifiedTime = formatDate(article.updateAt || article.createAt) || publishedTime
 
+    // Use AI-determined schemaType or default to Article
+    const schemaType = seoData.schemaType || 'Article'
+
     const schema = {
       "@context": "https://schema.org",
-      "@type": "Article",
+      "@type": schemaType,
       "headline": article.title,
       "description": description,
       "image": image,
@@ -213,6 +226,10 @@ class BodyInjector {
         "name": authorName,
         "url": authorUrl
       }
+      // Add curator credibility if available
+      if (seoData.curatorCredibility) {
+        schema.author.description = seoData.curatorCredibility
+      }
     }
 
     if (publishedTime) schema.datePublished = publishedTime
@@ -221,6 +238,33 @@ class BodyInjector {
     // Add keywords if available
     if (seoData.keywords) {
       schema.keywords = seoData.keywords
+    }
+
+    // Add AI-generated AEO data
+    const aeoData = seoData.aeoData || {}
+    if (aeoData.targetAudience) {
+      schema.audience = {
+        "@type": "Audience",
+        "audienceType": aeoData.targetAudience
+      }
+    }
+    if (aeoData.facts && aeoData.facts.length > 0) {
+      schema.abstract = aeoData.facts.join('. ')
+    }
+
+    // Add key takeaways as article sections
+    if (seoData.keyTakeaways && seoData.keyTakeaways.length > 0) {
+      schema.articleSection = seoData.keyTakeaways
+    }
+
+    // Add tags if available
+    if (seoData.tags && seoData.tags.length > 0) {
+      schema.keywords = seoData.tags.join(', ')
+    }
+
+    // Add category if available
+    if (seoData.category) {
+      schema.articleSection = seoData.category
     }
 
     const jsonLd = `<script type="application/ld+json">${JSON.stringify(schema)}</script>`
