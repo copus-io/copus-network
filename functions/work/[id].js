@@ -73,7 +73,7 @@ export async function onRequest(context) {
 
   // Remove existing meta tags and inject new ones
   // This ensures our AI-generated tags are the ONLY ones crawlers see
-  return new HTMLRewriter()
+  const transformedResponse = new HTMLRewriter()
     // Remove existing tags that we'll replace
     .on('title', new TagRemover())
     .on('meta[name="description"]', new TagRemover())
@@ -88,6 +88,21 @@ export async function onRequest(context) {
     .on('head', new HeadInjector(article, seoData, config.siteUrl))
     .on('body', new BodyInjector(article, seoData, config.siteUrl))
     .transform(response)
+
+  // Create new response with headers that prevent Cloudflare edge caching
+  // This ensures crawlers always get fresh, worker-processed content
+  const newResponse = new Response(transformedResponse.body, {
+    status: transformedResponse.status,
+    statusText: transformedResponse.statusText,
+    headers: transformedResponse.headers
+  })
+
+  // Override cache headers to prevent edge caching for crawlers
+  newResponse.headers.set('Cache-Control', 'public, max-age=0, must-revalidate')
+  newResponse.headers.set('CDN-Cache-Control', 'no-cache')
+  newResponse.headers.set('Cloudflare-CDN-Cache-Control', 'no-cache')
+
+  return newResponse
 }
 
 // Remove elements that we want to replace with our own
