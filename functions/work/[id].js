@@ -1,4 +1,4 @@
-// SEO Worker - Phase 3: Correct field mappings from API response
+// SEO Worker - Phase 4: Correct field mappings based on actual API response
 
 const SITE_NAME = 'Copus'
 const DEFAULT_IMAGE = 'https://copus.network/og-image.jpg'
@@ -11,11 +11,11 @@ function getConfig(hostname) {
   }
 }
 
-// Parse the content JSON string to extract fields like detailCover, description
-function parseContent(contentString) {
-  if (!contentString) return {}
+// Parse seoData JSON string
+function parseSeoData(seoDataString) {
+  if (!seoDataString) return {}
   try {
-    return typeof contentString === 'string' ? JSON.parse(contentString) : contentString
+    return JSON.parse(seoDataString)
   } catch {
     return {}
   }
@@ -38,7 +38,7 @@ export async function onRequest(context) {
 
   // Fetch article data
   let article = null
-  let content = {}
+  let seoData = {}
   try {
     const apiUrl = `${config.apiBase}/client/reader/article/info?uuid=${articleId}`
     const apiResponse = await fetch(apiUrl, {
@@ -49,7 +49,7 @@ export async function onRequest(context) {
       const json = await apiResponse.json()
       if (json.status === 1 && json.data) {
         article = json.data
-        content = parseContent(article.content)
+        seoData = parseSeoData(article.seoData)
       }
     }
   } catch (e) {
@@ -69,8 +69,8 @@ export async function onRequest(context) {
 
   // Inject real meta tags
   return new HTMLRewriter()
-    .on('head', new HeadInjector(article, content, config.siteUrl))
-    .on('body', new BodyInjector(article, content, config.siteUrl))
+    .on('head', new HeadInjector(article, seoData, config.siteUrl))
+    .on('body', new BodyInjector(article, seoData, config.siteUrl))
     .transform(response)
 }
 
@@ -96,19 +96,26 @@ function formatDate(timestamp) {
 }
 
 class HeadInjector {
-  constructor(article, content, siteUrl) {
+  constructor(article, seoData, siteUrl) {
     this.article = article
-    this.content = content
+    this.seoData = seoData
     this.siteUrl = siteUrl
   }
 
   element(element) {
-    const { article, content, siteUrl } = this
+    const { article, seoData, siteUrl } = this
 
-    // Use correct field mappings
-    const title = escapeHtml(article.title || content.title || '')
-    const description = escapeHtml(content.description || article.description || article.title || '')
-    const image = content.detailCover || content.cover || article.coverImage || DEFAULT_IMAGE
+    const title = escapeHtml(article.title || '')
+    // Use seoData.description if available, otherwise truncate content
+    const description = escapeHtml(
+      seoData.description ||
+      (article.content ? article.content.substring(0, 160) : '') ||
+      article.title ||
+      ''
+    )
+    const keywords = escapeHtml(seoData.keywords || '')
+    // Image is directly on article.coverUrl
+    const image = article.coverUrl || DEFAULT_IMAGE
     const articleUrl = `${siteUrl}/work/${article.uuid}`
 
     // Author info is nested in article.authorInfo
@@ -116,13 +123,14 @@ class HeadInjector {
     const authorName = escapeHtml(authorInfo.username || '')
 
     const publishedTime = formatDate(article.createAt)
-    const modifiedTime = formatDate(article.updateAt)
+    const modifiedTime = formatDate(article.updateAt || article.createAt)
 
     const metaTags = `
     <!-- SEO Worker: Article Meta -->
     <meta name="seo-worker" content="active" />
     <title>${title} - ${SITE_NAME}</title>
     <meta name="description" content="${description}" />
+    ${keywords ? `<meta name="keywords" content="${keywords}" />` : ''}
 
     <!-- Open Graph -->
     <meta property="og:type" content="article" />
@@ -149,33 +157,38 @@ class HeadInjector {
 }
 
 class BodyInjector {
-  constructor(article, content, siteUrl) {
+  constructor(article, seoData, siteUrl) {
     this.article = article
-    this.content = content
+    this.seoData = seoData
     this.siteUrl = siteUrl
   }
 
   element(element) {
-    const { article, content, siteUrl } = this
+    const { article, seoData, siteUrl } = this
 
     // Author info is nested in article.authorInfo
     const authorInfo = article.authorInfo || {}
-    const authorName = authorInfo.username || 'Unknown'
+    const authorName = authorInfo.username || ''
     const authorId = authorInfo.id
     const authorNamespace = authorInfo.namespace
 
     const articleUrl = `${siteUrl}/work/${article.uuid}`
-    const authorUrl = authorNamespace
-      ? `${siteUrl}/u/${authorNamespace}`
-      : authorId
-        ? `${siteUrl}/user/${authorId}/treasury`
-        : siteUrl
+    // Build author URL: prefer namespace, then id
+    let authorUrl = siteUrl
+    if (authorNamespace) {
+      authorUrl = `${siteUrl}/u/${authorNamespace}`
+    } else if (authorId) {
+      authorUrl = `${siteUrl}/user/${authorId}/treasury`
+    }
 
-    const image = content.detailCover || content.cover || article.coverImage || DEFAULT_IMAGE
-    const description = content.description || article.description || article.title || ''
+    // Image is directly on article.coverUrl
+    const image = article.coverUrl || DEFAULT_IMAGE
+    const description = seoData.description ||
+      (article.content ? article.content.substring(0, 300) : '') ||
+      article.title || ''
 
     const publishedTime = formatDate(article.createAt)
-    const modifiedTime = formatDate(article.updateAt) || publishedTime
+    const modifiedTime = formatDate(article.updateAt || article.createAt) || publishedTime
 
     const schema = {
       "@context": "https://schema.org",
@@ -184,11 +197,6 @@ class BodyInjector {
       "description": description,
       "image": image,
       "url": articleUrl,
-      "author": {
-        "@type": "Person",
-        "name": authorName,
-        "url": authorUrl
-      },
       "publisher": {
         "@type": "Organization",
         "name": SITE_NAME,
@@ -198,8 +206,22 @@ class BodyInjector {
       "mainEntityOfPage": { "@type": "WebPage", "@id": articleUrl }
     }
 
+    // Only add author if we have a name
+    if (authorName) {
+      schema.author = {
+        "@type": "Person",
+        "name": authorName,
+        "url": authorUrl
+      }
+    }
+
     if (publishedTime) schema.datePublished = publishedTime
     if (modifiedTime) schema.dateModified = modifiedTime
+
+    // Add keywords if available
+    if (seoData.keywords) {
+      schema.keywords = seoData.keywords
+    }
 
     const jsonLd = `<script type="application/ld+json">${JSON.stringify(schema)}</script>`
     element.prepend(jsonLd, { html: true })
