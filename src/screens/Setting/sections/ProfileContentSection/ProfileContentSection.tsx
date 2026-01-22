@@ -690,17 +690,17 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
 
         {/* Username and Bio */}
-        <div className="flex flex-col items-start gap-3 relative w-full">
+        <div className="flex flex-col items-start gap-3 relative w-full max-w-[500px]">
           {/* Name */}
           <div className="flex flex-col items-start gap-1">
-            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Name</h3>
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Name</h3>
             {isEditingName ? (
               <div className="flex items-center gap-3">
                 <input
                   type="text"
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="[font-family:'Lato',Helvetica] font-medium text-off-black text-[18px] tracking-[0] leading-[1.4] px-4 py-2 border border-gray-300 rounded-[20px] focus:outline-none focus:border-blue-500 w-[280px]"
+                  className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[1.4] px-4 py-2 border border-gray-300 rounded-[20px] focus:outline-none focus:border-blue-500 w-[280px]"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveName();
@@ -724,7 +724,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               </div>
             ) : (
               <div className="flex items-center gap-2.5">
-                <h1 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-[18px] tracking-[0] leading-[1.4]">
+                <h1 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[1.4]">
                   {formData.name || (!user ? "Loading..." : "Anonymous")}
                 </h1>
 
@@ -745,16 +745,74 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             )}
           </div>
 
+          {/* Custom ID */}
+          <div className="flex flex-col items-start gap-1">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Custom ID</h3>
+            {isEditingCustomId ? (
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={editedCustomId}
+                  onChange={(e) => setEditedCustomId(e.target.value)}
+                  className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4] px-4 py-2 border border-gray-300 rounded-[20px] focus:outline-none focus:border-blue-500 w-[280px]"
+                  autoFocus
+                  placeholder="Enter 3-20 characters"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveCustomId();
+                    if (e.key === 'Escape') handleCancelEditingCustomId();
+                  }}
+                />
+                <button
+                  onClick={handleSaveCustomId}
+                  disabled={isSavingCustomId}
+                  className="px-4 py-2 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                >
+                  {isSavingCustomId ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={handleCancelEditingCustomId}
+                  disabled={isSavingCustomId}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4]">
+                  @{user?.namespace || (!user ? "Loading..." : "Not set")}
+                </p>
+
+                {/* Edit button next to custom ID */}
+                <button
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  aria-label="Edit custom ID"
+                  onClick={handleStartEditingCustomId}
+                  title="Edit custom ID"
+                >
+                  <img
+                    className="w-4 h-4"
+                    alt="Edit"
+                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                  />
+                </button>
+              </div>
+            )}
+            <p className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-sm tracking-[0] leading-[1.4]">
+              Set a unique custom ID for easy sharing and promotion
+            </p>
+          </div>
+
           {/* Description */}
           <div className="flex flex-col items-start gap-1">
-            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Description</h3>
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Description</h3>
             {isEditingDescription ? (
               <div className="flex items-end gap-3">
                 <div className="relative">
                   <textarea
                     value={editedDescription}
                     onChange={(e) => setEditedDescription(e.target.value)}
-                    className={`[font-family:'Lato',Helvetica] font-normal text-off-black text-[18px] tracking-[0] leading-[1.4] px-4 py-3 pr-16 border rounded-[20px] focus:outline-none focus:border-blue-500 w-[450px] h-[80px] resize-none transition-colors ${
+                    className={`[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4] px-4 py-3 pr-16 border rounded-[20px] focus:outline-none focus:border-blue-500 w-[450px] h-[80px] resize-none transition-colors ${
                       editedDescription.length >= 55 ? 'border-orange-400' : editedDescription.length > 0 ? 'border-gray-300' : 'border-gray-300'
                     }`}
                     autoFocus
@@ -794,7 +852,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               </div>
             ) : (
               <div className="flex items-center gap-2.5">
-                <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-[18px] tracking-[0] leading-[1.4]">
+                <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4]">
                   {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
                 </p>
 
@@ -814,71 +872,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               </div>
             )}
           </div>
-
-          {/* Custom ID */}
-          <div className="flex flex-col items-start gap-1">
-            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Custom ID</h3>
-            {isEditingCustomId ? (
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  value={editedCustomId}
-                  onChange={(e) => setEditedCustomId(e.target.value)}
-                  className="[font-family:'Lato',Helvetica] font-normal text-off-black text-[18px] tracking-[0] leading-[1.4] px-4 py-2 border border-gray-300 rounded-[20px] focus:outline-none focus:border-blue-500 w-[280px]"
-                  autoFocus
-                  placeholder="Enter 3-20 characters"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveCustomId();
-                    if (e.key === 'Escape') handleCancelEditingCustomId();
-                  }}
-                />
-                <button
-                  onClick={handleSaveCustomId}
-                  disabled={isSavingCustomId}
-                  className="px-4 py-2 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
-                >
-                  {isSavingCustomId ? 'Saving...' : 'Save'}
-                </button>
-                <button
-                  onClick={handleCancelEditingCustomId}
-                  disabled={isSavingCustomId}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2.5">
-                <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-[18px] tracking-[0] leading-[1.4]">
-                  @{user?.namespace || (!user ? "Loading..." : "Not set")}
-                </p>
-
-                {/* Edit button next to custom ID */}
-                <button
-                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                  aria-label="Edit custom ID"
-                  onClick={handleStartEditingCustomId}
-                  title="Edit custom ID"
-                >
-                  <img
-                    className="w-4 h-4"
-                    alt="Edit"
-                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                  />
-                </button>
-              </div>
-            )}
-            <p className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-sm tracking-[0] leading-[1.4]">
-              Set a unique custom ID for easy sharing and promotion
-            </p>
-          </div>
         </div>
 
         {/* Profile and Cover images in one row on desktop, stacked on mobile */}
-        <div className="flex flex-col lg:flex-row items-start gap-5 lg:gap-8 relative w-full mt-3">
+        <div className="flex flex-col lg:flex-row items-start gap-5 lg:gap-8 relative w-full max-w-[500px] mt-3">
           {/* Profile image */}
           <div className="flex flex-col items-start gap-2">
-            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Profile image</h3>
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Profile image</h3>
             <button
               onClick={handleAvatarClick}
               className="w-[50px] h-[50px] lg:w-[60px] lg:h-[60px] rounded-full border-2 border-solid border-light-grey relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100 flex-shrink-0"
@@ -913,12 +913,12 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </button>
           </div>
 
-          {/* Divider - hidden on mobile */}
-          <div className="hidden lg:block w-px h-[100px] bg-[#E0E0E0] self-center"></div>
+          {/* Divider - hidden on mobile, aligned with cover image */}
+          <div className="hidden lg:block w-px h-[100px] bg-[#E0E0E0] mt-[28px]"></div>
 
           {/* Cover image */}
           <div className="flex flex-col items-start gap-2">
-            <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Cover image</h3>
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Cover image</h3>
             <button
               onClick={handleCoverClick}
               className="w-[200px] lg:w-[300px] aspect-[3/1] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border border-gray-200 flex items-center justify-center"
@@ -985,8 +985,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
 
         {/* Social links - below profile and cover */}
-        <div className="flex flex-col items-start gap-2 mt-3">
-          <h3 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px]">Social links</h3>
+        <div className="flex flex-col items-start gap-2 mt-3 w-full max-w-[500px]">
+          <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Social links</h3>
 
           {/* Display existing social links */}
           {socialLinksData && socialLinksData.length > 0 && (
@@ -1055,7 +1055,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
       </section>
 
-      <section className="flex flex-col items-start gap-5 pt-0 pb-5 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
+      <section className="flex flex-col items-start gap-5 pt-0 pb-8 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
         <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
           <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
             Account
@@ -1065,7 +1065,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         <div className="flex flex-col items-start gap-5 relative w-full">
           <div className="inline-flex flex-col items-start justify-center gap-1.5 relative flex-[0_0_auto]">
             <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] whitespace-nowrap">
+              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px] whitespace-nowrap">
                 {user?.walletAddress ? 'Wallet address' : 'Email address'}
               </h3>
             </div>
@@ -1079,7 +1079,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           {!isPasswordlessAuth && (
             <div className="inline-flex flex-col items-start justify-center gap-1.5 relative flex-[0_0_auto]">
               <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[23px] whitespace-nowrap">
+                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px] whitespace-nowrap">
                   Password
                 </h3>
               </div>
@@ -1105,7 +1105,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           </h2>
         </div>
 
-        <div className="flex flex-col items-start gap-5 pt-0 pb-5 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
+        <div className="flex flex-col items-start gap-5 pt-0 pb-8 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
           {!user ? (
             <div className="flex justify-center items-center py-4">
               <div className="text-sm text-gray-500">Please log in to view notification settings</div>
