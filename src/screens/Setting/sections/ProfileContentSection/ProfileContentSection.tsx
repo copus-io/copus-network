@@ -690,7 +690,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
 
         {/* Username and Bio */}
-        <div className="flex flex-col items-start gap-3 relative w-full max-w-[500px]">
+        <div className="flex flex-col items-start gap-5 relative w-full max-w-[500px]">
           {/* Name */}
           <div className="flex flex-col items-start gap-1">
             <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Name</h3>
@@ -1105,7 +1105,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           </h2>
         </div>
 
-        <div className="flex flex-col items-start gap-5 pt-0 pb-8 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
+        <div className="flex flex-col items-start gap-3 pt-0 pb-8 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
           {!user ? (
             <div className="flex justify-center items-center py-4">
               <div className="text-sm text-gray-500">Please log in to view notification settings</div>

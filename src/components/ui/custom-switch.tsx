@@ -67,7 +67,7 @@ const CustomSwitch = React.forwardRef<
 
       {label && (
         <div className="inline-flex flex-col items-start justify-center gap-[5px] relative flex-[0_0_auto]">
-          <label className="relative w-fit mt-[-1.00px] font-p-lato font-[number:var(--p-lato-font-weight)] text-off-black text-[length:var(--p-lato-font-size)] tracking-[var(--p-lato-letter-spacing)] leading-[var(--p-lato-line-height)] whitespace-nowrap [font-style:var(--p-lato-font-style)] cursor-pointer">
+          <label className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4] whitespace-nowrap cursor-pointer">
             {label}
           </label>
         </div>
