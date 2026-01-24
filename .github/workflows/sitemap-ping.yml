@@ -1,0 +1,53 @@
+name: Sitemap Ping
+
+on:
+  # Run daily at 6 AM UTC
+  schedule:
+    - cron: '0 6 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+  # Run on push to main (new content deployed)
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions/work/**'
+      - 'functions/sitemap.xml.js'
+
+jobs:
+  ping-search-engines:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Google
+        run: |
+          echo "Pinging Google..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://www.google.com/ping?sitemap=https://copus.network/sitemap.xml")
+          echo "Google response: $response"
+          if [ "$response" != "200" ]; then
+            echo "Warning: Google ping returned $response"
+          fi
+
+      - name: Ping Bing
+        run: |
+          echo "Pinging Bing..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://www.bing.com/ping?sitemap=https://copus.network/sitemap.xml")
+          echo "Bing response: $response"
+          if [ "$response" != "200" ]; then
+            echo "Warning: Bing ping returned $response"
+          fi
+
+      - name: Ping Copus endpoint
+        run: |
+          echo "Triggering Copus sitemap ping endpoint..."
+          curl -s "https://copus.network/scheduled/sitemap-ping" | jq '.'
+
+      - name: Summary
+        run: |
+          echo "## Sitemap Ping Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Sitemap URL:** https://copus.network/sitemap.xml" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Search engines have been notified of sitemap updates." >> $GITHUB_STEP_SUMMARY
