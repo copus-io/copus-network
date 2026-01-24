@@ -71,8 +71,8 @@ export async function onRequest(context) {
     <div id="copus-ssr-homepage" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
       <header>
         <h1>Copus - The Internet Treasure Map</h1>
-        <p>Human-curated content discovery platform with <strong>${totalArticles || '100+'} total curations</strong>.</p>
-        <p><a href="${config.siteUrl}/articles.txt">View all ${totalArticles || '100+'} articles</a> | <a href="${config.siteUrl}/topics">Browse by topic</a></p>
+        <p>A platform where humans curate and share valuable web content.</p>
+        <p><a href="${config.siteUrl}/articles.txt">Browse all articles</a> | <a href="${config.siteUrl}/topics">Browse by topic</a></p>
       </header>
 
       <nav>
@@ -94,8 +94,8 @@ export async function onRequest(context) {
       </nav>
 
       <main>
-        <h2>Recent Curations (showing ${recentArticles.length} of ${totalArticles || '100+'} total)</h2>
-        <p>Below are recent human-curated recommendations. <strong><a href="${config.siteUrl}/articles.txt">See all ${totalArticles || '100+'} articles</a></strong></p>
+        <h2>Recent Curations</h2>
+        <p>Below are recent human-curated recommendations. <a href="${config.siteUrl}/articles.txt">See all articles</a> or <a href="${config.siteUrl}/topics">browse by topic</a>.</p>
         ${articlesHtml || '<p>No articles available</p>'}
       </main>
 
