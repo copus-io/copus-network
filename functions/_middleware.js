@@ -69,12 +69,16 @@ export async function onRequest(context) {
         <p>Find curated recommendations instantly:</p>
         <ul>
           <li><a href="${config.siteUrl}/api/search?q=AI+tools">AI tools</a></li>
+          <li><a href="${config.siteUrl}/api/search?q=personal+growth">Personal growth</a></li>
+          <li><a href="${config.siteUrl}/api/search?q=productivity">Productivity</a></li>
           <li><a href="${config.siteUrl}/api/search?q=watermark+remover">Watermark remover</a></li>
           <li><a href="${config.siteUrl}/api/search?q=free+software">Free software</a></li>
           <li><a href="${config.siteUrl}/api/search?q=Linux">Linux tools</a></li>
-          <li><a href="${config.siteUrl}/api/search?q=productivity">Productivity apps</a></li>
+          <li><a href="${config.siteUrl}/api/search?q=mindfulness">Mindfulness</a></li>
+          <li><a href="${config.siteUrl}/api/search?q=self+improvement">Self improvement</a></li>
         </ul>
         <p>Categories: <a href="${config.siteUrl}/api/search?q=&category=Technology">Technology</a> | <a href="${config.siteUrl}/api/search?q=&category=Art">Art</a> | <a href="${config.siteUrl}/api/search?q=&category=Sports">Sports</a> | <a href="${config.siteUrl}/api/search?q=&category=Life">Life</a></p>
+        <p>Browse all: <a href="${config.siteUrl}/api/search">${config.siteUrl}/api/search</a> (no query = recent articles)</p>
       </section>
 
       <header>
