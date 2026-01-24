@@ -69,8 +69,25 @@ export async function onRequest(context) {
       <header>
         <h1>Copus - The Internet Treasure Map</h1>
         <p>Human-curated content discovery platform with ${recentArticles.length}+ recommendations.</p>
-        <p>Topics include: AI tools, productivity, personal growth, self-improvement, mindfulness, free software, Linux, technology, art, design, and more.</p>
       </header>
+
+      <nav>
+        <h2>Browse by Topic (click to view content)</h2>
+        <ul>
+          <li><a href="${config.siteUrl}/topics/personal-growth">Personal Growth</a> - Self-development, emotional growth</li>
+          <li><a href="${config.siteUrl}/topics/self-improvement">Self Improvement</a> - Skills, habits, becoming better</li>
+          <li><a href="${config.siteUrl}/topics/mindfulness">Mindfulness</a> - Meditation, awareness</li>
+          <li><a href="${config.siteUrl}/topics/mental-health">Mental Health</a> - Psychological wellbeing</li>
+          <li><a href="${config.siteUrl}/topics/productivity">Productivity</a> - Getting things done</li>
+          <li><a href="${config.siteUrl}/topics/ai-tools">AI Tools</a> - Artificial intelligence</li>
+          <li><a href="${config.siteUrl}/topics/free-software">Free Software</a> - Open source tools</li>
+          <li><a href="${config.siteUrl}/topics/linux">Linux</a> - Linux tools and tutorials</li>
+          <li><a href="${config.siteUrl}/topics/technology">Technology</a> - Tech tools and news</li>
+          <li><a href="${config.siteUrl}/topics/art">Art</a> - Creative resources</li>
+          <li><a href="${config.siteUrl}/topics/health">Health</a> - Wellness and fitness</li>
+        </ul>
+        <p><a href="${config.siteUrl}/topics">View all topics</a></p>
+      </nav>
 
       <main>
         <h2>Curated Content on Copus (${recentArticles.length} articles)</h2>
