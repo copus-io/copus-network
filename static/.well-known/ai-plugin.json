@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Copus - Internet Treasure Map",
+  "name_for_model": "copus_network",
+  "description_for_human": "Discover human-curated recommendations for valuable internet content. Find trusted resources recommended by experts across technology, art, sports, and life topics.",
+  "description_for_model": "Copus is a human-curated content discovery platform. Use this to find quality recommendations for web resources. Each curation includes: the original source URL, curator's recommendation note explaining why it's valuable, AI-enhanced metadata (key takeaways, facts, target audience), and curator credibility information. Access structured JSON data by appending ?format=json to any /work/{id} URL. Browse all content via /sitemap.xml.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://copus.network/.well-known/openapi.yaml"
+  },
+  "logo_url": "https://copus.network/logo.png",
+  "contact_email": "contact@copus.network",
+  "legal_info_url": "https://copus.network/terms"
+}

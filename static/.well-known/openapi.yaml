@@ -1,0 +1,174 @@
+openapi: 3.0.0
+info:
+  title: Copus Network API
+  description: Human-curated content discovery platform - The Internet Treasure Map
+  version: 1.0.0
+servers:
+  - url: https://copus.network
+    description: Production server
+
+paths:
+  /work/{articleId}:
+    get:
+      operationId: getArticle
+      summary: Get a curated article
+      description: Retrieve a human-curated content recommendation with metadata
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The unique article identifier (UUID)
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [json]
+          description: Set to 'json' to get structured JSON-LD data instead of HTML
+      responses:
+        '200':
+          description: Article data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+            text/html:
+              schema:
+                type: string
+                description: HTML page with SSR content readable by text extractors
+
+  /sitemap.xml:
+    get:
+      operationId: getSitemap
+      summary: Get sitemap with all articles
+      description: XML sitemap listing all curated content on Copus
+      responses:
+        '200':
+          description: XML sitemap
+          content:
+            application/xml:
+              schema:
+                type: string
+
+components:
+  schemas:
+    Article:
+      type: object
+      properties:
+        '@context':
+          type: string
+          example: https://schema.org
+        '@type':
+          type: string
+          example: Article
+        id:
+          type: string
+          description: Article UUID
+        url:
+          type: string
+          format: uri
+          description: Copus article URL
+        name:
+          type: string
+          description: Article title
+        headline:
+          type: string
+          description: Article headline
+        description:
+          type: string
+          description: AI-generated description
+        keywords:
+          type: array
+          items:
+            type: string
+          description: SEO keywords
+        author:
+          $ref: '#/components/schemas/Author'
+        source:
+          $ref: '#/components/schemas/Source'
+        curation:
+          $ref: '#/components/schemas/Curation'
+        aeoData:
+          $ref: '#/components/schemas/AEOData'
+        engagement:
+          $ref: '#/components/schemas/Engagement'
+        datePublished:
+          type: string
+          format: date-time
+        dateModified:
+          type: string
+          format: date-time
+
+    Author:
+      type: object
+      properties:
+        '@type':
+          type: string
+          example: Person
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        credibility:
+          type: string
+          description: Why this curator's recommendation matters
+
+    Source:
+      type: object
+      properties:
+        originalUrl:
+          type: string
+          format: uri
+          description: The original content being curated
+        domain:
+          type: string
+          description: Domain of the original source
+
+    Curation:
+      type: object
+      properties:
+        curatorNote:
+          type: string
+          description: Human-written recommendation explaining value
+        keyTakeaways:
+          type: array
+          items:
+            type: string
+          description: Main points from the content
+        tags:
+          type: array
+          items:
+            type: string
+
+    AEOData:
+      type: object
+      description: AI Engine Optimization data
+      properties:
+        facts:
+          type: array
+          items:
+            type: string
+          description: Verifiable statements from the content
+        targetAudience:
+          type: string
+          description: Who benefits from this content
+        problemSolved:
+          type: string
+          description: What issue this content addresses
+        uniqueValue:
+          type: string
+          description: What makes this content special
+
+    Engagement:
+      type: object
+      properties:
+        viewCount:
+          type: integer
+        collectedInTreasuries:
+          type: integer
+          description: Number of users who saved this to their treasury
+        commentCount:
+          type: integer
