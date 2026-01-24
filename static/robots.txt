@@ -40,4 +40,4 @@ Allow: /
 Sitemap: https://copus.network/sitemap.xml
 
 # For AI agents: Structured JSON available at any /work/{id}?format=json
-# See also: https://copus.network/llms.txt (coming soon)
+# See also: https://copus.network/llms.txt
