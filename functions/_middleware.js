@@ -42,7 +42,7 @@ export async function onRequest(context) {
       const json = await apiResponse.json()
       if (json.status === 1 && json.data?.data) {
         recentArticles = json.data.data
-        totalArticles = json.data.total || recentArticles.length
+        totalArticles = json.data.totalCount || json.data.total || recentArticles.length
       }
     }
   } catch (e) {
