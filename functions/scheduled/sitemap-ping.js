@@ -1,32 +1,18 @@
-// Automated Search Engine Notification
+// Automated Search Engine Notification with IndexNow
 //
-// Modern search engines (Google, Bing) have deprecated simple ping endpoints.
-// Current indexing methods:
+// IndexNow instantly notifies search engines of new/updated content.
+// Supported by: Bing, Yandex, Seznam, Naver (not Google)
 //
-// 1. Natural Crawling (ACTIVE - No setup required)
-//    - robots.txt with Sitemap directive ✓
-//    - sitemap.xml with all URLs ✓
-//    - AI bot access configured ✓
-//
-// 2. IndexNow Protocol (OPTIONAL - Requires key setup)
-//    - Supported by: Bing, Yandex, Seznam, Naver
-//    - Setup: Generate key, host at /{key}.txt, use in requests
-//
-// 3. Webmaster Tools APIs (OPTIONAL - Requires authentication)
-//    - Google Search Console: https://search.google.com/search-console
-//    - Bing Webmaster Tools: https://www.bing.com/webmasters
-//
-// This endpoint provides status info and optional IndexNow pings.
+// This endpoint:
+// 1. Pings IndexNow with the sitemap URL
+// 2. Can be called manually, by GitHub Actions, or on new article publish
+
+const INDEXNOW_KEY = '869f2de9e40b697bb5245a403917412f'
 
 function getConfig(hostname) {
   const isTest = hostname.includes('test.')
   return {
     siteUrl: isTest ? 'https://test.copus.network' : 'https://copus.network',
-    // To enable IndexNow:
-    // 1. Generate a key (any 32+ char hex string)
-    // 2. Create /static/{key}.txt with the key as content
-    // 3. Set INDEXNOW_KEY environment variable in Cloudflare
-    indexNowKey: null, // Set via env var in production
   }
 }
 
@@ -35,89 +21,60 @@ export async function onRequest(context) {
   const config = getConfig(url.hostname)
   const SITEMAP_URL = `${config.siteUrl}/sitemap.xml`
 
-  // Check for IndexNow key in environment
-  const indexNowKey = context.env?.INDEXNOW_KEY || config.indexNowKey
+  // IndexNow endpoints (all get notified with one ping to api.indexnow.org)
+  const indexNowEndpoints = [
+    { name: 'IndexNow (Bing/Yandex/Seznam/Naver)', url: 'https://api.indexnow.org/indexnow' },
+  ]
 
-  const status = {
-    timestamp: new Date().toISOString(),
-    sitemap: SITEMAP_URL,
-    siteUrl: config.siteUrl,
-  }
+  const results = []
+  const startTime = Date.now()
 
-  // Status of each indexing method
-  const indexingMethods = {
-    naturalCrawling: {
-      status: 'active',
-      description: 'Search engines will discover content via robots.txt and sitemap.xml',
-      files: {
-        robotsTxt: `${config.siteUrl}/robots.txt`,
-        sitemapXml: SITEMAP_URL,
-        llmsTxt: `${config.siteUrl}/llms.txt`,
-      },
-    },
-    indexNow: {
-      status: indexNowKey ? 'configured' : 'not_configured',
-      description: indexNowKey
-        ? 'IndexNow is configured and will ping Bing/Yandex'
-        : 'Set INDEXNOW_KEY env var to enable instant indexing',
-      supportedEngines: ['Bing', 'Yandex', 'Seznam', 'Naver'],
-    },
-    webmasterTools: {
-      status: 'manual',
-      description: 'Submit sitemap manually for priority indexing',
-      links: {
-        google: 'https://search.google.com/search-console',
-        bing: 'https://www.bing.com/webmasters',
-      },
-    },
-  }
+  for (const engine of indexNowEndpoints) {
+    try {
+      const pingUrl = `${engine.url}?url=${encodeURIComponent(SITEMAP_URL)}&key=${INDEXNOW_KEY}`
+      const response = await fetch(pingUrl, {
+        method: 'GET',
+        headers: { 'User-Agent': 'Copus-IndexNow/1.0' },
+      })
 
-  // If IndexNow key is configured, ping the engines
-  const pingResults = []
-  if (indexNowKey) {
-    const indexNowEndpoints = [
-      { name: 'Bing', url: 'https://www.bing.com/indexnow' },
-      { name: 'Yandex', url: 'https://yandex.com/indexnow' },
-    ]
-
-    for (const engine of indexNowEndpoints) {
-      try {
-        const pingUrl = `${engine.url}?url=${encodeURIComponent(SITEMAP_URL)}&key=${indexNowKey}`
-        const response = await fetch(pingUrl, {
-          method: 'GET',
-          headers: { 'User-Agent': 'Copus-IndexNow/1.0' },
-        })
-
-        pingResults.push({
-          engine: engine.name,
-          status: response.status,
-          success: response.status === 200 || response.status === 202,
-          message: response.status === 200 ? 'Submitted' : `HTTP ${response.status}`,
-        })
-      } catch (error) {
-        pingResults.push({
-          engine: engine.name,
-          status: 0,
-          success: false,
-          message: error.message,
-        })
-      }
+      results.push({
+        engine: engine.name,
+        status: response.status,
+        success: response.status === 200 || response.status === 202,
+        message: response.status === 200 || response.status === 202
+          ? 'Submitted successfully'
+          : `HTTP ${response.status}`,
+      })
+    } catch (error) {
+      results.push({
+        engine: engine.name,
+        status: 0,
+        success: false,
+        message: error.message,
+      })
     }
   }
 
+  const duration = Date.now() - startTime
+  const allSuccess = results.every(r => r.success)
+
   const responseData = {
-    ...status,
-    indexingMethods,
-    ...(pingResults.length > 0 && { pingResults }),
-    recommendations: [
-      'Sitemap is automatically discovered via robots.txt',
-      'For faster indexing, submit sitemap to Google Search Console and Bing Webmaster Tools',
-      indexNowKey ? 'IndexNow pings are active' : 'Consider setting up IndexNow for instant indexing',
-    ],
+    timestamp: new Date().toISOString(),
+    sitemap: SITEMAP_URL,
+    siteUrl: config.siteUrl,
+    duration: `${duration}ms`,
+    success: allSuccess,
+    results,
+    indexNow: {
+      key: INDEXNOW_KEY,
+      keyFile: `${config.siteUrl}/${INDEXNOW_KEY}.txt`,
+      supportedEngines: ['Bing', 'Yandex', 'Seznam', 'Naver'],
+      note: 'Google does not support IndexNow; uses natural crawling via sitemap',
+    },
   }
 
   return new Response(JSON.stringify(responseData, null, 2), {
-    status: 200,
+    status: allSuccess ? 200 : 500,
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store',
