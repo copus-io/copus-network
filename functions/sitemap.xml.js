@@ -55,20 +55,33 @@ export async function onRequest(context) {
 
   // Generate sitemap XML
   const urls = []
+  const today = new Date().toISOString().split('T')[0]
 
-  // Add homepage
-  urls.push({
-    loc: config.siteUrl,
-    changefreq: 'daily',
-    priority: '1.0'
-  })
+  // Add homepage and navigation pages
+  const staticPages = [
+    { path: '/', changefreq: 'daily', priority: '1.0' },
+    { path: '/home', changefreq: 'daily', priority: '0.9' },
+    { path: '/copus', changefreq: 'daily', priority: '0.9' },
+    { path: '/discovery', changefreq: 'hourly', priority: '0.9' },
+    { path: '/explore/new', changefreq: 'daily', priority: '0.8' },
+    { path: '/following', changefreq: 'daily', priority: '0.8' },
+    { path: '/treasury', changefreq: 'weekly', priority: '0.8' },
+    { path: '/curate', changefreq: 'weekly', priority: '0.8' },
+    { path: '/earning', changefreq: 'weekly', priority: '0.7' },
+    { path: '/my-treasury', changefreq: 'weekly', priority: '0.7' },
+    { path: '/published', changefreq: 'weekly', priority: '0.6' },
+    { path: '/login', changefreq: 'monthly', priority: '0.5' },
+    { path: '/signup', changefreq: 'monthly', priority: '0.5' }
+  ]
 
-  // Add discovery page
-  urls.push({
-    loc: `${config.siteUrl}/discovery`,
-    changefreq: 'hourly',
-    priority: '0.9'
-  })
+  for (const page of staticPages) {
+    urls.push({
+      loc: `${config.siteUrl}${page.path}`,
+      lastmod: today,
+      changefreq: page.changefreq,
+      priority: page.priority
+    })
+  }
 
   // Add all articles
   for (const article of allArticles) {
