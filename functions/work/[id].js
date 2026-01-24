@@ -21,22 +21,90 @@ function parseJsonString(jsonString) {
   }
 }
 
+// Extract hostname safely
+function getHostname(url) {
+  if (!url) return null
+  try {
+    return new URL(url).hostname
+  } catch {
+    return null
+  }
+}
+
+// Build JSON response for AI agents (?format=json)
+function buildJsonResponse(article, seoData, siteUrl) {
+  const authorInfo = article.authorInfo || {}
+  const aeoData = seoData.aeoData || {}
+
+  // Build author URL
+  let authorUrl = siteUrl
+  if (authorInfo.namespace) {
+    authorUrl = `${siteUrl}/u/${authorInfo.namespace}`
+  } else if (authorInfo.id) {
+    authorUrl = `${siteUrl}/user/${authorInfo.id}/treasury`
+  }
+
+  const publishedTime = formatDate(article.createAt)
+  const modifiedTime = formatDate(article.updateAt || article.createAt)
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "id": article.uuid,
+    "url": `${siteUrl}/work/${article.uuid}`,
+    "name": article.title,
+    "headline": article.title,
+    "description": seoData.description || (article.content ? article.content.substring(0, 300) : '') || article.title || '',
+    "abstract": aeoData.facts ? aeoData.facts.join('. ') : null,
+    "image": article.coverUrl || DEFAULT_IMAGE,
+    "keywords": seoData.tags || (seoData.keywords ? seoData.keywords.split(', ') : []),
+    "articleSection": seoData.category || null,
+    "author": {
+      "@type": "Person",
+      "name": authorInfo.username || 'Anonymous',
+      "url": authorUrl,
+      "description": seoData.curatorCredibility || authorInfo.bio || null
+    },
+    "audience": aeoData.targetAudience ? {
+      "@type": "Audience",
+      "audienceType": aeoData.targetAudience
+    } : null,
+    "datePublished": publishedTime || null,
+    "dateModified": modifiedTime || publishedTime || null,
+    "publisher": {
+      "@type": "Organization",
+      "name": SITE_NAME,
+      "url": siteUrl
+    },
+    "source": {
+      "originalUrl": article.targetUrl || null,
+      "domain": getHostname(article.targetUrl),
+      "title": article.targetTitle || article.title
+    },
+    "curation": {
+      "curatorNote": article.content || null,
+      "keyTakeaways": seoData.keyTakeaways || [],
+      "problemSolved": aeoData.problemSolved || null,
+      "uniqueValue": aeoData.uniqueValue || null
+    },
+    "engagement": {
+      "likeCount": article.likeCount || 0,
+      "commentCount": article.commentCount || 0,
+      "collectCount": article.treasureCount || 0
+    }
+  }
+}
+
 export async function onRequest(context) {
   const { params, next } = context
   const articleId = params.id
   const url = new URL(context.request.url)
   const config = getConfig(url.hostname)
 
-  // Get original response first - only call next() once!
-  const response = await next()
+  // Check if JSON format requested (for AI agents)
+  const formatJson = url.searchParams.get('format') === 'json'
 
-  // Skip non-HTML responses
-  const contentType = response.headers.get('content-type') || ''
-  if (!contentType.includes('text/html')) {
-    return response
-  }
-
-  // Fetch article data
+  // Fetch article data first (needed for both JSON and HTML responses)
   let article = null
   let seoData = {}
   try {
@@ -58,6 +126,39 @@ export async function onRequest(context) {
     }
   } catch (e) {
     console.error('[SEO Worker] API fetch failed:', e)
+  }
+
+  // If JSON format requested, return structured JSON for AI agents
+  if (formatJson) {
+    if (!article) {
+      return new Response(JSON.stringify({ error: 'Work not found' }), {
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=300'
+        }
+      })
+    }
+
+    const jsonResponse = buildJsonResponse(article, seoData, config.siteUrl)
+    return new Response(JSON.stringify(jsonResponse, null, 2), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=600'
+      }
+    })
+  }
+
+  // Get original response for HTML transformation
+  const response = await next()
+
+  // Skip non-HTML responses
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('text/html')) {
+    return response
   }
 
   // If no article data, just mark worker as active
@@ -197,6 +298,9 @@ class HeadInjector {
     ${authorName ? `<meta property="article:author" content="${authorName}" />` : ''}
     ${publishedTime ? `<meta property="article:published_time" content="${publishedTime}" />` : ''}
     ${modifiedTime ? `<meta property="article:modified_time" content="${modifiedTime}" />` : ''}
+
+    <!-- AI Agent Discovery -->
+    <link rel="alternate" type="application/json" href="${articleUrl}?format=json" title="JSON representation for AI agents" />
     `
 
     element.append(metaTags, { html: true })
