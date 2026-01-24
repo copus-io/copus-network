@@ -29,10 +29,12 @@ export async function onRequest(context) {
     return response
   }
 
-  // Fetch MORE articles for the SSR content (50 articles for better coverage)
+  // Fetch recent articles for SSR (20 articles - balance between discovery and performance)
+  // Note: Full list available at /articles.txt (137+ articles)
   let recentArticles = []
+  let totalArticles = 0
   try {
-    const apiUrl = `${config.apiBase}/client/home/pageArticle?pageIndex=1&pageSize=50`
+    const apiUrl = `${config.apiBase}/client/home/pageArticle?pageIndex=1&pageSize=20`
     const apiResponse = await fetch(apiUrl, {
       headers: { 'Content-Type': 'application/json' }
     })
@@ -40,6 +42,7 @@ export async function onRequest(context) {
       const json = await apiResponse.json()
       if (json.status === 1 && json.data?.data) {
         recentArticles = json.data.data
+        totalArticles = json.data.total || recentArticles.length
       }
     }
   } catch (e) {
@@ -68,7 +71,8 @@ export async function onRequest(context) {
     <div id="copus-ssr-homepage" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
       <header>
         <h1>Copus - The Internet Treasure Map</h1>
-        <p>Human-curated content discovery platform with ${recentArticles.length}+ recommendations.</p>
+        <p>Human-curated content discovery platform with <strong>${totalArticles || '100+'} total curations</strong>.</p>
+        <p><a href="${config.siteUrl}/articles.txt">View all ${totalArticles || '100+'} articles</a> | <a href="${config.siteUrl}/topics">Browse by topic</a></p>
       </header>
 
       <nav>
@@ -90,8 +94,8 @@ export async function onRequest(context) {
       </nav>
 
       <main>
-        <h2>Curated Content on Copus (${recentArticles.length} articles)</h2>
-        <p>Below are human-curated recommendations. Each includes the original URL, curator's insights, and why it's valuable.</p>
+        <h2>Recent Curations (showing ${recentArticles.length} of ${totalArticles || '100+'} total)</h2>
+        <p>Below are recent human-curated recommendations. <strong><a href="${config.siteUrl}/articles.txt">See all ${totalArticles || '100+'} articles</a></strong></p>
         ${articlesHtml || '<p>No articles available</p>'}
       </main>
 
