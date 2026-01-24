@@ -84,4 +84,4 @@ Website: https://copus.network
 For API questions or partnership inquiries, contact the Copus team.
 
 ## Last Updated
-2025-01-24
+2026-01-24
