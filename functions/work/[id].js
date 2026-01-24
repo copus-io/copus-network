@@ -88,9 +88,9 @@ function buildJsonResponse(article, seoData, siteUrl) {
       "uniqueValue": aeoData.uniqueValue || null
     },
     "engagement": {
-      "likeCount": article.likeCount || 0,
-      "commentCount": article.commentCount || 0,
-      "collectCount": article.treasureCount || 0
+      "viewCount": article.viewCount || 0,
+      "collectedInTreasuries": article.likeCount || 0,
+      "commentCount": article.commentCount || 0
     }
   }
 }
