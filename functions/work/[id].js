@@ -465,11 +465,13 @@ class BodyInjector {
       ? `<p><strong>Recommended for:</strong> ${escapeHtml(aeoData.targetAudience)}</p>`
       : ''
 
-    // Get author bio
-    const authorBio = authorInfo.bio || ''
+    // Build category HTML
+    const categoryHtml = seoData.category
+      ? `<p><strong>Category:</strong> ${escapeHtml(seoData.category)}</p>`
+      : ''
 
-    // SSR Article - positioned off-screen but still in DOM for crawlers
-    // Using clip-path instead of display:none to ensure crawlers can read it
+    // SSR Article - optimized for AI agent discoverability
+    // Structure prioritizes: factual statements, keywords, authority signals
     const ssrArticle = `
     <article id="copus-ssr-content" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
       <header>
@@ -477,23 +479,22 @@ class BodyInjector {
         <p>Curated by <a href="${authorUrl}">${escapeHtml(authorName)}</a>${displayDate ? ` on ${displayDate}` : ''}</p>
       </header>
 
-      ${authorBio ? `
+      ${seoData.description ? `
       <section>
-        <h2>About the Curator</h2>
-        <p><strong>${escapeHtml(authorName)}</strong>: ${escapeHtml(authorBio)}</p>
-        ${seoData.curatorCredibility ? `<p><em>Why trust this recommendation: ${escapeHtml(seoData.curatorCredibility)}</em></p>` : ''}
+        <h2>Summary</h2>
+        <p>${escapeHtml(seoData.description)}</p>
       </section>
-      ` : (seoData.curatorCredibility ? `
-      <section>
-        <h2>About the Curator</h2>
-        <p><em>${escapeHtml(seoData.curatorCredibility)}</em></p>
-      </section>
-      ` : '')}
+      ` : ''}
 
+      ${factsHtml}
+      ${takeawaysHtml}
+
+      ${seoData.curatorCredibility ? `
       <section>
-        <h2>Curator's Note</h2>
-        <p>${escapeHtml(curatorNote)}</p>
+        <h2>Why Trust This Recommendation</h2>
+        <p>${escapeHtml(seoData.curatorCredibility)}</p>
       </section>
+      ` : ''}
 
       ${sourceUrl ? `
       <section>
@@ -503,20 +504,18 @@ class BodyInjector {
       </section>
       ` : ''}
 
-      ${seoData.description ? `
-      <section>
-        <h2>Summary</h2>
-        <p>${escapeHtml(seoData.description)}</p>
-      </section>
-      ` : ''}
-
-      ${takeawaysHtml}
-      ${factsHtml}
-      ${tagsHtml}
-      ${audienceHtml}
-
       ${aeoData.problemSolved ? `<p><strong>Problem solved:</strong> ${escapeHtml(aeoData.problemSolved)}</p>` : ''}
       ${aeoData.uniqueValue ? `<p><strong>Unique value:</strong> ${escapeHtml(aeoData.uniqueValue)}</p>` : ''}
+      ${audienceHtml}
+      ${categoryHtml}
+      ${tagsHtml}
+
+      ${curatorNote ? `
+      <section>
+        <h2>Curator's Personal Note</h2>
+        <p>${escapeHtml(curatorNote)}</p>
+      </section>
+      ` : ''}
 
       <footer>
         <p>This content is curated on <a href="${siteUrl}">Copus</a>, the Internet Treasure Map.</p>
