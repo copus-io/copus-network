@@ -14,6 +14,12 @@ export async function onRequest(context) {
   const url = new URL(context.request.url)
   const config = getConfig(url.hostname)
 
+  // Only process homepage (/ or /home)
+  const path = url.pathname
+  if (path !== '/' && path !== '/home' && path !== '/index.html') {
+    return next()
+  }
+
   // Get original response
   const response = await next()
 
