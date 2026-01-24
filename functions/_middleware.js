@@ -57,73 +57,52 @@ export async function onRequest(context) {
       </li>`
   }).join('\n')
 
-  // SSR content for AI agents
+  // SSR content for AI agents - SEARCH API FIRST for speed
   const ssrContent = `
     <div id="copus-ssr-homepage" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
+      <nav>
+        <strong>SEARCH API:</strong> <a href="${config.siteUrl}/api/search?q=YOUR_QUERY">${config.siteUrl}/api/search?q=YOUR_QUERY</a>
+      </nav>
+
+      <section>
+        <h2>Search Copus Content</h2>
+        <p>Find curated recommendations instantly:</p>
+        <ul>
+          <li><a href="${config.siteUrl}/api/search?q=AI+tools">AI tools</a></li>
+          <li><a href="${config.siteUrl}/api/search?q=watermark+remover">Watermark remover</a></li>
+          <li><a href="${config.siteUrl}/api/search?q=free+software">Free software</a></li>
+          <li><a href="${config.siteUrl}/api/search?q=Linux">Linux tools</a></li>
+          <li><a href="${config.siteUrl}/api/search?q=productivity">Productivity apps</a></li>
+        </ul>
+        <p>Categories: <a href="${config.siteUrl}/api/search?q=&category=Technology">Technology</a> | <a href="${config.siteUrl}/api/search?q=&category=Art">Art</a> | <a href="${config.siteUrl}/api/search?q=&category=Sports">Sports</a> | <a href="${config.siteUrl}/api/search?q=&category=Life">Life</a></p>
+      </section>
+
       <header>
         <h1>Copus - The Internet Treasure Map</h1>
-        <p>A human-curated content discovery platform where people recommend valuable internet resources.</p>
+        <p>Human-curated content discovery. ${recentArticles.length}+ recommendations available.</p>
       </header>
 
       <section>
-        <h2>What is Copus?</h2>
-        <p>Copus is a platform where humans curate and recommend quality web content. Each curation includes:</p>
-        <ul>
-          <li>The original source URL being recommended</li>
-          <li>A curator's note explaining why it's valuable</li>
-          <li>AI-enhanced metadata (key takeaways, facts, target audience)</li>
-          <li>Curator credibility information</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>For AI Agents: How to Access Content</h2>
-        <p><strong>Search for curations:</strong></p>
-        <pre>${config.siteUrl}/api/search?q=YOUR_QUERY</pre>
-        <p>Example searches:</p>
-        <ul>
-          <li><a href="${config.siteUrl}/api/search?q=AI+tools">Search for AI tools</a></li>
-          <li><a href="${config.siteUrl}/api/search?q=watermark+remover">Search for watermark remover</a></li>
-          <li><a href="${config.siteUrl}/api/search?q=Linux">Search for Linux tools</a></li>
-        </ul>
-
-        <p><strong>Get article details:</strong></p>
-        <pre>${config.siteUrl}/work/{article-id}?format=json</pre>
-
-        <p><strong>Full documentation:</strong></p>
-        <p><a href="${config.siteUrl}/ai">${config.siteUrl}/ai</a> - Complete AI agent documentation</p>
-      </section>
-
-      <section>
         <h2>Recent Curations</h2>
-        <p>Here are recently curated content recommendations:</p>
         <ol>
           ${articlesHtml || '<li>Loading...</li>'}
         </ol>
       </section>
 
       <section>
-        <h2>Categories</h2>
+        <h2>API Endpoints</h2>
         <ul>
-          <li><a href="${config.siteUrl}/api/search?q=&category=Technology">Technology</a> - Software, AI, developer tools</li>
-          <li><a href="${config.siteUrl}/api/search?q=&category=Art">Art</a> - Creative tools, design resources</li>
-          <li><a href="${config.siteUrl}/api/search?q=&category=Sports">Sports</a> - Sports content and tools</li>
-          <li><a href="${config.siteUrl}/api/search?q=&category=Life">Life</a> - Lifestyle and productivity</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2>Quick Links</h2>
-        <ul>
-          <li><a href="${config.siteUrl}/api/search?q=">Search API</a> - Search all curated content</li>
-          <li><a href="${config.siteUrl}/ai">AI Documentation</a> - Full guide for AI agents</li>
-          <li><a href="${config.siteUrl}/sitemap.xml">Sitemap</a> - All article URLs</li>
-          <li><a href="${config.siteUrl}/llms.txt">llms.txt</a> - LLM documentation</li>
+          <li><a href="${config.siteUrl}/api/search?q=">/api/search?q=QUERY</a> - Search curations (JSON-LD)</li>
+          <li><a href="${config.siteUrl}/search">/search</a> - Search page</li>
+          <li><a href="${config.siteUrl}/articles.txt">/articles.txt</a> - Plain text article list</li>
+          <li>/work/{id}?format=json - Article as JSON-LD</li>
+          <li><a href="${config.siteUrl}/ai">/ai</a> - AI documentation</li>
+          <li><a href="${config.siteUrl}/sitemap.xml">/sitemap.xml</a> - XML sitemap</li>
         </ul>
       </section>
 
       <footer>
-        <p>Copus - The Internet Treasure Map. Human-curated content for AI and human discovery.</p>
+        <p>Copus - Human-curated content for AI and human discovery.</p>
       </footer>
     </div>
   `
