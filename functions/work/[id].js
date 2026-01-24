@@ -519,7 +519,7 @@ class BodyInjector {
 
       <section>
         <h2>Engagement</h2>
-        <p><strong>${article.viewCount || 0}</strong> views, <strong>${article.likeCount || 0}</strong> likes, <strong>${article.commentCount || 0}</strong> comments</p>
+        <p><strong>${article.viewCount || 0}</strong> views, collected in <strong>${article.likeCount || 0}</strong> treasuries, <strong>${article.commentCount || 0}</strong> comments</p>
       </section>
 
       <footer>
