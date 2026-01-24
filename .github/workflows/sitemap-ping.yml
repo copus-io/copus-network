@@ -20,28 +20,22 @@ jobs:
   ping-search-engines:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Google
+      - name: Ping Bing (sitemap)
         run: |
-          echo "Pinging Google..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" "https://www.google.com/ping?sitemap=https://copus.network/sitemap.xml")
-          echo "Google response: $response"
-          if [ "$response" != "200" ]; then
-            echo "Warning: Google ping returned $response"
-          fi
-
-      - name: Ping Bing
-        run: |
-          echo "Pinging Bing..."
+          echo "Pinging Bing with sitemap..."
           response=$(curl -s -o /dev/null -w "%{http_code}" "https://www.bing.com/ping?sitemap=https://copus.network/sitemap.xml")
-          echo "Bing response: $response"
-          if [ "$response" != "200" ]; then
-            echo "Warning: Bing ping returned $response"
-          fi
+          echo "Bing sitemap ping response: $response"
 
-      - name: Ping Copus endpoint
+      - name: Ping Bing (IndexNow)
+        run: |
+          echo "Pinging Bing via IndexNow..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://www.bing.com/indexnow?url=https://copus.network/sitemap.xml")
+          echo "Bing IndexNow response: $response"
+
+      - name: Trigger Copus ping endpoint
         run: |
           echo "Triggering Copus sitemap ping endpoint..."
-          curl -s "https://copus.network/scheduled/sitemap-ping" | jq '.'
+          curl -s "https://copus.network/scheduled/sitemap-ping" || echo "Endpoint not yet deployed"
 
       - name: Summary
         run: |
@@ -50,4 +44,8 @@ jobs:
           echo "- **Sitemap URL:** https://copus.network/sitemap.xml" >> $GITHUB_STEP_SUMMARY
           echo "- **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Search engines have been notified of sitemap updates." >> $GITHUB_STEP_SUMMARY
+          echo "### Search Engine Status" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bing:** Pinged via /ping and IndexNow" >> $GITHUB_STEP_SUMMARY
+          echo "- **Google:** Uses natural crawling (deprecated /ping in 2023)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For Google indexing, submit sitemap via [Google Search Console](https://search.google.com/search-console)." >> $GITHUB_STEP_SUMMARY
