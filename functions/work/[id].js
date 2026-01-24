@@ -234,6 +234,19 @@ function formatDate(timestamp) {
   }
 }
 
+// Format date for human display
+function formatDisplayDate(timestamp) {
+  if (!timestamp || isNaN(timestamp)) return ''
+  try {
+    const ms = timestamp > 9999999999 ? timestamp : timestamp * 1000
+    const date = new Date(ms)
+    if (isNaN(date.getTime())) return ''
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  } catch {
+    return ''
+  }
+}
+
 class HeadInjector {
   constructor(article, seoData, siteUrl) {
     this.article = article
@@ -420,6 +433,84 @@ class BodyInjector {
     }
 
     const jsonLd = `<script type="application/ld+json">${JSON.stringify(schema)}</script>`
-    element.prepend(jsonLd, { html: true })
+
+    // Build SSR article content for crawlers
+    // This is the actual readable content that AI/search crawlers will index
+    const displayDate = formatDisplayDate(article.createAt)
+    const curatorNote = article.content || ''
+    const sourceUrl = article.targetUrl || ''
+    const sourceDomain = getHostname(sourceUrl) || ''
+    // Note: aeoData already defined above for JSON-LD
+
+    // Build tags HTML
+    const tags = seoData.tags || []
+    const tagsHtml = tags.length > 0
+      ? `<p><strong>Topics:</strong> ${tags.map(t => escapeHtml(t)).join(', ')}</p>`
+      : ''
+
+    // Build key takeaways HTML
+    const keyTakeaways = seoData.keyTakeaways || []
+    const takeawaysHtml = keyTakeaways.length > 0
+      ? `<section><h3>Key Takeaways</h3><ul>${keyTakeaways.map(t => `<li>${escapeHtml(t)}</li>`).join('')}</ul></section>`
+      : ''
+
+    // Build facts HTML
+    const facts = aeoData.facts || []
+    const factsHtml = facts.length > 0
+      ? `<section><h3>Key Facts</h3><ul>${facts.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul></section>`
+      : ''
+
+    // Build audience HTML
+    const audienceHtml = aeoData.targetAudience
+      ? `<p><strong>Recommended for:</strong> ${escapeHtml(aeoData.targetAudience)}</p>`
+      : ''
+
+    // SSR Article - positioned off-screen but still in DOM for crawlers
+    // Using clip-path instead of display:none to ensure crawlers can read it
+    const ssrArticle = `
+    <article id="copus-ssr-content" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
+      <header>
+        <h1>${escapeHtml(article.title)}</h1>
+        <p>Curated by <a href="${authorUrl}">${escapeHtml(authorName)}</a>${displayDate ? ` on ${displayDate}` : ''}</p>
+        ${seoData.curatorCredibility ? `<p><em>${escapeHtml(seoData.curatorCredibility)}</em></p>` : ''}
+      </header>
+
+      <section>
+        <h2>Curator's Note</h2>
+        <p>${escapeHtml(curatorNote)}</p>
+      </section>
+
+      ${sourceUrl ? `
+      <section>
+        <h2>Original Source</h2>
+        <p><a href="${escapeHtml(sourceUrl)}" rel="nofollow noopener">${escapeHtml(sourceDomain)}</a></p>
+        ${article.targetTitle ? `<p>Original title: ${escapeHtml(article.targetTitle)}</p>` : ''}
+      </section>
+      ` : ''}
+
+      ${seoData.description ? `
+      <section>
+        <h2>Summary</h2>
+        <p>${escapeHtml(seoData.description)}</p>
+      </section>
+      ` : ''}
+
+      ${takeawaysHtml}
+      ${factsHtml}
+      ${tagsHtml}
+      ${audienceHtml}
+
+      ${aeoData.problemSolved ? `<p><strong>Problem solved:</strong> ${escapeHtml(aeoData.problemSolved)}</p>` : ''}
+      ${aeoData.uniqueValue ? `<p><strong>Unique value:</strong> ${escapeHtml(aeoData.uniqueValue)}</p>` : ''}
+
+      <footer>
+        <p>This content is curated on <a href="${siteUrl}">Copus</a>, the Internet Treasure Map.</p>
+        <p><a href="${articleUrl}">View full curation</a></p>
+      </footer>
+    </article>
+    `
+
+    // Prepend both SSR article and JSON-LD
+    element.prepend(ssrArticle + jsonLd, { html: true })
   }
 }
