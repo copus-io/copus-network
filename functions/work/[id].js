@@ -517,9 +517,15 @@ class BodyInjector {
       </section>
       ` : ''}
 
+      <section>
+        <h2>Engagement</h2>
+        <p><strong>${article.viewCount || 0}</strong> views, <strong>${article.likeCount || 0}</strong> likes, <strong>${article.commentCount || 0}</strong> comments</p>
+      </section>
+
       <footer>
         <p>This content is curated on <a href="${siteUrl}">Copus</a>, the Internet Treasure Map.</p>
         <p><a href="${articleUrl}">View full curation</a></p>
+        <p><strong>For AI agents:</strong> Get structured JSON data at <a href="${articleUrl}?format=json">${articleUrl}?format=json</a></p>
       </footer>
     </article>
     `
