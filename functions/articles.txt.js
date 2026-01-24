@@ -39,20 +39,28 @@ export async function onRequest(context) {
     console.error('[articles.txt] Error:', e)
   }
 
-  // Build plain text output
-  let output = `# Copus Articles
+  // Build plain text output with FULL content details
+  let output = `# Copus Articles - Human-Curated Content Recommendations
 # Total: ${allArticles.length} curated recommendations
-# Search API: ${config.siteUrl}/api/search?q=YOUR_QUERY
-# AI Documentation: ${config.siteUrl}/ai
+# Topics: AI tools, productivity, personal growth, self-improvement, mindfulness, technology, art, free software
+# Search: ${config.siteUrl}/api/search?q=YOUR_QUERY
 
 `
 
   for (const article of allArticles) {
     const authorName = article.authorInfo?.username || 'Anonymous'
-    output += `${article.title}
+    const description = article.description || article.summary || ''
+    const category = article.category || ''
+    const keywords = article.keywords ? article.keywords.join(', ') : ''
+    const targetUrl = article.targetUrl || ''
+
+    output += `## ${article.title}
 URL: ${config.siteUrl}/work/${article.uuid}
-JSON: ${config.siteUrl}/work/${article.uuid}?format=json
-By: ${authorName}
+${category ? `Category: ${category}` : ''}
+${description ? `Description: ${description}` : ''}
+${keywords ? `Keywords: ${keywords}` : ''}
+${targetUrl ? `Original Source: ${targetUrl}` : ''}
+Curated by: ${authorName}
 
 `
   }
