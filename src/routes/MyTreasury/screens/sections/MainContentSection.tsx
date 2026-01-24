@@ -6,6 +6,7 @@ import { Button } from "../../../../components/ui/button";
 import { TreasuryCard } from "../../../../components/ui/TreasuryCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import { useToast } from "../../../../components/ui/toast";
+import { ImageUploader } from "../../../../components/ImageUploader/ImageUploader";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -37,6 +38,8 @@ const TreasuryHeaderSection = ({
   avatarUrl,
   socialLinks,
   onShare,
+  onCreateSpace,
+  showCreateButton = false,
 }: {
   username: string;
   namespace: string;
@@ -44,6 +47,8 @@ const TreasuryHeaderSection = ({
   avatarUrl?: string;
   socialLinks: SocialLink[];
   onShare?: () => void;
+  onCreateSpace?: () => void;
+  showCreateButton?: boolean;
 }): JSX.Element => {
   return (
     <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
@@ -120,6 +125,22 @@ const TreasuryHeaderSection = ({
                   ))}
               </nav>
             )}
+
+            {/* Create Space button - only shown on own treasury */}
+            {showCreateButton && onCreateSpace && (
+              <div className="mt-3">
+                <button
+                  onClick={onCreateSpace}
+                  className="flex items-center gap-2 px-4 py-2 bg-red text-white rounded-full hover:bg-red/90 transition-colors font-medium"
+                  type="button"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Space
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -165,6 +186,14 @@ export const MainContentSection = (): JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
+
+  // Create Space Modal state
+  const [showCreateSpaceModal, setShowCreateSpaceModal] = useState(false);
+  const [newSpaceName, setNewSpaceName] = useState("");
+  const [newSpaceDescription, setNewSpaceDescription] = useState("");
+  const [newSpaceCoverUrl, setNewSpaceCoverUrl] = useState("");
+  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -324,9 +353,8 @@ export const MainContentSection = (): JSX.Element => {
 
           console.log('Spaces array length:', spacesArray.length);
 
-          // Use spaces directly from pageMySpaces API
-          // The API may include article previews in the response (check for data/articles fields)
-          // If not, TreasuryCard will display based on articleCount
+
+          // Use spaces from API
           setSpaces(spacesArray);
 
           // Store in cache for reuse during redirects
@@ -382,6 +410,53 @@ export const MainContentSection = (): JSX.Element => {
     }
   };
 
+  // Handle creating a new space
+  const handleCreateNewSpace = async () => {
+    if (!newSpaceName.trim()) {
+      showToast('Please enter a space name', 'error');
+      return;
+    }
+
+
+    setIsCreatingSpace(true);
+
+    try {
+      // Prepare space data
+      const spaceData = {
+        name: newSpaceName.trim(),
+        description: newSpaceDescription.trim() || undefined,
+        coverUrl: newSpaceCoverUrl || undefined
+      };
+
+      console.log('Creating space with data:', spaceData);
+
+      // Call the createSpace API to create a new space
+      const createResponse = await AuthService.createSpace(spaceData);
+      console.log('Create space response:', createResponse);
+
+      showToast(`Space "${newSpaceName.trim()}" created successfully`, 'success');
+
+      // Reset and close modal
+      resetCreateSpaceModal();
+
+      // Refresh the page to show the new space
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to create space:', err);
+      showToast('Failed to create space', 'error');
+    } finally {
+      setIsCreatingSpace(false);
+    }
+  };
+
+  // Reset create space modal
+  const resetCreateSpaceModal = () => {
+    setNewSpaceName("");
+    setNewSpaceDescription("");
+    setNewSpaceCoverUrl("");
+    setShowCreateSpaceModal(false);
+  };
+
   if (loading) {
     return (
       <main className="flex flex-col items-start gap-5 px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
@@ -421,6 +496,8 @@ export const MainContentSection = (): JSX.Element => {
         avatarUrl={displayUser?.faceUrl || profileDefaultAvatar}
         socialLinks={displaySocialLinks}
         onShare={handleShare}
+        onCreateSpace={() => setShowCreateSpaceModal(true)}
+        showCreateButton={!isViewingOtherUser}
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
@@ -459,6 +536,136 @@ export const MainContentSection = (): JSX.Element => {
           ))
         )}
       </div>
+
+      {/* Create Space Modal */}
+      {showCreateSpaceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={resetCreateSpaceModal}
+          />
+
+          {/* Modal */}
+          <div
+            className="flex flex-col w-[500px] max-w-[90vw] max-h-[90vh] overflow-y-auto items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="new-space-title"
+            aria-modal="true"
+          >
+            {/* Close button */}
+            <button
+              onClick={resetCreateSpaceModal}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label="Close dialog"
+              type="button"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
+              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
+                <h2
+                  id="new-space-title"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+                >
+                  Create New Space
+                </h2>
+
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="space-name-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Space Name
+                  </label>
+
+                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-50 border border-gray-200">
+                    <input
+                      id="space-name-input"
+                      type="text"
+                      value={newSpaceName}
+                      onChange={(e) => setNewSpaceName(e.target.value)}
+                      placeholder="Enter space name..."
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-gray-700 text-base tracking-[0] leading-[23px] outline-none placeholder:text-gray-400"
+                      aria-required="true"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Space Description */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="space-description-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Description (optional)
+                  </label>
+
+                  <div className="flex min-h-[80px] p-5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-50 border border-gray-200">
+                    <textarea
+                      id="space-description-input"
+                      value={newSpaceDescription}
+                      onChange={(e) => setNewSpaceDescription(e.target.value)}
+                      placeholder="Describe your space and what visitors can expect to find here..."
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-gray-700 text-base tracking-[0] leading-[23px] outline-none placeholder:text-gray-400 resize-none"
+                      rows={3}
+                      maxLength={500}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500 self-end">
+                    {newSpaceDescription.length}/500 characters
+                  </div>
+                </div>
+
+                {/* Space Cover Image */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    Cover Image (optional)
+                  </label>
+                  <p className="text-xs text-gray-600 [font-family:'Lato',Helvetica] font-normal leading-4 mb-2">
+                    Upload a custom cover image for your space. This will be used when sharing your space.
+                  </p>
+                  <ImageUploader
+                    onImageUploaded={(imageUrl) => setNewSpaceCoverUrl(imageUrl)}
+                    onImageRemoved={() => setNewSpaceCoverUrl("")}
+                    currentImageUrl={newSpaceCoverUrl}
+                    placeholder="Choose cover image..."
+                    className="w-full"
+                  />
+                </div>
+
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                <button
+                  className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={resetCreateSpaceModal}
+                  type="button"
+                >
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    Cancel
+                  </span>
+                </button>
+
+                <button
+                  className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
+                  onClick={handleCreateNewSpace}
+                  disabled={!newSpaceName.trim() || isCreatingSpace}
+                  type="button"
+                >
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    {isCreatingSpace ? 'Creating...' : 'Create'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

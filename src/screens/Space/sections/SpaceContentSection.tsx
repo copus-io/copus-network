@@ -7,6 +7,7 @@ import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
+import ImageUploader from "../../../components/ImageUploader/ImageUploader";
 
 // Add debug logging for Space component
 console.log('📍 SpaceContentSection module loaded');
@@ -20,9 +21,66 @@ interface SpaceFetchCacheEntry {
 const spaceFetchCache: Map<string, SpaceFetchCacheEntry> = new Map();
 const SPACE_CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles
 
+// Delete Confirm Content Component
+const DeleteConfirmContent = ({
+  isDeleting,
+  confirmDeleteArticle,
+  setDeleteConfirmOpen,
+  setArticleToDelete
+}: {
+  isDeleting: boolean;
+  confirmDeleteArticle: () => void;
+  setDeleteConfirmOpen: (open: boolean) => void;
+  setArticleToDelete: (id: string | null) => void;
+}): JSX.Element => {
+  return (
+    <>
+      <div className="flex flex-col items-center gap-2 text-center">
+        <h2
+          id="delete-confirm-title"
+          className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
+        >
+          Remove from Space
+        </h2>
+        <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+          Are you sure you want to remove this article from your space? You can add it back later.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3 w-full">
+        <button
+          className="flex-1 px-5 py-2.5 rounded-[15px] border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => {
+            setDeleteConfirmOpen(false);
+            setArticleToDelete(null);
+          }}
+          disabled={isDeleting}
+          type="button"
+        >
+          <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[22.4px]">
+            Cancel
+          </span>
+        </button>
+
+        <button
+          className="flex-1 px-5 py-2.5 rounded-[15px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={confirmDeleteArticle}
+          disabled={isDeleting}
+          type="button"
+        >
+          <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
+            {isDeleting ? 'Removing...' : 'Remove'}
+          </span>
+        </button>
+      </div>
+    </>
+  );
+};
+
 // Space Info Section Component
 const SpaceInfoSection = ({
   spaceName,
+  spaceDescription,
   treasureCount,
   authorName,
   authorAvatar,
@@ -37,6 +95,7 @@ const SpaceInfoSection = ({
   onEdit,
 }: {
   spaceName: string;
+  spaceDescription?: string;
   treasureCount: number;
   authorName: string;
   authorAvatar?: string;
@@ -55,10 +114,19 @@ const SpaceInfoSection = ({
   const [showUnfollowDropdown, setShowUnfollowDropdown] = useState(false);
   return (
     <section className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto] px-4 lg:px-0">
-      <header className="flex items-center relative self-stretch w-full flex-[0_0_auto]">
-        <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
-          {spaceName}
-        </h1>
+      <header className="flex items-center justify-between relative self-stretch w-full flex-[0_0_auto]">
+        <div className="flex-1">
+          <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42.0px]">
+            {spaceName}
+          </h1>
+          {/* Space Description */}
+          {spaceDescription && (
+            <p className="relative mt-2 [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+              {spaceDescription}
+            </p>
+          )}
+        </div>
+
       </header>
 
       <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
@@ -216,6 +284,8 @@ export const SpaceContentSection = (): JSX.Element => {
   // Edit space modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSpaceName, setEditSpaceName] = useState("");
+  const [editSpaceDescription, setEditSpaceDescription] = useState("");
+  const [editSpaceCoverUrl, setEditSpaceCoverUrl] = useState("");
   const [displaySpaceName, setDisplaySpaceName] = useState("");
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -304,8 +374,10 @@ export const SpaceContentSection = (): JSX.Element => {
 
           // Build space info object
           // Note: Do NOT fall back to logged-in user's avatar/namespace - always show the space creator's info
+          const cleanDescription = spaceData?.description?.trim() || undefined;
           fetchedSpaceInfo = {
             name: displayName,
+            description: cleanDescription,
             authorName: authorUsername,
             authorAvatar: spaceData?.userInfo?.faceUrl || profileDefaultAvatar,
             authorNamespace: spaceData?.userInfo?.namespace,
@@ -668,12 +740,16 @@ export const SpaceContentSection = (): JSX.Element => {
   // Handle edit space
   const handleEditSpace = () => {
     const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
+    const currentDescription = spaceInfo?.description || '';
+    const currentCoverUrl = spaceInfo?.coverUrl || '';
     setEditSpaceName(currentName);
+    setEditSpaceDescription(currentDescription);
+    setEditSpaceCoverUrl(currentCoverUrl);
     setShowEditModal(true);
   };
 
-  // Handle save space name
-  const handleSaveSpaceName = async () => {
+  // Handle save space
+  const handleSaveSpace = async () => {
     if (!editSpaceName.trim()) {
       showToast('Please enter a space name', 'error');
       return;
@@ -687,16 +763,35 @@ export const SpaceContentSection = (): JSX.Element => {
     try {
       setIsSaving(true);
 
-      // Call API to update space name
-      await AuthService.updateSpace(spaceId, editSpaceName.trim());
+      // Prepare update data
+      const updateData = {
+        name: editSpaceName.trim(),
+        description: editSpaceDescription.trim() || undefined,
+        coverUrl: editSpaceCoverUrl || undefined
+      };
 
+      // Call API to update space
+      await AuthService.updateSpace(spaceId, updateData);
+
+      // Update local state
       setDisplaySpaceName(editSpaceName.trim());
-      showToast(`Space renamed to "${editSpaceName.trim()}"`, 'success');
+      if (spaceInfo) {
+        setSpaceInfo({
+          ...spaceInfo,
+          name: editSpaceName.trim(),
+          description: editSpaceDescription.trim() || undefined,
+          coverUrl: editSpaceCoverUrl || undefined
+        });
+      }
+
+      showToast(`Space updated successfully`, 'success');
       setShowEditModal(false);
       setEditSpaceName("");
+      setEditSpaceDescription("");
+      setEditSpaceCoverUrl("");
     } catch (err) {
-      console.error('Failed to update space name:', err);
-      showToast('Failed to update space name', 'error');
+      console.error('Failed to update space:', err);
+      showToast('Failed to update space', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -743,22 +838,25 @@ export const SpaceContentSection = (): JSX.Element => {
     setDeleteConfirmOpen(true);
   };
 
-  // Confirm delete article
+  // Confirm remove article from space
   const confirmDeleteArticle = async () => {
     if (!articleToDelete) return;
 
     try {
       setIsDeleting(true);
-      await AuthService.deleteArticle(articleToDelete);
+
+      // Always use like/unlike API to remove from space
+      await AuthService.likeArticle(articleToDelete);
+      showToast('Article removed from space', 'success');
+
       // Remove the article from local state
       setArticles(prev => prev.filter(a => a.uuid !== articleToDelete));
       setTotalArticleCount(prev => Math.max(0, prev - 1));
-      showToast('Article deleted successfully', 'success');
       setDeleteConfirmOpen(false);
       setArticleToDelete(null);
     } catch (err) {
-      console.error('Failed to delete article:', err);
-      showToast('Failed to delete article', 'error');
+      console.error('Failed to remove article from space:', err);
+      showToast('Failed to remove article from space', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -778,9 +876,10 @@ export const SpaceContentSection = (): JSX.Element => {
     // Check if current user is the author of this article
     const isArticleAuthor = !!user && (article.authorInfo?.id === user.id || article.authorInfo?.namespace === user.namespace);
 
-    // Show edit/delete buttons for articles created by the current user
+    // Show edit button for articles created by the current user
     const canEditArticle = isArticleAuthor;
-    const canDeleteArticle = isArticleAuthor;
+    // Space owners can remove any article from their space
+    const canDeleteArticle = isOwner;
 
     return (
       <ArticleCard
@@ -835,6 +934,7 @@ export const SpaceContentSection = (): JSX.Element => {
       {/* Space Info Section */}
       <SpaceInfoSection
         spaceName={displaySpaceName || spaceInfo?.name || category || 'Space'}
+        spaceDescription={spaceInfo?.description}
         treasureCount={totalArticleCount || articles.length}
         authorName={spaceInfo?.authorName || 'Anonymous'}
         authorAvatar={spaceInfo?.authorAvatar}
@@ -886,6 +986,8 @@ export const SpaceContentSection = (): JSX.Element => {
             onClick={() => {
               setShowEditModal(false);
               setEditSpaceName("");
+              setEditSpaceDescription("");
+              setEditSpaceCoverUrl("");
             }}
           />
 
@@ -901,6 +1003,8 @@ export const SpaceContentSection = (): JSX.Element => {
               onClick={() => {
                 setShowEditModal(false);
                 setEditSpaceName("");
+                setEditSpaceDescription("");
+                setEditSpaceCoverUrl("");
               }}
               className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
               aria-label="Close dialog"
@@ -942,11 +1046,45 @@ export const SpaceContentSection = (): JSX.Element => {
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                          handleSaveSpaceName();
+                          handleSaveSpace();
                         }
                       }}
                     />
                   </div>
+                </div>
+
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="edit-space-description-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Description
+                  </label>
+
+                  <div className="flex min-h-[80px] items-start px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                    <textarea
+                      id="edit-space-description-input"
+                      value={editSpaceDescription}
+                      onChange={(e) => setEditSpaceDescription(e.target.value)}
+                      placeholder="Enter treasury description (optional)"
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none min-h-[60px]"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    Cover Image (optional)
+                  </label>
+
+                  <ImageUploader
+                    currentImageUrl={editSpaceCoverUrl}
+                    onImageUpload={setEditSpaceCoverUrl}
+                    placeholder="Upload a cover image for your treasury"
+                    aspectRatio="16:9"
+                    maxSize={5}
+                  />
                 </div>
               </div>
 
@@ -976,6 +1114,8 @@ export const SpaceContentSection = (): JSX.Element => {
                     onClick={() => {
                       setShowEditModal(false);
                       setEditSpaceName("");
+                      setEditSpaceDescription("");
+                      setEditSpaceCoverUrl("");
                     }}
                     type="button"
                   >
@@ -986,7 +1126,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
                   <button
                     className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                    onClick={handleSaveSpaceName}
+                    onClick={handleSaveSpace}
                     disabled={!editSpaceName.trim() || isSaving}
                     type="button"
                   >
@@ -1045,44 +1185,12 @@ export const SpaceContentSection = (): JSX.Element => {
               </svg>
             </div>
 
-            <div className="flex flex-col items-center gap-2 text-center">
-              <h2
-                id="delete-confirm-title"
-                className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
-              >
-                Delete Article
-              </h2>
-              <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                Are you sure you want to delete this article? This action cannot be undone.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 w-full">
-              <button
-                className="flex-1 px-5 py-2.5 rounded-[15px] border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => {
-                  setDeleteConfirmOpen(false);
-                  setArticleToDelete(null);
-                }}
-                disabled={isDeleting}
-                type="button"
-              >
-                <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[22.4px]">
-                  Cancel
-                </span>
-              </button>
-
-              <button
-                className="flex-1 px-5 py-2.5 rounded-[15px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={confirmDeleteArticle}
-                disabled={isDeleting}
-                type="button"
-              >
-                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </span>
-              </button>
-            </div>
+            <DeleteConfirmContent
+              isDeleting={isDeleting}
+              confirmDeleteArticle={confirmDeleteArticle}
+              setDeleteConfirmOpen={setDeleteConfirmOpen}
+              setArticleToDelete={setArticleToDelete}
+            />
           </div>
         </div>
       )}

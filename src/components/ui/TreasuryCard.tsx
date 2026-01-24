@@ -17,7 +17,8 @@ export interface SpaceData {
   namespace?: string;
   name?: string;
   title?: string;
-  spaceType?: number; // 1 = Collections, 2 = Curations
+  description?: string;
+  spaceType?: number; // 1 = Collections, 2 = Curations, 0 = Custom
   articleCount?: number;
   treasureCount?: number;
   ownerInfo?: {
@@ -178,11 +179,19 @@ export const TreasuryCard = ({
             <p className="text-gray-500">No treasures yet</p>
           )}
         </div>
-        <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
-            {title}
-          </h2>
-          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap">
+        <header className="justify-between flex items-start relative self-stretch w-full flex-[0_0_auto]">
+          <div className="flex-1 mr-4">
+            <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-7 mb-1">
+              {title}
+            </h2>
+            {/* Space description */}
+            {space.description && (
+              <p className="text-sm text-gray-600 [font-family:'Lato',Helvetica] font-normal leading-5 line-clamp-2">
+                {space.description}
+              </p>
+            )}
+          </div>
+          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
             {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
           </p>
         </header>
@@ -258,11 +267,19 @@ export const TreasuryCard = ({
         )}
       </div>
 
-      <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
-          {title}
-        </h2>
-        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap">
+      <header className="justify-between flex items-start relative self-stretch w-full flex-[0_0_auto]">
+        <div className="flex-1 mr-4">
+          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-7 mb-1">
+            {title}
+          </h2>
+          {/* Space description */}
+          {space.description && (
+            <p className="text-sm text-gray-600 [font-family:'Lato',Helvetica] font-normal leading-5 line-clamp-2">
+              {space.description}
+            </p>
+          )}
+        </div>
+        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
           {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
         </p>
       </header>

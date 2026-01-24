@@ -34,6 +34,11 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [collectModalOpen, setCollectModalOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
+  // Create Space Modal state
+  const [showCreateSpaceModal, setShowCreateSpaceModal] = useState(false);
+  const [newSpaceName, setNewSpaceName] = useState("");
+  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+
   // Fetch user info and articles list
   useEffect(() => {
     const fetchUserData = async () => {
@@ -364,6 +369,37 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     }
   };
 
+  // Handle creating a new space
+  const handleCreateNewSpace = async () => {
+    if (!newSpaceName.trim()) {
+      showToast('Please enter a space name', 'error');
+      return;
+    }
+
+    setIsCreatingSpace(true);
+
+    try {
+      // Call the createSpace API to create a new space
+      const createResponse = await AuthService.createSpace(newSpaceName.trim());
+      console.log('Create space response:', createResponse);
+
+      showToast(`Space "${newSpaceName.trim()}" created successfully`, 'success');
+
+      // Reset and close modal
+      setNewSpaceName("");
+      setShowCreateSpaceModal(false);
+
+      // Refresh the page to show the new space in user's profile
+      // Or you could add the space to local state if you want to avoid page refresh
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to create space:', err);
+      showToast('Failed to create space', 'error');
+    } finally {
+      setIsCreatingSpace(false);
+    }
+  };
+
   if (loading) {
     return <ArticleListSkeleton />;
   }
@@ -445,6 +481,21 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
                 <div className="text-sm text-gray-600">Received</div>
               </div>
             </div>
+
+            {/* Create Space button (only shown on own profile) */}
+            {isOwnProfile && (
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowCreateSpaceModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-red text-white rounded-full hover:bg-red/90 transition-colors font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Create Space
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Follow button or account status (only shown when viewing other users) */}
@@ -573,6 +624,107 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           isAlreadyCollected={selectedArticle.isLiked}
           onCollectSuccess={handleCollectSuccess}
         />
+      )}
+
+      {/* Create Space Modal */}
+      {showCreateSpaceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setShowCreateSpaceModal(false);
+              setNewSpaceName("");
+            }}
+          />
+
+          {/* Modal */}
+          <div
+            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="new-space-title"
+            aria-modal="true"
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowCreateSpaceModal(false);
+                setNewSpaceName("");
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label="Close dialog"
+              type="button"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
+              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
+                <h2
+                  id="new-space-title"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+                >
+                  Create New Space
+                </h2>
+
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="space-name-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Space Name
+                  </label>
+
+                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-50 border border-gray-200">
+                    <input
+                      id="space-name-input"
+                      type="text"
+                      value={newSpaceName}
+                      onChange={(e) => setNewSpaceName(e.target.value)}
+                      placeholder="Enter space name..."
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-gray-700 text-base tracking-[0] leading-[23px] outline-none placeholder:text-gray-400"
+                      aria-required="true"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleCreateNewSpace();
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                <button
+                  className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => {
+                    setShowCreateSpaceModal(false);
+                    setNewSpaceName("");
+                  }}
+                  type="button"
+                >
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    Cancel
+                  </span>
+                </button>
+
+                <button
+                  className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
+                  onClick={handleCreateNewSpace}
+                  disabled={!newSpaceName.trim() || isCreatingSpace}
+                  type="button"
+                >
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    {isCreatingSpace ? 'Creating...' : 'Create'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
