@@ -8,6 +8,48 @@ servers:
     description: Production server
 
 paths:
+  /api/search:
+    get:
+      operationId: searchArticles
+      summary: Search curated content
+      description: Search for human-curated content recommendations by topic. Returns JSON-LD formatted results.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Technology, Art, Sports, Life]
+          description: Filter by category
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+          description: Number of results to return
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination offset
+      responses:
+        '200':
+          description: Search results in JSON-LD format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResults'
+
   /work/{articleId}:
     get:
       operationId: getArticle
@@ -172,3 +214,72 @@ components:
           description: Number of users who saved this to their treasury
         commentCount:
           type: integer
+
+    SearchResults:
+      type: object
+      properties:
+        '@context':
+          type: string
+          example: https://schema.org
+        '@type':
+          type: string
+          example: SearchResultsPage
+        query:
+          type: string
+          description: The search query
+        totalResults:
+          type: integer
+          description: Total number of matching results
+        numberOfItems:
+          type: integer
+          description: Number of items in this response
+        itemListElement:
+          type: array
+          items:
+            type: object
+            properties:
+              '@type':
+                type: string
+                example: ListItem
+              position:
+                type: integer
+              item:
+                type: object
+                properties:
+                  '@type':
+                    type: string
+                    example: Article
+                  identifier:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  originalSource:
+                    type: string
+                    format: uri
+                  category:
+                    type: string
+                  keywords:
+                    type: array
+                    items:
+                      type: string
+                  jsonEndpoint:
+                    type: string
+                    format: uri
+                    description: URL to get full structured data for this article
+        pagination:
+          type: object
+          properties:
+            offset:
+              type: integer
+            limit:
+              type: integer
+            hasMore:
+              type: boolean
+            nextPage:
+              type: string
+              format: uri

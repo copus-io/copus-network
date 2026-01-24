@@ -12,7 +12,26 @@ Key concepts:
 
 ## How to Access Content
 
-### Structured JSON Data (Recommended for AI)
+### Search API (Recommended for AI Discovery)
+Find relevant curations by topic:
+```
+https://copus.network/api/search?q={query}&category={category}&limit={limit}
+```
+
+Parameters:
+- `q` (required): Search query
+- `category` (optional): Technology, Art, Sports, Life
+- `limit` (optional): Max results (default 10, max 50)
+- `offset` (optional): Pagination offset
+
+Example:
+```
+https://copus.network/api/search?q=AI+tools&category=Technology&limit=10
+```
+
+Returns JSON-LD with search results, each including article URL and jsonEndpoint for full data.
+
+### Structured JSON Data (For Specific Articles)
 Append `?format=json` to any article URL to get structured JSON-LD data:
 ```
 https://copus.network/work/{article-id}?format=json
@@ -66,6 +85,7 @@ Content is organized into categories:
 
 | Endpoint | Description |
 |----------|-------------|
+| `/api/search?q={query}` | Search curations by topic (recommended) |
 | `/work/{id}?format=json` | Get structured article data |
 | `/sitemap.xml` | List all articles with URLs |
 | `/robots.txt` | Crawler permissions |
