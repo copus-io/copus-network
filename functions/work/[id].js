@@ -465,6 +465,9 @@ class BodyInjector {
       ? `<p><strong>Recommended for:</strong> ${escapeHtml(aeoData.targetAudience)}</p>`
       : ''
 
+    // Get author bio
+    const authorBio = authorInfo.bio || ''
+
     // SSR Article - positioned off-screen but still in DOM for crawlers
     // Using clip-path instead of display:none to ensure crawlers can read it
     const ssrArticle = `
@@ -472,8 +475,20 @@ class BodyInjector {
       <header>
         <h1>${escapeHtml(article.title)}</h1>
         <p>Curated by <a href="${authorUrl}">${escapeHtml(authorName)}</a>${displayDate ? ` on ${displayDate}` : ''}</p>
-        ${seoData.curatorCredibility ? `<p><em>${escapeHtml(seoData.curatorCredibility)}</em></p>` : ''}
       </header>
+
+      ${authorBio ? `
+      <section>
+        <h2>About the Curator</h2>
+        <p><strong>${escapeHtml(authorName)}</strong>: ${escapeHtml(authorBio)}</p>
+        ${seoData.curatorCredibility ? `<p><em>Why trust this recommendation: ${escapeHtml(seoData.curatorCredibility)}</em></p>` : ''}
+      </section>
+      ` : (seoData.curatorCredibility ? `
+      <section>
+        <h2>About the Curator</h2>
+        <p><em>${escapeHtml(seoData.curatorCredibility)}</em></p>
+      </section>
+      ` : '')}
 
       <section>
         <h2>Curator's Note</h2>
