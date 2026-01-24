@@ -314,6 +314,8 @@ class HeadInjector {
 
     <!-- AI Agent Discovery -->
     <link rel="alternate" type="application/json" href="${articleUrl}?format=json" title="JSON representation for AI agents" />
+    <link rel="search" type="application/json" href="${siteUrl}/api/search" title="Search Copus curations" />
+    <link rel="help" href="${siteUrl}/ai" title="AI agent documentation" />
     `
 
     element.append(metaTags, { html: true })
@@ -472,8 +474,9 @@ class BodyInjector {
 
     // SSR Article - optimized for AI agent discoverability
     // Structure prioritizes: factual statements, keywords, authority signals
+    // Note: Using left:-9999px instead of clip:rect to ensure text extractors can read content
     const ssrArticle = `
-    <article id="copus-ssr-content" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
+    <article id="copus-ssr-content" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
       <header>
         <h1>${escapeHtml(article.title)}</h1>
         <p>Curated by <a href="${authorUrl}">${escapeHtml(authorName)}</a>${displayDate ? ` on ${displayDate}` : ''}</p>
@@ -525,7 +528,12 @@ class BodyInjector {
       <footer>
         <p>This content is curated on <a href="${siteUrl}">Copus</a>, the Internet Treasure Map.</p>
         <p><a href="${articleUrl}">View full curation</a></p>
-        <p><strong>For AI agents:</strong> Get structured JSON data at <a href="${articleUrl}?format=json">${articleUrl}?format=json</a></p>
+        <p><strong>For AI agents:</strong></p>
+        <ul>
+          <li>This article as JSON: <a href="${articleUrl}?format=json">${articleUrl}?format=json</a></li>
+          <li>Search all curations: <a href="${siteUrl}/api/search?q=QUERY">${siteUrl}/api/search?q=QUERY</a></li>
+          <li>AI documentation: <a href="${siteUrl}/ai">${siteUrl}/ai</a></li>
+        </ul>
       </footer>
     </article>
     `
