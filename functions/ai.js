@@ -62,6 +62,25 @@ export async function onRequest(context) {
 
   <p><strong>Copus</strong> is a human-curated content discovery platform. Users recommend valuable internet resources with context and insights.</p>
 
+  <div class="endpoint" style="background: #e8f5e9; border: 2px solid #4caf50;">
+    <h3>MCP Server (Recommended)</h3>
+    <p>Use Copus directly in <strong>Claude Desktop, Cursor, Cline, Continue, Zed</strong>, and other MCP-compatible AI tools:</p>
+    <pre>npx copus-mcp-server</pre>
+    <p>Add to your MCP config:</p>
+    <pre>{
+  "mcpServers": {
+    "copus": {
+      "command": "npx",
+      "args": ["copus-mcp-server"]
+    }
+  }
+}</pre>
+    <p>
+      <a href="https://www.npmjs.com/package/copus-mcp-server">npm</a> |
+      <a href="https://github.com/copus-io/copus-mcp-server">GitHub</a>
+    </p>
+  </div>
+
   <h2>Quick Start for AI Agents</h2>
 
   <div class="endpoint">
@@ -125,6 +144,10 @@ export async function onRequest(context) {
     <tr>
       <td><a href="${config.siteUrl}/.well-known/openapi.yaml">/.well-known/openapi.yaml</a></td>
       <td>OpenAPI specification</td>
+    </tr>
+    <tr>
+      <td><a href="https://www.npmjs.com/package/copus-mcp-server">npx copus-mcp-server</a></td>
+      <td>MCP Server for Claude, Cursor, Cline, etc.</td>
     </tr>
   </table>
 
