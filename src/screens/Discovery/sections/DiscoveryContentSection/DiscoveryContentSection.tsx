@@ -118,17 +118,12 @@ export const DiscoveryContentSection = (): JSX.Element => {
         <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
           <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
             <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-              Copus is where you follow people whose taste you trust for what you see online (not algorithms).
+              Copus is an open curation space where people share links to meaningful content they find online, along with a short reflection.
             </span>
           </p>
           <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
             <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-              You know that friend who always sends you stuff they know you'll like? You'll find more of them here.
-            </span>
-          </p>
-          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-              Wait, you're that friend? Then add our{' '}
+              You can subscribe to people whose taste you trust, or use the{' '}
               <a
                 href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
                 target="_blank"
@@ -137,7 +132,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
               >
                 browser extension
               </a>{' '}
-              and start sharing.
+              to collect and share as you browse :)
             </span>
           </p>
         </div>
