@@ -82,6 +82,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       console.log('🔥 Upload successful, server response:', result);
 
       onImageUploaded(result.url);
+      console.log('🔥 Image URL passed to parent component:', result.url);
 
       // Clean up resources
       if (previewUrl) {
@@ -222,38 +223,58 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             />
           )}
 
-          {/* Action buttons container */}
-          <div className="flex items-center justify-end gap-2.5 px-[15px] py-0 self-stretch w-full relative flex-[0_0_auto] z-10">
-            {currentImage && (
+          {/* Action buttons container - always visible when image exists */}
+          {currentImage && (
+            <div className="flex items-center justify-between gap-2.5 px-[15px] py-2 self-stretch w-full relative flex-[0_0_auto] z-10">
+              {/* Change button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/90 hover:bg-white rounded-[50px] border-medium-grey text-xs"
+                onClick={handleButtonClick}
+                disabled={isUploading}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="[font-family:'Lato',Helvetica] font-medium text-dark-grey">
+                  {isUploading ? 'Uploading...' : 'Change'}
+                </span>
+              </Button>
+
+              {/* Delete button */}
               <button
                 type="button"
                 onClick={handleRemoveImage}
-                className="relative flex-[0_0_auto] p-1 hover:bg-gray-100 rounded transition-colors bg-white/80"
+                className="relative flex-[0_0_auto] p-1.5 hover:bg-red/10 rounded transition-colors bg-white/90"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-4 h-4 text-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Upload button */}
-          <div className="flex flex-col items-center justify-center gap-2.5 relative flex-1 self-stretch w-full grow">
-            <Button
-              type="button"
-              variant="outline"
-              className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-white rounded-[100px] border-medium-grey hover:bg-gray-50 transition-colors"
-              onClick={handleButtonClick}
-              disabled={isUploading}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <span className="[font-family:'Lato',Helvetica] font-semibold text-medium-dark-grey text-base">
-                {isUploading ? 'Uploading...' : 'Add File'}
-              </span>
-            </Button>
-          </div>
+          {/* Upload button - only show when no image */}
+          {!currentImage && (
+            <div className="flex flex-col items-center justify-center gap-2.5 relative flex-1 self-stretch w-full grow">
+              <Button
+                type="button"
+                variant="outline"
+                className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-white rounded-[100px] border-medium-grey hover:bg-gray-50 transition-colors"
+                onClick={handleButtonClick}
+                disabled={isUploading}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span className="[font-family:'Lato',Helvetica] font-semibold text-medium-dark-grey text-base">
+                  {isUploading ? 'Uploading...' : 'Add File'}
+                </span>
+              </Button>
+            </div>
+          )}
         </div>
 
         <input
