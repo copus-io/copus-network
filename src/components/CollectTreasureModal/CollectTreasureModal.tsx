@@ -1,33 +1,57 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { AuthService } from "../../services/authService";
+import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
+import { logger } from "../../utils/logger";
 
 interface CollectTreasureModalProps {
   isOpen: boolean;
   onClose: () => void;
-  articleId: string;
+  articleId: string; // UUID
+  articleNumericId?: number; // Optional: Numeric ID for bindArticles API (if already known)
   articleTitle: string;
   isAlreadyCollected?: boolean;
-  onCollect: (articleId: string, spaceCategory: string, isNewSpace: boolean) => Promise<void>;
-  onUncollect?: (articleId: string) => Promise<void>;
+  onCollectSuccess?: () => void; // Callback after successful collection
+  onSaveComplete?: (isCollected: boolean, collectionCount: number) => void; // Callback with collection state
+}
+
+interface BindableSpace {
+  articleCount: number;
+  data: Array<{
+    coverUrl: string;
+    targetUrl: string;
+    title: string;
+  }>;
+  id: number;
+  isBind: boolean;
+  name: string;
+  namespace: string;
+  spaceType: number;
+  userId: number;
 }
 
 interface Collection {
   id: string;
+  numericId: number;
   name: string;
   image: string;
-  isSaved: boolean;
+  isSelected: boolean; // Current selection state in modal
+  wasOriginallyBound: boolean; // Was bound when modal opened
+  spaceType?: number;
+  namespace?: string;
+  firstLetter: string; // First letter of space name for avatar fallback
 }
 
 export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   isOpen,
   onClose,
   articleId,
+  articleNumericId,
   articleTitle,
   isAlreadyCollected = false,
-  onCollect,
-  onUncollect,
+  onCollectSuccess,
+  onSaveComplete,
 }) => {
   const { user } = useUser();
   const { showToast } = useToast();
@@ -37,76 +61,133 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [newTreasuryName, setNewTreasuryName] = useState("");
+  const [newTreasuryDescription, setNewTreasuryDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasCollectedOnce, setHasCollectedOnce] = useState(false);
+  const [resolvedArticleId, setResolvedArticleId] = useState<number | null>(null);
+  const [curationsSpaceId, setCurationsSpaceId] = useState<number | null>(null); // Store Curations space ID to always include in save
 
-  // Fetch user's existing collections (categories)
+  // Fetch user's bindable spaces using the bindableSpaces API
   useEffect(() => {
     const fetchCollections = async () => {
       if (!isOpen || !user?.id) return;
 
       try {
         setLoading(true);
-        const likedResponse = await AuthService.getMyLikedArticlesCorrect(1, 100, user.id);
 
-        let articlesArray: any[] = [];
-        if (likedResponse?.data?.data && Array.isArray(likedResponse.data.data)) {
-          articlesArray = likedResponse.data.data;
-        } else if (likedResponse?.data && Array.isArray(likedResponse.data)) {
-          articlesArray = likedResponse.data;
-        } else if (Array.isArray(likedResponse)) {
-          articlesArray = likedResponse;
+        // Resolve the numeric article ID
+        let numericId = articleNumericId;
+        if (!numericId || numericId <= 0) {
+          // Fetch article detail to get the numeric ID
+          logger.log('Fetching article detail to get numeric ID for:', articleId);
+          const articleDetail = await getArticleDetail(articleId);
+          numericId = articleDetail.id;
+          logger.log('Got numeric article ID:', numericId);
+        }
+        setResolvedArticleId(numericId);
+
+        // Use the bindableSpaces API with articleId to get binding status
+        const bindableResponse = await AuthService.getBindableSpaces(numericId);
+
+        // Parse the response - handle different possible formats
+        let spacesArray: BindableSpace[] = [];
+        if (bindableResponse?.data && Array.isArray(bindableResponse.data)) {
+          spacesArray = bindableResponse.data;
+        } else if (Array.isArray(bindableResponse)) {
+          spacesArray = bindableResponse;
         }
 
-        // Check if this article is already in the user's liked articles
-        const isArticleAlreadySaved = articlesArray.some(
-          (article: any) => article.uuid === articleId
-        );
-
-        // Group by category with first article's cover image
-        const categoryMap = new Map<string, { count: number; image: string }>();
-        articlesArray.forEach((article: any) => {
-          const category = article.categoryInfo?.name || 'General';
-          if (!categoryMap.has(category)) {
-            categoryMap.set(category, {
-              count: 1,
-              image: article.coverUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png'
-            });
-          } else {
-            const existing = categoryMap.get(category)!;
-            categoryMap.set(category, { ...existing, count: existing.count + 1 });
+        // Transform spaces to collection format
+        const collectionOptions: Collection[] = spacesArray.map((space) => {
+          // The bindableSpaces API doesn't return spaceType, so we need to detect it by name
+          // "Default Collections Space" = Treasury (spaceType 1)
+          // "Default Curations Space" = Curations (spaceType 2)
+          let spaceTypeNum = space.spaceType;
+          if (spaceTypeNum === undefined || spaceTypeNum === null) {
+            if (space.name === 'Default Collections Space') {
+              spaceTypeNum = 1;
+            } else if (space.name === 'Default Curations Space') {
+              spaceTypeNum = 2;
+            } else {
+              spaceTypeNum = 0; // Custom space
+            }
+          } else if (typeof spaceTypeNum === 'string') {
+            spaceTypeNum = parseInt(spaceTypeNum, 10);
           }
+
+          // For default spaces, show "Username's Treasury" or "Username's Curations"
+          let displayName: string;
+          if (spaceTypeNum === 1) {
+            displayName = `${user.username || 'Anonymous'}'s Treasury`;
+          } else if (spaceTypeNum === 2) {
+            displayName = `${user.username || 'Anonymous'}'s Curations`;
+          } else {
+            displayName = space.name || 'Untitled Treasury';
+          }
+
+          // For default Treasury/Curations (spaceType 1 & 2), use user's profile image
+          // For custom spaces, use the first article's cover image from this collection
+          const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
+          const coverImage = isDefaultSpace
+            ? (user.faceUrl || '')
+            : (space.data?.[0]?.coverUrl || '');
+
+          // Get first letter of space name for avatar fallback
+          const spaceName = space.name || displayName;
+          const firstLetter = spaceName.charAt(0).toUpperCase();
+
+          return {
+            id: space.id.toString(),
+            numericId: space.id,
+            name: displayName,
+            image: coverImage,
+            isSelected: space.isBind, // Initially selected if already bound
+            wasOriginallyBound: space.isBind,
+            spaceType: spaceTypeNum,
+            namespace: space.namespace,
+            firstLetter,
+          };
         });
 
-        // Add user's treasury as first option - mark as saved if article is already in treasury
-        const collectionOptions: Collection[] = [{
-          id: 'treasury',
-          name: `${user.username || 'My'}'s treasury`,
-          image: user.faceUrl || 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png',
-          isSaved: isAlreadyCollected || isArticleAlreadySaved,
-        }];
+        // Find Curations space (spaceType 2) - backend now properly handles it
+        const curationsSpace = collectionOptions.find(c => c.spaceType === 2);
+        if (curationsSpace) {
+          setCurationsSpaceId(curationsSpace.numericId);
+        }
 
-        // Add category-based collections
-        Array.from(categoryMap.entries()).forEach(([category, data]) => {
-          collectionOptions.push({
-            id: category,
-            name: category,
-            image: data.image,
-            isSaved: false,
-          });
+        // Filter out Curations space (spaceType 2) from the UI - curations are managed separately
+        // and should not be toggled by the user in the collect modal
+        const filteredCollections = collectionOptions.filter(c => c.spaceType !== 2);
+
+        // Sort collections: bound spaces first, then spaceType 1 (Treasury), then by ID descending
+        const sortedCollections = filteredCollections.sort((a, b) => {
+          // Already bound spaces come first (these have the red check mark)
+          if (a.wasOriginallyBound && !b.wasOriginallyBound) return -1;
+          if (!a.wasOriginallyBound && b.wasOriginallyBound) return 1;
+          // Then spaceType 1 (Treasury) comes first - this is the user's default treasury
+          if (a.spaceType === 1 && b.spaceType !== 1) return -1;
+          if (a.spaceType !== 1 && b.spaceType === 1) return 1;
+          // Then sort by numeric ID descending (higher ID = more recently created)
+          return b.numericId - a.numericId;
         });
 
-        setCollections(collectionOptions);
-        setHasCollectedOnce(isAlreadyCollected || isArticleAlreadySaved);
+        // Auto-select the Treasury space (spaceType 1) by default if not already bound
+        const collectionsWithDefault = sortedCollections.map(c => {
+          if (c.spaceType === 1 && !c.wasOriginallyBound) {
+            return { ...c, isSelected: true };
+          }
+          return c;
+        });
+
+        setCollections(collectionsWithDefault);
       } catch (err) {
-        console.error('Failed to fetch collections:', err);
+        logger.error('Failed to fetch bindable spaces:', err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCollections();
-  }, [isOpen, user?.id, user?.username, user?.faceUrl, articleId, isAlreadyCollected]);
+  }, [isOpen, user?.id, user?.username, user?.faceUrl, articleId, articleNumericId]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -114,69 +195,75 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setSearchQuery("");
       setShowCreateNew(false);
       setNewTreasuryName("");
+      setNewTreasuryDescription("");
       setIsSubmitting(false);
-      setHasCollectedOnce(false);
     }
   }, [isOpen]);
 
-  const handleToggleSave = async (collectionId: string) => {
-    const collection = collections.find(c => c.id === collectionId);
-    if (!collection) return;
+  // Toggle selection for a collection
+  const handleToggleSelection = (collectionId: string) => {
+    setCollections(prev =>
+      prev.map(c => c.id === collectionId ? { ...c, isSelected: !c.isSelected } : c)
+    );
+  };
 
-    // If already saved, toggle off (uncollect)
-    if (collection.isSaved) {
-      // Only allow uncollect from treasury (the main collection)
-      if (collectionId === 'treasury' && onUncollect) {
-        try {
-          setIsSubmitting(true);
-          await onUncollect(articleId);
-          setCollections(prev =>
-            prev.map(c => c.id === collectionId ? { ...c, isSaved: false } : c)
-          );
-          setHasCollectedOnce(false);
-          showToast('Removed from treasury', 'success');
-        } catch (err) {
-          console.error('Failed to uncollect:', err);
-          showToast('Failed to remove', 'error');
-        } finally {
-          setIsSubmitting(false);
-        }
-      } else {
-        // For other collections, just toggle visually
-        setCollections(prev =>
-          prev.map(c => c.id === collectionId ? { ...c, isSaved: false } : c)
-        );
-      }
+  // Handle save - call bindArticles API with all selected spaces
+  const handleSave = async () => {
+    if (!resolvedArticleId) {
+      showToast('Article ID not available. Please try again.', 'error');
       return;
     }
 
-    // Save to this collection
     try {
       setIsSubmitting(true);
 
-      // Update UI immediately
-      setCollections(prev =>
-        prev.map(c => c.id === collectionId ? { ...c, isSaved: true } : c)
-      );
+      // Get all selected space IDs
+      let selectedSpaceIds = collections
+        .filter(c => c.isSelected)
+        .map(c => c.numericId);
 
-      // Perform the actual save (only call API if not already collected)
-      if (!hasCollectedOnce) {
-        await onCollect(articleId, collection.name, false);
-        setHasCollectedOnce(true);
+      // IMPORTANT: Always include Curations space if it exists
+      // This prevents removing articles from curations when saving to other treasuries
+      // The bindArticles API replaces all bindings, so we must preserve curations
+      if (curationsSpaceId && !selectedSpaceIds.includes(curationsSpaceId)) {
+        selectedSpaceIds = [curationsSpaceId, ...selectedSpaceIds];
       }
 
-      showToast(`Saved to "${collection.name}"`, 'success');
-      // Don't close modal - allow user to save to multiple places
+      // Call bindArticles API with the resolved numeric article ID
+      await AuthService.bindArticles(resolvedArticleId, selectedSpaceIds);
+
+      // Count only user-selected spaces (excluding auto-included Curations)
+      const userSelectedCount = collections.filter(c => c.isSelected).length;
+      const isNowCollected = userSelectedCount > 0;
+
+      if (isNowCollected) {
+        showToast(`Saved to ${userSelectedCount} treasury${userSelectedCount > 1 ? 's' : ''}`, 'success');
+      } else {
+        showToast('Removed from all treasuries', 'success');
+      }
+
+      // Call new callback with collection state
+      if (onSaveComplete) {
+        onSaveComplete(isNowCollected, userSelectedCount);
+      }
+
+      // Call legacy success callback if provided (for backward compatibility)
+      if (onCollectSuccess && isNowCollected) {
+        onCollectSuccess();
+      }
+
+      onClose();
     } catch (err) {
-      console.error('Failed to save:', err);
-      // Revert UI on error
-      setCollections(prev =>
-        prev.map(c => c.id === collectionId ? { ...c, isSaved: false } : c)
-      );
+      logger.error('Failed to save:', err);
       showToast('Failed to save', 'error');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle cancel - just close without saving
+  const handleCancel = () => {
+    onClose();
   };
 
   const handleCreateNewTreasury = async () => {
@@ -188,26 +275,42 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
     try {
       setIsSubmitting(true);
 
-      if (!hasCollectedOnce) {
-        await onCollect(articleId, newTreasuryName.trim(), true);
-        setHasCollectedOnce(true);
+      // Call the createSpace API to create a new treasury
+      const createResponse = await AuthService.createSpace(
+        newTreasuryName.trim(),
+        newTreasuryDescription.trim() || undefined
+      );
+      logger.log('Create space response:', createResponse);
+
+      // Extract the created space from response
+      const createdSpace = createResponse?.data || createResponse;
+
+      if (!createdSpace?.id) {
+        throw new Error('Failed to create treasury - no ID returned');
       }
 
-      showToast(`Created and saved to "${newTreasuryName.trim()}"`, 'success');
+      showToast(`Created "${newTreasuryName.trim()}"`, 'success');
 
-      // Add the new treasury to collections list
+      // Add the new treasury to collections list and select it
+      // Use empty string for image to trigger firstLetter fallback (custom treasuries don't use profile image)
+      const treasuryName = createdSpace.name || newTreasuryName.trim();
       setCollections(prev => [...prev, {
-        id: newTreasuryName.trim(),
-        name: newTreasuryName.trim(),
-        image: 'https://c.animaapp.com/eANMvAF7/img/ellipse-55-3@2x.png',
-        isSaved: true,
+        id: createdSpace.id.toString(),
+        numericId: createdSpace.id,
+        name: treasuryName,
+        image: '', // Empty to trigger firstLetter fallback
+        isSelected: true, // Auto-select the newly created treasury
+        wasOriginallyBound: false,
+        spaceType: createdSpace.spaceType || 0,
+        namespace: createdSpace.namespace,
+        firstLetter: treasuryName.charAt(0).toUpperCase(),
       }]);
 
       setShowCreateNew(false);
       setNewTreasuryName("");
-      // Don't close modal
+      setNewTreasuryDescription("");
     } catch (err) {
-      console.error('Failed to create treasury:', err);
+      logger.error('Failed to create treasury:', err);
       showToast('Failed to create treasury', 'error');
     } finally {
       setIsSubmitting(false);
@@ -219,6 +322,9 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Check if there are any changes from original state
+  const hasChanges = collections.some(c => c.isSelected !== c.wasOriginallyBound);
+
   if (!isOpen) return null;
 
   return (
@@ -226,28 +332,26 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50"
-        onClick={onClose}
+        onClick={handleCancel}
       />
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10 max-h-[80vh]"
+        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 max-h-[80vh]"
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
       >
         {/* Close button */}
         <button
-          onClick={onClose}
-          className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
+          onClick={handleCancel}
+          className="absolute top-[20px] right-[20px] cursor-pointer hover:opacity-70 transition-opacity z-20"
           aria-label="Close dialog"
           type="button"
         >
-          <img
-            className="w-full"
-            alt=""
-            src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
-          />
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
+            <path d="M1 1L11 11M1 11L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </button>
 
         {showCreateNew ? (
@@ -282,6 +386,30 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Description Field */}
+              <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                <label
+                  htmlFor="treasury-description"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                >
+                  Description
+                </label>
+                <div className="flex flex-col items-start px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                  <textarea
+                    id="treasury-description"
+                    value={newTreasuryDescription}
+                    onChange={(e) => setNewTreasuryDescription(e.target.value)}
+                    placeholder="Describe your treasury"
+                    className="flex-1 w-full border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
+                    rows={3}
+                    maxLength={200}
+                  />
+                  <span className="self-end [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                    {newTreasuryDescription.length}/200
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
@@ -309,14 +437,34 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           </div>
         ) : (
           // Collection List View
-          <div className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+          <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-5">
             <div className="flex flex-col items-start justify-center gap-5 relative self-stretch w-full flex-[0_0_auto]">
-              <h2
-                id="collect-dialog-title"
-                className="relative w-fit mt-2 [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-              >
-                Collect treasures
-              </h2>
+              {/* Title and New Treasury on same line */}
+              <div className="flex items-center justify-between w-full">
+                <h2
+                  id="collect-dialog-title"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+                >
+                  Collect treasures
+                </h2>
+
+                <button
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity"
+                  type="button"
+                  onClick={() => setShowCreateNew(true)}
+                  aria-label="Create new treasury"
+                >
+                  <img
+                    className="relative w-6 h-6"
+                    alt="Add"
+                    src="https://c.animaapp.com/eANMvAF7/img/plus.svg"
+                    aria-hidden="true"
+                  />
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    New treasury
+                  </span>
+                </button>
+              </div>
 
               {/* Search Input */}
               <div className="flex h-12 items-center gap-2.5 px-5 py-2.5 relative self-stretch w-full rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
@@ -337,16 +485,21 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               </div>
             </div>
 
-            {/* Collections List */}
-            <div className="flex flex-col items-start gap-0 relative self-stretch w-full flex-[0_0_auto] max-h-[320px] overflow-y-auto">
+            {/* Collections List - scrollbar hidden until hover, fixed height */}
+            <div
+              className="flex flex-col items-start gap-0 relative self-stretch w-full h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
+              onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
+            >
               {loading ? (
                 <div className="flex items-center justify-center w-full py-8">
-                  <div className="text-gray-500">Loading collections...</div>
+                  <div className="text-gray-500">Loading treasuries...</div>
                 </div>
               ) : filteredCollections.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 w-full text-center">
                   <p className="text-gray-500 text-sm">
-                    {searchQuery ? 'No collections found' : 'No collections yet'}
+                    No treasuries found
                   </p>
                 </div>
               ) : (
@@ -354,72 +507,82 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                   {filteredCollections.map((collection) => (
                     <li
                       key={collection.id}
-                      className="flex items-center justify-between px-0 py-5 self-stretch w-full bg-white border-b [border-bottom-style:solid] border-light-grey"
+                      className="flex items-center justify-between px-0 py-4 self-stretch w-full bg-white border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => handleToggleSelection(collection.id)}
                     >
-                      <div className="inline-flex items-center justify-center gap-[15px] relative flex-[0_0_auto]">
-                        <img
-                          className="relative w-12 h-12 object-cover rounded-full"
-                          alt={collection.name}
-                          src={collection.image}
-                        />
-                        <div className="inline-flex flex-col items-start justify-center gap-2 relative flex-[0_0_auto]">
+                      <div className="inline-flex items-center gap-4 relative flex-[0_0_auto]">
+                        {/* Round Checkbox on the left */}
+                        <div
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            collection.isSelected
+                              ? 'bg-red border-red'
+                              : 'bg-white border-gray-300 hover:border-gray-400'
+                          }`}
+                        >
+                          {collection.isSelected && (
+                            <svg
+                              className="w-3 h-3 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </div>
+
+                        {collection.image ? (
+                          <img
+                            className="relative w-12 h-12 object-cover rounded-full"
+                            alt={collection.name}
+                            src={collection.image}
+                          />
+                        ) : (
+                          <div className="relative w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-lg font-medium text-gray-600">
+                              {collection.firstLetter}
+                            </span>
+                          </div>
+                        )}
+                        <div className="inline-flex flex-col items-start justify-center gap-1 relative flex-[0_0_auto]">
                           <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
                             {collection.name}
                           </span>
                         </div>
                       </div>
-
-                      <button
-                        className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] cursor-pointer disabled:opacity-50"
-                        onClick={() => handleToggleSave(collection.id)}
-                        type="button"
-                        disabled={isSubmitting}
-                        aria-pressed={collection.isSaved}
-                        aria-label={
-                          collection.isSaved
-                            ? `Remove from ${collection.name}`
-                            : `Save to ${collection.name}`
-                        }
-                      >
-                        {collection.isSaved ? (
-                          <div className="inline-flex items-center justify-center gap-1.5 px-[15px] py-[5px] relative flex-[0_0_auto] bg-red rounded-[100px]">
-                            <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-bold text-white text-sm tracking-[0] leading-[23px] whitespace-nowrap">
-                              Saved
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="inline-flex items-center justify-center gap-1.5 px-[15px] py-[5px] relative flex-[0_0_auto] rounded-[100px] border border-solid border-dark-grey hover:bg-gray-50 transition-colors">
-                            <span className="relative flex items-center justify-center w-fit [font-family:'Lato',Helvetica] font-medium text-dark-grey text-sm tracking-[0] leading-[23px] whitespace-nowrap">
-                              Save
-                            </span>
-                          </div>
-                        )}
-                      </button>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
 
-            {/* New Treasury Button - Fixed at bottom */}
-            <div className="flex w-full items-center gap-[15px] py-[15px] bg-white border-t border-light-grey mt-2">
+            {/* Save and Cancel Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ml-[-30px] mr-[-30px] pl-[30px] pr-[30px] w-[calc(100%+60px)] max-[440px]:ml-[-15px] max-[440px]:mr-[-15px] max-[440px]:pl-[15px] max-[440px]:pr-[15px] max-[440px]:w-[calc(100%+30px)]">
               <button
-                className="flex items-center gap-[15px] cursor-pointer hover:opacity-70 transition-opacity"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={handleCancel}
                 type="button"
-                onClick={() => setShowCreateNew(true)}
-                aria-label="Create new treasury"
+                disabled={isSubmitting}
               >
-                <img
-                  className="relative w-9 h-9"
-                  alt="Add"
-                  src="https://c.animaapp.com/eANMvAF7/img/plus.svg"
-                  aria-hidden="true"
-                />
-                <div className="inline-flex flex-col items-start justify-center gap-2 relative flex-[0_0_auto]">
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
-                    New treasury
-                  </span>
-                </div>
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
+                  Cancel
+                </span>
+              </button>
+
+              <button
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
+                onClick={handleSave}
+                disabled={isSubmitting}
+                type="button"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </span>
               </button>
             </div>
           </div>

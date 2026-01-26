@@ -226,14 +226,23 @@ export class NotificationService {
    */
   private static transformApiMessage(apiMessage: any): Notification {
 
-    // Determine message type based on messageType (0=all, 1=like, 999=system)
-    let type: 'like' | 'comment' | 'system' = 'system';
+    // Determine message type based on messageType
+    // API messageType: 1=treasury, 2=comment, 3=unlock/earning, 999=system
+    let type: 'comment' | 'follow' | 'system' | 'treasury' | 'mention' | 'follow_treasury' | 'comment_reply' | 'comment_like' | 'unlock' = 'system';
     let title = 'Message Notification';
 
     switch (apiMessage.messageType) {
       case 1:
-        type = 'like';
-        title = 'New Like';
+        type = 'treasury';
+        title = 'New Treasury';
+        break;
+      case 2:
+        type = 'comment';
+        title = 'New Comment';
+        break;
+      case 3:
+        type = 'unlock';
+        title = 'New Earning';
         break;
       case 999:
         type = 'system';
@@ -247,7 +256,7 @@ export class NotificationService {
     }
 
     // Get sender information
-    const senderName = apiMessage.senderInfo?.username || 'User';
+    const senderName = apiMessage.senderInfo?.username || 'Anonymous';
 
     // Process message content, generate user-friendly format
     let processedMessage = apiMessage.content || 'No content';
@@ -299,8 +308,14 @@ export class NotificationService {
 
     // Generate friendly message format based on message type
     switch (apiMessage.messageType) {
-      case 1: // Like
-        processedMessage = `${senderName} treasured your share "${workTitle}"`;
+      case 1: // Treasury
+        processedMessage = `[${senderName}] treasured your share [${workTitle}]`;
+        break;
+      case 2: // Comment
+        processedMessage = `[${senderName}] commented on your share [${workTitle}]`;
+        break;
+      case 3: // Unlock/Earning
+        processedMessage = `You earned from [${workTitle}]`;
         break;
       case 999: // System message
         processedMessage = workTitle; // System messages keep original format
@@ -309,9 +324,9 @@ export class NotificationService {
       default:
         // Default format, determine based on content
         if (workTitle && workTitle !== 'No content') {
-          processedMessage = `${senderName} interacted with your work "${workTitle}"`;
+          processedMessage = `[${senderName}] interacted with your work [${workTitle}]`;
         } else {
-          processedMessage = `${senderName} interacted with you`;
+          processedMessage = `[${senderName}] interacted with you`;
         }
     }
 

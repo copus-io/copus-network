@@ -57,6 +57,7 @@ export interface BackendAuthorInfo {
   namespace: string;
   username: string;
   faceUrl: string;
+  bio?: string; // 作者个人简介，60字符限制
 }
 
 export interface BackendCategoryInfo {
@@ -67,6 +68,7 @@ export interface BackendCategoryInfo {
 }
 
 export interface BackendArticle {
+  id: number; // Numeric article ID for bindArticles API
   uuid: string;
   authorInfo: BackendAuthorInfo;
   content: string;
@@ -77,6 +79,7 @@ export interface BackendArticle {
   title: string;
   viewCount: number;
   likeCount: number;
+  commentCount: number; // Total number of comments
   isLiked: boolean;
   categoryInfo: BackendCategoryInfo;
   /**
@@ -85,6 +88,15 @@ export interface BackendArticle {
    */
   targetUrlIsLocked?: boolean;
   priceInfo?: PriceInfo;
+  /**
+   * AR Chain ID - Arweave blockchain identifier for content storage
+   */
+  arChainId?: string;
+  /**
+   * SEO settings - custom meta description and keywords
+   */
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 export interface BackendApiResponse {
@@ -101,7 +113,8 @@ export interface BackendApiResponse {
 
 // Frontend transformed data structures
 export interface Article {
-  id: string;
+  id: string; // UUID for display/routing
+  numericId: number; // Numeric ID for bindArticles API
   title: string;
   description: string;
   category: string;
@@ -114,14 +127,20 @@ export interface Article {
   date: string;
   treasureCount: number;
   visitCount: number;
+  commentCount: number; // Total number of comments
   isLiked: boolean; // Like status field
   website: string;
   url?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Arweave chain ID for content storage
+  arChainId?: string;
   // x402 payment fields
   paymentPrice?: string; // Price in USDC (e.g., "0.01")
   isPaymentRequired?: boolean; // Whether content requires payment
+  // SEO fields
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 export interface PageArticleResponse {
@@ -143,11 +162,13 @@ export interface PageArticleParams {
 
 // Article detail API response data structure
 export interface ArticleDetailResponse {
+  id: number; // Numeric article ID (for API calls like bindArticles)
   authorInfo: {
     faceUrl: string;
     id: number;
     namespace: string;
     username: string;
+    bio?: string; // 作者个人简介
   };
   categoryInfo: {
     articleCount: number;
@@ -165,6 +186,7 @@ export interface ArticleDetailResponse {
   title: string;
   uuid: string;
   viewCount: number;
+  commentCount: number; // Total number of comments for this article
   /**
    * Arweave chain ID for onchain content storage
    * @see https://arseed.web3infra.dev/
@@ -176,6 +198,10 @@ export interface ArticleDetailResponse {
    */
   targetUrlIsLocked?: boolean;
   priceInfo?: PriceInfo;
+  /**
+   * SEO data - JSON string containing custom SEO settings
+   */
+  seoData?: string;
 }
 
 // My created articles API parameters
@@ -207,4 +233,43 @@ export interface MyUnlockedArticleResponse {
   pageIndex: number;
   pageSize: number;
   totalCount: number;
+}
+
+// SEO settings for articles
+export interface SEOSettings {
+  description: string;
+  keywords: string;
+  uuid: string;
+}
+
+// SEO settings with JSON string format for API
+export interface SEOSettingsRequest {
+  uuid: string;
+  seoData: string; // JSON string containing {"keywords": "", "description": ""}
+}
+
+// SEO settings API response
+export interface SEOSettingsResponse {
+  status: number;
+  msg: string;
+  data: boolean;
+}
+
+// Bind articles to spaces API types
+export interface BindArticlesRequest {
+  articleId: number;
+  spaceIds: number[];
+}
+
+export interface BindArticlesResponse {
+  isLiked: boolean;
+  likeCount: number;
+  state: boolean;
+}
+
+// Bind articles API response wrapper
+export interface BindArticlesApiResponse {
+  status: number;
+  msg: string;
+  data: BindArticlesResponse;
 }

@@ -52,7 +52,7 @@ const walletOptions: WalletOption[] = [
 
 const networkOptions = [
   { value: 'xlayer', label: 'X Layer' },
-  { value: 'base-mainnet', label: 'Base Mainnet' },
+  { value: 'base-mainnet', label: 'Base' },
 ];
 
 const xlayerCurrencyOptions = [
@@ -171,14 +171,21 @@ export const PayConfirmModal: React.FC<PayConfirmModalProps> = ({
       >
         <button
           onClick={onClose}
-          className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
+          className="absolute top-[20px] right-[20px] p-2.5 cursor-pointer hover:opacity-70 transition-opacity z-20"
           aria-label="Close payment dialog"
         >
-          <img
-            className="w-full"
-            alt=""
-            src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
-          />
+          <svg
+            className="w-3 h-3"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#686868"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
 
         <div className="flex flex-col w-[438px] items-center gap-[25px] px-10 py-0 relative flex-[0_0_auto] ml-[-29.00px] mr-[-29.00px]">

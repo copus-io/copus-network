@@ -16,10 +16,18 @@ import profileDefaultAvatar from "../../../../assets/images/profile-default.svg"
 
 
 // Message type mapping - matches API msgType values
+// Message types in display order (998 first, then numerical order)
+const MESSAGE_TYPE_ORDER = [998, 2, 3, 4, 6, 7, 8, 9];
+
 const MESSAGE_TYPE_MAP = {
-  0: { label: "Show all notifications", id: "all-notifications" },
-  1: { label: "Show treasured notifications", id: "like-notifications" },
-  999: { label: "Show system notifications", id: "system-notifications" },
+  998: { label: "Receive daily email summaries from Copus", id: "email-summaries" },
+  2: { label: "Show new followers of your treasury", id: "treasury-followers" },
+  3: { label: "Show new treasures from followed treasuries", id: "followed-treasures" },
+  4: { label: "Show new comments", id: "new-comments" },
+  6: { label: "Show new comment replies", id: "comment-replies" },
+  7: { label: "Show new comment likes", id: "comment-likes" },
+  8: { label: "Show new earnings", id: "new-earnings" },
+  9: { label: "Show new treasure collections", id: "treasure-collections" },
 } as const;
 
 interface ProfileContentSectionProps {
@@ -44,7 +52,51 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   });
 
   // 使用 UserContext 中的社交链接数据
-  const { socialLinks: socialLinksData, socialLinksLoading } = useUser();
+  const { socialLinks: socialLinksData, socialLinksLoading, fetchSocialLinks, deleteSocialLink } = useUser();
+
+  // Fetch social links when page loads (since we don't fetch them globally anymore)
+  React.useEffect(() => {
+    if (user) {
+      fetchSocialLinks();
+    }
+  }, [user, fetchSocialLinks]);
+
+  // 智能图片加载检测
+  const checkImageLoad = React.useCallback((imageUrl: string) => {
+    if (!imageUrl) return;
+
+    setBannerImageLoaded(false);
+    setShowLoadingSpinner(false);
+
+    let isLoaded = false;
+
+    // 延迟300ms显示loading，如果图片快速加载完成就不显示loading
+    const loadingTimer = setTimeout(() => {
+      if (!isLoaded) {
+        setShowLoadingSpinner(true);
+      }
+    }, 300);
+
+    // 创建新图片对象检测加载
+    const img = new Image();
+    img.onload = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true);
+      setShowLoadingSpinner(false);
+    };
+    img.onerror = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImage('');
+      setBannerImageLoaded(false);
+      setShowLoadingSpinner(false);
+    };
+    img.src = imageUrl;
+
+    // 清理函数
+    return () => clearTimeout(loadingTimer);
+  }, []);
 
   // 初始化图片状态和表单数据
   React.useEffect(() => {
@@ -53,6 +105,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
     if (user?.coverUrl) {
       setBannerImage(user.coverUrl);
+      checkImageLoad(user.coverUrl);
     }
     if (user?.username) {
       setFormUsername(user.username);
@@ -68,8 +121,21 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const [formUsername, setFormUsername] = useState<string>('');
   const [formBio, setFormBio] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState<string>('');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedDescription, setEditedDescription] = useState<string>('');
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
+  const [isEditingCustomId, setIsEditingCustomId] = useState(false);
+  const [editedCustomId, setEditedCustomId] = useState<string>('');
+  const [isSavingCustomId, setIsSavingCustomId] = useState(false);
   const [showCoverUploader, setShowCoverUploader] = useState(false);
   const [showAvatarUploader, setShowAvatarUploader] = useState(false);
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [isCoverSaving, setIsCoverSaving] = useState(false);
+  const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
+  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
 
   // 消息通知设置状态
   const [notificationSettings, setNotificationSettings] = useState<Array<{ isOpen: boolean; msgType: number }>>([]);
@@ -146,24 +212,23 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         setNotificationLoading(true);
         const settings = await AuthService.getMessageNotificationSettings();
 
-        // Use the API response directly - it returns the msgTypes that are available
-        // If API returns empty, use default msgTypes from MESSAGE_TYPE_MAP
-        if (settings && settings.length > 0) {
-          setNotificationSettings(settings);
-        } else {
-          // Default fallback: all notification types ON
-          const defaultMessageTypes = Object.keys(MESSAGE_TYPE_MAP).map(Number);
-          setNotificationSettings(
-            defaultMessageTypes.map(msgType => ({ msgType, isOpen: true }))
-          );
-        }
+        // Always show all notification types from MESSAGE_TYPE_ORDER
+        // Merge with API response - use API values where available, default to ON for missing
+        const allMessageTypes = MESSAGE_TYPE_ORDER;
+        const settingsMap = new Map(settings?.map(s => [s.msgType, s.isOpen]) || []);
+
+        const mergedSettings = allMessageTypes.map(msgType => ({
+          msgType,
+          isOpen: settingsMap.has(msgType) ? settingsMap.get(msgType)! : true
+        }));
+
+        setNotificationSettings(mergedSettings);
       } catch (error) {
         console.error('❌ Failed to get notification settings:', error);
         showToast('Failed to get notification settings, please try again', 'error');
         // Set default values to avoid infinite loading - all notifications ON by default
-        const defaultMessageTypes = Object.keys(MESSAGE_TYPE_MAP).map(Number);
         setNotificationSettings(
-          defaultMessageTypes.map(msgType => ({ msgType, isOpen: true }))
+          MESSAGE_TYPE_ORDER.map(msgType => ({ msgType, isOpen: true }))
         );
       } finally {
         setNotificationLoading(false);
@@ -265,106 +330,64 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   };
 
   const handleProfileImageUploaded = async (imageUrl: string) => {
+    setIsAvatarSaving(true);
     try {
-      console.log('Avatar uploaded successfully, updating user profile:', imageUrl);
-
-      // Update local state
-      setProfileImage(imageUrl);
-
-      // Prepare data to send - ALL 4 fields
-      const updateData = {
+      // Call API to update user profile
+      const success = await AuthService.updateUserInfo({
         userName: formUsername || user?.username || '',
         bio: formBio || user?.bio || '',
         faceUrl: imageUrl,
         coverUrl: bannerImage || user?.coverUrl || ''
-      };
-
-      console.log('🔥 Sending ALL 4 fields to API:', {
-        userName: updateData.userName,
-        bio: updateData.bio,
-        faceUrl: updateData.faceUrl ? `${updateData.faceUrl.substring(0, 50)}...` : 'empty',
-        coverUrl: updateData.coverUrl ? `${updateData.coverUrl.substring(0, 50)}...` : 'empty',
-        formUsernameValue: formUsername,
-        userContextUsername: user?.username,
-        formBioValue: formBio,
-        userContextBio: user?.bio
       });
 
-      // Call API to update user profile - send ALL 4 fields to prevent data loss
-      const success = await AuthService.updateUserInfo(updateData);
-
-      console.log('Profile update result with all fields:', success);
-
-      if (success) {
-        // Try to fetch latest user data from server to ensure UI is in sync
-        try {
-          await fetchUserInfo();
-        } catch (fetchError) {
-          console.warn('Failed to refresh user info after avatar update, but update was successful:', fetchError);
-          // Don't throw - the update was successful even if we can't refresh
-        }
-
-        // Close upload modal
-        setShowAvatarUploader(false);
-        showToast('Avatar updated successfully!', 'success');
-      } else {
-        throw new Error('Failed to update user avatar');
+      if (!success) {
+        throw new Error('API returned failure');
       }
+
+      // Update user context with new image URL
+      // This must be done AFTER API success to ensure UI shows new avatar
+      updateUser({ faceUrl: imageUrl });
+      setProfileImage(imageUrl);
+
+      // Close modal and show success
+      setShowAvatarUploader(false);
+      showToast('Avatar updated successfully!', 'success');
     } catch (error) {
       console.error('Failed to update avatar:', error);
       showToast('Failed to update avatar, please try again', 'error');
+    } finally {
+      setIsAvatarSaving(false);
     }
   };
 
   const handleBannerImageUploaded = async (imageUrl: string) => {
+    setIsCoverSaving(true);
     try {
-      console.log('Cover image uploaded successfully, updating user profile:', imageUrl);
-
-      // Update local state
-      setBannerImage(imageUrl);
-
-      // Prepare data to send - ALL 4 fields
-      const updateData = {
+      // Call API to update user profile
+      const success = await AuthService.updateUserInfo({
         userName: formUsername || user?.username || '',
         bio: formBio || user?.bio || '',
         faceUrl: profileImage === profileDefaultAvatar ? '' : (profileImage || user?.faceUrl || ''),
         coverUrl: imageUrl
-      };
-
-      console.log('🔥 Sending ALL 4 fields to API:', {
-        userName: updateData.userName,
-        bio: updateData.bio,
-        faceUrl: updateData.faceUrl ? `${updateData.faceUrl.substring(0, 50)}...` : 'empty',
-        coverUrl: updateData.coverUrl ? `${updateData.coverUrl.substring(0, 50)}...` : 'empty',
-        formUsernameValue: formUsername,
-        userContextUsername: user?.username,
-        formBioValue: formBio,
-        userContextBio: user?.bio
       });
 
-      // Call API to update user profile - send ALL 4 fields to prevent data loss
-      const success = await AuthService.updateUserInfo(updateData);
-
-      console.log('User profile update result with all fields:', success);
-
-      if (success) {
-        // Try to fetch latest user data from server to ensure UI is in sync
-        try {
-          await fetchUserInfo();
-        } catch (fetchError) {
-          console.warn('Failed to refresh user info after cover update, but update was successful:', fetchError);
-          // Don't throw - the update was successful even if we can't refresh
-        }
-
-        // Close upload modal
-        setShowCoverUploader(false);
-        showToast('Cover image updated successfully!', 'success');
-      } else {
-        throw new Error('Failed to update user profile');
+      if (!success) {
+        throw new Error('API returned failure');
       }
+
+      // Update user context with new image URL
+      updateUser({ coverUrl: imageUrl });
+      setBannerImage(imageUrl);
+      checkImageLoad(imageUrl);
+
+      // Close modal and show success
+      setShowCoverUploader(false);
+      showToast('Cover image updated successfully!', 'success');
     } catch (error) {
       console.error('Failed to update cover image:', error);
       showToast('Failed to update cover image, please try again', 'error');
+    } finally {
+      setIsCoverSaving(false);
     }
   };
 
@@ -382,6 +405,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const handleBannerImageLocalUpdate = (imageUrl: string) => {
     console.log('Banner image updated locally (will save on click Save):', imageUrl);
     setBannerImage(imageUrl);
+    if (imageUrl) {
+      checkImageLoad(imageUrl);
+    }
   };
 
   const handleLogout = async () => {
@@ -472,6 +498,10 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
         showToast('Personal information updated successfully', 'success');
         setShowPersonalInfoPopup(false);
+        // 延迟刷新页面让用户看到成功消息
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         showToast('Update failed, please try again', 'error');
       }
@@ -498,53 +528,422 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     setShowCoverUploader(true);
   };
 
+  // Handle inline name editing
+  const handleStartEditingName = () => {
+    setEditedName(formData.name || user?.username || '');
+    setIsEditingName(true);
+  };
 
+  const handleSaveName = async () => {
+    if (!editedName.trim()) {
+      showToast('Name cannot be empty', 'error');
+      return;
+    }
+
+    setIsSavingName(true);
+    try {
+      const success = await AuthService.updateUserInfo({
+        userName: editedName.trim(),
+        bio: formBio || user?.bio || '',
+        faceUrl: profileImage === profileDefaultAvatar ? '' : profileImage,
+        coverUrl: bannerImage || ''
+      });
+
+      if (success) {
+        updateUser({ username: editedName.trim() });
+        setFormUsername(editedName.trim());
+        setFormData(prev => ({ ...prev, name: editedName.trim() }));
+        setIsEditingName(false);
+        showToast('Name updated successfully', 'success');
+      } else {
+        showToast('Update failed, please try again', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to update name:', error);
+      showToast('Update failed, please try again', 'error');
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const handleCancelEditingName = () => {
+    setIsEditingName(false);
+    setEditedName('');
+  };
+
+  // Handle inline description editing
+  const handleStartEditingDescription = () => {
+    setEditedDescription(formData.bio || user?.bio || '');
+    setIsEditingDescription(true);
+  };
+
+  const handleSaveDescription = async () => {
+    setIsSavingDescription(true);
+    try {
+      const success = await AuthService.updateUserInfo({
+        userName: formUsername || user?.username || '',
+        bio: editedDescription.trim(),
+        faceUrl: profileImage === profileDefaultAvatar ? '' : profileImage,
+        coverUrl: bannerImage || ''
+      });
+
+      if (success) {
+        updateUser({ bio: editedDescription.trim() });
+        setFormBio(editedDescription.trim());
+        setFormData(prev => ({ ...prev, bio: editedDescription.trim() }));
+        setIsEditingDescription(false);
+        showToast('Description updated successfully', 'success');
+      } else {
+        showToast('Update failed, please try again', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to update description:', error);
+      showToast('Update failed, please try again', 'error');
+    } finally {
+      setIsSavingDescription(false);
+    }
+  };
+
+  const handleCancelEditingDescription = () => {
+    setIsEditingDescription(false);
+    setEditedDescription('');
+  };
+
+  // Handle inline custom ID editing
+  const handleStartEditingCustomId = () => {
+    setEditedCustomId(user?.namespace || '');
+    setIsEditingCustomId(true);
+  };
+
+  const validateCustomId = (id: string): string | null => {
+    if (!id.trim()) {
+      return 'Custom ID cannot be empty';
+    }
+    if (id.length < 3) {
+      return 'Custom ID must be at least 3 characters';
+    }
+    if (id.length > 20) {
+      return 'Custom ID cannot exceed 20 characters';
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      return 'Custom ID can only contain letters, numbers, underscores and hyphens';
+    }
+    return null;
+  };
+
+  const handleSaveCustomId = async () => {
+    const validationError = validateCustomId(editedCustomId);
+    if (validationError) {
+      showToast(validationError, 'error');
+      return;
+    }
+
+    setIsSavingCustomId(true);
+    try {
+      const success = await AuthService.updateUserNamespace(editedCustomId.trim());
+      if (success) {
+        updateUser({ namespace: editedCustomId.trim() });
+        setFormData(prev => ({ ...prev, username: `@${editedCustomId.trim()}` }));
+        setIsEditingCustomId(false);
+        showToast('Custom ID updated successfully!', 'success');
+      } else {
+        showToast('Update failed, please try again', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to update custom ID:', error);
+      showToast('Failed to update custom ID, please try again', 'error');
+    } finally {
+      setIsSavingCustomId(false);
+    }
+  };
+
+  const handleCancelEditingCustomId = () => {
+    setIsEditingCustomId(false);
+    setEditedCustomId('');
+  };
+
+  // Handle deleting social link
+  const handleDeleteSocialLink = async (linkId: number, linkTitle: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${linkTitle}" link?`)) return;
+
+    try {
+      const success = await deleteSocialLink(linkId);
+      if (success) {
+        showToast(`${linkTitle} link deleted successfully`, 'success');
+      } else {
+        showToast('Failed to delete link, please try again', 'error');
+      }
+    } catch (error) {
+      console.error('Failed to delete link:', error);
+      showToast('Failed to delete link, please try again', 'error');
+    }
+  };
 
   return (
-    <main className="flex flex-col items-start gap-[30px] px-4 lg:pl-[60px] lg:pr-10 pt-0 pb-[100px] relative flex-1 self-stretch grow bg-transparent">
-      <section className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
-        <div
-          className="relative self-stretch w-full h-40 rounded-lg overflow-hidden bg-gradient-to-r from-blue-100 to-purple-100 group cursor-pointer"
-          onClick={handleCoverClick}
-        >
-          <img
-            src={user?.coverUrl || 'https://c.animaapp.com/w7obk4mX/img/banner.png'}
-            alt="Profile banner"
-            className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
-          />
-          {/* 编辑提示覆盖层 */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-            <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
-              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
+    <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-5 pb-5 relative flex-1 self-stretch grow bg-transparent">
+      {/* Identity section */}
+      <section className="flex flex-col items-start gap-3 relative self-stretch w-full flex-[0_0_auto] pb-8 border-b border-[#E0E0E0]">
+        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
+          <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
+            Identity
+          </h2>
+        </div>
+
+        {/* Username and Bio */}
+        <div className="flex flex-col items-start gap-5 relative w-full max-w-[500px]">
+          {/* Name */}
+          <div className="flex flex-col items-start gap-1">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Name</h3>
+            {isEditingName ? (
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[1.4] px-4 py-2 border border-gray-300 rounded-[20px] focus:outline-none focus:border-blue-500 w-[280px]"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName();
+                    if (e.key === 'Escape') handleCancelEditingName();
+                  }}
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={isSavingName}
+                  className="px-4 py-2 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                >
+                  {isSavingName ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={handleCancelEditingName}
+                  disabled={isSavingName}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <h1 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[1.4]">
+                  {formData.name || (!user ? "Loading..." : "Anonymous")}
+                </h1>
+
+                {/* Edit button next to username */}
+                <button
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  aria-label="Edit name"
+                  onClick={handleStartEditingName}
+                  title="Edit name"
+                >
+                  <img
+                    className="w-4 h-4"
+                    alt="Edit"
+                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                  />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Custom ID */}
+          <div className="flex flex-col items-start gap-1">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Custom ID</h3>
+            {isEditingCustomId ? (
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={editedCustomId}
+                  onChange={(e) => setEditedCustomId(e.target.value)}
+                  className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4] px-4 py-2 border border-gray-300 rounded-[20px] focus:outline-none focus:border-blue-500 w-[280px]"
+                  autoFocus
+                  placeholder="Enter 3-20 characters"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveCustomId();
+                    if (e.key === 'Escape') handleCancelEditingCustomId();
+                  }}
+                />
+                <button
+                  onClick={handleSaveCustomId}
+                  disabled={isSavingCustomId}
+                  className="px-4 py-2 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                >
+                  {isSavingCustomId ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={handleCancelEditingCustomId}
+                  disabled={isSavingCustomId}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4]">
+                  @{user?.namespace || (!user ? "Loading..." : "Not set")}
+                </p>
+
+                {/* Edit button next to custom ID */}
+                <button
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  aria-label="Edit custom ID"
+                  onClick={handleStartEditingCustomId}
+                  title="Edit custom ID"
+                >
+                  <img
+                    className="w-4 h-4"
+                    alt="Edit"
+                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                  />
+                </button>
+              </div>
+            )}
+            <p className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-sm tracking-[0] leading-[1.4]">
+              Set a unique custom ID for easy sharing and promotion
+            </p>
+          </div>
+
+          {/* Description */}
+          <div className="flex flex-col items-start gap-1">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Description</h3>
+            {isEditingDescription ? (
+              <div className="flex items-end gap-3">
+                <div className="relative">
+                  <textarea
+                    value={editedDescription}
+                    onChange={(e) => setEditedDescription(e.target.value)}
+                    className={`[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4] px-4 py-3 pr-16 border rounded-[20px] focus:outline-none focus:border-blue-500 w-[450px] h-[80px] resize-none transition-colors ${
+                      editedDescription.length >= 55 ? 'border-orange-400' : editedDescription.length > 0 ? 'border-gray-300' : 'border-gray-300'
+                    }`}
+                    autoFocus
+                    maxLength={60}
+                    placeholder="A short bio about yourself"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSaveDescription();
+                      }
+                      if (e.key === 'Escape') handleCancelEditingDescription();
+                    }}
+                  />
+                  <span className={`absolute right-4 bottom-3 text-sm font-medium transition-colors ${
+                    editedDescription.length >= 55 ? 'text-red-500' :
+                    editedDescription.length >= 50 ? 'text-orange-500' :
+                    editedDescription.length > 0 ? 'text-gray-400' :
+                    'text-gray-400'
+                  }`}>
+                    {editedDescription.length}/60
+                  </span>
+                </div>
+                <button
+                  onClick={handleSaveDescription}
+                  disabled={isSavingDescription}
+                  className="px-4 py-2 mb-3 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                >
+                  {isSavingDescription ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={handleCancelEditingDescription}
+                  disabled={isSavingDescription}
+                  className="px-4 py-2 mb-3 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <p className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[1.4]">
+                  {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
+                </p>
+
+                {/* Edit button next to bio */}
+                <button
+                  className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                  aria-label="Edit bio"
+                  onClick={handleStartEditingDescription}
+                  title="Edit bio"
+                >
+                  <img
+                    className="w-4 h-4"
+                    alt="Edit"
+                    src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
+                  />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="gap-4 lg:gap-10 px-4 lg:pl-5 lg:pr-10 py-0 mt-[-46px] flex flex-col lg:flex-row items-start relative self-stretch w-full flex-[0_0_auto]">
-          <button
-            onClick={handleAvatarClick}
-            className="w-[80px] h-[80px] lg:w-[100px] lg:h-[100px] rounded-[60px] border-2 border-solid border-white relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100"
-            title="Click to change avatar"
-            aria-label="Click to change avatar"
-          >
-            {/* Avatar image */}
-            <img
-              src={(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar}
-              alt="Profile avatar"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                console.log('🔥 Avatar image failed to load, using default');
-                e.currentTarget.src = profileDefaultAvatar;
-              }}
-            />
+        {/* Profile and Cover images in one row on desktop, stacked on mobile */}
+        <div className="flex flex-col lg:flex-row items-start gap-5 lg:gap-8 relative w-full max-w-[500px] mt-3">
+          {/* Profile image */}
+          <div className="flex flex-col items-start gap-2">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Profile image</h3>
+            <button
+              onClick={handleAvatarClick}
+              className="w-[50px] h-[50px] lg:w-[60px] lg:h-[60px] rounded-full border-2 border-solid border-light-grey relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100 flex-shrink-0"
+              title="Click to change avatar"
+              aria-label="Click to change avatar"
+            >
+              <img
+                key={user?.faceUrl || 'default'}
+                src={(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar}
+                alt="Profile avatar"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = profileDefaultAvatar;
+                }}
+              />
+              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89L8.65 4.54A2 2 0 0110.314 4h3.372a2 2 0 011.664.54L16.41 6.11A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+            </button>
+          </div>
 
-            {/* Show upload icon on hover */}
-            <div className="absolute inset-0 bg-black/50 rounded-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+          {/* Divider - hidden on mobile, aligned with cover image */}
+          <div className="hidden lg:block w-px h-[100px] bg-[#E0E0E0] mt-[28px]"></div>
+
+          {/* Cover image */}
+          <div className="flex flex-col items-start gap-2">
+            <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Cover image</h3>
+            <button
+              onClick={handleCoverClick}
+              className="w-[200px] lg:w-[300px] aspect-[3/1] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border border-gray-200 flex items-center justify-center"
+          title="Click to change cover image"
+          aria-label="Click to change cover image"
+        >
+          {bannerImage ? (
+            <>
+              <div
+                className="w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-200"
+                style={{
+                  backgroundImage: `url(${bannerImage})`,
+                  backgroundColor: '#f3f4f6'
+                }}
+              />
+              {showLoadingSpinner && (
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-0 text-gray-500">
               <svg
-                className="w-8 h-8 text-white"
+                className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -552,125 +951,121 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89L8.65 4.54A2 2 0 0110.314 4h3.372a2 2 0 011.664.54L16.41 6.11A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                  strokeWidth={1.5}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
+              <span className="text-sm font-medium">Add cover image</span>
             </div>
-          </button>
+          )}
 
-          <div className="flex flex-col items-start gap-5 pt-0 lg:pt-[60px] pb-0 px-0 relative flex-1 grow w-full">
-            <div className="flex items-start justify-between w-full">
-              <header className="h-[60px] inline-flex flex-col items-start justify-center relative">
-                <div className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] mt-[-3.50px]">
-                  <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
-                    {formData.name || (!user ? "Loading..." : "Anonymous")}
-                  </h1>
-
-                  {/* Edit button next to username */}
-                  <button
-                    className="relative w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                    aria-label="Edit personal information"
-                    onClick={() => setShowPersonalInfoPopup(true)}
-                    title="Edit username, bio and other personal information"
-                  >
-                    <img
-                      className="w-4 h-4"
-                      alt="Edit"
-                      src="https://c.animaapp.com/w7obk4mX/img/edit-1.svg"
-                    />
-                  </button>
-                </div>
-
-                <div className="relative w-fit mb-[-2.50px] [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  {formData.username || (!user ? "Loading..." : "@unknown")}
-                </div>
-              </header>
-            </div>
-
-            <div className="flex-col gap-2.5 flex items-start relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex items-center gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                <p className="relative w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-off-black text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)]">
-                  {formData.bio || (!user ? "Loading..." : "Hello, welcome to my creative space.")}
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3 relative self-stretch w-full flex-[0_0_auto]">
-                {/* 显示已填写的社交链接 */}
-                <div className="flex items-start gap-[25px] relative self-stretch w-full flex-wrap">
-                  {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).map((link) => {
-                    // Update old YouTube icons to new one
-                    const NEW_YOUTUBE_ICON = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNMTkuNjE1IDcuNjU0Yy0uMTg4LS43MDYtLjczNi0xLjI2Mi0xLjQzOC0xLjQ1MkMxNi45MDYgNiAxMiA2IDEyIDZzLTQuOTA2IDAtNi4xNzcuMzQ4Yy0uNzAyLjE5LTEuMjUuNzQ2LTEuNDM4IDEuNDUyQzQgOC45MjggNCA5LjI5OCA0IDEyYzAgMi43MDIgMCAzLjA3Mi4zODUgNC4zNDYuMTg4LjcwNi43MzYgMS4yNjIgMS40MzggMS40NTJDNy4wOTQgMTggMTIgMTggMTIgMThzNC45MDYgMCA2LjE3Ny0uMzQ4Yy43MDItLjE5IDEuMjUtLjc0NiAxLjQzOC0xLjQ1MkMyMCAxNS4wNzIgMjAgMTQuNzAyIDIwIDEyYzAtMi43MDIgMC0zLjA3Mi0uMzg1LTQuMzQ2eiIgZmlsbD0iI0ZGMDAwMCIvPgo8cGF0aCBkPSJNOS45ODUgMTQuOTY1VjkuMDM1TDE1LjIxMyAxMmwtNS4yMjggMi45NjV6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=';
-                    const displayIconUrl = (link.title === 'YouTube' && link.iconUrl?.includes('M19.293'))
-                      ? NEW_YOUTUBE_ICON
-                      : link.iconUrl;
-
-                    return (
-                      <button
-                        key={link.id}
-                        className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] pr-3 py-2 rounded-lg hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                        onClick={() => setShowSocialLinksPopup(true)}
-                        title={`Edit ${link.title}`}
-                      >
-                        <img
-                          className="relative w-6 h-6 flex-[0_0_auto]"
-                          alt={`${link.title} logo`}
-                          src={displayIconUrl || 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg'}
-                          onError={(e) => {
-                            e.currentTarget.src = 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg';
-                          }}
-                        />
-
-                      <div className="relative w-fit font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap [font-style:var(--p-l-font-style)] max-w-[120px] overflow-hidden text-ellipsis">
-                        {link.title}
-                      </div>
-                    </button>
-                    );
-                  })}
-
-                  {/* Edit social links button */}
-                  <button
-                    className="inline-flex items-center gap-2 px-3 py-2 relative flex-[0_0_auto] rounded-lg border border-dashed border-medium-grey hover:border-dark-grey hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                    onClick={() => setShowSocialLinksPopup(true)}
-                    title="Manage social links"
-                  >
-                    <svg
-                      className="w-5 h-5 text-medium-dark-grey"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
-                    <span className="text-sm text-medium-dark-grey">
-                      {socialLinksData && socialLinksData.filter(link => link.linkUrl && link.linkUrl.trim()).length > 0 ? 'Edit Links' : 'Add Links'}
-                    </span>
-                  </button>
-                </div>
+          {bannerImage && !showLoadingSpinner && (
+            <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-20">
+              <div className="flex flex-col items-center gap-2 text-white">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89L8.65 4.54A2 2 0 0110.314 4h3.372a2 2 0 011.664.54L16.41 6.11A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-sm font-medium">Change cover</span>
               </div>
             </div>
+          )}
+            </button>
           </div>
         </div>
 
+        {/* Social links - below profile and cover */}
+        <div className="flex flex-col items-start gap-2 mt-3 w-full max-w-[500px]">
+          <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Social links</h3>
+
+          {/* Display existing social links */}
+          {socialLinksData && socialLinksData.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              {socialLinksData.map((link) => (
+                <div
+                  key={link.id}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full group"
+                >
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    title={link.title || link.url}
+                  >
+                    {link.iconUrl && (
+                      <img
+                        src={link.iconUrl}
+                        alt=""
+                        className="w-5 h-5 rounded-sm object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-sm text-off-black max-w-[150px] truncate">
+                      {link.title || new URL(link.url).hostname}
+                    </span>
+                  </a>
+                  <button
+                    onClick={() => handleDeleteSocialLink(link.id, link.title || 'Link')}
+                    className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete link"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowSocialLinksPopup(true)}
+            className="flex items-center gap-2 px-5 h-[35px] rounded-[50px] border border-solid border-dark-grey text-dark-grey hover:bg-gray-100 transition-all duration-300 cursor-pointer"
+            title="Manage social links"
+            aria-label="Manage social links"
+          >
+            <svg
+              className="w-4 h-4 text-dark-grey"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+            <span className="[font-family:'Lato',Helvetica] font-normal text-[16px] leading-5">Add links</span>
+          </button>
+        </div>
       </section>
 
-      <section className="flex flex-col items-start gap-5 pt-5 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
-        <div className="pt-0 pb-2.5 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
+      <section className="flex flex-col items-start gap-5 pt-0 pb-8 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
+        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
           <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
             Account
           </h2>
         </div>
 
         <div className="flex flex-col items-start gap-5 relative w-full">
-          <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
+          <div className="inline-flex flex-col items-start justify-center gap-1.5 relative flex-[0_0_auto]">
             <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
+              <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px] whitespace-nowrap">
                 {user?.walletAddress ? 'Wallet address' : 'Email address'}
               </h3>
             </div>
@@ -682,9 +1077,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
 
           {/* Only show password section if user logged in via email/password */}
           {!isPasswordlessAuth && (
-            <div className="inline-flex flex-col items-start justify-center gap-[15px] relative flex-[0_0_auto]">
+            <div className="inline-flex flex-col items-start justify-center gap-1.5 relative flex-[0_0_auto]">
               <div className="inline-flex items-center justify-end gap-0.5 relative flex-[0_0_auto]">
-                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-xl tracking-[0] leading-[23px] whitespace-nowrap">
+                <h3 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px] whitespace-nowrap">
                   Password
                 </h3>
               </div>
@@ -692,9 +1087,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               <Button
                 onClick={() => setShowChangePasswordModal(true)}
                 variant="outline"
-                className="inline-flex items-center justify-center gap-2.5 px-4 py-2 h-auto rounded-lg border border-solid border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+                className="flex items-center gap-2 px-5 h-[35px] rounded-[50px] border border-solid border-dark-grey text-dark-grey hover:bg-gray-100 transition-all duration-300"
               >
-                <span className="[font-family:'Lato',Helvetica] font-normal text-base leading-5">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-[16px] leading-5">
                   Change Password
                 </span>
               </Button>
@@ -703,14 +1098,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
       </section>
 
-      <section className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-        <div className="pt-0 pb-2.5 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
+      <section className="flex flex-col items-start gap-5 pt-0 relative self-stretch w-full flex-[0_0_auto]">
+        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
           <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
             Notification
           </h2>
         </div>
 
-        <div className="flex flex-col items-start gap-5 pt-0 pb-[25px] px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
+        <div className="flex flex-col items-start gap-3 pt-0 pb-8 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
           {!user ? (
             <div className="flex justify-center items-center py-4">
               <div className="text-sm text-gray-500">Please log in to view notification settings</div>
@@ -795,10 +1190,12 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               <button
                 type="button"
                 aria-label="Close dialog"
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="hover:opacity-70 transition-opacity"
                 onClick={handleCancelPersonalInfo}
               >
-                <XIcon className="w-6 h-6 text-gray-400" />
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
+                  <path d="M3 3L15 15M3 15L15 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </button>
             </div>
 
@@ -807,13 +1204,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
                   <label
                     htmlFor="username-input"
-                    className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-lg tracking-[0] leading-[23px] whitespace-nowrap"
+                    className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-[450] text-off-black text-[18px] tracking-[0] leading-[23px] whitespace-nowrap"
                   >
                     User name
                   </label>
                 </div>
 
-                <div className="flex items-center px-2.5 py-[15px] relative self-stretch w-full flex-[0_0_auto] bg-monowhite rounded-lg overflow-hidden border-2 border-solid border-light-grey shadow-inputs">
+                <div className="flex items-center px-2.5 py-[15px] relative self-stretch w-full flex-[0_0_auto] bg-monowhite rounded-lg overflow-hidden border border-solid border-gray-300 shadow-inputs">
                   <input
                     id="username-input"
                     type="text"
@@ -829,29 +1226,37 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
                   <label
                     htmlFor="bio-textarea"
-                    className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-off-black text-lg tracking-[0] leading-[23px] whitespace-nowrap"
+                    className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-[450] text-off-black text-[18px] tracking-[0] leading-[23px] whitespace-nowrap"
                   >
                     Bio
                   </label>
                 </div>
 
-                <div className="flex flex-col h-[120px] items-start justify-between px-2.5 py-[15px] relative self-stretch w-full bg-monowhite rounded-lg overflow-hidden border-2 border-solid border-light-grey shadow-inputs">
-                  <textarea
+                <div className={`flex items-center justify-between px-4 py-3 relative self-stretch w-full bg-monowhite rounded-lg overflow-hidden border border-solid transition-all duration-200 shadow-inputs ${
+                  formBio.length >= 50 ? 'border-orange-400' : formBio.length > 0 ? 'border-green-400' : 'border-gray-300'
+                }`}>
+                  <input
                     id="bio-textarea"
+                    type="text"
                     value={formBio}
                     onChange={(e) => setFormBio(e.target.value)}
-                    placeholder="Write something about yourself"
-                    className="relative w-full flex-1 mt-[-2.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[normal] bg-transparent border-none outline-none resize-none placeholder:text-medium-dark-grey"
-                    maxLength={140}
+                    placeholder="A short bio about yourself"
+                    className="relative w-full [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[normal] bg-transparent border-none outline-none placeholder:text-medium-dark-grey transition-colors duration-200"
+                    maxLength={60}
                     aria-describedby="bio-counter"
                   />
 
                   <div
                     id="bio-counter"
-                    className="relative self-stretch [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm text-right tracking-[0] leading-[normal]"
+                    className={`relative ml-3 flex-shrink-0 [font-family:'Lato',Helvetica] font-medium text-sm tracking-[0] leading-[normal] transition-colors duration-200 ${
+                      formBio.length >= 55 ? 'text-red-500' :
+                      formBio.length >= 50 ? 'text-orange-500' :
+                      formBio.length > 0 ? 'text-green-600' :
+                      'text-medium-dark-grey'
+                    }`}
                     aria-live="polite"
                   >
-                    {formData.bio.length}/140
+                    {formBio.length}/60
                   </div>
                 </div>
               </div>
@@ -860,13 +1265,6 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 type="avatar"
                 currentImage={profileImage}
                 onImageUploaded={handleProfileImageLocalUpdate}
-                onError={handleImageUploadError}
-              />
-
-              <ImageUploader
-                type="banner"
-                currentImage={bannerImage}
-                onImageUploaded={handleBannerImageLocalUpdate}
                 onError={handleImageUploadError}
               />
 
@@ -911,7 +1309,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       {/* Cover image upload modal */}
       {showCoverUploader && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 relative">
+            {isCoverSaving && (
+              <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-red border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-gray-600 font-medium">Saving cover image...</span>
+                </div>
+              </div>
+            )}
             <h3 className="text-xl font-semibold mb-4 text-center">Change Cover Image</h3>
             <ImageUploader
               type="banner"
@@ -921,7 +1327,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             />
             <button
               onClick={() => setShowCoverUploader(false)}
-              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={isCoverSaving}
+              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
@@ -932,7 +1339,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       {/* Avatar upload modal */}
       {showAvatarUploader && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 relative">
+            {isAvatarSaving && (
+              <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-red border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-gray-600 font-medium">Saving avatar...</span>
+                </div>
+              </div>
+            )}
             <h3 className="text-xl font-semibold mb-4 text-center">Change Avatar</h3>
             <ImageUploader
               type="avatar"
@@ -942,7 +1357,8 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             />
             <button
               onClick={() => setShowAvatarUploader(false)}
-              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={isAvatarSaving}
+              className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

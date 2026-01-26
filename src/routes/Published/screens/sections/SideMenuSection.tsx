@@ -17,7 +17,7 @@ export const SideMenuSection = (): JSX.Element => {
     },
     {
       icon: WalletIcon,
-      label: "My treasury",
+      label: "Treasury",
       isActive: true,
     },
     {

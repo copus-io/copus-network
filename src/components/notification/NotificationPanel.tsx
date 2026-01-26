@@ -13,6 +13,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   const panelRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, isLoading, fetchNotifications, markAsRead, markAllAsRead, clearAllNotifications } = useNotification();
 
+
   // Load notification list when panel opens
   useEffect(() => {
     if (isOpen) {
@@ -61,14 +62,6 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   // Get notification type icon
   const getNotificationIcon = (type: string): JSX.Element => {
     switch (type) {
-      case 'like':
-        return (
-          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-            </svg>
-          </div>
-        );
       case 'comment':
         return (
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -82,6 +75,55 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
             <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
               <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+            </svg>
+          </div>
+        );
+      case 'treasury':
+        return (
+          <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+            </svg>
+          </div>
+        );
+      case 'mention':
+        return (
+          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+            </svg>
+          </div>
+        );
+      case 'follow_treasury':
+        return (
+          <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        );
+      case 'comment_reply':
+        return (
+          <div className="w-8 h-8 bg-cyan-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-cyan-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+        );
+      case 'comment_like':
+        return (
+          <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-pink-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+            </svg>
+          </div>
+        );
+      case 'unlock':
+        return (
+          <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
           </div>
         );
@@ -102,6 +144,54 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
           </div>
         );
     }
+  };
+
+  // Render message with clickable work title
+  const renderMessageWithLinks = (notification: Notification) => {
+    const { message, metadata } = notification;
+
+    console.log('🔍 Checking notification:', {
+      type: notification.type,
+      message,
+      hasMetadata: !!metadata,
+      targetTitle: metadata?.targetTitle,
+      targetUuid: metadata?.targetUuid
+    });
+
+    // For treasury type (type 4), make the work title clickable
+    if (notification.type === 'treasury' && metadata?.targetTitle && metadata?.targetUuid) {
+      const workTitle = metadata.targetTitle;
+
+      console.log('✅ Treasury notification found, processing:', { workTitle, message });
+
+      // Check if message contains the work title
+      if (message.includes(workTitle)) {
+        const beforeTitle = message.substring(0, message.indexOf(workTitle));
+        const afterTitle = message.substring(message.indexOf(workTitle) + workTitle.length);
+
+        console.log('🎯 Splitting message:', { beforeTitle, workTitle, afterTitle });
+
+        return (
+          <>
+            {beforeTitle}
+            <span
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ Clicking work title, navigating to:', `/work/${metadata.targetUuid}`);
+                navigate(`/work/${metadata.targetUuid}`);
+                onClose();
+              }}
+              className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+            >
+              {workTitle}
+            </span>
+            {afterTitle}
+          </>
+        );
+      }
+    }
+
+    return message;
   };
 
   // Handle notification click
@@ -200,7 +290,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                     <p className={`text-sm ${notification.isRead ? 'text-gray-900' : 'font-medium text-gray-900'}`}>
                       {notification.title}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                    <p className="text-sm text-gray-600 mt-1">{renderMessageWithLinks(notification)}</p>
                   </div>
                   {!notification.isRead && (
                     <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>

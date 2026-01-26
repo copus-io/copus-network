@@ -4,6 +4,7 @@ export interface CollectionItem {
   id: string;
   title: string;
   url: string;
+  website?: string; // Extracted hostname for display
   coverImage: string;
 }
 
@@ -13,6 +14,13 @@ interface CollectionSectionProps {
   items: CollectionItem[];
 }
 
+/**
+ * Extract hostname from URL for display
+ */
+const getDisplayHostname = (url: string): string => {
+  return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+};
+
 export const CollectionSection = ({ title, treasureCount, items }: CollectionSectionProps): JSX.Element => {
   if (items.length === 0) {
     return (
@@ -20,11 +28,11 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
         <div className="flex h-[300px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <p className="text-gray-500">No items in this collection</p>
         </div>
-        <header className="justify-between flex items-start relative self-stretch w-full flex-[0_0_auto]">
-          <h2 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+        <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
             {title}
           </h2>
-          <p className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+          <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
             {treasureCount} treasures
           </p>
         </header>
@@ -40,21 +48,18 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
         {/* Main item on the left */}
         <article className="inline-flex flex-col items-start justify-center gap-[5px] px-[15px] py-0 relative self-stretch flex-[0_0_auto] rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <div
-            className="flex flex-col w-[259px] h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
-            style={{ backgroundImage: `url(${mainItem.coverImage})` }}
+            className="flex flex-col w-[259px] items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
+            style={{ backgroundImage: `url(${mainItem.coverImage})`, aspectRatio: '4 / 3' }}
           >
+            {mainItem.website && (
             <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-              <a
-                href={mainItem.url.startsWith('http') ? mainItem.url : `https://${mainItem.url}`}
-                className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-white/80 rounded-[15px] overflow-hidden hover:bg-white transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-white/80 rounded-[15px] overflow-hidden">
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                  {mainItem.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                  {getDisplayHostname(mainItem.url)}
                 </span>
-              </a>
+              </span>
             </div>
+          )}
           </div>
 
           <div className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto]">
@@ -79,20 +84,15 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
                 } flex flex-col items-start gap-[5px] relative self-stretch w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
               >
                 <div
-                  className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
-                  style={{ backgroundImage: `url(${item.coverImage})` }}
+                  className="p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
+                  style={{ backgroundImage: `url(${item.coverImage})`, aspectRatio: '16 / 9' }}
                 >
                   <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-                    <a
-                      href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                      className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white/80 rounded-[15px] overflow-hidden relative flex-[0_0_auto] hover:bg-white transition-colors"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white/80 rounded-[15px] overflow-hidden relative flex-[0_0_auto]">
                       <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                        {item.url.replace(/^https?:\/\//, '').replace(/^www\./, '')}
+                        {getDisplayHostname(item.url)}
                       </span>
-                    </a>
+                    </span>
                   </div>
                 </div>
 
@@ -111,11 +111,11 @@ export const CollectionSection = ({ title, treasureCount, items }: CollectionSec
         )}
       </div>
 
-      <header className="justify-between flex items-start relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+      <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
+        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
           {title}
         </h2>
-        <p className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-lg tracking-[0] leading-[27px] whitespace-nowrap">
+        <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
           {treasureCount} treasures
         </p>
       </header>

@@ -1,6 +1,7 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from "react-helmet-async";
 import { queryClient } from "./lib/queryClient";
 import { UserProvider } from "./contexts/UserContext";
 import { CategoryProvider } from "./contexts/CategoryContext";
@@ -8,34 +9,49 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 import { ImagePreviewProvider } from "./contexts/ImagePreviewContext";
 import { ToastProvider } from "./components/ui/toast";
 import { GlobalImagePreview } from "./components/ui/GlobalImagePreview";
-import { Discovery } from "./screens/Discovery/Discovery";
-import { Following } from "./screens/Following/Following";
-import { MainFrame } from "./screens/MainFrame/MainFrame";
-import { Notification } from "./screens/Notification/Notification";
-import { Setting } from "./screens/Setting/Setting";
-import { Treasury } from "./screens/Treasury/Treasury";
-import { Login } from "./screens/Login/Login";
-import { Create } from "./screens/Create/Create";
-import { Content } from "./screens/Content/Content";
-import { NotLogIn } from "./routes/NotLogIn/screens/NotLogIn";
-import { NewExplore } from "./routes/NewExplore/screens/NewExplore";
-import { MyTreasury } from "./routes/MyTreasury/screens/MyTreasury";
-import { LinkPreview } from "./routes/LinkPreview/screens/LinkPreview";
-import { DeleteAccount } from "./routes/DeleteAccount/screens/DeleteAccount";
-import { Published } from "./routes/Published/screens/Published";
-import { Screen } from "./routes/Screen/screens/Screen";
-import { Screen as Screen24 } from "./routes/Screen24/screens/Screen";
-import { Screen as Screen25 } from "./routes/Screen25/screens/Screen";
-import { Screen as Screen26 } from "./routes/Screen26/screens/Screen";
-import { Screen as Screen27 } from "./routes/Screen27/screens/Screen";
-import { SignUp } from "./routes/SignUp/screens/SignUp";
-import { SwitchDemo } from "./components/demo/SwitchDemo";
 import { AuthGuard } from "./components/guards/AuthGuard";
-import { UserProfile } from "./screens/UserProfile/UserProfile";
-import { NotFoundPage } from "./components/pages/NotFoundPage";
-import OAuthRedirect from "./components/OAuthRedirect";
+import { CopusLoading } from "./components/ui/copus-loading";
+
+// Eagerly loaded - critical path
+import { Discovery } from "./screens/Discovery/Discovery";
+
+// Withdrawal and Login - eagerly loaded for better UX
+import { Withdrawal } from "./screens/Withdrawal/Withdrawal";
+import { Login } from "./screens/Login/Login";
+
+// Content - eagerly loaded to prevent dynamic import errors
+import { Content } from "./screens/Content/Content";
+
+// ShortLinkHandler - eagerly loaded to prevent dynamic import errors
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
-import { Space } from "./screens/Space/Space";
+
+// Lazy loaded routes - split code for better initial load
+const Following = lazy(() => import("./screens/Following/Following").then(m => ({ default: m.Following })));
+const Notification = lazy(() => import("./screens/Notification/Notification").then(m => ({ default: m.Notification })));
+const Setting = lazy(() => import("./screens/Setting/Setting").then(m => ({ default: m.Setting })));
+const Treasury = lazy(() => import("./screens/Treasury/Treasury").then(m => ({ default: m.Treasury })));
+const Create = lazy(() => import("./screens/Create/Create").then(m => ({ default: m.Create })));
+const UserProfile = lazy(() => import("./screens/UserProfile/UserProfile").then(m => ({ default: m.UserProfile })));
+const Space = lazy(() => import("./screens/Space/Space").then(m => ({ default: m.Space })));
+const SEOSet = lazy(() => import("./screens/SEOSet/SEOSet").then(m => ({ default: m.SEOSet })));
+
+// Lazy loaded route modules
+const NotLogIn = lazy(() => import("./routes/NotLogIn/screens/NotLogIn").then(m => ({ default: m.NotLogIn })));
+const NewExplore = lazy(() => import("./routes/NewExplore/screens/NewExplore").then(m => ({ default: m.NewExplore })));
+const MyTreasury = lazy(() => import("./routes/MyTreasury/screens/MyTreasury").then(m => ({ default: m.MyTreasury })));
+const LinkPreview = lazy(() => import("./routes/LinkPreview/screens/LinkPreview").then(m => ({ default: m.LinkPreview })));
+const DeleteAccount = lazy(() => import("./routes/DeleteAccount/screens/DeleteAccount").then(m => ({ default: m.DeleteAccount })));
+const Published = lazy(() => import("./routes/Published/screens/Published").then(m => ({ default: m.Published })));
+const SignUp = lazy(() => import("./routes/SignUp/screens/SignUp").then(m => ({ default: m.SignUp })));
+const NotFoundPage = lazy(() => import("./components/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
+const OAuthRedirect = lazy(() => import("./components/OAuthRedirect"));
+
+// Suspense wrapper for lazy components
+const LazyRoute = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<CopusLoading />}>
+    {children}
+  </Suspense>
+);
 
 const router = createBrowserRouter([
   {
@@ -54,7 +70,7 @@ const router = createBrowserRouter([
     path: "/following",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Following />
+        <LazyRoute><Following /></LazyRoute>
       </AuthGuard>
     ),
   },
@@ -62,7 +78,7 @@ const router = createBrowserRouter([
     path: "/treasury",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Treasury />
+        <LazyRoute><Treasury /></LazyRoute>
       </AuthGuard>
     ),
   },
@@ -70,7 +86,7 @@ const router = createBrowserRouter([
     path: "/notification",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Notification />
+        <LazyRoute><Notification /></LazyRoute>
       </AuthGuard>
     ),
   },
@@ -78,7 +94,15 @@ const router = createBrowserRouter([
     path: "/setting",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Setting />
+        <LazyRoute><Setting /></LazyRoute>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/earning",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <Withdrawal />
       </AuthGuard>
     ),
   },
@@ -88,37 +112,42 @@ const router = createBrowserRouter([
   },
   {
     path: "/callback",
-    element: <OAuthRedirect />,
+    element: <LazyRoute><OAuthRedirect /></LazyRoute>,
   },
   {
     path: "/newglobal",
-    element: <OAuthRedirect />,
+    element: <LazyRoute><OAuthRedirect /></LazyRoute>,
   },
   {
     path: "/explore/new",
-    element: <NewExplore />,
+    element: <LazyRoute><NewExplore /></LazyRoute>,
   },
   {
     path: "/my-treasury",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <MyTreasury />
+        <LazyRoute><MyTreasury /></LazyRoute>
       </AuthGuard>
     ),
   },
   {
     path: "/user/:namespace",
-    element: <UserProfile />,
+    element: <LazyRoute><UserProfile /></LazyRoute>,
   },
   {
     path: "/user/:namespace/treasury",
-    element: <MyTreasury />,
+    element: <LazyRoute><MyTreasury /></LazyRoute>,
   },
   {
+    path: "/treasury/:namespace",
+    element: <LazyRoute><Space /></LazyRoute>,
+  },
+  {
+    // Keep old /space route for backwards compatibility
     path: "/space/:category",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Space />
+        <LazyRoute><Space /></LazyRoute>
       </AuthGuard>
     ),
   },
@@ -127,10 +156,10 @@ const router = createBrowserRouter([
     element: <ShortLinkHandler />, // Short link format: /u/namespace
   },
   {
-    path: "/create",
+    path: "/curate",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Create />
+        <LazyRoute><Create /></LazyRoute>
       </AuthGuard>
     ),
   },
@@ -140,75 +169,61 @@ const router = createBrowserRouter([
   },
   {
     path: "/auth/unauthorized",
-    element: <NotLogIn />,
+    element: <LazyRoute><NotLogIn /></LazyRoute>,
   },
   {
     path: "/preview/link/:id?",
-    element: <LinkPreview />,
+    element: <LazyRoute><LinkPreview /></LazyRoute>,
   },
   {
     path: "/account/delete",
     element: (
       <AuthGuard requireAuth={true} fallbackPath="/login">
-        <DeleteAccount />
+        <LazyRoute><DeleteAccount /></LazyRoute>
       </AuthGuard>
     ),
   },
   {
     path: "/published",
-    element: <Published />,
-  },
-  {
-    path: "/screen/default",
-    element: <Screen />,
-  },
-  {
-    path: "/screen/v24",
-    element: <Screen24 />,
-  },
-  {
-    path: "/screen/v25",
-    element: <Screen25 />,
-  },
-  {
-    path: "/screen/v26",
-    element: <Screen26 />,
-  },
-  {
-    path: "/screen/v27",
-    element: <Screen27 />,
+    element: <LazyRoute><Published /></LazyRoute>,
   },
   {
     path: "/signup",
-    element: <SignUp />,
+    element: <LazyRoute><SignUp /></LazyRoute>,
   },
   {
-    path: "/demo/components/switch",
-    element: <SwitchDemo />,
+    path: "/seoSet",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <LazyRoute><SEOSet /></LazyRoute>
+      </AuthGuard>
+    ),
   },
   // 404 catch-all route - must be last
   {
     path: "*",
-    element: <NotFoundPage />,
+    element: <LazyRoute><NotFoundPage /></LazyRoute>,
   },
 ]);
 
 
 export const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <CategoryProvider>
-          <NotificationProvider>
-            <ImagePreviewProvider>
-              <ToastProvider>
-                <RouterProvider router={router} />
-                <GlobalImagePreview />
-              </ToastProvider>
-            </ImagePreviewProvider>
-          </NotificationProvider>
-        </CategoryProvider>
-      </UserProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <UserProvider>
+          <CategoryProvider>
+            <NotificationProvider>
+              <ImagePreviewProvider>
+                <ToastProvider>
+                  <RouterProvider router={router} />
+                  <GlobalImagePreview />
+                </ToastProvider>
+              </ImagePreviewProvider>
+            </NotificationProvider>
+          </CategoryProvider>
+        </UserProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 };

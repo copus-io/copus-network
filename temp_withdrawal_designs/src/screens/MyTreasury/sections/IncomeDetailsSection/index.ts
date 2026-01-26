@@ -1,0 +1,1 @@
+export { IncomeDetailsSection } from "./IncomeDetailsSection";

@@ -1,0 +1,43 @@
+# Copus Network - robots.txt
+# The Internet Treasure Map - Human-curated content for discovery
+
+# We welcome all search crawlers and AI agents
+User-agent: *
+Allow: /
+
+# AI Search Bots - Explicitly welcome for search and discovery
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Sitemap - dynamic, includes all curated content
+Sitemap: https://copus.network/sitemap.xml
+
+# For AI agents: Structured JSON available at any /work/{id}?format=json
+# See also: https://copus.network/llms.txt

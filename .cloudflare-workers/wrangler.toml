@@ -1,0 +1,9 @@
+name = "copus-meta-tags"
+main = "meta-tags-worker.js"
+compatibility_date = "2024-01-01"
+
+# Production routes - intercept /work/* for both prod and test
+routes = [
+  { pattern = "copus.network/work/*", zone_name = "copus.network" },
+  { pattern = "test.copus.network/work/*", zone_name = "copus.network" }
+]

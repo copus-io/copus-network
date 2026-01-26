@@ -1,11 +1,19 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Notification, NotificationContextType } from '../types/notification';
 import { notificationService } from '../services/notificationService';
+import { EnhancedNotificationService, NotificationFilters } from '../services/notification/EnhancedNotificationService';
 import { AuthService } from '../services/authService';
+import * as storage from '../utils/storage';
 
 interface NotificationState {
   notifications: Notification[];
   unreadCount: number;
+  unreadCounts: {
+    commentCount: number;
+    earningCount: number;
+    totalCount: number;
+    treasureCount: number;
+  };
   isLoading: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
@@ -18,6 +26,7 @@ type NotificationAction =
   | { type: 'SET_NOTIFICATIONS'; payload: Notification[] }
   | { type: 'APPEND_NOTIFICATIONS'; payload: { notifications: Notification[]; hasMore: boolean; page: number } }
   | { type: 'SET_UNREAD_COUNT'; payload: number }
+  | { type: 'SET_UNREAD_COUNTS'; payload: { commentCount: number; earningCount: number; totalCount: number; treasureCount: number } }
   | { type: 'ADD_NOTIFICATION'; payload: Notification }
   | { type: 'MARK_AS_READ'; payload: string }
   | { type: 'MARK_ALL_AS_READ' }
@@ -27,6 +36,12 @@ type NotificationAction =
 const initialState: NotificationState = {
   notifications: [],
   unreadCount: 0,
+  unreadCounts: {
+    commentCount: 0,
+    earningCount: 0,
+    totalCount: 0,
+    treasureCount: 0,
+  },
   isLoading: false,
   isLoadingMore: false,
   hasMore: true,
@@ -70,6 +85,13 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
       return {
         ...state,
         unreadCount: action.payload,
+      };
+
+    case 'SET_UNREAD_COUNTS':
+      return {
+        ...state,
+        unreadCounts: action.payload,
+        unreadCount: action.payload.totalCount,
       };
 
     case 'ADD_NOTIFICATION':
@@ -140,7 +162,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const fetchNotifications = async (
     page: number = 1,
     pageSize: number = 20,
-    msgType: number = 0, // Default to fetch all types of messages
+    filters: NotificationFilters = {},
     append: boolean = false // New parameter to control append vs replace
   ): Promise<void> => {
     try {
@@ -149,7 +171,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         dispatch({ type: 'SET_LOADING', payload: true });
       }
 
-      const result = await notificationService.getNotifications(page, pageSize, msgType);
+      console.log(`[NotificationContext] Using EnhancedNotificationService with filters:`, filters);
+      const result = await EnhancedNotificationService.getNotifications(page, pageSize, filters);
 
       if (append) {
         dispatch({
@@ -184,7 +207,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const fetchUnreadCount = async (): Promise<void> => {
     // Skip if no token (no point in calling authenticated endpoint)
-    const token = localStorage.getItem('copus_token');
+    // Use storage utility to check both localStorage and sessionStorage
+    const token = storage.getItem('copus_token');
     if (!token || token.trim() === '') {
       // When no token exists, set unread count to 0 without error
       dispatch({ type: 'SET_UNREAD_COUNT', payload: 0 });
@@ -194,7 +218,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
 
-      const unreadCount = await AuthService.getUnreadMessageCount();
+      const unreadCounts = await AuthService.getUnreadMessageCounts();
+      const unreadCount = unreadCounts.totalCount;
 
       // Check if we recently marked all as read
       const markedAllReadTime = localStorage.getItem('lastMarkedAllReadTime');
@@ -223,7 +248,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
       }
 
-      dispatch({ type: 'SET_UNREAD_COUNT', payload: unreadCount });
+      dispatch({ type: 'SET_UNREAD_COUNTS', payload: unreadCounts });
     } catch (error) {
       // If authentication error, handle silently and set unread count to 0
       if (error instanceof Error && (error.message.includes('Valid authentication token not found') || 
@@ -246,7 +271,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       // Record user action time to avoid polling conflicts
       localStorage.setItem('lastNotificationAction', Date.now().toString());
 
-      const success = await notificationService.markAsRead(notificationId);
+      console.log(`[NotificationContext] Using EnhancedNotificationService to mark as read: ${notificationId}`);
+      const success = await EnhancedNotificationService.markAsRead(notificationId);
 
       if (success) {
         dispatch({ type: 'MARK_AS_READ', payload: notificationId });
@@ -315,7 +341,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       dispatch({ type: 'SET_LOADING_MORE', payload: true });
       const nextPage = state.currentPage + 1;
       console.log(`[NotificationContext] Loading more notifications - page ${nextPage}`);
-      await fetchNotifications(nextPage, 20, 0, true);
+      await fetchNotifications(nextPage, 20, {}, true);
     } finally {
       dispatch({ type: 'SET_LOADING_MORE', payload: false });
     }
@@ -386,6 +412,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const contextValue: NotificationContextType = {
     notifications: state.notifications,
     unreadCount: state.unreadCount,
+    unreadCounts: state.unreadCounts,
     isLoading: state.isLoading,
     isLoadingMore: state.isLoadingMore,
     hasMore: state.hasMore,

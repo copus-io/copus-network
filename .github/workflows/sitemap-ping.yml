@@ -1,0 +1,51 @@
+name: Sitemap Ping
+
+on:
+  # Run daily at 6 AM UTC
+  schedule:
+    - cron: '0 6 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+  # Run on push to main (new content deployed)
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions/work/**'
+      - 'functions/sitemap.xml.js'
+
+jobs:
+  ping-search-engines:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Bing (sitemap)
+        run: |
+          echo "Pinging Bing with sitemap..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://www.bing.com/ping?sitemap=https://copus.network/sitemap.xml")
+          echo "Bing sitemap ping response: $response"
+
+      - name: Ping Bing (IndexNow)
+        run: |
+          echo "Pinging Bing via IndexNow..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://www.bing.com/indexnow?url=https://copus.network/sitemap.xml")
+          echo "Bing IndexNow response: $response"
+
+      - name: Trigger Copus ping endpoint
+        run: |
+          echo "Triggering Copus sitemap ping endpoint..."
+          curl -s "https://copus.network/scheduled/sitemap-ping" || echo "Endpoint not yet deployed"
+
+      - name: Summary
+        run: |
+          echo "## Sitemap Ping Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Sitemap URL:** https://copus.network/sitemap.xml" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Search Engine Status" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bing:** Pinged via /ping and IndexNow" >> $GITHUB_STEP_SUMMARY
+          echo "- **Google:** Uses natural crawling (deprecated /ping in 2023)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For Google indexing, submit sitemap via [Google Search Console](https://search.google.com/search-console)." >> $GITHUB_STEP_SUMMARY

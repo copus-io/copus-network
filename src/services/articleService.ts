@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams } from '../types/article';
+import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest, BindArticlesRequest, BindArticlesApiResponse } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
@@ -16,6 +16,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
 
   // Convert timestamp to date string
   const formatTimestamp = (timestamp: number): string => {
+    if (!timestamp || timestamp === 0) return '';
     return new Date(timestamp * 1000).toISOString();
   };
 
@@ -28,6 +29,13 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     // Check if it's a valid URL
     try {
       new URL(coverUrl);
+
+      // Fix malformed extensions like '.svg+xml' -> '.svg'
+      // This can happen when MIME type 'image/svg+xml' is incorrectly used as extension
+      if (coverUrl.endsWith('+xml')) {
+        coverUrl = coverUrl.replace(/\+xml$/, '');
+      }
+
       return coverUrl;
     } catch (error) {
       return '';
@@ -52,33 +60,40 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
 
   // Determine the user avatar: only use faceUrl if it's a real uploaded image, otherwise use default
   const getUserAvatar = (): string => {
-    const faceUrl = backendArticle.authorInfo.faceUrl;
+    const faceUrl = backendArticle.authorInfo?.faceUrl;
     if (isGeneratedAvatar(faceUrl)) {
       return profileDefaultAvatar;
     }
-    return faceUrl!;
+    return faceUrl || profileDefaultAvatar;
   };
 
   const transformedArticle = {
     id: backendArticle.uuid,
+    numericId: backendArticle.id, // Numeric ID for bindArticles API
     title: backendArticle.title,
     description: backendArticle.content,
-    category: backendArticle.categoryInfo.name,
-    categoryColor: backendArticle.categoryInfo.color, // Save category color returned from backend
+    category: backendArticle.categoryInfo?.name || '',
+    categoryColor: backendArticle.categoryInfo?.color, // Save category color returned from backend
     coverImage: processImageUrl(backendArticle.coverUrl),
-    userName: backendArticle.authorInfo.username,
-    userId: backendArticle.authorInfo.id,
-    namespace: backendArticle.authorInfo.namespace, // Add namespace field
+    userName: backendArticle.authorInfo?.username || 'Anonymous',
+    userId: backendArticle.authorInfo?.id,
+    namespace: backendArticle.authorInfo?.namespace, // Add namespace field
     userAvatar: getUserAvatar(), // Two states only: user's real uploaded image or default image - no generated avatars
     date: formatTimestamp(backendArticle.createAt),
     treasureCount: backendArticle.likeCount,
     visitCount: backendArticle.viewCount,
+    commentCount: backendArticle.commentCount || 0, // Total number of comments
     isLiked: backendArticle.isLiked, // Preserve like status returned from server
     website: getWebsiteFromUrl(backendArticle.targetUrl),
     url: backendArticle.targetUrl,
+    // Arweave chain ID for content storage
+    arChainId: backendArticle.arChainId,
     // x402 payment fields
     isPaymentRequired: backendArticle.targetUrlIsLocked || false,
     paymentPrice: backendArticle.priceInfo?.price?.toString() || undefined,
+    // SEO fields
+    seoDescription: backendArticle.seoDescription,
+    seoKeywords: backendArticle.seoKeywords,
   };
 
   return transformedArticle;
@@ -157,32 +172,152 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
   };
 };
 
-// Get article details
-export const getArticleDetail = async (uuid: string, bustCache: boolean = false): Promise<ArticleDetailResponse> => {
+// Article detail cache
+const articleDetailCache = new Map<string, {
+  data: ArticleDetailResponse;
+  timestamp: number;
+  expiresAt: number;
+}>();
+const ARTICLE_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-  // Add cache-busting timestamp when needed (e.g., after edit)
-  const cacheBuster = bustCache ? `&_t=${Date.now()}` : '';
-  const endpoint = `/client/reader/article/info?uuid=${uuid}${cacheBuster}`;
+// Types for article options
+export interface GetArticleDetailOptions {
+  bustCache?: boolean;
+  forceRefresh?: boolean;
+  retryCount?: number;
+}
 
-  try {
-    // Article details are publicly viewable but will include token if available for personalized data
-    const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, {
-      headers: bustCache ? {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      } : {}
-    });
+// Get article details with caching and error handling
+export const getArticleDetail = async (
+  uuid: string,
+  options: GetArticleDetailOptions = {}
+): Promise<ArticleDetailResponse> => {
+  const { bustCache = false, forceRefresh = false, retryCount = 2 } = options;
+  const cacheKey = uuid;
 
-    if (response.status !== 1) {
-      throw new Error(response.msg || 'API request failed');
+  // Check cache first (unless bust cache or force refresh)
+  if (!bustCache && !forceRefresh) {
+    const cached = articleDetailCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.data;
     }
-
-    return response.data;
-  } catch (error) {
-    console.error('❌ Failed to fetch article detail:', error);
-    throw new Error(`Failed to fetch article detail: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+
+  // Retry mechanism
+  const executeRequest = async (attempt: number = 0): Promise<ArticleDetailResponse> => {
+    try {
+      // Add cache-busting timestamp when needed (e.g., after edit)
+      const cacheBuster = bustCache ? `&_t=${Date.now()}` : '';
+      const endpoint = `/client/reader/article/info?uuid=${uuid}${cacheBuster}`;
+
+      // Article details are publicly viewable but will include token if available for personalized data
+      const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, {
+        headers: bustCache ? {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        } : {},
+        timeout: 10000 // 10 second timeout
+      });
+
+      // Validate API response
+      if (response.status !== 1) {
+        throw new Error(response.msg || 'API request failed');
+      }
+
+      // Validate required fields
+      const data = response.data;
+      if (!data || !data.uuid || !data.title) {
+        throw new Error('Invalid article data received from API');
+      }
+
+      // Cache the successful result
+      articleDetailCache.set(cacheKey, {
+        data,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + ARTICLE_CACHE_DURATION
+      });
+
+      return data;
+    } catch (error: any) {
+      // Enhanced error handling with retry logic
+      const errorMessage = error?.response?.data?.msg ||
+                          error?.message ||
+                          'Failed to fetch article detail';
+
+      console.error(`❌ Failed to fetch article detail (attempt ${attempt + 1}):`, {
+        uuid,
+        error: errorMessage,
+        timestamp: new Date().toISOString()
+      });
+
+      // Check if we should retry
+      const shouldRetry = attempt < retryCount && (
+        error?.status === 500 || // Server error
+        error?.status === 502 || // Bad gateway
+        error?.status === 503 || // Service unavailable
+        error?.status === 504 || // Gateway timeout
+        error?.code === 'NETWORK_ERROR' ||
+        error?.code === 'TIMEOUT'
+      );
+
+      if (shouldRetry) {
+        // Exponential backoff: wait 1s, 2s, 4s...
+        const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+        console.warn(`🔄 Retrying article detail request in ${delay}ms...`);
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return executeRequest(attempt + 1);
+      }
+
+      // If all retries failed, try to return cached data if available
+      const cached = articleDetailCache.get(cacheKey);
+      if (cached) {
+        console.warn('⚠️ Using stale cached data due to API failure');
+        return cached.data;
+      }
+
+      // No cache available, throw the error
+      throw new Error(errorMessage);
+    }
+  };
+
+  return executeRequest();
+};
+
+// Clear article detail cache
+export const clearArticleDetailCache = (uuid?: string): void => {
+  if (uuid) {
+    articleDetailCache.delete(uuid);
+  } else {
+    articleDetailCache.clear();
+  }
+};
+
+// Preload article detail (fire and forget)
+export const preloadArticleDetail = async (uuid: string): Promise<void> => {
+  try {
+    await getArticleDetail(uuid, { forceRefresh: false });
+  } catch (error) {
+    // Silently ignore preload errors
+    console.debug('Article detail preload failed:', error);
+  }
+};
+
+// Get article ID by UUID (optimized for frequent calls)
+export const getArticleIdByUuid = async (uuid: string): Promise<number> => {
+  try {
+    const detail = await getArticleDetail(uuid, { forceRefresh: false });
+    return detail.id;
+  } catch (error) {
+    console.error('Failed to get article ID:', error);
+    throw new Error(`Failed to get article ID for UUID ${uuid}`);
+  }
+};
+
+// Legacy method for backward compatibility
+export const getArticleDetailLegacy = async (uuid: string, bustCache: boolean = false): Promise<ArticleDetailResponse> => {
+  return getArticleDetail(uuid, { bustCache });
 };
 
 // Get my created articles
@@ -241,16 +376,30 @@ export const publishArticle = async (articleData: {
   coverUrl: string;
   targetUrl: string;
   categoryId: number;
+  spaceIds?: number[]; // Optional: array of space IDs to save the article to
+  targetUrlIsLocked?: boolean;
+  priceInfo?: {
+    chainId: string;
+    currency: string;
+    price: number;
+  };
 }): Promise<{ uuid: string }> => {
 
   const endpoint = '/client/author/article/edit';
 
   try {
+    console.log('📤 Calling publishArticle API with data:', articleData);
+    console.log('📤 Payment fields being sent to API:', {
+      targetUrlIsLocked: articleData.targetUrlIsLocked,
+      priceInfo: articleData.priceInfo || 'undefined/not included',
+      fullPayload: JSON.stringify(articleData)
+    });
     const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),
     });
 
+    console.log('📥 publishArticle API response:', response);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'Failed to publish article');
@@ -260,5 +409,71 @@ export const publishArticle = async (articleData: {
   } catch (error) {
     console.error('❌ Failed to publish article:', error);
     throw new Error(`Failed to publish article: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Set SEO settings for an article
+export const setSEOSettings = async (seoData: SEOSettings): Promise<boolean> => {
+  const endpoint = '/client/author/article/setSeo';
+
+  // Use direct format as per original API spec: {description, keywords, uuid}
+  const requestData = {
+    uuid: seoData.uuid,
+    description: seoData.description,
+    keywords: seoData.keywords
+  };
+
+  try {
+    console.log('📤 Setting SEO for article:', {
+      uuid: seoData.uuid,
+      description: seoData.description?.substring(0, 50) + '...',
+      keywords: seoData.keywords,
+      requestData: requestData
+    });
+
+    const response = await apiRequest<SEOSettingsResponse>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+
+    console.log('📥 SEO settings API response:', response);
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'Failed to set SEO settings');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Failed to set SEO settings:', error);
+    throw new Error(`Failed to set SEO settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Bind articles to spaces
+export const bindArticles = async (bindData: BindArticlesRequest): Promise<BindArticlesApiResponse> => {
+  const endpoint = '/client/article/bind/bindArticles';
+
+  try {
+    console.log('📤 Binding article to spaces:', {
+      articleId: bindData.articleId,
+      spaceIds: bindData.spaceIds,
+      requestData: bindData
+    });
+
+    const response = await apiRequest<BindArticlesApiResponse>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(bindData),
+    });
+
+    console.log('📥 Bind articles API response:', response);
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'Failed to bind articles');
+    }
+
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to bind articles:', error);
+    throw new Error(`Failed to bind articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

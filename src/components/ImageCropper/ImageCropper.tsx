@@ -38,6 +38,24 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
   const [originalCropArea, setOriginalCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [lastPinchDistance, setLastPinchDistance] = useState<number | null>(null);
+
+  // Helper to calculate distance between two touch points
+  const getTouchDistance = (touches: React.TouchList): number => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Helper to get center point between two touches
+  const getTouchCenter = (touches: React.TouchList, rect: DOMRect): { x: number; y: number } => {
+    if (touches.length < 2) return { x: 0, y: 0 };
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2 - rect.left,
+      y: (touches[0].clientY + touches[1].clientY) / 2 - rect.top
+    };
+  };
 
   React.useEffect(() => {
     const url = URL.createObjectURL(image);
@@ -106,7 +124,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
       };
 
       setCropArea(initialCrop);
-      drawCanvas(ctx, img, initialCrop);
+      drawCanvas(ctx, img, initialCrop, 1, { x: 0, y: 0 });
     };
 
     img.src = url;
@@ -114,7 +132,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     return () => URL.revokeObjectURL(url);
   }, [image, aspectRatio]);
 
-  const drawCanvas = useCallback((ctx: CanvasRenderingContext2D, img: HTMLImageElement, crop: CropArea) => {
+  const drawCanvas = useCallback((ctx: CanvasRenderingContext2D, img: HTMLImageElement, crop: CropArea, currentScale: number = 1, currentOffset: { x: number; y: number } = { x: 0, y: 0 }) => {
     const canvas = ctx.canvas;
 
     // Clear canvas
@@ -123,9 +141,9 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     // Save current state
     ctx.save();
 
-    // Apply scale and offset
-    ctx.translate(offset.x, offset.y);
-    ctx.scale(scale, scale);
+    // Apply scale and offset (use passed parameters, not closure values)
+    ctx.translate(currentOffset.x, currentOffset.y);
+    ctx.scale(currentScale, currentScale);
 
     // Draw image
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -218,7 +236,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
       });
     }
-  }, [cropShape, scale, offset]);
+  }, [cropShape]);
 
   // Detect which resize handle was clicked
   const getResizeHandle = (x: number, y: number): ResizeHandle | null => {
@@ -264,16 +282,17 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const y = e.clientY - rect.top;
 
     const handle = getResizeHandle(x, y);
-    if (handle) {
+    if (handle && handle !== 'move') {
+      // Only allow resize handles for rect mode, not 'move'
       setResizeHandle(handle);
       setIsDragging(true);
       setDragStart({ x, y });
       setOriginalCropArea({ ...cropArea });
     } else {
-      // If not clicking on resize handle, start image dragging
+      // For clicking inside crop area or anywhere else, enable image panning
       setIsDragging(true);
       setDragStart({ x, y });
-      setResizeHandle(null);
+      setResizeHandle(null); // null means image panning mode
     }
   };
 
@@ -401,7 +420,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx || !loadedImageRef.current) return;
 
-    drawCanvas(ctx, loadedImageRef.current, newCropArea);
+    drawCanvas(ctx, loadedImageRef.current, newCropArea, scale, offset);
   };
 
   const handleMouseUp = () => {
@@ -409,39 +428,188 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     setResizeHandle(null);
   };
 
-  // Handle mouse wheel zoom
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+  // Touch event handlers for mobile support
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Pinch-to-zoom disabled - only use slider for zoom
+    if (e.touches.length === 2) {
+      return;
+    }
+
+    const touch = e.touches[0];
     const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
 
-    // Zoom step size
-    const zoomStep = 0.1;
-    const newScale = e.deltaY > 0
-      ? Math.max(0.5, scale - zoomStep)  // Zoom out, minimum 0.5x
-      : Math.min(3, scale + zoomStep);   // Zoom in, maximum 3x
+    const handle = getResizeHandle(x, y);
+    if (handle && handle !== 'move') {
+      // Only allow resize handles for rect mode, not 'move'
+      setResizeHandle(handle);
+      setIsDragging(true);
+      setDragStart({ x, y });
+      setOriginalCropArea({ ...cropArea });
+    } else {
+      // For clicking inside crop area or anywhere else, enable image panning
+      setIsDragging(true);
+      setDragStart({ x, y });
+      setResizeHandle(null); // null means image panning mode
+    }
+  };
 
-    if (newScale !== scale) {
-      // Calculate offset adjustment for zoom center point
-      const scaleChange = newScale / scale;
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-      setScale(newScale);
-      setOffset(prev => ({
-        x: mouseX - (mouseX - prev.x) * scaleChange,
-        y: mouseY - (mouseY - prev.y) * scaleChange
-      }));
+    // Pinch-to-zoom disabled - only use slider for zoom
+    if (e.touches.length === 2) {
+      return;
+    }
 
-      // Redraw canvas using cached image
+    if (!isDragging) return;
+
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    // If no resize handle, handle image dragging
+    if (!resizeHandle) {
+      const dx = x - dragStart.x;
+      const dy = y - dragStart.y;
+
+      const newOffset = {
+        x: offset.x + dx,
+        y: offset.y + dy
+      };
+      setOffset(newOffset);
+      setDragStart({ x, y });
+
+      // Redraw canvas using cached image with new offset
       const ctx = canvas.getContext('2d');
       if (!ctx || !loadedImageRef.current) return;
 
-      drawCanvas(ctx, loadedImageRef.current, cropArea);
+      drawCanvas(ctx, loadedImageRef.current, cropArea, scale, newOffset);
+      return;
     }
+
+    const dx = x - dragStart.x;
+    const dy = y - dragStart.y;
+
+    let newCropArea = { ...originalCropArea };
+
+    // Adjust crop area based on drag handle type
+    switch (resizeHandle) {
+      case 'move':
+        newCropArea.x = Math.max(0, Math.min(originalCropArea.x + dx, imgDimensions.width - originalCropArea.width));
+        newCropArea.y = Math.max(0, Math.min(originalCropArea.y + dy, imgDimensions.height - originalCropArea.height));
+        break;
+
+      case 'nw':
+        newCropArea.x = Math.max(0, originalCropArea.x + dx);
+        newCropArea.y = Math.max(0, originalCropArea.y + dy);
+        newCropArea.width = Math.max(50, originalCropArea.width - dx);
+        newCropArea.height = Math.max(50, originalCropArea.height - dy);
+        break;
+
+      case 'n':
+        newCropArea.y = Math.max(0, originalCropArea.y + dy);
+        newCropArea.height = Math.max(50, originalCropArea.height - dy);
+        break;
+
+      case 'ne':
+        newCropArea.y = Math.max(0, originalCropArea.y + dy);
+        newCropArea.width = Math.max(50, Math.min(originalCropArea.width + dx, imgDimensions.width - originalCropArea.x));
+        newCropArea.height = Math.max(50, originalCropArea.height - dy);
+        break;
+
+      case 'e':
+        newCropArea.width = Math.max(50, Math.min(originalCropArea.width + dx, imgDimensions.width - originalCropArea.x));
+        break;
+
+      case 'se':
+        newCropArea.width = Math.max(50, Math.min(originalCropArea.width + dx, imgDimensions.width - originalCropArea.x));
+        newCropArea.height = Math.max(50, Math.min(originalCropArea.height + dy, imgDimensions.height - originalCropArea.y));
+        break;
+
+      case 's':
+        newCropArea.height = Math.max(50, Math.min(originalCropArea.height + dy, imgDimensions.height - originalCropArea.y));
+        break;
+
+      case 'sw':
+        newCropArea.x = Math.max(0, originalCropArea.x + dx);
+        newCropArea.width = Math.max(50, originalCropArea.width - dx);
+        newCropArea.height = Math.max(50, Math.min(originalCropArea.height + dy, imgDimensions.height - originalCropArea.y));
+        break;
+
+      case 'w':
+        newCropArea.x = Math.max(0, originalCropArea.x + dx);
+        newCropArea.width = Math.max(50, originalCropArea.width - dx);
+        break;
+    }
+
+    // If aspect ratio is locked, adjust size to maintain proportions
+    if (aspectRatio && resizeHandle !== 'move') {
+      if (['nw', 'ne', 'se', 'sw'].includes(resizeHandle)) {
+        const widthChange = Math.abs(dx);
+        const heightChange = Math.abs(dy);
+
+        if (widthChange > heightChange) {
+          newCropArea.height = newCropArea.width / aspectRatio;
+        } else {
+          newCropArea.width = newCropArea.height * aspectRatio;
+        }
+
+        if (['nw', 'sw'].includes(resizeHandle)) {
+          const widthDiff = newCropArea.width - originalCropArea.width;
+          newCropArea.x = originalCropArea.x - widthDiff;
+        }
+
+        if (['nw', 'ne'].includes(resizeHandle)) {
+          const heightDiff = newCropArea.height - originalCropArea.height;
+          newCropArea.y = originalCropArea.y - heightDiff;
+        }
+      } else if (['n', 's'].includes(resizeHandle)) {
+        const newWidth = newCropArea.height * aspectRatio;
+        const widthDiff = newWidth - newCropArea.width;
+        newCropArea.x = Math.max(0, newCropArea.x - widthDiff / 2);
+        newCropArea.width = newWidth;
+      } else if (['e', 'w'].includes(resizeHandle)) {
+        const newHeight = newCropArea.width / aspectRatio;
+        const heightDiff = newHeight - newCropArea.height;
+        newCropArea.y = Math.max(0, newCropArea.y - heightDiff / 2);
+        newCropArea.height = newHeight;
+      }
+    }
+
+    // Ensure crop area stays within image bounds
+    newCropArea.x = Math.max(0, Math.min(newCropArea.x, imgDimensions.width - newCropArea.width));
+    newCropArea.y = Math.max(0, Math.min(newCropArea.y, imgDimensions.height - newCropArea.height));
+    newCropArea.width = Math.min(newCropArea.width, imgDimensions.width - newCropArea.x);
+    newCropArea.height = Math.min(newCropArea.height, imgDimensions.height - newCropArea.y);
+
+    setCropArea(newCropArea);
+
+    // Redraw canvas using cached image
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !loadedImageRef.current) return;
+
+    drawCanvas(ctx, loadedImageRef.current, newCropArea, scale, offset);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    setResizeHandle(null);
+    setLastPinchDistance(null);
+  };
+
+  // Handle mouse wheel - disabled, only use slider for zoom
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    // Zoom disabled - only use the slider below
   };
 
   // Handle image dragging (when not on a resize handle)
@@ -458,18 +626,18 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     const dx = x - dragStart.x;
     const dy = y - dragStart.y;
 
-    setOffset(prev => ({
-      x: prev.x + dx,
-      y: prev.y + dy
-    }));
-
+    const newOffset = {
+      x: offset.x + dx,
+      y: offset.y + dy
+    };
+    setOffset(newOffset);
     setDragStart({ x, y });
 
-    // Redraw canvas using cached image
+    // Redraw canvas using cached image with new offset
     const ctx = canvas.getContext('2d');
     if (!ctx || !loadedImageRef.current) return;
 
-    drawCanvas(ctx, loadedImageRef.current, cropArea);
+    drawCanvas(ctx, loadedImageRef.current, cropArea, scale, newOffset);
   };
 
   // Set cursor style based on mouse position
@@ -503,7 +671,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
       'move': 'move'
     };
 
-    canvas.style.cursor = handle ? cursors[handle] : 'grab';
+    canvas.style.cursor = handle ? (handle === 'move' ? 'grab' : cursors[handle]) : 'grab';
   };
 
   const handleCrop = async () => {
@@ -576,7 +744,14 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         'Ratio Match': Math.abs(aspectRatio - (outputWidth / outputHeight)) < 0.01 ? '✅' : '❌'
       });
 
+      // Clear canvas with transparent background
+      outputCtx.clearRect(0, 0, outputWidth, outputHeight);
+
       if (cropShape === 'circle') {
+        // For circle crop, fill with white background first to avoid black edges
+        outputCtx.fillStyle = '#ffffff';
+        outputCtx.fillRect(0, 0, outputWidth, outputHeight);
+
         // Circle crop
         outputCtx.beginPath();
         outputCtx.arc(outputWidth / 2, outputHeight / 2, Math.min(outputWidth, outputHeight) / 2, 0, 2 * Math.PI);
@@ -590,16 +765,18 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         0, 0, outputWidth, outputHeight
       );
 
-      // Convert to File object
+      // Convert to File object - use JPEG for better compatibility
+      const outputType = 'image/jpeg';
       outputCanvas.toBlob((blob) => {
         if (blob) {
-          const croppedFile = new File([blob], image.name, {
-            type: image.type,
+          const fileName = image.name.replace(/\.[^/.]+$/, '.jpg');
+          const croppedFile = new File([blob], fileName, {
+            type: outputType,
             lastModified: Date.now(),
           });
           onCrop(croppedFile);
         }
-      }, image.type, 0.95); // Improved compression quality
+      }, outputType, 0.95);
     };
 
     img.src = imageUrl;
@@ -613,7 +790,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         <div className="flex justify-center mb-4">
           <canvas
             ref={canvasRef}
-            className="border border-gray-300"
+            className="border border-gray-300 touch-none"
             onMouseDown={handleMouseDown}
             onMouseMove={(e) => {
               handleMouseHover(e);
@@ -622,32 +799,68 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
             onWheel={handleWheel}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
         </div>
 
-        <div className="text-sm text-gray-600 mb-4 text-center">
-          <div>🎯 Drag to move crop area</div>
-          <div>🖼️ Drag blank area to move image</div>
-          <div>📏 Drag corners to resize</div>
-          <div>🔍 Scroll wheel to zoom</div>
-          <div className="text-xs text-gray-500 mt-1">Zoom range: {scale.toFixed(1)}x (0.5x - 3.0x)</div>
-          {aspectRatio !== 1 && <div>🔒 Maintain {(() => {
-            // Display common aspect ratios nicely
-            if (Math.abs(aspectRatio - 16/9) < 0.01) return '16:9';
-            if (Math.abs(aspectRatio - 4/3) < 0.01) return '4:3';
-            if (Math.abs(aspectRatio - 3/2) < 0.01) return '3:2';
-            if (Math.abs(aspectRatio - 21/9) < 0.01) return '21:9';
-            return aspectRatio > 1 ? `${aspectRatio.toFixed(2)}:1` : `1:${(1/aspectRatio).toFixed(2)}`;
-          })()} aspect ratio</div>}
+        {/* Zoom Slider */}
+        <div className="flex items-center gap-3 mb-4 px-2">
+          <span className="text-sm text-gray-500">−</span>
+          <input
+            type="range"
+            min="0.5"
+            max="3"
+            step="0.1"
+            value={scale}
+            onChange={(e) => {
+              const newScale = parseFloat(e.target.value);
+              const canvas = canvasRef.current;
+              if (!canvas) return;
+
+              // Zoom towards center
+              const centerX = canvas.width / 2;
+              const centerY = canvas.height / 2;
+              const scaleRatio = newScale / scale;
+
+              const newOffset = {
+                x: centerX - (centerX - offset.x) * scaleRatio,
+                y: centerY - (centerY - offset.y) * scaleRatio
+              };
+              setOffset(newOffset);
+              setScale(newScale);
+
+              // Redraw canvas with new scale and offset
+              const ctx = canvas.getContext('2d');
+              if (ctx && loadedImageRef.current) {
+                drawCanvas(ctx, loadedImageRef.current, cropArea, newScale, newOffset);
+              }
+            }}
+            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red"
+          />
+          <span className="text-sm text-gray-500">+</span>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onCancel}>
+        <p className="text-xs text-gray-400 text-center mb-4">
+          Drag to move image • Use slider to zoom
+        </p>
+
+        <div className="flex justify-end gap-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-[50px] hover:bg-gray-100 transition-colors cursor-pointer [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base"
+          >
             Cancel
-          </Button>
-          <Button onClick={handleCrop}>
+          </button>
+          <button
+            type="button"
+            onClick={handleCrop}
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-red rounded-[50px] hover:bg-red/90 transition-colors cursor-pointer [font-family:'Lato',Helvetica] font-semibold text-white text-base"
+          >
             Confirm Crop
-          </Button>
+          </button>
         </div>
       </div>
     </div>

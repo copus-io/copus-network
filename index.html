@@ -1,24 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N340HSQBFW"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-N340HSQBFW');
+    </script>
+
     <meta charset="utf-8" />
-    <title>Copus - Internet Treasure Map!</title>
+    <title data-rh="true">Copus – Open-Web Curation & Creator Rewards</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="copus-human Internet - A decentralized social content platform" />
-    <meta name="keywords" content="copus, social, content, decentralized, blockchain, web3" />
-    <meta name="author" content="copus-human Internet Team" />
+    <meta name="description" content="Copus is an open-web curation network that rewards tastemakers for sharing valuable web content. A sustainable alternative to ads-based monetization." data-rh="true" />
+    <meta name="robots" content="index,follow" data-rh="true" />
+    <meta name="author" content="Copus Network" />
+    <meta name="language" content="en" />
+    <meta name="geo.region" content="US" />
+    <meta name="geo.placename" content="Global" />
+    <meta name="theme-color" content="#f23a00" />
+    <link rel="canonical" href="https://copus.network/" data-rh="true" />
+
+    <!-- Open Graph - data-rh allows React Helmet to replace on work pages -->
+    <meta property="og:type" content="website" data-rh="true" />
+    <meta property="og:site_name" content="Copus" data-rh="true" />
+    <meta property="og:title" content="Copus – A New Business Model for the Open Web" data-rh="true" />
+    <meta property="og:description" content="Earn by curating the Internet's best content. Original creators get paid too." data-rh="true" />
+    <meta property="og:url" content="https://copus.network/" data-rh="true" />
+    <meta property="og:image" content="https://copus.network/og-image.jpg" data-rh="true" />
+    <meta property="og:image:width" content="1200" data-rh="true" />
+    <meta property="og:image:height" content="630" data-rh="true" />
+    <meta property="og:image:alt" content="Copus - Internet Treasure Map for Content Curation and Creator Rewards" data-rh="true" />
+    <meta property="og:locale" content="en_US" data-rh="true" />
+
+    <!-- Twitter Card - data-rh allows React Helmet to replace on work pages -->
+    <meta name="twitter:card" content="summary_large_image" data-rh="true" />
+    <meta name="twitter:site" content="@copus_network" data-rh="true" />
+    <meta name="twitter:creator" content="@copus_network" data-rh="true" />
+    <meta name="twitter:title" content="Earn by Curating the Open Web" data-rh="true" />
+    <meta name="twitter:description" content="Collect, share, and reward creators for the content that makes the Internet worth exploring." data-rh="true" />
+    <meta name="twitter:image" content="https://copus.network/og-image.jpg" data-rh="true" />
+    <meta name="twitter:image:alt" content="Copus - Internet Treasure Map for Content Curation and Creator Rewards" data-rh="true" />
+
+    <!-- Enhanced Structured Data -->
+    <script type="application/ld+json">
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Copus",
+        "alternateName": "Copus Network",
+        "url": "https://copus.network/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://copus.network/logo.png",
+          "width": "400",
+          "height": "400"
+        },
+        "sameAs": ["https://copus.io"],
+        "description": "Copus is an open-web curation network that rewards tastemakers for sharing valuable content. A sustainable alternative to ads-based monetization.",
+        "foundingDate": "2024",
+        "slogan": "Internet Treasure Map - Rewarding Taste",
+        "knowsAbout": ["content curation", "creator rewards", "open web", "decentralized monetization"],
+        "areaServed": "Worldwide",
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Content Curation Services",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "name": "Content Curation",
+              "description": "Discover, collect and share valuable web content while earning rewards"
+            },
+            {
+              "@type": "Offer",
+              "name": "Creator Rewards",
+              "description": "Original content creators receive compensation when their content is shared"
+            }
+          ]
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Copus",
+        "url": "https://copus.network/",
+        "description": "Open-web curation network that rewards curators and creators",
+        "publisher": {
+          "@type": "Organization",
+          "name": "Copus"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://copus.network/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Copus",
+        "applicationCategory": "WebApplication",
+        "operatingSystem": "Any",
+        "description": "Web application for content curation with creator rewards",
+        "url": "https://copus.network/",
+        "author": {
+          "@type": "Organization",
+          "name": "Copus"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    ]
+    </script>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/favicon.png?v=2" />
     <link rel="apple-touch-icon" href="/favicon.png?v=2" />
 
-    <style>
-      @import url("https://fonts.googleapis.com/css?family=Lato:300,400,500,700,600|Maven+Pro:600");
-    </style>
-    <link href="tailwind.css" rel="stylesheet" />
+    <!-- Performance optimizations -->
+    <link rel="dns-prefetch" href="https://copus.network" />
+    <link rel="dns-prefetch" href="https://api-prod.copus.network" />
+    <link rel="dns-prefetch" href="https://api-test.copus.network" />
+
+    <!-- Preload critical fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&family=Maven+Pro:wght@600&display=swap" rel="stylesheet" />
+
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/logo.png" as="image" type="image/png" />
+    <link rel="preload" href="/og-image.jpg" as="image" type="image/jpeg" />
+
     <link href="tailwind.css" rel="stylesheet" />
   </head>
-  
+
   <body>
     <div id="app"></div>
     <script type="module" src="./src/index.tsx"></script>

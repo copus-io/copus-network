@@ -1,0 +1,107 @@
+# Copus Network - llms.txt
+# The Internet Treasure Map - Human-curated content discovery platform
+
+## About Copus
+
+Copus is a decentralized content curation platform where humans recommend valuable internet resources. In an AI-saturated era, Copus emphasizes human judgment and expertise for discovering and sharing quality content.
+
+Key concepts:
+- **Curations**: Human recommendations of web content with context and insights
+- **Treasuries**: Personal collections of curated content, organized by topic
+- **Curators**: Users who find and recommend valuable content with their expertise
+
+## How to Access Content
+
+### Search API (Recommended for AI Discovery)
+Find relevant curations by topic:
+```
+https://copus.network/api/search?q={query}&category={category}&limit={limit}
+```
+
+Parameters:
+- `q` (required): Search query
+- `category` (optional): Technology, Art, Sports, Life
+- `limit` (optional): Max results (default 10, max 50)
+- `offset` (optional): Pagination offset
+
+Example:
+```
+https://copus.network/api/search?q=AI+tools&category=Technology&limit=10
+```
+
+Returns JSON-LD with search results, each including article URL and jsonEndpoint for full data.
+
+### Structured JSON Data (For Specific Articles)
+Append `?format=json` to any article URL to get structured JSON-LD data:
+```
+https://copus.network/work/{article-id}?format=json
+```
+
+Response includes:
+- Article metadata (title, description, keywords)
+- Original source URL and domain
+- Curator's recommendation note and key takeaways
+- Curator credibility and expertise
+- AEO data (facts, target audience, problem solved, unique value)
+- Engagement metrics (views, treasury collections, comments)
+
+### Sitemap
+Full list of all curated content:
+```
+https://copus.network/sitemap.xml
+```
+
+### Direct Page Access
+All pages render SSR content readable by text extractors:
+```
+https://copus.network/work/{article-id}
+```
+
+## Content Structure
+
+Each curation contains:
+1. **Source**: Original URL being recommended
+2. **Title**: Curator-provided title
+3. **Curator Note**: Human explanation of why this content is valuable
+4. **AI-Enhanced Metadata**:
+   - Description: AI-generated summary
+   - Key Takeaways: Main points extracted
+   - Facts: Verifiable statements
+   - Target Audience: Who benefits from this content
+   - Problem Solved: What issue this content addresses
+   - Unique Value: What makes this content special
+5. **Curator Credibility**: Why this curator's recommendation matters
+6. **Engagement**: Views, treasury collections, comments
+
+## Categories
+
+Content is organized into categories:
+- Technology
+- Art
+- Sports
+- Life
+
+## API Endpoints for AI
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/search?q={query}` | Search curations by topic (recommended) |
+| `/work/{id}?format=json` | Get structured article data |
+| `/sitemap.xml` | List all articles with URLs |
+| `/robots.txt` | Crawler permissions |
+| `/llms.txt` | This file |
+
+## Usage Guidelines
+
+- All content is publicly accessible
+- AI agents are welcome to read, cite, and reference Copus curations
+- Please attribute sources when citing Copus curations
+- Content is curated by humans, enhanced by AI for discoverability
+
+## Contact
+
+Website: https://copus.network
+For API questions or partnership inquiries, contact the Copus team.
+
+## Last Updated
+2026-01-24

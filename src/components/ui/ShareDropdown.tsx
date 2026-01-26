@@ -15,7 +15,9 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const shareUrl = url || window.location.href;
+  // Always use clean URL without query parameters for sharing
+  const baseUrl = url || window.location.href;
+  const shareUrl = baseUrl.split('?')[0]; // Strip all query parameters
   const { showToast } = useToast();
 
   // Close dropdown when clicking outside
@@ -66,20 +68,20 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
         onClick={handleShareClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0"
-        style={{
-          background: isHovered
-            ? 'linear-gradient(0deg, rgba(33, 145, 251, 0.2) 0%, rgba(33, 145, 251, 0.2) 100%), linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 1) 100%)'
-            : 'transparent'
-        }}
+        className="relative cursor-pointer transition-all duration-200 flex items-center justify-center p-0 hover:opacity-70"
         aria-label="Share"
         aria-expanded={isOpen}
       >
-        <img
-          className="w-[38px] h-[38px]"
-          alt="Share"
-          src="https://c.animaapp.com/5EW1c9Rn/img/share.svg"
-        />
+        <svg
+          width="25"
+          height="22"
+          viewBox="0 0 20 18"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M3.0243 18H13.96C15.6286 18 16.9843 16.5628 16.9843 14.7946C16.9843 14.5772 16.8186 14.4014 16.6129 14.4014C16.4086 14.4014 16.2414 14.5772 16.2414 14.7946C16.2414 16.1294 15.2186 17.2149 13.9586 17.2149H3.0243C1.7657 17.2149 0.74143 16.1294 0.74143 14.7946V3.2054C0.74143 1.872 1.7657 0.7865 3.0243 0.7865C3.23 0.7865 3.3957 0.6106 3.3957 0.3932C3.3957 0.1758 3.23 0 3.0243 0C1.3571 0 0 1.4372 0 3.2054V14.7946C0 16.5614 1.3571 17.9986 3.0243 17.9986V18Z" fill="#2191FB" />
+          <path d="M12.9586 0.1454V3.3245C8.3929 3.6083 5.4543 6.246 3.9814 11.3829L3.64 12.5695L4.5629 11.808C7.8043 9.1302 10.3343 8.1762 12.9586 8.6649V11.8938L20 6.0203L12.9586 0.1454ZM13.4071 7.9546C10.1471 7.2208 7.3114 8.7314 5.0757 10.4192C6.59 6.2529 9.24 4.2342 13.3414 4.0929L13.7 4.0805V1.764L18.8 6.0203L13.7 10.2752V8.0211L13.4071 7.9546Z" fill="#2191FB" />
+        </svg>
       </button>
 
       {isOpen && (

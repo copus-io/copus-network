@@ -1,5 +1,11 @@
 import { apiRequest } from './api';
 import { ArticleCategoryListResponse } from '../types/category';
+import {
+  UserInfo,
+  GetUserInfoOptions,
+  CachedUserInfo,
+  ApiUserInfoResponse
+} from '../types/user';
 
 export interface VerificationCodeParams {
   email: string;
@@ -602,10 +608,146 @@ export class AuthService {
     return this.metamaskLogin(address, signature, hasToken);
   }
 
+  // User info cache
+  private static userInfoCache = new Map<string, CachedUserInfo>();
+  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   /**
-   * Get user information
+   * Get user information with caching and error handling
    */
-  static async getUserInfo(token?: string): Promise<{
+  static async getUserInfo(options: GetUserInfoOptions = {}): Promise<UserInfo> {
+    const { forceRefresh = false, token } = options;
+    const cacheKey = token || 'default';
+
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.userInfoCache.get(cacheKey);
+      if (cached && Date.now() < cached.cacheExpiry) {
+        return {
+          id: cached.id,
+          username: cached.username,
+          namespace: cached.namespace,
+          email: cached.email,
+          bio: cached.bio,
+          faceUrl: cached.faceUrl,
+          coverUrl: cached.coverUrl,
+          walletAddress: cached.walletAddress,
+          loginType: cached.loginType
+        };
+      }
+    }
+
+    try {
+      const requestOptions: any = {
+        method: 'GET',
+        requiresAuth: true,
+      };
+
+      // If token is provided, add it to headers
+      if (token) {
+        requestOptions.headers = {
+          'Authorization': `Bearer ${token}`
+        };
+      }
+
+      const response: ApiUserInfoResponse = await apiRequest('/client/user/userInfo', requestOptions);
+
+      // Validate API response format
+      if (response.status !== 1 || !response.data) {
+        throw new Error(response.msg || 'Failed to fetch user information');
+      }
+
+      // Extract and validate user data
+      const userData = response.data;
+      const userInfo: UserInfo = {
+        id: userData.id || 0,
+        username: userData.username || '',
+        namespace: userData.namespace || '',
+        email: userData.email || '',
+        bio: userData.bio || '',
+        faceUrl: userData.faceUrl || '',
+        coverUrl: userData.coverUrl || '',
+        walletAddress: userData.walletAddress || '',
+        loginType: userData.loginType || 'email'
+      };
+
+      // Cache the result
+      const cachedInfo: CachedUserInfo = {
+        ...userInfo,
+        lastFetched: Date.now(),
+        cacheExpiry: Date.now() + this.CACHE_DURATION
+      };
+      this.userInfoCache.set(cacheKey, cachedInfo);
+
+      return userInfo;
+    } catch (error: any) {
+      // Enhanced error handling
+      const errorMessage = error?.response?.data?.msg ||
+                          error?.message ||
+                          'Failed to fetch user information';
+
+      console.error('getUserInfo error:', {
+        error: errorMessage,
+        token: token ? '[PROVIDED]' : '[DEFAULT]',
+        timestamp: new Date().toISOString()
+      });
+
+      // If it's an auth error, clear cache and let auth system handle it
+      if (error?.status === 401 || error?.status === 403) {
+        this.userInfoCache.delete(cacheKey);
+        throw error; // Re-throw auth errors for proper handling
+      }
+
+      // For other errors, try to return cached data if available
+      const cached = this.userInfoCache.get(cacheKey);
+      if (cached) {
+        console.warn('Using cached user info due to API error');
+        return {
+          id: cached.id,
+          username: cached.username,
+          namespace: cached.namespace,
+          email: cached.email,
+          bio: cached.bio,
+          faceUrl: cached.faceUrl,
+          coverUrl: cached.coverUrl,
+          walletAddress: cached.walletAddress,
+          loginType: cached.loginType
+        };
+      }
+
+      // If no cache available, throw the error
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Clear user info cache
+   */
+  static clearUserInfoCache(token?: string): void {
+    if (token) {
+      this.userInfoCache.delete(token);
+    } else {
+      this.userInfoCache.clear();
+    }
+  }
+
+  /**
+   * Preload user info (fire and forget)
+   */
+  static async preloadUserInfo(token?: string): Promise<void> {
+    try {
+      await this.getUserInfo({ token, forceRefresh: false });
+    } catch (error) {
+      // Silently ignore preload errors
+      console.debug('User info preload failed:', error);
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   * @deprecated Use getUserInfo(options) instead
+   */
+  static async getUserInfoLegacy(token?: string): Promise<{
     bio: string;
     coverUrl: string;
     email: string;
@@ -615,21 +757,17 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    const options: any = {
-      method: 'GET',
-      requiresAuth: true,
+    const userInfo = await this.getUserInfo({ token });
+    return {
+      bio: userInfo.bio,
+      coverUrl: userInfo.coverUrl,
+      email: userInfo.email,
+      faceUrl: userInfo.faceUrl,
+      id: userInfo.id,
+      namespace: userInfo.namespace,
+      username: userInfo.username,
+      walletAddress: userInfo.walletAddress
     };
-
-    // If token is provided, add it to headers
-    if (token) {
-      options.headers = {
-        'Authorization': `Bearer ${token}`
-      };
-    }
-
-    const response = await apiRequest('/client/user/userInfo', options);
-    // User information is in response.data
-    return response.data;
   }
 
   /**
@@ -734,6 +872,61 @@ export class AuthService {
 
       console.error('🔥 Extracted error message:', errorMessage);
       throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * 批量上传评论图片
+   * @param files 图片文件数组
+   * @returns Promise<string[]> 图片URL数组
+   */
+  static async uploadCommentImages(files: File[]): Promise<string[]> {
+    console.log('🔥 AuthService.uploadCommentImages starting batch upload:', {
+      fileCount: files.length,
+      files: files.map(file => ({
+        name: file.name,
+        size: (file.size / 1024).toFixed(2) + 'KB',
+        type: file.type
+      }))
+    });
+
+    if (files.length === 0) {
+      return [];
+    }
+
+    try {
+      // 并行上传所有图片
+      const uploadPromises = files.map(async (file, index) => {
+        console.log(`🔥 Uploading image ${index + 1}/${files.length}:`, {
+          name: file.name,
+          size: (file.size / 1024).toFixed(2) + 'KB'
+        });
+
+        const result = await this.uploadImage(file);
+
+        console.log(`🔥 Image ${index + 1} uploaded successfully:`, {
+          name: file.name,
+          url: result.url,
+          size: (file.size / 1024).toFixed(2) + 'KB'
+        });
+
+        return result.url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      console.log('🔥 All images uploaded successfully:', {
+        count: urls.length,
+        totalSize: (totalSize / 1024 / 1024).toFixed(2) + 'MB',
+        urls: urls
+      });
+
+      return urls;
+
+    } catch (error) {
+      console.error('🔥 Batch image upload failed:', error);
+      throw error;
     }
   }
 
@@ -865,36 +1058,11 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    // Check if user has token for personalized data
-    const token = localStorage.getItem('copus_token');
-    const hasValidToken = token && token.trim() !== '';
 
-    if (hasValidToken) {
-      // With token: get personalized treasury info
-      return apiRequest('/client/userHome/userInfo', {
-        method: 'GET',
-        requiresAuth: true,
-      });
-    } else {
-      // Without token: return default empty data
-      console.log('📝 No token found, returning default treasury info');
-      return {
-        bio: '',
-        coverUrl: '',
-        email: '',
-        faceUrl: '',
-        id: 0,
-        namespace: '',
-        socialLinks: [],
-        statistics: {
-          articleCount: 0,
-          likedArticleCount: 0,
-          myArticleLikedCount: 0
-        },
-        username: '',
-        walletAddress: ''
-      };
-    }
+    return apiRequest('/client/myHome/userInfo', {
+      method: 'GET',
+      requiresAuth: true,
+    });
   }
 
   /**
@@ -1468,34 +1636,72 @@ export class AuthService {
   }
 
   /**
-   * Get unread message count
+   * Get detailed unread message counts from API
    */
-  static async getUnreadMessageCount(): Promise<number> {
+  static async getUnreadMessageCounts(): Promise<{
+    commentCount: number;
+    earningCount: number;
+    totalCount: number;
+    treasureCount: number;
+  }> {
 
     try {
+      // Note: requiresAuth is true so that 403 errors will clear the stale token and log out the user
+      // The NotificationContext already checks for token presence before calling this
       const response = await apiRequest('/client/user/msg/countMsg', {
         method: 'GET',
         requiresAuth: true,
       });
 
+      // Handle new detailed response format
+      if (response && typeof response === 'object') {
+        // New format: { commentCount, earningCount, totalCount, treasureCount }
+        if ('commentCount' in response && 'earningCount' in response &&
+            'totalCount' in response && 'treasureCount' in response) {
+          return {
+            commentCount: response.commentCount || 0,
+            earningCount: response.earningCount || 0,
+            totalCount: response.totalCount || 0,
+            treasureCount: response.treasureCount || 0,
+          };
+        }
 
-      // Handle different API response formats
-      if (typeof response === 'number') {
-        // Return number directly
-        return response;
-      } else if (response.data !== undefined && typeof response.data === 'number') {
-        // Data wrapped in data field
-        return response.data;
-      } else if (response.status === 1 && response.data !== undefined) {
-        // Standard response format: {status: 1, data: number, msg: "..."}
-        return typeof response.data === 'number' ? response.data : 0;
-      } else if (response.count !== undefined && typeof response.count === 'number') {
-        // Possible field name: count
-        return response.count;
+        // Handle wrapped response format
+        if (response.data && typeof response.data === 'object' && 'commentCount' in response.data) {
+          const data = response.data;
+          return {
+            commentCount: data.commentCount || 0,
+            earningCount: data.earningCount || 0,
+            totalCount: data.totalCount || 0,
+            treasureCount: data.treasureCount || 0,
+          };
+        }
+
+        // Legacy format handling: single number
+        if (typeof response === 'number') {
+          return {
+            commentCount: 0,
+            earningCount: 0,
+            totalCount: response,
+            treasureCount: 0,
+          };
+        } else if (response.data !== undefined && typeof response.data === 'number') {
+          return {
+            commentCount: 0,
+            earningCount: 0,
+            totalCount: response.data,
+            treasureCount: 0,
+          };
+        }
       }
 
-      // If none match, return 0
-      return 0;
+      // Default empty counts
+      return {
+        commentCount: 0,
+        earningCount: 0,
+        totalCount: 0,
+        treasureCount: 0,
+      };
     } catch (error) {
       console.error('❌ Failed to get unread message count:', error);
       
@@ -1510,8 +1716,21 @@ export class AuthService {
         }
       }
       
-      return 0; // Return 0 on error, don't affect normal page display
+      return {
+        commentCount: 0,
+        earningCount: 0,
+        totalCount: 0,
+        treasureCount: 0,
+      }; // Return empty counts on error, don't affect normal page display
     }
+  }
+
+  /**
+   * Get total unread message count (backward compatibility)
+   */
+  static async getUnreadMessageCount(): Promise<number> {
+    const counts = await this.getUnreadMessageCounts();
+    return counts.totalCount;
   }
 
   /**
@@ -1689,6 +1908,176 @@ export class AuthService {
         requiresAuth: false,
       });
     }
+  }
+
+  /**
+   * Get user's spaces (treasuries) using pageMySpaces API
+   * @param targetUserId - Required target user ID
+   * @param pageIndex - Optional page number (default: 1)
+   * @param pageSize - Optional page size (default: 20)
+   */
+  static async getMySpaces(targetUserId: number, pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    const params = new URLSearchParams({
+      targetUserId: targetUserId.toString(),
+      pageIndex: pageIndex.toString(),
+      pageSize: pageSize.toString(),
+    });
+    return apiRequest(`/client/userHome/pageMySpaces?${params.toString()}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get space info by namespace
+   * @param namespace - Space namespace identifier
+   */
+  static async getSpaceInfo(namespace: string): Promise<any> {
+    return apiRequest(`/client/article/space/info/${namespace}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get space articles by spaceId (paginated)
+   * @param spaceId - Required space ID
+   * @param pageIndex - Optional page number (default: 1)
+   * @param pageSize - Optional page size (default: 20)
+   */
+  static async getSpaceArticles(spaceId: number, pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    const params = new URLSearchParams({
+      spaceId: spaceId.toString(),
+      pageIndex: pageIndex.toString(),
+      pageSize: pageSize.toString(),
+    });
+    return apiRequest(`/client/article/space/pageArticles?${params.toString()}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get spaces that contain a specific article
+   * @param articleId - The article ID (from article.id field)
+   */
+  static async getSpacesByArticleId(articleId: number): Promise<any> {
+    return apiRequest(`/client/article/bind/spacesByArticleId/${articleId}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get user's bindable spaces for collecting an article
+   * Returns spaces with isBind flag indicating if article is already bound
+   * @param articleId - Optional article ID to check binding status for each space
+   * @returns Array of spaces with articleCount, data, id, isBind, name, namespace, spaceType, userId
+   */
+  static async getBindableSpaces(articleId?: number): Promise<any> {
+    // Build query parameters
+    let url = '/client/article/bind/bindableSpaces';
+    if (articleId) {
+      url += `?id=${articleId}`;
+    }
+
+    return apiRequest(url, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Create a new space/treasury
+   * @param name - The name of the new space
+   * @param description - Optional description for the space
+   * @param coverUrl - Optional cover image URL for the space
+   * @returns The created space object with id, name, namespace, spaceType, userId, etc.
+   */
+  static async createSpace(name: string, description?: string, coverUrl?: string): Promise<any> {
+    return apiRequest(`/client/article/space/create`, {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        ...(description && { description }),
+        ...(coverUrl && { coverUrl })
+      }),
+    });
+  }
+
+  /**
+   * Update a space/treasury
+   * API: POST /client/article/space/update
+   * @param id - The space ID
+   * @param name - The new name for the space
+   * @param description - Optional new description for the space
+   * @param coverUrl - Optional new cover image URL for the space
+   */
+  static async updateSpace(id: number, name: string, description?: string, coverUrl?: string): Promise<any> {
+    return apiRequest(`/client/article/space/update`, {
+      method: 'POST',
+      body: JSON.stringify({
+        id,
+        name,
+        ...(description !== undefined && { description }),
+        ...(coverUrl !== undefined && { coverUrl })
+      }),
+    });
+  }
+
+  /**
+   * Delete a space/treasury
+   * API: POST /client/article/space/delete
+   * @param id - The space ID to delete
+   */
+  static async deleteSpace(id: number): Promise<any> {
+    return apiRequest(`/client/article/space/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  /**
+   * Bind an article to one or more spaces/treasuries
+   * @param articleId - The article ID (numeric ID from article.id field)
+   * @param spaceIds - Array of space IDs to bind the article to
+   */
+  static async bindArticles(articleId: number, spaceIds: number[]): Promise<any> {
+    return apiRequest(`/client/article/bind/bindArticles`, {
+      method: 'POST',
+      body: JSON.stringify({ articleId, spaceIds }),
+    });
+  }
+
+  /**
+   * Follow a space/treasury
+   * API: POST /client/article/space/follow
+   * @param id - The space ID to follow
+   */
+  static async followSpace(id: number): Promise<any> {
+    return apiRequest(`/client/article/space/follow`, {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  /**
+   * Get list of followed spaces
+   * API: GET /client/article/space/myFollowedSpaces
+   */
+  static async getFollowedSpaces(): Promise<any> {
+    return apiRequest(`/client/article/space/myFollowedSpaces`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Get articles from followed spaces (paginated)
+   * API: GET /client/article/space/pageMyFollowedArticle
+   * @param pageIndex - Page number (default 1)
+   * @param pageSize - Page size (default 20)
+   */
+  static async getFollowedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+    return apiRequest(`/client/article/space/pageMyFollowedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
   }
 
 }

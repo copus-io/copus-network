@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface TreasureButtonProps {
   isLiked: boolean;
@@ -17,25 +17,27 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
   className = '',
   disabled = false
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   // Set styles based on size
   const sizeStyles = {
     small: {
       container: 'gap-1 p-1',
-      icon: 'w-[11px] h-4',
-      text: 'text-sm',
-      background: 'w-[11px] h-4'
+      icon: 'w-[10px] h-[14px]',
+      text: 'text-[12px]',
+      background: 'w-[10px] h-[14px]'
     },
     medium: {
-      container: 'gap-2 p-1',
-      icon: 'w-[13px] h-5',
-      text: 'text-base',
-      background: 'w-[13px] h-5'
+      container: 'gap-1.5 p-1',
+      icon: 'w-[11px] h-4',
+      text: 'text-[13px]',
+      background: 'w-[11px] h-4'
     },
     large: {
       container: 'gap-[10px] px-[15px] py-2',
-      icon: 'w-3.5 h-[22px]',
+      icon: 'w-[18px] h-[22px]',
       text: 'text-lg',
-      background: 'w-3.5 h-[22px]'
+      background: 'w-[18px] h-[22px]'
     }
   };
 
@@ -53,17 +55,28 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
     return safeCount.toString();
   };
 
+  // Get background color for large size button - use light transparent yellow for both hover and liked states
+  const largeButtonBg = (isLiked || isHovered)
+    ? 'rgba(225, 158, 29, 0.2)'
+    : 'white';
+
   return (
     <button
       className={`
         inline-flex items-center transition-all duration-200 group
         ${size === 'large'
-          ? `h-[38px] rounded-[100px] gap-[10px] px-5 py-2 border border-solid border-[#e19e1d] hover:bg-[#e19e1d] ${isLiked ? 'bg-[#e19e1d]' : 'bg-white'}`
+          ? 'h-[38px] rounded-[100px] gap-1.5 lg:gap-[10px] px-3 lg:px-5 py-2 border border-solid border-[#e19e1d]'
           : `rounded-lg hover:bg-gray-100 ${currentSize.container}`
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         ${className}
       `}
+      style={size === 'large' ? {
+        backgroundColor: largeButtonBg,
+        transition: 'background-color 200ms ease'
+      } : undefined}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       onClick={!disabled ? onClick : undefined}
       disabled={disabled}
       aria-label={`${isLiked ? 'Remove from treasury' : 'Add to treasury'}, ${likesCount} treasures`}
@@ -82,9 +95,8 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
           src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
           style={
             size === 'large' ? {
-              filter: isLiked
-                ? 'brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(93deg) brightness(103%) contrast(103%)'
-                : 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
+              // Always use yellow icon for large size (both liked and not liked)
+              filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
             } : (isLiked ? {
               filter: 'brightness(0) saturate(100%) invert(57%) sepia(85%) saturate(1274%) hue-rotate(18deg) brightness(92%) contrast(89%)'
             } : {
@@ -92,20 +104,6 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
             })
           }
         />
-        {/* White icon overlay for hover effect - only for large size */}
-        {size === 'large' && !isLiked && (
-          <img
-            className={`
-              absolute top-0 left-0 transition-opacity duration-200 opacity-0 group-hover:opacity-100 z-20
-              ${currentSize.icon}
-            `}
-            alt="Treasure icon hover"
-            src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
-            style={{
-              filter: 'brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(93deg) brightness(103%) contrast(103%)'
-            }}
-          />
-        )}
         {/* Yellow hover overlay for small/medium sizes */}
         {size !== 'large' && !isLiked && (
           <img
@@ -125,15 +123,14 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       {/* Like count text */}
       <span
         className={`
-          [font-family:'Lato',Helvetica] font-normal text-center tracking-[0] leading-[20.8px]
+          [font-family:'Lato',Helvetica] font-bold text-center tracking-[0] leading-[16px]
           ${currentSize.text}
           ${size === 'large'
-            ? (isLiked ? 'text-white group-hover:text-white' : 'text-[#e19e1d] group-hover:text-white')
+            ? 'text-[#e19e1d]'
             : 'text-[#696969]'
           }
           transition-colors duration-200
         `}
-        style={{ fontSize: '1rem' }}
       >
         {formatCount(likesCount)}
       </span>

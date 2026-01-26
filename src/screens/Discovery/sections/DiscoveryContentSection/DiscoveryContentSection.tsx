@@ -18,7 +18,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState<{ id: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; numericId: number; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
   // Welcome guide display state management
   const [showWelcomeGuide, setShowWelcomeGuide] = React.useState(false);
@@ -82,28 +82,10 @@ export const DiscoveryContentSection = (): JSX.Element => {
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
 
 
-  // Ensure data refresh each time page is entered or regains focus
-  React.useEffect(() => {
-    const handleFocus = () => {
-      refresh();
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        refresh();
-      }
-    };
-
-    // Listen to window focus event
-    window.addEventListener('focus', handleFocus);
-    // Listen to page visibility change
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [refresh]); // Add refresh dependency, but remove refresh call on page load
+  // Note: Removed auto-refresh on focus/visibility change to prevent
+  // unwanted API calls when navigating between pages. The useArticles hook
+  // already fetches data on initial mount, and users can manually refresh
+  // by scrolling to load more or reloading the page.
 
   // Scroll to load more logic
   React.useEffect(() => {
@@ -127,71 +109,35 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Render different guide content based on user login status
   const renderGuideContent = () => {
-    if (user) {
-      // Logged-in users: functional guidance
-      return (
-        <>
-          <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus!
-          </h1>
-          <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
-            <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Discover Internet gems hand-picked by people. No algorithmic feeds here.
-              </span>
-            </p>
-            <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Click "Curate" (top-right) to share your finds.
-              </span>
-            </p>
-            {!isExtensionInstalled && (
-              <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-                <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                  <a
-                    href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb?authuser=5&hl=en"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#2191FB] hover:underline cursor-pointer font-normal"
-                  >
-                    Install our browser extension
-                  </a>{' '}
-                  to easily save and share content while browsing.
-                </span>
-              </p>
-            )}
-          </div>
-        </>
-      );
-    } else {
-      // Guest users: platform introduction (using English, maintaining same styling)
-      return (
-        <>
-          <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus!
-          </h1>
-          <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
-            <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                Today's Internet is noisy, meaning gets lost.
-              </span>
-            </p>
-            <p className="text-dark-grey text-lg leading-[27px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-lg tracking-[0] leading-[27px]">
-                We value human agency and power it with an x402-based economic engine that rewards quality sharing and creation.{' '}
-                <button
-                  onClick={() => navigate('/login')}
-                  className="text-[#2191FB] hover:underline cursor-pointer font-normal"
-                >
-                  Join us
-                </button>{' '}
-                to weave a new internet: our collective opus. :)
-              </span>
-            </p>
-          </div>
-        </>
-      );
-    }
+    // Same welcome content for both logged-in and guest users
+    return (
+      <>
+        <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+          Welcome to Copus!
+        </h1>
+        <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
+          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+              Copus is an open curation space where people share links to meaningful content they find online, along with a short reflection.
+            </span>
+          </p>
+          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+              You can subscribe to people whose taste you trust, or use the{' '}
+              <a
+                href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#2191FB] hover:underline cursor-pointer font-normal"
+              >
+                browser extension
+              </a>{' '}
+              to collect and share as you browse :)
+            </span>
+          </p>
+        </div>
+      </>
+    );
   };
 
   // Sync local article state and like status
@@ -227,6 +173,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       date: article.date,
       treasureCount: article.treasureCount,
       visitCount: `${article.visitCount || 0}`,
+      commentCount: article.commentCount || 0,
       isLiked: article.isLiked, // Use actual like status returned from server
       targetUrl: article.url,
       website: article.website,
@@ -253,7 +200,8 @@ export const DiscoveryContentSection = (): JSX.Element => {
     const article = localArticles.find(a => a.id === articleId);
     if (article) {
       setSelectedArticle({
-        id: articleId,
+        uuid: articleId, // This is actually the UUID
+        numericId: article.numericId, // Numeric ID for bindArticles API
         title: article.title,
         isLiked: currentIsLiked,
         likeCount: currentLikeCount
@@ -262,29 +210,16 @@ export const DiscoveryContentSection = (): JSX.Element => {
     }
   };
 
-  // Handle collect from modal
-  const handleCollect = async (articleId: string, spaceCategory: string, isNewSpace: boolean) => {
+  // Handle successful collection - update local state
+  const handleCollectSuccess = () => {
     if (!selectedArticle) return;
 
-    // Perform the like action (this adds to treasury)
-    await toggleLike(articleId, selectedArticle.isLiked, selectedArticle.likeCount);
+    // Update like state locally
+    const newLikeCount = selectedArticle.likeCount + 1;
+    updateArticleLikeState(selectedArticle.uuid, true, newLikeCount);
 
     // Update selectedArticle state to reflect the change
-    setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: prev.likeCount + 1 } : null);
-
-    // Note: In a real implementation, you might want to also save the space/category association
-    // For now, the like action adds to the user's general treasury
-  };
-
-  // Handle uncollect from modal
-  const handleUncollect = async (articleId: string) => {
-    if (!selectedArticle) return;
-
-    // Perform the unlike action (this removes from treasury)
-    await toggleLike(articleId, true, selectedArticle.likeCount);
-
-    // Update selectedArticle state to reflect the change
-    setSelectedArticle(prev => prev ? { ...prev, isLiked: false, likeCount: Math.max(0, prev.likeCount - 1) } : null);
+    setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
   };
 
   // Handle user click
@@ -301,6 +236,11 @@ export const DiscoveryContentSection = (): JSX.Element => {
       // Fallback to using userId
       navigate(`/user/${userId}/treasury`);
     }
+  };
+
+  // Handle comment navigation
+  const handleComment = (articleId: string, articleUuid?: string) => {
+    navigate(`/work/${articleUuid || articleId}?comments=open`);
   };
 
   const renderPostCard = (post: Article, index: number) => {
@@ -331,6 +271,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             showVisits: true
           }}
           onLike={handleLike}
+          onComment={handleComment}
           onUserClick={handleUserClick}
         />
       </div>
@@ -364,7 +305,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
   }
 
   return (
-    <main className="flex flex-col items-start gap-10 py-0 relative flex-1">
+    <main className="flex flex-col items-start gap-5 py-0 relative flex-1">
       {/* Welcome Guide Bar - Display different content based on login status */}
       {showWelcomeGuide && (
         <section className="mx-4 sm:mx-0 pl-4 sm:pl-[30px] pr-4 py-4 sm:py-[30px] rounded-lg border-l-[3px] [border-left-style:solid] border-red shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-start gap-[15px] relative w-auto sm:w-full min-h-fit overflow-hidden">
@@ -413,7 +354,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
           </div>
         </section>
       ) : (
-        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(408px,1fr))] gap-4 lg:gap-8">
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-4 lg:pl-[15px] lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] 3xl:grid-cols-[repeat(auto-fill,minmax(320px,1fr))] 4xl:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] 5xl:grid-cols-[repeat(auto-fill,minmax(420px,1fr))] gap-4 lg:gap-6 3xl:gap-8 4xl:gap-10 5xl:gap-12 relative z-10">
           {localArticles.map((post, index) => renderPostCard(post, index))}
         </section>
       )}
@@ -440,11 +381,11 @@ export const DiscoveryContentSection = (): JSX.Element => {
             setCollectModalOpen(false);
             setSelectedArticle(null);
           }}
-          articleId={selectedArticle.id}
+          articleId={selectedArticle.uuid}
+          articleNumericId={selectedArticle.numericId}
           articleTitle={selectedArticle.title}
           isAlreadyCollected={selectedArticle.isLiked}
-          onCollect={handleCollect}
-          onUncollect={handleUncollect}
+          onCollectSuccess={handleCollectSuccess}
         />
       )}
     </main>

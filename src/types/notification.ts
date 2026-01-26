@@ -1,6 +1,6 @@
 export interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'system';
+  type: 'comment' | 'follow' | 'system' | 'treasury' | 'mention' | 'follow_treasury' | 'comment_reply' | 'comment_like' | 'unlock' | 'collect';
   title: string;
   message: string;
   avatar?: string;
@@ -8,12 +8,19 @@ export interface Notification {
   isRead: boolean;
   actionUrl?: string;
   metadata?: {
-    articleId?: string;
-    userId?: string;
-    commentId?: string;
     senderId?: string;
     senderUsername?: string;
     senderNamespace?: string;
+    targetId?: string;
+    targetUuid?: string;
+    targetType?: 'article' | 'treasury' | 'comment' | 'user';
+    targetTitle?: string;
+    actionType?: string;
+    extra?: Record<string, any>;
+    // Legacy fields for backward compatibility
+    articleId?: string;
+    userId?: string;
+    commentId?: string;
     articleUuid?: string;
   };
 }
@@ -21,11 +28,17 @@ export interface Notification {
 export interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
+  unreadCounts: {
+    commentCount: number;
+    earningCount: number;
+    totalCount: number;
+    treasureCount: number;
+  };
   isLoading: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
   currentPage: number;
-  fetchNotifications: (page?: number, pageSize?: number, msgType?: number, append?: boolean) => Promise<void>;
+  fetchNotifications: (page?: number, pageSize?: number, filters?: any, append?: boolean) => Promise<void>;
   loadMoreNotifications: () => Promise<void>;
   fetchUnreadCount: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;

@@ -1,0 +1,363 @@
+// Comment Image Uploader V2 - 改进的用户体验版本
+
+import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
+import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from '../../utils/imageUtils';
+import { useImagePreview } from '../../contexts/ImagePreviewContext';
+
+interface CommentImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  uploadUrl?: string;
+  isUploading?: boolean;
+  error?: string;
+  status: 'pending' | 'processing' | 'success' | 'error';
+  originalSize?: number;
+  finalSize?: number;
+}
+
+interface CommentImageUploaderProps {
+  maxImages?: number;
+  onImagesChange: (images: CommentImage[]) => void;
+  onUploadStart?: () => void;
+  onUploadComplete?: (images: CommentImage[]) => void;
+  onError?: (error: string) => void;
+  disabled?: boolean;
+  className?: string;
+}
+
+export interface CommentImageUploaderRef {
+  triggerFileSelect: () => void;
+  clearImages: () => void;
+}
+
+export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, CommentImageUploaderProps>(({
+  maxImages = 9,
+  onImagesChange,
+  onUploadStart,
+  onUploadComplete,
+  onError,
+  disabled = false,
+  className = ''
+}, ref) => {
+
+  const [images, setImages] = useState<CommentImage[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { openPreview } = useImagePreview();
+
+  // 清理所有图片和状态
+  const clearAllImages = () => {
+    // 清理所有预览URL，防止内存泄漏
+    images.forEach(image => {
+      if (image.previewUrl) {
+        revokeImagePreview(image.previewUrl);
+      }
+    });
+
+    // 重置状态
+    setImages([]);
+    setIsProcessing(false);
+
+    // 重置文件输入
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    // 通知父组件
+    onImagesChange([]);
+
+    console.log('🧹 图片缓存已清理');
+  };
+
+  // 组件卸载时清理所有图片URL，防止内存泄漏
+  useEffect(() => {
+    return () => {
+      // 清理所有预览URL
+      images.forEach(image => {
+        if (image.previewUrl) {
+          revokeImagePreview(image.previewUrl);
+        }
+      });
+    };
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    triggerFileSelect: () => {
+      fileInputRef.current?.click();
+    },
+    clearImages: clearAllImages
+  }), [images, onImagesChange]);
+
+  // 🎯 智能文件预处理
+  const preprocessFiles = (files: File[]) => {
+    const result = {
+      valid: [] as File[],
+      oversized: [] as File[],
+      invalid: [] as { file: File; reason: string }[]
+    };
+
+    files.forEach(file => {
+      const validation = validateImageFile(file);
+
+      if (!validation.isValid) {
+        result.invalid.push({
+          file,
+          reason: validation.error || '文件格式不支持'
+        });
+      } else if (file.size > 10 * 1024 * 1024) {  // 10MB - 极限大小
+        result.invalid.push({
+          file,
+          reason: '文件太大 (>10MB)，无法处理'
+        });
+      } else if (file.size > 3 * 1024 * 1024) {  // 3MB - 需要积极压缩
+        result.oversized.push(file);
+      } else {
+        result.valid.push(file);
+      }
+    });
+
+    return result;
+  };
+
+  // 🚀 智能压缩策略
+  const getCompressionStrategy = (file: File) => {
+    const sizeInMB = file.size / (1024 * 1024);
+
+    if (sizeInMB > 5) {
+      return {
+        maxWidth: 600,
+        maxHeight: 450,
+        quality: 0.5,
+        format: 'webp' as const,
+        description: '积极压缩'
+      };
+    } else if (sizeInMB > 2) {
+      return {
+        maxWidth: 800,
+        maxHeight: 600,
+        quality: 0.65,
+        format: 'webp' as const,
+        description: '智能压缩'
+      };
+    } else {
+      return {
+        maxWidth: 800,
+        maxHeight: 600,
+        quality: 0.75,
+        format: 'webp' as const,
+        description: '标准压缩'
+      };
+    }
+  };
+
+  // 处理文件选择
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const remainingSlots = maxImages - images.length;
+    if (files.length > remainingSlots) {
+      onError?.(`最多只能上传${maxImages}张图片，当前还可添加${remainingSlots}张`);
+      return;
+    }
+
+    setIsProcessing(true);
+    onUploadStart?.();
+
+    // 🎯 预处理文件分类
+    const { valid, oversized, invalid } = preprocessFiles(files);
+    const allValidFiles = [...valid, ...oversized];
+
+    // 🔔 友好的提示信息
+    if (invalid.length > 0) {
+      const messages = invalid.map(item => `${item.file.name}: ${item.reason}`);
+      onError?.(`以下文件无法处理：\n${messages.join('\n')}`);
+    }
+
+    if (oversized.length > 0) {
+      console.log(`💡 检测到${oversized.length}个大文件，将使用智能压缩...`);
+    }
+
+    if (allValidFiles.length === 0) {
+      setIsProcessing(false);
+      return;
+    }
+
+    // 🎨 创建临时预览项，显示处理进度
+    const baseTimestamp = Date.now(); // 统一时间戳，避免ID不匹配
+    const tempImages: CommentImage[] = allValidFiles.map((file, index) => ({
+      id: `temp-${baseTimestamp}-${index}`,
+      file,
+      previewUrl: '',
+      status: 'pending',
+      originalSize: file.size
+    }));
+
+    const updatedTempImages = [...images, ...tempImages];
+    setImages(updatedTempImages);
+    onImagesChange(updatedTempImages);
+
+    // 🔄 逐个处理文件（更好的用户反馈）
+    const finalImages: CommentImage[] = [];
+
+    for (let i = 0; i < allValidFiles.length; i++) {
+      const file = allValidFiles[i];
+      const tempImageId = `temp-${baseTimestamp}-${i}`; // 使用统一的时间戳
+
+      try {
+        // 更新状态为处理中 - 基于当前状态
+        setImages(currentImages => {
+          const processingImages = currentImages.map(img =>
+            img.id === tempImageId
+              ? { ...img, status: 'processing' as const }
+              : img
+          );
+          onImagesChange(processingImages);
+          return processingImages;
+        });
+
+        const strategy = getCompressionStrategy(file);
+        console.log(`🖼️ 开始${strategy.description}图片 ${i + 1}/${allValidFiles.length}:`, {
+          originalName: file.name,
+          originalSize: (file.size / 1024 / 1024).toFixed(2) + 'MB',
+          strategy: strategy.description
+        });
+
+        const compressedFile = await compressImage(file, strategy);
+
+        console.log(`✅ 图片处理完成:`, {
+          compressedSize: (compressedFile.size / 1024 / 1024).toFixed(2) + 'MB',
+          compressionRatio: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%'
+        });
+
+        const imageId = `${baseTimestamp}-processed-${i}`;
+        const previewUrl = createImagePreview(compressedFile);
+
+        // 创建重命名的文件
+        const originalName = file.name.replace(/\.[^/.]+$/, '');
+        const finalFile = new File(
+          [compressedFile],
+          `${originalName}.webp`,
+          { type: 'image/webp', lastModified: Date.now() }
+        );
+
+        const processedImage: CommentImage = {
+          id: imageId,
+          file: finalFile,
+          previewUrl,
+          status: 'success',
+          originalSize: file.size,
+          finalSize: compressedFile.size
+        };
+
+        finalImages.push(processedImage);
+
+        // 更新为成功状态 - 基于当前状态而不是固定的 updatedTempImages
+        setImages(currentImages => {
+          const successImages = currentImages.map(img =>
+            img.id === tempImageId
+              ? processedImage
+              : img
+          );
+          onImagesChange(successImages);
+          return successImages;
+        });
+
+      } catch (error) {
+        console.error(`🖼️ 图片处理失败:`, error);
+
+        // 更新为错误状态 - 基于当前状态
+        setImages(currentImages => {
+          const errorImages = currentImages.map(img =>
+            img.id === tempImageId
+              ? { ...img, status: 'error' as const, error: '处理失败' }
+              : img
+          );
+          onImagesChange(errorImages);
+          return errorImages;
+        });
+      }
+    }
+
+    // 重置文件输入
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    setIsProcessing(false);
+    onUploadComplete?.(finalImages);
+  };
+
+  // 删除图片
+  const handleRemoveImage = (imageId: string) => {
+    const imageToRemove = images.find(img => img.id === imageId);
+    if (imageToRemove?.previewUrl) {
+      revokeImagePreview(imageToRemove.previewUrl);
+    }
+
+    const filteredImages = images.filter(img => img.id !== imageId);
+    setImages(filteredImages);
+    onImagesChange(filteredImages);
+  };
+
+  // 预览图片
+  const handleImageClick = (image: CommentImage) => {
+    if (image.status === 'success' && image.previewUrl) {
+      openPreview(image.previewUrl, image.file.name);
+    }
+  };
+
+  // 渲染状态指示器
+  const renderStatusIndicator = (image: CommentImage) => {
+    switch (image.status) {
+      case 'pending':
+        return (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="text-white text-xs">等待处理</div>
+          </div>
+        );
+      case 'processing':
+        return (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="absolute inset-0 bg-red-500 bg-opacity-80 flex items-center justify-center">
+            <div className="text-white text-xs text-center px-1">
+              ❌<br />处理失败
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className={className}>
+      {/* 隐藏的文件输入 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileSelect}
+        disabled={disabled || isProcessing}
+        className="hidden"
+      />
+
+      {/* 处理状态提示 */}
+      {isProcessing && (
+        <div className="text-xs text-gray-500 mb-2 flex items-center gap-2">
+          <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+          <span>Processing images...</span>
+        </div>
+      )}
+    </div>
+  );
+});
+
+export default CommentImageUploaderV2;

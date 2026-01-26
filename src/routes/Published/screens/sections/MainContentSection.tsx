@@ -74,7 +74,8 @@ export const MainContentSection = (): JSX.Element => {
       date: card.date,
       treasureCount: parseInt(card.treasures) || 0,
       visitCount: card.visits,
-      isLiked: card.hasLike,
+      commentCount: 0,
+      isLiked: card.hasLiked,
       targetUrl: `https://${card.url}`,
       website: card.url
     };
@@ -197,7 +198,7 @@ export const MainContentSection = (): JSX.Element => {
             >
               <div className="flex justify-center px-[15px] py-2.5 w-full items-center">
                 <span className="[font-family:'Lato',Helvetica] data-[state=active]:font-bold font-normal text-dark-grey text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
-                  My treasury collection
+                  Treasury collection
                 </span>
               </div>
             </TabsTrigger>
@@ -219,7 +220,7 @@ export const MainContentSection = (): JSX.Element => {
               className="w-full"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
                 gap: '2rem'
               }}
             >
@@ -245,7 +246,7 @@ export const MainContentSection = (): JSX.Element => {
               className="w-full"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
                 gap: '2rem'
               }}
             >

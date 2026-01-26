@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -11,11 +12,16 @@ import { ContentPageSkeleton } from "../../components/ui/skeleton";
 import { useArticleDetail } from "../../hooks/queries";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
+import { devLog } from "../../utils/devLogger";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
+import { CommentButton } from "../../components/ui/CommentButton";
 import { CollectTreasureModal } from "../../components/CollectTreasureModal";
+import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
+import { CommentSection } from "../../components/CommentSection";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
+import commentIcon from "../../assets/images/comment.svg";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
 import {
   generateNonce,
@@ -27,138 +33,14 @@ import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils'
 import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
+// SEO meta tags are now handled by Cloudflare Worker - see functions/work/[id].js
+import { UserCard } from '../../components/ui/UserCard';
 
-// Collection Card Component for "Collected in" section
-interface CollectionItem {
-  id: string;
-  title: string;
-  url: string;
-  coverImage: string;
-}
-
-const CollectionCard = ({
-  title,
-  treasureCount,
-  items,
-  onClick,
-}: {
-  title: string;
-  treasureCount: number;
-  items: CollectionItem[];
-  onClick?: () => void;
-}): JSX.Element => {
-  if (items.length === 0) {
-    return (
-      <section className="relative w-full h-fit flex flex-col items-start gap-[15px]">
-        <div className="flex h-[300px] items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-          <p className="text-gray-500">No items in this collection</p>
-        </div>
-        <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-7 whitespace-nowrap">
-            {title}
-          </h2>
-          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
-            {treasureCount} treasures
-          </p>
-        </header>
-      </section>
-    );
+// Debug logging helper - only logs in development mode
+const debugLog = (...args: any[]) => {
+  if (import.meta.env.DEV) {
+    console.log(...args);
   }
-
-  const [mainItem, ...sideItems] = items.slice(0, 3);
-
-  return (
-    <section
-      className="relative w-full h-fit flex flex-col items-start gap-[15px] cursor-pointer"
-      onClick={onClick}
-    >
-      <div className="flex h-[300px] items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow">
-        {/* Main item on the left */}
-        <article className="inline-flex flex-col items-start justify-center gap-[5px] px-[15px] py-0 relative self-stretch flex-[0_0_auto] rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-          <div
-            className="flex flex-col w-[320px] h-60 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
-            style={{ backgroundImage: `url(${mainItem.coverImage})` }}
-          >
-            <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-              <a
-                href={mainItem.url.startsWith('http') ? mainItem.url : `https://${mainItem.url}`}
-                className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-[#ffffffcc] rounded-[15px] overflow-hidden"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                  {mainItem.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]}
-                </span>
-              </a>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto]">
-            <h3 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 line-clamp-1">
-              {mainItem.title}
-            </h3>
-          </div>
-        </article>
-
-        {/* Side items on the right */}
-        {sideItems.length > 0 && (
-          <div className="flex flex-col items-start justify-center gap-1 relative flex-1 self-stretch grow rounded-[0px_15px_15px_0px]">
-            {sideItems.map((item, index) => (
-              <article
-                key={item.id}
-                className={`${
-                  index === 0 ? "h-[153px]" : "flex-1 grow"
-                } pl-0 pr-[15px] ${index === 0 ? "py-[15px]" : "py-0"} ${
-                  index === 0
-                    ? "rounded-[0px_15px_0px_0px]"
-                    : "rounded-[0px_0px_15px_0px]"
-                } flex flex-col items-start gap-[5px] relative self-stretch w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]`}
-              >
-                <div
-                  className="h-[98px] p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
-                  style={{ backgroundImage: `url(${item.coverImage})` }}
-                >
-                  <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-                    <a
-                      href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                      className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
-                        {item.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]}
-                      </span>
-                    </a>
-                  </div>
-                </div>
-
-                <div
-                  className={`flex flex-col items-start gap-[15px] ${
-                    index === 0 ? "mb-[-4.00px]" : ""
-                  } relative self-stretch w-full flex-[0_0_auto]`}
-                >
-                  <h3 className="relative self-stretch mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-6 line-clamp-1">
-                    {item.title}
-                  </h3>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-7 whitespace-nowrap">
-          {title}
-        </h2>
-        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[16px] tracking-[0] leading-6 whitespace-nowrap">
-          {treasureCount} treasures
-        </p>
-      </header>
-    </section>
-  );
 };
 
 // Helper function to get token information for payment requests
@@ -176,6 +58,12 @@ const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
   if (imageUrl.startsWith('blob:')) {
     // Return placeholder as blob URLs are invalid after page refresh
     return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5VcGxvYWRlZCBJbWFnZTwvdGV4dD48L3N2Zz4=';
+  }
+
+  // Fix malformed extensions like '.svg+xml' -> '.svg'
+  // This can happen when MIME type 'image/svg+xml' is incorrectly used as extension
+  if (imageUrl.endsWith('+xml')) {
+    imageUrl = imageUrl.replace(/\+xml$/, '');
   }
 
   // Check if it's a valid HTTP/HTTPS URL
@@ -197,11 +85,15 @@ export const Content = (): JSX.Element => {
   const location = useLocation();
   const { user, getArticleLikeState, updateArticleLikeState, login, fetchUserInfo } = useUser();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
+
+  // User spaces state for hover card
+  const [userSpaces, setUserSpaces] = useState<SpaceData[]>([]);
 
   // ========================================
   // x402 Payment Protocol State Management
@@ -223,12 +115,12 @@ export const Content = (): JSX.Element => {
   const getDefaultNetwork = (): NetworkType => {
     const authMethod = localStorage.getItem('copus_auth_method');
     const defaultNetwork = authMethod === 'okx' ? 'xlayer' : 'base-mainnet';
-    console.log('🔧 Default network selection:', { authMethod, defaultNetwork });
+    debugLog('🔧 Default network selection:', { authMethod, defaultNetwork });
     return defaultNetwork;
   };
 
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>(getDefaultNetwork());
-  const [selectedCurrency, setSelectedCurrency] = useState<TokenType>('usdc');
+  const [selectedCurrency, setSelectedCurrency] = useState<TokenType>('usdt');
 
   // Payment details from 402 API response
   // Contains: payTo (recipient), asset (USDC contract), amount, network, resource (unlock URL)
@@ -243,11 +135,139 @@ export const Content = (): JSX.Element => {
   // Payment progress state to prevent duplicate submissions
   const [isPaymentInProgress, setIsPaymentInProgress] = useState(false);
 
-  // Use new article detail API hook
-  const { article, loading, error } = useArticleDetail(id || '');
+  // Use new article detail API hook (includes commentCount)
+  const { article, loading, error, refetch: refetchArticle } = useArticleDetail(id || '');
 
-  // State for "Collected in" section
-  const [collectedInData, setCollectedInData] = useState<{category: string; items: CollectionItem[]}[]>([]);
+  // Comment count is already in article data - no need for separate hook
+  const totalComments = article?.commentCount || 0;
+
+  // State for "Collected in" section - stores spaces directly
+  const [collectedInData, setCollectedInData] = useState<SpaceData[]>([]);
+
+  // Comment section modal state
+  const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
+  const [shouldShowModal, setShouldShowModal] = useState(false);
+  const commentScrollRef = useRef<HTMLDivElement>(null);
+
+  // Show success toast when arriving from browser extension after publishing
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('published') === 'true') {
+      showToast('Done! You just surfaced an internet gem!', 'success');
+      // Remove the query param from URL without reload
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search, showToast]);
+
+  // Handle modal animation timing and body scroll lock
+  useEffect(() => {
+    if (isCommentSectionOpen) {
+      console.log('🔒 CommentSection: Locking body scroll');
+      // Show modal immediately when opening
+      setShouldShowModal(true);
+
+      // Save original styles
+      const originalOverflow = window.getComputedStyle(document.body).overflow;
+      const originalPosition = window.getComputedStyle(document.body).position;
+      console.log('🔒 Original styles:', { overflow: originalOverflow, position: originalPosition });
+
+      // Prevent background scroll with multiple approaches
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+
+      // Prevent touch scrolling on iOS, but allow scrolling within the comment section
+      const preventTouchMove = (e: TouchEvent) => {
+        const target = e.target as Element;
+
+        // Find comment section container (look for elements with overflow-y-auto or similar)
+        const commentContainer = target.closest('[class*="overflow-y"]') ||
+                                target.closest('.comment-section') ||
+                                target.closest('[data-comment-section]');
+
+        if (commentContainer) {
+          // Allow touch events within the comment section
+          return;
+        }
+
+        // Prevent touch events outside the comment section
+        e.preventDefault();
+      };
+
+      document.addEventListener('touchmove', preventTouchMove, { passive: false });
+
+      // Auto-scroll to top of comment area after modal is fully open
+      const scrollTimer = setTimeout(() => {
+        if (commentScrollRef.current) {
+          commentScrollRef.current.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }
+      }, 750); // Wait for modal animation to complete (700ms + buffer)
+
+      return () => {
+        clearTimeout(scrollTimer);
+        console.log('🔓 CommentSection: Restoring body scroll');
+        // Restore original styles
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.width = '';
+        document.body.style.height = '';
+
+        document.removeEventListener('touchmove', preventTouchMove);
+      };
+    } else {
+      // Delay hiding modal until animation completes
+      const timer = setTimeout(() => {
+        setShouldShowModal(false);
+      }, 500); // Match the transition duration
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [isCommentSectionOpen]);
+
+  // Refresh comment data when comment section opens
+  useEffect(() => {
+    if (isCommentSectionOpen && id) {
+      // Invalidate comment queries to force refresh
+      queryClient.invalidateQueries({ queryKey: ['optimizedComments'] });
+      queryClient.invalidateQueries({ queryKey: ['articleWithComments'] });
+    }
+  }, [isCommentSectionOpen, id, queryClient]);
+
+  // Handle URL parameters for comments
+  useEffect(() => {
+    const handleCommentNavigation = () => {
+      // Check for comments parameter
+      const urlParams = new URLSearchParams(location.search);
+      const hasCommentsParam = urlParams.get('comments') === 'open';
+
+      // Also check for legacy ? parameter for backward compatibility
+      const hasQuestionOnly = window.location.href.endsWith('?');
+
+      if (hasCommentsParam || hasQuestionOnly) {
+        setIsCommentSectionOpen(true);
+      }
+    };
+
+    // Handle initial load
+    handleCommentNavigation();
+
+    // Listen to popstate for back/forward navigation
+    const handlePopState = () => {
+      handleCommentNavigation();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [location.pathname, location.search]); // 同时监听路径和search参数变化
 
   // ========================================
   // Helper Functions (extracted for code reuse)
@@ -627,8 +647,8 @@ export const Content = (): JSX.Element => {
 
   // Debug: Log article data to check arChainId and payment info
   useEffect(() => {
-    if (article && process.env.NODE_ENV === 'development') {
-      console.log('Article loaded:', {
+    if (article && import.meta.env.MODE === 'development') {
+      debugLog('Article loaded:', {
         uuid: article.uuid,
         targetUrlIsLocked: article.targetUrlIsLocked,
         hasArChainId: !!article.arChainId,
@@ -637,105 +657,153 @@ export const Content = (): JSX.Element => {
     }
   }, [article]);
 
-  // Convert API data to format needed by page
-  const content = article ? {
-    id: article.uuid,
-    title: article.title,
-    description: article.content,
-    coverImage: article.coverUrl,
-    url: article.targetUrl,
-    category: article.categoryInfo?.name || 'General',
-    categoryApiColor: article.categoryInfo?.color,
-    categoryStyle: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color),
-    categoryInlineStyle: getCategoryInlineStyle(article.categoryInfo?.color),
-    userName: article.authorInfo?.username || 'Anonymous',
-    userId: article.authorInfo?.id,
-    userNamespace: article.authorInfo?.namespace,
-    userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
-    date: new Date(article.createAt * 1000).toLocaleDateString(),
-    treasureCount: article.likeCount || 0,
-    visitCount: `${article.viewCount || 0} Visits`,
-    likes: article.likeCount || 0,
-    isLiked: article.isLiked || false,
-    website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
-  } : null;
+  // Convert API data to format needed by page - memoized to prevent recomputation
+  const content = useMemo(() => {
+    if (!article) return null;
+
+    // Parse SEO data from JSON string
+    let seoDescription = '';
+    let seoKeywords = '';
+
+    if (article.seoData) {
+      try {
+        const seoSettings = JSON.parse(article.seoData);
+        seoDescription = seoSettings.description || '';
+        seoKeywords = seoSettings.keywords || '';
+      } catch (error) {
+        console.warn('Failed to parse SEO data:', error);
+      }
+    }
+
+    return {
+      id: article.uuid,
+      title: article.title,
+      description: article.content,
+      coverImage: article.coverUrl,
+      url: article.targetUrl,
+      category: article.categoryInfo?.name || 'General',
+      categoryApiColor: article.categoryInfo?.color,
+      categoryStyle: getCategoryStyle(article.categoryInfo?.name || 'General', article.categoryInfo?.color),
+      categoryInlineStyle: getCategoryInlineStyle(article.categoryInfo?.color),
+      userName: article.authorInfo?.username || 'Anonymous',
+      userId: article.authorInfo?.id,
+      userNamespace: article.authorInfo?.namespace,
+      userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
+      userBio: article.authorInfo?.bio || '', // 作者个人简介
+      date: new Date(article.createAt * 1000).toLocaleDateString(),
+      treasureCount: article.likeCount || 0,
+      visitCount: `${article.viewCount || 0} Visits`,
+      likes: article.likeCount || 0,
+      isLiked: article.isLiked || false,
+      website: article.targetUrl ? new URL(article.targetUrl).hostname.replace('www.', '') : 'website.com',
+      // SEO fields
+      seoDescription: seoDescription,
+      seoKeywords: seoKeywords,
+    };
+  }, [article]);
 
   // Set like state when article data is fetched
   useEffect(() => {
     if (content && article) {
-      // Get global state or use API data
-      const globalState = getArticleLikeState(article.uuid, content.isLiked, content.likes);
-      setIsLiked(globalState.isLiked);
-      setLikesCount(globalState.likeCount);
+      // Use fresh API data for the work page - article.likeCount is the source of truth
+      // Don't use cached global state as it may be stale
+      setIsLiked(article.isLiked || false);
+      setLikesCount(article.likeCount || 0);
+      // Update global state with fresh API data so other pages stay in sync
+      updateArticleLikeState(article.uuid, article.isLiked || false, article.likeCount || 0);
     }
-  }, [content, article, getArticleLikeState]);
+  }, [content, article, updateArticleLikeState]);
 
-  // Fetch "Collected in" data - use the current article's category to create a collection
+  // Fetch "Collected in" data - get spaces that contain this article
+  // Use article.id directly in useEffect to avoid callback recreation on every article change
   useEffect(() => {
     const fetchCollectedInData = async () => {
-      if (!article) {
+      if (!article?.id) {
+        setCollectedInData([]);
         return;
       }
 
       try {
-        // Create a collection from the current article's category
-        const category = article.categoryInfo?.name || 'General';
+        // Fetch spaces that contain this article using the article's id field
+        const spacesResponse = await AuthService.getSpacesByArticleId(article.id);
+        debugLog('Spaces by article ID response:', spacesResponse);
 
-        // Create a collection item from the current article
-        const currentArticleItem: CollectionItem = {
-          id: article.uuid,
-          title: article.title,
-          url: article.targetUrl || 'copus.network',
-          coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
-        };
-
-        // If the user is logged in, try to fetch their liked articles in this category
-        if (user?.id) {
-          try {
-            const likedResponse = await AuthService.getMyLikedArticlesCorrect(1, 100, user.id);
-
-            let articlesArray: any[] = [];
-            if (likedResponse?.data?.data && Array.isArray(likedResponse.data.data)) {
-              articlesArray = likedResponse.data.data;
-            } else if (likedResponse?.data && Array.isArray(likedResponse.data)) {
-              articlesArray = likedResponse.data;
-            } else if (Array.isArray(likedResponse)) {
-              articlesArray = likedResponse;
-            }
-
-            // Filter articles by the current article's category
-            const categoryArticles = articlesArray.filter(
-              (art: any) => (art.categoryInfo?.name || 'General') === category
-            );
-
-            if (categoryArticles.length > 0) {
-              const items = categoryArticles.map((art: any): CollectionItem => ({
-                id: art.uuid,
-                title: art.title,
-                url: art.targetUrl || 'copus.network',
-                coverImage: art.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
-              }));
-
-              setCollectedInData([{ category, items }]);
-              return;
-            }
-          } catch (err) {
-            console.warn('Could not fetch user liked articles:', err);
-          }
+        // Parse the response - handle different possible formats
+        let spacesArray: SpaceData[] = [];
+        if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
+          spacesArray = spacesResponse.data.data;
+        } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
+          spacesArray = spacesResponse.data;
+        } else if (Array.isArray(spacesResponse)) {
+          spacesArray = spacesResponse;
         }
 
-        // Fallback: just show the current article in its category
-        setCollectedInData([{ category, items: [currentArticleItem] }]);
+        // Use space data directly from API response
+        setCollectedInData(spacesArray);
       } catch (err) {
         console.error('Failed to fetch collected in data:', err);
+        setCollectedInData([]);
       }
     };
 
     fetchCollectedInData();
-  }, [article, user?.id]);
+  }, [article?.id]); // Only depend on article.id, not the full article object
+
+  // 🔍 SEARCH: user-card-spaces-fetch
+  // Fetch user spaces for user hover card display (limited to 2 for UI optimization)
+  useEffect(() => {
+    const fetchUserSpaces = async () => {
+      if (!article?.authorInfo?.id) {
+        setUserSpaces([]);
+        return;
+      }
+
+      const startTime = performance.now();
+      const endpoint = '/client/userHome/pageMySpaces';
+      const authorId = article.authorInfo.id;
+
+      devLog.apiCall(endpoint, { targetUserId: authorId, pageSize: 2 }, {
+        component: 'Content',
+        action: 'fetch-user-spaces',
+        userId: authorId
+      });
+
+      try {
+        // 🔍 SEARCH: pageMySpaces-api-call-user-card
+        const response = await AuthService.getMySpaces(authorId, 1, 2);
+        const duration = performance.now() - startTime;
+
+        // 🔍 SEARCH: spaces-response-parsing
+        // Parse nested API response structure from pageMySpaces endpoint
+        const spacesData = response?.data?.data && Array.isArray(response.data.data)
+          ? response.data.data
+          : response?.data && Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        devLog.apiResponse(endpoint, { count: spacesData.length }, duration, {
+          component: 'Content',
+          userId: authorId
+        });
+
+        setUserSpaces(spacesData);
+      } catch (error) {
+        const duration = performance.now() - startTime;
+        devLog.apiError(endpoint, error, {
+          component: 'Content',
+          action: 'fetch-user-spaces-error',
+          userId: authorId
+        });
+        console.error('🚨 Failed to fetch user spaces:', error);
+        setUserSpaces([]);
+      }
+    };
+
+    fetchUserSpaces();
+  }, [article?.authorInfo?.id]);
 
   // ========================================
-  // Event Handlers
+  // Early Returns (After All Hooks)
   // ========================================
 
   if (loading) {
@@ -782,7 +850,7 @@ export const Content = (): JSX.Element => {
                 {!isArticleDeleted && (
                   <button
                     onClick={() => window.location.reload()}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors font-medium"
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors font-button"
                   >
                     Reload Page
                   </button>
@@ -813,63 +881,6 @@ export const Content = (): JSX.Element => {
     setCollectModalOpen(true);
   };
 
-  // Handle collect from modal
-  const handleCollect = async (articleId: string, spaceCategory: string, isNewSpace: boolean) => {
-    if (!article) return;
-
-    try {
-      const newLikesCount = likesCount + 1;
-
-      // Update local state immediately
-      setIsLiked(true);
-      setLikesCount(newLikesCount);
-
-      // Update global state simultaneously
-      updateArticleLikeState(article.uuid, true, newLikesCount);
-
-      // Call API
-      await AuthService.likeArticle(article.uuid);
-
-      // Note: In a real implementation, you might also save the space/category association
-    } catch (error) {
-      // Rollback state on API failure
-      setIsLiked(false);
-      setLikesCount(likesCount);
-      updateArticleLikeState(article.uuid, false, likesCount);
-
-      console.error('Collect operation failed:', error);
-      throw error; // Re-throw to let the modal handle the error
-    }
-  };
-
-  // Handle uncollect from modal
-  const handleUncollect = async (articleId: string) => {
-    if (!article) return;
-
-    try {
-      const newLikesCount = Math.max(0, likesCount - 1);
-
-      // Update local state immediately
-      setIsLiked(false);
-      setLikesCount(newLikesCount);
-
-      // Update global state simultaneously
-      updateArticleLikeState(article.uuid, false, newLikesCount);
-
-      // Call API
-      await AuthService.likeArticle(article.uuid);
-
-    } catch (error) {
-      // Rollback state on API failure
-      setIsLiked(true);
-      setLikesCount(likesCount);
-      updateArticleLikeState(article.uuid, true, likesCount);
-
-      console.error('Uncollect operation failed:', error);
-      throw error; // Re-throw to let the modal handle the error
-    }
-  };
-
   const handleUserClick = () => {
     if (!content?.userNamespace) return;
 
@@ -879,6 +890,19 @@ export const Content = (): JSX.Element => {
     } else {
       // Navigate to the user's profile page using short link format
       navigate(`/u/${content.userNamespace}`);
+    }
+  };
+
+  // 处理空间点击事件 - 导航到对应的空间页面
+  const handleSpaceClick = (space: SpaceData) => {
+    if (space.namespace) {
+      // 使用 /treasury/:namespace 格式导航到空间页面
+      navigate(`/treasury/${space.namespace}`);
+    } else if (space.id) {
+      // 如果没有namespace，使用旧版 /space/:id 格式
+      navigate(`/space/${space.id}`);
+    } else {
+      console.warn('Space missing both namespace and id:', space);
     }
   };
 
@@ -906,7 +930,7 @@ export const Content = (): JSX.Element => {
       };
 
       const paymentEndpoint = getPaymentEndpoint(network);
-      console.log('🌐 Payment API selection:', { network, paymentEndpoint });
+      debugLog('🌐 Payment API selection:', { network, paymentEndpoint });
 
       // Build URL with uuid parameter (new OKX API only requires uuid)
       const urlParams = new URLSearchParams({ uuid: article.uuid });
@@ -923,9 +947,19 @@ export const Content = (): JSX.Element => {
       }
 
       // For now, use GET request with query parameters (Backend might need POST implementation)
-      const tokenInfo = getSupportedTokens(network).includes(selectedCurrency)
+      const supportedTokens = getSupportedTokens(network);
+      debugLog('🔍 Token selection debug:', {
+        network,
+        selectedCurrency,
+        supportedTokens,
+        isSupported: supportedTokens.includes(selectedCurrency)
+      });
+
+      const tokenInfo = supportedTokens.includes(selectedCurrency)
         ? getTokenInfo(selectedCurrency)
         : getTokenInfo('usdc'); // fallback to usdc
+
+      debugLog('📋 Selected token info:', tokenInfo);
 
       // Add token info to URL parameters
       const extendedParams = new URLSearchParams({
@@ -934,13 +968,33 @@ export const Content = (): JSX.Element => {
         verifyingContract: tokenInfo.verifyingContract
       });
 
-      const fullUrl = `${apiBaseUrl}${paymentEndpoint}?${extendedParams.toString()}`;
-      console.log('📤 Payment info request for', network, ':', {
-        url: fullUrl,
-        params: Object.fromEntries(extendedParams)
+      debugLog('🔍 Payment request parameters:', {
+        uuid: article.uuid,
+        name: tokenInfo.name,
+        verifyingContract: tokenInfo.verifyingContract,
+        nameEmpty: !tokenInfo.name,
+        contractEmpty: !tokenInfo.verifyingContract
       });
 
+      const fullUrl = `${apiBaseUrl}${paymentEndpoint}?${extendedParams.toString()}`;
+      debugLog('📤 Payment info request for', network, ':', {
+        url: fullUrl,
+        params: Object.fromEntries(extendedParams),
+        selectedCurrency: selectedCurrency,
+        tokenInfo: tokenInfo,
+        hasToken: !!token,
+        tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
+      });
+
+      debugLog('🚀 Sending payment API request...');
       const response = await fetch(fullUrl, { headers });
+
+      debugLog('📡 Payment API response status:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
 
       if (!response.ok && response.status !== 402) {
         // 402 is the expected "Payment Required" status for payment APIs
@@ -952,7 +1006,21 @@ export const Content = (): JSX.Element => {
         }
       }
 
-      const data = await response.json();
+      let data = await response.json();
+      debugLog('📦 Payment API raw response data:', {
+        network: network,
+        responseType: typeof data,
+        dataKeys: Object.keys(data || {}),
+        data: data
+      });
+
+      // Unwrap common API response wrappers (e.g., { data: { ... } } or { code: 0, data: { ... } })
+      if (data && typeof data === 'object' && !data.domain && !data.message && !data.accepts) {
+        if (data.data && (typeof data.data === 'object' || typeof data.data === 'string')) {
+          debugLog('📦 Unwrapping nested data field:', data.data);
+          data = data.data;
+        }
+      }
 
       // Handle different response formats based on endpoint
       if (network === 'xlayer' && data.domain && data.message) {
@@ -1003,7 +1071,53 @@ export const Content = (): JSX.Element => {
 
         // Return the data immediately for use in the calling function
         return { eip712Data, paymentInfo };
-      } else if ((network === 'base-mainnet' || network === 'base-sepolia') && typeof data === 'string') {
+      } else if ((network === 'base-mainnet' || network === 'base-sepolia') && (typeof data === 'string' || (data && data.domain && data.message))) {
+        // Base API may return target URL as string or EIP-712 structure
+        // If it returns EIP-712 structure, handle it like XLayer
+        if (data && data.domain && data.message) {
+          // Base API returned EIP-712 structure
+          const testConnectedAddress = walletAddress;
+          const testStoredAddress = user?.walletAddress;
+
+          let actualWalletAddress = null;
+          try {
+            const provider = window.ethereum;
+            if (provider) {
+              const accounts = await provider.request({ method: 'eth_accounts' });
+              actualWalletAddress = accounts[0] || null;
+            }
+          } catch (error) {
+            console.warn('Could not get wallet account:', error);
+          }
+
+          const addressToUse = actualWalletAddress || testConnectedAddress || testStoredAddress;
+          if (!addressToUse) {
+            throw new Error('Please connect your wallet first');
+          }
+
+          const eip712Data = {
+            ...data,
+            message: {
+              ...data.message,
+              from: addressToUse
+            }
+          };
+
+          setOkxEip712Data(eip712Data);
+
+          const resourceUrl = `${apiBaseUrl}${paymentEndpoint}?${urlParams.toString()}`;
+          const paymentInfo = {
+            payTo: data.message.to,
+            asset: data.domain.verifyingContract,
+            amount: data.message.value,
+            network: network,
+            resource: resourceUrl
+          };
+
+          setX402PaymentInfo(paymentInfo);
+          return { eip712Data, paymentInfo };
+        }
+
         // Base API returns target URL as string, need to construct payment info manually
         const contractAddress = getTokenContract(network, selectedCurrency);
         if (!contractAddress) {
@@ -1025,7 +1139,7 @@ export const Content = (): JSX.Element => {
 
         const eip712Data = {
           domain: {
-            name: selectedCurrency === 'usdc' ? 'USD Coin' : 'Tether USD',
+            name: selectedCurrency === 'usdc' ? 'USD Coin' : 'USD₮',
             version: '2',
             chainId: parseInt(getNetworkConfig(network).chainId, 16),
             verifyingContract: contractAddress
@@ -1075,7 +1189,7 @@ export const Content = (): JSX.Element => {
         return { };
       }
 
-      console.log(`✅ Payment info fetched successfully for ${network}`);
+      debugLog(`✅ Payment info fetched successfully for ${network}`);
       return { }; // fallback return
 
     } catch (error) {
@@ -1225,75 +1339,220 @@ export const Content = (): JSX.Element => {
   // Step 3: Execute Payment using x402 + ERC-3009
 
   const handlePayNow = async () => {
-    // Prevent duplicate submissions
+    debugLog('💳 ========== 开始支付流程 ==========');
+    debugLog('🌐 环境和配置信息:');
+    debugLog('  当前环境:', import.meta.env.MODE);
+    debugLog('  API基础URL:', import.meta.env.VITE_API_BASE_URL);
+    debugLog('  当前域名:', window.location.origin);
+
+    debugLog('🔍 初始支付状态检查:');
+    debugLog('  支付进行中:', isPaymentInProgress);
+    debugLog('  钱包地址:', walletAddress);
+    debugLog('  钱包提供者:', !!walletProvider);
+    debugLog('  选择的网络:', selectedNetwork);
+    debugLog('  选择的货币:', selectedCurrency);
+    debugLog('  钱包类型:', walletType);
+
+    // 检查USDT特定配置
+    if (selectedCurrency === 'usdt') {
+      debugLog('💰 USDT支付特定检查:');
+      const networkConfig = getNetworkConfig(selectedNetwork);
+      debugLog('  X Layer网络配置:', networkConfig);
+      debugLog('  X Layer是否支持USDT:', getSupportedTokens(selectedNetwork).includes('usdt'));
+      debugLog('  USDT合约地址:', getTokenContract(selectedNetwork, 'usdt'));
+    }
+
+    // 防止重复提交
     if (isPaymentInProgress) {
+      console.warn('⚠️ 支付已在进行中，终止操作');
       showToast('Payment is in progress, please wait...', 'warning');
       return;
     }
 
     if (!walletAddress || !walletProvider) {
+      console.error('❌ 钱包未正确连接:', { 钱包地址: walletAddress, 钱包提供者: !!walletProvider });
       showToast('Wallet not connected', 'error');
       return;
     }
 
-    // Start payment, set state
+    // 开始支付，设置状态
     setIsPaymentInProgress(true);
+    debugLog('🚀 支付流程已启动，设置状态为进行中');
 
     // Local variables to store fresh data for immediate use
     let currentEip712Data = okxEip712Data;
     let currentPaymentInfo = x402PaymentInfo;
 
-    // Determine the final address to use consistently throughout the payment process
+    debugLog('📊 当前支付数据状态:');
+    debugLog('  当前EIP712数据:', !!currentEip712Data ? '可用' : '不可用');
+    debugLog('  当前支付信息:', !!currentPaymentInfo ? '可用' : '不可用');
+    if (currentEip712Data) {
+      debugLog('  EIP-712域:', currentEip712Data.domain);
+      debugLog('  EIP-712消息预览:', {
+        发送者: currentEip712Data.message?.from,
+        接收者: currentEip712Data.message?.to,
+        金额: currentEip712Data.message?.value
+      });
+    }
+    if (currentPaymentInfo) {
+      debugLog('  支付信息:', {
+        支付给: currentPaymentInfo.payTo,
+        资产: currentPaymentInfo.asset,
+        金额: currentPaymentInfo.amount,
+        网络: currentPaymentInfo.network
+      });
+    }
+
+    // 确定在整个支付过程中使用的最终地址
     let finalPaymentAddress = walletAddress;
+    debugLog('👤 确定最终支付地址:');
+    debugLog('  初始钱包地址:', walletAddress);
     try {
       const accounts = await walletProvider.request({ method: 'eth_accounts' });
+      debugLog('  从钱包提供者获取的账户:', accounts);
       finalPaymentAddress = accounts[0] || walletAddress;
+      debugLog('  选择的最终支付地址:', finalPaymentAddress);
     } catch (error) {
-      console.warn('Could not get MetaMask account, using wallet address:', error);
+      console.warn('⚠️ Failed to get wallet account, using stored address:', error);
+      debugLog('  回退到存储的钱包地址:', walletAddress);
     }
 
     try {
-      // Check if payment info is available (should be preloaded)
-      // All networks now use new OKX API with EIP-712 format
-      if (!x402PaymentInfo || !currentEip712Data || x402PaymentInfo.network !== selectedNetwork) {
-        showToast(`Preparing payment for ${selectedNetwork}...`, 'info');
-        const fetchedData = await fetchPaymentInfo(selectedNetwork);
+      // 检查支付信息是否可用（应该已预加载）
+      // 所有网络现在都使用带有EIP-712格式的新OKX API
+      debugLog('🔄 检查支付数据可用性:');
+      debugLog('  x402支付信息可用:', !!x402PaymentInfo);
+      debugLog('  当前EIP712数据可用:', !!currentEip712Data);
+      debugLog('  网络匹配:', x402PaymentInfo?.network === selectedNetwork);
 
-        // New OKX API should return both EIP-712 data and payment info for all networks
-        if (!fetchedData.eip712Data || !fetchedData.paymentInfo) {
+      if (!x402PaymentInfo || !currentEip712Data || x402PaymentInfo.network !== selectedNetwork) {
+        debugLog('⚠️ 支付数据不可用或网络不匹配，获取新数据');
+        debugLog('  需要为网络获取:', selectedNetwork);
+        showToast(`Preparing payment for ${selectedNetwork}...`, 'info');
+
+        debugLog('📡 Fetching payment info...');
+        const fetchedData = await fetchPaymentInfo(selectedNetwork);
+        debugLog('📡 Payment info fetch result:', {
+          hasEIP712Data: !!fetchedData.eip712Data,
+          hasPaymentInfo: !!fetchedData.paymentInfo
+        });
+
+        // Check if we got payment info
+        if (!fetchedData.paymentInfo) {
+          console.error('❌ Payment info missing:', fetchedData);
           throw new Error(`Failed to get payment data for ${selectedNetwork}`);
         }
 
-        // Store the fresh data for immediate use
-        currentEip712Data = fetchedData.eip712Data;
         currentPaymentInfo = fetchedData.paymentInfo;
+
+        // For Base networks, if EIP-712 data is not provided, construct it manually
+        if (!fetchedData.eip712Data && (selectedNetwork === 'base-mainnet' || selectedNetwork === 'base-sepolia')) {
+          debugLog('📝 Constructing EIP-712 data for Base network...');
+          const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
+          const nonce = generateNonce();
+          const now = Math.floor(Date.now() / 1000);
+
+          currentEip712Data = {
+            types: {
+              EIP712Domain: [
+                { name: 'name', type: 'string' },
+                { name: 'version', type: 'string' },
+                { name: 'chainId', type: 'uint256' },
+                { name: 'verifyingContract', type: 'address' }
+              ],
+              TransferWithAuthorization: [
+                { name: 'from', type: 'address' },
+                { name: 'to', type: 'address' },
+                { name: 'value', type: 'uint256' },
+                { name: 'validAfter', type: 'uint256' },
+                { name: 'validBefore', type: 'uint256' },
+                { name: 'nonce', type: 'bytes32' }
+              ]
+            },
+            primaryType: 'TransferWithAuthorization',
+            domain: {
+              name: 'USD Coin',
+              version: '2',
+              chainId: parseInt(getNetworkConfig(selectedNetwork).chainId, 16),
+              verifyingContract: contractAddress
+            },
+            message: {
+              from: finalPaymentAddress,
+              to: currentPaymentInfo.payTo,
+              value: currentPaymentInfo.amount,
+              validAfter: now.toString(),
+              validBefore: (now + 3600).toString(),
+              nonce: nonce
+            }
+          };
+          debugLog('✅ EIP-712 data constructed:', currentEip712Data);
+        } else if (fetchedData.eip712Data) {
+          currentEip712Data = fetchedData.eip712Data;
+        } else {
+          console.error('❌ EIP-712 data missing and not a Base network:', fetchedData);
+          throw new Error(`Failed to get EIP-712 data for ${selectedNetwork}`);
+        }
+
+        debugLog('✅ Payment data ready for use');
+      } else {
+        debugLog('✅ 使用缓存的支付数据');
       }
 
-      // Ensure user is on the correct network for payment
+      // 确保用户在正确的网络上进行支付
+      debugLog('🔗 网络验证和切换:');
       const paymentNetworkConfig = getNetworkConfig(selectedNetwork);
+      debugLog('  选择的网络:', selectedNetwork);
+      debugLog('  期望的链ID:', paymentNetworkConfig.chainId);
+      debugLog('  网络配置:', paymentNetworkConfig);
+
       const chainId = await walletProvider.request({ method: 'eth_chainId' });
+      debugLog('  当前钱包链ID:', chainId);
 
       if (chainId !== paymentNetworkConfig.chainId) {
+        debugLog('⚠️ 检测到网络不匹配，正在切换网络');
+        debugLog('  从:', chainId);
+        debugLog('  到:', paymentNetworkConfig.chainId);
         showToast(`Switching to ${selectedNetwork} network for payment...`, 'info');
         await switchToNetwork(walletProvider, selectedNetwork);
+        debugLog('✅ 网络切换完成');
+      } else {
+        debugLog('✅ 已在正确的网络上');
       }
 
-      // Create ERC-3009 TransferWithAuthorization signature
+      // 创建ERC-3009 TransferWithAuthorization签名
       const walletName = walletType === 'metamask' ? 'MetaMask' : walletType === 'okx' ? 'OKX Wallet' : 'Coinbase Wallet';
+      debugLog('✍️ 启动签名流程:');
+      debugLog('  钱包类型:', walletType);
+      debugLog('  钱包名称:', walletName);
+      debugLog('  最终支付地址:', finalPaymentAddress);
+
       showToast(`Please sign the payment authorization in ${walletName}...`, 'info');
 
       let signedAuth;
 
       // All networks now use EIP-712 signing with the new OKX API
       if (currentEip712Data) {
+        debugLog('✍️ Starting EIP-712 signature process:');
+
         // Get payment contract address and chain ID for the selected network
         const paymentContractAddress = getTokenContract(selectedNetwork, selectedCurrency);
         const chainIdInt = parseInt(paymentNetworkConfig.chainId, 16);
 
+        debugLog('  Contract address:', paymentContractAddress);
+        debugLog('  Chain ID (int):', chainIdInt);
+        debugLog('  Selected currency:', selectedCurrency);
+
         // Try OKX-optimized signing method first (for XLayer), fallback to standard EIP-712
         try {
           if (selectedNetwork === 'xlayer' && walletType === 'okx') {
-            console.log('Attempting OKX browser signature method for XLayer...');
+            debugLog('🦊 ========== INITIATING OKX SIGNING FOR XLAYER ==========');
+            debugLog('🦊 [MAIN] Attempting OKX browser signature method for XLayer...');
+            debugLog('🦊 [MAIN] OKX wallet detected, using specialized signing');
+            debugLog('🦊 [MAIN] 钱包检查详情:');
+            debugLog('  钱包对象存在:', !!walletProvider);
+            debugLog('  isOKXWallet标识:', walletProvider?.isOKXWallet);
+            debugLog('  钱包名称:', walletProvider?.name);
+            debugLog('  钱包版本:', walletProvider?.version);
 
             // Extract parameters from EIP-712 data for OKX method
             const transferParams = {
@@ -1305,17 +1564,33 @@ export const Content = (): JSX.Element => {
               nonce: currentEip712Data.message.nonce
             };
 
+            debugLog('🦊 [MAIN] OKX Transfer params extracted from EIP-712 data:', transferParams);
+            debugLog('🦊 [MAIN] Additional OKX signing context:', {
+              chainIdInt: chainIdInt,
+              paymentContractAddress: paymentContractAddress,
+              selectedCurrency: selectedCurrency,
+              walletProvider: walletProvider?.isOKXWallet ? 'OKX Wallet' : 'Unknown',
+              currentEip712DataKeys: Object.keys(currentEip712Data)
+            });
+
+            debugLog('🦊 [MAIN] Calling signTransferWithAuthorizationOKXBrowser...');
             signedAuth = await signTransferWithAuthorizationOKXBrowser(
               transferParams,
               walletProvider,
               chainIdInt,
-              paymentContractAddress || ''
+              paymentContractAddress || '',
+              selectedCurrency // Pass the selected token type
             );
+
+            debugLog('🦊 [MAIN] ✅ OKX browser signature successful!');
+            debugLog('🦊 [MAIN] OKX signed result:', signedAuth);
+            debugLog('🦊 ========== OKX SIGNING COMPLETED ==========');
           } else {
             throw new Error('Using standard EIP-712 method');
           }
         } catch (okxError) {
-          console.log('Using standard EIP-712 signing method...');
+          debugLog('📝 Using standard EIP-712 signing method...');
+          debugLog('  OKX error (fallback expected):', okxError);
 
           // Standard EIP-712 signing for all wallets and networks
           const correctedEip712Data = {
@@ -1326,17 +1601,133 @@ export const Content = (): JSX.Element => {
             }
           };
 
+          debugLog('📝 Corrected EIP-712 data for standard signing:');
+          debugLog('  Domain:', correctedEip712Data.domain);
+          debugLog('  Message:', correctedEip712Data.message);
+          debugLog('  From address correction:', {
+            original: currentEip712Data.message.from,
+            corrected: finalPaymentAddress
+          });
+
+          // 签名前的详细检查
+          debugLog('🔍 ========== 签名前详细检查 ==========');
+          debugLog('🔍 EIP-712数据完整性验证:');
+          debugLog('  域名:', correctedEip712Data.domain?.name);
+          debugLog('  版本:', correctedEip712Data.domain?.version);
+          debugLog('  链ID:', correctedEip712Data.domain?.chainId);
+          debugLog('  验证合约:', correctedEip712Data.domain?.verifyingContract);
+          debugLog('  主要类型:', correctedEip712Data.primaryType);
+
+          debugLog('🔍 消息参数验证:');
+          debugLog('  发送方:', correctedEip712Data.message.from);
+          debugLog('  接收方:', correctedEip712Data.message.to);
+          debugLog('  金额:', correctedEip712Data.message.value);
+          debugLog('  有效开始时间:', correctedEip712Data.message.validAfter);
+          debugLog('  有效结束时间:', correctedEip712Data.message.validBefore);
+          debugLog('  随机数:', correctedEip712Data.message.nonce);
+
+          debugLog('🔍 环境检查:');
+          debugLog('  钱包提供者类型:', typeof walletProvider);
+          debugLog('  钱包提供者可用:', !!walletProvider);
+          debugLog('  是否有request方法:', typeof walletProvider?.request === 'function');
+          debugLog('  发送方地址格式检查:', {
+            地址: finalPaymentAddress,
+            长度: finalPaymentAddress?.length,
+            是否以0x开头: finalPaymentAddress?.startsWith('0x'),
+            是否为有效格式: /^0x[a-fA-F0-9]{40}$/.test(finalPaymentAddress || '')
+          });
+
+          debugLog('🔍 JSON序列化检查:');
+          const jsonString = JSON.stringify(correctedEip712Data);
+          debugLog('  序列化长度:', jsonString.length);
+          debugLog('  序列化预览:', jsonString.substring(0, 200) + '...');
+
+          // 验证JSON可以被正确解析
+          try {
+            const parsed = JSON.parse(jsonString);
+            debugLog('  ✅ JSON序列化/解析验证通过');
+          } catch (jsonError) {
+            console.error('  ❌ JSON序列化/解析失败:', jsonError);
+          }
+
+          debugLog('📤 Sending eth_signTypedData_v4 request...');
+          debugLog('📤 请求参数详情:');
+          debugLog('  方法:', 'eth_signTypedData_v4');
+          debugLog('  参数1 (账户地址):', finalPaymentAddress);
+          debugLog('  参数2 (数据)长度:', jsonString.length);
+
+          // 显示时间戳便于追踪
+          const signRequestTime = new Date().toISOString();
+          debugLog('📤 签名请求发送时间:', signRequestTime);
           // Sign using eth_signTypedData_v4 with the corrected structure
           const signature = await walletProvider.request({
             method: 'eth_signTypedData_v4',
             params: [finalPaymentAddress, JSON.stringify(correctedEip712Data)]
           });
 
+          // 记录签名响应时间
+          const signResponseTime = new Date().toISOString();
+          debugLog('📥 签名响应接收时间:', signResponseTime);
+
+          debugLog('✅ Standard signature received:', signature);
+
+          // 签名后的详细分析
+          debugLog('🔍 ========== 签名后详细分析 ==========');
+          debugLog('🔍 原始签名数据分析:');
+          debugLog('  签名类型:', typeof signature);
+          debugLog('  签名长度:', signature?.length);
+          debugLog('  签名格式检查:', {
+            是否以0x开头: signature?.startsWith('0x'),
+            是否为字符串: typeof signature === 'string',
+            期望长度: signature?.length === 132, // 0x + 64 + 64 + 2 = 132
+          });
+
+          // 验证签名格式
+          const signatureRegex = /^0x[a-fA-F0-9]{130}$/;
+          const isValidSignatureFormat = signatureRegex.test(signature || '');
+          debugLog('  签名格式有效性:', isValidSignatureFormat);
+
+          if (!isValidSignatureFormat) {
+            console.error('❌ 签名格式无效!');
+            console.error('  期望格式: 0x + 130个十六进制字符');
+            console.error('  实际接收:', signature);
+          }
+
           // Parse signature into v, r, s components
           const r = signature.slice(0, 66);
           const s = '0x' + signature.slice(66, 130);
           const vHex = signature.slice(130, 132);
           const v = parseInt(vHex, 16);
+
+          debugLog('🔪 Standard signature parsing:');
+          debugLog('  r组件:', r, '(长度:', r.length, ')');
+          debugLog('  s组件:', s, '(长度:', s.length, ')');
+          debugLog('  vHex:', vHex, '(长度:', vHex.length, ')');
+          debugLog('  v十进制:', v);
+
+          // 验证解析的组件
+          debugLog('🔍 签名组件验证:');
+          const isValidR = /^0x[a-fA-F0-9]{64}$/.test(r);
+          const isValidS = /^0x[a-fA-F0-9]{64}$/.test(s);
+          const isValidV = v === 27 || v === 28 || v === 0 || v === 1;
+
+          debugLog('  r组件有效性:', isValidR);
+          debugLog('  s组件有效性:', isValidS);
+          debugLog('  v值有效性:', isValidV, '(期望值: 0,1,27,28)');
+
+          if (!isValidR || !isValidS || !isValidV) {
+            console.warn('⚠️ 一些签名组件验证失败，这可能导致后续问题');
+          }
+
+          debugLog('🔍 签名重建验证:');
+          const rebuiltSignature = r + s.slice(2) + vHex;
+          const rebuiltMatches = rebuiltSignature === signature;
+          debugLog('  重建签名:', rebuiltSignature);
+          debugLog('  与原始匹配:', rebuiltMatches);
+
+          if (!rebuiltMatches) {
+            console.error('❌ 签名重建失败! 这表明解析过程有问题');
+          }
 
           signedAuth = {
             from: finalPaymentAddress,
@@ -1349,17 +1740,35 @@ export const Content = (): JSX.Element => {
             r,
             s
           };
+
+          debugLog('✅ Final signed authorization (standard):', signedAuth);
         }
       } else {
+        console.error('❌ No EIP-712 data available for signing');
         throw new Error('No EIP-712 data available for signing');
       }
 
       // Map network name for x402 protocol
       // x402 protocol uses 'base' for Base mainnet, not 'base-mainnet'
+      debugLog('🗺️ Network name mapping:');
+      debugLog('  Selected network:', selectedNetwork);
+      debugLog('  Current payment info network:', currentPaymentInfo.network);
+
       const x402NetworkName = selectedNetwork === 'base-mainnet' ? 'base' :
                              selectedNetwork === 'xlayer' ? 'xlayer' :
                              currentPaymentInfo.network;
 
+      debugLog('  Mapped x402 network name:', x402NetworkName);
+
+      debugLog('💳 Creating X-PAYMENT header...');
+      debugLog('  Network:', x402NetworkName);
+      debugLog('  Asset:', currentPaymentInfo.asset);
+      debugLog('  Signed auth summary:', {
+        from: signedAuth.from,
+        to: signedAuth.to,
+        value: signedAuth.value,
+        v: signedAuth.v
+      });
 
       // Create X-PAYMENT header with signed authorization
       const paymentHeader = createX402PaymentHeader(
@@ -1368,18 +1777,37 @@ export const Content = (): JSX.Element => {
         currentPaymentInfo.asset
       );
 
+      debugLog('✅ X-PAYMENT header created successfully');
+
       // Debug output for development
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         try {
           const decodedHeader = JSON.parse(atob(paymentHeader));
-          console.log('Payment header created for network:', x402NetworkName);
-          console.log('Signature verification details:', {
+          debugLog('🔍 Payment header verification:');
+          debugLog('  Network in header:', decodedHeader.network);
+          debugLog('  X402 version:', decodedHeader.x402Version);
+          debugLog('  Scheme:', decodedHeader.scheme);
+
+          const verification = {
             fromMatches: decodedHeader.payload?.authorization?.from === finalPaymentAddress,
             toMatches: decodedHeader.payload?.authorization?.to === currentPaymentInfo.payTo,
             valueMatches: decodedHeader.payload?.authorization?.value === currentPaymentInfo.amount?.toString()
-          });
+          };
+          debugLog('  Verification results:', verification);
+
+          if (!verification.fromMatches || !verification.toMatches || !verification.valueMatches) {
+            console.warn('⚠️ Payment header verification failed!');
+            debugLog('    Expected from:', finalPaymentAddress);
+            debugLog('    Header from:', decodedHeader.payload?.authorization?.from);
+            debugLog('    Expected to:', currentPaymentInfo.payTo);
+            debugLog('    Header to:', decodedHeader.payload?.authorization?.to);
+            debugLog('    Expected value:', currentPaymentInfo.amount?.toString());
+            debugLog('    Header value:', decodedHeader.payload?.authorization?.value);
+          } else {
+            debugLog('✅ Payment header verification successful');
+          }
         } catch (e) {
-          console.error('Failed to decode payment header for debug:', e);
+          console.error('❌ Failed to decode payment header for debug:', e);
         }
       }
 
@@ -1387,7 +1815,7 @@ export const Content = (): JSX.Element => {
 
       // Add user authentication token to payment request
       const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
-      console.log('🔐 Authentication token status:', {
+      debugLog('🔐 Authentication token status:', {
         tokenFound: !!token,
         tokenLength: token?.length || 0,
         tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token found'
@@ -1402,62 +1830,112 @@ export const Content = (): JSX.Element => {
       const contractAddress = getTokenContract(selectedNetwork, selectedCurrency);
       if (contractAddress) {
         paymentHeaders['X-PAYMENT-ASSET'] = contractAddress;
-        console.log('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
+        debugLog('✅ Added X-PAYMENT-ASSET header with contract address:', contractAddress);
       } else {
         console.warn('⚠️ No contract address found for', selectedNetwork, selectedCurrency);
       }
 
       if (token) {
         paymentHeaders.Authorization = `Bearer ${token}`;
-        console.log('✅ Added Authorization header to payment request');
+        debugLog('✅ Added Authorization header to payment request');
       } else {
         console.warn('⚠️ No authentication token found! Payment may fail');
       }
 
-      console.log('📤 Payment request headers:', {
-        'X-PAYMENT': `${paymentHeader.substring(0, 50)}...`,
+      // Ensure payment URL includes all necessary parameters and uses the same address as EIP-712 data
+      let paymentUrl = currentPaymentInfo.resource;
+      debugLog('🔗 Payment URL preparation:');
+      debugLog('  Original resource URL:', currentPaymentInfo.resource);
+
+      const url = new URL(paymentUrl);
+
+      // Get token info for URL parameters
+      const supportedTokens = getSupportedTokens(selectedNetwork as NetworkType);
+      const currentTokenInfo = supportedTokens.includes(selectedCurrency)
+        ? getTokenInfo(selectedCurrency)
+        : getTokenInfo('usdc');
+
+      // Add token info parameters for verification
+      url.searchParams.set('name', currentTokenInfo.name);
+      url.searchParams.set('verifyingContract', currentTokenInfo.verifyingContract);
+
+      if (selectedNetwork === 'xlayer' && paymentUrl.includes('from=')) {
+        // Replace the 'from' parameter with the final payment address
+        const originalFrom = url.searchParams.get('from');
+        url.searchParams.set('from', finalPaymentAddress);
+        debugLog('  XLayer URL address correction:');
+        debugLog('    Original from:', originalFrom);
+        debugLog('    Corrected from:', finalPaymentAddress);
+      } else {
+        debugLog('  Using original URL (no address correction needed)');
+      }
+
+      paymentUrl = url.toString();
+      debugLog('🔗 Final payment URL with all parameters:', paymentUrl);
+
+      debugLog('📤 Final payment request details:');
+      debugLog('  URL:', paymentUrl);
+      debugLog('  Headers summary:', {
+        'X-PAYMENT': `${paymentHeader.substring(0, 50)}... (${paymentHeader.length} chars)`,
         'X-PAYMENT-ASSET': paymentHeaders['X-PAYMENT-ASSET'] || 'Not provided',
         'Authorization': token ? 'Bearer [TOKEN]' : 'Not provided',
         'Content-Type': paymentHeaders['Content-Type']
       });
+      debugLog('  Complete headers object:', paymentHeaders);
 
-      // Ensure payment URL uses the same address as EIP-712 data
-      let paymentUrl = currentPaymentInfo.resource;
-
-      if (selectedNetwork === 'xlayer' && paymentUrl.includes('from=')) {
-        // Replace the 'from' parameter with the final payment address
-        const url = new URL(paymentUrl);
-        url.searchParams.set('from', finalPaymentAddress);
-        paymentUrl = url.toString();
-      }
-
-
+      debugLog('🚀 发送支付请求...');
       const unlockResponse = await fetch(paymentUrl, {
         headers: paymentHeaders
       });
 
+      debugLog('📥 收到支付响应:');
+      debugLog('  状态码:', unlockResponse.status);
+      debugLog('  状态文本:', unlockResponse.statusText);
+      debugLog('  请求成功:', unlockResponse.ok);
+
 
       if (!unlockResponse.ok) {
+        console.error('❌ 支付请求失败');
         const errorText = await unlockResponse.text();
-        console.error('Payment verification failed:', {
-          status: unlockResponse.status,
-          statusText: unlockResponse.statusText,
-          error: errorText,
-          network: currentPaymentInfo.network
+        console.error('📄 错误响应详情:', {
+          状态码: unlockResponse.status,
+          状态文本: unlockResponse.statusText,
+          响应头: Object.fromEntries(unlockResponse.headers),
+          错误内容: errorText,
+          网络: currentPaymentInfo.network,
+          请求URL: paymentUrl
         });
 
-        throw new Error(`failed to verify payment: ${unlockResponse.status} ${unlockResponse.statusText}`);
+        // 尝试将错误解析为JSON以便更好地调试
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error('📄 解析的错误JSON:', errorJson);
+        } catch (parseError) {
+          debugLog('📄 错误响应不是JSON格式，原始文本:', errorText);
+        }
+
+        throw new Error(`Payment verification failed: ${unlockResponse.status} ${unlockResponse.statusText}`);
       }
 
+      debugLog('✅ 支付请求成功');
       const unlockData = await unlockResponse.json();
-      console.log('🎉 Payment success response:', unlockData);
+      debugLog('🎉 支付成功响应:', unlockData);
+      debugLog('📄 响应结构分析:', {
+        有data字段: 'data' in unlockData,
+        有targetUrl字段: 'targetUrl' in unlockData,
+        有url字段: 'url' in unlockData,
+        data值: unlockData.data,
+        targetUrl值: unlockData.targetUrl,
+        url值: unlockData.url,
+        所有字段: Object.keys(unlockData)
+      });
 
       // Handle different response structures for different networks
       let targetUrl = unlockData.data || unlockData.targetUrl;
 
       // XLayer specific response handling
       if (selectedNetwork === 'xlayer') {
-        console.log('🔗 XLayer payment response structure:', {
+        debugLog('🔗 XLayer payment response structure:', {
           data: unlockData.data,
           targetUrl: unlockData.targetUrl,
           url: unlockData.url,
@@ -1473,7 +1951,7 @@ export const Content = (): JSX.Element => {
         showToast(`Payment successful! Opening ${selectedNetwork === 'xlayer' ? 'XLayer' : 'Base'} content...`, 'success');
         setIsPayConfirmOpen(false);
 
-        console.log(`🚀 Auto-redirecting to: ${targetUrl}`);
+        debugLog(`🚀 Auto-redirecting to: ${targetUrl}`);
 
         // Open target URL in new tab with enhanced popup handling
         try {
@@ -1481,7 +1959,7 @@ export const Content = (): JSX.Element => {
           if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
             showToast('Content unlocked! Please check if popup was blocked and manually click the link.', 'info');
           } else {
-            console.log('✅ Successfully opened target URL in new tab');
+            debugLog('✅ Successfully opened target URL in new tab');
           }
         } catch (popupError) {
           console.warn('Popup blocked or failed:', popupError);
@@ -1493,15 +1971,32 @@ export const Content = (): JSX.Element => {
       }
 
     } catch (error: any) {
-      console.error('Payment error:', error);
+      console.error('❌ ========== 支付错误 ==========');
+      console.error('错误详情:', {
+        错误消息: error.message,
+        错误代码: error.code,
+        错误堆栈: error.stack,
+        错误名称: error.name,
+        完整错误: error
+      });
+
       if (error.code === 4001) {
+        debugLog('👤 用户取消了签名');
         showToast('Signature cancelled', 'info');
+      } else if (error.code === 4902) {
+        debugLog('🔗 钱包中未添加该网络');
+        showToast('Please add the network to your wallet', 'error');
       } else {
+        console.error('💥 意外的支付错误:', error.message || '未知错误');
         showToast(`Payment failed: ${error.message || 'Unknown error'}`, 'error');
       }
+
+      console.error('❌ ========== 支付错误结束 ==========');
     } finally {
-      // Reset payment state, allow next payment
+      // 重置支付状态，允许下次支付
+      debugLog('🔄 重置支付状态');
       setIsPaymentInProgress(false);
+      debugLog('💳 ========== 支付流程结束 ==========');
     }
   };
 
@@ -1509,67 +2004,70 @@ export const Content = (): JSX.Element => {
   // JSX Return (unchanged from original)
   // ========================================
   return (
-    <div
-      className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
-      data-model-id="9091:54529"
-    >
+    <>
+      {/* SEO meta tags are now handled by Cloudflare Worker at the edge.
+          The worker injects AI-generated meta tags before JS loads,
+          so we don't need React Helmet here anymore.
+          See: functions/work/[id].js */}
+
+
+      <div
+        className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
+        data-model-id="9091:54529"
+      >
       <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
         <HeaderSection articleAuthorId={content?.userId} />
 
-        <main className="flex flex-col items-start gap-[30px] pt-[70px] lg:pt-[120px] pb-[120px] px-4 relative flex-1 w-full max-w-[1040px] mx-auto grow">
-          <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow border-b-2 [border-bottom-style:solid] border-[#E0E0E0]">
+        <main className="flex flex-col lg:flex-row items-start pt-[70px] lg:pt-[120px] pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow">
+          {/* Main Content Column */}
+          <div className="flex-1 w-full">
+            <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
-                <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
-                  {/* Title with x402 payment badge inline */}
+                <div className="flex flex-col lg:h-[250px] items-start justify-start relative flex-1 grow gap-6">
+                  {/* Title with x402 payment badge above on mobile, inline on desktop */}
                   <div className="flex flex-col gap-2 w-full">
-                    <div className="flex items-center gap-2 w-full">
-                      {/* Payment badge - show if content is locked */}
-                      {article?.targetUrlIsLocked && article?.priceInfo && (
-                        <div className="h-[34px] px-2.5 py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] flex-shrink-0">
-                          <img
-                            className="relative w-[22px] h-5 aspect-[1.11]"
-                            alt="x402 icon"
-                            src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
-                          />
-                          <span className="[font-family:'Lato',Helvetica] font-semibold text-[#0052ff] text-xl tracking-[0] leading-5 whitespace-nowrap">
-                            {article.priceInfo.price}
-                          </span>
-                        </div>
-                      )}
+                    {/* Payment badge - show above title on mobile */}
+                    {article?.targetUrlIsLocked && article?.priceInfo && (
+                      <div className="h-[30px] lg:h-[34px] px-2 lg:px-2.5 py-1 lg:py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] self-start">
+                        <img
+                          className="relative w-[18px] h-[16px] lg:w-[22px] lg:h-5 aspect-[1.11]"
+                          alt="x402 icon"
+                          src="https://c.animaapp.com/I7dLtijI/img/x402-icon-blue-2@2x.png"
+                        />
+                        <span className="[font-family:'Lato',Helvetica] font-semibold text-[#0052ff] text-base lg:text-xl tracking-[0] leading-5 whitespace-nowrap">
+                          {article.priceInfo.price}
+                        </span>
+                      </div>
+                    )}
 
-                      <h1
-                        className="relative flex-1 [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words overflow-hidden"
-                        style={{
-                          display: '-webkit-box',
-                          WebkitBoxOrient: 'vertical',
-                          WebkitLineClamp: 2,
-                          overflow: 'hidden',
-                          wordBreak: 'break-word',
-                          overflowWrap: 'break-word'
-                        }}
-                      >
-                        {content.title}
-                      </h1>
-                    </div>
+                    <h1
+                      className="relative w-full [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
+                      style={{
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word'
+                      }}
+                    >
+                      {content.title}
+                    </h1>
                   </div>
                 </div>
 
-                <div className="relative w-full lg:w-[364px] h-[205px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
+                <div className="relative w-full lg:w-[400px] h-[200px] lg:h-[225px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
                      style={{
                        backgroundImage: `url(${getValidDetailImageUrl(content.coverImage)})`
                      }}
                 />
               </div>
 
-              <blockquote className="flex flex-col items-start gap-5 p-5 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                <div className="flex items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex items-start justify-center w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
+              <blockquote className="flex flex-col items-start gap-4 lg:gap-5 p-4 lg:p-[30px] relative self-stretch w-full flex-[0_0_auto] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] rounded-lg">
+                <div className="flex items-start gap-2 lg:gap-4 relative self-stretch w-full flex-[0_0_auto]">
+                  <div className="flex items-start justify-center w-fit whitespace-nowrap relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[40px] lg:text-[50px] tracking-[0] leading-[60px] lg:leading-[80.0px]">
                     &quot;
                   </div>
 
                   <p
-                    className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-xl tracking-[0] leading-[32.0px]"
+                    className="relative flex-1 mt-[-1.00px] [font-family:'Lato',Helvetica] font-light text-off-black text-lg lg:text-xl tracking-[0] leading-[28px] lg:leading-[32.0px]"
                     style={{
                       wordBreak: 'break-word',
                       overflowWrap: 'break-word',
@@ -1579,26 +2077,44 @@ export const Content = (): JSX.Element => {
                     {content.description}
                   </p>
 
-                  <div className="flex items-end justify-center self-stretch w-5 relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[50px] tracking-[0] leading-[80.0px]">
+                  <div className="flex items-end justify-center self-stretch w-5 relative mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-red text-[40px] lg:text-[50px] tracking-[0] leading-[60px] lg:leading-[80.0px]">
                     &quot;
                   </div>
                 </div>
 
-                <cite
-                  className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                  onClick={handleUserClick}
-                  title={`View ${content.userName}'s profile`}
+                <UserCard
+                  userId={content.userId}
+                  userName={content.userName}
+                  userNamespace={content.userNamespace}
+                  userAvatar={content.userAvatar}
+                  userBio={content.userBio}
+                  userSpaces={userSpaces}
+                  onUserClick={handleUserClick}
+                  onSpaceClick={handleSpaceClick}
                 >
-                  <img
-                    className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
-                    alt="Profile image"
-                    src={content.userAvatar}
-                  />
+                  <cite
+                    className="inline-flex items-center gap-3 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                    onClick={handleUserClick}
+                    title={`View ${content.userName}'s profile`}
+                  >
+                    <img
+                      className="w-10 h-10 object-cover relative aspect-[1] rounded-full"
+                      alt="Profile image"
+                      src={content.userAvatar}
+                    />
 
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200">
-                    {content.userName}
-                  </span>
-                </cite>
+                    <div className="flex flex-col items-start gap-0.5">
+                      <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
+                        {content.userName}
+                      </span>
+                      {content.userBio && content.userBio.trim() && (
+                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-sm leading-relaxed">
+                          {content.userBio}
+                        </span>
+                      )}
+                    </div>
+                  </cite>
+                </UserCard>
               </blockquote>
             </div>
 
@@ -1615,19 +2131,19 @@ export const Content = (): JSX.Element => {
                     src="https://c.animaapp.com/5EW1c9Rn/img/ic-view.svg"
                   />
 
-                  <span className="mt-[-1.00px] relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg text-center tracking-[0] leading-5 whitespace-nowrap">
+                  <span className="mt-[-1.00px] relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm text-center tracking-[0] leading-5 whitespace-nowrap">
                     {article?.viewCount || 0}
                   </span>
                 </div>
 
                 {/* Arweave onchain storage link - Always show as clickable */}
-                <div
-                  className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity"
+                <button
+                  type="button"
+                  className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-none p-0"
                   title={article?.arChainId ? "View on Arweave" : "Arweave storage not available"}
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
                     if (!article?.arChainId) {
-                      console.warn('No arChainId available for this article');
+                      showToast('Arweave storage not available for this article', 'info');
                     } else {
                       const arweaveUrl = `https://arseed.web3infra.dev/${article.arChainId}`;
                       window.open(arweaveUrl, '_blank', 'noopener,noreferrer');
@@ -1635,39 +2151,211 @@ export const Content = (): JSX.Element => {
                   }}
                 >
                   <img
-                    className="w-full h-full"
+                    className="w-full h-full pointer-events-none"
                     alt="Arweave ar logo"
                     src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
                   />
-                </div>
+                </button>
               </div>
             </div>
-          </article>
 
-          {/* Collected in Section */}
-          {collectedInData.length > 0 && (
-            <section className="flex flex-col items-start gap-[30px] w-full pt-[30px]">
-              <h2 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9">
-                Collected in
-              </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[30px] w-full">
-                {collectedInData.map((collection) => (
-                  <CollectionCard
-                    key={collection.category}
-                    title={collection.category}
-                    treasureCount={collection.items.length}
-                    items={collection.items}
-                    onClick={() => navigate(`/space/${encodeURIComponent(collection.category)}`)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+            {/* Collected in spaces section - moved back to article content */}
+            {collectedInData.length > 0 && (
+              <section className="mt-[50px] border-t border-[#D3D3D3] pt-[30px] w-full self-stretch">
+                <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-[28px] mb-[20px]">
+                  Collected in
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {collectedInData.map((space) => (
+                    <TreasuryCard
+                      key={space.namespace || space.id?.toString()}
+                      space={space}
+                      onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            </article>
+
+            {/* Comment Section Modal - NetEase Music Style */}
+            {shouldShowModal && article && (
+              <>
+                {/* Apple-style frosted glass backdrop */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => { setIsCommentSectionOpen(false); refetchArticle(); }}
+                  style={{
+                    transition: 'opacity 600ms cubic-bezier(0.4, 0.0, 0.2, 1), backdrop-filter 800ms cubic-bezier(0.4, 0.0, 0.2, 1)',
+                    opacity: isCommentSectionOpen ? 1 : 0,
+                    background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.35) 100%)',
+                    backdropFilter: isCommentSectionOpen
+                      ? 'blur(25px) brightness(0.85) saturate(1.6) contrast(1.15)'
+                      : 'blur(0px) brightness(1) saturate(1) contrast(1)',
+                    WebkitBackdropFilter: isCommentSectionOpen
+                      ? 'blur(25px) brightness(0.85) saturate(1.6) contrast(1.15)'
+                      : 'blur(0px) brightness(1) saturate(1) contrast(1)',
+                  }}
+                />
+
+                {/* Comment modal */}
+                <div
+                  className="fixed bottom-0 left-0 right-0 z-50 flex justify-center"
+                  style={{
+                    transition: 'transform 700ms cubic-bezier(0.25, 1.25, 0.45, 0.95), opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1)',
+                    transform: isCommentSectionOpen
+                      ? 'translateY(0%)'
+                      : 'translateY(100%)',
+                    opacity: isCommentSectionOpen ? 1 : 0,
+                    transformOrigin: 'center bottom'
+                  }}
+                >
+                  <div
+                    className="h-[85vh] lg:h-[94vh] overflow-hidden w-full max-w-[1250px] mx-0 lg:mx-[30px]"
+                    style={{
+                      background: 'linear-gradient(0deg, rgba(224,224,224,0.18) 0%, rgba(224,224,224,0.18) 100%), linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 100%)',
+                      borderRadius: window.innerWidth >= 1024 ? '32px 32px 0 0' : '24px 24px 0 0',
+                      boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)',
+                    }}
+                    onWheel={(e) => {
+                      // Prevent wheel events from bubbling to parent
+                      e.stopPropagation();
+                    }}
+                    onTouchMove={(e) => {
+                      // Prevent touch move events from bubbling to parent
+                      e.stopPropagation();
+                    }}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={commentIcon}
+                          alt="Comments"
+                          className="w-[25px] h-[22px]"
+                          style={{
+                            filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(55%) contrast(90%)'
+                          }}
+                        />
+                        <div className="flex items-end gap-2">
+                          <h3
+                            className="[font-family:'Lato',Helvetica] font-semibold text-xl leading-none"
+                            style={{ color: 'rgba(0, 0, 0, 0.9)' }}
+                          >
+                            Comments
+                          </h3>
+                          {!loading && (
+                            <>
+                              <div
+                                className="w-1 h-1 rounded-full mb-1"
+                                style={{ background: 'rgba(0, 0, 0, 0.3)' }}
+                              />
+                              <span
+                                className="[font-family:'Lato',Helvetica] text-sm leading-none"
+                                style={{ color: 'rgba(0, 0, 0, 0.6)' }}
+                              >
+                                {totalComments === 0 ? 'No comments yet' : `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Close button */}
+                      <button
+                        onClick={() => { setIsCommentSectionOpen(false); refetchArticle(); }}
+                        className="flex items-center justify-center w-[36px] h-[36px] rounded-full"
+                      >
+                        <svg
+                          className="w-[20px] h-[20px]"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#696969"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Content area */}
+                    <div
+                      ref={commentScrollRef}
+                      className="h-[75vh] lg:h-[85vh] overflow-y-auto px-0 lg:px-4"
+                      data-comment-section="true"
+                      style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+                      }}
+                      onWheel={(e) => {
+                        // Ensure scroll events stay within the comment area
+                        e.stopPropagation();
+                      }}
+                      onTouchMove={(e) => {
+                        // Prevent touch scroll from bubbling to parent
+                        e.stopPropagation();
+                      }}
+                    >
+                      <div className="mb-12 px-0 lg:px-2">
+                        {/* Lazy load comments - only render when expanded */}
+                        {isCommentSectionOpen ? (
+                          <CommentSection
+                            targetType="article"
+                            targetId={article.uuid}
+                            className="px-0 py-0"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center py-12">
+                            <div className="text-gray-500 [font-family:'Lato',Helvetica] text-sm">
+                              Loading comments...
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Apple-style animations and scrollbar */}
+                <style jsx>{`
+                  /* Apple-style scrollbar */
+                  .h-\\[85vh\\]::-webkit-scrollbar {
+                    width: 6px;
+                    height: 6px;
+                  }
+                  .h-\\[85vh\\]::-webkit-scrollbar-track {
+                    background: transparent;
+                  }
+                  .h-\\[85vh\\]::-webkit-scrollbar-thumb {
+                    background: rgba(0, 0, 0, 0.25);
+                    border-radius: 3px;
+                    transition: background 0.2s ease;
+                    min-height: 20px;
+                  }
+                  .h-\\[85vh\\]::-webkit-scrollbar-thumb:hover {
+                    background: rgba(0, 0, 0, 0.4);
+                  }
+                  .h-\\[85vh\\]::-webkit-scrollbar-thumb:active {
+                    background: rgba(0, 0, 0, 0.5);
+                  }
+                  /* Hide scrollbar on non-hover */
+                  .h-\\[85vh\\] {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(0, 0, 0, 0.25) rgba(0, 0, 0, 0.05);
+                  }
+                `}</style>
+              </>
+            )}
+          </div>
+
         </main>
 
         {/* Sticky bottom button bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-5 px-4 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <div className="flex justify-between items-center w-full max-w-[1040px] mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-3 lg:py-5 px-3 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
               {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
@@ -1677,40 +2365,37 @@ export const Content = (): JSX.Element => {
                 size="large"
               />
 
+              {/* Comment button */}
+              <CommentButton
+                commentCount={totalComments || 0}
+                isLoading={loading}
+                onClick={() => setIsCommentSectionOpen(prev => !prev)}
+                isExpanded={isCommentSectionOpen}
+              />
+
               {/* Share dropdown menu */}
               <ShareDropdown
                 title={content.title}
-                url={window.location.href}
               />
             </div>
 
             <div className="flex items-center gap-5">
               {/* Edit button - only visible to author */}
               {(() => {
-                // Use namespace for comparison (more reliable) with id as fallback
                 const isAuthor = (user && article?.authorInfo) && (
                   (user.namespace && user.namespace === article.authorInfo.namespace) ||
                   (user.id && user.id === article.authorInfo.id)
                 );
-
-                console.log('Edit button check:', {
-                  userId: user?.id,
-                  userNamespace: user?.namespace,
-                  authorId: article?.authorInfo?.id,
-                  authorNamespace: article?.authorInfo?.namespace,
-                  isAuthor
-                });
-
                 return isAuthor;
               })() && (
                 <button
-                  onClick={() => navigate(`/create?edit=${article.uuid}`)}
-                  className="w-[38px] h-[38px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center border-0 p-0 hover:bg-gray-100"
+                  onClick={() => navigate(`/curate?edit=${article.uuid}`)}
+                  className="cursor-pointer transition-all duration-200 flex items-center justify-center p-0 hover:opacity-70"
                   aria-label="Edit"
                   title="Edit"
                 >
                   <img
-                    className="w-[22px] h-[22px]"
+                    className="w-[25px] h-[25px]"
                     alt="Edit"
                     src={getIconUrl('EDIT')}
                     style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
@@ -1723,14 +2408,14 @@ export const Content = (): JSX.Element => {
               // Content has been unlocked via payment - show "Visit" button
               <button
                 onClick={() => window.open(unlockedUrl, '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
+                className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                   Visit
                 </span>
 
                 <img
-                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
+                  className="relative w-[31px] h-[14.73px] mr-[-1.00px] transition-transform duration-200 group-hover:translate-x-1"
                   alt="Arrow"
                   src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
                 />
@@ -1739,14 +2424,14 @@ export const Content = (): JSX.Element => {
               // Content has targetUrl - show "Visit" button regardless of lock status
               <button
                 onClick={() => window.open(article.targetUrl, '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-colors"
+                className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
                   Visit
                 </span>
 
                 <img
-                  className="relative w-[31px] h-[14.73px] mr-[-1.00px]"
+                  className="relative w-[31px] h-[14.73px] mr-[-1.00px] transition-transform duration-200 group-hover:translate-x-1"
                   alt="Arrow"
                   src="https://c.animaapp.com/5EW1c9Rn/img/arrow-1.svg"
                 />
@@ -1755,15 +2440,15 @@ export const Content = (): JSX.Element => {
               // Content is locked and requires payment - show "Unlock now" button
               <button
                 onClick={handleUnlock}
-                className="h-[46px] gap-2.5 px-5 py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,255,255,1)_100%)] transition-all active:scale-95"
+                className="h-[38px] lg:h-[46px] gap-1.5 lg:gap-2.5 px-3 lg:px-5 py-1.5 lg:py-2 bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] inline-flex items-center relative flex-[0_0_auto] rounded-[50px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] hover:bg-[linear-gradient(0deg,rgba(0,82,255,0.9)_0%,rgba(0,82,255,0.9)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,255,255,1)_100%)] transition-all active:scale-95"
               >
-                <span className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
+                <span className="inline-flex items-center gap-1 lg:gap-2 relative flex-[0_0_auto]">
                   <img
-                    className="relative w-[27px] h-[25px] aspect-[1.09]"
+                    className="relative w-[20px] h-[18px] lg:w-[27px] lg:h-[25px] aspect-[1.09]"
                     alt="x402 icon"
                     src="https://c.animaapp.com/2ALjTCkW/img/x402-icon-blue-1@2x.png"
                   />
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-xl tracking-[0] leading-5 whitespace-nowrap">
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-[#ffffff] text-base lg:text-xl tracking-[0] leading-5 whitespace-nowrap">
                     Unlock now
                   </span>
                 </span>
@@ -1781,7 +2466,7 @@ export const Content = (): JSX.Element => {
           onWalletSelect={handleWalletSelect}
           walletAddress={walletAddress}
           availableBalance={walletBalance}
-          amount={article?.priceInfo ? `${article.priceInfo.price} ${article.priceInfo.currency}` : '0.01 USDC'}
+          amount={article?.priceInfo ? `${article.priceInfo.price} USD` : '0.01 USD'}
           network={getNetworkConfig(selectedNetwork).name}
           faucetLink={selectedNetwork === 'xlayer' && walletType === 'okx' ? 'https://www.okx.com/dex' : 'https://faucet.circle.com/'}
           isInsufficientBalance={(() => {
@@ -1834,13 +2519,34 @@ export const Content = (): JSX.Element => {
             isOpen={collectModalOpen}
             onClose={() => setCollectModalOpen(false)}
             articleId={article.uuid}
+            articleNumericId={article.id}
             articleTitle={article.title}
             isAlreadyCollected={isLiked}
-            onCollect={handleCollect}
-            onUncollect={handleUncollect}
+            onSaveComplete={async (isCollected, collectionCount) => {
+              // Update like state based on whether article is now collected or not
+              if (isCollected && !isLiked) {
+                const newLikesCount = likesCount + 1;
+                setIsLiked(true);
+                setLikesCount(newLikesCount);
+                updateArticleLikeState(article.uuid, true, newLikesCount);
+              } else if (!isCollected && isLiked) {
+                const newLikesCount = Math.max(0, likesCount - 1);
+                setIsLiked(false);
+                setLikesCount(newLikesCount);
+                updateArticleLikeState(article.uuid, false, newLikesCount);
+              }
+              // Refresh "Collected in" section to show the new treasury
+              fetchCollectedInData();
+              // Refetch article to get accurate diamond count from API
+              await refetchArticle();
+            }}
           />
         )}
+
       </div>
     </div>
+
+
+    </>
   );
 };

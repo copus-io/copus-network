@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useImagePreview } from "../../../contexts/ImagePreviewContext";
@@ -7,7 +7,9 @@ import { AuthService } from "../../../services/authService";
 import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
+import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
+import defaultBanner from "../../../assets/images/default-banner.svg";
 
 interface UserProfileContentProps {
   namespace: string;
@@ -15,7 +17,7 @@ interface UserProfileContentProps {
 
 export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespace }) => {
   const navigate = useNavigate();
-  const { user, toggleLike, updateUser, getArticleLikeState } = useUser();
+  const { user, toggleLike, updateUser, getArticleLikeState, updateArticleLikeState } = useUser();
   const { openPreview } = useImagePreview();
   const { showToast } = useToast();
 
@@ -27,6 +29,53 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [articlesLoading, setArticlesLoading] = useState(false);
   const [hasMoreArticles, setHasMoreArticles] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const isLoadingMoreRef = useRef(false); // Ref to prevent race conditions in scroll handler
+  const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
+  const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
+
+  // Collect Treasure Modal state
+  const [collectModalOpen, setCollectModalOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
+
+  // 智能Banner图片加载检测
+  const checkBannerImageLoad = React.useCallback((imageUrl: string) => {
+    if (!imageUrl || imageUrl === defaultBanner) {
+      setBannerImageLoaded(true);
+      setShowBannerLoadingSpinner(false);
+      return;
+    }
+
+    setBannerImageLoaded(false);
+    setShowBannerLoadingSpinner(false);
+
+    let isLoaded = false;
+
+    // 延迟300ms显示loading，如果图片快速加载完成就不显示loading
+    const loadingTimer = setTimeout(() => {
+      if (!isLoaded) {
+        setShowBannerLoadingSpinner(true);
+      }
+    }, 300);
+
+    // 创建新图片对象检测加载
+    const img = new Image();
+    img.onload = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true);
+      setShowBannerLoadingSpinner(false);
+    };
+    img.onerror = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true); // 即使加载失败也显示，避免持续loading
+      setShowBannerLoadingSpinner(false);
+    };
+    img.src = imageUrl;
+
+    // 清理函数
+    return () => clearTimeout(loadingTimer);
+  }, []);
 
   // Fetch user info and articles list
   useEffect(() => {
@@ -85,6 +134,10 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             coverUrl: userData.coverUrl,
             walletAddress: userData.walletAddress
           });
+
+          // 检测banner图片加载
+          const bannerUrl = userData.coverUrl || defaultBanner;
+          checkBannerImageLoad(bannerUrl);
         }
 
         console.log('[UserProfile] User info set successfully, now fetching liked articles...');
@@ -106,15 +159,15 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             content: article.content,
             cover: article.coverUrl,
             author: {
-              id: article.authorInfo.id,
-              name: article.authorInfo.username,
-              namespace: article.authorInfo.namespace,
-              avatar: article.authorInfo.faceUrl
+              id: article.authorInfo?.id,
+              name: article.authorInfo?.username,
+              namespace: article.authorInfo?.namespace,
+              avatar: article.authorInfo?.faceUrl
             },
-            category: article.categoryInfo.name,
-            categoryColor: article.categoryInfo.color,
-            categoryId: article.categoryInfo.id,
-            userId: article.authorInfo.id,
+            category: article.categoryInfo?.name || '',
+            categoryColor: article.categoryInfo?.color,
+            categoryId: article.categoryInfo?.id,
+            userId: article.authorInfo?.id,
             isLiked: article.isLiked,
             likeCount: article.likeCount,
             createTime: article.createAt,
@@ -171,11 +224,13 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   }, [namespace, showToast]);
 
   // Load more articles function
-  const loadMoreArticles = async () => {
-    if (!userInfo || articlesLoading || !hasMoreArticles) {
+  const loadMoreArticles = useCallback(async () => {
+    // Use ref to prevent multiple simultaneous calls
+    if (!userInfo || isLoadingMoreRef.current || !hasMoreArticles) {
       return;
     }
 
+    isLoadingMoreRef.current = true;
     setArticlesLoading(true);
     try {
       const nextPage = currentPage + 1;
@@ -189,15 +244,15 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         content: article.content,
         cover: article.coverUrl,
         author: {
-          id: article.authorInfo.id,
-          name: article.authorInfo.username,
-          namespace: article.authorInfo.namespace,
-          avatar: article.authorInfo.faceUrl
+          id: article.authorInfo?.id,
+          name: article.authorInfo?.username,
+          namespace: article.authorInfo?.namespace,
+          avatar: article.authorInfo?.faceUrl
         },
-        category: article.categoryInfo.name,
-        categoryColor: article.categoryInfo.color,
-        categoryId: article.categoryInfo.id,
-        userId: article.authorInfo.id,
+        category: article.categoryInfo?.name || '',
+        categoryColor: article.categoryInfo?.color,
+        categoryId: article.categoryInfo?.id,
+        userId: article.authorInfo?.id,
         isLiked: article.isLiked,
         likeCount: article.likeCount,
         createTime: article.createAt,
@@ -217,18 +272,24 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       showToast('Failed to load more content', 'error');
     } finally {
       setArticlesLoading(false);
+      isLoadingMoreRef.current = false;
     }
-  };
+  }, [userInfo, hasMoreArticles, currentPage, showToast]);
 
   // Infinite scroll effect
   useEffect(() => {
     const handleScroll = () => {
+      // Skip if no more articles or already loading
+      if (!hasMoreArticles || isLoadingMoreRef.current) {
+        return;
+      }
+
       const scrollTop = window.scrollY;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
       const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
 
-      if (scrolledToBottom && hasMoreArticles && !articlesLoading && userInfo) {
+      if (scrolledToBottom && userInfo) {
         loadMoreArticles();
       }
     };
@@ -237,7 +298,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [hasMoreArticles, articlesLoading, userInfo, currentPage]);
+  }, [hasMoreArticles, userInfo, loadMoreArticles]);
 
   // Handle like/treasure action
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -251,7 +312,30 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
       return;
     }
 
-    await toggleLike(articleId, currentIsLiked, currentLikeCount);
+    // Always show the collect modal (whether liked or not)
+    // User can uncollect from within the modal
+    const article = articles.find(a => a.id === articleId);
+    if (article) {
+      setSelectedArticle({
+        uuid: articleId,
+        title: article.title,
+        isLiked: currentIsLiked,
+        likeCount: currentLikeCount
+      });
+      setCollectModalOpen(true);
+    }
+  };
+
+  // Handle successful collection - update local state
+  const handleCollectSuccess = () => {
+    if (!selectedArticle) return;
+
+    // Update like state locally
+    const newLikeCount = selectedArticle.likeCount + 1;
+    updateArticleLikeState(selectedArticle.uuid, true, newLikeCount);
+
+    // Update selectedArticle state to reflect the change
+    setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
   };
 
   // Handle user click (view other users)
@@ -327,6 +411,15 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     }
   };
 
+  // Handle share
+  const handleShare = () => {
+    if (userInfo?.namespace) {
+      const url = `${window.location.origin}/u/${userInfo.namespace}`;
+      navigator.clipboard.writeText(url);
+      showToast('Profile link copied to clipboard', 'success');
+    }
+  };
+
   if (loading) {
     return <ArticleListSkeleton />;
   }
@@ -354,19 +447,46 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   }
 
   return (
-    <main className="flex flex-col gap-10 px-5 py-0 relative">
+    <main className="flex flex-col gap-5 px-5 pt-0 pb-0 relative">
       {/* User info header */}
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
         {/* Cover image */}
         <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
-          <img
-            src={userInfo.coverUrl || 'https://c.animaapp.com/w7obk4mX/img/banner.png'}
-            alt="Cover"
-            className={`w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 ${
-              isOwnProfile ? 'cursor-pointer' : ''
-            }`}
-            onClick={handleCoverClick}
-          />
+          {userInfo.coverUrl || defaultBanner ? (
+            <>
+              <div
+                className={`w-full h-full bg-cover bg-center bg-no-repeat hover:scale-105 transition-all duration-300 ${
+                  isOwnProfile ? 'cursor-pointer' : ''
+                } ${
+                  bannerImageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{
+                  backgroundImage: `url(${userInfo.coverUrl || defaultBanner})`,
+                  backgroundColor: '#f3f4f6'
+                }}
+                onClick={handleCoverClick}
+              />
+              {showBannerLoadingSpinner && (
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div
+              className={`w-full h-full bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center ${
+                isOwnProfile ? 'cursor-pointer' : ''
+              }`}
+              onClick={isOwnProfile ? handleCoverClick : undefined}
+            >
+              <div className="flex flex-col items-center gap-3 text-gray-500">
+                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span className="text-sm font-medium">Add cover image</span>
+              </div>
+            </div>
+          )}
           {/* Edit overlay - only shown on own profile */}
           {isOwnProfile && (
             <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -389,9 +509,23 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
               onClick={handleAvatarClick}
             />
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
-            <p className="text-gray-600 mb-4">@{userInfo.namespace}</p>
+          <div className="flex-1 pt-8">
+            <div className="flex items-center gap-4 mb-1">
+              <h1 className="text-3xl font-bold text-gray-900">{userInfo.username}</h1>
+              <button
+                type="button"
+                aria-label="Share profile"
+                className="relative flex-[0_0_auto] hover:opacity-70 transition-opacity"
+                onClick={handleShare}
+              >
+                <img
+                  alt="Share"
+                  src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
+                  className="w-5 h-5"
+                />
+              </button>
+            </div>
+            <p className="text-sm text-gray-400 mb-4">@{userInfo.namespace}</p>
             <p className="text-gray-700 mb-6">{userInfo.bio}</p>
 
             <div className="flex gap-8">
@@ -410,7 +544,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             </div>
           </div>
 
-          {/* Follow button or account status (only shown when viewing other users) */}
+          {/* Subscribe button or account status (only shown when viewing other users) */}
           {user && user.namespace !== namespace && (
             <button
               className={`px-6 py-2 rounded-full transition-colors ${
@@ -420,7 +554,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               }`}
               disabled={!accountExists}
             >
-              {accountExists ? 'Follow' : "This account doesn't exist"}
+              {accountExists ? 'Subscribe' : "This account doesn't exist"}
             </button>
           )}
           </div>
@@ -442,7 +576,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         className="w-full"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
           gap: '2rem'
         }}
       >
@@ -521,6 +655,21 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             </button>
           </div>
         </div>
+      )}
+
+      {/* Collect Treasure Modal */}
+      {selectedArticle && (
+        <CollectTreasureModal
+          isOpen={collectModalOpen}
+          onClose={() => {
+            setCollectModalOpen(false);
+            setSelectedArticle(null);
+          }}
+          articleId={selectedArticle.uuid}
+          articleTitle={selectedArticle.title}
+          isAlreadyCollected={selectedArticle.isLiked}
+          onCollectSuccess={handleCollectSuccess}
+        />
       )}
     </main>
   );

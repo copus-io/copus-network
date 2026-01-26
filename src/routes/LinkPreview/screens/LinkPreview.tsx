@@ -117,14 +117,14 @@ export const LinkPreview = (): JSX.Element => {
             className="inline-flex items-center justify-center gap-[15px] px-5 py-2 rounded-[50px] border border-solid border-[#f23a00] bg-transparent text-red hover:bg-[#f23a00]/10 h-auto transition-colors"
             asChild
           >
-            <Link to="/create">
+            <Link to="/curate">
               <img
                 className="w-5 h-5"
                 alt="Vector"
                 src="https://c.animaapp.com/mfuxsdcbXwMuVe/img/vector.svg"
               />
               <div className="[font-family:'Lato',Helvetica] font-bold text-lg tracking-[0] leading-[27px] whitespace-nowrap">
-                Create
+                Curate
               </div>
             </Link>
           </Button>

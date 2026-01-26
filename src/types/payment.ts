@@ -36,7 +36,7 @@ export const SUPPORTED_TOKENS = {
     verifyingContract: '0x74b7f16337b8972027f6196a17a631ac6de26d22'
   },
   usdt: {
-    name: 'USDT',
+    name: 'USD₮',
     verifyingContract: '0x779ded0c9e1022225f8e0630b35a9b54be713736'
   }
 } as const;

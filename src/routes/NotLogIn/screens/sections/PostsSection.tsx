@@ -17,6 +17,7 @@ const transformPostToArticleData = (post: any): ArticleData => {
     date: post.date,
     treasureCount: parseInt(post.treasureCount) || 0,
     visitCount: post.viewCount,
+    commentCount: 0,
     isLiked: false, // 静态数据默认为未点赞
     targetUrl: `https://${post.website}`,
     website: post.website
@@ -129,7 +130,7 @@ export const PostsSection = (): JSX.Element => {
       className="w-full px-10 pt-5 pb-[30px] min-h-screen"
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(408px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
         gap: '2rem'
       }}
     >
