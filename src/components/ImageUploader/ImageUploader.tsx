@@ -30,10 +30,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    console.log('🔥 ImageUploader: File selected, type:', type, 'file:', file?.name);
     if (!file) return;
 
     // Validate file
     const validation = validateImageFile(file);
+    console.log('🔥 ImageUploader: File validation result:', validation);
     if (!validation.isValid) {
       onError?.(validation.error || 'File format not supported');
       return;
@@ -43,6 +45,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     const preview = createImagePreview(file);
     setPreviewUrl(preview);
     setShowCropper(true);
+    console.log('🔥 ImageUploader: Cropper should show now');
   };
 
   const handleCrop = async (croppedFile: File) => {
@@ -122,6 +125,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const handleButtonClick = () => {
+    console.log('🔥 ImageUploader: Button clicked, type:', type);
     fileInputRef.current?.click();
   };
 

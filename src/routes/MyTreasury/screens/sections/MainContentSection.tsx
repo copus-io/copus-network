@@ -778,6 +778,7 @@ export const MainContentSection = (): JSX.Element => {
                       type="banner"
                       currentImage={createSpaceCoverUrl}
                       onImageUploaded={(url) => setCreateSpaceCoverUrl(url)}
+                      onError={(error) => showToast(error, 'error')}
                     />
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
                       Recommended size: 1200x675px (16:9 ratio)
