@@ -7,6 +7,7 @@ import { TreasuryCard } from "../../../../components/ui/TreasuryCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import defaultBanner from "../../../../assets/images/default-banner.svg";
 import { useToast } from "../../../../components/ui/toast";
+import { ImageUploader } from "../../../../components/ImageUploader/ImageUploader";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -260,6 +261,13 @@ export const MainContentSection = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
 
+  // Create Space Modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createSpaceName, setCreateSpaceName] = useState("");
+  const [createSpaceDescription, setCreateSpaceDescription] = useState("");
+  const [createSpaceCoverUrl, setCreateSpaceCoverUrl] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
   const targetNamespace = namespace || user?.namespace;
@@ -505,6 +513,55 @@ export const MainContentSection = (): JSX.Element => {
   const displayUser = isViewingOtherUser ? treasuryUserInfo : user;
   const displaySocialLinks = isViewingOtherUser ? (treasuryUserInfo?.socialLinks || []) : (socialLinksData || []);
 
+  // Handle create new space
+  const handleCreateSpace = async () => {
+    if (!createSpaceName.trim()) {
+      showToast('Please enter a space name', 'error');
+      return;
+    }
+
+    if (!user) {
+      showToast('Please log in to create a space', 'error');
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+
+      // Prepare optional fields
+      const description = createSpaceDescription.trim() || undefined;
+      const coverUrl = createSpaceCoverUrl.trim() || undefined;
+
+      // Call API to create space
+      const response = await AuthService.createSpace(createSpaceName.trim(), description, coverUrl);
+      console.log('Create space response:', response);
+
+      // Add the new space to the local state
+      const newSpace = response.data || response;
+      if (newSpace) {
+        setSpaces(prev => [newSpace, ...prev]);
+      }
+
+      showToast('Space created successfully', 'success');
+      setShowCreateModal(false);
+
+      // Reset form
+      setCreateSpaceName("");
+      setCreateSpaceDescription("");
+      setCreateSpaceCoverUrl("");
+
+      // Navigate to the new space if we have its namespace
+      if (newSpace?.namespace) {
+        navigate(`/treasury/${newSpace.namespace}`);
+      }
+    } catch (err) {
+      console.error('Failed to create space:', err);
+      showToast('Failed to create space', 'error');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   // Handle cover image upload
   const handleCoverUpload = async (imageUrl: string) => {
     if (!user) return;
@@ -557,6 +614,22 @@ export const MainContentSection = (): JSX.Element => {
         onCoverUpload={handleCoverUpload}
       />
 
+      {/* Create New Space Button - only show for own profile */}
+      {!isViewingOtherUser && (
+        <div className="w-full flex justify-end px-2.5 lg:px-0 pt-2 pb-2">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-red hover:bg-red/90 text-white rounded-[50px] transition-colors [font-family:'Lato',Helvetica] font-bold text-sm"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5V19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Create New Space
+          </button>
+        </div>
+      )}
+
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
       <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8 w-full pt-[10px] px-2.5 lg:pl-2.5 lg:pr-0">
         {spaces.length === 0 ? (
@@ -593,6 +666,162 @@ export const MainContentSection = (): JSX.Element => {
           ))
         )}
       </div>
+
+      {/* Create Space Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setShowCreateModal(false);
+              setCreateSpaceName("");
+              setCreateSpaceDescription("");
+              setCreateSpaceCoverUrl("");
+            }}
+          />
+
+          {/* Modal */}
+          <div
+            className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="create-space-title"
+            aria-modal="true"
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowCreateModal(false);
+                setCreateSpaceName("");
+                setCreateSpaceDescription("");
+                setCreateSpaceCoverUrl("");
+              }}
+              className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
+              aria-label="Close dialog"
+              type="button"
+            >
+              <img
+                className="w-full"
+                alt=""
+                src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
+              />
+            </button>
+
+            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
+              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
+                <h2
+                  id="create-space-title"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+                >
+                  Create New Space
+                </h2>
+
+                {/* Space Name */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="create-space-name-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Name
+                  </label>
+
+                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                    <input
+                      id="create-space-name-input"
+                      type="text"
+                      value={createSpaceName}
+                      onChange={(e) => setCreateSpaceName(e.target.value)}
+                      placeholder="Enter space name"
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
+                      aria-required="true"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Space Description */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="create-space-description-input"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Description (Optional)
+                  </label>
+
+                  <div className="flex items-start px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                    <textarea
+                      id="create-space-description-input"
+                      value={createSpaceDescription}
+                      onChange={(e) => setCreateSpaceDescription(e.target.value)}
+                      placeholder="Describe your space (optional)"
+                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
+                      rows={3}
+                      maxLength={200}
+                    />
+                  </div>
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                    {createSpaceDescription.length}/200 characters
+                  </span>
+                </div>
+
+                {/* Cover Image Upload */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="create-space-cover-upload"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Cover Image (Optional)
+                  </label>
+
+                  <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
+                    <ImageUploader
+                      onImageUploaded={(url) => setCreateSpaceCoverUrl(url)}
+                      initialImage={createSpaceCoverUrl}
+                      placeholder="Upload cover image for sharing cards"
+                      aspectRatio="16:9"
+                      maxSize={5}
+                    />
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                      Recommended size: 1200x675px (16:9 ratio)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end relative self-stretch w-full flex-[0_0_auto]">
+                {/* Cancel and Create buttons */}
+                <div className="flex items-center gap-2.5">
+                  <button
+                    className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setCreateSpaceName("");
+                      setCreateSpaceDescription("");
+                      setCreateSpaceCoverUrl("");
+                    }}
+                    type="button"
+                  >
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                      Cancel
+                    </span>
+                  </button>
+
+                  <button
+                    className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
+                    onClick={handleCreateSpace}
+                    disabled={isCreating || !createSpaceName.trim()}
+                    type="button"
+                  >
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                      {isCreating ? 'Creating...' : 'Create Space'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

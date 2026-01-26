@@ -7,6 +7,7 @@ import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
+import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 import { devLog } from "../../../utils/devLogger";
 import { ErrorHandler } from "../../../utils/errorHandler";
 import { API_ENDPOINTS } from "../../../config/apiEndpoints";
@@ -294,6 +295,7 @@ export const SpaceContentSection = (): JSX.Element => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSpaceName, setEditSpaceName] = useState("");
   const [editSpaceDescription, setEditSpaceDescription] = useState("");
+  const [editSpaceCoverUrl, setEditSpaceCoverUrl] = useState("");
   const [displaySpaceName, setDisplaySpaceName] = useState("");
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -767,8 +769,10 @@ export const SpaceContentSection = (): JSX.Element => {
   const handleEditSpace = () => {
     const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
     const currentDescription = spaceInfo?.description || '';
+    const currentCoverUrl = spaceInfo?.coverUrl || '';
     setEditSpaceName(currentName);
     setEditSpaceDescription(currentDescription);
+    setEditSpaceCoverUrl(currentCoverUrl);
     setShowEditModal(true);
 
     // 🔍 SEARCH: dev-log-space-edit-modal
@@ -805,6 +809,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
       // Prepare optional fields
       const description = editSpaceDescription.trim() || undefined;
+      const coverUrl = editSpaceCoverUrl.trim() || undefined;
 
       // 🔍 SEARCH: space-name-handling-for-restricted-spaces
       // Use current displayed name if name editing is not allowed
@@ -814,6 +819,7 @@ export const SpaceContentSection = (): JSX.Element => {
         spaceId,
         name: nameToUse,
         description,
+        coverUrl,
         canEditName: canEditSpaceName
       }, {
         component: 'SpaceContentSection',
@@ -821,7 +827,7 @@ export const SpaceContentSection = (): JSX.Element => {
       });
 
       // Call API to update space with all fields
-      await AuthService.updateSpace(spaceId, nameToUse, description);
+      await AuthService.updateSpace(spaceId, nameToUse, description, coverUrl);
 
       // Only update display name if name editing was allowed
       if (canEditSpaceName) {
@@ -894,17 +900,26 @@ export const SpaceContentSection = (): JSX.Element => {
     setDeleteConfirmOpen(true);
   };
 
-  // Confirm delete article
+  // Confirm delete/remove article based on space type
   const confirmDeleteArticle = async () => {
     if (!articleToDelete) return;
 
     try {
       setIsDeleting(true);
-      await AuthService.deleteArticle(articleToDelete);
+
+      if (isCurationsSpace) {
+        // In Curations space: Delete the article permanently
+        await AuthService.deleteArticle(articleToDelete);
+        showToast('Article deleted successfully', 'success');
+      } else {
+        // In other spaces: Remove from space (use like/unlike API)
+        await AuthService.likeArticle(articleToDelete);
+        showToast('Article removed from space', 'success');
+      }
+
       // Remove the article from local state
       setArticles(prev => prev.filter(a => a.uuid !== articleToDelete));
       setTotalArticleCount(prev => Math.max(0, prev - 1));
-      showToast('Article deleted successfully', 'success');
       setDeleteConfirmOpen(false);
       setArticleToDelete(null);
     } catch (err) {
@@ -929,9 +944,9 @@ export const SpaceContentSection = (): JSX.Element => {
     // Check if current user is the author of this article
     const isArticleAuthor = !!user && (article.authorInfo?.id === user.id || article.authorInfo?.namespace === user.namespace);
 
-    // Show edit/delete buttons for articles created by the current user
+    // Show edit/delete buttons for articles created by the current user or space owner
     const canEditArticle = isArticleAuthor;
-    const canDeleteArticle = isArticleAuthor;
+    const canDeleteArticle = isArticleAuthor || isOwner; // Space owners can also delete/remove articles
 
     return (
       <ArticleCard
@@ -1125,6 +1140,29 @@ export const SpaceContentSection = (): JSX.Element => {
                   </span>
                 </div>
 
+                {/* Cover Image Upload */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    htmlFor="edit-space-cover-upload"
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Cover Image (Optional)
+                  </label>
+
+                  <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
+                    <ImageUploader
+                      onImageUploaded={(url) => setEditSpaceCoverUrl(url)}
+                      initialImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
+                      placeholder="Upload cover image for sharing cards"
+                      aspectRatio="16:9"
+                      maxSize={5}
+                    />
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                      Recommended size: 1200x675px (16:9 ratio)
+                    </span>
+                  </div>
+                </div>
+
               </div>
 
               <div className="flex items-center justify-between relative self-stretch w-full flex-[0_0_auto]">
@@ -1239,10 +1277,13 @@ export const SpaceContentSection = (): JSX.Element => {
                 id="delete-confirm-title"
                 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
               >
-                Delete Article
+                {isCurationsSpace ? 'Delete Article' : 'Remove from Space'}
               </h2>
               <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                Are you sure you want to delete this article? This action cannot be undone.
+                {isCurationsSpace
+                  ? 'Are you sure you want to permanently delete this article? This action cannot be undone.'
+                  : 'Are you sure you want to remove this article from the space? The article will remain available elsewhere.'
+                }
               </p>
             </div>
 
@@ -1268,7 +1309,10 @@ export const SpaceContentSection = (): JSX.Element => {
                 type="button"
               >
                 <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {isDeleting
+                    ? (isCurationsSpace ? 'Deleting...' : 'Removing...')
+                    : (isCurationsSpace ? 'Delete' : 'Remove')
+                  }
                 </span>
               </button>
             </div>
