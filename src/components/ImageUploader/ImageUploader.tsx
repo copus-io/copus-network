@@ -82,7 +82,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       console.log('🔥 Upload successful, server response:', result);
 
       onImageUploaded(result.url);
-      console.log('🔥 Image URL passed to parent component:', result.url);
+      console.log('🔥🔥🔥 SPACE ImageUploader: Image URL passed to parent component:', result.url);
 
       // Clean up resources
       if (previewUrl) {
@@ -126,7 +126,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const handleButtonClick = () => {
-    console.log('🔥 ImageUploader: Button clicked, type:', type);
+    console.log('🔥🔥🔥 SPACE ImageUploader: Button clicked, type:', type);
     fileInputRef.current?.click();
   };
 

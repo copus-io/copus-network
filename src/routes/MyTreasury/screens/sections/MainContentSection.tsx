@@ -777,7 +777,11 @@ export const MainContentSection = (): JSX.Element => {
                     <ImageUploader
                       type="banner"
                       currentImage={createSpaceCoverUrl}
-                      onImageUploaded={(url) => setCreateSpaceCoverUrl(url)}
+                      onImageUploaded={(url) => {
+                        console.log('🔥🔥🔥 SPACE CREATE: Received image URL:', url);
+                        setCreateSpaceCoverUrl(url);
+                        console.log('🔥🔥🔥 SPACE CREATE: State updated with URL:', url);
+                      }}
                       onError={(error) => showToast(error, 'error')}
                     />
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">

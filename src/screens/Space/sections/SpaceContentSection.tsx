@@ -1155,7 +1155,11 @@ export const SpaceContentSection = (): JSX.Element => {
                     <ImageUploader
                       type="banner"
                       currentImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
-                      onImageUploaded={(url) => setEditSpaceCoverUrl(url)}
+                      onImageUploaded={(url) => {
+                        console.log('🔥🔥🔥 SPACE EDIT: Received image URL:', url);
+                        setEditSpaceCoverUrl(url);
+                        console.log('🔥🔥🔥 SPACE EDIT: State updated with URL:', url);
+                      }}
                       onError={(error) => showToast(error, 'error')}
                     />
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
