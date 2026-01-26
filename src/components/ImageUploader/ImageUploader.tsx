@@ -25,7 +25,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [isUploading, setIsUploading] = useState(false);
 
   const isAvatar = type === 'avatar';
-  const aspectRatio = isAvatar ? 1 : 16 / 9; // Avatar 1:1, Banner 16:9 (standard widescreen)
+  const aspectRatio = isAvatar ? 1 : 560 / 360; // Avatar 1:1, Banner 560:360 (Telegram card format)
   const cropShape = isAvatar ? 'circle' : 'rect';
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,7 +214,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           Banner image
         </div>
 
-        <div className="flex flex-col h-[102px] items-center px-0 py-2.5 relative self-stretch w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent overflow-hidden">
+        <div className="flex flex-col h-[130px] items-center px-0 py-2.5 relative self-stretch w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent overflow-hidden">
           {/* Current banner image */}
           {currentImage && (
             <div
