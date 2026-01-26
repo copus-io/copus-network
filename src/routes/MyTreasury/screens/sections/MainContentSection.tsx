@@ -630,11 +630,9 @@ export const MainContentSection = (): JSX.Element => {
                     Upload a custom cover image for your space. This will be used when sharing your space.
                   </p>
                   <ImageUploader
-                    onImageUploaded={(imageUrl) => setNewSpaceCoverUrl(imageUrl)}
-                    onImageRemoved={() => setNewSpaceCoverUrl("")}
-                    currentImageUrl={newSpaceCoverUrl}
-                    placeholder="Choose cover image..."
-                    className="w-full"
+                    type="banner"
+                    currentImage={newSpaceCoverUrl}
+                    onImageUploaded={setNewSpaceCoverUrl}
                   />
                 </div>
 

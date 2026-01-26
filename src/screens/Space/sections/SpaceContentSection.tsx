@@ -7,7 +7,7 @@ import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { ArticleCard, ArticleData } from "../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
-import ImageUploader from "../../../components/ImageUploader/ImageUploader";
+import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 
 // Add debug logging for Space component
 console.log('📍 SpaceContentSection module loaded');
@@ -1079,11 +1079,9 @@ export const SpaceContentSection = (): JSX.Element => {
                   </label>
 
                   <ImageUploader
-                    currentImageUrl={editSpaceCoverUrl}
-                    onImageUpload={setEditSpaceCoverUrl}
-                    placeholder="Upload a cover image for your treasury"
-                    aspectRatio="16:9"
-                    maxSize={5}
+                    type="banner"
+                    currentImage={editSpaceCoverUrl}
+                    onImageUploaded={setEditSpaceCoverUrl}
                   />
                 </div>
               </div>
@@ -1197,3 +1195,5 @@ export const SpaceContentSection = (): JSX.Element => {
     </main>
   );
 };
+
+export default SpaceContentSection;
