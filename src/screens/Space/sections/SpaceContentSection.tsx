@@ -884,7 +884,9 @@ export const SpaceContentSection = (): JSX.Element => {
   const isOwner = !!user && spaceInfo?.authorNamespace === user?.namespace;
 
   // Check if this is a curations space
-  const isCurationsSpace = category ? decodeURIComponent(category).endsWith("'s curations") : false;
+  // spaceType 2 = Curations, or fallback to category name check for old routes
+  const isCurationsSpace = spaceInfo?.spaceType === 2 ||
+    (category ? decodeURIComponent(category).endsWith("'s curations") : false);
 
   // Track hovered card ID
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
