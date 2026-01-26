@@ -1278,3 +1278,5 @@ export const SpaceContentSection = (): JSX.Element => {
     </main>
   );
 };
+
+export default SpaceContentSection;
