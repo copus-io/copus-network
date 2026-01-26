@@ -775,11 +775,9 @@ export const MainContentSection = (): JSX.Element => {
 
                   <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
                     <ImageUploader
+                      type="banner"
+                      currentImage={createSpaceCoverUrl}
                       onImageUploaded={(url) => setCreateSpaceCoverUrl(url)}
-                      initialImage={createSpaceCoverUrl}
-                      placeholder="Upload cover image for sharing cards"
-                      aspectRatio="16:9"
-                      maxSize={5}
                     />
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
                       Recommended size: 1200x675px (16:9 ratio)
