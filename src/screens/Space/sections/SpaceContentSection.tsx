@@ -26,7 +26,7 @@ interface SpaceFetchCacheEntry {
 const spaceFetchCache: Map<string, SpaceFetchCacheEntry> = new Map();
 const SPACE_CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles
 
-// Space Info Section Component
+// Space Info Section Component - Styled similar to Profile page
 const SpaceInfoSection = ({
   spaceName,
   treasureCount,
@@ -35,6 +35,7 @@ const SpaceInfoSection = ({
   authorNamespace,
   spaceDescription,
   spaceCoverUrl,
+  firstArticleCover,
   isFollowing,
   isOwner,
   spaceType,
@@ -51,6 +52,7 @@ const SpaceInfoSection = ({
   authorNamespace?: string;
   spaceDescription?: string;
   spaceCoverUrl?: string;
+  firstArticleCover?: string;
   isFollowing: boolean;
   isOwner: boolean;
   spaceType?: number;
@@ -60,14 +62,7 @@ const SpaceInfoSection = ({
   onAuthorClick: () => void;
   onEdit?: () => void;
 }): JSX.Element => {
-  // Allow space owners to edit all types of spaces (including default Collections/Curations)
-  // Now that we support descriptions and covers, owners should be able to customize their spaces
   const canEdit = isOwner;
-
-  // Debug logging for spaceCoverUrl changes
-  React.useEffect(() => {
-    console.log('🖼️ SPACE INFO: Cover URL changed:', spaceCoverUrl);
-  }, [spaceCoverUrl]);
   const [showUnfollowDropdown, setShowUnfollowDropdown] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const { showToast } = useToast();
@@ -94,60 +89,100 @@ const SpaceInfoSection = ({
   };
 
   return (
-    <section className="flex flex-col items-start gap-2 relative self-stretch w-full flex-[0_0_auto] px-4 lg:px-0">
-      {/* Title row with edit/share buttons - only show title when no cover image */}
-      <div className="flex items-center gap-4 relative self-stretch w-full flex-wrap">
-        {!spaceCoverUrl && (
-          <h1 className="relative w-fit [font-family:'Lato',Helvetica] font-medium text-off-black text-3xl tracking-[0] leading-[42.0px] whitespace-nowrap">
-            {spaceName}
-          </h1>
-        )}
-
-        {/* Action buttons - only show when no cover image */}
-        {!spaceCoverUrl && (
-          <div className="inline-flex items-center gap-3 ml-auto">
-            {canEdit ? (
-              // Edit button for space owner
+    <section className="w-full">
+      {/* Cover image - only show if there's a cover */}
+      {spaceCoverUrl && (
+        <div className="w-full h-48 rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
+          <div
+            className="w-full h-full bg-cover bg-center bg-no-repeat rounded-t-2xl overflow-hidden"
+            style={{
+              backgroundImage: `url(${spaceCoverUrl})`,
+              backgroundColor: '#f3f4f6'
+            }}
+          />
+          {/* Edit and Share buttons - positioned at top right */}
+          <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+            {canEdit && (
               <button
-                className="inline-flex items-center gap-2 px-0 py-0 cursor-pointer hover:opacity-70 transition-opacity"
-                aria-label="Edit space"
                 type="button"
+                aria-label="Edit space"
+                className="w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center hover:opacity-70 transition-opacity"
                 onClick={onEdit}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
-            ) : !isOwner && (
-              // Subscribe/Subscribed button for non-owner
-              isFollowing ? (
+            )}
+
+            {/* Share button */}
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Share space"
+                className="w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center hover:opacity-70 transition-opacity"
+                onClick={() => setShowShareDropdown(!showShareDropdown)}
+              >
+                <img
+                  alt="Share"
+                  src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
+                  className="w-4 h-4"
+                />
+              </button>
+              {showShareDropdown && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowShareDropdown(false)} />
+                  <div className="absolute top-full right-0 mt-1 w-[183px] bg-white rounded-[15px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] z-20">
+                    <button
+                      onClick={handleCopyLink}
+                      className="flex items-center gap-4 pl-5 pr-5 py-4 w-full text-left rounded-t-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)]"
+                    >
+                      <svg className="w-[18px] h-[18px]" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7.5 10.5C7.89782 11.0052 8.40206 11.4133 8.97664 11.6955C9.55121 11.9777 10.1815 12.1267 10.8214 12.1321C11.4613 12.1375 12.094 12.0992 12.6729 11.8202C13.2518 11.5412 13.7627 11.1286 14.1675 10.6125L16.4175 8.3625C17.1977 7.53784 17.6309 6.44599 17.6221 5.31271C17.6133 4.17943 17.163 3.09441 16.3705 2.28195C15.578 1.46948 14.503 1.01919 13.3797 1.01039C12.2564 1.00159 11.1746 1.43483 10.35 2.215L9.1125 3.4525" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M10.5 7.5C10.1022 6.99475 9.59794 6.58669 9.02336 6.30453C8.44879 6.02237 7.81854 5.87331 7.17863 5.86789C6.53872 5.86247 5.90598 5.90083 5.32709 6.17978C4.7482 6.45873 4.23726 6.87144 3.8325 7.3875L1.5825 9.6375C0.802299 10.4622 0.369062 11.554 0.377857 12.6873C0.386652 13.8206 0.836948 14.9056 1.62948 15.718C2.422 16.5305 3.49702 16.9808 4.62031 16.9896C5.74359 16.9984 6.82543 16.5652 7.65 15.785L8.8875 14.5475" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Copy link</span>
+                    </button>
+                    <button
+                      onClick={handleShareOnX}
+                      className="flex items-center gap-4 pl-5 pr-5 py-4 w-full text-left rounded-b-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)] border-t border-[#e0e0e0]"
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#454545"/>
+                      </svg>
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Share on X</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Subscribe button - positioned at bottom right (only for non-owners) */}
+          {!isOwner && (
+            <div className="absolute bottom-3 right-3 z-10">
+              {isFollowing ? (
                 <div className="relative">
                   <button
-                    className="inline-flex items-center gap-2 px-3 h-[35px] rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-transparent"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-white shadow-lg"
                     aria-label="Subscription options"
                     type="button"
                     onClick={() => setShowUnfollowDropdown(!showUnfollowDropdown)}
                   >
-                    <svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
-                      <path d="M12.6967 13.0467C15.1618 13.0467 17.1671 11.0411 17.1671 8.57603C17.1671 6.11099 15.1618 4.10566 12.6967 4.10566C10.2317 4.10566 8.22603 6.11099 8.22603 8.57603C8.22603 11.0411 10.2317 13.0467 12.6967 13.0467ZM12.6967 4.80566C14.7759 4.80566 16.4671 6.49688 16.4671 8.57603C16.4671 10.6552 14.7759 12.3467 12.6967 12.3467C10.6176 12.3467 8.92603 10.6552 8.92603 8.57603C8.92603 6.49688 10.6176 4.80566 12.6967 4.80566Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
-                      <path d="M25.2021 14.8904C25.3276 14.1689 25.3935 13.432 25.3935 12.6967C25.3935 5.6957 19.6978 0 12.6967 0C5.6957 0 0 5.6957 0 12.6967C0 19.6978 5.6957 25.3935 12.6967 25.3935C13.4323 25.3935 14.1695 25.328 14.8906 25.2024C16.238 26.9034 18.3166 28 20.65 28C24.7027 28 28 24.7027 28 20.65C28 18.3165 26.9033 16.2378 25.2021 14.8904ZM12.6967 0.7C19.3119 0.7 24.6935 6.08159 24.6935 12.6967C24.6935 13.2802 24.6495 13.8647 24.5657 14.4409C23.4305 13.7224 22.09 13.3 20.65 13.3C18.8694 13.3 17.2353 13.9372 15.962 14.9946C14.9104 14.6529 13.8131 14.4754 12.6967 14.4754C8.76307 14.4754 5.13302 16.7004 3.32408 20.1724C1.68397 18.1203 0.7 15.522 0.7 12.6967C0.7 6.08159 6.08159 0.7 12.6967 0.7ZM12.6967 24.6935C9.17831 24.6935 6.00907 23.1709 3.81268 20.7502C5.45388 17.3611 8.92765 15.1754 12.6967 15.1754C13.6074 15.1754 14.5029 15.306 15.3694 15.5496C14.0911 16.8727 13.3 18.6694 13.3 20.65C13.3 22.0899 13.7223 23.4303 14.4408 24.5655C13.8649 24.6492 13.2804 24.6935 12.6967 24.6935ZM20.65 27.3C16.9832 27.3 14 24.3168 14 20.65C14 16.9832 16.9832 14 20.65 14C24.3168 14 27.3 16.9832 27.3 20.65C27.3 24.3168 24.3168 27.3 20.65 27.3Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
-                      <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
-                    </svg>
-                    <span className="[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
+                    <span className="[font-family:'Lato',Helvetica] font-medium text-sm tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
                       Subscribed
                     </span>
-                    <svg width="16" height="16" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
+                    <svg width="14" height="14" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
                       <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
-
                   {showUnfollowDropdown && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowUnfollowDropdown(false)} />
-                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-[50px] shadow-lg z-20 w-full">
+                      <div className="fixed inset-0 z-20" onClick={() => setShowUnfollowDropdown(false)} />
+                      <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-[50px] shadow-lg z-30 min-w-[120px]">
                         <button
-                          className="w-full px-4 py-2 text-center text-red hover:bg-gray-50 rounded-[50px] [font-family:'Lato',Helvetica] font-medium text-base"
+                          className="w-full px-4 py-2 text-center text-red hover:bg-gray-50 rounded-[50px] [font-family:'Lato',Helvetica] font-medium text-sm"
                           onClick={() => {
                             setShowUnfollowDropdown(false);
                             onUnfollow();
@@ -161,18 +196,116 @@ const SpaceInfoSection = ({
                 </div>
               ) : (
                 <button
-                  className="inline-flex items-center gap-2 px-3 h-[35px] rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all shadow-lg"
                   style={{ background: 'linear-gradient(0deg, rgba(43, 134, 73, 0.1) 0%, rgba(43, 134, 73, 0.1) 100%), #FFFFFF' }}
                   aria-label="Subscribe to space"
                   type="button"
                   onClick={onFollow}
                 >
-                  <svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
+                  <svg width="22" height="22" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
                     <path d="M12.6967 13.0467C15.1618 13.0467 17.1671 11.0411 17.1671 8.57603C17.1671 6.11099 15.1618 4.10566 12.6967 4.10566C10.2317 4.10566 8.22603 6.11099 8.22603 8.57603C8.22603 11.0411 10.2317 13.0467 12.6967 13.0467ZM12.6967 4.80566C14.7759 4.80566 16.4671 6.49688 16.4671 8.57603C16.4671 10.6552 14.7759 12.3467 12.6967 12.3467C10.6176 12.3467 8.92603 10.6552 8.92603 8.57603C8.92603 6.49688 10.6176 4.80566 12.6967 4.80566Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
                     <path d="M25.2021 14.8904C25.3276 14.1689 25.3935 13.432 25.3935 12.6967C25.3935 5.6957 19.6978 0 12.6967 0C5.6957 0 0 5.6957 0 12.6967C0 19.6978 5.6957 25.3935 12.6967 25.3935C13.4323 25.3935 14.1695 25.328 14.8906 25.2024C16.238 26.9034 18.3166 28 20.65 28C24.7027 28 28 24.7027 28 20.65C28 18.3165 26.9033 16.2378 25.2021 14.8904ZM12.6967 0.7C19.3119 0.7 24.6935 6.08159 24.6935 12.6967C24.6935 13.2802 24.6495 13.8647 24.5657 14.4409C23.4305 13.7224 22.09 13.3 20.65 13.3C18.8694 13.3 17.2353 13.9372 15.962 14.9946C14.9104 14.6529 13.8131 14.4754 12.6967 14.4754C8.76307 14.4754 5.13302 16.7004 3.32408 20.1724C1.68397 18.1203 0.7 15.522 0.7 12.6967C0.7 6.08159 6.08159 0.7 12.6967 0.7ZM12.6967 24.6935C9.17831 24.6935 6.00907 23.1709 3.81268 20.7502C5.45388 17.3611 8.92765 15.1754 12.6967 15.1754C13.6074 15.1754 14.5029 15.306 15.3694 15.5496C14.0911 16.8727 13.3 18.6694 13.3 20.65C13.3 22.0899 13.7223 23.4303 14.4408 24.5655C13.8649 24.6492 13.2804 24.6935 12.6967 24.6935ZM20.65 27.3C16.9832 27.3 14 24.3168 14 20.65C14 16.9832 16.9832 14 20.65 14C24.3168 14 27.3 16.9832 27.3 20.65C27.3 24.3168 24.3168 27.3 20.65 27.3Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
                     <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
                   </svg>
-                  <span className="[font-family:'Lato',Helvetica] font-medium text-base tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
+                  <span className="[font-family:'Lato',Helvetica] font-medium text-sm tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
+                    Subscribe
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Space information */}
+      <div className={`relative flex flex-col items-center text-center ${spaceCoverUrl ? 'mt-[-40px]' : ''}`}>
+        {/* Space avatar - use author avatar for default spaces, first article cover for custom */}
+        {(() => {
+          const isDefaultSpace = spaceType === 1 || spaceType === 2;
+          const avatarImage = isDefaultSpace ? authorAvatar : firstArticleCover;
+          const firstLetter = spaceName?.charAt(0)?.toUpperCase() || 'S';
+
+          return avatarImage ? (
+            <img
+              src={avatarImage}
+              alt={spaceName}
+              className="w-20 h-20 rounded-full object-cover mb-3 border-4 border-white shadow-lg"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mb-3 border-4 border-white shadow-lg">
+              <span className="text-2xl font-medium text-gray-600">{firstLetter}</span>
+            </div>
+          );
+        })()}
+
+        {/* Space name */}
+        <h1 className="text-2xl font-bold text-gray-900 mb-3">{spaceName}</h1>
+
+        {/* Action buttons - show below name when no cover */}
+        {!spaceCoverUrl && (
+          <div className="flex items-center gap-3 mb-3">
+            {canEdit && (
+              <button
+                type="button"
+                aria-label="Edit space"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+                onClick={onEdit}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )}
+
+            {/* Subscribe button (only for non-owners) */}
+            {!isOwner && (
+              isFollowing ? (
+                <div className="relative">
+                  <button
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-white"
+                    aria-label="Subscription options"
+                    type="button"
+                    onClick={() => setShowUnfollowDropdown(!showUnfollowDropdown)}
+                  >
+                    <span className="[font-family:'Lato',Helvetica] font-medium text-sm tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
+                      Subscribed
+                    </span>
+                    <svg width="14" height="14" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
+                      <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  {showUnfollowDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setShowUnfollowDropdown(false)} />
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-gray-200 rounded-[50px] shadow-lg z-30 min-w-[120px]">
+                        <button
+                          className="w-full px-4 py-2 text-center text-red hover:bg-gray-50 rounded-[50px] [font-family:'Lato',Helvetica] font-medium text-sm"
+                          onClick={() => {
+                            setShowUnfollowDropdown(false);
+                            onUnfollow();
+                          }}
+                        >
+                          Unsubscribe
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <button
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all"
+                  style={{ background: 'linear-gradient(0deg, rgba(43, 134, 73, 0.1) 0%, rgba(43, 134, 73, 0.1) 100%), #FFFFFF' }}
+                  aria-label="Subscribe to space"
+                  type="button"
+                  onClick={onFollow}
+                >
+                  <svg width="22" height="22" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
+                    <path d="M12.6967 13.0467C15.1618 13.0467 17.1671 11.0411 17.1671 8.57603C17.1671 6.11099 15.1618 4.10566 12.6967 4.10566C10.2317 4.10566 8.22603 6.11099 8.22603 8.57603C8.22603 11.0411 10.2317 13.0467 12.6967 13.0467ZM12.6967 4.80566C14.7759 4.80566 16.4671 6.49688 16.4671 8.57603C16.4671 10.6552 14.7759 12.3467 12.6967 12.3467C10.6176 12.3467 8.92603 10.6552 8.92603 8.57603C8.92603 6.49688 10.6176 4.80566 12.6967 4.80566Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
+                    <path d="M25.2021 14.8904C25.3276 14.1689 25.3935 13.432 25.3935 12.6967C25.3935 5.6957 19.6978 0 12.6967 0C5.6957 0 0 5.6957 0 12.6967C0 19.6978 5.6957 25.3935 12.6967 25.3935C13.4323 25.3935 14.1695 25.328 14.8906 25.2024C16.238 26.9034 18.3166 28 20.65 28C24.7027 28 28 24.7027 28 20.65C28 18.3165 26.9033 16.2378 25.2021 14.8904ZM12.6967 0.7C19.3119 0.7 24.6935 6.08159 24.6935 12.6967C24.6935 13.2802 24.6495 13.8647 24.5657 14.4409C23.4305 13.7224 22.09 13.3 20.65 13.3C18.8694 13.3 17.2353 13.9372 15.962 14.9946C14.9104 14.6529 13.8131 14.4754 12.6967 14.4754C8.76307 14.4754 5.13302 16.7004 3.32408 20.1724C1.68397 18.1203 0.7 15.522 0.7 12.6967C0.7 6.08159 6.08159 0.7 12.6967 0.7ZM12.6967 24.6935C9.17831 24.6935 6.00907 23.1709 3.81268 20.7502C5.45388 17.3611 8.92765 15.1754 12.6967 15.1754C13.6074 15.1754 14.5029 15.306 15.3694 15.5496C14.0911 16.8727 13.3 18.6694 13.3 20.65C13.3 22.0899 13.7223 23.4303 14.4408 24.5655C13.8649 24.6492 13.2804 24.6935 12.6967 24.6935ZM20.65 27.3C16.9832 27.3 14 24.3168 14 20.65C14 16.9832 16.9832 14 20.65 14C24.3168 14 27.3 16.9832 27.3 20.65C27.3 24.3168 24.3168 27.3 20.65 27.3Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
+                    <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-medium text-sm tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
                     Subscribe
                   </span>
                 </button>
@@ -182,25 +315,24 @@ const SpaceInfoSection = ({
             {/* Share button */}
             <div className="relative">
               <button
-                className="relative cursor-pointer hover:opacity-70 transition-opacity flex items-center justify-center p-0"
-                aria-label="Share space"
                 type="button"
+                aria-label="Share space"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
                 onClick={() => setShowShareDropdown(!showShareDropdown)}
               >
                 <img
                   alt="Share"
                   src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                 />
               </button>
-
               {showShareDropdown && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowShareDropdown(false)} />
-                  <div className="absolute top-full right-0 mt-1 w-[183px] bg-white rounded-[15px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] z-20">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-[183px] bg-white rounded-[15px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] z-20">
                     <button
                       onClick={handleCopyLink}
-                      className="flex items-center gap-4 pl-5 pr-5 py-5 w-full text-left rounded-t-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)]"
+                      className="flex items-center gap-4 pl-5 pr-5 py-4 w-full text-left rounded-t-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)]"
                     >
                       <svg className="w-[18px] h-[18px]" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M7.5 10.5C7.89782 11.0052 8.40206 11.4133 8.97664 11.6955C9.55121 11.9777 10.1815 12.1267 10.8214 12.1321C11.4613 12.1375 12.094 12.0992 12.6729 11.8202C13.2518 11.5412 13.7627 11.1286 14.1675 10.6125L16.4175 8.3625C17.1977 7.53784 17.6309 6.44599 17.6221 5.31271C17.6133 4.17943 17.163 3.09441 16.3705 2.28195C15.578 1.46948 14.503 1.01919 13.3797 1.01039C12.2564 1.00159 11.1746 1.43483 10.35 2.215L9.1125 3.4525" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -210,9 +342,9 @@ const SpaceInfoSection = ({
                     </button>
                     <button
                       onClick={handleShareOnX}
-                      className="flex items-center gap-4 pl-5 pr-5 py-5 w-full text-left rounded-b-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)] border-t border-[#e0e0e0]"
+                      className="flex items-center gap-4 pl-5 pr-5 py-4 w-full text-left rounded-b-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)] border-t border-[#e0e0e0]"
                     >
-                      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#454545"/>
                       </svg>
                       <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Share on X</span>
@@ -223,236 +355,30 @@ const SpaceInfoSection = ({
             </div>
           </div>
         )}
+
+        {/* Treasure count and author info */}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm text-gray-500">{treasureCount} treasures</span>
+          <span className="text-gray-300">·</span>
+          <span className="text-sm text-gray-500">By</span>
+          <button
+            onClick={onAuthorClick}
+            className="inline-flex items-center gap-1.5 hover:opacity-70 transition-opacity cursor-pointer"
+          >
+            <img
+              src={authorAvatar || profileDefaultAvatar}
+              alt={authorName}
+              className="w-4 h-4 rounded-full object-cover"
+            />
+            <span className="text-sm text-gray-500 hover:text-gray-700">{authorName}</span>
+          </button>
+        </div>
+
+        {/* Description */}
+        {spaceDescription && spaceDescription.trim() && (
+          <p className="text-gray-700 text-base leading-relaxed">{spaceDescription}</p>
+        )}
       </div>
-
-      {/* Space Cover Banner */}
-      {spaceCoverUrl && (
-        <div className="relative self-stretch w-full mt-4 mb-4 rounded-lg overflow-hidden" style={{ aspectRatio: '560/360', maxHeight: '240px' }}>
-          {/* Background Image */}
-          <img
-            src={spaceCoverUrl}
-            alt={`${spaceName} cover`}
-            className="w-full h-full object-cover"
-            style={{ aspectRatio: '560/360' }}
-            onLoad={() => console.log('🖼️ SPACE BANNER: Cover image loaded successfully:', spaceCoverUrl)}
-            onError={() => console.error('🖼️ SPACE BANNER: Failed to load cover image:', spaceCoverUrl)}
-          />
-
-          {/* Gradient Overlay for Better Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-
-          {/* Action Buttons Overlay (Top Right) */}
-          <div className="absolute top-4 right-4 flex items-center gap-3 z-50" style={{ pointerEvents: 'auto' }}>
-            {canEdit ? (
-              // Edit button for space owner
-              <button
-                className="inline-flex items-center gap-2 p-2 bg-white/20 backdrop-blur-sm rounded-full cursor-pointer hover:bg-white/30 transition-all border border-white/20 hover:border-white/40"
-                aria-label="Edit space"
-                type="button"
-                onClick={(e) => {
-                  console.log('🔥 COVER EDIT BUTTON: Clicked!');
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onEdit();
-                }}
-                style={{ pointerEvents: 'auto', zIndex: 51 }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            ) : !isOwner && (
-              // Subscribe/Subscribed button for non-owner - adapted for overlay
-              isFollowing ? (
-                <div className="relative">
-                  <button
-                    className="inline-flex items-center gap-2 px-3 py-2 bg-green/20 backdrop-blur-sm rounded-full border border-green/30 cursor-pointer hover:bg-green/30 transition-all text-white"
-                    aria-label="Subscription options"
-                    type="button"
-                    style={{ pointerEvents: 'auto', zIndex: 51 }}
-                    onClick={(e) => {
-                      console.log('🔥 COVER SUBSCRIBE DROPDOWN BUTTON: Clicked!');
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowUnfollowDropdown(!showUnfollowDropdown);
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
-                      <path d="M12.6967 13.0467C15.1618 13.0467 17.1671 11.0411 17.1671 8.57603C17.1671 6.11099 15.1618 4.10566 12.6967 4.10566C10.2317 4.10566 8.22603 6.11099 8.22603 8.57603C8.22603 11.0411 10.2317 13.0467 12.6967 13.0467ZM12.6967 4.80566C14.7759 4.80566 16.4671 6.49688 16.4671 8.57603C16.4671 10.6552 14.7759 12.3467 12.6967 12.3467C10.6176 12.3467 8.92603 10.6552 8.92603 8.57603C8.92603 6.49688 10.6176 4.80566 12.6967 4.80566Z" fill="currentColor"/>
-                      <path d="M25.2021 14.8904C25.3276 14.1689 25.3935 13.432 25.3935 12.6967C25.3935 5.6957 19.6978 0 12.6967 0C5.6957 0 0 5.6957 0 12.6967C0 19.6978 5.6957 25.3935 12.6967 25.3935C13.4323 25.3935 14.1695 25.328 14.8906 25.2024C16.238 26.9034 18.3166 28 20.65 28C24.7027 28 28 24.7027 28 20.65C28 18.3165 26.9033 16.2378 25.2021 14.8904ZM12.6967 0.7C19.3119 0.7 24.6935 6.08159 24.6935 12.6967C24.6935 13.2802 24.6495 13.8647 24.5657 14.4409C23.4305 13.7224 22.09 13.3 20.65 13.3C18.8694 13.3 17.2353 13.9372 15.962 14.9946C14.9104 14.6529 13.8131 14.4754 12.6967 14.4754C8.76307 14.4754 5.13302 16.7004 3.32408 20.1724C1.68397 18.1203 0.7 15.522 0.7 12.6967C0.7 6.08159 6.08159 0.7 12.6967 0.7ZM12.6967 24.6935C9.17831 24.6935 6.00907 23.1709 3.81268 20.7502C5.45388 17.3611 8.92765 15.1754 12.6967 15.1754C13.6074 15.1754 14.5029 15.306 15.3694 15.5496C14.0911 16.8727 13.3 18.6694 13.3 20.65C13.3 22.0899 13.7223 23.4303 14.4408 24.5655C13.8649 24.6492 13.2804 24.6935 12.6967 24.6935ZM20.65 27.3C16.9832 27.3 14 24.3168 14 20.65C14 16.9832 16.9832 14 20.65 14C24.3168 14 27.3 16.9832 27.3 20.65C27.3 24.3168 24.3168 27.3 20.65 27.3Z" fill="currentColor"/>
-                    </svg>
-                    <span className="text-sm font-medium">Subscribed</span>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                  {/* Dropdown for unsubscribe */}
-                  {showUnfollowDropdown && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowUnfollowDropdown(false)} />
-                      <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-full min-w-[120px]">
-                        <button
-                          className="w-full px-4 py-2 text-center text-red hover:bg-gray-50 rounded-lg font-medium text-sm"
-                          onClick={() => { setShowUnfollowDropdown(false); onUnfollow(); }}
-                        >
-                          Unsubscribe
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <button
-                  className="inline-flex items-center gap-2 px-3 py-2 bg-green/20 backdrop-blur-sm rounded-full border border-green/30 cursor-pointer hover:bg-green/30 transition-all text-white"
-                  aria-label="Subscribe to space"
-                  type="button"
-                  style={{ pointerEvents: 'auto', zIndex: 51 }}
-                  onClick={(e) => {
-                    console.log('🔥 COVER SUBSCRIBE BUTTON: Clicked!');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onFollow();
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
-                    <path d="M12.6967 13.0467C15.1618 13.0467 17.1671 11.0411 17.1671 8.57603C17.1671 6.11099 15.1618 4.10566 12.6967 4.10566C10.2317 4.10566 8.22603 6.11099 8.22603 8.57603C8.22603 11.0411 10.2317 13.0467 12.6967 13.0467ZM12.6967 4.80566C14.7759 4.80566 16.4671 6.49688 16.4671 8.57603C16.4671 10.6552 14.7759 12.3467 12.6967 12.3467C10.6176 12.3467 8.92603 10.6552 8.92603 8.57603C8.92603 6.49688 10.6176 4.80566 12.6967 4.80566Z" fill="currentColor"/>
-                    <path d="M25.2021 14.8904C25.3276 14.1689 25.3935 13.432 25.3935 12.6967C25.3935 5.6957 19.6978 0 12.6967 0C5.6957 0 0 5.6957 0 12.6967C0 19.6978 5.6957 25.3935 12.6967 25.3935C13.4323 25.3935 14.1695 25.328 14.8906 25.2024C16.238 26.9034 18.3166 28 20.65 28C24.7027 28 28 24.7027 28 20.65C28 18.3165 26.9033 16.2378 25.2021 14.8904ZM12.6967 0.7C19.3119 0.7 24.6935 6.08159 24.6935 12.6967C24.6935 13.2802 24.6495 13.8647 24.5657 14.4409C23.4305 13.7224 22.09 13.3 20.65 13.3C18.8694 13.3 17.2353 13.9372 15.962 14.9946C14.9104 14.6529 13.8131 14.4754 12.6967 14.4754C8.76307 14.4754 5.13302 16.7004 3.32408 20.1724C1.68397 18.1203 0.7 15.522 0.7 12.6967C0.7 6.08159 6.08159 0.7 12.6967 0.7ZM12.6967 24.6935C9.17831 24.6935 6.00907 23.1709 3.81268 20.7502C5.45388 17.3611 8.92765 15.1754 12.6967 15.1754C13.6074 15.1754 14.5029 15.306 15.3694 15.5496C14.0911 16.8727 13.3 18.6694 13.3 20.65C13.3 22.0899 13.7223 23.4303 14.4408 24.5655C13.8649 24.6492 13.2804 24.6935 12.6967 24.6935ZM20.65 27.3C16.9832 27.3 14 24.3168 14 20.65C14 16.9832 16.9832 14 20.65 14C24.3168 14 27.3 16.9832 27.3 20.65C27.3 24.3168 24.3168 27.3 20.65 27.3Z" fill="currentColor"/>
-                  </svg>
-                  <span className="text-sm font-medium">Subscribe</span>
-                </button>
-              )
-            )}
-
-            {/* Share button */}
-            <div className="relative" style={{ zIndex: 52 }}>
-              <button
-                className="p-2 bg-white/20 backdrop-blur-sm rounded-full cursor-pointer hover:bg-white/30 transition-all border border-white/20 hover:border-white/40"
-                aria-label="Share space"
-                type="button"
-                onClick={(e) => {
-                  console.log('🔥 COVER SHARE BUTTON: Clicked!');
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowShareDropdown(!showShareDropdown);
-                }}
-                style={{ pointerEvents: 'auto', zIndex: 51 }}
-              >
-                <img
-                  alt="Share"
-                  src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
-                  className="w-5 h-5 filter brightness-0 invert"
-                />
-              </button>
-
-              {/* Share dropdown menu */}
-              {showShareDropdown && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowShareDropdown(false)} />
-                  <div className="absolute top-full right-0 mt-1 w-[183px] bg-white rounded-[15px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] z-20">
-                    <button
-                      onClick={handleCopyLink}
-                      className="flex items-center gap-4 pl-5 pr-5 py-5 w-full text-left rounded-t-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)]"
-                    >
-                      <svg className="w-[18px] h-[18px]" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7.5 10.5C7.89782 11.0052 8.40206 11.4133 8.97664 11.6955C9.55121 11.9777 10.1815 12.1267 10.8214 12.1321C11.4613 12.1375 12.094 12.0992 12.6729 11.8202C13.2518 11.5412 13.7627 11.1286 14.1675 10.6125L16.4175 8.3625C17.1977 7.53784 17.6309 6.44599 17.6221 5.31271C17.6133 4.17943 17.163 3.09441 16.3705 2.28195C15.578 1.46948 14.503 1.01919 13.3797 1.01039C12.2564 1.00159 11.1746 1.43483 10.35 2.215L9.1125 3.4525" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M10.5 7.5C10.1022 6.99475 9.59794 6.58669 9.02336 6.30453C8.44879 6.02237 7.81854 5.87331 7.17863 5.86789C6.53872 5.86247 5.90598 5.90083 5.32709 6.17978C4.7482 6.45873 4.23726 6.87144 3.8325 7.3875L1.5825 9.6375C0.802299 10.4622 0.369062 11.554 0.377857 12.6873C0.386652 13.8206 0.836948 14.9056 1.62948 15.718C2.422 16.5305 3.49702 16.9808 4.62031 16.9896C5.74359 16.9984 6.82543 16.5652 7.65 15.785L8.8875 14.5475" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span className="font-normal text-dark-grey text-base">Copy link</span>
-                    </button>
-                    <button
-                      onClick={handleShareOnX}
-                      className="flex items-center gap-4 pl-5 pr-5 py-5 w-full text-left rounded-b-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)] border-t border-[#e0e0e0]"
-                    >
-                      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#454545"/>
-                      </svg>
-                      <span className="font-normal text-dark-grey text-base">Share on X</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Space Information Overlay - Left Side */}
-          <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white rounded px-3 py-2" style={{ pointerEvents: 'auto', zIndex: 40 }}>
-            <div className="flex flex-col gap-1">
-              {/* Space Name */}
-              <div className="text-sm font-semibold">
-                {spaceName}
-              </div>
-
-              {/* Space Stats */}
-              <div className="flex items-center gap-3 text-xs">
-                {/* Treasure Count */}
-                <div className="flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                  </svg>
-                  <span>{treasureCount} treasures</span>
-                </div>
-
-                {/* Author Info */}
-                <div className="flex items-center gap-1">
-                  <span className="text-white/80">By</span>
-                  <div className="flex items-center gap-1 cursor-pointer hover:text-white transition-colors" onClick={onAuthorClick}>
-                    <img
-                      className="w-3 h-3 rounded-full object-cover border border-white/20"
-                      alt={`${authorName}'s profile`}
-                      src={authorAvatar || profileDefaultAvatar}
-                    />
-                    <span className="font-medium">{authorName}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      )}
-
-      {/* Space Description */}
-      {spaceDescription && spaceDescription.trim() && (
-        <div className="relative self-stretch w-full">
-          <p className="[font-family:'Lato',Helvetica] font-normal text-gray-700 text-base tracking-[0] leading-[24px]">
-            {spaceDescription}
-          </p>
-        </div>
-      )}
-
-      {/* Stats info - only show when no cover image */}
-      {!spaceCoverUrl && (
-        <div className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
-          <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
-            {treasureCount} treasures
-          </p>
-
-          <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
-            ·
-          </span>
-
-          <div className="inline-flex items-center gap-1.5 relative flex-[0_0_auto]">
-            <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4]">
-              By
-            </span>
-
-            <button
-              onClick={onAuthorClick}
-              className="inline-flex items-center gap-1 relative flex-[0_0_auto] hover:opacity-70 transition-opacity cursor-pointer"
-            >
-              <img
-                className="relative w-4 h-4 rounded-full object-cover"
-                alt={`${authorName}'s profile`}
-                src={authorAvatar || profileDefaultAvatar}
-              />
-              <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] hover:text-dark-grey">
-                {authorName}
-              </span>
-            </button>
-          </div>
-        </div>
-      )}
     </section>
   );
 };
@@ -1293,6 +1219,7 @@ export const SpaceContentSection = (): JSX.Element => {
         authorNamespace={spaceInfo?.authorNamespace}
         spaceDescription={spaceInfo?.description}
         spaceCoverUrl={spaceInfo?.coverUrl}
+        firstArticleCover={articles[0]?.cover || articles[0]?.coverUrl}
         isFollowing={isFollowing}
         isOwner={isOwner}
         spaceType={spaceInfo?.spaceType}
@@ -1357,25 +1284,25 @@ export const SpaceContentSection = (): JSX.Element => {
               onClick={() => {
                 setShowEditModal(false);
                 setEditSpaceName("");
+                setEditSpaceDescription("");
+                setEditSpaceCoverUrl("");
               }}
-              className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
               aria-label="Close dialog"
               type="button"
             >
-              <img
-                className="w-full"
-                alt=""
-                src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
-              />
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
 
-            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
+            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto] pt-5">
               <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
                 <h2
                   id="edit-space-title"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
                 >
-                  Edit Space
+                  Edit collection
                 </h2>
 
                 {/* Space Name */}
@@ -1429,13 +1356,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
                 {/* Cover Image Upload */}
                 <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="edit-space-cover-upload"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Cover Image (Optional)
-                  </label>
-
                   <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
                     <ImageUploader
                       type="banner"
@@ -1483,7 +1403,7 @@ export const SpaceContentSection = (): JSX.Element => {
                       onError={(error) => showToast(error, 'error')}
                     />
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
-                      Recommended size: 1200x675px (16:9 ratio)
+                      Recommended size: 1200x200px (6:1 ratio)
                     </span>
                   </div>
                 </div>

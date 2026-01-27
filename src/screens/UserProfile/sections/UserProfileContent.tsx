@@ -447,15 +447,15 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   }
 
   return (
-    <main className="flex flex-col gap-5 px-5 pt-0 pb-0 relative">
+    <main className="flex flex-col gap-5 px-4 lg:px-2.5 pt-0 pb-0 relative">
       {/* User info header */}
-      <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <section className="w-full">
         {/* Cover image */}
         <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
           {userInfo.coverUrl || defaultBanner ? (
             <>
               <div
-                className={`w-full h-full bg-cover bg-center bg-no-repeat hover:scale-105 transition-all duration-300 ${
+                className={`w-full h-full bg-cover bg-center bg-no-repeat ${
                   isOwnProfile ? 'cursor-pointer' : ''
                 } ${
                   bannerImageLoaded ? 'opacity-100' : 'opacity-0'
@@ -479,17 +479,16 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               }`}
               onClick={isOwnProfile ? handleCoverClick : undefined}
             >
-              <div className="flex flex-col items-center gap-3 text-gray-500">
+              <div className="flex flex-col items-center gap-3 text-gray-400">
                 <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <span className="text-sm font-medium">Add cover image</span>
               </div>
             </div>
           )}
           {/* Edit overlay - only shown on own profile */}
           {isOwnProfile && (
-            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer" onClick={handleCoverClick}>
               <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
                 <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -500,51 +499,49 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           )}
         </div>
 
-        {/* User information */}
-        <div className="p-8 mt-[-64px] relative">
-          <div className="flex items-start gap-8">
-            <img
-              src={userInfo.faceUrl}
-              alt={userInfo.username}
-              className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
-              onClick={handleAvatarClick}
-            />
-          <div className="flex-1 pt-8">
-            <div className="flex items-center gap-4 mb-1">
-              <h1 className="text-3xl font-bold text-gray-900">{userInfo.username}</h1>
-              <button
-                type="button"
-                aria-label="Share profile"
-                className="relative flex-[0_0_auto] hover:opacity-70 transition-opacity"
-                onClick={handleShare}
-              >
-                <img
-                  alt="Share"
-                  src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
-                  className="w-5 h-5"
-                />
-              </button>
-            </div>
-            <p className="text-sm text-gray-400 mb-4">@{userInfo.namespace}</p>
-            <p className="text-gray-700 mb-6">{userInfo.bio}</p>
+        {/* User information - centered layout */}
+        <div className="relative flex flex-col items-center text-center mt-[-40px]">
+          {/* Avatar */}
+          <img
+            src={userInfo.faceUrl}
+            alt={userInfo.username}
+            className="w-20 h-20 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer mb-3"
+            onClick={handleAvatarClick}
+          />
 
-            <div className="flex gap-8">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.articleCount || 0}</div>
-                <div className="text-sm text-gray-600">Articles</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.likedArticleCount || 0}</div>
-                <div className="text-sm text-gray-600">Treasured</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.myArticleLikedCount || 0}</div>
-                <div className="text-sm text-gray-600">Received</div>
-              </div>
-            </div>
+          {/* Username */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
+
+          {/* Share button */}
+          <div className="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              aria-label="Share profile"
+              className="relative hover:opacity-70 transition-opacity"
+              onClick={handleShare}
+            >
+              <img
+                alt="Share"
+                src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
+                className="w-5 h-5"
+              />
+            </button>
           </div>
 
-          {/* Subscribe button or account status (only shown when viewing other users) */}
+          {/* Namespace and bio */}
+          <p className="text-sm text-gray-400 mb-2">@{userInfo.namespace}</p>
+          <p className="text-gray-700 mb-4 max-w-md">{userInfo.bio}</p>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 mb-3">
+            <span className="text-sm text-gray-500">{userInfo.statistics?.articleCount || 0} Articles</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.likedArticleCount || 0} Treasured</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleLikedCount || 0} Received</span>
+          </div>
+
+          {/* Subscribe button (only shown when viewing other users) */}
           {user && user.namespace !== namespace && (
             <button
               className={`px-6 py-2 rounded-full transition-colors ${
@@ -557,7 +554,6 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               {accountExists ? 'Subscribe' : "This account doesn't exist"}
             </button>
           )}
-          </div>
         </div>
       </section>
 

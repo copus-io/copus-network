@@ -4,6 +4,7 @@ import { AuthService } from "../../services/authService";
 import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
 import { logger } from "../../utils/logger";
+import { ImageUploader } from "../ImageUploader/ImageUploader";
 
 interface CollectTreasureModalProps {
   isOpen: boolean;
@@ -62,6 +63,8 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [newTreasuryName, setNewTreasuryName] = useState("");
   const [newTreasuryDescription, setNewTreasuryDescription] = useState("");
+  const [newTreasuryCoverUrl, setNewTreasuryCoverUrl] = useState("");
+  const [isImageUploading, setIsImageUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedArticleId, setResolvedArticleId] = useState<number | null>(null);
   const [curationsSpaceId, setCurationsSpaceId] = useState<number | null>(null); // Store Curations space ID to always include in save
@@ -196,6 +199,8 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setShowCreateNew(false);
       setNewTreasuryName("");
       setNewTreasuryDescription("");
+      setNewTreasuryCoverUrl("");
+      setIsImageUploading(false);
       setIsSubmitting(false);
     }
   }, [isOpen]);
@@ -268,17 +273,18 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
   const handleCreateNewTreasury = async () => {
     if (!newTreasuryName.trim()) {
-      showToast('Please enter a treasury name', 'error');
+      showToast('Please enter a collection name', 'error');
       return;
     }
 
     try {
       setIsSubmitting(true);
 
-      // Call the createSpace API to create a new treasury
+      // Call the createSpace API to create a new collection
       const createResponse = await AuthService.createSpace(
         newTreasuryName.trim(),
-        newTreasuryDescription.trim() || undefined
+        newTreasuryDescription.trim() || undefined,
+        newTreasuryCoverUrl.trim() || undefined
       );
       logger.log('Create space response:', createResponse);
 
@@ -309,9 +315,11 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setShowCreateNew(false);
       setNewTreasuryName("");
       setNewTreasuryDescription("");
+      setNewTreasuryCoverUrl("");
+      setIsImageUploading(false);
     } catch (err) {
-      logger.error('Failed to create treasury:', err);
-      showToast('Failed to create treasury', 'error');
+      logger.error('Failed to create collection:', err);
+      showToast('Failed to create collection', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -337,7 +345,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 max-h-[80vh]"
+        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 ${showCreateNew ? 'pb-[30px]' : 'pb-4 max-h-[80vh]'}`}
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
@@ -345,13 +353,19 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         {/* Close button */}
         <button
           onClick={handleCancel}
-          className="absolute top-[20px] right-[20px] cursor-pointer hover:opacity-70 transition-opacity z-20"
+          className={`absolute top-4 right-4 cursor-pointer z-20 ${showCreateNew ? 'w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors' : 'hover:opacity-70 transition-opacity'}`}
           aria-label="Close dialog"
           type="button"
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
-            <path d="M1 1L11 11M1 11L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          {showCreateNew ? (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
+              <path d="M1 1L11 11M1 11L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
         </button>
 
         {showCreateNew ? (
@@ -360,9 +374,9 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
               <h2
                 id="collect-dialog-title"
-                className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+                className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
               >
-                New treasury
+                Create new collection
               </h2>
 
               <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
@@ -379,7 +393,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                     type="text"
                     value={newTreasuryName}
                     onChange={(e) => setNewTreasuryName(e.target.value)}
-                    placeholder="Like &quot;Place to go&quot;"
+                    placeholder="Enter collection name"
                     className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
                     aria-required="true"
                     autoFocus
@@ -393,14 +407,14 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                   htmlFor="treasury-description"
                   className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
                 >
-                  Description
+                  Description (Optional)
                 </label>
                 <div className="flex flex-col items-start px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                   <textarea
                     id="treasury-description"
                     value={newTreasuryDescription}
                     onChange={(e) => setNewTreasuryDescription(e.target.value)}
-                    placeholder="Describe your treasury"
+                    placeholder="Describe your collection (optional)"
                     className="flex-1 w-full border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
                     rows={3}
                     maxLength={200}
@@ -410,12 +424,38 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Cover Image Upload */}
+              <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
+                  <ImageUploader
+                    type="banner"
+                    currentImage={newTreasuryCoverUrl}
+                    onImageUploaded={(url) => {
+                      setNewTreasuryCoverUrl(url);
+                    }}
+                    onError={(error) => showToast(error, 'error')}
+                    onUploadStatusChange={(uploading) => {
+                      setIsImageUploading(uploading);
+                    }}
+                  />
+                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                    Recommended size: 1200x200px (6:1 ratio)
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
               <button
                 className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => setShowCreateNew(false)}
+                onClick={() => {
+                  setShowCreateNew(false);
+                  setNewTreasuryName("");
+                  setNewTreasuryDescription("");
+                  setNewTreasuryCoverUrl("");
+                  setIsImageUploading(false);
+                }}
                 type="button"
               >
                 <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
@@ -426,11 +466,11 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               <button
                 className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
                 onClick={handleCreateNewTreasury}
-                disabled={!newTreasuryName.trim() || isSubmitting}
+                disabled={!newTreasuryName.trim() || isSubmitting || isImageUploading}
                 type="button"
               >
                 <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                  {isSubmitting ? 'Creating...' : 'Create'}
+                  {isImageUploading ? 'Uploading image...' : (isSubmitting ? 'Creating...' : 'Create')}
                 </span>
               </button>
             </div>
@@ -452,7 +492,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                   className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity"
                   type="button"
                   onClick={() => setShowCreateNew(true)}
-                  aria-label="Create new treasury"
+                  aria-label="Create new collection"
                 >
                   <img
                     className="relative w-6 h-6"
@@ -461,7 +501,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                     aria-hidden="true"
                   />
                   <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    New treasury
+                    New collection
                   </span>
                 </button>
               </div>

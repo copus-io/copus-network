@@ -300,14 +300,14 @@ export const TreasuryContentSection = (): JSX.Element => {
 
   return (
     <main className="flex flex-col gap-5 px-5 py-0 relative">
-      {/* User info header - matching UserProfileContent layout */}
-      <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
+      {/* User info header - centered layout matching Space page */}
+      <section className="w-full">
         {/* Cover image */}
         <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
           {user?.coverUrl || defaultBanner ? (
             <>
               <div
-                className={`w-full h-full bg-cover bg-center bg-no-repeat hover:scale-105 transition-all duration-300 cursor-pointer ${
+                className={`w-full h-full bg-cover bg-center bg-no-repeat cursor-pointer ${
                   bannerImageLoaded ? 'opacity-100' : 'opacity-0'
                 }`}
                 style={{
@@ -336,7 +336,7 @@ export const TreasuryContentSection = (): JSX.Element => {
             </div>
           )}
           {/* Edit overlay */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer" onClick={handleCoverClick}>
             <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
               <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -346,47 +346,46 @@ export const TreasuryContentSection = (): JSX.Element => {
           </div>
         </div>
 
-        {/* User information */}
-        <div className="p-8 mt-[-64px] relative">
-          <div className="flex items-start gap-8">
-            <img
-              src={user?.faceUrl || profileDefaultAvatar}
-              alt={user?.username || 'Anonymous'}
-              className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
-              onClick={handleAvatarClick}
-            />
-            <div className="flex-1 pt-8">
-              <div className="flex items-center gap-4 mb-1">
-                <h1 className="text-3xl font-bold text-gray-900">{user?.username || 'Anonymous'}</h1>
-                <button
-                  type="button"
-                  aria-label="Share profile"
-                  className="relative flex-[0_0_auto] hover:opacity-70 transition-opacity"
-                  onClick={handleShare}
-                >
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 6.667a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM5 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM15 18.333a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7.158 11.258l5.692 3.317M12.842 5.425l-5.684 3.317" stroke="#686868" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-              <p className="text-sm text-gray-400 mb-4">@{user?.namespace || 'user'}</p>
-              {user?.bio && <p className="text-gray-700 mb-6">{user.bio}</p>}
+        {/* User information - centered layout */}
+        <div className="relative flex flex-col items-center text-center mt-[-40px]">
+          {/* Avatar */}
+          <img
+            src={user?.faceUrl || profileDefaultAvatar}
+            alt={user?.username || 'Anonymous'}
+            className="w-20 h-20 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer mb-3"
+            onClick={handleAvatarClick}
+          />
 
-              <div className="flex gap-8">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">{treasuryStats.articleCount || 0}</div>
-                  <div className="text-sm text-gray-600">Articles</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">{treasuryStats.likedArticleCount || 0}</div>
-                  <div className="text-sm text-gray-600">Treasured</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">{treasuryStats.myArticleLikedCount || 0}</div>
-                  <div className="text-sm text-gray-600">Received</div>
-                </div>
-              </div>
-            </div>
+          {/* Username */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{user?.username || 'Anonymous'}</h1>
+
+          {/* Share button */}
+          <div className="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              aria-label="Share profile"
+              className="relative hover:opacity-70 transition-opacity"
+              onClick={handleShare}
+            >
+              <img
+                alt="Share"
+                src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
+                className="w-5 h-5"
+              />
+            </button>
+          </div>
+
+          {/* Namespace and bio */}
+          <p className="text-sm text-gray-400 mb-2">@{user?.namespace || 'user'}</p>
+          {user?.bio && <p className="text-gray-700 mb-4 max-w-md">{user.bio}</p>}
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 mb-3">
+            <span className="text-sm text-gray-500">{treasuryStats.articleCount || 0} Articles</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{treasuryStats.likedArticleCount || 0} Treasured</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{treasuryStats.myArticleLikedCount || 0} Received</span>
           </div>
         </div>
       </section>
