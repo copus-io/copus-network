@@ -327,6 +327,7 @@ export const SpaceContentSection = (): JSX.Element => {
   const [displaySpaceName, setDisplaySpaceName] = useState("");
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false); // 跟踪图片上传状态
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
@@ -842,6 +843,7 @@ export const SpaceContentSection = (): JSX.Element => {
     });
 
     setShowEditModal(true);
+    setIsImageUploading(false); // 重置图片上传状态
     console.log('🔥🔥🔥 SPACE EDIT: Modal opened');
 
     // 🔍 SEARCH: dev-log-space-edit-modal
@@ -1277,6 +1279,10 @@ export const SpaceContentSection = (): JSX.Element => {
                       type="banner"
                       currentImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
                       key={`image-uploader-${showEditModal}-${editSpaceCoverUrl || spaceInfo?.coverUrl}`} // 强制重新渲染
+                      onUploadStatusChange={(uploading) => {
+                        console.log('🔄 SPACE EDIT: Image upload status changed:', uploading);
+                        setIsImageUploading(uploading);
+                      }}
                       onImageUploaded={async (url) => {
                         console.log('🔥🔥🔥 SPACE EDIT: Received image URL:', url);
                         setEditSpaceCoverUrl(url);
@@ -1371,11 +1377,11 @@ export const SpaceContentSection = (): JSX.Element => {
                   <button
                     className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
                     onClick={handleSaveSpaceName}
-                    disabled={isSaving || (canEditSpaceName && !editSpaceName.trim())}
+                    disabled={isSaving || isImageUploading || (canEditSpaceName && !editSpaceName.trim())}
                     type="button"
                   >
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      {isSaving ? 'Saving...' : 'Save'}
+                      {isSaving ? 'Saving...' : isImageUploading ? 'Uploading image...' : 'Save'}
                     </span>
                   </button>
                 </div>

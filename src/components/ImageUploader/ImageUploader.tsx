@@ -10,13 +10,15 @@ interface ImageUploaderProps {
   currentImage?: string;
   onImageUploaded: (imageUrl: string) => void;
   onError?: (error: string) => void;
+  onUploadStatusChange?: (isUploading: boolean) => void; // 新增：上传状态变化回调
 }
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
   type,
   currentImage,
   onImageUploaded,
-  onError
+  onError,
+  onUploadStatusChange
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -99,6 +101,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       console.log('🚀 FAST PREVIEW: Created local preview immediately:', localPreview);
 
       setIsUploading(true);
+      onUploadStatusChange?.(true); // 通知开始上传
       setShowCropper(false);
 
       // Compress image
@@ -160,6 +163,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       }
     } finally {
       setIsUploading(false);
+      onUploadStatusChange?.(false); // 通知上传结束
     }
   };
 
