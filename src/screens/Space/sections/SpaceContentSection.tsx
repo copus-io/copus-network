@@ -807,7 +807,15 @@ export const SpaceContentSection = (): JSX.Element => {
     setEditSpaceName(currentName);
     setEditSpaceDescription(currentDescription);
     setEditSpaceCoverUrl(currentCoverUrl);
+
+    console.log('🔥🔥🔥 SPACE EDIT: Setting edit states:', {
+      editSpaceName: currentName,
+      editSpaceDescription: currentDescription,
+      editSpaceCoverUrl: currentCoverUrl
+    });
+
     setShowEditModal(true);
+    console.log('🔥🔥🔥 SPACE EDIT: Modal opened');
 
     // 🔍 SEARCH: dev-log-space-edit-modal
     devLog.userAction('open-space-edit-modal', {
@@ -1232,6 +1240,7 @@ export const SpaceContentSection = (): JSX.Element => {
                     <ImageUploader
                       type="banner"
                       currentImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
+                      key={`image-uploader-${showEditModal}-${editSpaceCoverUrl || spaceInfo?.coverUrl}`} // 强制重新渲染
                       onImageUploaded={async (url) => {
                         console.log('🔥🔥🔥 SPACE EDIT: Received image URL:', url);
                         setEditSpaceCoverUrl(url);

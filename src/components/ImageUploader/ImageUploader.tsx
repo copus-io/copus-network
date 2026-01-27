@@ -33,25 +33,35 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   useEffect(() => {
     // 当 currentImage 变为空时，清理所有本地状态
     if (!currentImage) {
-      if (localPreviewUrl) {
-        revokeImagePreview(localPreviewUrl);
-        setLocalPreviewUrl('');
-      }
-      if (previewUrl) {
-        revokeImagePreview(previewUrl);
-        setPreviewUrl('');
-      }
+      console.log('🔥🔥🔥 SPACE ImageUploader: currentImage is empty, cleaning up states');
+
+      // 使用当前状态值进行清理，避免依赖循环
+      setLocalPreviewUrl(prev => {
+        if (prev) {
+          revokeImagePreview(prev);
+          console.log('🔥🔥🔥 SPACE ImageUploader: Revoked localPreviewUrl');
+        }
+        return '';
+      });
+
+      setPreviewUrl(prev => {
+        if (prev) {
+          revokeImagePreview(prev);
+          console.log('🔥🔥🔥 SPACE ImageUploader: Revoked previewUrl');
+        }
+        return '';
+      });
+
       setSelectedFile(null);
       setShowCropper(false);
 
       // 重置文件输入
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
+        console.log('🔥🔥🔥 SPACE ImageUploader: Reset file input');
       }
-
-      console.log('🔥🔥🔥 SPACE ImageUploader: Cleaned up local state due to currentImage reset');
     }
-  }, [currentImage, localPreviewUrl, previewUrl]);
+  }, [currentImage]); // 只依赖 currentImage，避免无限循环
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -169,7 +179,20 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleButtonClick = () => {
     console.log('🔥🔥🔥 SPACE ImageUploader: Button clicked, type:', type);
-    fileInputRef.current?.click();
+    console.log('🔥🔥🔥 SPACE ImageUploader: Current state:', {
+      currentImage,
+      localPreviewUrl,
+      isUploading,
+      showCropper,
+      fileInputExists: !!fileInputRef.current
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+      console.log('🔥🔥🔥 SPACE ImageUploader: File input clicked');
+    } else {
+      console.error('🔥🔥🔥 SPACE ImageUploader: File input ref is null');
+    }
   };
 
   const handleRemoveImage = () => {
@@ -332,7 +355,16 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           )}
 
           {/* Upload button - only show when no image and no local preview */}
-          {!currentImage && !localPreviewUrl && (
+          {(() => {
+            const showUploadButton = !currentImage && !localPreviewUrl;
+            console.log('🔥 DEBUG: Upload button visibility:', {
+              currentImage: currentImage,
+              localPreviewUrl: localPreviewUrl,
+              showUploadButton: showUploadButton,
+              isUploading: isUploading
+            });
+            return showUploadButton;
+          })() && (
             <div className="flex flex-col items-center justify-center gap-2.5 relative flex-1 self-stretch w-full grow">
               <Button
                 type="button"
