@@ -273,3 +273,16 @@ export interface BindArticlesApiResponse {
   msg: string;
   data: BindArticlesResponse;
 }
+
+// Remove article from space request
+export interface RemoveArticleFromSpaceRequest {
+  articleId: number;
+  spaceId: number;
+}
+
+// Remove article from space response
+export interface RemoveArticleFromSpaceResponse {
+  status: number;
+  msg: string;
+  data: boolean;
+}

@@ -1,5 +1,5 @@
 import { apiRequest } from './api';
-import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest, BindArticlesRequest, BindArticlesApiResponse } from '../types/article';
+import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest, BindArticlesRequest, BindArticlesApiResponse, RemoveArticleFromSpaceRequest, RemoveArticleFromSpaceResponse } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
@@ -475,5 +475,34 @@ export const bindArticles = async (bindData: BindArticlesRequest): Promise<BindA
   } catch (error) {
     console.error('❌ Failed to bind articles:', error);
     throw new Error(`Failed to bind articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Remove article from space
+export const removeArticleFromSpace = async (removeData: RemoveArticleFromSpaceRequest): Promise<boolean> => {
+  const endpoint = '/client/article/bind/unbindArticle';
+
+  try {
+    console.log('📤 Removing article from space:', {
+      articleId: removeData.articleId,
+      spaceId: removeData.spaceId,
+      requestData: removeData
+    });
+
+    const response = await apiRequest<RemoveArticleFromSpaceResponse>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(removeData),
+    });
+
+    console.log('📥 Remove article from space API response:', response);
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'Failed to remove article from space');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Failed to remove article from space:', error);
+    throw new Error(`Failed to remove article from space: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

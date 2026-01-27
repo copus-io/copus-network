@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { AuthService } from "../../../services/authService";
+import { removeArticleFromSpace } from "../../../services/articleService";
 import { Button } from "../../../components/ui/button";
 import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
@@ -365,9 +366,11 @@ export const SpaceContentSection = (): JSX.Element => {
           console.log('[Space] Fetching space info by namespace:', decodedIdentifier);
           const spaceInfoResponse = await AuthService.getSpaceInfo(decodedIdentifier);
           console.log('[Space] Space info API response:', spaceInfoResponse);
+          console.log('🔥🔥🔥 SPACE COVERURL DEBUG: Raw API response:', JSON.stringify(spaceInfoResponse, null, 2));
 
           // Extract space info from response.data
           const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
+          console.log('🔥🔥🔥 SPACE COVERURL DEBUG: Extracted space data:', JSON.stringify(spaceData, null, 2));
 
           // Get author username for display name with comprehensive fallback chain
           // Note: Do NOT fall back to logged-in user's username - use API data only
@@ -427,6 +430,17 @@ export const SpaceContentSection = (): JSX.Element => {
             } else if (articlesResponse?.data?.data && Array.isArray(articlesResponse.data.data)) {
               articlesArray = articlesResponse.data.data;
             }
+
+            // 添加原始文章数据的调试信息
+            console.log('🔥 DEBUG: Raw articles from API:', {
+              count: articlesArray.length,
+              firstArticleSample: articlesArray[0] ? {
+                id: articlesArray[0].id,
+                uuid: articlesArray[0].uuid,
+                title: articlesArray[0].title,
+                keys: Object.keys(articlesArray[0])
+              } : 'no articles'
+            });
           }
 
           // Set all states
@@ -545,9 +559,10 @@ export const SpaceContentSection = (): JSX.Element => {
       }
     }
 
-    return {
+    const transformedArticle = {
       id: article.uuid,
       uuid: article.uuid,
+      numericId: article.id, // 保存数字ID，用于移除接口
       title: article.title,
       description: article.content,
       coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
@@ -567,6 +582,16 @@ export const SpaceContentSection = (): JSX.Element => {
       isPaymentRequired: article.targetUrlIsLocked,
       paymentPrice: article.priceInfo?.price?.toString()
     };
+
+    // 添加调试信息
+    console.log('🔥 DEBUG: Transformed article:', {
+      originalId: article.id,
+      uuid: article.uuid,
+      numericId: transformedArticle.numericId,
+      transformedKeys: Object.keys(transformedArticle)
+    });
+
+    return transformedArticle;
   };
 
   // Handle like/unlike - opens the collect modal
@@ -770,6 +795,15 @@ export const SpaceContentSection = (): JSX.Element => {
     const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
     const currentDescription = spaceInfo?.description || '';
     const currentCoverUrl = spaceInfo?.coverUrl || '';
+
+    console.log('🔥🔥🔥 SPACE EDIT MODAL DEBUG:', {
+      spaceInfo: spaceInfo,
+      spaceInfoKeys: spaceInfo ? Object.keys(spaceInfo) : 'null',
+      currentCoverUrl: currentCoverUrl,
+      coverUrlFromSpaceInfo: spaceInfo?.coverUrl,
+      allSpaceData: JSON.stringify(spaceInfo, null, 2)
+    });
+
     setEditSpaceName(currentName);
     setEditSpaceDescription(currentDescription);
     setEditSpaceCoverUrl(currentCoverUrl);
@@ -914,8 +948,51 @@ export const SpaceContentSection = (): JSX.Element => {
         await AuthService.deleteArticle(articleToDelete);
         showToast('Article deleted successfully', 'success');
       } else {
-        // In other spaces: Remove from space (use like/unlike API)
-        await AuthService.likeArticle(articleToDelete);
+        // In other spaces: Remove from space using unbind API
+        if (!spaceId) {
+          showToast('Space ID not available', 'error');
+          return;
+        }
+
+        // Find the article to get its numeric ID
+        const article = articles.find(a => a.uuid === articleToDelete);
+        console.log('🔥 DEBUG: Found article for deletion:', {
+          articleToDelete,
+          foundArticle: article,
+          allArticles: articles.map(a => ({ uuid: a.uuid, numericId: a.numericId, id: a.id })),
+          articleKeys: article ? Object.keys(article) : 'article not found'
+        });
+
+        if (!article) {
+          showToast('Article not found', 'error');
+          return;
+        }
+
+        // 尝试获取数字 ID，优先使用 numericId，其次使用 id
+        const articleNumericId = article.numericId || article.id;
+        console.log('🔥 DEBUG: Article ID resolution:', {
+          numericId: article.numericId,
+          id: article.id,
+          finalId: articleNumericId
+        });
+
+        if (!articleNumericId) {
+          showToast('Article numeric ID not available', 'error');
+          console.error('🔥 ERROR: No valid article ID found:', article);
+          return;
+        }
+
+        console.log('🔥 Removing article from space:', {
+          articleId: articleNumericId,
+          spaceId: spaceId,
+          articleUuid: articleToDelete
+        });
+
+        await removeArticleFromSpace({
+          articleId: articleNumericId,
+          spaceId: spaceId
+        });
+
         showToast('Article removed from space', 'success');
       }
 
@@ -1155,10 +1232,40 @@ export const SpaceContentSection = (): JSX.Element => {
                     <ImageUploader
                       type="banner"
                       currentImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
-                      onImageUploaded={(url) => {
+                      onImageUploaded={async (url) => {
                         console.log('🔥🔥🔥 SPACE EDIT: Received image URL:', url);
                         setEditSpaceCoverUrl(url);
                         console.log('🔥🔥🔥 SPACE EDIT: State updated with URL:', url);
+
+                        // 当图片被删除时（url为空），自动保存删除操作
+                        if (!url && (editSpaceCoverUrl || spaceInfo?.coverUrl)) {
+                          console.log('🔥🔥🔥 SPACE EDIT: Auto-saving cover image removal...');
+
+                          if (!spaceId) {
+                            showToast('Space ID not available', 'error');
+                            return;
+                          }
+
+                          try {
+                            const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
+                            const currentDescription = spaceInfo?.description || '';
+
+                            // 立即保存删除操作到服务器
+                            await AuthService.updateSpace(spaceId, currentName, currentDescription, ''); // 传入空字符串删除封面图
+
+                            showToast('Cover image removed successfully', 'success');
+
+                            // 更新本地 spaceInfo 状态
+                            setSpaceInfo(prev => prev ? { ...prev, coverUrl: '' } : null);
+
+                            console.log('🔥🔥🔥 SPACE EDIT: Cover image removal saved successfully');
+                          } catch (error) {
+                            console.error('🔥🔥🔥 SPACE EDIT: Failed to save cover image removal:', error);
+                            showToast('Failed to remove cover image', 'error');
+                            // 回滚状态
+                            setEditSpaceCoverUrl(spaceInfo?.coverUrl || '');
+                          }
+                        }
                       }}
                       onError={(error) => showToast(error, 'error')}
                     />
