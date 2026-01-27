@@ -267,6 +267,7 @@ export const MainContentSection = (): JSX.Element => {
   const [createSpaceDescription, setCreateSpaceDescription] = useState("");
   const [createSpaceCoverUrl, setCreateSpaceCoverUrl] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false); // 图片上传状态
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -549,6 +550,7 @@ export const MainContentSection = (): JSX.Element => {
       setCreateSpaceName("");
       setCreateSpaceDescription("");
       setCreateSpaceCoverUrl("");
+      setIsImageUploading(false); // 重置图片上传状态
 
       // Navigate to the new space if we have its namespace
       if (newSpace?.namespace) {
@@ -678,6 +680,7 @@ export const MainContentSection = (): JSX.Element => {
               setCreateSpaceName("");
               setCreateSpaceDescription("");
               setCreateSpaceCoverUrl("");
+              setIsImageUploading(false); // 重置图片上传状态
             }}
           />
 
@@ -695,6 +698,7 @@ export const MainContentSection = (): JSX.Element => {
                 setCreateSpaceName("");
                 setCreateSpaceDescription("");
                 setCreateSpaceCoverUrl("");
+                setIsImageUploading(false); // 重置图片上传状态
               }}
               className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
               aria-label="Close dialog"
@@ -783,6 +787,10 @@ export const MainContentSection = (): JSX.Element => {
                         console.log('🔥🔥🔥 SPACE CREATE: State updated with URL:', url);
                       }}
                       onError={(error) => showToast(error, 'error')}
+                      onUploadStatusChange={(uploading) => {
+                        console.log('🔥🔥🔥 SPACE CREATE: Image upload status changed:', uploading);
+                        setIsImageUploading(uploading);
+                      }}
                     />
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
                       Recommended size: 1200x675px (16:9 ratio)
@@ -801,6 +809,7 @@ export const MainContentSection = (): JSX.Element => {
                       setCreateSpaceName("");
                       setCreateSpaceDescription("");
                       setCreateSpaceCoverUrl("");
+                      setIsImageUploading(false); // 重置图片上传状态
                     }}
                     type="button"
                   >
@@ -812,11 +821,11 @@ export const MainContentSection = (): JSX.Element => {
                   <button
                     className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
                     onClick={handleCreateSpace}
-                    disabled={isCreating || !createSpaceName.trim()}
+                    disabled={isCreating || !createSpaceName.trim() || isImageUploading}
                     type="button"
                   >
                     <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      {isCreating ? 'Creating...' : 'Create Space'}
+                      {isImageUploading ? 'Uploading image...' : (isCreating ? 'Creating...' : 'Create Space')}
                     </span>
                   </button>
                 </div>
