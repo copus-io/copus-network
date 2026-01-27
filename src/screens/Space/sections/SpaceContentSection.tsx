@@ -34,6 +34,7 @@ const SpaceInfoSection = ({
   authorAvatar,
   authorNamespace,
   spaceDescription,
+  spaceCoverUrl,
   isFollowing,
   isOwner,
   spaceType,
@@ -49,6 +50,7 @@ const SpaceInfoSection = ({
   authorAvatar?: string;
   authorNamespace?: string;
   spaceDescription?: string;
+  spaceCoverUrl?: string;
   isFollowing: boolean;
   isOwner: boolean;
   spaceType?: number;
@@ -61,6 +63,11 @@ const SpaceInfoSection = ({
   // Allow space owners to edit all types of spaces (including default Collections/Curations)
   // Now that we support descriptions and covers, owners should be able to customize their spaces
   const canEdit = isOwner;
+
+  // Debug logging for spaceCoverUrl changes
+  React.useEffect(() => {
+    console.log('🖼️ SPACE INFO: Cover URL changed:', spaceCoverUrl);
+  }, [spaceCoverUrl]);
   const [showUnfollowDropdown, setShowUnfollowDropdown] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const { showToast } = useToast();
@@ -225,6 +232,26 @@ const SpaceInfoSection = ({
         </div>
         </div>
       </div>
+
+      {/* Space Cover Banner */}
+      {spaceCoverUrl && (
+        <div className="relative self-stretch w-full mt-4 mb-4 rounded-lg overflow-hidden" style={{ aspectRatio: '560/360', maxHeight: '240px' }}>
+          <img
+            src={spaceCoverUrl}
+            alt={`${spaceName} cover`}
+            className="w-full h-full object-cover"
+            style={{ aspectRatio: '560/360' }}
+            onLoad={() => console.log('🖼️ SPACE BANNER: Cover image loaded successfully:', spaceCoverUrl)}
+            onError={() => console.error('🖼️ SPACE BANNER: Failed to load cover image:', spaceCoverUrl)}
+          />
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+              Cover: {spaceCoverUrl?.substring(spaceCoverUrl.lastIndexOf('/') + 1)}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Space Description */}
       {spaceDescription && spaceDescription.trim() && (
@@ -871,10 +898,20 @@ export const SpaceContentSection = (): JSX.Element => {
       // Call API to update space with all fields
       await AuthService.updateSpace(spaceId, nameToUse, description, coverUrl);
 
+      // 立即更新本地状态，避免等待页面刷新
+      setSpaceInfo(prev => prev ? {
+        ...prev,
+        name: nameToUse,
+        description: description,
+        coverUrl: coverUrl
+      } : null);
+
       // Only update display name if name editing was allowed
       if (canEditSpaceName) {
         setDisplaySpaceName(nameToUse);
       }
+
+      console.log('🚀 SPACE EDIT: Local state updated immediately with new coverUrl:', coverUrl);
       showToast('Space updated successfully', 'success');
       setShowEditModal(false);
 
@@ -883,11 +920,9 @@ export const SpaceContentSection = (): JSX.Element => {
       setEditSpaceDescription("");
       setEditSpaceCoverUrl("");
 
-      // Force refresh the page to show all updated changes immediately
-      // This ensures users see the updated description, cover, and name
-      setTimeout(() => {
-        window.location.reload();
-      }, 500); // Small delay to allow toast to show
+      // 移除页面刷新，改为依赖本地状态更新
+      // 这样可以避免测试环境中的网络延迟问题
+      console.log('🚀 SPACE EDIT: Skipping page reload, using immediate state update');
     } catch (err) {
       const errorMessage = ErrorHandler.handleApiError(err, {
         component: 'SpaceContentSection',
@@ -1093,6 +1128,7 @@ export const SpaceContentSection = (): JSX.Element => {
         authorAvatar={spaceInfo?.authorAvatar}
         authorNamespace={spaceInfo?.authorNamespace}
         spaceDescription={spaceInfo?.description}
+        spaceCoverUrl={spaceInfo?.coverUrl}
         isFollowing={isFollowing}
         isOwner={isOwner}
         spaceType={spaceInfo?.spaceType}
