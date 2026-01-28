@@ -875,13 +875,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
 
         {/* Profile and Cover images in one row on desktop, stacked on mobile */}
-        <div className="flex flex-col lg:flex-row items-start gap-5 lg:gap-8 relative w-full max-w-[500px] mt-3">
+        <div className="flex flex-col lg:flex-row items-start gap-5 lg:gap-8 relative w-full max-w-[650px] mt-3">
           {/* Profile image */}
-          <div className="flex flex-col items-start gap-2">
+          <div className="flex flex-col items-start gap-2 flex-shrink-0">
             <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Profile image</h3>
             <button
               onClick={handleAvatarClick}
-              className="w-[50px] h-[50px] lg:w-[60px] lg:h-[60px] rounded-full border-2 border-solid border-light-grey relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100 flex-shrink-0"
+              className="w-[60px] h-[60px] lg:w-[80px] lg:h-[80px] rounded-full border-2 border-solid border-light-grey relative aspect-[1] cursor-pointer hover:ring-4 hover:ring-blue-300 transition-all duration-200 group overflow-hidden bg-gray-100 flex-shrink-0"
               title="Click to change avatar"
               aria-label="Click to change avatar"
             >
@@ -914,14 +914,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           </div>
 
           {/* Divider - hidden on mobile, aligned with profile/cover images */}
-          <div className="hidden lg:block w-px h-[60px] bg-[#E0E0E0] mt-[28px]"></div>
+          <div className="hidden lg:block w-px h-[80px] bg-[#E0E0E0] mt-[28px]"></div>
 
           {/* Cover image */}
           <div className="flex flex-col items-start gap-2">
             <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Cover image</h3>
             <button
               onClick={handleCoverClick}
-              className="w-[200px] lg:w-[360px] h-[50px] lg:h-[60px] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl border border-gray-200 flex items-center justify-center"
+              className="w-[250px] lg:w-[480px] h-[60px] lg:h-[80px] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl border border-gray-200 flex items-center justify-center"
           title="Click to change cover image"
           aria-label="Click to change cover image"
         >
