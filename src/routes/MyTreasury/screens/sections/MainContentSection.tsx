@@ -276,7 +276,7 @@ const TreasuryHeaderSection = ({
 
         {/* Action buttons - Create new treasury, Edit, Share - shown when no cover */}
         {!coverUrl && (
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex items-center gap-3 mt-1">
             {/* Create new treasury button */}
             {onCreate && isOwnProfile && (
               <button
