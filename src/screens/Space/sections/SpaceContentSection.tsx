@@ -261,7 +261,7 @@ const SpaceInfoSection = ({
 
         {/* Description */}
         {spaceDescription && spaceDescription.trim() && (
-          <p className="text-gray-700 text-base leading-relaxed mb-3">{spaceDescription}</p>
+          <p className="text-gray-700 text-sm leading-relaxed mb-3">{spaceDescription}</p>
         )}
 
         {/* Action buttons - show below description when no cover */}
