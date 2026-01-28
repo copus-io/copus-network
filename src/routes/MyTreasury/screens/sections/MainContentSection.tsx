@@ -234,13 +234,13 @@ const TreasuryHeaderSection = ({
         </h1>
 
         {/* Namespace */}
-        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[1.4] mb-2">
+        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] mb-2">
           @{namespace}
         </div>
 
         {/* Bio */}
         {bio && (
-          <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px] mb-1 max-w-md">
+          <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-[19.6px] mb-1 max-w-md">
             {bio}
           </p>
         )}
@@ -266,7 +266,7 @@ const TreasuryHeaderSection = ({
                     alt=""
                     src={link.iconUrl || 'https://c.animaapp.com/w7obk4mX/img/link-icon.svg'}
                   />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-[19.6px] whitespace-nowrap">
                     {link.title}
                   </span>
                 </a>
