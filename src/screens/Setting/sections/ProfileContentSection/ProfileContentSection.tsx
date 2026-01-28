@@ -921,7 +921,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Cover image</h3>
             <button
               onClick={handleCoverClick}
-              className="w-[200px] lg:w-[300px] aspect-[3/1] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl border border-gray-200 flex items-center justify-center"
+              className="w-[200px] lg:w-[300px] aspect-[6/1] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl border border-gray-200 flex items-center justify-center"
           title="Click to change cover image"
           aria-label="Click to change cover image"
         >
@@ -935,7 +935,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 }}
               />
               {showLoadingSpinner && (
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
                 </div>
               )}
@@ -960,7 +960,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           )}
 
           {bannerImage && !showLoadingSpinner && (
-            <div className="absolute inset-0 bg-black/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-20">
+            <div className="absolute inset-0 bg-black/50 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-20">
               <div className="flex flex-col items-center gap-2 text-white">
                 <svg
                   className="w-8 h-8"
