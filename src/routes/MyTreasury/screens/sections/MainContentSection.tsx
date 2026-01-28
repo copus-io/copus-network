@@ -204,7 +204,7 @@ const TreasuryHeaderSection = ({
             )}
           </div>
 
-          {/* Create new collection button - positioned at bottom right */}
+          {/* Create new treasury button - positioned at bottom right */}
           {onCreate && isOwnProfile && (
             <button
               onClick={onCreate}
@@ -213,7 +213,7 @@ const TreasuryHeaderSection = ({
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M6 0V12M0 6H12" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
-              Create new collection
+              Create new treasury
             </button>
           )}
         </div>
@@ -274,10 +274,10 @@ const TreasuryHeaderSection = ({
           </nav>
         )}
 
-        {/* Action buttons - Create new collection, Edit, Share - shown when no cover */}
+        {/* Action buttons - Create new treasury, Edit, Share - shown when no cover */}
         {!coverUrl && (
           <div className="flex items-center gap-3 mt-4">
-            {/* Create new collection button */}
+            {/* Create new treasury button */}
             {onCreate && isOwnProfile && (
               <button
                 onClick={onCreate}
@@ -286,7 +286,7 @@ const TreasuryHeaderSection = ({
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M6 0V12M0 6H12" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
                 </svg>
-                Create new collection
+                Create new treasury
               </button>
             )}
 
@@ -833,7 +833,7 @@ export const MainContentSection = (): JSX.Element => {
                   id="create-space-title"
                   className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
                 >
-                  Create new collection
+                  Create new treasury
                 </h2>
 
                 {/* Space Name */}

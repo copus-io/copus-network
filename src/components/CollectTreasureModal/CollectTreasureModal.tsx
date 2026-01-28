@@ -376,7 +376,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                 id="collect-dialog-title"
                 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
               >
-                Create new collection
+                Create new treasury
               </h2>
 
               <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
@@ -492,7 +492,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                   className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity"
                   type="button"
                   onClick={() => setShowCreateNew(true)}
-                  aria-label="Create new collection"
+                  aria-label="Create new treasury"
                 >
                   <img
                     className="relative w-6 h-6"
@@ -501,7 +501,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                     aria-hidden="true"
                   />
                   <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    New collection
+                    New treasury
                   </span>
                 </button>
               </div>
