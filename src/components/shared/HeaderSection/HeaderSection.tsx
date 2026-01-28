@@ -673,7 +673,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         </div>
       )}
 
-      <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:py-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
+      <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:py-[10px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
         {/* Search Results Dropdown - Desktop only */}
         {showResults && (
           <div className="hidden lg:flex fixed right-[30px] top-[70px] w-[900px] max-h-[80vh] bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] rounded-2xl shadow-xl border border-gray-200 z-50 flex-col overflow-hidden">

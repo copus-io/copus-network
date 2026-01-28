@@ -239,11 +239,34 @@ const SpaceInfoSection = ({
         })()}
 
         {/* Space name */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">{spaceName}</h1>
+        <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-3">{spaceName}</h1>
 
-        {/* Action buttons - show below name when no cover */}
+        {/* Treasure count and author info */}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm text-gray-500">{treasureCount} treasures</span>
+          <span className="text-gray-300">·</span>
+          <span className="text-sm text-gray-500">By</span>
+          <button
+            onClick={onAuthorClick}
+            className="inline-flex items-center gap-1.5 hover:opacity-70 transition-opacity cursor-pointer"
+          >
+            <img
+              src={authorAvatar || profileDefaultAvatar}
+              alt={authorName}
+              className="w-4 h-4 rounded-full object-cover"
+            />
+            <span className="text-sm text-gray-500 hover:text-gray-700">{authorName}</span>
+          </button>
+        </div>
+
+        {/* Description */}
+        {spaceDescription && spaceDescription.trim() && (
+          <p className="text-gray-700 text-base leading-relaxed mb-3">{spaceDescription}</p>
+        )}
+
+        {/* Action buttons - show below description when no cover */}
         {!spaceCoverUrl && (
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3 mt-1">
             {canEdit && (
               <button
                 type="button"
@@ -354,29 +377,6 @@ const SpaceInfoSection = ({
               )}
             </div>
           </div>
-        )}
-
-        {/* Treasure count and author info */}
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm text-gray-500">{treasureCount} treasures</span>
-          <span className="text-gray-300">·</span>
-          <span className="text-sm text-gray-500">By</span>
-          <button
-            onClick={onAuthorClick}
-            className="inline-flex items-center gap-1.5 hover:opacity-70 transition-opacity cursor-pointer"
-          >
-            <img
-              src={authorAvatar || profileDefaultAvatar}
-              alt={authorName}
-              className="w-4 h-4 rounded-full object-cover"
-            />
-            <span className="text-sm text-gray-500 hover:text-gray-700">{authorName}</span>
-          </button>
-        </div>
-
-        {/* Description */}
-        {spaceDescription && spaceDescription.trim() && (
-          <p className="text-gray-700 text-base leading-relaxed">{spaceDescription}</p>
         )}
       </div>
     </section>

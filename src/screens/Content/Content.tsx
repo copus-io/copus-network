@@ -2354,8 +2354,8 @@ export const Content = (): JSX.Element => {
         </main>
 
         {/* Sticky bottom button bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-3 lg:py-5 px-3 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-3 lg:py-5 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto px-4 lg:px-[30px]">
             <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
               {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
