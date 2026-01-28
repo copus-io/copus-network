@@ -450,57 +450,42 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     <main className="flex flex-col gap-5 px-4 lg:px-2.5 pt-0 pb-0 relative">
       {/* User info header */}
       <section className="w-full">
-        {/* Cover image */}
-        <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
-          {userInfo.coverUrl || defaultBanner ? (
-            <>
-              <div
-                className={`w-full h-full bg-cover bg-center bg-no-repeat ${
-                  isOwnProfile ? 'cursor-pointer' : ''
-                } ${
-                  bannerImageLoaded ? 'opacity-100' : 'opacity-0'
-                }`}
-                style={{
-                  backgroundImage: `url(${userInfo.coverUrl || defaultBanner})`,
-                  backgroundColor: '#f3f4f6'
-                }}
-                onClick={handleCoverClick}
-              />
-              {showBannerLoadingSpinner && (
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
-                </div>
-              )}
-            </>
-          ) : (
+        {/* Cover image - only show if user has a cover image */}
+        {userInfo.coverUrl && (
+          <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
             <div
-              className={`w-full h-full bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center ${
+              className={`w-full h-full bg-cover bg-center bg-no-repeat ${
                 isOwnProfile ? 'cursor-pointer' : ''
+              } ${
+                bannerImageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
-              onClick={isOwnProfile ? handleCoverClick : undefined}
-            >
-              <div className="flex flex-col items-center gap-3 text-gray-400">
-                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
+              style={{
+                backgroundImage: `url(${userInfo.coverUrl})`,
+                backgroundColor: '#f3f4f6'
+              }}
+              onClick={handleCoverClick}
+            />
+            {showBannerLoadingSpinner && (
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
               </div>
-            </div>
-          )}
-          {/* Edit overlay - only shown on own profile */}
-          {isOwnProfile && (
-            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer" onClick={handleCoverClick}>
-              <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+            )}
+            {/* Edit overlay - only shown on own profile */}
+            {isOwnProfile && (
+              <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer" onClick={handleCoverClick}>
+                <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                  <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* User information - centered layout */}
-        <div className="relative flex flex-col items-center text-center mt-[-40px]">
+        <div className={`relative flex flex-col items-center text-center ${userInfo.coverUrl ? 'mt-[-40px]' : ''}`}>
           {/* Avatar */}
           <img
             src={userInfo.faceUrl}
@@ -509,11 +494,9 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             onClick={handleAvatarClick}
           />
 
-          {/* Username */}
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
-
-          {/* Share button */}
-          <div className="flex items-center gap-3 mb-3">
+          {/* Username and Share button */}
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900">{userInfo.username}</h1>
             <button
               type="button"
               aria-label="Share profile"
