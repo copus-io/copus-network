@@ -229,18 +229,18 @@ const TreasuryHeaderSection = ({
         />
 
         {/* Username */}
-        <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-2">
+        <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1">
           {username}
         </h1>
 
         {/* Namespace */}
-        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] mb-2">
+        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] mb-1">
           @{namespace}
         </div>
 
         {/* Bio */}
         {bio && (
-          <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-[19.6px] mb-1 max-w-md">
+          <p className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-[19.6px] mb-0.5 max-w-md">
             {bio}
           </p>
         )}
