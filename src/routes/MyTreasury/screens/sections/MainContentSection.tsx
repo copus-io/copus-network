@@ -210,11 +210,9 @@ const TreasuryHeaderSection = ({
               onClick={onCreate}
               className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-4 py-2 bg-red hover:bg-red/90 text-white rounded-[50px] shadow-lg transition-colors [font-family:'Lato',Helvetica] font-bold text-sm"
             >
-              <img
-                src="https://c.animaapp.com/eANMvAF7/img/plus.svg"
-                alt="Add"
-                className="w-4 h-4 brightness-0 invert"
-              />
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 0V12M0 6H12" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+              </svg>
               Create new collection
             </button>
           )}
