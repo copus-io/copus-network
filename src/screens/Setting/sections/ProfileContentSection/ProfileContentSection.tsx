@@ -913,15 +913,15 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </button>
           </div>
 
-          {/* Divider - hidden on mobile, aligned with cover image */}
-          <div className="hidden lg:block w-px h-[100px] bg-[#E0E0E0] mt-[28px]"></div>
+          {/* Divider - hidden on mobile, aligned with profile/cover images */}
+          <div className="hidden lg:block w-px h-[60px] bg-[#E0E0E0] mt-[28px]"></div>
 
           {/* Cover image */}
           <div className="flex flex-col items-start gap-2">
             <h3 className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-sm tracking-[0] leading-[20px]">Cover image</h3>
             <button
               onClick={handleCoverClick}
-              className="w-[200px] lg:w-[300px] aspect-[6/1] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl border border-gray-200 flex items-center justify-center"
+              className="w-[200px] lg:w-[360px] h-[50px] lg:h-[60px] relative cursor-pointer hover:opacity-90 transition-opacity duration-200 group overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl border border-gray-200 flex items-center justify-center"
           title="Click to change cover image"
           aria-label="Click to change cover image"
         >
