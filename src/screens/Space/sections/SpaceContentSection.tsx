@@ -100,22 +100,6 @@ const SpaceInfoSection = ({
               backgroundColor: '#f3f4f6'
             }}
           />
-          {/* Edit button - positioned at top right */}
-          {canEdit && (
-            <div className="absolute top-3 right-3 z-10">
-              <button
-                type="button"
-                aria-label="Edit space"
-                className="w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center hover:opacity-70 transition-opacity"
-                onClick={onEdit}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            </div>
-          )}
         </div>
       )}
 
@@ -163,13 +147,13 @@ const SpaceInfoSection = ({
 
         {/* Description */}
         {spaceDescription && spaceDescription.trim() && (
-          <p className="text-gray-700 text-sm leading-relaxed mb-3">{spaceDescription}</p>
+          <p className="text-gray-700 text-sm leading-relaxed mb-1">{spaceDescription}</p>
         )}
 
         {/* Action buttons - always show below description */}
-        <div className="flex items-center gap-3 mt-1">
-          {/* Edit button - only show when no cover (it's on the cover when there is one) */}
-          {!spaceCoverUrl && canEdit && (
+        <div className="flex items-center gap-3">
+          {/* Edit button */}
+          {canEdit && (
             <button
               type="button"
               aria-label="Edit space"
