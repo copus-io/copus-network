@@ -142,20 +142,23 @@ class BodyInjector {
 
     const treasuryUrl = `${SITE_URL}/treasury/${space.namespace}`
     const authorUrl = `${SITE_URL}/user/${space.userInfo?.namespace}`
+    const spaceName = space.name || 'Treasury'
+    const authorName = space.userInfo?.username || 'Curator'
+    const articleCount = space.articleCount || 0
 
     // Collection schema with articles
     const collectionSchema = {
       "@context": "https://schema.org",
       "@type": "Collection",
       "@id": treasuryUrl,
-      "name": space.name || 'Treasury',
+      "name": spaceName,
       "url": treasuryUrl,
-      "description": `A curated collection of ${space.articleCount || 0} treasures by ${space.userInfo?.username || 'a curator'} on Copus. Each item includes the curator's notes explaining why it's valuable.`,
-      "numberOfItems": space.articleCount || 0,
+      "description": `A curated collection of ${articleCount} treasures by ${authorName} on Copus. Each item includes the curator's notes explaining why it's valuable.`,
+      "numberOfItems": articleCount,
       "author": {
         "@type": "Person",
         "@id": `${authorUrl}#person`,
-        "name": space.userInfo?.username || 'Curator',
+        "name": authorName,
         "url": authorUrl,
         "image": space.userInfo?.faceUrl
       },
@@ -200,13 +203,13 @@ class BodyInjector {
         {
           "@type": "ListItem",
           "position": 2,
-          "name": space.userInfo?.username || 'User',
+          "name": authorName,
           "item": authorUrl
         },
         {
           "@type": "ListItem",
           "position": 3,
-          "name": space.name || 'Treasury',
+          "name": spaceName,
           "item": treasuryUrl
         }
       ]
@@ -215,6 +218,39 @@ class BodyInjector {
     const schemas = [collectionSchema, breadcrumbSchema]
     const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(schemas)}</script>`
 
-    element.prepend(jsonLdScript, { html: true })
+    // Build readable HTML content for AI agents (hidden from visual users)
+    const articlesHtml = articles && articles.length > 0
+      ? articles.map((a, i) => `
+          <article>
+            <h3>${i + 1}. <a href="${SITE_URL}/work/${a.uuid}">${escapeHtml(a.title)}</a></h3>
+            ${a.content ? `<p><strong>Curation Note:</strong> ${escapeHtml(a.content.slice(0, 300))}${a.content.length > 300 ? '...' : ''}</p>` : ''}
+            ${a.targetUrl ? `<p><strong>Original Source:</strong> <a href="${escapeHtml(a.targetUrl)}">${escapeHtml(a.targetUrl)}</a></p>` : ''}
+            <p><strong>Treasured:</strong> ${a.likeCount || 0} times</p>
+          </article>`).join('')
+      : '<p>No articles in this treasury yet.</p>'
+
+    const ssrContent = `
+      <div id="copus-ssr-treasury" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
+        <header>
+          <h1>${escapeHtml(spaceName)}</h1>
+          <p><strong>Curated by:</strong> <a href="${authorUrl}">${escapeHtml(authorName)}</a></p>
+          <p><strong>Total Items:</strong> ${articleCount} curated treasures</p>
+          <p><strong>Treasury URL:</strong> <a href="${treasuryUrl}">${treasuryUrl}</a></p>
+        </header>
+
+        <main>
+          <h2>Curated Content</h2>
+          <p>Below are the items ${escapeHtml(authorName)} has curated in this treasury, each with their curation notes explaining why it's valuable:</p>
+          ${articlesHtml}
+        </main>
+
+        <footer>
+          <p>This is a treasury on Copus, a human-curated content discovery platform.</p>
+          <p><a href="${authorUrl}">View ${escapeHtml(authorName)}'s profile</a> | <a href="${SITE_URL}">Back to Copus Home</a></p>
+        </footer>
+      </div>
+    `
+
+    element.prepend(jsonLdScript + ssrContent, { html: true })
   }
 }

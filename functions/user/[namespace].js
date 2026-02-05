@@ -146,29 +146,33 @@ class BodyInjector {
     const { user, treasuries } = this
 
     const profileUrl = `${SITE_URL}/user/${user.namespace}`
+    const name = user.username || user.namespace
+    const bio = user.bio || `${name} is a curator on Copus.`
+    const articleCount = user.statistics?.articleCount || 0
+    const treasuredCount = user.statistics?.likedArticleCount || 0
 
     // Person schema with treasuries
     const personSchema = {
       "@context": "https://schema.org",
       "@type": "Person",
       "@id": `${profileUrl}#person`,
-      "name": user.username || user.namespace,
+      "name": name,
       "url": profileUrl,
       "identifier": user.namespace,
-      "description": user.bio || `${user.username} is a curator on Copus, an open-web curation network.`,
+      "description": user.bio || `${name} is a curator on Copus, an open-web curation network.`,
       "image": user.faceUrl || DEFAULT_AVATAR,
       "sameAs": [`${SITE_URL}/u/${user.namespace}`],
       "interactionStatistic": [
         {
           "@type": "InteractionCounter",
           "interactionType": "https://schema.org/WriteAction",
-          "userInteractionCount": user.statistics?.articleCount || 0,
+          "userInteractionCount": articleCount,
           "description": "Number of curations created"
         },
         {
           "@type": "InteractionCounter",
           "interactionType": "https://schema.org/LikeAction",
-          "userInteractionCount": user.statistics?.likedArticleCount || 0,
+          "userInteractionCount": treasuredCount,
           "description": "Number of items treasured"
         }
       ]
@@ -178,8 +182,8 @@ class BodyInjector {
     if (treasuries && treasuries.length > 0) {
       personSchema.owns = {
         "@type": "ItemList",
-        "name": `${user.username}'s Treasuries`,
-        "description": `Curated collections by ${user.username} on Copus. Visit each treasury to see the curated content.`,
+        "name": `${name}'s Treasuries`,
+        "description": `Curated collections by ${name} on Copus. Visit each treasury to see the curated content.`,
         "numberOfItems": treasuries.length,
         "itemListElement": treasuries.map((treasury, index) => ({
           "@type": "ListItem",
@@ -190,7 +194,7 @@ class BodyInjector {
             "name": treasury.name || 'Unnamed Treasury',
             "url": `${SITE_URL}/treasury/${treasury.namespace}`,
             "numberOfItems": treasury.articleCount || 0,
-            "description": `A curated collection with ${treasury.articleCount || 0} treasures. Visit this treasury to see ${user.username}'s curated content and curation notes.`
+            "description": `A curated collection with ${treasury.articleCount || 0} treasures. Visit this treasury to see ${name}'s curated content and curation notes.`
           }
         }))
       }
@@ -210,7 +214,7 @@ class BodyInjector {
         {
           "@type": "ListItem",
           "position": 2,
-          "name": user.username || user.namespace,
+          "name": name,
           "item": profileUrl
         }
       ]
@@ -219,6 +223,41 @@ class BodyInjector {
     const schemas = [personSchema, breadcrumbSchema]
     const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(schemas)}</script>`
 
-    element.prepend(jsonLdScript, { html: true })
+    // Build readable HTML content for AI agents (hidden from visual users)
+    const treasuriesHtml = treasuries && treasuries.length > 0
+      ? treasuries.map((t, i) => `
+          <li>
+            <a href="${SITE_URL}/treasury/${t.namespace}">${escapeHtml(t.name || 'Unnamed Treasury')}</a>
+            - ${t.articleCount || 0} curated items
+          </li>`).join('')
+      : '<li>No public treasuries yet</li>'
+
+    const ssrContent = `
+      <div id="copus-ssr-profile" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
+        <header>
+          <h1>${escapeHtml(name)} - Curator Profile</h1>
+          <p><strong>Username:</strong> @${escapeHtml(user.namespace)}</p>
+          <p><strong>Bio:</strong> ${escapeHtml(bio)}</p>
+          <p><strong>Stats:</strong> ${articleCount} curations created, ${treasuredCount} items treasured</p>
+          <p><strong>Profile URL:</strong> <a href="${profileUrl}">${profileUrl}</a></p>
+          <p><strong>Taste Profile (JSON):</strong> <a href="${SITE_URL}/api/taste/${user.namespace}.json">${SITE_URL}/api/taste/${user.namespace}.json</a></p>
+        </header>
+
+        <main>
+          <h2>${escapeHtml(name)}'s Treasuries</h2>
+          <p>Browse ${escapeHtml(name)}'s curated collections:</p>
+          <ul>
+            ${treasuriesHtml}
+          </ul>
+        </main>
+
+        <footer>
+          <p>This is ${escapeHtml(name)}'s profile on Copus, a human-curated content discovery platform.</p>
+          <p><a href="${SITE_URL}">Back to Copus Home</a> | <a href="${SITE_URL}/api/taste/${user.namespace}.json">Get JSON taste profile</a></p>
+        </footer>
+      </div>
+    `
+
+    element.prepend(jsonLdScript + ssrContent, { html: true })
   }
 }
