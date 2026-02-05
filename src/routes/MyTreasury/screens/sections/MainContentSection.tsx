@@ -399,6 +399,7 @@ export const MainContentSection = (): JSX.Element => {
   const [createSpaceName, setCreateSpaceName] = useState("");
   const [createSpaceDescription, setCreateSpaceDescription] = useState("");
   const [createSpaceCoverUrl, setCreateSpaceCoverUrl] = useState("");
+  const [createSpaceFaceUrl, setCreateSpaceFaceUrl] = useState(""); // 空间头像
   const [isCreating, setIsCreating] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false); // 图片上传状态
 
@@ -665,9 +666,10 @@ export const MainContentSection = (): JSX.Element => {
       // Prepare optional fields
       const description = createSpaceDescription.trim() || undefined;
       const coverUrl = createSpaceCoverUrl.trim() || undefined;
+      const faceUrl = createSpaceFaceUrl.trim() || undefined;
 
       // Call API to create space
-      const response = await AuthService.createSpace(createSpaceName.trim(), description, coverUrl);
+      const response = await AuthService.createSpace(createSpaceName.trim(), description, coverUrl, faceUrl);
       console.log('Create space response:', response);
 
       // Add the new space to the local state
@@ -683,6 +685,7 @@ export const MainContentSection = (): JSX.Element => {
       setCreateSpaceName("");
       setCreateSpaceDescription("");
       setCreateSpaceCoverUrl("");
+      setCreateSpaceFaceUrl("");
       setIsImageUploading(false); // 重置图片上传状态
 
       // Navigate to the new space if we have its namespace
@@ -798,6 +801,7 @@ export const MainContentSection = (): JSX.Element => {
               setCreateSpaceName("");
               setCreateSpaceDescription("");
               setCreateSpaceCoverUrl("");
+              setCreateSpaceFaceUrl("");
               setIsImageUploading(false); // 重置图片上传状态
             }}
           />
@@ -816,6 +820,7 @@ export const MainContentSection = (): JSX.Element => {
                 setCreateSpaceName("");
                 setCreateSpaceDescription("");
                 setCreateSpaceCoverUrl("");
+                setCreateSpaceFaceUrl("");
                 setIsImageUploading(false); // 重置图片上传状态
               }}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
@@ -906,6 +911,29 @@ export const MainContentSection = (): JSX.Element => {
                     </span>
                   </div>
                 </div>
+
+                {/* Space Avatar Upload */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
+                    <ImageUploader
+                      type="avatar"
+                      currentImage={createSpaceFaceUrl}
+                      onImageUploaded={(url) => {
+                        console.log('🔥🔥🔥 SPACE CREATE: Received avatar URL:', url);
+                        setCreateSpaceFaceUrl(url);
+                        console.log('🔥🔥🔥 SPACE CREATE: Avatar state updated with URL:', url);
+                      }}
+                      onError={(error) => showToast(error, 'error')}
+                      onUploadStatusChange={(uploading) => {
+                        console.log('🔥🔥🔥 SPACE CREATE: Avatar upload status changed:', uploading);
+                        setIsImageUploading(uploading);
+                      }}
+                    />
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                      Space avatar - Recommended size: 400x400px (1:1 ratio)
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-end relative self-stretch w-full flex-[0_0_auto]">
@@ -918,6 +946,7 @@ export const MainContentSection = (): JSX.Element => {
                       setCreateSpaceName("");
                       setCreateSpaceDescription("");
                       setCreateSpaceCoverUrl("");
+                      setCreateSpaceFaceUrl("");
                       setIsImageUploading(false); // 重置图片上传状态
                     }}
                     type="button"

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { AuthService } from "../../services/authService";
 import { useToast } from "../ui/toast";
+import { BindableSpace } from "../../types/space";
 
 interface ChooseTreasuriesModalProps {
   isOpen: boolean;
@@ -18,20 +19,7 @@ export interface SelectedSpace {
   spaceType?: number;
 }
 
-interface BindableSpace {
-  articleCount: number;
-  data: Array<{
-    coverUrl: string;
-    targetUrl: string;
-    title: string;
-  }>;
-  id: number;
-  isBind: boolean;
-  name: string;
-  namespace: string;
-  spaceType: number;
-  userId: number;
-}
+// BindableSpace type imported from types/space.ts
 
 interface Collection {
   id: string;
@@ -247,7 +235,12 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
     try {
       setIsSubmitting(true);
 
-      const createResponse = await AuthService.createSpace(newTreasuryName.trim());
+      const createResponse = await AuthService.createSpace(
+        newTreasuryName.trim(),
+        undefined, // description - not supported in this modal
+        undefined, // coverUrl - not supported in this modal
+        undefined  // faceUrl - not supported in this modal
+      );
       console.log('Create space response:', createResponse);
 
       const createdSpace = createResponse?.data || createResponse;

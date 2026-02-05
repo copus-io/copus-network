@@ -25,6 +25,7 @@ import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import { queryClient } from "../../lib/queryClient";
 import { getSpaceDisplayName } from "../../components/ui/TreasuryCard";
 import { ChooseTreasuriesModal, SelectedSpace } from "../../components/ChooseTreasuriesModal/ChooseTreasuriesModal";
+import { BindableSpace } from "../../types/space";
 
 
 export const Create = (): JSX.Element => {
@@ -102,7 +103,7 @@ export const Create = (): JSX.Element => {
         console.log('Bindable spaces response (Create page):', response);
 
         // Parse the response - handle different possible formats
-        let spacesArray: any[] = [];
+        let spacesArray: BindableSpace[] = [];
         if (response?.data && Array.isArray(response.data)) {
           spacesArray = response.data;
         } else if (Array.isArray(response)) {
@@ -110,7 +111,7 @@ export const Create = (): JSX.Element => {
         }
 
         // Transform spaces to the format expected by the dropdown
-        const spaces: { id: string; name: string }[] = spacesArray.map((space: any) => {
+        const spaces: { id: string; name: string }[] = spacesArray.map((space: BindableSpace) => {
           // Get display name using the same logic as TreasuryCard
           const displayName = getSpaceDisplayName({
             ...space,
@@ -396,7 +397,12 @@ export const Create = (): JSX.Element => {
 
     try {
       // Call the createSpace API to create a new treasury
-      const createResponse = await AuthService.createSpace(newTreasuryName.trim());
+      const createResponse = await AuthService.createSpace(
+        newTreasuryName.trim(),
+        undefined, // description - not supported in this modal
+        undefined, // coverUrl - not supported in this modal
+        undefined  // faceUrl - not supported in this modal
+      );
       console.log('Create space response:', createResponse);
 
       // Extract the created space from response

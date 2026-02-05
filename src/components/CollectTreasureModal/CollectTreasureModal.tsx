@@ -5,6 +5,7 @@ import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
 import { logger } from "../../utils/logger";
 import { ImageUploader } from "../ImageUploader/ImageUploader";
+import { BindableSpace } from "../../types/space";
 
 interface CollectTreasureModalProps {
   isOpen: boolean;
@@ -17,20 +18,7 @@ interface CollectTreasureModalProps {
   onSaveComplete?: (isCollected: boolean, collectionCount: number) => void; // Callback with collection state
 }
 
-interface BindableSpace {
-  articleCount: number;
-  data: Array<{
-    coverUrl: string;
-    targetUrl: string;
-    title: string;
-  }>;
-  id: number;
-  isBind: boolean;
-  name: string;
-  namespace: string;
-  spaceType: number;
-  userId: number;
-}
+// BindableSpace type imported from types/space.ts
 
 interface Collection {
   id: string;
@@ -284,7 +272,8 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       const createResponse = await AuthService.createSpace(
         newTreasuryName.trim(),
         newTreasuryDescription.trim() || undefined,
-        newTreasuryCoverUrl.trim() || undefined
+        newTreasuryCoverUrl.trim() || undefined,
+        undefined // faceUrl - not supported in this modal yet
       );
       logger.log('Create space response:', createResponse);
 
