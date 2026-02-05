@@ -115,7 +115,14 @@ async function fetchTreasuryArticles(spaceId, limit = 10) {
     if (!response.ok) return []
 
     const data = await response.json()
-    return data.data || []
+    // API returns nested structure: data.data.data is the array
+    if (data.data && Array.isArray(data.data.data)) {
+      return data.data.data
+    }
+    if (data.data && Array.isArray(data.data)) {
+      return data.data
+    }
+    return []
   } catch (error) {
     console.error('Failed to fetch treasury articles:', error)
     return []
@@ -222,6 +229,9 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
     default:
       // Full access - fetch articles with curation notes
       const articles = treasury.id ? await fetchTreasuryArticles(treasury.id, 20) : []
+      if (!Array.isArray(articles)) {
+        return { ...baseData, articles: [] }
+      }
       return {
         ...baseData,
         articles: articles.map(article => ({
@@ -243,6 +253,7 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
  */
 async function fetchTreasuryArticlesTeaser(spaceId) {
   const articles = await fetchTreasuryArticles(spaceId, 5)
+  if (!Array.isArray(articles)) return []
   return articles.map(article => ({
     title: article.title,
     uuid: article.uuid,
