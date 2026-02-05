@@ -115,9 +115,8 @@ export const UserCard: React.FC<UserCardProps> = ({
     onUserClick();
   }, [onUserClick]);
 
-  // 优化空间显示逻辑
-  const displayedSpaces = useMemo(() => userSpaces?.slice(0, 3) || [], [userSpaces]);
-  const hasMoreSpaces = useMemo(() => (userSpaces?.length || 0) > 3, [userSpaces]);
+  // 优化空间显示逻辑 - show max 2 cards
+  const displayedSpaces = useMemo(() => userSpaces?.slice(0, 2) || [], [userSpaces]);
 
   return (
     <div className="relative inline-block">
@@ -204,13 +203,6 @@ export const UserCard: React.FC<UserCardProps> = ({
                       </div>
                     ))}
                   </div>
-                  {hasMoreSpaces && (
-                    <div className="text-center mt-1">
-                      <span className="[font-family:'Lato',Helvetica] text-xs text-gray-500">
-                        +{(userSpaces?.length || 0) - 3} more
-                      </span>
-                    </div>
-                  )}
                 </div>
               )}
 
