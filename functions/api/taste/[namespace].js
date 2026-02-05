@@ -91,7 +91,14 @@ async function fetchUserTreasuries(userId) {
     if (!response.ok) return []
 
     const data = await response.json()
-    return data.data || []
+    // API returns nested structure: data.data.data is the array
+    if (data.data && Array.isArray(data.data.data)) {
+      return data.data.data
+    }
+    if (data.data && Array.isArray(data.data)) {
+      return data.data
+    }
+    return []
   } catch (error) {
     console.error('Failed to fetch treasuries:', error)
     return []
