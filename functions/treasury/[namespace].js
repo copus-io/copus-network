@@ -1,10 +1,32 @@
 // Cloudflare Worker for Treasury/Space SEO/AEO Meta Tag Injection
 // This runs at the edge and injects meta tags + JSON-LD for treasury pages
+//
+// Access Control:
+// - PUBLIC: Full content in SSR
+// - PRIVATE: Shows "private treasury" message, no content
+// - PAY_TO_ACCESS: Shows teaser (titles only), price info, unlock CTA
 
 const API_BASE = 'https://api-prod.copus.network'
 const SITE_URL = 'https://copus.network'
 const SITE_NAME = 'Copus'
 const DEFAULT_IMAGE = 'https://copus.network/og-image.jpg'
+
+// Access levels
+const ACCESS_LEVEL = {
+  PUBLIC: 'public',
+  PRIVATE: 'private',
+  PAY_TO_ACCESS: 'pay_to_access'
+}
+
+/**
+ * Determine access level from treasury data
+ */
+function getTreasuryAccessLevel(space) {
+  if (space.accessLevel) return space.accessLevel
+  if (space.visibility === 1 || space.isPrivate) return ACCESS_LEVEL.PRIVATE
+  if (space.visibility === 2 || space.isPaid || space.requiresPayment) return ACCESS_LEVEL.PAY_TO_ACCESS
+  return ACCESS_LEVEL.PUBLIC
+}
 
 export async function onRequest(context) {
   const { request, params, next } = context
@@ -145,6 +167,7 @@ class BodyInjector {
     const spaceName = space.name || 'Treasury'
     const authorName = space.userInfo?.username || 'Curator'
     const articleCount = space.articleCount || 0
+    const accessLevel = getTreasuryAccessLevel(space)
 
     // Collection schema with articles
     const collectionSchema = {
@@ -153,7 +176,6 @@ class BodyInjector {
       "@id": treasuryUrl,
       "name": spaceName,
       "url": treasuryUrl,
-      "description": `A curated collection of ${articleCount} treasures by ${authorName} on Copus. Each item includes the curator's notes explaining why it's valuable.`,
       "numberOfItems": articleCount,
       "author": {
         "@type": "Person",
@@ -169,24 +191,141 @@ class BodyInjector {
       }
     }
 
-    // Add articles as collection items - this is key for AI to understand the curated content
-    if (articles && articles.length > 0) {
-      collectionSchema.hasPart = articles.map((article, index) => ({
-        "@type": "CreativeWork",
-        "@id": `${SITE_URL}/work/${article.uuid}`,
-        "position": index + 1,
-        "name": article.title,
-        "url": `${SITE_URL}/work/${article.uuid}`,
-        "description": article.content || undefined, // This is the curation note/reason
-        "mainEntityOfPage": article.targetUrl || undefined,
-        "genre": article.categoryInfo?.name || undefined,
-        "datePublished": article.createAt ? new Date(article.createAt * 1000).toISOString() : undefined,
-        "interactionStatistic": {
-          "@type": "InteractionCounter",
-          "interactionType": "https://schema.org/LikeAction",
-          "userInteractionCount": article.likeCount || 0
+    // Customize description and content based on access level
+    let ssrContent = ''
+
+    if (accessLevel === ACCESS_LEVEL.PRIVATE) {
+      // Private treasury - minimal info
+      collectionSchema.description = `A private curated collection by ${authorName} on Copus. This treasury is only visible to the owner.`
+
+      ssrContent = `
+        <div id="copus-ssr-treasury" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
+          <header>
+            <h1>${escapeHtml(spaceName)} (Private)</h1>
+            <p><strong>Curated by:</strong> <a href="${authorUrl}">${escapeHtml(authorName)}</a></p>
+            <p><strong>Access:</strong> Private - This treasury is only visible to its owner.</p>
+          </header>
+          <footer>
+            <p><a href="${authorUrl}">View ${escapeHtml(authorName)}'s public profile</a></p>
+          </footer>
+        </div>
+      `
+    } else if (accessLevel === ACCESS_LEVEL.PAY_TO_ACCESS) {
+      // Paid treasury - show teaser (titles only, no curation notes)
+      const price = space.price || space.accessPrice || 'varies'
+      const currency = space.currency || 'USDC'
+
+      collectionSchema.description = `A premium curated collection of ${articleCount} treasures by ${authorName} on Copus. Pay to unlock full curation notes and insights.`
+      collectionSchema.isAccessibleForFree = false
+      if (space.price) {
+        collectionSchema.offers = {
+          "@type": "Offer",
+          "price": space.price,
+          "priceCurrency": currency,
+          "url": `${treasuryUrl}?unlock=true`
         }
-      }))
+      }
+
+      // Teaser articles - titles only, no curation notes
+      if (articles && articles.length > 0) {
+        collectionSchema.hasPart = articles.slice(0, 5).map((article, index) => ({
+          "@type": "CreativeWork",
+          "@id": `${SITE_URL}/work/${article.uuid}`,
+          "position": index + 1,
+          "name": article.title,
+          "url": `${SITE_URL}/work/${article.uuid}`
+          // No description (curation note) - that's the paid content
+        }))
+      }
+
+      const teaserHtml = articles && articles.length > 0
+        ? articles.slice(0, 5).map((a, i) => `
+            <li><a href="${SITE_URL}/work/${a.uuid}">${escapeHtml(a.title)}</a></li>`).join('')
+        : '<li>No preview available</li>'
+
+      ssrContent = `
+        <div id="copus-ssr-treasury" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
+          <header>
+            <h1>${escapeHtml(spaceName)} (Premium)</h1>
+            <p><strong>Curated by:</strong> <a href="${authorUrl}">${escapeHtml(authorName)}</a></p>
+            <p><strong>Total Items:</strong> ${articleCount} curated treasures</p>
+            <p><strong>Access:</strong> Pay-to-access. Unlock to see full curation notes and insights.</p>
+            <p><strong>Price:</strong> ${price} ${currency}</p>
+            <p><strong>Unlock:</strong> <a href="${treasuryUrl}?unlock=true">${treasuryUrl}?unlock=true</a></p>
+          </header>
+
+          <main>
+            <h2>Preview (Titles Only)</h2>
+            <p>Below is a preview of what's in this treasury. Pay to unlock full curation notes:</p>
+            <ul>
+              ${teaserHtml}
+              ${articles.length > 5 ? `<li>...and ${articles.length - 5} more</li>` : ''}
+            </ul>
+          </main>
+
+          <footer>
+            <p>This is a premium treasury on Copus. The curator's insights and notes are available after payment.</p>
+            <p><a href="${authorUrl}">View ${escapeHtml(authorName)}'s profile</a> | <a href="${SITE_URL}">Back to Copus Home</a></p>
+          </footer>
+        </div>
+      `
+    } else {
+      // Public treasury - full content
+      collectionSchema.description = `A curated collection of ${articleCount} treasures by ${authorName} on Copus. Each item includes the curator's notes explaining why it's valuable.`
+      collectionSchema.isAccessibleForFree = true
+
+      // Add articles as collection items
+      if (articles && articles.length > 0) {
+        collectionSchema.hasPart = articles.map((article, index) => ({
+          "@type": "CreativeWork",
+          "@id": `${SITE_URL}/work/${article.uuid}`,
+          "position": index + 1,
+          "name": article.title,
+          "url": `${SITE_URL}/work/${article.uuid}`,
+          "description": article.content || undefined,
+          "mainEntityOfPage": article.targetUrl || undefined,
+          "genre": article.categoryInfo?.name || undefined,
+          "datePublished": article.createAt ? new Date(article.createAt * 1000).toISOString() : undefined,
+          "interactionStatistic": {
+            "@type": "InteractionCounter",
+            "interactionType": "https://schema.org/LikeAction",
+            "userInteractionCount": article.likeCount || 0
+          }
+        }))
+      }
+
+      const articlesHtml = articles && articles.length > 0
+        ? articles.map((a, i) => `
+            <article>
+              <h3>${i + 1}. <a href="${SITE_URL}/work/${a.uuid}">${escapeHtml(a.title)}</a></h3>
+              ${a.content ? `<p><strong>Curation Note:</strong> ${escapeHtml(a.content.slice(0, 300))}${a.content.length > 300 ? '...' : ''}</p>` : ''}
+              ${a.targetUrl ? `<p><strong>Original Source:</strong> <a href="${escapeHtml(a.targetUrl)}">${escapeHtml(a.targetUrl)}</a></p>` : ''}
+              <p><strong>Treasured:</strong> ${a.likeCount || 0} times</p>
+            </article>`).join('')
+        : '<p>No articles in this treasury yet.</p>'
+
+      ssrContent = `
+        <div id="copus-ssr-treasury" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
+          <header>
+            <h1>${escapeHtml(spaceName)}</h1>
+            <p><strong>Curated by:</strong> <a href="${authorUrl}">${escapeHtml(authorName)}</a></p>
+            <p><strong>Total Items:</strong> ${articleCount} curated treasures</p>
+            <p><strong>Access:</strong> Public</p>
+            <p><strong>Treasury URL:</strong> <a href="${treasuryUrl}">${treasuryUrl}</a></p>
+          </header>
+
+          <main>
+            <h2>Curated Content</h2>
+            <p>Below are the items ${escapeHtml(authorName)} has curated in this treasury, each with their curation notes explaining why it's valuable:</p>
+            ${articlesHtml}
+          </main>
+
+          <footer>
+            <p>This is a treasury on Copus, a human-curated content discovery platform.</p>
+            <p><a href="${authorUrl}">View ${escapeHtml(authorName)}'s profile</a> | <a href="${SITE_URL}">Back to Copus Home</a></p>
+          </footer>
+        </div>
+      `
     }
 
     // Breadcrumb schema - shows navigation path
@@ -217,39 +356,6 @@ class BodyInjector {
 
     const schemas = [collectionSchema, breadcrumbSchema]
     const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(schemas)}</script>`
-
-    // Build readable HTML content for AI agents (hidden from visual users)
-    const articlesHtml = articles && articles.length > 0
-      ? articles.map((a, i) => `
-          <article>
-            <h3>${i + 1}. <a href="${SITE_URL}/work/${a.uuid}">${escapeHtml(a.title)}</a></h3>
-            ${a.content ? `<p><strong>Curation Note:</strong> ${escapeHtml(a.content.slice(0, 300))}${a.content.length > 300 ? '...' : ''}</p>` : ''}
-            ${a.targetUrl ? `<p><strong>Original Source:</strong> <a href="${escapeHtml(a.targetUrl)}">${escapeHtml(a.targetUrl)}</a></p>` : ''}
-            <p><strong>Treasured:</strong> ${a.likeCount || 0} times</p>
-          </article>`).join('')
-      : '<p>No articles in this treasury yet.</p>'
-
-    const ssrContent = `
-      <div id="copus-ssr-treasury" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
-        <header>
-          <h1>${escapeHtml(spaceName)}</h1>
-          <p><strong>Curated by:</strong> <a href="${authorUrl}">${escapeHtml(authorName)}</a></p>
-          <p><strong>Total Items:</strong> ${articleCount} curated treasures</p>
-          <p><strong>Treasury URL:</strong> <a href="${treasuryUrl}">${treasuryUrl}</a></p>
-        </header>
-
-        <main>
-          <h2>Curated Content</h2>
-          <p>Below are the items ${escapeHtml(authorName)} has curated in this treasury, each with their curation notes explaining why it's valuable:</p>
-          ${articlesHtml}
-        </main>
-
-        <footer>
-          <p>This is a treasury on Copus, a human-curated content discovery platform.</p>
-          <p><a href="${authorUrl}">View ${escapeHtml(authorName)}'s profile</a> | <a href="${SITE_URL}">Back to Copus Home</a></p>
-        </footer>
-      </div>
-    `
 
     element.prepend(jsonLdScript + ssrContent, { html: true })
   }

@@ -1,15 +1,40 @@
 // Cloudflare Worker for AI-readable Taste Profile API
 // Endpoint: /api/taste/[namespace].json
 // Returns structured JSON data about a user's curated content
+//
+// Access Control (future):
+// - PUBLIC: Full content visible to everyone
+// - PRIVATE: Only visible to treasury owner (requires auth token)
+// - PAY_TO_ACCESS: Teaser visible, full content requires payment proof
+//
+// Query params:
+// - ?access_token=xxx - For accessing private/paid content (future)
 
 const API_BASE = 'https://api-prod.copus.network'
 const SITE_URL = 'https://copus.network'
 
-// Access levels for treasuries (for future implementation)
+// Access levels for treasuries
+// Backend should return one of these in treasury.accessLevel or treasury.visibility
 const ACCESS_LEVEL = {
   PUBLIC: 'public',
   PRIVATE: 'private',
   PAY_TO_ACCESS: 'pay_to_access'
+}
+
+// Map possible backend field values to our access levels
+const ACCESS_LEVEL_MAP = {
+  // Numeric values (if backend uses numbers)
+  0: ACCESS_LEVEL.PUBLIC,
+  1: ACCESS_LEVEL.PRIVATE,
+  2: ACCESS_LEVEL.PAY_TO_ACCESS,
+  // String values
+  'public': ACCESS_LEVEL.PUBLIC,
+  'private': ACCESS_LEVEL.PRIVATE,
+  'pay_to_access': ACCESS_LEVEL.PAY_TO_ACCESS,
+  'paid': ACCESS_LEVEL.PAY_TO_ACCESS,
+  // Default
+  undefined: ACCESS_LEVEL.PUBLIC,
+  null: ACCESS_LEVEL.PUBLIC
 }
 
 export async function onRequest(context) {
@@ -131,11 +156,35 @@ async function fetchTreasuryArticles(spaceId, limit = 10) {
 
 /**
  * Determine access level for a treasury
- * TODO: Update this when access control is implemented in the API
+ * Reads from backend API response, with fallback to PUBLIC
+ *
+ * Expected backend fields (in order of priority):
+ * - treasury.accessLevel: 'public' | 'private' | 'pay_to_access'
+ * - treasury.visibility: 0 (public) | 1 (private) | 2 (paid)
+ * - treasury.isPrivate: boolean (legacy support)
  */
 function getTreasuryAccessLevel(treasury) {
-  // Future: Check treasury.accessLevel or treasury.visibility
-  // For now, all treasuries are public
+  // Check accessLevel field (preferred)
+  if (treasury.accessLevel !== undefined) {
+    return ACCESS_LEVEL_MAP[treasury.accessLevel] || ACCESS_LEVEL.PUBLIC
+  }
+
+  // Check visibility field (numeric)
+  if (treasury.visibility !== undefined) {
+    return ACCESS_LEVEL_MAP[treasury.visibility] || ACCESS_LEVEL.PUBLIC
+  }
+
+  // Check legacy isPrivate boolean
+  if (treasury.isPrivate === true) {
+    return ACCESS_LEVEL.PRIVATE
+  }
+
+  // Check isPaid boolean
+  if (treasury.isPaid === true || treasury.requiresPayment === true) {
+    return ACCESS_LEVEL.PAY_TO_ACCESS
+  }
+
+  // Default to public
   return ACCESS_LEVEL.PUBLIC
 }
 
@@ -190,6 +239,17 @@ async function buildTasteProfile(userInfo, treasuries) {
 
 /**
  * Build treasury data based on access level
+ *
+ * For PAY_TO_ACCESS treasuries, includes:
+ * - price: { amount, currency, paymentUrl }
+ * - teaser articles (titles only, no curation notes)
+ *
+ * For PRIVATE treasuries:
+ * - No content shown
+ * - Message indicating privacy
+ *
+ * For PUBLIC treasuries:
+ * - Full articles with curation notes
  */
 async function buildTreasuryData(treasury, userInfo, accessLevel) {
   // Determine display name based on space type
@@ -213,15 +273,23 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
     case ACCESS_LEVEL.PRIVATE:
       return {
         ...baseData,
-        message: 'This treasury is private',
+        message: 'This treasury is private. Only the owner can view its contents.',
         articles: []
       }
 
     case ACCESS_LEVEL.PAY_TO_ACCESS:
+      // Build price info from backend data
+      const priceInfo = {
+        amount: treasury.price || treasury.accessPrice || null,
+        currency: treasury.currency || 'USDC',
+        paymentUrl: `${SITE_URL}/treasury/${treasury.namespace}?unlock=true`
+      }
+
       return {
         ...baseData,
-        message: 'Pay to access full content',
-        // Show teaser - just titles, no curation notes
+        message: 'This treasury requires payment to access full content. Teaser titles shown below.',
+        price: priceInfo,
+        // Show teaser - just titles, no curation notes (the valuable part)
         articles: treasury.id ? await fetchTreasuryArticlesTeaser(treasury.id) : []
       }
 
@@ -265,16 +333,20 @@ async function fetchTreasuryArticlesTeaser(spaceId) {
 
 /**
  * Generate an AI-friendly summary of the user's taste
+ * Includes counts of public/private/paid treasuries
  */
 function generateSummary(userInfo, treasuries) {
   const publicTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PUBLIC)
+  const privateTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PRIVATE)
+  const paidTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PAY_TO_ACCESS)
+
   const totalArticles = publicTreasuries.reduce((sum, t) => sum + t.articles.length, 0)
 
-  if (totalArticles === 0) {
-    return `${userInfo.username} is a curator on Copus but hasn't curated any public content yet.`
+  if (totalArticles === 0 && privateTreasuries.length === 0 && paidTreasuries.length === 0) {
+    return `${userInfo.username} is a curator on Copus but hasn't curated any content yet.`
   }
 
-  // Collect categories
+  // Collect categories from public content
   const categories = {}
   publicTreasuries.forEach(treasury => {
     treasury.articles.forEach(article => {
@@ -289,20 +361,36 @@ function generateSummary(userInfo, treasuries) {
     .slice(0, 3)
     .map(([cat]) => cat)
 
-  // Collect sample curation notes
+  // Collect sample curation notes from public content
   const sampleNotes = publicTreasuries
     .flatMap(t => t.articles)
     .filter(a => a.curationNote && a.curationNote.length > 20)
     .slice(0, 3)
     .map(a => `"${a.curationNote.slice(0, 100)}${a.curationNote.length > 100 ? '...' : ''}"`)
 
-  let summary = `${userInfo.username} is a curator on Copus with ${userInfo.statistics?.articleCount || 0} curations`
+  let summary = `${userInfo.username} is a curator on Copus with ${userInfo.statistics?.articleCount || 0} total curations`
 
   if (topCategories.length > 0) {
     summary += ` focusing on ${topCategories.join(', ')}`
   }
 
-  summary += `. They have ${publicTreasuries.length} public treasuries containing curated content.`
+  summary += '.'
+
+  // Treasury breakdown
+  const treasuryParts = []
+  if (publicTreasuries.length > 0) {
+    treasuryParts.push(`${publicTreasuries.length} public`)
+  }
+  if (paidTreasuries.length > 0) {
+    treasuryParts.push(`${paidTreasuries.length} premium (pay-to-access)`)
+  }
+  if (privateTreasuries.length > 0) {
+    treasuryParts.push(`${privateTreasuries.length} private`)
+  }
+
+  if (treasuryParts.length > 0) {
+    summary += ` They have ${treasuryParts.join(', ')} treasuries.`
+  }
 
   if (userInfo.bio) {
     summary += ` Bio: "${userInfo.bio}"`
