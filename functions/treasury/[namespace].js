@@ -84,7 +84,10 @@ export async function onRequest(context) {
   } catch (error) {
     console.error('Treasury SEO injection error:', error)
     if (wantsJson) {
-      return new Response(JSON.stringify({ error: 'Failed to fetch treasury' }), {
+      return new Response(JSON.stringify({
+        error: 'Failed to fetch treasury',
+        details: String(error)
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       })
@@ -188,7 +191,14 @@ async function fetchSpaceArticles(spaceId, pageSize = 20) {
     if (!response.ok) return []
 
     const data = await response.json()
-    return data.data || []
+    // API returns nested structure: data.data.data is the array
+    if (data.data && Array.isArray(data.data.data)) {
+      return data.data.data
+    }
+    if (data.data && Array.isArray(data.data)) {
+      return data.data
+    }
+    return []
   } catch (error) {
     console.error('Failed to fetch space articles:', error)
     return []

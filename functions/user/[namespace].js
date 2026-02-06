@@ -153,7 +153,14 @@ async function fetchUserTreasuries(namespace) {
     if (!spacesResponse.ok) return []
 
     const spacesData = await spacesResponse.json()
-    return spacesData.data || []
+    // API returns nested structure: data.data.data is the array
+    if (spacesData.data && Array.isArray(spacesData.data.data)) {
+      return spacesData.data.data
+    }
+    if (spacesData.data && Array.isArray(spacesData.data)) {
+      return spacesData.data
+    }
+    return []
   } catch (error) {
     console.error('Failed to fetch user treasuries:', error)
     return []
