@@ -61,7 +61,11 @@ export async function onRequest(context) {
   } catch (error) {
     console.error('User profile SEO injection error:', error)
     if (wantsJson) {
-      return new Response(JSON.stringify({ error: 'Failed to fetch user profile' }), {
+      return new Response(JSON.stringify({
+        error: 'Failed to fetch user profile',
+        message: error.message,
+        stack: error.stack
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       })
