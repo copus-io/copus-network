@@ -10,11 +10,15 @@ export async function onRequest(context) {
   const { request, params, next } = context
   const namespace = params.namespace
 
-  // Skip if not a page request (e.g., JS, CSS, images)
   const url = new URL(request.url)
-  if (url.pathname.includes('.')) {
+
+  // Skip if not a page request (e.g., JS, CSS, images) unless JSON format requested
+  if (url.pathname.includes('.') && !url.search.includes('format=json')) {
     return next()
   }
+
+  // Check for JSON format request
+  const wantsJson = url.searchParams.get('format') === 'json'
 
   try {
     // Fetch user data and treasuries in parallel
@@ -24,7 +28,25 @@ export async function onRequest(context) {
     ])
 
     if (!userData) {
+      if (wantsJson) {
+        return new Response(JSON.stringify({ error: 'User not found', namespace }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        })
+      }
       return next()
+    }
+
+    // Return JSON if requested - bypasses Cloudflare challenges
+    if (wantsJson) {
+      const jsonResponse = buildUserJsonResponse(userData, treasuriesData)
+      return new Response(JSON.stringify(jsonResponse, null, 2), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=300'
+        }
+      })
     }
 
     // Get original response
@@ -38,7 +60,44 @@ export async function onRequest(context) {
 
   } catch (error) {
     console.error('User profile SEO injection error:', error)
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error: 'Failed to fetch user profile' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      })
+    }
     return next()
+  }
+}
+
+/**
+ * Build JSON response for ?format=json requests
+ */
+function buildUserJsonResponse(user, treasuries) {
+  const profileUrl = `${SITE_URL}/user/${user.namespace}`
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: user.username,
+    namespace: user.namespace,
+    url: profileUrl,
+    shortUrl: `${SITE_URL}/u/${user.namespace}`,
+    bio: user.bio || null,
+    avatar: user.faceUrl || DEFAULT_AVATAR,
+    stats: {
+      curationsCreated: user.statistics?.articleCount || 0,
+      itemsTreasured: user.statistics?.likedArticleCount || 0,
+      treasuresReceived: user.statistics?.myArticleLikedCount || 0
+    },
+    treasuries: (treasuries || []).map(t => ({
+      name: t.name || 'Unnamed Treasury',
+      namespace: t.namespace,
+      url: `${SITE_URL}/treasury/${t.namespace}`,
+      articleCount: t.articleCount || 0
+    })),
+    tasteProfileUrl: `${SITE_URL}/api/taste/${user.namespace}.json`,
+    fetchedAt: new Date().toISOString()
   }
 }
 

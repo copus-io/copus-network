@@ -12,20 +12,41 @@ export async function onRequest(context) {
 
   // Skip if not a page request (e.g., JS, CSS, images)
   const url = new URL(request.url)
-  if (url.pathname.includes('.')) {
+  if (url.pathname.includes('.') && !url.search.includes('format=json')) {
     return next()
   }
+
+  // Check for JSON format request
+  const wantsJson = url.searchParams.get('format') === 'json'
 
   try {
     // Fetch article data from API
     const articleData = await fetchArticle(articleId)
 
     if (!articleData) {
+      if (wantsJson) {
+        return new Response(JSON.stringify({ error: 'Article not found', id: articleId }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        })
+      }
       return next()
     }
 
     // Parse seoData
     const seoData = parseSeoData(articleData.seoData)
+
+    // Return JSON if requested - this bypasses Cloudflare challenges
+    if (wantsJson) {
+      const jsonResponse = buildJsonResponse(articleData, seoData)
+      return new Response(JSON.stringify(jsonResponse, null, 2), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=300'
+        }
+      })
+    }
 
     // Get original response
     const response = await next()
@@ -38,7 +59,54 @@ export async function onRequest(context) {
 
   } catch (error) {
     console.error('SEO injection error:', error)
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error: 'Failed to fetch article' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      })
+    }
     return next()
+  }
+}
+
+/**
+ * Build JSON response for ?format=json requests
+ * Returns structured data that AI agents can easily parse
+ */
+function buildJsonResponse(article, seoData) {
+  const articleUrl = `${SITE_URL}/work/${article.id || article.uuid}`
+  const authorUrl = article.namespace
+    ? `${SITE_URL}/u/${article.namespace}`
+    : `${SITE_URL}/user/${article.userId}`
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    id: article.id || article.uuid,
+    title: article.title,
+    url: articleUrl,
+    description: seoData.description || article.description || null,
+    keywords: seoData.keywords || [],
+    image: article.coverImage || DEFAULT_IMAGE,
+    originalSource: article.targetUrl || null,
+    curationNote: article.content || null,
+    category: article.category || null,
+    author: {
+      name: article.userName,
+      namespace: article.namespace,
+      url: authorUrl
+    },
+    stats: {
+      views: article.viewCount || 0,
+      treasures: article.treasureCount || article.likeCount || 0,
+      comments: article.commentCount || 0
+    },
+    dates: {
+      published: article.createdAt || null,
+      modified: article.updatedAt || article.createdAt || null
+    },
+    keyTakeaways: seoData.keyTakeaways || [],
+    fetchedAt: new Date().toISOString()
   }
 }
 

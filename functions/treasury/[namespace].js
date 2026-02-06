@@ -32,22 +32,45 @@ export async function onRequest(context) {
   const { request, params, next } = context
   const namespace = params.namespace
 
-  // Skip if not a page request (e.g., JS, CSS, images)
   const url = new URL(request.url)
-  if (url.pathname.includes('.')) {
+
+  // Skip if not a page request unless JSON format requested
+  if (url.pathname.includes('.') && !url.search.includes('format=json')) {
     return next()
   }
+
+  // Check for JSON format request
+  const wantsJson = url.searchParams.get('format') === 'json'
 
   try {
     // Fetch treasury/space data
     const spaceData = await fetchSpaceInfo(namespace)
 
     if (!spaceData) {
+      if (wantsJson) {
+        return new Response(JSON.stringify({ error: 'Treasury not found', namespace }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        })
+      }
       return next()
     }
 
     // Fetch articles in this treasury
     const articles = await fetchSpaceArticles(spaceData.id)
+
+    // Return JSON if requested - bypasses Cloudflare challenges
+    if (wantsJson) {
+      const accessLevel = getTreasuryAccessLevel(spaceData)
+      const jsonResponse = buildTreasuryJsonResponse(spaceData, articles, accessLevel)
+      return new Response(JSON.stringify(jsonResponse, null, 2), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=300'
+        }
+      })
+    }
 
     // Get original response
     const response = await next()
@@ -60,7 +83,81 @@ export async function onRequest(context) {
 
   } catch (error) {
     console.error('Treasury SEO injection error:', error)
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error: 'Failed to fetch treasury' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      })
+    }
     return next()
+  }
+}
+
+/**
+ * Build JSON response for ?format=json requests
+ * Respects access control levels
+ */
+function buildTreasuryJsonResponse(space, articles, accessLevel) {
+  const treasuryUrl = `${SITE_URL}/treasury/${space.namespace}`
+  const authorUrl = `${SITE_URL}/user/${space.userInfo?.namespace}`
+
+  const baseResponse = {
+    '@context': 'https://schema.org',
+    '@type': 'Collection',
+    name: space.name || 'Treasury',
+    namespace: space.namespace,
+    url: treasuryUrl,
+    accessLevel: accessLevel,
+    articleCount: space.articleCount || 0,
+    author: {
+      name: space.userInfo?.username || 'Curator',
+      namespace: space.userInfo?.namespace,
+      url: authorUrl,
+      avatar: space.userInfo?.faceUrl
+    },
+    fetchedAt: new Date().toISOString()
+  }
+
+  // Handle access levels
+  if (accessLevel === ACCESS_LEVEL.PRIVATE) {
+    return {
+      ...baseResponse,
+      message: 'This treasury is private',
+      articles: []
+    }
+  }
+
+  if (accessLevel === ACCESS_LEVEL.PAY_TO_ACCESS) {
+    return {
+      ...baseResponse,
+      message: 'Pay to access full content',
+      price: {
+        amount: space.price || space.accessPrice || null,
+        currency: space.currency || 'USDC',
+        unlockUrl: `${treasuryUrl}?unlock=true`
+      },
+      // Teaser: titles only, no curation notes
+      articles: (articles || []).slice(0, 5).map(a => ({
+        title: a.title,
+        uuid: a.uuid,
+        url: `${SITE_URL}/work/${a.uuid}`
+      }))
+    }
+  }
+
+  // Public: full content
+  return {
+    ...baseResponse,
+    articles: (articles || []).map(a => ({
+      title: a.title,
+      uuid: a.uuid,
+      url: `${SITE_URL}/work/${a.uuid}`,
+      curationNote: a.content || null,
+      originalUrl: a.targetUrl || null,
+      category: a.categoryInfo?.name || null,
+      treasureCount: a.likeCount || 0,
+      curatedAt: a.createAt ? new Date(a.createAt * 1000).toISOString() : null
+    }))
   }
 }
 
