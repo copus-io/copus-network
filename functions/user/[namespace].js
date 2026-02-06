@@ -20,25 +20,26 @@ export async function onRequest(context) {
   // Check for JSON format request
   const wantsJson = url.searchParams.get('format') === 'json'
 
-  try {
-    // Fetch user data and treasuries in parallel
-    const [userData, treasuriesData] = await Promise.all([
-      fetchUserInfo(namespace),
-      fetchUserTreasuries(namespace)
-    ])
+  // Handle JSON format request separately with simpler error handling
+  if (wantsJson) {
+    try {
+      const userData = await fetchUserInfo(namespace)
 
-    if (!userData) {
-      if (wantsJson) {
+      if (!userData) {
         return new Response(JSON.stringify({ error: 'User not found', namespace }), {
           status: 404,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         })
       }
-      return next()
-    }
 
-    // Return JSON if requested - bypasses Cloudflare challenges
-    if (wantsJson) {
+      // Fetch treasuries separately (don't let it break the response)
+      let treasuriesData = []
+      try {
+        treasuriesData = await fetchUserTreasuries(namespace)
+      } catch (e) {
+        console.error('Failed to fetch treasuries:', e)
+      }
+
       const jsonResponse = buildUserJsonResponse(userData, treasuriesData)
       return new Response(JSON.stringify(jsonResponse, null, 2), {
         headers: {
@@ -47,6 +48,26 @@ export async function onRequest(context) {
           'Cache-Control': 'public, max-age=300'
         }
       })
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Failed to fetch user profile',
+        details: String(error)
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      })
+    }
+  }
+
+  try {
+    // Fetch user data and treasuries in parallel
+    const [userData, treasuriesData] = await Promise.all([
+      fetchUserInfo(namespace),
+      fetchUserTreasuries(namespace)
+    ])
+
+    if (!userData) {
+      return next()
     }
 
     // Get original response
@@ -60,16 +81,6 @@ export async function onRequest(context) {
 
   } catch (error) {
     console.error('User profile SEO injection error:', error)
-    if (wantsJson) {
-      return new Response(JSON.stringify({
-        error: 'Failed to fetch user profile',
-        message: error.message,
-        stack: error.stack
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      })
-    }
     return next()
   }
 }
