@@ -13,6 +13,89 @@
 const API_BASE = 'https://api-prod.copus.network'
 const SITE_URL = 'https://copus.network'
 
+// Auto-detect content format from URL
+function detectFormat(url) {
+  if (!url) return 'unknown'
+
+  const urlLower = url.toLowerCase()
+
+  // Video platforms
+  if (urlLower.includes('youtube.com') || urlLower.includes('youtu.be') ||
+      urlLower.includes('vimeo.com') || urlLower.includes('tiktok.com') ||
+      urlLower.includes('twitch.tv')) {
+    return 'video'
+  }
+
+  // Podcast platforms
+  if (urlLower.includes('spotify.com/episode') || urlLower.includes('podcasts.apple.com') ||
+      urlLower.includes('overcast.fm') || urlLower.includes('pocketcasts.com') ||
+      urlLower.includes('anchor.fm')) {
+    return 'podcast'
+  }
+
+  // Music platforms
+  if (urlLower.includes('spotify.com/track') || urlLower.includes('spotify.com/album') ||
+      urlLower.includes('soundcloud.com') || urlLower.includes('bandcamp.com') ||
+      urlLower.includes('music.apple.com')) {
+    return 'music'
+  }
+
+  // Image/Art platforms
+  if (urlLower.includes('instagram.com') || urlLower.includes('behance.net') ||
+      urlLower.includes('dribbble.com') || urlLower.includes('artstation.com') ||
+      urlLower.includes('flickr.com') || urlLower.includes('unsplash.com')) {
+    return 'image'
+  }
+
+  // Tool/App indicators
+  if (urlLower.includes('github.com') || urlLower.includes('gitlab.com') ||
+      urlLower.includes('.app') || urlLower.includes('apps.apple.com') ||
+      urlLower.includes('play.google.com') || urlLower.includes('producthunt.com')) {
+    return 'tool'
+  }
+
+  // Film/Movie databases
+  if (urlLower.includes('imdb.com') || urlLower.includes('letterboxd.com') ||
+      urlLower.includes('mubi.com') || urlLower.includes('criterion.com') ||
+      urlLower.includes('rottentomatoes.com')) {
+    return 'film'
+  }
+
+  // Book platforms
+  if (urlLower.includes('goodreads.com') || urlLower.includes('amazon.com/dp') ||
+      urlLower.includes('bookshop.org') || urlLower.includes('audible.com')) {
+    return 'book'
+  }
+
+  // Game platforms
+  if (urlLower.includes('store.steampowered.com') || urlLower.includes('itch.io') ||
+      urlLower.includes('epicgames.com') || urlLower.includes('gog.com')) {
+    return 'game'
+  }
+
+  // Social/Thread
+  if (urlLower.includes('twitter.com') || urlLower.includes('x.com') ||
+      urlLower.includes('threads.net') || urlLower.includes('mastodon')) {
+    return 'social_post'
+  }
+
+  // Research/Academic
+  if (urlLower.includes('arxiv.org') || urlLower.includes('scholar.google') ||
+      urlLower.includes('researchgate.net') || urlLower.includes('.edu/') ||
+      urlLower.includes('doi.org')) {
+    return 'research'
+  }
+
+  // Newsletter/Article platforms
+  if (urlLower.includes('substack.com') || urlLower.includes('medium.com') ||
+      urlLower.includes('mirror.xyz') || urlLower.includes('ghost.io')) {
+    return 'article'
+  }
+
+  // Default to article for most web content
+  return 'article'
+}
+
 // Access levels for treasuries
 // Backend should return one of these in treasury.accessLevel or treasury.visibility
 const ACCESS_LEVEL = {
@@ -141,16 +224,48 @@ async function fetchTreasuryArticles(spaceId, limit = 10) {
 
     const data = await response.json()
     // API returns nested structure: data.data.data is the array
+    let articles = []
     if (data.data && Array.isArray(data.data.data)) {
-      return data.data.data
+      articles = data.data.data
+    } else if (data.data && Array.isArray(data.data)) {
+      articles = data.data
     }
-    if (data.data && Array.isArray(data.data)) {
-      return data.data
-    }
-    return []
+
+    // Enrich articles with seoDataByAi (fetch in parallel, limit to first 20)
+    const enrichedArticles = await Promise.all(
+      articles.slice(0, 20).map(async (article) => {
+        const seoData = await fetchArticleSeoData(article.uuid)
+        return { ...article, seoDataByAi: seoData }
+      })
+    )
+
+    return enrichedArticles
   } catch (error) {
     console.error('Failed to fetch treasury articles:', error)
     return []
+  }
+}
+
+/**
+ * Fetch article details to get seoDataByAi (AI-generated tags, category, keywords)
+ */
+async function fetchArticleSeoData(uuid) {
+  if (!uuid) return null
+  try {
+    const response = await fetch(
+      `${API_BASE}/client/reader/article/info?uuid=${uuid}`,
+      { headers: { 'Content-Type': 'application/json' } }
+    )
+
+    if (!response.ok) return null
+
+    const data = await response.json()
+    if (data.status === 1 && data.data?.seoDataByAi) {
+      return data.data.seoDataByAi
+    }
+    return null
+  } catch (error) {
+    return null
   }
 }
 
@@ -262,6 +377,7 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
 
   const baseData = {
     name: displayName,
+    description: treasury.description || null, // Purpose of this space/collection
     namespace: treasury.namespace,
     url: `${SITE_URL}/treasury/${treasury.namespace}`,
     articleCount: treasury.articleCount || 0,
@@ -295,23 +411,32 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
 
     case ACCESS_LEVEL.PUBLIC:
     default:
-      // Full access - fetch articles with curation notes
+      // Full access - fetch articles with curation notes and AI-generated metadata
       const articles = treasury.id ? await fetchTreasuryArticles(treasury.id, 20) : []
       if (!Array.isArray(articles)) {
         return { ...baseData, articles: [] }
       }
       return {
         ...baseData,
-        articles: articles.map(article => ({
-          title: article.title,
-          uuid: article.uuid,
-          url: `${SITE_URL}/work/${article.uuid}`,
-          curationNote: article.content || null, // The curator's reason/note
-          originalUrl: article.targetUrl || null,
-          category: article.categoryInfo?.name || null,
-          treasureCount: article.likeCount || 0,
-          curatedAt: article.createAt ? new Date(article.createAt * 1000).toISOString() : null
-        }))
+        articles: articles.map(article => {
+          const seo = article.seoDataByAi || {}
+          return {
+            title: article.title,
+            uuid: article.uuid,
+            url: `${SITE_URL}/work/${article.uuid}`,
+            curationNote: article.content || null, // The curator's reason/note
+            originalUrl: article.targetUrl || null,
+            format: detectFormat(article.targetUrl), // Auto-detected: article, video, tool, podcast, film, book, game, etc.
+            // AI-generated metadata from seoDataByAi
+            category: seo.category || article.categoryInfo?.name || null,
+            tags: seo.tags || [],
+            keywords: seo.keywords || [],
+            keyTakeaways: seo.keyTakeaways || [],
+            // Engagement stats
+            treasureCount: article.likeCount || 0,
+            curatedAt: article.createAt ? new Date(article.createAt * 1000).toISOString() : null
+          }
+        })
       }
   }
 }
@@ -322,18 +447,23 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
 async function fetchTreasuryArticlesTeaser(spaceId) {
   const articles = await fetchTreasuryArticles(spaceId, 5)
   if (!Array.isArray(articles)) return []
-  return articles.map(article => ({
-    title: article.title,
-    uuid: article.uuid,
-    url: `${SITE_URL}/work/${article.uuid}`,
-    // No curation note for teaser
-    category: article.categoryInfo?.name || null
-  }))
+  return articles.map(article => {
+    const seo = article.seoDataByAi || {}
+    return {
+      title: article.title,
+      uuid: article.uuid,
+      url: `${SITE_URL}/work/${article.uuid}`,
+      // No curation note for teaser - that's the valuable part
+      format: detectFormat(article.targetUrl),
+      category: seo.category || article.categoryInfo?.name || null,
+      tags: seo.tags || []
+    }
+  })
 }
 
 /**
  * Generate an AI-friendly summary of the user's taste
- * Includes counts of public/private/paid treasuries
+ * Includes counts of public/private/paid treasuries and top interest tags
  */
 function generateSummary(userInfo, treasuries) {
   const publicTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PUBLIC)
@@ -361,6 +491,23 @@ function generateSummary(userInfo, treasuries) {
     .slice(0, 3)
     .map(([cat]) => cat)
 
+  // Collect all tags from public content for interest mapping
+  const tagCounts = {}
+  publicTreasuries.forEach(treasury => {
+    treasury.articles.forEach(article => {
+      if (article.tags && Array.isArray(article.tags)) {
+        article.tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1
+        })
+      }
+    })
+  })
+
+  const topTags = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([tag]) => tag)
+
   // Collect sample curation notes from public content
   const sampleNotes = publicTreasuries
     .flatMap(t => t.articles)
@@ -375,6 +522,11 @@ function generateSummary(userInfo, treasuries) {
   }
 
   summary += '.'
+
+  // Add top interest tags for AI agents
+  if (topTags.length > 0) {
+    summary += ` Top interest tags: ${topTags.join(', ')}.`
+  }
 
   // Treasury breakdown
   const treasuryParts = []
