@@ -61,27 +61,27 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
     : 'white';
 
   return (
-    <button
-      className={`
-        inline-flex items-center transition-all duration-200 group
-        ${size === 'large'
-          ? 'h-[38px] rounded-[100px] gap-1.5 lg:gap-[10px] px-3 lg:px-5 py-2 border border-solid border-[#e19e1d]'
-          : `rounded-lg hover:bg-gray-100 ${currentSize.container}`
-        }
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-        ${className}
-      `}
-      style={size === 'large' ? {
-        backgroundColor: largeButtonBg,
-        transition: 'background-color 200ms ease'
-      } : undefined}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={!disabled ? onClick : undefined}
-      disabled={disabled}
-      aria-label={`${isLiked ? 'Remove from treasury' : 'Add to treasury'}, ${likesCount} treasures`}
-      title={isLiked ? 'Remove from your treasury' : 'Add to your treasury'}
-    >
+    <div className="relative inline-flex">
+      <button
+        className={`
+          inline-flex items-center transition-all duration-200 group
+          ${size === 'large'
+            ? 'h-[38px] rounded-[100px] gap-1.5 lg:gap-[10px] px-3 lg:px-5 py-2 border border-solid border-[#e19e1d]'
+            : `rounded-lg hover:bg-gray-100 ${currentSize.container}`
+          }
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          ${className}
+        `}
+        style={size === 'large' ? {
+          backgroundColor: largeButtonBg,
+          transition: 'background-color 200ms ease'
+        } : undefined}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={!disabled ? onClick : undefined}
+        disabled={disabled}
+        aria-label={`${isLiked ? 'Remove from treasury' : 'Add to treasury'}, ${likesCount} treasures`}
+      >
       <div className="relative">
         {/* Gem icon - different styles for different sizes */}
         <img
@@ -134,7 +134,21 @@ export const TreasureButton: React.FC<TreasureButtonProps> = ({
       >
         {formatCount(likesCount)}
       </span>
-    </button>
+      </button>
+
+      {/* Tooltip - shows on hover */}
+      {isHovered && (
+        <div
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1
+            bg-gray-800 text-white text-xs font-medium rounded shadow-lg
+            whitespace-nowrap z-50 pointer-events-none"
+        >
+          Collect
+          {/* Tooltip arrow */}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+        </div>
+      )}
+    </div>
   );
 };
 
