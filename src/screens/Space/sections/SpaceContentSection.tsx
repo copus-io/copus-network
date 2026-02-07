@@ -373,9 +373,9 @@ export const SpaceContentSection = (): JSX.Element => {
           console.log('[Space] Space info API response:', spaceInfoResponse);
           console.log('🔥🔥🔥 SPACE COVERURL DEBUG: Raw API response:', JSON.stringify(spaceInfoResponse, null, 2));
 
-          // Extract space info from response.data
+          // Extract space info from response - faceUrl is now at root level
           const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
-          console.log('🔥🔥🔥 SPACE COVERURL DEBUG: Extracted space data:', JSON.stringify(spaceData, null, 2));
+          console.log('🔥🔥🔥 SPACE DATA DEBUG: Extracted space data:', JSON.stringify(spaceData, null, 2));
 
           // Get author username for display name with comprehensive fallback chain
           // Note: Do NOT fall back to logged-in user's username - use API data only
@@ -410,7 +410,7 @@ export const SpaceContentSection = (): JSX.Element => {
             spaceType: spaceData?.spaceType,
             description: spaceData?.description, // Add space description
             coverUrl: spaceData?.coverUrl, // Add space cover image
-            faceUrl: spaceData?.faceUrl, // Add space avatar/face URL
+            faceUrl: spaceInfoResponse?.faceUrl || spaceData?.faceUrl, // Get faceUrl from root level or fallback to nested
           };
 
           // Store spaceId for later use (edit functionality)
@@ -811,6 +811,7 @@ export const SpaceContentSection = (): JSX.Element => {
       currentFaceUrl: currentFaceUrl,
       coverUrlFromSpaceInfo: spaceInfo?.coverUrl,
       faceUrlFromSpaceInfo: spaceInfo?.faceUrl,
+      faceUrlFromEdit: currentFaceUrl,
       allSpaceData: JSON.stringify(spaceInfo, null, 2)
     });
 
