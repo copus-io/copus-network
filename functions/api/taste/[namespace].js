@@ -248,6 +248,7 @@ async function fetchTreasuryArticles(spaceId, limit = 10) {
 
 /**
  * Fetch article details to get seoDataByAi (AI-generated tags, category, keywords)
+ * Note: seoDataByAi comes as a JSON string from the backend, needs parsing
  */
 async function fetchArticleSeoData(uuid) {
   if (!uuid) return null
@@ -261,7 +262,12 @@ async function fetchArticleSeoData(uuid) {
 
     const data = await response.json()
     if (data.status === 1 && data.data?.seoDataByAi) {
-      return data.data.seoDataByAi
+      // seoDataByAi is a JSON string, parse it
+      try {
+        return JSON.parse(data.data.seoDataByAi)
+      } catch (parseError) {
+        return null
+      }
     }
     return null
   } catch (error) {
