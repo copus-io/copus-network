@@ -6,6 +6,10 @@ import {
   CachedUserInfo,
   ApiUserInfoResponse
 } from '../types/user';
+import {
+  BindableSpacesRequest,
+  BindableSpacesResponse
+} from '../types/space';
 
 export interface VerificationCodeParams {
   email: string;
@@ -1968,9 +1972,9 @@ export class AuthService {
    * Get user's bindable spaces for collecting an article
    * Returns spaces with isBind flag indicating if article is already bound
    * @param articleId - Optional article ID to check binding status for each space
-   * @returns Array of spaces with articleCount, data, id, isBind, name, namespace, spaceType, userId
+   * @returns Array of bindable spaces with enhanced data structure
    */
-  static async getBindableSpaces(articleId?: number): Promise<any> {
+  static async getBindableSpaces(articleId?: number): Promise<BindableSpacesResponse> {
     // Build query parameters
     let url = '/client/article/bind/bindableSpaces';
     if (articleId) {
@@ -1987,15 +1991,17 @@ export class AuthService {
    * @param name - The name of the new space
    * @param description - Optional description for the space
    * @param coverUrl - Optional cover image URL for the space
+   * @param faceUrl - Optional avatar/face image URL for the space
    * @returns The created space object with id, name, namespace, spaceType, userId, etc.
    */
-  static async createSpace(name: string, description?: string, coverUrl?: string): Promise<any> {
+  static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string): Promise<any> {
     return apiRequest(`/client/article/space/create`, {
       method: 'POST',
       body: JSON.stringify({
         name,
         ...(description && { description }),
-        ...(coverUrl && { coverUrl })
+        ...(coverUrl && { coverUrl }),
+        ...(faceUrl && { faceUrl })
       }),
     });
   }
@@ -2007,15 +2013,17 @@ export class AuthService {
    * @param name - The new name for the space
    * @param description - Optional new description for the space
    * @param coverUrl - Optional new cover image URL for the space
+   * @param faceUrl - Optional new avatar/face image URL for the space
    */
-  static async updateSpace(id: number, name: string, description?: string, coverUrl?: string): Promise<any> {
+  static async updateSpace(id: number, name: string, description?: string, coverUrl?: string, faceUrl?: string): Promise<any> {
     return apiRequest(`/client/article/space/update`, {
       method: 'POST',
       body: JSON.stringify({
         id,
         name,
         ...(description !== undefined && { description }),
-        ...(coverUrl !== undefined && { coverUrl })
+        ...(coverUrl !== undefined && { coverUrl }),
+        ...(faceUrl !== undefined && { faceUrl })
       }),
     });
   }

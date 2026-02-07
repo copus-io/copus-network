@@ -35,6 +35,7 @@ const SpaceInfoSection = ({
   authorNamespace,
   spaceDescription,
   spaceCoverUrl,
+  spaceFaceUrl,
   firstArticleCover,
   isFollowing,
   isOwner,
@@ -52,6 +53,7 @@ const SpaceInfoSection = ({
   authorNamespace?: string;
   spaceDescription?: string;
   spaceCoverUrl?: string;
+  spaceFaceUrl?: string;
   firstArticleCover?: string;
   isFollowing: boolean;
   isOwner: boolean;
@@ -105,10 +107,11 @@ const SpaceInfoSection = ({
 
       {/* Space information */}
       <div className={`relative flex flex-col items-center text-center ${spaceCoverUrl ? 'mt-[-40px]' : ''}`}>
-        {/* Space avatar - use author avatar for default spaces, first article cover for custom */}
+        {/* Space avatar - priority: space's own faceUrl > author avatar for default spaces > first article cover > initials */}
         {(() => {
           const isDefaultSpace = spaceType === 1 || spaceType === 2;
-          const avatarImage = isDefaultSpace ? authorAvatar : firstArticleCover;
+          // Priority order for avatar image
+          const avatarImage = spaceFaceUrl || (isDefaultSpace ? authorAvatar : firstArticleCover);
           const firstLetter = spaceName?.charAt(0)?.toUpperCase() || 'S';
 
           return avatarImage ? (
@@ -297,6 +300,7 @@ export const SpaceContentSection = (): JSX.Element => {
   const [editSpaceName, setEditSpaceName] = useState("");
   const [editSpaceDescription, setEditSpaceDescription] = useState("");
   const [editSpaceCoverUrl, setEditSpaceCoverUrl] = useState("");
+  const [editSpaceFaceUrl, setEditSpaceFaceUrl] = useState(""); // Add face URL state
   const [displaySpaceName, setDisplaySpaceName] = useState("");
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -369,9 +373,9 @@ export const SpaceContentSection = (): JSX.Element => {
           console.log('[Space] Space info API response:', spaceInfoResponse);
           console.log('🔥🔥🔥 SPACE COVERURL DEBUG: Raw API response:', JSON.stringify(spaceInfoResponse, null, 2));
 
-          // Extract space info from response.data
+          // Extract space info from response - faceUrl is now at root level
           const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
-          console.log('🔥🔥🔥 SPACE COVERURL DEBUG: Extracted space data:', JSON.stringify(spaceData, null, 2));
+          console.log('🔥🔥🔥 SPACE DATA DEBUG: Extracted space data:', JSON.stringify(spaceData, null, 2));
 
           // Get author username for display name with comprehensive fallback chain
           // Note: Do NOT fall back to logged-in user's username - use API data only
@@ -406,6 +410,7 @@ export const SpaceContentSection = (): JSX.Element => {
             spaceType: spaceData?.spaceType,
             description: spaceData?.description, // Add space description
             coverUrl: spaceData?.coverUrl, // Add space cover image
+            faceUrl: spaceInfoResponse?.faceUrl || spaceData?.faceUrl, // Get faceUrl from root level or fallback to nested
           };
 
           // Store spaceId for later use (edit functionality)
@@ -467,6 +472,7 @@ export const SpaceContentSection = (): JSX.Element => {
             authorNamespace: user?.namespace,
             description: undefined, // No description available for old category routes
             coverUrl: undefined, // No cover available for old category routes
+            faceUrl: undefined, // No face URL available for old category routes
           });
 
           // For old routes, assume not following (since no API to check)
@@ -796,23 +802,29 @@ export const SpaceContentSection = (): JSX.Element => {
     const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
     const currentDescription = spaceInfo?.description || '';
     const currentCoverUrl = spaceInfo?.coverUrl || '';
+    const currentFaceUrl = spaceInfo?.faceUrl || '';
 
     console.log('🔥🔥🔥 SPACE EDIT MODAL DEBUG:', {
       spaceInfo: spaceInfo,
       spaceInfoKeys: spaceInfo ? Object.keys(spaceInfo) : 'null',
       currentCoverUrl: currentCoverUrl,
+      currentFaceUrl: currentFaceUrl,
       coverUrlFromSpaceInfo: spaceInfo?.coverUrl,
+      faceUrlFromSpaceInfo: spaceInfo?.faceUrl,
+      faceUrlFromEdit: currentFaceUrl,
       allSpaceData: JSON.stringify(spaceInfo, null, 2)
     });
 
     setEditSpaceName(currentName);
     setEditSpaceDescription(currentDescription);
     setEditSpaceCoverUrl(currentCoverUrl);
+    setEditSpaceFaceUrl(currentFaceUrl);
 
     console.log('🔥🔥🔥 SPACE EDIT: Setting edit states:', {
       editSpaceName: currentName,
       editSpaceDescription: currentDescription,
-      editSpaceCoverUrl: currentCoverUrl
+      editSpaceCoverUrl: currentCoverUrl,
+      editSpaceFaceUrl: currentFaceUrl
     });
 
     setShowEditModal(true);
@@ -854,6 +866,7 @@ export const SpaceContentSection = (): JSX.Element => {
       // Prepare optional fields
       const description = editSpaceDescription.trim() || undefined;
       const coverUrl = editSpaceCoverUrl.trim() || undefined;
+      const faceUrl = editSpaceFaceUrl.trim() || undefined;
 
       // 🔍 SEARCH: space-name-handling-for-restricted-spaces
       // Use current displayed name if name editing is not allowed
@@ -864,21 +877,23 @@ export const SpaceContentSection = (): JSX.Element => {
         name: nameToUse,
         description,
         coverUrl,
+        faceUrl,
         canEditName: canEditSpaceName
       }, {
         component: 'SpaceContentSection',
         action: 'update-space-with-restrictions'
       });
 
-      // Call API to update space with all fields
-      await AuthService.updateSpace(spaceId, nameToUse, description, coverUrl);
+      // Call API to update space with all fields including faceUrl
+      await AuthService.updateSpace(spaceId, nameToUse, description, coverUrl, faceUrl);
 
       // 立即更新本地状态，避免等待页面刷新
       setSpaceInfo(prev => prev ? {
         ...prev,
         name: nameToUse,
         description: description,
-        coverUrl: coverUrl
+        coverUrl: coverUrl,
+        faceUrl: faceUrl
       } : null);
 
       // Only update display name if name editing was allowed
@@ -894,6 +909,7 @@ export const SpaceContentSection = (): JSX.Element => {
       setEditSpaceName("");
       setEditSpaceDescription("");
       setEditSpaceCoverUrl("");
+      setEditSpaceFaceUrl("");
 
       // 移除页面刷新，改为依赖本地状态更新
       // 这样可以避免测试环境中的网络延迟问题
@@ -1104,6 +1120,7 @@ export const SpaceContentSection = (): JSX.Element => {
         authorNamespace={spaceInfo?.authorNamespace}
         spaceDescription={spaceInfo?.description}
         spaceCoverUrl={spaceInfo?.coverUrl}
+        spaceFaceUrl={spaceInfo?.faceUrl}
         firstArticleCover={articles[0]?.cover || articles[0]?.coverUrl}
         isFollowing={isFollowing}
         isOwner={isOwner}
@@ -1154,6 +1171,7 @@ export const SpaceContentSection = (): JSX.Element => {
               setEditSpaceName("");
               setEditSpaceDescription("");
               setEditSpaceCoverUrl("");
+              setEditSpaceFaceUrl("");
             }}
           />
 
@@ -1171,6 +1189,7 @@ export const SpaceContentSection = (): JSX.Element => {
                 setEditSpaceName("");
                 setEditSpaceDescription("");
                 setEditSpaceCoverUrl("");
+                setEditSpaceFaceUrl("");
               }}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
               aria-label="Close dialog"
@@ -1237,6 +1256,35 @@ export const SpaceContentSection = (): JSX.Element => {
                   <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
                     {editSpaceDescription.length}/200 characters
                   </span>
+                </div>
+
+                {/* Avatar Upload */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                  <label
+                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                  >
+                    Avatar (Optional)
+                  </label>
+                  <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
+                    <ImageUploader
+                      type="avatar"
+                      currentImage={editSpaceFaceUrl || spaceInfo?.faceUrl}
+                      key={`avatar-uploader-${showEditModal}-${editSpaceFaceUrl || spaceInfo?.faceUrl}`}
+                      onUploadStatusChange={(uploading) => {
+                        console.log('🔄 SPACE EDIT: Avatar upload status changed:', uploading);
+                        setIsImageUploading(uploading);
+                      }}
+                      onImageUploaded={async (url) => {
+                        console.log('🔥🔥🔥 SPACE EDIT: Received avatar URL:', url);
+                        setEditSpaceFaceUrl(url);
+                        console.log('🔥🔥🔥 SPACE EDIT: Avatar state updated with URL:', url);
+                      }}
+                      onError={(error) => showToast(error, 'error')}
+                    />
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
+                      Recommended size: 400x400px (1:1 ratio)
+                    </span>
+                  </div>
                 </div>
 
                 {/* Cover Image Upload */}
@@ -1333,6 +1381,7 @@ export const SpaceContentSection = (): JSX.Element => {
                       setEditSpaceName("");
                       setEditSpaceDescription("");
                       setEditSpaceCoverUrl("");
+                      setEditSpaceFaceUrl("");
                     }}
                     type="button"
                   >
