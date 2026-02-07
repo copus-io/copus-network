@@ -7,7 +7,7 @@ import { TreasuryCard } from "../../../../components/ui/TreasuryCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import defaultBanner from "../../../../assets/images/default-banner.svg";
 import { useToast } from "../../../../components/ui/toast";
-import { ImageUploader } from "../../../../components/ImageUploader/ImageUploader";
+import { CreateSpaceModal } from "../../../../components/CreateSpaceModal";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -396,12 +396,6 @@ export const MainContentSection = (): JSX.Element => {
 
   // Create Space Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createSpaceName, setCreateSpaceName] = useState("");
-  const [createSpaceDescription, setCreateSpaceDescription] = useState("");
-  const [createSpaceCoverUrl, setCreateSpaceCoverUrl] = useState("");
-  const [createSpaceFaceUrl, setCreateSpaceFaceUrl] = useState(""); // 空间头像
-  const [isCreating, setIsCreating] = useState(false);
-  const [isImageUploading, setIsImageUploading] = useState(false); // 图片上传状态
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -648,55 +642,16 @@ export const MainContentSection = (): JSX.Element => {
   const displayUser = isViewingOtherUser ? treasuryUserInfo : user;
   const displaySocialLinks = isViewingOtherUser ? (treasuryUserInfo?.socialLinks || []) : (socialLinksData || []);
 
-  // Handle create new space
-  const handleCreateSpace = async () => {
-    if (!createSpaceName.trim()) {
-      showToast('Please enter a space name', 'error');
-      return;
+  // Handle space creation success
+  const handleSpaceCreated = (newSpace: any) => {
+    // Add the new space to the local state
+    if (newSpace) {
+      setSpaces(prev => [newSpace, ...prev]);
     }
 
-    if (!user) {
-      showToast('Please log in to create a space', 'error');
-      return;
-    }
-
-    try {
-      setIsCreating(true);
-
-      // Prepare optional fields
-      const description = createSpaceDescription.trim() || undefined;
-      const coverUrl = createSpaceCoverUrl.trim() || undefined;
-      const faceUrl = createSpaceFaceUrl.trim() || undefined;
-
-      // Call API to create space
-      const response = await AuthService.createSpace(createSpaceName.trim(), description, coverUrl, faceUrl);
-      console.log('Create space response:', response);
-
-      // Add the new space to the local state
-      const newSpace = response.data || response;
-      if (newSpace) {
-        setSpaces(prev => [newSpace, ...prev]);
-      }
-
-      showToast('Space created successfully', 'success');
-      setShowCreateModal(false);
-
-      // Reset form
-      setCreateSpaceName("");
-      setCreateSpaceDescription("");
-      setCreateSpaceCoverUrl("");
-      setCreateSpaceFaceUrl("");
-      setIsImageUploading(false); // 重置图片上传状态
-
-      // Navigate to the new space if we have its namespace
-      if (newSpace?.namespace) {
-        navigate(`/treasury/${newSpace.namespace}`);
-      }
-    } catch (err) {
-      console.error('Failed to create space:', err);
-      showToast('Failed to create space', 'error');
-    } finally {
-      setIsCreating(false);
+    // Navigate to the new space if we have its namespace
+    if (newSpace?.namespace) {
+      navigate(`/treasury/${newSpace.namespace}`);
     }
   };
 
@@ -791,187 +746,13 @@ export const MainContentSection = (): JSX.Element => {
       </div>
 
       {/* Create Space Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => {
-              setShowCreateModal(false);
-              setCreateSpaceName("");
-              setCreateSpaceDescription("");
-              setCreateSpaceCoverUrl("");
-              setCreateSpaceFaceUrl("");
-              setIsImageUploading(false); // 重置图片上传状态
-            }}
-          />
-
-          {/* Modal */}
-          <div
-            className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
-            role="dialog"
-            aria-labelledby="create-space-title"
-            aria-modal="true"
-          >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setShowCreateModal(false);
-                setCreateSpaceName("");
-                setCreateSpaceDescription("");
-                setCreateSpaceCoverUrl("");
-                setCreateSpaceFaceUrl("");
-                setIsImageUploading(false); // 重置图片上传状态
-              }}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
-              aria-label="Close dialog"
-              type="button"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-
-            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                <h2
-                  id="create-space-title"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-                >
-                  Create new treasury
-                </h2>
-
-                {/* Space Name */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="create-space-name-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Name
-                  </label>
-
-                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                    <input
-                      id="create-space-name-input"
-                      type="text"
-                      value={createSpaceName}
-                      onChange={(e) => setCreateSpaceName(e.target.value)}
-                      placeholder="Enter space name"
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
-                      aria-required="true"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-
-                {/* Space Description */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="create-space-description-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Description (Optional)
-                  </label>
-
-                  <div className="flex items-start px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                    <textarea
-                      id="create-space-description-input"
-                      value={createSpaceDescription}
-                      onChange={(e) => setCreateSpaceDescription(e.target.value)}
-                      placeholder="Describe your space (optional)"
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
-                      rows={3}
-                      maxLength={200}
-                    />
-                  </div>
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
-                    {createSpaceDescription.length}/200 characters
-                  </span>
-                </div>
-
-                {/* Cover Image Upload */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
-                    <ImageUploader
-                      type="banner"
-                      currentImage={createSpaceCoverUrl}
-                      onImageUploaded={(url) => {
-                        console.log('🔥🔥🔥 SPACE CREATE: Received image URL:', url);
-                        setCreateSpaceCoverUrl(url);
-                        console.log('🔥🔥🔥 SPACE CREATE: State updated with URL:', url);
-                      }}
-                      onError={(error) => showToast(error, 'error')}
-                      onUploadStatusChange={(uploading) => {
-                        console.log('🔥🔥🔥 SPACE CREATE: Image upload status changed:', uploading);
-                        setIsImageUploading(uploading);
-                      }}
-                    />
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
-                      Recommended size: 1200x200px (6:1 ratio)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Space Avatar Upload */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
-                    <ImageUploader
-                      type="avatar"
-                      currentImage={createSpaceFaceUrl}
-                      onImageUploaded={(url) => {
-                        console.log('🔥🔥🔥 SPACE CREATE: Received avatar URL:', url);
-                        setCreateSpaceFaceUrl(url);
-                        console.log('🔥🔥🔥 SPACE CREATE: Avatar state updated with URL:', url);
-                      }}
-                      onError={(error) => showToast(error, 'error')}
-                      onUploadStatusChange={(uploading) => {
-                        console.log('🔥🔥🔥 SPACE CREATE: Avatar upload status changed:', uploading);
-                        setIsImageUploading(uploading);
-                      }}
-                    />
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
-                      Space avatar - Recommended size: 400x400px (1:1 ratio)
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end relative self-stretch w-full flex-[0_0_auto]">
-                {/* Cancel and Create buttons */}
-                <div className="flex items-center gap-2.5">
-                  <button
-                    className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setCreateSpaceName("");
-                      setCreateSpaceDescription("");
-                      setCreateSpaceCoverUrl("");
-                      setCreateSpaceFaceUrl("");
-                      setIsImageUploading(false); // 重置图片上传状态
-                    }}
-                    type="button"
-                  >
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      Cancel
-                    </span>
-                  </button>
-
-                  <button
-                    className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                    onClick={handleCreateSpace}
-                    disabled={isCreating || !createSpaceName.trim() || isImageUploading}
-                    type="button"
-                  >
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      {isImageUploading ? 'Uploading image...' : (isCreating ? 'Creating...' : 'Create')}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateSpaceModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleSpaceCreated}
+        mode="full"
+        title="Create new treasury"
+      />
     </main>
   );
 };

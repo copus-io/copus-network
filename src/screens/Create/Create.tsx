@@ -26,6 +26,7 @@ import { queryClient } from "../../lib/queryClient";
 import { getSpaceDisplayName } from "../../components/ui/TreasuryCard";
 import { ChooseTreasuriesModal, SelectedSpace } from "../../components/ChooseTreasuriesModal/ChooseTreasuriesModal";
 import { BindableSpace } from "../../types/space";
+import { CreateSpaceModal } from "../../components/CreateSpaceModal";
 
 
 export const Create = (): JSX.Element => {
@@ -76,8 +77,6 @@ export const Create = (): JSX.Element => {
 
   // New treasury modal state
   const [showNewTreasuryModal, setShowNewTreasuryModal] = useState(false);
-  const [newTreasuryName, setNewTreasuryName] = useState("");
-  const [isCreatingTreasury, setIsCreatingTreasury] = useState(false);
 
   // Choose treasuries modal state
   const [showChooseTreasuriesModal, setShowChooseTreasuriesModal] = useState(false);
@@ -387,57 +386,29 @@ export const Create = (): JSX.Element => {
   };
 
   // Handle creating a new treasury
-  const handleCreateNewTreasury = async () => {
-    if (!newTreasuryName.trim()) {
-      showToast('Please enter a treasury name', 'error');
+  const handleTreasuryCreated = (createdSpace: any) => {
+    if (!createdSpace?.id) {
+      console.error('Failed to create treasury - no ID returned');
+      showToast('Failed to create treasury', 'error');
       return;
     }
 
-    setIsCreatingTreasury(true);
+    // Add the new treasury to the spaces list with real data from API
+    const newSpace = {
+      id: createdSpace.id.toString(),
+      name: createdSpace.name || 'New Treasury'
+    };
 
-    try {
-      // Call the createSpace API to create a new treasury
-      const createResponse = await AuthService.createSpace(
-        newTreasuryName.trim(),
-        undefined, // description - not supported in this modal
-        undefined, // coverUrl - not supported in this modal
-        undefined  // faceUrl - not supported in this modal
-      );
-      console.log('Create space response:', createResponse);
+    setUserSpaces(prev => [...prev, newSpace]);
 
-      // Extract the created space from response
-      const createdSpace = createResponse?.data || createResponse;
+    // Select the new treasury
+    setFormData(prev => ({
+      ...prev,
+      selectedTopic: newSpace.name,
+      selectedTopicId: parseInt(newSpace.id)
+    }));
 
-      if (!createdSpace?.id) {
-        throw new Error('Failed to create treasury - no ID returned');
-      }
-
-      // Add the new treasury to the spaces list with real data from API
-      const newSpace = {
-        id: createdSpace.id.toString(),
-        name: createdSpace.name || newTreasuryName.trim()
-      };
-
-      setUserSpaces(prev => [...prev, newSpace]);
-
-      // Select the new treasury
-      setFormData(prev => ({
-        ...prev,
-        selectedTopic: newSpace.name,
-        selectedTopicId: parseInt(newSpace.id)
-      }));
-
-      showToast(`Treasury "${newTreasuryName.trim()}" created`, 'success');
-
-      // Reset and close modal
-      setNewTreasuryName("");
-      setShowNewTreasuryModal(false);
-    } catch (err) {
-      console.error('Failed to create treasury:', err);
-      showToast('Failed to create treasury', 'error');
-    } finally {
-      setIsCreatingTreasury(false);
-    }
+    showToast(`Treasury "${newSpace.name}" created`, 'success');
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1160,107 +1131,16 @@ export const Create = (): JSX.Element => {
       )}
 
       {/* New Treasury Modal */}
-      {showNewTreasuryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => {
-              setShowNewTreasuryModal(false);
-              setNewTreasuryName("");
-            }}
-          />
-
-          {/* Modal */}
-          <div
-            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
-            role="dialog"
-            aria-labelledby="new-treasury-title"
-            aria-modal="true"
-          >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setShowNewTreasuryModal(false);
-                setNewTreasuryName("");
-              }}
-              className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
-              aria-label="Close dialog"
-              type="button"
-            >
-              <img
-                className="w-full"
-                alt=""
-                src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
-              />
-            </button>
-
-            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                <h2
-                  id="new-treasury-title"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-                >
-                  New treasury
-                </h2>
-
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="treasury-name-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Name
-                  </label>
-
-                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                    <input
-                      id="treasury-name-input"
-                      type="text"
-                      value={newTreasuryName}
-                      onChange={(e) => setNewTreasuryName(e.target.value)}
-                      placeholder="Like &quot;Place to go&quot;"
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
-                      aria-required="true"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleCreateNewTreasury();
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                <button
-                  className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => {
-                    setShowNewTreasuryModal(false);
-                    setNewTreasuryName("");
-                  }}
-                  type="button"
-                >
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    Cancel
-                  </span>
-                </button>
-
-                <button
-                  className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                  onClick={handleCreateNewTreasury}
-                  disabled={!newTreasuryName.trim() || isCreatingTreasury}
-                  type="button"
-                >
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    {isCreatingTreasury ? 'Creating...' : 'Create'}
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateSpaceModal
+        isOpen={showNewTreasuryModal}
+        onClose={() => setShowNewTreasuryModal(false)}
+        onSuccess={handleTreasuryCreated}
+        mode="simple"
+        title="New treasury"
+        nameLabel="Name"
+        namePlaceholder='Like "Place to go"'
+        submitLabel="Create"
+      />
 
       {/* Choose Treasuries Modal */}
       <ChooseTreasuriesModal
