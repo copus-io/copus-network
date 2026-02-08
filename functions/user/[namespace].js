@@ -73,9 +73,12 @@ export async function onRequest(context) {
     // Get original response
     const response = await next()
 
-    // Inject meta tags and JSON-LD
+    // Inject meta tags and JSON-LD, and remove default meta tags
     return new HTMLRewriter()
       .on('head', new HeadInjector(userData, treasuriesData))
+      .on('title[data-rh="true"]', new ElementRemover())
+      .on('meta[data-rh="true"]', new ElementRemover())
+      .on('link[data-rh="true"]', new ElementRemover())
       .on('body', new BodyInjector(userData, treasuriesData))
       .transform(response)
 
@@ -177,6 +180,13 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;')
 }
 
+// Remove elements with data-rh="true" attribute (default meta tags)
+class ElementRemover {
+  element(element) {
+    element.remove()
+  }
+}
+
 class HeadInjector {
   constructor(user, treasuries) {
     this.user = user
@@ -193,27 +203,30 @@ class HeadInjector {
     const articleCount = user.statistics?.articleCount || 0
     const treasuredCount = user.statistics?.likedArticleCount || 0
 
+    // IMPORTANT: Use prepend to inject BEFORE the default meta tags
+    // Link preview scrapers use the first occurrence of each meta tag
     const metaTags = `
-    <title>${name} (@${user.namespace}) - Curator Profile | ${SITE_NAME}</title>
-    <meta name="description" content="${bio} | ${articleCount} curations, ${treasuredCount} treasured items on Copus." />
+    <title>${name} - ${SITE_NAME}</title>
+    <meta name="description" content="${bio}" />
 
-    <!-- Open Graph -->
+    <!-- Open Graph - Profile Specific -->
     <meta property="og:type" content="profile" />
     <meta property="og:site_name" content="${SITE_NAME}" />
-    <meta property="og:title" content="${name} - Curator on Copus" />
+    <meta property="og:title" content="${name}" />
     <meta property="og:description" content="${bio}" />
     <meta property="og:image" content="${avatar}" />
     <meta property="og:url" content="${profileUrl}" />
     <meta property="profile:username" content="${user.namespace}" />
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="${name} - Curator on Copus" />
+    <!-- Twitter Card - Profile Specific -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${name}" />
     <meta name="twitter:description" content="${bio}" />
     <meta name="twitter:image" content="${avatar}" />
     `
 
-    element.append(metaTags, { html: true })
+    // Prepend to ensure profile meta tags appear BEFORE defaults
+    element.prepend(metaTags, { html: true })
   }
 }
 
