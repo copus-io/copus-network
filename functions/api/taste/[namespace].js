@@ -391,17 +391,23 @@ function parseSeoData(seoDataString) {
 async function fetchTreasurySeoData(namespace) {
   if (!namespace) return null
   try {
-    const response = await fetch(
-      `${API_BASE}/client/article/space/info/${encodeURIComponent(namespace)}`,
-      { headers: { 'Content-Type': 'application/json' } }
-    )
-    if (!response.ok) return null
+    const url = `${API_BASE}/client/article/space/info/${encodeURIComponent(namespace)}`
+    const response = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      cf: { cacheTtl: 300 } // Cache for 5 minutes
+    })
+    if (!response.ok) {
+      console.error(`[fetchTreasurySeoData] Failed to fetch ${namespace}: ${response.status}`)
+      return null
+    }
     const data = await response.json()
     if (data.status === 1 && data.data?.seoDataByAi) {
-      return parseSeoData(data.data.seoDataByAi)
+      const seoData = parseSeoData(data.data.seoDataByAi)
+      return seoData
     }
     return null
-  } catch {
+  } catch (error) {
+    console.error(`[fetchTreasurySeoData] Error for ${namespace}:`, error)
     return null
   }
 }
@@ -416,7 +422,13 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
   }
 
   // Fetch AI-generated SEO data for this treasury
-  const seoData = await fetchTreasurySeoData(treasury.namespace) || {}
+  let seoData = {}
+  if (treasury.namespace) {
+    const fetchedSeo = await fetchTreasurySeoData(treasury.namespace)
+    if (fetchedSeo) {
+      seoData = fetchedSeo
+    }
+  }
 
   const baseData = {
     name: displayName,
