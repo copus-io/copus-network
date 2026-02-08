@@ -75,9 +75,12 @@ export async function onRequest(context) {
     // Get original response
     const response = await next()
 
-    // Inject meta tags and JSON-LD
+    // Inject meta tags and JSON-LD, and remove default meta tags
     return new HTMLRewriter()
       .on('head', new HeadInjector(spaceData, articles))
+      .on('title[data-rh="true"]', new ElementRemover())
+      .on('meta[data-rh="true"]', new ElementRemover())
+      .on('link[data-rh="true"]', new ElementRemover())
       .on('body', new BodyInjector(spaceData, articles))
       .transform(response)
 
@@ -110,13 +113,16 @@ function buildTreasuryJsonResponse(space, articles, accessLevel) {
     name: space.name || 'Treasury',
     namespace: space.namespace,
     url: treasuryUrl,
+    description: space.description || null,
+    image: space.coverUrl || space.faceUrl || DEFAULT_IMAGE,
     accessLevel: accessLevel,
     articleCount: space.articleCount || 0,
     author: {
       name: space.userInfo?.username || 'Curator',
       namespace: space.userInfo?.namespace,
       url: authorUrl,
-      avatar: space.userInfo?.faceUrl
+      avatar: space.userInfo?.faceUrl,
+      bio: space.userInfo?.bio || null
     },
     fetchedAt: new Date().toISOString()
   }
@@ -215,6 +221,13 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;')
 }
 
+// Remove elements with data-rh="true" attribute (default meta tags)
+class ElementRemover {
+  element(element) {
+    element.remove()
+  }
+}
+
 class HeadInjector {
   constructor(space, articles) {
     this.space = space
@@ -228,35 +241,43 @@ class HeadInjector {
     const authorName = escapeHtml(space.userInfo?.username || 'Curator')
     const articleCount = space.articleCount || articles.length || 0
     const treasuryUrl = `${SITE_URL}/treasury/${space.namespace}`
-    const authorUrl = `${SITE_URL}/user/${space.userInfo?.namespace}`
 
-    // Create description from first few articles
-    let description = `A curated collection of ${articleCount} treasures by ${authorName} on Copus.`
-    if (articles.length > 0) {
-      const titles = articles.slice(0, 3).map(a => a.title).join(', ')
-      description += ` Includes: ${titles}${articles.length > 3 ? '...' : ''}`
+    // Use treasury's own description (curator's recommendation), fallback to auto-generated
+    let description = space.description
+    if (!description) {
+      description = `A curated collection of ${articleCount} treasures by ${authorName}.`
+      if (articles.length > 0) {
+        const titles = articles.slice(0, 3).map(a => a.title).join(', ')
+        description += ` Includes: ${titles}${articles.length > 3 ? '...' : ''}`
+      }
     }
 
+    // Use coverUrl first, then faceUrl (profile image), then default
+    const image = space.coverUrl || space.faceUrl || DEFAULT_IMAGE
+
+    // IMPORTANT: Use prepend to inject BEFORE the default meta tags
+    // Link preview scrapers use the first occurrence of each meta tag
     const metaTags = `
-    <title>${spaceName} by ${authorName} | ${SITE_NAME} Treasury</title>
+    <title>${spaceName} by ${authorName} - ${SITE_NAME}</title>
     <meta name="description" content="${escapeHtml(description)}" />
 
-    <!-- Open Graph -->
+    <!-- Open Graph - Treasury Specific -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="${SITE_NAME}" />
-    <meta property="og:title" content="${spaceName} - Curated by ${authorName}" />
+    <meta property="og:title" content="${spaceName}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
-    <meta property="og:image" content="${space.coverUrl || DEFAULT_IMAGE}" />
+    <meta property="og:image" content="${image}" />
     <meta property="og:url" content="${treasuryUrl}" />
 
-    <!-- Twitter Card -->
+    <!-- Twitter Card - Treasury Specific -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${spaceName} - Curated by ${authorName}" />
+    <meta name="twitter:title" content="${spaceName}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${space.coverUrl || DEFAULT_IMAGE}" />
+    <meta name="twitter:image" content="${image}" />
     `
 
-    element.append(metaTags, { html: true })
+    // Prepend to ensure treasury meta tags appear BEFORE defaults
+    element.prepend(metaTags, { html: true })
   }
 }
 
@@ -276,25 +297,36 @@ class BodyInjector {
     const articleCount = space.articleCount || 0
     const accessLevel = getTreasuryAccessLevel(space)
 
+    // Use treasury's own description (curator's recommendation)
+    const treasuryDescription = space.description || `A curated collection of ${articleCount} treasures by ${authorName}.`
+    const treasuryImage = space.coverUrl || space.faceUrl || DEFAULT_IMAGE
+
     // Collection schema with articles
     const collectionSchema = {
       "@context": "https://schema.org",
       "@type": "Collection",
       "@id": treasuryUrl,
       "name": spaceName,
+      "description": treasuryDescription,
       "url": treasuryUrl,
+      "image": treasuryImage,
       "numberOfItems": articleCount,
       "author": {
         "@type": "Person",
         "@id": `${authorUrl}#person`,
         "name": authorName,
         "url": authorUrl,
-        "image": space.userInfo?.faceUrl
+        "image": space.userInfo?.faceUrl,
+        "description": space.userInfo?.bio || undefined
       },
       "publisher": {
         "@type": "Organization",
         "name": SITE_NAME,
-        "url": SITE_URL
+        "url": SITE_URL,
+        "logo": {
+          "@type": "ImageObject",
+          "url": `${SITE_URL}/logo.png`
+        }
       }
     }
 
@@ -378,7 +410,7 @@ class BodyInjector {
       `
     } else {
       // Public treasury - full content
-      collectionSchema.description = `A curated collection of ${articleCount} treasures by ${authorName} on Copus. Each item includes the curator's notes explaining why it's valuable.`
+      // Keep the curator's description as primary, it's already set in collectionSchema
       collectionSchema.isAccessibleForFree = true
 
       // Add articles as collection items
@@ -416,6 +448,7 @@ class BodyInjector {
           <header>
             <h1>${escapeHtml(spaceName)}</h1>
             <p><strong>Curated by:</strong> <a href="${authorUrl}">${escapeHtml(authorName)}</a></p>
+            ${space.description ? `<p><strong>About this Treasury:</strong> ${escapeHtml(space.description)}</p>` : ''}
             <p><strong>Total Items:</strong> ${articleCount} curated treasures</p>
             <p><strong>Access:</strong> Public</p>
             <p><strong>Treasury URL:</strong> <a href="${treasuryUrl}">${treasuryUrl}</a></p>
