@@ -51,9 +51,12 @@ export async function onRequest(context) {
     // Get original response
     const response = await next()
 
-    // Inject meta tags and JSON-LD
+    // Inject meta tags and JSON-LD, and remove default meta tags
     return new HTMLRewriter()
       .on('head', new HeadInjector(articleData, seoData))
+      .on('title[data-rh="true"]', new ElementRemover())
+      .on('meta[data-rh="true"]', new ElementRemover())
+      .on('link[data-rh="true"]', new ElementRemover())
       .on('body', new BodyInjector(articleData, seoData))
       .transform(response)
 
@@ -154,6 +157,13 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
+}
+
+// Remove elements with data-rh="true" attribute (default meta tags)
+class ElementRemover {
+  element(element) {
+    element.remove()
+  }
 }
 
 class HeadInjector {
