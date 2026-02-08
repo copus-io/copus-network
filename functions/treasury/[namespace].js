@@ -114,7 +114,7 @@ function buildTreasuryJsonResponse(space, articles, accessLevel) {
     namespace: space.namespace,
     url: treasuryUrl,
     description: space.description || null,
-    image: space.coverUrl || space.faceUrl || DEFAULT_IMAGE,
+    image: space.faceUrl || space.coverUrl || DEFAULT_IMAGE,
     accessLevel: accessLevel,
     articleCount: space.articleCount || 0,
     author: {
@@ -252,8 +252,8 @@ class HeadInjector {
       }
     }
 
-    // Use coverUrl first, then faceUrl (profile image), then default
-    const image = space.coverUrl || space.faceUrl || DEFAULT_IMAGE
+    // Use faceUrl (profile image) first for link previews, then coverUrl (banner), then default
+    const image = space.faceUrl || space.coverUrl || DEFAULT_IMAGE
 
     // IMPORTANT: Use prepend to inject BEFORE the default meta tags
     // Link preview scrapers use the first occurrence of each meta tag
@@ -299,7 +299,7 @@ class BodyInjector {
 
     // Use treasury's own description (curator's recommendation)
     const treasuryDescription = space.description || `A curated collection of ${articleCount} treasures by ${authorName}.`
-    const treasuryImage = space.coverUrl || space.faceUrl || DEFAULT_IMAGE
+    const treasuryImage = space.faceUrl || space.coverUrl || DEFAULT_IMAGE
 
     // Collection schema with articles
     const collectionSchema = {
