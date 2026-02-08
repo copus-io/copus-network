@@ -169,12 +169,14 @@ class HeadInjector {
     const articleUrl = `${SITE_URL}/work/${article.id}`
     const authorName = escapeHtml(article.userName || '')
 
+    // IMPORTANT: Use prepend to inject BEFORE the default meta tags
+    // Link preview scrapers use the first occurrence of each meta tag
     const metaTags = `
     <title>${title} - ${SITE_NAME}</title>
     <meta name="description" content="${description}" />
     <meta name="keywords" content="${keywords}" />
 
-    <!-- Open Graph -->
+    <!-- Open Graph - Article Specific -->
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="${SITE_NAME}" />
     <meta property="og:title" content="${title}" />
@@ -182,7 +184,7 @@ class HeadInjector {
     <meta property="og:image" content="${image}" />
     <meta property="og:url" content="${articleUrl}" />
 
-    <!-- Twitter Card -->
+    <!-- Twitter Card - Article Specific -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${title}" />
     <meta name="twitter:description" content="${description}" />
@@ -193,7 +195,8 @@ class HeadInjector {
     <meta property="article:published_time" content="${article.createdAt || ''}" />
     `
 
-    element.append(metaTags, { html: true })
+    // Prepend to ensure article meta tags appear BEFORE defaults
+    element.prepend(metaTags, { html: true })
   }
 }
 
