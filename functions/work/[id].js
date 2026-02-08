@@ -112,13 +112,15 @@ function buildJsonResponse(article, seoData) {
 
 async function fetchArticle(articleId) {
   try {
-    const response = await fetch(`${API_BASE}/client/article/${articleId}`, {
+    // Use the correct API endpoint: /client/reader/article/info?uuid=
+    const response = await fetch(`${API_BASE}/client/reader/article/info?uuid=${articleId}`, {
       headers: {
         'Content-Type': 'application/json',
       },
     })
 
     if (!response.ok) {
+      console.error(`API returned ${response.status} for article ${articleId}`)
       return null
     }
 
