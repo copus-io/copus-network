@@ -372,6 +372,40 @@ async function buildTasteProfile(userInfo, treasuries) {
  * For PUBLIC treasuries:
  * - Full articles with curation notes
  */
+/**
+ * Parse seoDataByAi JSON string from backend
+ */
+function parseSeoData(seoDataString) {
+  if (!seoDataString) return null
+  try {
+    const parsed = JSON.parse(seoDataString)
+    return typeof parsed === 'string' ? { description: parsed } : parsed
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fetch treasury info to get seoDataByAi
+ */
+async function fetchTreasurySeoData(namespace) {
+  if (!namespace) return null
+  try {
+    const response = await fetch(
+      `${API_BASE}/client/article/space/info/${encodeURIComponent(namespace)}`,
+      { headers: { 'Content-Type': 'application/json' } }
+    )
+    if (!response.ok) return null
+    const data = await response.json()
+    if (data.status === 1 && data.data?.seoDataByAi) {
+      return parseSeoData(data.data.seoDataByAi)
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 async function buildTreasuryData(treasury, userInfo, accessLevel) {
   // Determine display name based on space type
   let displayName = treasury.name
@@ -381,13 +415,25 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
     displayName = `${userInfo.username}'s Curations`
   }
 
+  // Fetch AI-generated SEO data for this treasury
+  const seoData = await fetchTreasurySeoData(treasury.namespace) || {}
+
   const baseData = {
     name: displayName,
-    description: treasury.description || null, // Purpose of this space/collection
+    // Use AI description if available, fallback to curator's description
+    description: seoData.description || treasury.description || null,
     namespace: treasury.namespace,
     url: `${SITE_URL}/treasury/${treasury.namespace}`,
     articleCount: treasury.articleCount || 0,
-    accessLevel: accessLevel
+    accessLevel: accessLevel,
+    // AI-generated treasury metadata
+    keywords: seoData.keywords || [],
+    tags: seoData.tags || [],
+    category: seoData.category || null,
+    keyThemes: seoData.keyThemes || [],
+    targetAudience: seoData.targetAudience || null,
+    collectionInsight: seoData.collectionInsight || null,
+    curatorCredibility: seoData.curatorCredibility || null
   }
 
   // Handle different access levels
