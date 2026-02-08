@@ -96,48 +96,42 @@ export async function onRequest(context) {
     })
   }
 
-  // Fetch and add treasury pages
-  try {
-    const treasuriesResponse = await fetch(`${config.apiBase}/client/article/space/pagePublicSpaces?pageIndex=1&pageSize=200`, {
-      headers: { 'Content-Type': 'application/json' }
-    })
-    if (treasuriesResponse.ok) {
-      const treasuriesJson = await treasuriesResponse.json()
-      const treasuries = treasuriesJson.data?.data || treasuriesJson.data || []
-      for (const treasury of treasuries) {
-        if (!treasury.namespace) continue
-        urls.push({
-          loc: `${config.siteUrl}/treasury/${treasury.namespace}`,
-          lastmod: today,
-          changefreq: 'weekly',
-          priority: '0.7'
-        })
-      }
+  // Extract unique users and treasuries from articles
+  const uniqueUsers = new Map() // namespace -> true
+  const uniqueTreasuries = new Map() // namespace -> true
+
+  for (const article of allArticles) {
+    // Extract user from article author
+    const authorNamespace = article.authorInfo?.namespace
+    if (authorNamespace && !uniqueUsers.has(authorNamespace)) {
+      uniqueUsers.set(authorNamespace, true)
     }
-  } catch (e) {
-    console.error('[Sitemap] Error fetching treasuries:', e)
+
+    // Extract treasury from article space info (if available)
+    const spaceNamespace = article.spaceInfo?.namespace
+    if (spaceNamespace && !uniqueTreasuries.has(spaceNamespace)) {
+      uniqueTreasuries.set(spaceNamespace, true)
+    }
   }
 
-  // Fetch and add user profile pages
-  try {
-    const usersResponse = await fetch(`${config.apiBase}/client/userHome/pageUsers?pageIndex=1&pageSize=200`, {
-      headers: { 'Content-Type': 'application/json' }
+  // Add user profile pages
+  for (const namespace of uniqueUsers.keys()) {
+    urls.push({
+      loc: `${config.siteUrl}/u/${namespace}`,
+      lastmod: today,
+      changefreq: 'weekly',
+      priority: '0.6'
     })
-    if (usersResponse.ok) {
-      const usersJson = await usersResponse.json()
-      const users = usersJson.data?.data || usersJson.data || []
-      for (const user of users) {
-        if (!user.namespace) continue
-        urls.push({
-          loc: `${config.siteUrl}/u/${user.namespace}`,
-          lastmod: today,
-          changefreq: 'weekly',
-          priority: '0.6'
-        })
-      }
-    }
-  } catch (e) {
-    console.error('[Sitemap] Error fetching users:', e)
+  }
+
+  // Add treasury pages
+  for (const namespace of uniqueTreasuries.keys()) {
+    urls.push({
+      loc: `${config.siteUrl}/treasury/${namespace}`,
+      lastmod: today,
+      changefreq: 'weekly',
+      priority: '0.7'
+    })
   }
 
   // Build XML
