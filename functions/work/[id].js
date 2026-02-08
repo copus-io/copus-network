@@ -33,8 +33,8 @@ export async function onRequest(context) {
       return next()
     }
 
-    // Parse seoData
-    const seoData = parseSeoData(articleData.seoData)
+    // Parse seoData - prefer seoDataByAi (AI-generated) over seoData (manual)
+    const seoData = parseSeoData(articleData.seoDataByAi) || parseSeoData(articleData.seoData) || {}
 
     // Return JSON if requested - this bypasses Cloudflare challenges
     if (wantsJson) {
@@ -74,26 +74,27 @@ export async function onRequest(context) {
  * Returns structured data that AI agents can easily parse
  */
 function buildJsonResponse(article, seoData) {
-  const articleUrl = `${SITE_URL}/work/${article.id || article.uuid}`
-  const authorUrl = article.namespace
-    ? `${SITE_URL}/u/${article.namespace}`
+  const articleUrl = `${SITE_URL}/work/${article.uuid || article.id}`
+  const authorInfo = article.authorInfo || {}
+  const authorUrl = authorInfo.namespace
+    ? `${SITE_URL}/u/${authorInfo.namespace}`
     : `${SITE_URL}/user/${article.userId}`
 
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
-    id: article.id || article.uuid,
+    id: article.uuid || article.id,
     title: article.title,
     url: articleUrl,
-    description: seoData.description || article.description || null,
+    description: seoData.description || article.content || null,
     keywords: seoData.keywords || [],
-    image: article.coverImage || DEFAULT_IMAGE,
+    image: article.coverUrl || DEFAULT_IMAGE,
     originalSource: article.targetUrl || null,
     curationNote: article.content || null,
-    category: article.category || null,
+    category: seoData.category || article.category || null,
     author: {
-      name: article.userName,
-      namespace: article.namespace,
+      name: authorInfo.username || article.userName,
+      namespace: authorInfo.namespace,
       url: authorUrl
     },
     stats: {
@@ -102,8 +103,8 @@ function buildJsonResponse(article, seoData) {
       comments: article.commentCount || 0
     },
     dates: {
-      published: article.createdAt || null,
-      modified: article.updatedAt || article.createdAt || null
+      published: article.createAt || article.createdAt || null,
+      modified: article.publishAt || article.updatedAt || article.createAt || null
     },
     keyTakeaways: seoData.keyTakeaways || [],
     fetchedAt: new Date().toISOString()
@@ -165,11 +166,12 @@ class HeadInjector {
     const { article, seoData } = this
 
     const title = escapeHtml(article.title || '')
-    const description = escapeHtml(seoData.description || article.description || '')
-    const keywords = (seoData.keywords || []).map(escapeHtml).join(', ')
-    const image = article.coverImage || DEFAULT_IMAGE
-    const articleUrl = `${SITE_URL}/work/${article.id}`
-    const authorName = escapeHtml(article.userName || '')
+    // Use AI-generated description, then content (curator's note), then empty
+    const description = escapeHtml(seoData.description || article.content || '')
+    const keywords = seoData.keywords ? (Array.isArray(seoData.keywords) ? seoData.keywords : seoData.keywords.split(',')).map(k => escapeHtml(k.trim())).join(', ') : ''
+    const image = article.coverUrl || DEFAULT_IMAGE
+    const articleUrl = `${SITE_URL}/work/${article.uuid || article.id}`
+    const authorName = escapeHtml(article.authorInfo?.username || article.userName || '')
 
     // IMPORTANT: Use prepend to inject BEFORE the default meta tags
     // Link preview scrapers use the first occurrence of each meta tag
@@ -211,10 +213,16 @@ class BodyInjector {
   element(element) {
     const { article, seoData } = this
 
-    const articleUrl = `${SITE_URL}/work/${article.id}`
-    const authorUrl = article.namespace
-      ? `${SITE_URL}/u/${article.namespace}`
+    const authorInfo = article.authorInfo || {}
+    const articleUrl = `${SITE_URL}/work/${article.uuid || article.id}`
+    const authorUrl = authorInfo.namespace
+      ? `${SITE_URL}/u/${authorInfo.namespace}`
       : `${SITE_URL}/user/${article.userId}/treasury`
+
+    // Handle keywords - could be array or comma-separated string
+    const keywordsArray = seoData.keywords
+      ? (Array.isArray(seoData.keywords) ? seoData.keywords : seoData.keywords.split(',').map(k => k.trim()))
+      : []
 
     // Main Article/WebPage schema
     const mainSchema = {
@@ -222,15 +230,15 @@ class BodyInjector {
       "@type": seoData.schemaType || "Article",
       "name": article.title,
       "headline": article.title,
-      "description": seoData.description || article.description || "",
+      "description": seoData.description || article.content || "",
       "url": articleUrl,
-      "image": article.coverImage || DEFAULT_IMAGE,
-      "datePublished": article.createdAt,
-      "dateModified": article.updatedAt || article.createdAt,
-      "keywords": (seoData.keywords || []).join(", "),
+      "image": article.coverUrl || DEFAULT_IMAGE,
+      "datePublished": article.createAt || article.createdAt,
+      "dateModified": article.publishAt || article.updatedAt || article.createAt,
+      "keywords": keywordsArray.join(", "),
       "author": {
         "@type": "Person",
-        "name": article.userName,
+        "name": authorInfo.username || article.userName,
         "url": authorUrl
       },
       "publisher": {
