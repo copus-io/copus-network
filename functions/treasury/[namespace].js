@@ -59,10 +59,13 @@ export async function onRequest(context) {
     // Fetch articles in this treasury
     const articles = await fetchSpaceArticles(spaceData.id)
 
+    // Parse seoDataByAi - AI-generated SEO metadata (similar to work pages)
+    const seoData = parseSeoData(spaceData.seoDataByAi) || {}
+
     // Return JSON if requested - bypasses Cloudflare challenges
     if (wantsJson) {
       const accessLevel = getTreasuryAccessLevel(spaceData)
-      const jsonResponse = buildTreasuryJsonResponse(spaceData, articles, accessLevel)
+      const jsonResponse = buildTreasuryJsonResponse(spaceData, articles, accessLevel, seoData)
       return new Response(JSON.stringify(jsonResponse, null, 2), {
         headers: {
           'Content-Type': 'application/json',
@@ -77,11 +80,11 @@ export async function onRequest(context) {
 
     // Inject meta tags and JSON-LD, and remove default meta tags
     return new HTMLRewriter()
-      .on('head', new HeadInjector(spaceData, articles))
+      .on('head', new HeadInjector(spaceData, articles, seoData))
       .on('title[data-rh="true"]', new ElementRemover())
       .on('meta[data-rh="true"]', new ElementRemover())
       .on('link[data-rh="true"]', new ElementRemover())
-      .on('body', new BodyInjector(spaceData, articles))
+      .on('body', new BodyInjector(spaceData, articles, seoData))
       .transform(response)
 
   } catch (error) {
@@ -103,7 +106,20 @@ export async function onRequest(context) {
  * Build JSON response for ?format=json requests
  * Respects access control levels
  */
-function buildTreasuryJsonResponse(space, articles, accessLevel) {
+/**
+ * Parse seoDataByAi JSON string from backend
+ */
+function parseSeoData(seoDataString) {
+  if (!seoDataString) return null
+  try {
+    const parsed = JSON.parse(seoDataString)
+    return typeof parsed === 'string' ? { description: parsed } : parsed
+  } catch {
+    return null
+  }
+}
+
+function buildTreasuryJsonResponse(space, articles, accessLevel, seoData = {}) {
   const treasuryUrl = `${SITE_URL}/treasury/${space.namespace}`
   const authorUrl = `${SITE_URL}/user/${space.userInfo?.namespace}`
 
@@ -113,16 +129,25 @@ function buildTreasuryJsonResponse(space, articles, accessLevel) {
     name: space.name || 'Treasury',
     namespace: space.namespace,
     url: treasuryUrl,
-    description: space.description || null,
+    // Use AI-generated description if available, fallback to curator's description
+    description: seoData.description || space.description || null,
     image: space.faceUrl || space.coverUrl || DEFAULT_IMAGE,
     accessLevel: accessLevel,
     articleCount: space.articleCount || 0,
+    // AI-generated metadata
+    keywords: seoData.keywords || [],
+    tags: seoData.tags || [],
+    category: seoData.category || null,
+    keyThemes: seoData.keyThemes || [],
+    targetAudience: seoData.targetAudience || null,
+    collectionInsight: seoData.collectionInsight || null,
     author: {
       name: space.userInfo?.username || 'Curator',
       namespace: space.userInfo?.namespace,
       url: authorUrl,
       avatar: space.userInfo?.faceUrl,
-      bio: space.userInfo?.bio || null
+      bio: space.userInfo?.bio || null,
+      credibility: seoData.curatorCredibility || null
     },
     fetchedAt: new Date().toISOString()
   }
@@ -229,21 +254,22 @@ class ElementRemover {
 }
 
 class HeadInjector {
-  constructor(space, articles) {
+  constructor(space, articles, seoData = {}) {
     this.space = space
     this.articles = articles
+    this.seoData = seoData
   }
 
   element(element) {
-    const { space, articles } = this
+    const { space, articles, seoData } = this
 
     const spaceName = escapeHtml(space.name || 'Treasury')
     const authorName = escapeHtml(space.userInfo?.username || 'Curator')
     const articleCount = space.articleCount || articles.length || 0
     const treasuryUrl = `${SITE_URL}/treasury/${space.namespace}`
 
-    // Use treasury's own description (curator's recommendation), fallback to auto-generated
-    let description = space.description
+    // Use AI-generated description first, then curator's description, then auto-generated
+    let description = seoData.description || space.description
     if (!description) {
       description = `A curated collection of ${articleCount} treasures by ${authorName}.`
       if (articles.length > 0) {
@@ -255,11 +281,15 @@ class HeadInjector {
     // Use faceUrl (profile image) first for link previews, then coverUrl (banner), then default
     const image = space.faceUrl || space.coverUrl || DEFAULT_IMAGE
 
+    // Build keywords meta tag from AI-generated keywords
+    const keywords = seoData.keywords ? (Array.isArray(seoData.keywords) ? seoData.keywords : seoData.keywords.split(',')).map(k => escapeHtml(k.trim())).join(', ') : ''
+
     // IMPORTANT: Use prepend to inject BEFORE the default meta tags
     // Link preview scrapers use the first occurrence of each meta tag
     const metaTags = `
     <title>${spaceName} by ${authorName} - ${SITE_NAME}</title>
     <meta name="description" content="${escapeHtml(description)}" />
+    ${keywords ? `<meta name="keywords" content="${keywords}" />` : ''}
 
     <!-- Open Graph - Treasury Specific -->
     <meta property="og:type" content="website" />
@@ -282,13 +312,14 @@ class HeadInjector {
 }
 
 class BodyInjector {
-  constructor(space, articles) {
+  constructor(space, articles, seoData = {}) {
     this.space = space
     this.articles = articles
+    this.seoData = seoData
   }
 
   element(element) {
-    const { space, articles } = this
+    const { space, articles, seoData } = this
 
     const treasuryUrl = `${SITE_URL}/treasury/${space.namespace}`
     const authorUrl = `${SITE_URL}/user/${space.userInfo?.namespace}`
@@ -297,9 +328,14 @@ class BodyInjector {
     const articleCount = space.articleCount || 0
     const accessLevel = getTreasuryAccessLevel(space)
 
-    // Use treasury's own description (curator's recommendation)
-    const treasuryDescription = space.description || `A curated collection of ${articleCount} treasures by ${authorName}.`
+    // Use AI-generated description first, then curator's description
+    const treasuryDescription = seoData.description || space.description || `A curated collection of ${articleCount} treasures by ${authorName}.`
     const treasuryImage = space.faceUrl || space.coverUrl || DEFAULT_IMAGE
+
+    // Build keywords string from AI-generated keywords
+    const keywordsArray = seoData.keywords
+      ? (Array.isArray(seoData.keywords) ? seoData.keywords : seoData.keywords.split(',').map(k => k.trim()))
+      : []
 
     // Collection schema with articles
     const collectionSchema = {
@@ -311,13 +347,16 @@ class BodyInjector {
       "url": treasuryUrl,
       "image": treasuryImage,
       "numberOfItems": articleCount,
+      "keywords": keywordsArray.join(", ") || undefined,
+      "about": seoData.targetAudience || undefined,
+      "abstract": seoData.collectionInsight || undefined,
       "author": {
         "@type": "Person",
         "@id": `${authorUrl}#person`,
         "name": authorName,
         "url": authorUrl,
         "image": space.userInfo?.faceUrl,
-        "description": space.userInfo?.bio || undefined
+        "description": seoData.curatorCredibility || space.userInfo?.bio || undefined
       },
       "publisher": {
         "@type": "Organization",
@@ -328,6 +367,14 @@ class BodyInjector {
           "url": `${SITE_URL}/logo.png`
         }
       }
+    }
+
+    // Add key themes as collection topics
+    if (seoData.keyThemes && seoData.keyThemes.length > 0) {
+      collectionSchema.mainEntity = seoData.keyThemes.map(theme => ({
+        "@type": "Thing",
+        "name": theme
+      }))
     }
 
     // Customize description and content based on access level
