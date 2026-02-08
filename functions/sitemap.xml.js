@@ -96,6 +96,50 @@ export async function onRequest(context) {
     })
   }
 
+  // Fetch and add treasury pages
+  try {
+    const treasuriesResponse = await fetch(`${config.apiBase}/client/article/space/pagePublicSpaces?pageIndex=1&pageSize=200`, {
+      headers: { 'Content-Type': 'application/json' }
+    })
+    if (treasuriesResponse.ok) {
+      const treasuriesJson = await treasuriesResponse.json()
+      const treasuries = treasuriesJson.data?.data || treasuriesJson.data || []
+      for (const treasury of treasuries) {
+        if (!treasury.namespace) continue
+        urls.push({
+          loc: `${config.siteUrl}/treasury/${treasury.namespace}`,
+          lastmod: today,
+          changefreq: 'weekly',
+          priority: '0.7'
+        })
+      }
+    }
+  } catch (e) {
+    console.error('[Sitemap] Error fetching treasuries:', e)
+  }
+
+  // Fetch and add user profile pages
+  try {
+    const usersResponse = await fetch(`${config.apiBase}/client/userHome/pageUsers?pageIndex=1&pageSize=200`, {
+      headers: { 'Content-Type': 'application/json' }
+    })
+    if (usersResponse.ok) {
+      const usersJson = await usersResponse.json()
+      const users = usersJson.data?.data || usersJson.data || []
+      for (const user of users) {
+        if (!user.namespace) continue
+        urls.push({
+          loc: `${config.siteUrl}/u/${user.namespace}`,
+          lastmod: today,
+          changefreq: 'weekly',
+          priority: '0.6'
+        })
+      }
+    }
+  } catch (e) {
+    console.error('[Sitemap] Error fetching users:', e)
+  }
+
   // Build XML
   const xmlUrls = urls.map(u => {
     let entry = `  <url>\n    <loc>${escapeXml(u.loc)}</loc>`

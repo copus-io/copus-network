@@ -341,6 +341,23 @@ async function buildTasteProfile(userInfo, treasuries) {
     // AI-friendly summary
     summary: null,
 
+    // Instructions for AI agents
+    _aiHints: {
+      description: 'This is a curator taste profile on Copus. Each treasury contains curated articles with curation notes.',
+      deeperData: {
+        treasury: 'Append ?format=json to any treasury URL for full structured data, e.g., /treasury/{namespace}?format=json',
+        article: 'Append ?format=json to any work URL for article details with AI-generated keywords and takeaways, e.g., /work/{uuid}?format=json',
+        search: 'Use /api/search?q=QUERY to search across all curated content'
+      },
+      fieldsExplained: {
+        keywords: 'AI-generated keywords representing the treasury themes (empty if not yet processed)',
+        keyThemes: 'AI-identified common threads across curated items',
+        targetAudience: 'Who would benefit from this treasury',
+        collectionInsight: 'What this collection reveals about the topic',
+        curatorCredibility: 'Why this curator perspective matters'
+      }
+    },
+
     // Timestamp
     fetchedAt: new Date().toISOString()
   }
