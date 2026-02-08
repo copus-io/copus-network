@@ -421,14 +421,8 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
     displayName = `${userInfo.username}'s Curations`
   }
 
-  // Fetch AI-generated SEO data for this treasury
-  let seoData = {}
-  if (treasury.namespace) {
-    const fetchedSeo = await fetchTreasurySeoData(treasury.namespace)
-    if (fetchedSeo) {
-      seoData = fetchedSeo
-    }
-  }
+  // Parse AI-generated SEO data from treasury object (comes from pageMySpaces API)
+  const seoData = parseSeoData(treasury.seoDataByAi) || {}
 
   const baseData = {
     name: displayName,
