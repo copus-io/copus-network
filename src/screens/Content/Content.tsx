@@ -35,6 +35,9 @@ import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
 // SEO meta tags are now handled by Cloudflare Worker - see functions/work/[id].js
 import { UserCard } from '../../components/ui/UserCard';
+import { PrivateContentGuard } from '../../components/PrivateContentGuard/PrivateContentGuard';
+import { PrivacyBanner } from '../../components/PrivacyBanner/PrivacyBanner';
+import { NoAccessPermission } from '../../components/NoAccessPermission/NoAccessPermission';
 
 // Debug logging helper - only logs in development mode
 const debugLog = (...args: any[]) => {
@@ -150,6 +153,7 @@ export const Content = (): JSX.Element => {
   const commentScrollRef = useRef<HTMLDivElement>(null);
 
   // Show success toast when arriving from browser extension after publishing
+  // Handle cache refresh for updated articles (from edit mode)
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('published') === 'true') {
@@ -158,7 +162,18 @@ export const Content = (): JSX.Element => {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [location.search, showToast]);
+
+    // Handle refresh parameter (from edit mode redirect)
+    if (searchParams.get('refresh') && id) {
+      console.log('🔄 Cache refresh requested for article:', id);
+      // Force refresh article data by invalidating cache
+      queryClient.removeQueries({ queryKey: ['articleDetail', id] });
+      queryClient.removeQueries({ queryKey: ['articleId', id] });
+      // Clean URL by removing refresh parameter
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search, showToast, id, queryClient]);
 
   // Handle modal animation timing and body scroll lock
   useEffect(() => {
@@ -808,6 +823,28 @@ export const Content = (): JSX.Element => {
 
   if (loading) {
     return <ContentPageSkeleton />;
+  }
+
+  // Check if this is a private content access denied error (status 2104)
+  const isNoAccessPermission = error && (
+    error.includes('2104') ||
+    error.includes('无权限') ||
+    error.includes('private') ||
+    error.includes('access denied')
+  );
+
+  // If no access permission, show the NoAccessPermission component
+  if (isNoAccessPermission) {
+    return (
+      <div className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+        <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
+          <HeaderSection articleAuthorId={undefined} />
+          <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center pt-[70px] lg:pt-[120px]">
+            <NoAccessPermission />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Check if the article has been deleted
@@ -2015,10 +2052,35 @@ export const Content = (): JSX.Element => {
         className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
         data-model-id="9091:54529"
       >
-      <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
-        <HeaderSection articleAuthorId={content?.userId} />
+        <PrivateContentGuard
+          article={{
+            isPrivate: article?.isPrivate,
+            visibility: article?.visibility,
+            userId: article?.authorInfo?.id,
+            userName: article?.authorInfo?.username,
+            title: article?.title,
+            authorInfo: article?.authorInfo
+          }}
+        >
+          <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
+            <HeaderSection articleAuthorId={content?.userId} />
 
-        <main className="flex flex-col lg:flex-row items-start pt-[70px] lg:pt-[120px] pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow">
+        {/* Privacy Banner for Private Articles - Outside main layout */}
+        {article && (
+          <PrivacyBanner
+            isPrivate={article.isPrivate}
+            visibility={article.visibility}
+            isAuthor={user?.id === article.authorInfo?.id}
+            className="w-full max-w-[1250px] mx-auto px-4 lg:px-[30px] mt-[70px] lg:mt-[120px]"
+          />
+        )}
+
+        <main className={`flex flex-col lg:flex-row items-start pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow ${
+          // Dynamic top padding based on whether privacy banner is visible
+          article && article.visibility === 1 && user?.id === article.authorInfo?.id
+            ? 'pt-6 lg:pt-6' // Smaller padding when privacy banner is shown
+            : 'pt-16 lg:pt-20' // Larger padding when no privacy banner
+        }`}>
           {/* Main Content Column */}
           <div className="flex-1 w-full">
             <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow">
@@ -2543,8 +2605,9 @@ export const Content = (): JSX.Element => {
           />
         )}
 
+          </div>
+        </PrivateContentGuard>
       </div>
-    </div>
 
 
     </>

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { AuthService } from '../../services/authService';
 import { useToast } from '../ui/toast';
+import { SPACE_VISIBILITY } from '../../types/space';
 import { ImageUploader } from '../ImageUploader/ImageUploader';
+import { ArenaImportModal } from '../ArenaImportModal/ArenaImportModal';
+import { CSVImportModal } from '../CSVImportModal/CSVImportModal';
 
 export interface CreateSpaceModalProps {
   isOpen: boolean;
@@ -31,22 +34,62 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   const [spaceDescription, setSpaceDescription] = useState('');
   const [spaceCoverUrl, setSpaceCoverUrl] = useState('');
   const [spaceFaceUrl, setSpaceFaceUrl] = useState('');
+  const [visibility, setVisibility] = useState(SPACE_VISIBILITY.PUBLIC);
 
   // Loading states
   const [isCreating, setIsCreating] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
+
+  // Import states
+  const [showArenaImport, setShowArenaImport] = useState(false);
+  const [showCSVImport, setShowCSVImport] = useState(false);
 
   const resetForm = () => {
     setSpaceName('');
     setSpaceDescription('');
     setSpaceCoverUrl('');
     setSpaceFaceUrl('');
+    setVisibility(SPACE_VISIBILITY.PUBLIC);
     setIsImageUploading(false);
   };
 
   const handleClose = () => {
     resetForm();
+    setShowArenaImport(false);
+    setShowCSVImport(false);
     onClose();
+  };
+
+  const handleArenaImport = (data: { spaceName: string; blocks: any[]; isPrivate: boolean }) => {
+    // Pre-fill form with Arena data
+    setSpaceName(data.spaceName);
+    setSpaceDescription(`Imported from Are.na with ${data.blocks.length} items`);
+
+    // 🔒 设置隐私状态
+    setVisibility(data.isPrivate ? SPACE_VISIBILITY.PRIVATE : SPACE_VISIBILITY.PUBLIC);
+
+    // TODO: Save the blocks data for later use when creating articles
+    // For now, we'll just create the space with the name and description
+    const privacyLabel = data.isPrivate ? 'private space' : 'public space';
+    showToast(`Ready to import "${data.spaceName}" with ${data.blocks.length} items as ${privacyLabel}`, 'success');
+
+    setShowArenaImport(false);
+  };
+
+  const handleCSVImport = (data: { spaceName: string; items: any[]; isPrivate: boolean }) => {
+    // Pre-fill form with CSV data
+    setSpaceName(data.spaceName);
+    setSpaceDescription(`Imported from CSV with ${data.items.length} bookmarks`);
+
+    // 🔒 设置隐私状态
+    setVisibility(data.isPrivate ? SPACE_VISIBILITY.PRIVATE : SPACE_VISIBILITY.PUBLIC);
+
+    // TODO: Save the items data for later use when creating articles
+    // For now, we'll just create the space with the name and description
+    const privacyLabel = data.isPrivate ? 'private space' : 'public space';
+    showToast(`Ready to import "${data.spaceName}" with ${data.items.length} bookmarks as ${privacyLabel}`, 'success');
+
+    setShowCSVImport(false);
   };
 
   const handleCreateSpace = async () => {
@@ -63,8 +106,14 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
       const coverUrl = mode === 'full' ? (spaceCoverUrl.trim() || undefined) : undefined;
       const faceUrl = mode === 'full' ? (spaceFaceUrl.trim() || undefined) : undefined;
 
-      // Call API to create space
-      const response = await AuthService.createSpace(spaceName.trim(), description, coverUrl, faceUrl);
+      // Call API to create space with visibility
+      const response = await AuthService.createSpace(
+        spaceName.trim(),
+        description,
+        coverUrl,
+        faceUrl,
+        visibility
+      );
       console.log('Create space response:', response);
 
       // Get the created space data
@@ -122,12 +171,46 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
 
         <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto] pt-5">
           <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-            <h2
-              id="create-space-title"
-              className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-            >
-              {title}
-            </h2>
+            <div className="flex items-center justify-between relative self-stretch w-full flex-[0_0_auto]">
+              <h2
+                id="create-space-title"
+                className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+              >
+                {title}
+              </h2>
+
+              {mode === 'full' && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowArenaImport(true)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer"
+                    type="button"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7,10 12,15 17,10"/>
+                      <line x1="12" x2="12" y1="15" y2="3"/>
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">Import Are.na</span>
+                  </button>
+
+                  <button
+                    onClick={() => setShowCSVImport(true)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer"
+                    type="button"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14,2 14,8 20,8"/>
+                      <line x1="16" x2="8" y1="13" y2="13"/>
+                      <line x1="16" x2="8" y1="17" y2="17"/>
+                      <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">Import CSV</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Space Name */}
             <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
@@ -183,6 +266,35 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                   <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
                     {spaceDescription.length}/200 characters
                   </span>
+                </div>
+
+                {/* Private Space Toggle */}
+                <div className="flex items-start gap-3 relative self-stretch w-full flex-[0_0_auto]">
+                  <input
+                    id="private-space-checkbox"
+                    type="checkbox"
+                    checked={visibility === SPACE_VISIBILITY.PRIVATE}
+                    onChange={(e) => setVisibility(e.target.checked ? SPACE_VISIBILITY.PRIVATE : SPACE_VISIBILITY.PUBLIC)}
+                    className="mt-1 w-4 h-4 text-red bg-gray-100 border-gray-300 rounded focus:ring-red focus:ring-2 cursor-pointer"
+                  />
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label
+                      htmlFor="private-space-checkbox"
+                      className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] cursor-pointer"
+                    >
+                      Private Space
+                    </label>
+                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-500 text-sm tracking-[0] leading-[18px]">
+                      Only you can see and access this space. It won't appear in public listings or search results.
+                    </span>
+
+                    {/* Show additional note for CSV imports */}
+                    {visibility === SPACE_VISIBILITY.PRIVATE && spaceDescription.includes('Imported from CSV') && (
+                      <div className="mt-2 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
+                        💡 CSV导入内容默认为私享，保护你的个人收藏。你可以稍后在空间设置中调整隐私选项。
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Avatar Upload */}
@@ -260,6 +372,20 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Arena Import Modal */}
+      <ArenaImportModal
+        isOpen={showArenaImport}
+        onClose={() => setShowArenaImport(false)}
+        onImportComplete={handleArenaImport}
+      />
+
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        isOpen={showCSVImport}
+        onClose={() => setShowCSVImport(false)}
+        onImportComplete={handleCSVImport}
+      />
     </div>
   );
 };

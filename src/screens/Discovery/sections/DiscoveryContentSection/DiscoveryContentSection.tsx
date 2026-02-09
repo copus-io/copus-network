@@ -9,6 +9,7 @@ import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../../components/CollectTreasureModal";
 import { getCategoryStyle, getCategoryInlineStyle, formatDate, formatCount } from "../../../../utils/categoryStyles";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
+import { canUserViewArticle } from "../../../../types/article";
 
 export const DiscoveryContentSection = (): JSX.Element => {
   const { showToast } = useToast();
@@ -142,11 +143,16 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Sync local article state and like status
   React.useEffect(() => {
-    setLocalArticles(articles);
+    // Filter out private articles from public discovery using visibility system
+    const filteredArticles = articles.filter(article => {
+      return canUserViewArticle(article, user?.id);
+    });
+
+    setLocalArticles(filteredArticles);
 
     // Sync like status to localStorage
-    if (articles.length > 0) {
-      const articlesForSync = articles.map(article => ({
+    if (filteredArticles.length > 0) {
+      const articlesForSync = filteredArticles.map(article => ({
         id: article.id,
         uuid: article.id,
         isLiked: article.isLiked, // Use actual like status returned from server
@@ -154,7 +160,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       }));
       syncArticleStates(articlesForSync);
     }
-  }, [articles]); // Remove syncArticleStates dependency to avoid infinite loop
+  }, [articles, user]); // Add user dependency for filtering updates
 
   // Transform article data format
   const transformArticleToCardData = (article: Article): ArticleData => {
@@ -179,7 +185,9 @@ export const DiscoveryContentSection = (): JSX.Element => {
       website: article.website,
       // x402 payment fields - pass through from article
       isPaymentRequired: article.isPaymentRequired,
-      paymentPrice: article.paymentPrice
+      paymentPrice: article.paymentPrice,
+      // Privacy field - article visibility
+      visibility: article.visibility
     };
   };
 
@@ -244,6 +252,11 @@ export const DiscoveryContentSection = (): JSX.Element => {
   };
 
   const renderPostCard = (post: Article, index: number) => {
+    // Filter out private articles in discovery using visibility system
+    if (!canUserViewArticle(post, user?.id)) {
+      return null;
+    }
+
     const articleData = transformArticleToCardData(post);
 
     // Only show like states for logged-in users

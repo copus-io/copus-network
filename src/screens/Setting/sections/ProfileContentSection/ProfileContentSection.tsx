@@ -51,6 +51,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     placeholder: "",
   });
 
+
   // 使用 UserContext 中的社交链接数据
   const { socialLinks: socialLinksData, socialLinksLoading, fetchSocialLinks, deleteSocialLink } = useUser();
 
@@ -328,6 +329,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   const handleDeleteAccount = () => {
     navigate('/account/delete');
   };
+
 
   const handleProfileImageUploaded = async (imageUrl: string) => {
     setIsAvatarSaving(true);
@@ -1136,6 +1138,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           )}
         </div>
       </section>
+
 
       <section className="inline-flex flex-col items-start gap-5 relative flex-[0_0_auto]">
         <button

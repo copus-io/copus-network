@@ -4,6 +4,14 @@ import profileDefaultAvatar from '../assets/images/profile-default.svg';
 
 // Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
+  // Debug: Check if this is the "阿瑟地方" article
+  if (backendArticle.title && backendArticle.title.includes('阿瑟地方')) {
+    console.log('🔍 Backend Article Data for 阿瑟地方:', {
+      title: backendArticle.title,
+      visibility: backendArticle.visibility,
+      fullBackendArticle: backendArticle
+    });
+  }
   // Extract domain from URL as website
   const getWebsiteFromUrl = (url: string): string => {
     try {
@@ -94,6 +102,8 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     // SEO fields
     seoDescription: backendArticle.seoDescription,
     seoKeywords: backendArticle.seoKeywords,
+    // Article visibility status
+    visibility: backendArticle.visibility,
   };
 
   return transformedArticle;
@@ -383,6 +393,7 @@ export const publishArticle = async (articleData: {
     currency: string;
     price: number;
   };
+  visibility?: number; // Article visibility (0: public, 1: private, 2: unlisted)
 }): Promise<{ uuid: string }> => {
 
   const endpoint = '/client/author/article/edit';

@@ -22,6 +22,9 @@ import { Login } from "./screens/Login/Login";
 // Content - eagerly loaded to prevent dynamic import errors
 import { Content } from "./screens/Content/Content";
 
+// Test components for development
+import { TestNoAccess } from "./screens/Test/TestNoAccess";
+
 // ShortLinkHandler - eagerly loaded to prevent dynamic import errors
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
@@ -166,6 +169,10 @@ const router = createBrowserRouter([
   {
     path: "/work/:id",
     element: <Content />,
+  },
+  {
+    path: "/test/no-access",
+    element: <TestNoAccess />,
   },
   {
     path: "/auth/unauthorized",

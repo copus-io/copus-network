@@ -8,6 +8,11 @@ import profileDefaultAvatar from "../../../../assets/images/profile-default.svg"
 import defaultBanner from "../../../../assets/images/default-banner.svg";
 import { useToast } from "../../../../components/ui/toast";
 import { CreateSpaceModal } from "../../../../components/CreateSpaceModal";
+import { ImportCSVModal } from "../../../../components/ImportCSVModal";
+import { type ImportedBookmark } from "../../../../utils/csvUtils";
+import { useCategory } from "../../../../contexts/CategoryContext";
+import CryptoJS from 'crypto-js';
+import { NoAccessPermission } from "../../../../components/NoAccessPermission/NoAccessPermission";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -44,6 +49,7 @@ const TreasuryHeaderSection = ({
   isOwnProfile = false,
   onCoverUpload,
   onCreate,
+  onImportCSV,
 }: {
   username: string;
   namespace: string;
@@ -56,6 +62,7 @@ const TreasuryHeaderSection = ({
   isOwnProfile?: boolean;
   onCoverUpload?: (imageUrl: string) => void;
   onCreate?: () => void;
+  onImportCSV?: () => void;
 }): JSX.Element => {
   const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
   const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
@@ -144,7 +151,7 @@ const TreasuryHeaderSection = ({
             </div>
           )}
 
-          {/* Edit and Share buttons - positioned at top right when cover exists */}
+          {/* Edit, Import and Share buttons - positioned at top right when cover exists */}
           <div className="absolute top-3 right-3 flex items-center gap-2">
             {onEdit && (
               <button
@@ -159,6 +166,7 @@ const TreasuryHeaderSection = ({
                 </svg>
               </button>
             )}
+
 
             {onShare && (
               <div className="relative">
@@ -274,7 +282,7 @@ const TreasuryHeaderSection = ({
           </nav>
         )}
 
-        {/* Action buttons - Create new treasury, Edit, Share - shown when no cover */}
+        {/* Action buttons - Create new treasury, Edit, Import, Share - shown when no cover */}
         {!coverUrl && (
           <div className="flex items-center gap-3 mt-1">
             {/* Create new treasury button */}
@@ -301,6 +309,20 @@ const TreasuryHeaderSection = ({
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )}
+
+            {/* Import button */}
+            {onImportCSV && isOwnProfile && (
+              <button
+                type="button"
+                aria-label="Import bookmarks"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+                onClick={onImportCSV}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
             )}
@@ -361,6 +383,7 @@ export const MainContentSection = (): JSX.Element => {
   const { namespace } = useParams<{ namespace?: string }>();
   const { user, socialLinks: socialLinksData, fetchSocialLinks, updateUser } = useUser();
   const { showToast } = useToast();
+  const { categories } = useCategory();
 
   // Determine if viewing other user early
   const isViewingOtherUserCheck = !!namespace && namespace !== user?.namespace;
@@ -396,6 +419,9 @@ export const MainContentSection = (): JSX.Element => {
 
   // Create Space Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Import CSV Modal state
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -580,9 +606,18 @@ export const MainContentSection = (): JSX.Element => {
           });
         }
 
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to fetch treasury data:', err);
-        setError('Failed to load treasury data');
+
+        // Check if this is a 2104 no access permission error
+        let errorMessage = 'Failed to load treasury data';
+        if (err?.status === 2104 || err?.response?.status === 2104 || err?.response?.data?.status === 2104) {
+          errorMessage = '2104 - You do not have access permission';
+        } else if (err?.message?.includes('2104')) {
+          errorMessage = '2104 - You do not have access permission';
+        }
+
+        setError(errorMessage);
         showToast('Failed to fetch treasury data, please try again', 'error');
         // Clear cache on error so user can retry
         fetchCache.delete(fetchKey);
@@ -623,7 +658,21 @@ export const MainContentSection = (): JSX.Element => {
     );
   }
 
+  // Check for 2104 no access permission error
+  const isNoAccessPermission = error && (error.includes('2104') || error.includes('You do not have access permission') || error.includes('无权限') || error.includes('私享'));
+
   if (error) {
+    if (isNoAccessPermission) {
+      return (
+        <main className="flex flex-col items-start px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
+          <NoAccessPermission
+            message="该用户的空间为私享内容，仅作者本人可查看"
+            onBackToHome={() => navigate('/')}
+          />
+        </main>
+      );
+    }
+
     return (
       <main className="flex flex-col items-start px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
@@ -706,6 +755,7 @@ export const MainContentSection = (): JSX.Element => {
         isOwnProfile={!isViewingOtherUser}
         onCoverUpload={handleCoverUpload}
         onCreate={() => setShowCreateModal(true)}
+        onImportCSV={!isViewingOtherUser ? () => setShowImportModal(true) : undefined}
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
@@ -753,6 +803,76 @@ export const MainContentSection = (): JSX.Element => {
         mode="full"
         title="Create new treasury"
       />
+
+      {/* Import CSV Modal */}
+      {showImportModal && (
+        <ImportCSVModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onImport={async (bookmarks: ImportedBookmark[]) => {
+            try {
+              if (!user?.id) {
+                throw new Error('User not logged in');
+              }
+
+              showToast(`Importing ${bookmarks.length} bookmarks...`, 'info');
+
+              // Get default category ID (use first category or fallback to 1)
+              const defaultCategoryId = categories.length > 0 ? categories[0].id : 1;
+
+              let successCount = 0;
+              let failedCount = 0;
+
+              // Import each bookmark as an article
+              for (const bookmark of bookmarks) {
+                try {
+                  // Generate UUID for the article using crypto-js
+                  const articleUuid = CryptoJS.lib.WordArray.random(16).toString();
+
+                  // Create article data from bookmark
+                  const articleData = {
+                    uuid: articleUuid,
+                    title: bookmark.title || 'Untitled',
+                    content: bookmark.description || bookmark.title || 'Imported bookmark',
+                    targetUrl: bookmark.url,
+                    coverUrl: '', // No cover image for imported bookmarks
+                    categoryId: defaultCategoryId,
+                  };
+
+                  console.log('Creating article from bookmark:', articleData);
+
+                  // Create the article
+                  const createResponse = await AuthService.createArticle(articleData);
+                  console.log('Article created:', createResponse);
+
+                  successCount++;
+                } catch (articleError) {
+                  console.error('Failed to import bookmark:', bookmark, articleError);
+                  failedCount++;
+                }
+              }
+
+              if (successCount > 0) {
+                showToast(
+                  `Successfully imported ${successCount} bookmarks. You can now collect them to your treasuries.`,
+                  'success'
+                );
+              }
+
+              if (failedCount > 0) {
+                showToast(`${failedCount} bookmarks failed to import`, 'error');
+              }
+
+              if (successCount === 0) {
+                throw new Error('No bookmarks were successfully imported');
+              }
+            } catch (error) {
+              console.error('Failed to import bookmarks:', error);
+              throw error;
+            }
+          }}
+        />
+      )}
     </main>
   );
 };

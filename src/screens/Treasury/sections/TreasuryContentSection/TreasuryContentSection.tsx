@@ -6,10 +6,12 @@ import { useUser } from "../../../../contexts/UserContext";
 import { useImagePreview } from "../../../../contexts/ImagePreviewContext";
 import { useToast } from "../../../../components/ui/toast";
 import { ImageUploader } from "../../../../components/ImageUploader/ImageUploader";
+import { ImportCSVModal } from "../../../../components/ImportCSVModal";
 import { NavigationTabsSection } from "../NavigationTabsSection";
 import { CollectionSection, CollectionItem } from "../CollectionSection";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import defaultBanner from "../../../../assets/images/default-banner.svg";
+import { type ImportedBookmark } from "../../../../utils/csvUtils";
 
 interface TreasuryArticle {
   id: string;
@@ -46,6 +48,9 @@ export const TreasuryContentSection = (): JSX.Element => {
     articleCount: 0,
     myArticleLikedCount: 0
   });
+
+  // CSV 导入状态
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Smart Banner image load detection
   const checkBannerImageLoad = useCallback((imageUrl: string) => {
@@ -222,6 +227,31 @@ export const TreasuryContentSection = (): JSX.Element => {
     }
   };
 
+  // 处理CSV导入
+  const handleImportCSV = () => {
+    setShowImportModal(true);
+  };
+
+  // 处理导入书签数据
+  const handleImportBookmarks = async (bookmarks: ImportedBookmark[]) => {
+    try {
+      // 这里需要调用API来保存导入的书签
+      // 暂时模拟成功
+      console.log('导入的书签数据:', bookmarks);
+
+      // TODO: 实现实际的API调用
+      // const response = await AuthService.importBookmarks(bookmarks);
+
+      // 刷新收藏数据
+      // await fetchTreasuryData();
+
+      showToast(`成功导入 ${bookmarks.length} 条收藏`, 'success');
+    } catch (error) {
+      console.error('导入收藏失败:', error);
+      throw error; // 重新抛出错误，让模态框处理
+    }
+  };
+
   // Group articles by category for collections view
   const getCollectionsByCategory = (): { title: string; items: CollectionItem[] }[] => {
     const categoryMap = new Map<string, TreasuryArticle[]>();
@@ -395,6 +425,8 @@ export const TreasuryContentSection = (): JSX.Element => {
         <NavigationTabsSection
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          onImportCSV={handleImportCSV}
+          showImportButton={true}
         />
 
         {activeTab === "collections" ? (
@@ -423,6 +455,7 @@ export const TreasuryContentSection = (): JSX.Element => {
                     title={collection.title}
                     treasureCount={collection.items.length}
                     items={collection.items}
+                    onImportCSV={handleImportCSV}
                   />
                 ))}
               </div>
@@ -456,6 +489,13 @@ export const TreasuryContentSection = (): JSX.Element => {
           </div>
         </div>
       )}
+
+      {/* CSV导入模态框 */}
+      <ImportCSVModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={handleImportBookmarks}
+      />
     </main>
   );
 };

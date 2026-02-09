@@ -6,6 +6,7 @@ import { TreasuryCard, SpaceData } from '@/components/ui/TreasuryCard';
 import { Search, X, ChevronLeft } from 'lucide-react';
 import searchIcon from '@/assets/images/icon-search.svg';
 import { debugLog } from '@/utils/debugLogger';
+import { useUser } from '@/contexts/UserContext';
 import {
   searchAll,
   searchArticles,
@@ -15,6 +16,7 @@ import {
   SearchSpaceItem,
   SearchUserItem,
 } from '@/services/searchService';
+import { canUserViewArticle } from '@/types/article';
 
 // 🔍 SEARCH: search-result-types
 interface SearchResultItem {
@@ -61,6 +63,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
   className = ''
 }) => {
   const navigate = useNavigate();
+  const { user } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -90,19 +93,32 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
   }, [isSearchOpen, onToggleSearch]);
 
   // 🔍 SEARCH: search-functions
+  // Filter private articles from search results using new visibility system
+  const filterPrivateArticles = (articles: SearchArticleItem[]): SearchArticleItem[] => {
+    return articles.filter(article => {
+      // Use new visibility system with fallback to legacy isPrivate
+      if (article.visibility !== undefined) {
+        return canUserViewArticle(article, user?.id);
+      } else {
+        // Fallback to legacy isPrivate system
+        return !article.isPrivate || (user && user.id === article.authorInfo.id);
+      }
+    });
+  };
+
   const transformArticleToSearchResult = (article: SearchArticleItem): SearchResultItem => ({
     id: article.id.toString(),
     title: article.title,
     type: 'article',
-    description: article.description,
-    coverImage: article.detailCover,
-    category: article.category,
-    categoryColor: article.categoryColor,
-    userName: article.user?.username,
-    userAvatar: article.user?.faceUrl,
-    userId: article.user?.id,
-    namespace: article.user?.namespace,
-    userNamespace: article.user?.namespace,
+    description: article.content,
+    coverImage: article.coverUrl,
+    category: article.categoryInfo?.name,
+    categoryColor: article.categoryInfo?.color,
+    userName: article.authorInfo?.username,
+    userAvatar: article.authorInfo?.faceUrl,
+    userId: article.authorInfo?.id,
+    namespace: article.authorInfo?.namespace,
+    userNamespace: article.authorInfo?.namespace,
     date: new Date(article.createAt * 1000).toLocaleDateString(),
     treasureCount: article.likeCount || 0,
     visitCount: `${article.viewCount || 0} Visits`,
@@ -148,29 +164,24 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
       let results: SearchResultItem[] = [];
 
       if (tab === 'all') {
-        const response = await searchAll(query, 1, 20);
-        if (response.success && response.data) {
-          // Transform and combine results
-          const articles = (response.data.articles || []).map(transformArticleToSearchResult);
-          const users = (response.data.users || []).map(transformUserToSearchResult);
-          const spaces = (response.data.spaces || []).map(transformSpaceToSearchResult);
-          results = [...articles, ...users, ...spaces];
-        }
+        const response = await searchAll({ keyword: query, pageIndex: 1, pageSize: 20 });
+        // Filter and transform articles to remove private content
+        const filteredArticles = filterPrivateArticles(response.articles.items || []);
+        const articles = filteredArticles.map(transformArticleToSearchResult);
+        const users = (response.users.items || []).map(transformUserToSearchResult);
+        const spaces = (response.spaces.items || []).map(transformSpaceToSearchResult);
+        results = [...articles, ...users, ...spaces];
       } else if (tab === 'articles') {
-        const response = await searchArticles(query, 1, 20);
-        if (response.success && response.data) {
-          results = response.data.map(transformArticleToSearchResult);
-        }
+        const response = await searchArticles({ keyword: query, pageIndex: 1, pageSize: 20 });
+        // Filter private articles before transforming
+        const filteredArticles = filterPrivateArticles(response.items || []);
+        results = filteredArticles.map(transformArticleToSearchResult);
       } else if (tab === 'users') {
-        const response = await searchUsers(query, 1, 20);
-        if (response.success && response.data) {
-          results = response.data.map(transformUserToSearchResult);
-        }
+        const response = await searchUsers({ keyword: query, pageIndex: 1, pageSize: 20 });
+        results = (response.items || []).map(transformUserToSearchResult);
       } else if (tab === 'treasuries') {
-        const response = await searchSpaces(query, 1, 20);
-        if (response.success && response.data) {
-          results = response.data.map(transformSpaceToSearchResult);
-        }
+        const response = await searchSpaces({ keyword: query, pageIndex: 1, pageSize: 20 });
+        results = (response.items || []).map(transformSpaceToSearchResult);
       }
 
       setSearchResults(results);

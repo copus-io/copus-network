@@ -1994,14 +1994,15 @@ export class AuthService {
    * @param faceUrl - Optional avatar/face image URL for the space
    * @returns The created space object with id, name, namespace, spaceType, userId, etc.
    */
-  static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string): Promise<any> {
+  static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string, visibility?: number): Promise<any> {
     return apiRequest(`/client/article/space/create`, {
       method: 'POST',
       body: JSON.stringify({
         name,
         ...(description && { description }),
         ...(coverUrl && { coverUrl }),
-        ...(faceUrl && { faceUrl })
+        ...(faceUrl && { faceUrl }),
+        ...(visibility !== undefined && { visibility })
       }),
     });
   }
@@ -2015,7 +2016,7 @@ export class AuthService {
    * @param coverUrl - Optional new cover image URL for the space
    * @param faceUrl - Optional new avatar/face image URL for the space
    */
-  static async updateSpace(id: number, name: string, description?: string, coverUrl?: string, faceUrl?: string): Promise<any> {
+  static async updateSpace(id: number, name: string, description?: string, coverUrl?: string, faceUrl?: string, isPrivate?: boolean, visibility?: number): Promise<any> {
     return apiRequest(`/client/article/space/update`, {
       method: 'POST',
       body: JSON.stringify({
@@ -2023,7 +2024,10 @@ export class AuthService {
         name,
         ...(description !== undefined && { description }),
         ...(coverUrl !== undefined && { coverUrl }),
-        ...(faceUrl !== undefined && { faceUrl })
+        ...(faceUrl !== undefined && { faceUrl }),
+        // Send both new visibility and legacy isPrivate for backward compatibility
+        ...(visibility !== undefined && { visibility }),
+        ...(isPrivate !== undefined && { isPrivate })
       }),
     });
   }
@@ -2086,6 +2090,40 @@ export class AuthService {
       method: 'GET',
       requiresAuth: true,
     });
+  }
+
+  /**
+   * Batch import articles to a space
+   * API: POST /client/article/space/importArticles
+   * @param spaceId - The space ID to import articles to
+   * @param articles - Array of articles to import
+   */
+  static async importArticles(spaceId: number, articles: Array<{
+    title: string;
+    content: string;
+    targetUrl: string;
+    coverUrl?: string;
+  }>): Promise<any> {
+    // According to API docs, the request body should be an object with spaceId and articles
+    const requestBody = {
+      spaceId,
+      articles: articles.map(article => ({
+        title: article.title,
+        content: article.content,
+        targetUrl: article.targetUrl,
+        coverUrl: article.coverUrl || ''
+      }))
+    };
+
+    console.log('📤 Import API request body:', JSON.stringify(requestBody, null, 2));
+
+    const response = await apiRequest(`/client/article/space/importArticles`, {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log('📥 Import API raw response:', response);
+    return response;
   }
 
 }

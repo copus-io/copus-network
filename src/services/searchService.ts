@@ -12,6 +12,9 @@ export interface SearchArticleItem {
   viewCount: number;
   likeCount: number;
   isLiked: boolean;
+  // Privacy fields (new visibility system with legacy support)
+  visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
+  isPrivate?: boolean; // Legacy privacy field for filtering
   authorInfo: {
     id: number;
     namespace: string;

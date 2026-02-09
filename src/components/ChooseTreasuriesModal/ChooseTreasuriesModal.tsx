@@ -18,6 +18,7 @@ export interface SelectedSpace {
   name: string;
   namespace?: string;
   spaceType?: number;
+  visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
 }
 
 // BindableSpace type imported from types/space.ts
@@ -30,6 +31,7 @@ interface Collection {
   isSelected: boolean;
   wasOriginallyBound: boolean; // Track if this was already bound when modal opened
   spaceType?: number;
+  visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
   namespace?: string;
   firstLetter: string; // First letter of space name for avatar fallback
 }
@@ -127,6 +129,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             isSelected: shouldBeSelected,
             wasOriginallyBound, // Track original binding state
             spaceType: spaceTypeNum,
+            visibility: space.visibility, // Include visibility from API
             namespace: space.namespace,
             firstLetter,
           };
@@ -181,6 +184,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         name: c.name,
         namespace: c.namespace,
         spaceType: c.spaceType,
+        visibility: c.visibility, // Include visibility field
       }));
 
     // SECURITY: Only bind to the current user's own treasuries
@@ -236,6 +240,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
       isSelected: true, // Auto-select the newly created treasury
       wasOriginallyBound: false, // New treasury is not originally bound
       spaceType: createdSpace.spaceType || 0,
+      visibility: createdSpace.visibility, // Include visibility from created space
       namespace: createdSpace.namespace,
       firstLetter: treasuryName.charAt(0).toUpperCase(),
     }]);
@@ -449,7 +454,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         isOpen={showCreateNew}
         onClose={() => setShowCreateNew(false)}
         onSuccess={handleTreasuryCreated}
-        mode="simple"
+        mode="full"
         title="New treasury"
         nameLabel="Name"
         namePlaceholder='Like "Place to go"'

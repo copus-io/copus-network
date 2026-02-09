@@ -13,6 +13,10 @@ import { devLog } from "../../../utils/devLogger";
 import { ErrorHandler } from "../../../utils/errorHandler";
 import { API_ENDPOINTS } from "../../../config/apiEndpoints";
 import { spaceShortcuts, eventHandlers } from "../../../utils/devShortcuts";
+import { ImportCSVModal } from "../../../components/ImportCSVModal";
+import { type ImportedBookmark } from "../../../utils/csvUtils";
+import { useCategory } from "../../../contexts/CategoryContext";
+import { NoAccessPermission } from "../../../components/NoAccessPermission/NoAccessPermission";
 
 // Add debug logging for Space component
 console.log('📍 SpaceContentSection module loaded');
@@ -45,6 +49,7 @@ const SpaceInfoSection = ({
   onShare,
   onAuthorClick,
   onEdit,
+  onImportCSV,
 }: {
   spaceName: string;
   treasureCount: number;
@@ -63,6 +68,7 @@ const SpaceInfoSection = ({
   onShare: () => void;
   onAuthorClick: () => void;
   onEdit?: () => void;
+  onImportCSV?: () => void;
 }): JSX.Element => {
   const canEdit = isOwner;
   const [showUnfollowDropdown, setShowUnfollowDropdown] = useState(false);
@@ -166,6 +172,20 @@ const SpaceInfoSection = ({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
+
+          {/* Import button */}
+          {canEdit && onImportCSV && (
+            <button
+              type="button"
+              aria-label="Import bookmarks"
+              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+              onClick={onImportCSV}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           )}
@@ -280,6 +300,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
   const { user, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
+  const { categories } = useCategory();
 
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -314,6 +335,10 @@ export const SpaceContentSection = (): JSX.Element => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Import CSV state
+  const [showImportModal, setShowImportModal] = useState(false);
+
 
   // Fetch space data
   useEffect(() => {
@@ -372,6 +397,14 @@ export const SpaceContentSection = (): JSX.Element => {
           const spaceInfoResponse = await AuthService.getSpaceInfo(decodedIdentifier);
           console.log('[Space] Space info API response:', spaceInfoResponse);
           console.log('🔥🔥🔥 SPACE COVERURL DEBUG: Raw API response:', JSON.stringify(spaceInfoResponse, null, 2));
+
+          // Check for 2104 status code in response
+          if (spaceInfoResponse?.status === 2104) {
+            console.log('[Space] Detected 2104 no access permission in response');
+            setError('2104 - You do not have access permission');
+            setLoading(false);
+            return;
+          }
 
           // Extract space info from response - faceUrl is now at root level
           const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
@@ -534,9 +567,18 @@ export const SpaceContentSection = (): JSX.Element => {
           }
         }
 
-      } catch (err) {
+      } catch (err: any) {
         console.error('[Space] Failed to fetch space data:', err);
-        setError('Failed to load space data');
+
+        // Check if this is a 2104 no access permission error
+        let errorMessage = 'Failed to load space data';
+        if (err?.status === 2104 || err?.response?.status === 2104 || err?.response?.data?.status === 2104) {
+          errorMessage = '2104 - You do not have access permission';
+        } else if (err?.message?.includes('2104')) {
+          errorMessage = '2104 - You do not have access permission';
+        }
+
+        setError(errorMessage);
         showToast('Failed to fetch space data, please try again', 'error');
         // Clear cache on error so user can retry
         spaceFetchCache.delete(cacheKey);
@@ -1093,7 +1135,21 @@ export const SpaceContentSection = (): JSX.Element => {
     );
   }
 
+  // Check for 2104 no access permission error
+  const isNoAccessPermission = error && (error.includes('2104') || error.includes('You do not have access permission') || error.includes('无权限') || error.includes('私享'));
+
   if (error) {
+    if (isNoAccessPermission) {
+      return (
+        <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
+          <NoAccessPermission
+            message="该空间为作者私享内容，仅作者本人可查看"
+            onBackToHome={() => navigate('/my-treasury')}
+          />
+        </main>
+      );
+    }
+
     return (
       <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
@@ -1130,6 +1186,7 @@ export const SpaceContentSection = (): JSX.Element => {
         onShare={handleShare}
         onAuthorClick={handleAuthorClick}
         onEdit={handleEditSpace}
+        onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
       />
 
       {/* Articles Grid */}
@@ -1498,6 +1555,73 @@ export const SpaceContentSection = (): JSX.Element => {
           </div>
         </div>
       )}
+
+      {/* Import CSV Modal */}
+      {showImportModal && (
+        <ImportCSVModal
+          isOpen={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onImport={async (bookmarks: ImportedBookmark[]) => {
+            try {
+              if (!spaceId) {
+                throw new Error('Space ID not available');
+              }
+
+              if (!user?.id) {
+                throw new Error('User not logged in');
+              }
+
+              showToast(`Importing ${bookmarks.length} bookmarks to space...`, 'info');
+
+              // Transform bookmarks to articles format for batch import
+              const articles = bookmarks.map(bookmark => ({
+                title: bookmark.title || 'Untitled',
+                content: bookmark.description || bookmark.title || 'Imported bookmark',
+                targetUrl: bookmark.url,
+                coverUrl: bookmark.cover || '' // Use cover from CSV if available
+              }));
+
+              console.log('Batch importing articles:', articles);
+              console.log('Target spaceId:', spaceId);
+              console.log('Cover URLs in articles:', articles.map(a => ({ title: a.title, coverUrl: a.coverUrl })));
+
+              // Use new batch import API
+              const importResponse = await AuthService.importArticles(spaceId, articles);
+              console.log('Batch import response:', importResponse);
+
+              // Check if the import was actually successful
+              console.log('🔍 Checking import response success:', {
+                hasResponse: !!importResponse,
+                status: importResponse?.status,
+                success: importResponse?.success,
+                code: importResponse?.code,
+                msg: importResponse?.msg,
+                fullResponse: importResponse
+              });
+
+              if (importResponse && (importResponse.status === 1 || importResponse.success === true || importResponse.code === 200)) {
+                console.log('✅ Import successful, showing toast and refreshing page');
+                showToast(`Successfully imported ${bookmarks.length} bookmarks to space`, 'success');
+
+                // Refresh the page to show the new articles
+                setTimeout(() => {
+                  console.log('📄 Refreshing page to show imported articles');
+                  window.location.reload();
+                }, 1500); // 增加刷新延迟到1.5秒
+              } else {
+                // If response indicates failure, throw an error with details
+                console.error('❌ Import API returned error:', importResponse);
+                const errorMsg = importResponse?.msg || importResponse?.message || 'Unknown import error';
+                throw new Error(`Import failed: ${errorMsg}`);
+              }
+            } catch (error) {
+              console.error('Failed to import bookmarks to space:', error);
+              throw error;
+            }
+          }}
+        />
+      )}
+
     </main>
   );
 };

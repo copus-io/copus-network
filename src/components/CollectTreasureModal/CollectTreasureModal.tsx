@@ -29,6 +29,7 @@ interface Collection {
   isSelected: boolean; // Current selection state in modal
   wasOriginallyBound: boolean; // Was bound when modal opened
   spaceType?: number;
+  visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
   namespace?: string;
   firstLetter: string; // First letter of space name for avatar fallback
 }
@@ -131,6 +132,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             isSelected: space.isBind, // Initially selected if already bound
             wasOriginallyBound: space.isBind,
             spaceType: spaceTypeNum,
+            visibility: space.visibility, // Include visibility from API
             namespace: space.namespace,
             firstLetter,
           };

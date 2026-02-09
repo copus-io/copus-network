@@ -10,6 +10,7 @@ import { LazyImage } from "../ui/lazy-image";
 import { getCategoryStyle, getCategoryInlineStyle, formatCount, formatDate } from "../../utils/categoryStyles";
 import { getIconUrl, getIconStyle } from "../../config/icons";
 import commentIcon from "../../assets/images/comment.svg";
+import { convertVisibilityToLegacyPrivate } from "../../types/article";
 
 // Generic article data interface
 export interface ArticleData {
@@ -35,6 +36,8 @@ export interface ArticleData {
   // x402 payment fields
   paymentPrice?: string; // Price in USDC (e.g., "0.01")
   isPaymentRequired?: boolean; // Whether content requires payment
+  // Article visibility status (0: public, 1: private, 2: unlisted)
+  visibility?: number;
 }
 
 // Layout mode
@@ -85,6 +88,11 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
   className = ""
 }) => {
   const navigate = useNavigate();
+
+  // Helper function to check if article is private using visibility system
+  const isArticlePrivate = (): boolean => {
+    return article.visibility === 1; // ARTICLE_VISIBILITY.PRIVATE
+  };
   const categoryStyle = getCategoryStyle(article.category, article.categoryColor);
   const categoryInlineStyle = getCategoryInlineStyle(article.categoryColor);
 
@@ -231,9 +239,21 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2">
-                    {article.title || 'Enter a title...'}
-                  </h3>
+                  <div className="flex items-start gap-2 w-full">
+                    <div className="flex items-start gap-2 flex-1">
+                      {isArticlePrivate() && (
+                        <div className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 mt-1">
+                          <svg className="w-3 h-3 text-red" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-red text-xs font-medium leading-none">私享</span>
+                        </div>
+                      )}
+                      <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2 flex-1 min-w-0">
+                        {article.title || 'Enter a title...'}
+                      </h3>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
@@ -310,9 +330,29 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] tracking-[0] leading-[27px] break-words line-clamp-2">
-                    {article.title}
-                  </h3>
+                  <div className="flex items-start gap-2 w-full">
+                    <div className="flex items-start gap-2 flex-1">
+                      {isArticlePrivate() && (
+                        <div className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 mt-0.5">
+                          <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-red text-xs font-medium leading-none">私享</span>
+                        </div>
+                      )}
+                      <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] tracking-[0] leading-[27px] break-words line-clamp-2 flex-1 min-w-0">
+                        {article.title}
+                      </h3>
+                    </div>
+                    {isArticlePrivate() && (
+                      <div className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 mt-0.5">
+                        <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-red text-xs font-medium leading-none">私享</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
@@ -501,9 +541,19 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-[20px] break-words line-clamp-2">
-                    {article.title}
-                  </h3>
+                  <div className="flex items-start gap-1.5 w-full">
+                    {isArticlePrivate() && (
+                      <div className="flex-shrink-0 flex items-center gap-1 px-1 py-0.5 bg-red/8 rounded border border-red/15 mt-0.5">
+                        <svg className="w-2 h-2 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-red text-[10px] font-medium leading-none">私享</span>
+                      </div>
+                    )}
+                    <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-[20px] break-words line-clamp-2 flex-1">
+                      {article.title}
+                    </h3>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5 px-2 py-2 rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors flex-1">
@@ -588,9 +638,19 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] 3xl:text-[20px] 4xl:text-[22px] tracking-[0] leading-[27px] 3xl:leading-[30px] 4xl:leading-[33px] break-words line-clamp-2">
-                    {article.title}
-                  </h3>
+                  <div className="flex items-start gap-2 w-full">
+                    {isArticlePrivate() && (
+                      <div className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 mt-0.5">
+                        <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-red text-xs font-medium leading-none">私享</span>
+                      </div>
+                    )}
+                    <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] 3xl:text-[20px] 4xl:text-[22px] tracking-[0] leading-[27px] 3xl:leading-[30px] 4xl:leading-[33px] break-words line-clamp-2 flex-1 min-w-0">
+                      {article.title}
+                    </h3>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2 3xl:gap-2.5 4xl:gap-3 px-2 py-2.5 3xl:px-2.5 3xl:py-3 4xl:px-3 4xl:py-3.5 rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
@@ -728,14 +788,68 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
     }
   };
 
-  const cardClasses = layout === 'preview'
-    ? "bg-white rounded-lg border-0 w-full shadow-sm lg:shadow-card-white flex flex-col"
-    : layout === 'compact'
-    ? "bg-white rounded-[8px] border-0 shadow-[1px_1px_8px_#d5d5d5] hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col h-full"
-    : "bg-white rounded-[8px] border-0 shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-all duration-200 cursor-pointer group flex flex-col min-h-[380px]";
+  // Base classes for different layouts
+  const getBaseClasses = (layout: LayoutMode) => {
+    if (layout === 'preview') {
+      return "rounded-lg border-0 w-full shadow-sm lg:shadow-card-white flex flex-col";
+    }
+    if (layout === 'compact') {
+      return "rounded-[8px] border-0 shadow-[1px_1px_8px_#d5d5d5] hover:shadow-[1px_1px_10px_#c5c5c5] transition-all duration-200 cursor-pointer group flex flex-col h-full";
+    }
+    return "rounded-[8px] border-0 shadow-none hover:shadow-[1px_1px_10px_#c5c5c5] transition-all duration-200 cursor-pointer group flex flex-col min-h-[380px]";
+  };
+
+  // Private article styling
+  const getPrivateStyles = (isPrivate: boolean, layout: LayoutMode) => {
+    if (!isPrivate) return "";
+
+    if (layout === 'preview') {
+      return "border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10";
+    }
+    if (layout === 'compact') {
+      return "border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10 hover:border-red/30 hover:from-red/8 hover:to-red/15";
+    }
+    return "border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10 hover:border-red/30 hover:from-red/8 hover:to-red/15";
+  };
+
+  // Regular styling for non-private articles
+  const getRegularStyles = (layout: LayoutMode) => {
+    if (layout === 'preview') {
+      return "bg-white";
+    }
+    if (layout === 'compact') {
+      return "bg-white hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]";
+    }
+    return "bg-white hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]";
+  };
+
+  const isPrivate = isArticlePrivate();
+
+  // Debug: Check if this is the "阿瑟地方" article
+  if (article.title.includes('阿瑟地方')) {
+    console.log('🔍 阿瑟地方 Article Debug:', {
+      title: article.title,
+      visibility: article.visibility,
+      calculated_isPrivate: isPrivate,
+      layout: layout,
+      fullArticle: article
+    });
+  }
+
+  const cardClasses = `${getBaseClasses(layout)} ${isPrivate ? getPrivateStyles(true, layout) : getRegularStyles(layout)}`;
 
   const cardContent = (
-    <Card className={cardClasses}>
+    <Card className={`${cardClasses} relative overflow-hidden`}>
+      {/* Private article corner badge */}
+      {isPrivate && (
+        <div className="absolute top-0 right-0 w-0 h-0 border-l-[0px] border-r-[30px] border-t-[30px] border-b-[0px] border-r-transparent border-t-red/30 z-10">
+          <div className="absolute -top-[28px] -right-[26px] w-6 h-6 flex items-center justify-center">
+            <svg className="w-3 h-3 text-red rotate-45" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
+      )}
       {renderCardContent()}
     </Card>
   );

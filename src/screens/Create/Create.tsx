@@ -18,6 +18,7 @@ import { publishArticle, getArticleDetail } from "../../services/articleService"
 import { useNavigate } from "react-router-dom";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../components/ArticleCard";
+import { ARTICLE_VISIBILITY } from "../../types/article";
 import { ImageCropper } from "../../components/ImageCropper/ImageCropper";
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from "../../utils/imageUtils";
 import { addRecentCategory, sortCategoriesByRecent } from "../../utils/recentCategories";
@@ -55,6 +56,9 @@ export const Create = (): JSX.Element => {
   // x402 pay-to-unlock states
   const [payToUnlock, setPayToUnlock] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("0.01");
+
+  // Privacy state - using visibility system (0: public, 1: private, 2: unlisted)
+  const [visibility, setVisibility] = useState(ARTICLE_VISIBILITY.PUBLIC);
 
   const [characterCount, setCharacterCount] = useState(0);
   const [titleCharacterCount, setTitleCharacterCount] = useState(0);
@@ -348,7 +352,9 @@ export const Create = (): JSX.Element => {
     website: extractDomain(formData.link),
     // x402 payment fields
     isPaymentRequired: payToUnlock,
-    paymentPrice: payToUnlock ? paymentAmount : undefined
+    paymentPrice: payToUnlock ? paymentAmount : undefined,
+    // Privacy field
+    visibility
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -396,19 +402,19 @@ export const Create = (): JSX.Element => {
     // Add the new treasury to the spaces list with real data from API
     const newSpace = {
       id: createdSpace.id.toString(),
-      name: createdSpace.name || 'New Treasury'
+      name: createdSpace.name || 'New Treasury',
+      numericId: createdSpace.id,
+      spaceType: createdSpace.spaceType || 0,
+      visibility: createdSpace.visibility,
+      namespace: createdSpace.namespace
     };
 
     setUserSpaces(prev => [...prev, newSpace]);
 
-    // Select the new treasury
-    setFormData(prev => ({
-      ...prev,
-      selectedTopic: newSpace.name,
-      selectedTopicId: parseInt(newSpace.id)
-    }));
+    // Add the new treasury to the selected treasuries list
+    setSelectedTreasuries(prev => [...prev, newSpace]);
 
-    showToast(`Treasury "${newSpace.name}" created`, 'success');
+    showToast(`Treasury "${newSpace.name}" created and selected`, 'success');
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -523,6 +529,16 @@ export const Create = (): JSX.Element => {
           setPayToUnlock(false);
           setPaymentAmount("0.01");
           console.log('ℹ️ Article has no payment lock');
+        }
+
+        // Set visibility state based on article's visibility field
+        if (articleData.visibility !== undefined) {
+          setVisibility(articleData.visibility);
+          console.log('✅ Loaded visibility setting:', articleData.visibility === ARTICLE_VISIBILITY.PRIVATE ? 'Private' : 'Public');
+        } else {
+          // Fallback for older articles without visibility field
+          setVisibility(ARTICLE_VISIBILITY.PUBLIC);
+          console.log('ℹ️ No visibility field found, defaulting to public');
         }
 
       } catch (error) {
@@ -640,9 +656,15 @@ export const Create = (): JSX.Element => {
           }
         } : {
           targetUrlIsLocked: false
-        })
+        }),
+        // Privacy field - article visibility (0: public, 1: private, 2: unlisted)
+        visibility
       };
 
+      console.log('🔒 Privacy settings:', {
+        visibility_state: visibility,
+        sent_visibility: articleParams.visibility
+      });
       console.log('📤 Sending article params:', articleParams);
       console.log('📤 Payment settings:', {
         payToUnlock_state: payToUnlock,
@@ -674,6 +696,22 @@ export const Create = (): JSX.Element => {
       queryClient.invalidateQueries({ queryKey: ['article'] });
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['myCreatedArticles'] });
+
+      // Force clear specific article cache if we have UUID (especially for edit mode)
+      if (typeof response === 'string') {
+        // Clear the specific article cache to ensure fresh data
+        queryClient.removeQueries({ queryKey: ['articleDetail', response] });
+        queryClient.removeQueries({ queryKey: ['articleId', response] });
+        console.log('🗑️ Cleared cache for article:', response);
+      } else if (response?.uuid) {
+        queryClient.removeQueries({ queryKey: ['articleDetail', response.uuid] });
+        queryClient.removeQueries({ queryKey: ['articleId', response.uuid] });
+        console.log('🗑️ Cleared cache for article:', response.uuid);
+      } else if (editId) {
+        queryClient.removeQueries({ queryKey: ['articleDetail', editId] });
+        queryClient.removeQueries({ queryKey: ['articleId', editId] });
+        console.log('🗑️ Cleared cache for edited article:', editId);
+      }
 
       // The API returns the UUID as a string directly in response.data
       // So publishArticle returns the UUID string, not an object
@@ -988,6 +1026,28 @@ export const Create = (): JSX.Element => {
                   No treasury selected
                 </span>
               )}
+            </div>
+
+            {/* Private Article Toggle */}
+            <div className="flex items-start gap-3 w-full pt-2">
+              <input
+                id="private-article-checkbox"
+                type="checkbox"
+                checked={visibility === ARTICLE_VISIBILITY.PRIVATE}
+                onChange={(e) => setVisibility(e.target.checked ? ARTICLE_VISIBILITY.PRIVATE : ARTICLE_VISIBILITY.PUBLIC)}
+                className="mt-1 w-4 h-4 text-red bg-gray-100 border-gray-300 rounded focus:ring-red focus:ring-2 cursor-pointer"
+              />
+              <div className="flex flex-col gap-1 flex-1">
+                <label
+                  htmlFor="private-article-checkbox"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] cursor-pointer"
+                >
+                  Private Article
+                </label>
+                <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-500 text-sm tracking-[0] leading-[18px]">
+                  Only you can see this article. It won't appear in public feeds or search results.
+                </span>
+              </div>
             </div>
 
             {/* x402 Pay-to-unlock section - Hidden for now */}

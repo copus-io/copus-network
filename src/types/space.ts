@@ -3,6 +3,17 @@
  */
 
 /**
+ * Space visibility constants (same as article visibility)
+ */
+export const SPACE_VISIBILITY = {
+  PUBLIC: 0,   // 公开 - 所有人可见
+  PRIVATE: 1,  // 私享 - 仅创建者可见
+  UNLISTED: 2  // 未列出 - 仅通过直链访问
+} as const;
+
+export type SpaceVisibility = typeof SPACE_VISIBILITY[keyof typeof SPACE_VISIBILITY];
+
+/**
  * Request interface for bindableSpaces API
  */
 export interface BindableSpacesRequest {
@@ -91,6 +102,13 @@ export interface BindableSpace {
    */
   spaceType: number;
   /**
+   * Space visibility status
+   * 0: Public (公开) - visible to everyone
+   * 1: Private (私享) - only visible to owner
+   * 2: Unlisted (未列出) - accessible via direct link but not in public feeds
+   */
+  visibility: number;
+  /**
    * Space owner user information
    */
   userInfo: SpaceUserInfo;
@@ -100,3 +118,61 @@ export interface BindableSpace {
  * API Response type for bindableSpaces endpoint
  */
 export type BindableSpacesResponse = BindableSpace[];
+
+/**
+ * Utility functions for space visibility
+ */
+
+/**
+ * Check if a space is private
+ */
+export const isSpacePrivate = (space: { visibility?: number } | BindableSpace): boolean => {
+  return space.visibility === SPACE_VISIBILITY.PRIVATE;
+};
+
+/**
+ * Check if a space is public
+ */
+export const isSpacePublic = (space: { visibility?: number } | BindableSpace): boolean => {
+  return space.visibility === SPACE_VISIBILITY.PUBLIC;
+};
+
+/**
+ * Check if a space is unlisted
+ */
+export const isSpaceUnlisted = (space: { visibility?: number } | BindableSpace): boolean => {
+  return space.visibility === SPACE_VISIBILITY.UNLISTED;
+};
+
+/**
+ * Check if a user can view a space based on visibility and ownership
+ */
+export const canUserViewSpace = (
+  space: { visibility?: number; userInfo?: { id: number }; isAdmin?: boolean },
+  userId?: number
+): boolean => {
+  // Public spaces are always visible
+  if (space.visibility === SPACE_VISIBILITY.PUBLIC) {
+    return true;
+  }
+
+  // Private spaces are only visible to the owner/admin
+  if (space.visibility === SPACE_VISIBILITY.PRIVATE) {
+    return userId !== undefined && (space.userInfo?.id === userId || space.isAdmin);
+  }
+
+  // Unlisted spaces are visible via direct link (assume yes if checking)
+  if (space.visibility === SPACE_VISIBILITY.UNLISTED) {
+    return true;
+  }
+
+  // Default to public if visibility is not set
+  return true;
+};
+
+/**
+ * Convert visibility number to legacy isPrivate boolean for spaces (backward compatibility)
+ */
+export const convertSpaceVisibilityToLegacyPrivate = (visibility?: number): boolean => {
+  return visibility === SPACE_VISIBILITY.PRIVATE;
+};

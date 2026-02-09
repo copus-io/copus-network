@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { SPACE_VISIBILITY } from "../../types/space";
 
 // Types for treasury items
 export interface TreasuryItem {
@@ -22,6 +23,7 @@ export interface SpaceData {
   spaceType?: number; // 1 = Collections, 2 = Curations
   articleCount?: number;
   treasureCount?: number;
+  visibility?: number; // Space visibility (0: public, 1: private, 2: unlisted)
   ownerInfo?: {
     username?: string;
     id?: number;
@@ -149,13 +151,30 @@ export const TreasuryCard = ({
   const treasureCount = getSpaceTreasureCount(space);
   const items = transformSpaceToItems(space);
 
+  // Check if space is private
+  const isPrivateSpace = space.visibility === SPACE_VISIBILITY.PRIVATE;
+
   if (items.length === 0) {
     return (
       <section
         className={`relative w-full h-fit flex flex-col items-start gap-2 ${onClick ? 'cursor-pointer' : ''}`}
         onClick={onClick}
       >
-        <div className={`flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`} style={{ aspectRatio: '16 / 9' }}>
+        {/* Private space corner badge */}
+        {isPrivateSpace && (
+          <div className="absolute top-0 right-0 w-0 h-0 border-l-[0px] border-r-[30px] border-t-[30px] border-b-[0px] border-r-transparent border-t-red/30 z-20">
+            <div className="absolute -top-[28px] -right-[26px] w-6 h-6 flex items-center justify-center">
+              <svg className="w-3 h-3 text-red rotate-45" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        )}
+        <div className={`flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] overflow-hidden ${
+          isPrivateSpace
+            ? 'border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10'
+            : 'bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]'
+        } ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`} style={{ aspectRatio: '16 / 9' }}>
           {emptyAction ? (
             <Link
               to={emptyAction.href}
@@ -179,10 +198,20 @@ export const TreasuryCard = ({
           )}
         </div>
         <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
-            {title}
-          </h2>
-          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
+              {title}
+            </h2>
+            {isPrivateSpace && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 flex-shrink-0">
+                <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-red text-xs font-medium leading-none">私享</span>
+              </div>
+            )}
+          </div>
+          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap flex-shrink-0">
             {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
           </p>
         </header>
@@ -197,7 +226,21 @@ export const TreasuryCard = ({
       className="relative w-full h-fit flex flex-col items-start gap-2 cursor-pointer"
       onClick={onClick}
     >
-      <div className="flex items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
+      {/* Private space corner badge */}
+      {isPrivateSpace && (
+        <div className="absolute top-0 right-0 w-0 h-0 border-l-[0px] border-r-[30px] border-t-[30px] border-b-[0px] border-r-transparent border-t-red/30 z-20">
+          <div className="absolute -top-[28px] -right-[26px] w-6 h-6 flex items-center justify-center">
+            <svg className="w-3 h-3 text-red rotate-45" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
+      )}
+      <div className={`flex items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden ${
+        isPrivateSpace
+          ? 'border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10 hover:border-red/30 hover:from-red/8 hover:to-red/15'
+          : 'bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]'
+      }`} style={{ aspectRatio: '16 / 9' }}>
         {/* Main item on the left - takes ~65% width */}
         <article className="flex flex-col items-start justify-center gap-[5px] px-[15px] py-[15px] relative self-stretch w-[65%] flex-shrink-0 rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <div
@@ -259,10 +302,20 @@ export const TreasuryCard = ({
       </div>
 
       <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
-        <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
-          {title}
-        </h2>
-        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
+            {title}
+          </h2>
+          {isPrivateSpace && (
+            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 flex-shrink-0">
+              <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+              <span className="text-red text-xs font-medium leading-none">私享</span>
+            </div>
+          )}
+        </div>
+        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap flex-shrink-0">
           {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
         </p>
       </header>

@@ -85,9 +85,14 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLogout = () => {
-    logout();
-    setShowUserMenu(false);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setShowUserMenu(false);
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setShowUserMenu(false);
+    }
   };
 
   // Load search history from localStorage
