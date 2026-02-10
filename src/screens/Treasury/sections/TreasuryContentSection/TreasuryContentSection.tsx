@@ -425,8 +425,7 @@ export const TreasuryContentSection = (): JSX.Element => {
         <NavigationTabsSection
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          onImportCSV={handleImportCSV}
-          showImportButton={true}
+          showImportButton={false}
         />
 
         {activeTab === "collections" ? (
@@ -455,7 +454,6 @@ export const TreasuryContentSection = (): JSX.Element => {
                     title={collection.title}
                     treasureCount={collection.items.length}
                     items={collection.items}
-                    onImportCSV={handleImportCSV}
                   />
                 ))}
               </div>

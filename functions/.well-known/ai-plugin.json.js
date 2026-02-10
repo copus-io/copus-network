@@ -17,7 +17,7 @@ export async function onRequest(context) {
     "name_for_human": "Copus - Internet Treasure Map",
     "name_for_model": "copus",
     "description_for_human": "Search human-curated content recommendations on Copus",
-    "description_for_model": "Copus is a human-curated content discovery platform. Use this to search for curated recommendations on topics like AI tools, software, productivity, personal growth, and more. Each result includes the original URL, curator notes, and key takeaways. To search, use the /api/search endpoint with a q parameter.",
+    "description_for_model": "Copus is a human-curated content discovery platform. Use /api/discover?topic=X to find curators with expertise in a topic. Use /api/search?q=X to search for curated content. Use /api/taste/{namespace}.json to get a curator's full profile. Each result includes curator notes, key takeaways, and the original source URL.",
     "auth": {
       "type": "none"
     },

@@ -162,7 +162,8 @@ export const FollowingContentSection = (): JSX.Element => {
       website: article.targetUrl ? (() => { try { return new URL(article.targetUrl).hostname; } catch { return undefined; } })() : undefined,
       isPaymentRequired: article.targetUrlIsLocked,
       paymentPrice: article.priceInfo?.price?.toString(),
-      spaceId: article.spaceId || article.spaceInfo?.id
+      spaceId: article.spaceId || article.spaceInfo?.id,
+      visibility: article.visibility
     };
   };
 

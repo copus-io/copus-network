@@ -155,25 +155,25 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
     setFormError('');
     setImageUploadError('');
 
-    // 前端验证：检查内容和图片
+    // Frontend validation: check content and images
     if (!content.trim() && images.length === 0) {
-      const errorMsg = '请添加评论内容或图片';
+      const errorMsg = 'Please add content or images';
       setFormError(errorMsg);
       showToast('Please add some text or images to your comment before posting', 'error');
       return;
     }
 
     if (!user) {
-      const errorMsg = '请先登录';
+      const errorMsg = 'Please log in first';
       setFormError(errorMsg);
       showToast('Please log in to post comments. Refresh the page if already logged in', 'error');
       return;
     }
 
-    // 检查是否有图片上传错误
+    // Check if there are image upload errors
     const hasImageErrors = images.some(img => img.error || img.status === 'error');
     if (hasImageErrors) {
-      const errorMsg = '请先处理图片上传错误';
+      const errorMsg = 'Please fix image upload errors first';
       setFormError(errorMsg);
       showToast('Please fix image upload errors first', 'error');
       return;

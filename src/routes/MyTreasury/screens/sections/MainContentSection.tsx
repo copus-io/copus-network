@@ -759,7 +759,6 @@ export const MainContentSection = (): JSX.Element => {
         isOwnProfile={!isViewingOtherUser}
         onCoverUpload={handleCoverUpload}
         onCreate={() => setShowCreateModal(true)}
-        onImportCSV={!isViewingOtherUser ? () => setShowImportModal(true) : undefined}
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}

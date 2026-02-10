@@ -227,11 +227,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   if (isAvatar) {
     return (
       <>
-        <div className="flex flex-col items-start gap-2.5 px-0 py-[15px] relative self-stretch w-full flex-[0_0_auto]">
-          <div className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-[450] text-off-black text-[18px] tracking-[0] leading-[normal]">
-            Profile photo
-          </div>
-
+        <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
           <div className="inline-flex items-center gap-[15px] relative flex-[0_0_auto]">
             {/* Avatar preview */}
             <div className="relative w-[45px] h-[45px] rounded-[100px] overflow-hidden border-2 border-gray-200">

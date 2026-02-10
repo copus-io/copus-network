@@ -31,11 +31,17 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
   };
 
   try {
-    const lines = csvContent.split('\n').filter(line => line.trim() !== '');
-    result.totalRows = lines.length - 1; // 减去标题行
+    // Handle Windows (\r\n), Unix (\n), and old Mac (\r) line endings
+    const normalizedContent = csvContent
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
+
+    // Parse CSV properly handling quoted fields with newlines
+    const lines = parseCSVLines(normalizedContent);
+    result.totalRows = lines.length - 1; // Subtract header row
 
     if (lines.length < 2) {
-      result.errors.push('CSV文件需要包含至少一行数据');
+      result.errors.push('CSV file must contain at least one row of data');
       return result;
     }
 
@@ -48,12 +54,12 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
     const urlIndex = findHeaderIndex(headers, ['url', 'link', 'href', '链接', '网址']);
 
     if (titleIndex === -1) {
-      result.errors.push('CSV文件必须包含标题字段 (title, name, 标题, 名称)');
+      result.errors.push('CSV file must contain a title field (title or name)');
       return result;
     }
 
     if (urlIndex === -1) {
-      result.errors.push('CSV文件必须包含URL字段 (url, link, href, 链接, 网址)');
+      result.errors.push('CSV file must contain a URL field (url, link, or href)');
       return result;
     }
 
@@ -63,23 +69,29 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
     const tagsIndex = findHeaderIndex(headers, ['tags', 'keywords', 'labels', '标签', '关键词']);
     const coverIndex = findHeaderIndex(headers, ['cover', 'coverurl', 'cover_url', 'image', 'thumbnail', '封面', '图片']);
 
-    // 解析数据行
+    // Parse data rows
     for (let i = 1; i < lines.length; i++) {
       try {
-        const fields = parseCSVLine(lines[i]);
+        const line = lines[i];
+
+        // Skip lines that are only commas, whitespace, or empty
+        if (!line || /^[\s,]*$/.test(line)) {
+          continue;
+        }
+
+        const fields = parseCSVLine(line);
 
         const title = fields[titleIndex]?.trim();
         const url = fields[urlIndex]?.trim();
 
-        // 跳过空行或无效行
+        // Skip rows with missing title or URL (don't report as error for cleaner UX)
         if (!title || !url) {
-          result.errors.push(`第${i}行: 标题或URL为空`);
           continue;
         }
 
         // 验证URL格式
         if (!isValidUrl(url)) {
-          result.errors.push(`第${i}行: URL格式无效 - ${url}`);
+          result.errors.push(`Row ${i}: invalid URL format - ${url}`);
           continue;
         }
 
@@ -95,20 +107,52 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
         result.data.push(bookmark);
         result.validRows++;
       } catch (error) {
-        result.errors.push(`第${i}行: 解析错误 - ${error instanceof Error ? error.message : '未知错误'}`);
+        result.errors.push(`Row ${i}: parse error - ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
     result.success = result.validRows > 0;
     return result;
   } catch (error) {
-    result.errors.push(`CSV解析失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    result.errors.push(`CSV parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return result;
   }
 };
 
 /**
- * 解析CSV行，处理引号和逗号
+ * Parse CSV content into lines, handling quoted fields with newlines
+ */
+const parseCSVLines = (content: string): string[] => {
+  const lines: string[] = [];
+  let currentLine = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      currentLine += char;
+    } else if (char === '\n' && !inQuotes) {
+      if (currentLine.trim() !== '') {
+        lines.push(currentLine);
+      }
+      currentLine = '';
+    } else {
+      currentLine += char;
+    }
+  }
+
+  // Add the last line if not empty
+  if (currentLine.trim() !== '') {
+    lines.push(currentLine);
+  }
+
+  return lines;
+};
+
+/**
+ * Parse a single CSV line into fields
  */
 const parseCSVLine = (line: string): string[] => {
   const result: string[] = [];
@@ -137,10 +181,11 @@ const parseCSVLine = (line: string): string[] => {
     }
   }
 
-  // 添加最后一个字段
-  result.push(current);
+  // Add the last field and trim any carriage returns
+  result.push(current.replace(/\r/g, ''));
 
-  return result;
+  // Trim all fields
+  return result.map(field => field.trim());
 };
 
 /**
@@ -236,7 +281,7 @@ export const detectAndConvertEncoding = (file: File): Promise<string> => {
     };
 
     reader.onerror = () => {
-      reject(new Error('文件读取失败'));
+      reject(new Error('File read failed'));
     };
 
     // 使用UTF-8读取

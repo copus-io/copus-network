@@ -40,9 +40,9 @@ export const CollectionSection = ({ title, treasureCount, items, onImportCSV }: 
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-gray-800">开始构建您的收藏</h3>
+              <h3 className="text-xl font-semibold text-gray-800">Start building your collection</h3>
               <p className="text-gray-600 leading-relaxed">
-                还没有收藏内容？您可以从其他平台导入现有收藏，或开始发现新的优质内容。
+                No bookmarks yet? You can import existing bookmarks from other platforms or start discovering new quality content.
               </p>
             </div>
 

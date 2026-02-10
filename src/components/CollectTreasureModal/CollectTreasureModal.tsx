@@ -188,6 +188,21 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
     }
   }, [isOpen]);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Toggle selection for a collection
   const handleToggleSelection = (collectionId: string) => {
     setCollections(prev =>

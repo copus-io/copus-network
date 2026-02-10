@@ -39,7 +39,7 @@ export const SEOSettingsModal: React.FC<SEOSettingsModalProps> = ({
     e.preventDefault();
 
     if (!description.trim()) {
-      alert('请输入SEO描述');
+      alert('Please enter an SEO description');
       return;
     }
 
@@ -77,7 +77,7 @@ export const SEOSettingsModal: React.FC<SEOSettingsModalProps> = ({
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">SEO设置</h2>
+            <h2 className="text-xl font-semibold text-gray-900">SEO Settings</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -88,10 +88,10 @@ export const SEOSettingsModal: React.FC<SEOSettingsModalProps> = ({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* SEO 描述 */}
+            {/* SEO Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                SEO描述
+                SEO Description
                 <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -100,19 +100,19 @@ export const SEOSettingsModal: React.FC<SEOSettingsModalProps> = ({
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f23a00] focus:border-transparent resize-none"
                 rows={3}
                 maxLength={160}
-                placeholder="请输入文章的SEO描述（建议150字符以内）"
+                placeholder="Enter SEO description for the article (recommended under 150 characters)"
                 disabled={isLoading}
                 required
               />
               <div className="text-sm text-gray-500 mt-1">
-                {description.length}/160 字符
+                {description.length}/160 characters
               </div>
             </div>
 
-            {/* SEO 关键词 */}
+            {/* SEO Keywords */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                SEO关键词
+                SEO Keywords
               </label>
               <div className="space-y-2">
                 <textarea
@@ -120,7 +120,7 @@ export const SEOSettingsModal: React.FC<SEOSettingsModalProps> = ({
                   onChange={(e) => handleKeywordInput(e.target.value)}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f23a00] focus:border-transparent resize-none"
                   rows={2}
-                  placeholder="请输入关键词，用逗号分隔（例如：技术, 前端开发, React）"
+                  placeholder="Enter keywords separated by commas (e.g., technology, frontend, React)"
                   disabled={isLoading}
                 />
                 {articleTitle && (
@@ -130,37 +130,37 @@ export const SEOSettingsModal: React.FC<SEOSettingsModalProps> = ({
                     className="text-sm text-[#f23a00] hover:underline"
                     disabled={isLoading}
                   >
-                    根据标题生成关键词建议
+                    Generate keyword suggestions from title
                   </button>
                 )}
               </div>
               <div className="text-sm text-gray-500 mt-1">
-                建议添加3-8个相关关键词，用逗号分隔
+                We recommend adding 3-8 related keywords, separated by commas
               </div>
             </div>
 
-            {/* 预览 */}
+            {/* Preview */}
             {(description || keywords) && (
               <div className="bg-gray-50 p-4 rounded-md">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">预览效果</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Preview</h3>
                 <div className="space-y-2 text-sm">
                   <div>
-                    <span className="font-medium">标题：</span>
-                    <span>{articleTitle || '文章标题'}</span>
+                    <span className="font-medium">Title: </span>
+                    <span>{articleTitle || 'Article title'}</span>
                   </div>
                   <div>
-                    <span className="font-medium">描述：</span>
-                    <span className="text-gray-600">{description || '暂无描述'}</span>
+                    <span className="font-medium">Description: </span>
+                    <span className="text-gray-600">{description || 'No description'}</span>
                   </div>
                   <div>
-                    <span className="font-medium">关键词：</span>
-                    <span className="text-gray-600">{keywords || '暂无关键词'}</span>
+                    <span className="font-medium">Keywords: </span>
+                    <span className="text-gray-600">{keywords || 'No keywords'}</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* 操作按钮 */}
+            {/* Action buttons */}
             <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
@@ -168,14 +168,14 @@ export const SEOSettingsModal: React.FC<SEOSettingsModalProps> = ({
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
                 disabled={isLoading}
               >
-                取消
+                Cancel
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-[#f23a00] text-white rounded-md hover:bg-[#e03400] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading || !description.trim()}
               >
-                {isLoading ? '保存中...' : '保存设置'}
+                {isLoading ? 'Saving...' : 'Save Settings'}
               </button>
             </div>
           </form>

@@ -1213,7 +1213,7 @@ export const SpaceContentSection = (): JSX.Element => {
             <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">No treasures yet — this collection is just getting started.</h3>
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors [font-family:'Lato',Helvetica] font-bold text-lg leading-5"
+              className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors [font-family:'Lato',Helvetica] font-normal text-lg leading-5"
             >
               Discover
             </button>

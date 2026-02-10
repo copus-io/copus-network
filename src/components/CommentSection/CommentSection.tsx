@@ -66,7 +66,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           id: commentId,
           authorName: userName,
           authorAvatar: null,
-          content: '回复的评论', // 临时内容，用于显示
+          content: 'Reply comment', // Temporary content for display
           createdAt: new Date().toISOString(),
           isLiked: false,
           likesCount: 0,

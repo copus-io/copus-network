@@ -998,7 +998,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 }
               }}
               className="flex items-center cursor-pointer relative focus:outline-none"
-              title={location.pathname === '/notification' ? "刷新通知" : "前往通知页面"}
+              title={location.pathname === '/notification' ? "Refresh notifications" : "Go to notifications"}
             >
               <img
                 className="w-[28px] h-[28px] rotate-[12deg] hover:rotate-[17deg] transition-transform duration-200"

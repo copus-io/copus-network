@@ -173,7 +173,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             createTime: article.createAt,
             publishTime: article.publishAt,
             link: article.targetUrl,
-            viewCount: article.viewCount
+            viewCount: article.viewCount,
+            visibility: article.visibility
           };
         });
 
@@ -258,7 +259,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         createTime: article.createAt,
         publishTime: article.publishAt,
         link: article.targetUrl,
-        viewCount: article.viewCount
+        viewCount: article.viewCount,
+        visibility: article.visibility
       }));
 
       // Append new articles to existing ones

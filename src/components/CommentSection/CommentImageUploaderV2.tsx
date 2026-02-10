@@ -103,12 +103,12 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
       if (!validation.isValid) {
         result.invalid.push({
           file,
-          reason: validation.error || '文件格式不支持'
+          reason: validation.error || 'File format not supported'
         });
       } else if (file.size > 10 * 1024 * 1024) {  // 10MB - 极限大小
         result.invalid.push({
           file,
-          reason: '文件太大 (>10MB)，无法处理'
+          reason: 'File too large (>10MB), cannot process'
         });
       } else if (file.size > 3 * 1024 * 1024) {  // 3MB - 需要积极压缩
         result.oversized.push(file);
@@ -130,7 +130,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
         maxHeight: 450,
         quality: 0.5,
         format: 'webp' as const,
-        description: '积极压缩'
+        description: 'Aggressive compression'
       };
     } else if (sizeInMB > 2) {
       return {
@@ -138,7 +138,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
         maxHeight: 600,
         quality: 0.65,
         format: 'webp' as const,
-        description: '智能压缩'
+        description: 'Smart compression'
       };
     } else {
       return {
@@ -146,7 +146,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
         maxHeight: 600,
         quality: 0.75,
         format: 'webp' as const,
-        description: '标准压缩'
+        description: 'Standard compression'
       };
     }
   };
@@ -158,7 +158,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
 
     const remainingSlots = maxImages - images.length;
     if (files.length > remainingSlots) {
-      onError?.(`最多只能上传${maxImages}张图片，当前还可添加${remainingSlots}张`);
+      onError?.(`Maximum ${maxImages} images allowed, you can add ${remainingSlots} more`);
       return;
     }
 
@@ -172,7 +172,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
     // 🔔 友好的提示信息
     if (invalid.length > 0) {
       const messages = invalid.map(item => `${item.file.name}: ${item.reason}`);
-      onError?.(`以下文件无法处理：\n${messages.join('\n')}`);
+      onError?.(`The following files cannot be processed:\n${messages.join('\n')}`);
     }
 
     if (oversized.length > 0) {
@@ -271,7 +271,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
         setImages(currentImages => {
           const errorImages = currentImages.map(img =>
             img.id === tempImageId
-              ? { ...img, status: 'error' as const, error: '处理失败' }
+              ? { ...img, status: 'error' as const, error: 'Processing failed' }
               : img
           );
           onImagesChange(errorImages);
@@ -314,7 +314,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
       case 'pending':
         return (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="text-white text-xs">等待处理</div>
+            <div className="text-white text-xs">Waiting</div>
           </div>
         );
       case 'processing':
@@ -327,7 +327,7 @@ export const CommentImageUploaderV2 = forwardRef<CommentImageUploaderRef, Commen
         return (
           <div className="absolute inset-0 bg-red-500 bg-opacity-80 flex items-center justify-center">
             <div className="text-white text-xs text-center px-1">
-              ❌<br />处理失败
+              ❌<br />Failed
             </div>
           </div>
         );

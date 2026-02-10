@@ -38,7 +38,7 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
     return (
       <div className={`${className}`}>
         {showTitle && (
-          <h4 className="text-sm font-medium text-gray-700 mb-3">社交链接</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Social links</h4>
         )}
         <div className="animate-pulse flex space-x-2">
           {[1, 2, 3].map((i) => (
@@ -76,7 +76,7 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
                 : 'flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50'
               }
             `}
-            title={`访问 ${link.title}: ${link.linkUrl}`}
+            title={`Visit ${link.title}: ${link.linkUrl}`}
           >
             <img
               src={link.iconUrl}
@@ -100,7 +100,7 @@ export const SocialLinksDisplay: React.FC<SocialLinksDisplayProps> = ({
 
         {hasMoreLinks && (
           <span className="text-xs text-gray-500">
-            +{socialLinks.length - maxCount!} 更多
+            +{socialLinks.length - maxCount!} more
           </span>
         )}
       </div>

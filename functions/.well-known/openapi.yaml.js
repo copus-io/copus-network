@@ -17,21 +17,78 @@ info:
   title: Copus API
   description: |
     Copus is a human-curated content discovery platform.
-    Search for curated recommendations on any topic.
+    Find curators and curated content on any topic.
 
-    QUICK START:
+    QUICK START - Find curators:
+    GET ${config.siteUrl}/api/discover?topic=YOUR_TOPIC
+
+    QUICK START - Search content:
     GET ${config.siteUrl}/api/search?q=YOUR_QUERY
 
-    Example searches:
-    - ${config.siteUrl}/api/search?q=AI+tools
-    - ${config.siteUrl}/api/search?q=personal+growth
-    - ${config.siteUrl}/api/search?q=watermark+remover
-    - ${config.siteUrl}/api/search?q=productivity
-  version: 1.0.0
+    Examples:
+    - ${config.siteUrl}/api/discover?topic=AI (find curators)
+    - ${config.siteUrl}/api/search?q=AI+tools (find content)
+    - ${config.siteUrl}/api/taste/handuo.json (curator profile)
+  version: 1.1.0
 servers:
   - url: ${config.siteUrl}
     description: Copus API
 paths:
+  /api/discover:
+    get:
+      operationId: discoverCurators
+      summary: Find curators with expertise in a topic
+      description: |
+        Discover human curators on Copus who curate content on a specific topic.
+        Returns curators ranked by relevance, with their profiles, matching treasuries, and sample curations.
+        Use this to find people to follow for a topic.
+      parameters:
+        - name: topic
+          in: query
+          description: Topic to find curators for (e.g., "AI", "crypto", "productivity")
+          required: true
+          schema:
+            type: string
+            example: AI tools
+        - name: limit
+          in: query
+          description: Max curators to return (default 10, max 20)
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+      responses:
+        '200':
+          description: Curators with expertise in this topic
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  '@type':
+                    type: string
+                    example: ItemList
+                  query:
+                    type: string
+                  numberOfItems:
+                    type: integer
+                  itemListElement:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                            tasteProfileUrl:
+                              type: string
+                            matchingTreasuries:
+                              type: array
   /api/search:
     get:
       operationId: searchCurations
@@ -103,6 +160,24 @@ paths:
                               type: string
                             description:
                               type: string
+  /api/taste/{namespace}.json:
+    get:
+      operationId: getTasteProfile
+      summary: Get curator's taste profile
+      description: |
+        Get a curator's full taste profile including all treasuries, curated articles, and AI-generated insights.
+        Best way to understand a curator's interests and expertise.
+      parameters:
+        - name: namespace
+          in: path
+          required: true
+          description: Curator's namespace (username identifier)
+          schema:
+            type: string
+            example: handuo
+      responses:
+        '200':
+          description: Full taste profile with treasuries and articles
   /work/{id}:
     get:
       operationId: getArticle

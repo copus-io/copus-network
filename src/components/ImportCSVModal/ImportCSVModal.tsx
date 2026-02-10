@@ -176,11 +176,11 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
         </div>
 
         {/* Content area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-hidden">
           {step === 'upload' && (
             <div className="p-6">
               {/* Upload area */}
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 hover:bg-gray-50/30 transition-all duration-200 cursor-pointer group"
+              <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 hover:bg-gray-50/30 transition-all duration-200 cursor-pointer group"
                    onClick={() => fileInputRef.current?.click()}>
                 <div className="space-y-4">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto group-hover:bg-gray-200 transition-colors">
@@ -189,7 +189,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-base font-medium text-gray-800 mb-1">Drag and drop or click to upload</h3>
+                    <h3 className="text-base font-medium text-gray-800 mb-1">Drop or click to upload</h3>
                     <p className="text-sm text-gray-500">Supports CSV files or browser bookmark files (.html)</p>
                   </div>
                   <input
@@ -292,50 +292,35 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
           )}
 
           {step === 'preview' && parseResult && (
-            <div className="p-6 space-y-6">
+            <div className="px-6 pt-2 pb-4 space-y-3 flex flex-col h-full overflow-hidden">
               {/* Top statistics card */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-green-800">
-                        Successfully parsed: {parseResult.validRows} valid records
-                      </h4>
-                      <p className="text-green-600">
-                        Selected <span className="font-semibold">{selectedItems.size}</span> records to import
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={toggleSelectAll}
-                    className="inline-flex items-center justify-center h-9 px-4 rounded-md text-sm font-medium border border-green-300 text-green-700 bg-white hover:bg-green-100 transition-colors"
-                  >
-                    {selectedItems.size === parseResult.data.length ? 'Deselect All' : 'Select All'}
-                  </button>
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-3 rounded-lg border" style={{ borderColor: '#22c55e' }}>
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <h4 className="text-base font-bold text-green-800">
+                    Successfully parsed: {parseResult.validRows} valid records
+                  </h4>
                 </div>
               </div>
 
               {/* Warning messages (if any) */}
               {parseResult.errors.length > 0 && (
-                <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="border-l-4 border-red px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(242, 58, 0, 0.05)' }}>
+                  <div className="flex items-start gap-2">
+                    <svg className="w-4 h-4 text-red mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                     <div className="flex-1">
-                      <h4 className="font-medium text-amber-800 mb-2">Found {parseResult.errors.length} issues</h4>
-                      <div className="text-sm text-amber-700 space-y-1">
+                      <h4 className="font-medium text-red text-sm mb-1">Found {parseResult.errors.length} issues</h4>
+                      <div className="text-sm text-red/80 space-y-1">
                         {parseResult.errors.slice(0, 3).map((error, index) => (
                           <div key={index}>• {error}</div>
                         ))}
                         {parseResult.errors.length > 3 && (
                           <details className="mt-2">
-                            <summary className="cursor-pointer text-amber-600 hover:text-amber-800 font-medium">
+                            <summary className="cursor-pointer text-red hover:text-red/80 font-medium">
                               View more ({parseResult.errors.length - 3})
                             </summary>
                             <div className="mt-2 space-y-1">
@@ -352,14 +337,19 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
               )}
 
               {/* Data preview */}
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800">Data Preview</h3>
-                  <p className="text-sm text-gray-600 mt-1">Preview first 20 records to confirm data accuracy</p>
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm w-full">
+                <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-gray-800">Data Preview</h3>
+                  <button
+                    onClick={toggleSelectAll}
+                    className="inline-flex items-center justify-center h-7 px-2.5 rounded-[15px] text-xs font-medium border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 transition-colors"
+                  >
+                    {selectedItems.size === parseResult.data.length ? 'Deselect All' : 'Select All'}
+                  </button>
                 </div>
 
-                <div className="max-h-80 overflow-y-auto">
-                  <table className="w-full">
+                <div className="max-h-80 overflow-y-auto overflow-x-hidden">
+                  <table className="w-full table-fixed">
                     <thead className="bg-gray-50 sticky top-0 border-b border-gray-200">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide w-16">Select</th>
@@ -375,12 +365,20 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                       {parseResult.data.slice(0, 20).map((item, index) => (
                         <tr key={index} className="hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedItems.has(index)}
-                              onChange={() => toggleItemSelection(index)}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                            />
+                            <div
+                              onClick={() => toggleItemSelection(index)}
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${
+                                selectedItems.has(index)
+                                  ? 'bg-red border-red'
+                                  : 'bg-white border-gray-300 hover:border-gray-400'
+                              }`}
+                            >
+                              {selectedItems.has(index) && (
+                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="font-medium text-gray-900 truncate max-w-xs" title={item.title}>
@@ -392,15 +390,15 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 max-w-[180px]">
                             <a
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm truncate block max-w-xs underline"
+                              className="text-blue-600 hover:text-blue-800 text-sm truncate block underline"
                               title={item.url}
                             >
-                              {item.url.length > 40 ? `${item.url.substring(0, 40)}...` : item.url}
+                              {item.url.length > 25 ? `${item.url.substring(0, 25)}...` : item.url}
                             </a>
                           </td>
                           <td className="px-4 py-3">
@@ -484,17 +482,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
 
         {/* Action buttons */}
         {step !== 'importing' && (
-          <div className="flex items-center justify-end gap-2.5 p-6 border-t border-gray-200 bg-gray-50">
-            {step === 'preview' && (
-              <button
-                onClick={() => setStep('upload')}
-                className="inline-flex items-center justify-center px-5 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-              >
-                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                  Back
-                </span>
-              </button>
-            )}
+          <div className="flex items-center justify-end gap-2.5 px-6 py-3 border-t border-gray-200 bg-gray-50">
             <button
               onClick={() => {
                 onClose();
@@ -512,7 +500,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                 disabled={selectedItems.size === 0}
                 className="inline-flex items-center justify-center px-5 py-2.5 rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
               >
-                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
                   {selectedItems.size > 0 ? `Import ${selectedItems.size} Items` : 'Select items to import'}
                 </span>
               </button>

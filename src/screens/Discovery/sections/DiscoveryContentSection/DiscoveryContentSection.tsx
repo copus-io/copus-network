@@ -143,9 +143,21 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Sync local article state and like status
   React.useEffect(() => {
-    // Filter out private articles from public discovery using visibility system
+    // Filter out private articles from public discovery
+    // On discovery page, ONLY show articles that are explicitly public (visibility === 0)
+    // or have no visibility set AND no isPrivate flag
     const filteredArticles = articles.filter(article => {
-      return canUserViewArticle(article, user?.id);
+      // If visibility is set, only show if it's PUBLIC (0)
+      if (article.visibility !== undefined) {
+        return article.visibility === 0; // ARTICLE_VISIBILITY.PUBLIC
+      }
+      // If visibility is not set, fall back to isPrivate check
+      // Don't show if isPrivate is true
+      if ((article as any).isPrivate === true) {
+        return false;
+      }
+      // Default: show if no privacy indicators
+      return true;
     });
 
     setLocalArticles(filteredArticles);
@@ -252,8 +264,13 @@ export const DiscoveryContentSection = (): JSX.Element => {
   };
 
   const renderPostCard = (post: Article, index: number) => {
-    // Filter out private articles in discovery using visibility system
-    if (!canUserViewArticle(post, user?.id)) {
+    // Filter out private articles in discovery - only show explicitly public articles
+    // If visibility is set, must be PUBLIC (0)
+    if (post.visibility !== undefined && post.visibility !== 0) {
+      return null;
+    }
+    // Also check legacy isPrivate flag
+    if ((post as any).isPrivate === true) {
       return null;
     }
 
