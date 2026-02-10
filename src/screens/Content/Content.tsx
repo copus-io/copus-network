@@ -167,11 +167,15 @@ export const Content = (): JSX.Element => {
     // Handle refresh parameter (from edit mode redirect)
     if (searchParams.get('refresh') && id) {
       console.log('🔄 Cache refresh requested for article:', id);
-      // Force refresh with cache busting - clears all caches and fetches fresh data
-      bustCacheAndRefresh(id);
-      // Clean URL by removing refresh parameter
+      // Clean URL immediately to prevent multiple refreshes
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
+      // Force refresh with cache busting - clears all caches and fetches fresh data
+      bustCacheAndRefresh(id).then(() => {
+        console.log('✅ Article cache refreshed successfully');
+      }).catch((err) => {
+        console.error('❌ Failed to refresh article cache:', err);
+      });
     }
   }, [location.search, showToast, id, bustCacheAndRefresh]);
 

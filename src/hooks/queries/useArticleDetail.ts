@@ -87,12 +87,13 @@ export const useArticleDetailActions = () => {
   const bustCacheAndRefresh = async (uuid: string) => {
     // Clear internal service cache
     clearArticleDetailCache(uuid);
-    // Remove the query from cache entirely
+    // Remove the query from cache entirely - use correct query key format
+    queryClient.removeQueries({ queryKey: ['article', 'detail', uuid] });
     queryClient.removeQueries({ queryKey: ['articleDetail', uuid] });
     queryClient.removeQueries({ queryKey: ['articleId', uuid] });
     // Force refetch with cache busting - this updates the query data
     await queryClient.fetchQuery({
-      queryKey: ['articleDetail', uuid],
+      queryKey: ['article', 'detail', uuid],
       queryFn: () => getArticleDetail(uuid, { bustCache: true }),
       staleTime: 0
     });
