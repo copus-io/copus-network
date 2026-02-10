@@ -84,10 +84,14 @@ export const useArticleDetailActions = () => {
     clearArticleDetailCache();
   };
 
-  const bustCacheAndRefresh = (uuid: string) => {
-    // Force refresh with cache busting
-    queryClient.invalidateQueries({ queryKey: ['articleDetail', uuid] });
-    queryClient.prefetchQuery({
+  const bustCacheAndRefresh = async (uuid: string) => {
+    // Clear internal service cache
+    clearArticleDetailCache(uuid);
+    // Remove the query from cache entirely
+    queryClient.removeQueries({ queryKey: ['articleDetail', uuid] });
+    queryClient.removeQueries({ queryKey: ['articleId', uuid] });
+    // Force refetch with cache busting - this updates the query data
+    await queryClient.fetchQuery({
       queryKey: ['articleDetail', uuid],
       queryFn: () => getArticleDetail(uuid, { bustCache: true }),
       staleTime: 0

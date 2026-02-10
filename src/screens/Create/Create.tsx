@@ -48,7 +48,7 @@ export const Create = (): JSX.Element => {
     link: "",
     title: "",
     recommendation: "",
-    selectedTopic: "生活", // Default to Chinese category
+    selectedTopic: "Life", // Default to Life category
     selectedTopicId: 1, // Corresponding ID
     coverImage: null as File | null,
   });
@@ -500,7 +500,8 @@ export const Create = (): JSX.Element => {
 
       setIsLoadingArticle(true);
       try {
-        const articleData = await getArticleDetail(editId);
+        // Bust cache to get fresh article data in edit mode
+        const articleData = await getArticleDetail(editId, { bustCache: true });
 
         // Set article data
         setEditingArticle(articleData);
@@ -510,7 +511,7 @@ export const Create = (): JSX.Element => {
           link: articleData.targetUrl || "",
           title: articleData.title || "",
           recommendation: articleData.content || "",
-          selectedTopic: articleData.categoryInfo?.name || "生活",
+          selectedTopic: articleData.categoryInfo?.name || "Life",
           selectedTopicId: articleData.categoryInfo?.id || 1,
           coverImage: null, // Don't load image file directly in edit mode
         });
@@ -532,6 +533,11 @@ export const Create = (): JSX.Element => {
         }
 
         // Set visibility state based on article's visibility field
+        console.log('📋 Article visibility from API:', {
+          visibility: articleData.visibility,
+          type: typeof articleData.visibility,
+          isPrivate: articleData.visibility === ARTICLE_VISIBILITY.PRIVATE
+        });
         if (articleData.visibility !== undefined) {
           setVisibility(articleData.visibility);
           console.log('✅ Loaded visibility setting:', articleData.visibility === ARTICLE_VISIBILITY.PRIVATE ? 'Private' : 'Public');
@@ -539,6 +545,39 @@ export const Create = (): JSX.Element => {
           // Fallback for older articles without visibility field
           setVisibility(ARTICLE_VISIBILITY.PUBLIC);
           console.log('ℹ️ No visibility field found, defaulting to public');
+        }
+
+        // Load existing space bindings for edit mode
+        try {
+          const bindableSpaces = await AuthService.getBindableSpaces(articleData.id);
+          console.log('📦 Bindable spaces for article:', bindableSpaces);
+
+          // Parse the response - handle different possible formats
+          let spacesArray: BindableSpace[] = [];
+          if (bindableSpaces?.data && Array.isArray(bindableSpaces.data)) {
+            spacesArray = bindableSpaces.data;
+          } else if (Array.isArray(bindableSpaces)) {
+            spacesArray = bindableSpaces;
+          }
+
+          // Filter for spaces where the article is already bound
+          const boundSpaces = spacesArray.filter((space: BindableSpace) => space.isBind);
+          console.log('✅ Found', boundSpaces.length, 'bound spaces for article');
+
+          // Convert to SelectedSpace format
+          const selectedSpaces: SelectedSpace[] = boundSpaces.map((space: BindableSpace) => ({
+            id: space.id.toString(),
+            name: space.name || getSpaceDisplayName({
+              ...space,
+              ownerInfo: { username: user?.username || 'Anonymous' },
+            }),
+          }));
+
+          setSelectedTreasuries(selectedSpaces);
+          console.log('✅ Loaded existing treasury bindings:', selectedSpaces);
+        } catch (bindError) {
+          console.error('Failed to load space bindings:', bindError);
+          // Don't fail the entire edit load if space bindings fail
         }
 
       } catch (error) {
@@ -551,7 +590,7 @@ export const Create = (): JSX.Element => {
     };
 
     loadArticleForEdit();
-  }, [isEditMode, editId, navigate, showToast]);
+  }, [isEditMode, editId, navigate, showToast, user?.username]);
 
   // Publish article
   const handlePublish = async () => {
@@ -642,9 +681,9 @@ export const Create = (): JSX.Element => {
         coverUrl: finalCoverUrl.substring(0, 500), // Ensure max 500 chars
         targetUrl: finalUrl.substring(0, 255), // Ensure max 255 chars
         title: formData.title.substring(0, 75), // Ensure max 75 chars
-        // Send all selected space IDs to backend
+        // Send all selected space IDs to backend (convert to numbers for API)
         ...(selectedTreasuries.length > 0 ? {
-          spaceIds: selectedTreasuries.map(t => t.id)
+          spaceIds: selectedTreasuries.map(t => parseInt(t.id, 10))
         } : {}),
         // x402 payment fields
         ...(payToUnlock ? {
@@ -779,7 +818,7 @@ export const Create = (): JSX.Element => {
     <div className="w-full min-h-screen overflow-x-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
       <HeaderSection hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
-      <div className="lg:ml-[350px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[110px] overflow-x-hidden">
+      <div className="lg:ml-[350px] lg:mr-[70px] min-h-screen pt-[50px] lg:pt-[80px] overflow-x-hidden">
         <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] px-3 sm:px-5 md:px-8 lg:pl-8 lg:pr-4 xl:pl-12 xl:pr-6 2xl:pl-20 2xl:pr-10 py-0 pb-[100px] w-full overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
             <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-left sm:text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
@@ -1029,23 +1068,34 @@ export const Create = (): JSX.Element => {
             </div>
 
             {/* Private Article Toggle */}
-            <div className="flex items-start gap-3 w-full pt-2">
-              <input
-                id="private-article-checkbox"
-                type="checkbox"
-                checked={visibility === ARTICLE_VISIBILITY.PRIVATE}
-                onChange={(e) => setVisibility(e.target.checked ? ARTICLE_VISIBILITY.PRIVATE : ARTICLE_VISIBILITY.PUBLIC)}
-                className="mt-1 w-4 h-4 text-red bg-gray-100 border-gray-300 rounded focus:ring-red focus:ring-2 cursor-pointer"
-              />
+            <div className="flex items-start gap-3 w-full">
+              <div
+                onClick={() => setVisibility(visibility === ARTICLE_VISIBILITY.PRIVATE ? ARTICLE_VISIBILITY.PUBLIC : ARTICLE_VISIBILITY.PRIVATE)}
+                className={`w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${
+                  visibility === ARTICLE_VISIBILITY.PRIVATE
+                    ? 'bg-red border-red'
+                    : 'bg-white border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {visibility === ARTICLE_VISIBILITY.PRIVATE && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
               <div className="flex flex-col gap-1 flex-1">
-                <label
-                  htmlFor="private-article-checkbox"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] cursor-pointer"
+                <div
+                  onClick={() => setVisibility(visibility === ARTICLE_VISIBILITY.PRIVATE ? ARTICLE_VISIBILITY.PUBLIC : ARTICLE_VISIBILITY.PRIVATE)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 w-fit bg-[#E0E0E0] rounded-[100px] cursor-pointer"
                 >
-                  Private Article
-                </label>
+                  <svg className="w-5 h-5" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                    <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                  </svg>
+                  <span className="text-[#454545] text-[14px] font-medium">Private</span>
+                </div>
                 <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-500 text-sm tracking-[0] leading-[18px]">
-                  Only you can see this article. It won't appear in public feeds or search results.
+                  Only you can see this content. It won't appear in public feeds or search results.
                 </span>
               </div>
             </div>
@@ -1145,7 +1195,7 @@ export const Create = (): JSX.Element => {
             </div>
 
             <div className="flex flex-col items-start gap-10 w-full">
-              <div className="w-full lg:max-w-[350px] xl:max-w-[400px] 2xl:max-w-[450px]">
+              <div className="w-full lg:max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px]">
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
@@ -1154,7 +1204,7 @@ export const Create = (): JSX.Element => {
               </div>
 
               <div
-                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors lg:w-full lg:max-w-[350px] xl:max-w-[400px] 2xl:max-w-[450px]"
+                className="inline-flex items-center justify-center gap-2.5 px-6 py-2.5 bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors"
                 onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
                 style={{
                     opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,

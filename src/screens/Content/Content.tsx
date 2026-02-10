@@ -9,7 +9,7 @@ import { HeaderSection } from "../../components/shared/HeaderSection/HeaderSecti
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
-import { useArticleDetail } from "../../hooks/queries";
+import { useArticleDetail, useArticleDetailActions } from "../../hooks/queries";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { devLog } from "../../utils/devLogger";
@@ -140,6 +140,7 @@ export const Content = (): JSX.Element => {
 
   // Use new article detail API hook (includes commentCount)
   const { article, loading, error, refetch: refetchArticle } = useArticleDetail(id || '');
+  const { bustCacheAndRefresh } = useArticleDetailActions();
 
   // Comment count is already in article data - no need for separate hook
   const totalComments = article?.commentCount || 0;
@@ -166,14 +167,13 @@ export const Content = (): JSX.Element => {
     // Handle refresh parameter (from edit mode redirect)
     if (searchParams.get('refresh') && id) {
       console.log('🔄 Cache refresh requested for article:', id);
-      // Force refresh article data by invalidating cache
-      queryClient.removeQueries({ queryKey: ['articleDetail', id] });
-      queryClient.removeQueries({ queryKey: ['articleId', id] });
+      // Force refresh with cache busting - clears all caches and fetches fresh data
+      bustCacheAndRefresh(id);
       // Clean URL by removing refresh parameter
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [location.search, showToast, id, queryClient]);
+  }, [location.search, showToast, id, bustCacheAndRefresh]);
 
   // Handle modal animation timing and body scroll lock
   useEffect(() => {
