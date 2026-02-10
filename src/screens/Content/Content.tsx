@@ -2104,7 +2104,7 @@ export const Content = (): JSX.Element => {
                     )}
 
                     <h1
-                      className="relative w-full [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
+                      className="relative w-full [font-family:'Lato',Helvetica] font-medium text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
                       style={{
                         wordBreak: 'break-word',
                         overflowWrap: 'break-word'
