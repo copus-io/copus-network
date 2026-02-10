@@ -221,12 +221,8 @@ export const getArticleDetail = async (
       const endpoint = `/client/reader/article/info?uuid=${uuid}${cacheBuster}`;
 
       // Article details are publicly viewable but will include token if available for personalized data
+      // Note: Cache busting is done via _t query param, not headers (to avoid CORS issues)
       const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, {
-        headers: bustCache ? {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        } : {},
         timeout: 10000 // 10 second timeout
       });
 
