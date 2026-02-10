@@ -44,6 +44,7 @@ const SpaceInfoSection = ({
   isFollowing,
   isOwner,
   spaceType,
+  visibility,
   onFollow,
   onUnfollow,
   onShare,
@@ -63,6 +64,7 @@ const SpaceInfoSection = ({
   isFollowing: boolean;
   isOwner: boolean;
   spaceType?: number;
+  visibility?: number;
   onFollow: () => void;
   onUnfollow: () => void;
   onShare: () => void;
@@ -132,6 +134,17 @@ const SpaceInfoSection = ({
             </div>
           );
         })()}
+
+        {/* Private pill - overlaps with avatar */}
+        {visibility === 1 && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#E0E0E0] rounded-[100px] -mt-5 mb-1">
+            <svg className="w-4 h-4" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+              <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+            <span className="text-[#454545] text-sm font-medium">Private</span>
+          </span>
+        )}
 
         {/* Space name */}
         <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-3">{spaceName}</h1>
@@ -444,6 +457,7 @@ export const SpaceContentSection = (): JSX.Element => {
             description: spaceData?.description, // Add space description
             coverUrl: spaceData?.coverUrl, // Add space cover image
             faceUrl: spaceInfoResponse?.faceUrl || spaceData?.faceUrl, // Get faceUrl from root level or fallback to nested
+            visibility: spaceData?.visibility, // Add visibility for private pill
           };
 
           // Store spaceId for later use (edit functionality)
@@ -629,7 +643,9 @@ export const SpaceContentSection = (): JSX.Element => {
       targetUrl: article.targetUrl,
       website,
       isPaymentRequired: article.targetUrlIsLocked,
-      paymentPrice: article.priceInfo?.price?.toString()
+      paymentPrice: article.priceInfo?.price?.toString(),
+      // Privacy field - article visibility (0: public, 1: private, 2: unlisted)
+      visibility: article.visibility
     };
 
     // 添加调试信息
@@ -1181,6 +1197,7 @@ export const SpaceContentSection = (): JSX.Element => {
         isFollowing={isFollowing}
         isOwner={isOwner}
         spaceType={spaceInfo?.spaceType}
+        visibility={spaceInfo?.visibility}
         onFollow={handleFollow}
         onUnfollow={handleUnfollow}
         onShare={handleShare}
@@ -1248,11 +1265,11 @@ export const SpaceContentSection = (): JSX.Element => {
                 setEditSpaceCoverUrl("");
                 setEditSpaceFaceUrl("");
               }}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              className="absolute top-5 right-5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-20"
               aria-label="Close dialog"
               type="button"
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
@@ -1299,7 +1316,7 @@ export const SpaceContentSection = (): JSX.Element => {
                     Description (Optional)
                   </label>
 
-                  <div className="flex items-start px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                  <div className="flex flex-col px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                     <textarea
                       id="edit-space-description-input"
                       value={editSpaceDescription}
@@ -1309,93 +1326,81 @@ export const SpaceContentSection = (): JSX.Element => {
                       rows={3}
                       maxLength={200}
                     />
-                  </div>
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
-                    {editSpaceDescription.length}/200 characters
-                  </span>
-                </div>
-
-                {/* Avatar Upload */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Avatar (Optional)
-                  </label>
-                  <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
-                    <ImageUploader
-                      type="avatar"
-                      currentImage={editSpaceFaceUrl || spaceInfo?.faceUrl}
-                      key={`avatar-uploader-${showEditModal}-${editSpaceFaceUrl || spaceInfo?.faceUrl}`}
-                      onUploadStatusChange={(uploading) => {
-                        console.log('🔄 SPACE EDIT: Avatar upload status changed:', uploading);
-                        setIsImageUploading(uploading);
-                      }}
-                      onImageUploaded={async (url) => {
-                        console.log('🔥🔥🔥 SPACE EDIT: Received avatar URL:', url);
-                        setEditSpaceFaceUrl(url);
-                        console.log('🔥🔥🔥 SPACE EDIT: Avatar state updated with URL:', url);
-                      }}
-                      onError={(error) => showToast(error, 'error')}
-                    />
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
-                      Recommended size: 400x400px (1:1 ratio)
+                    <span className="self-end [font-family:'Lato',Helvetica] font-normal text-gray-400 text-xs tracking-[0] leading-[16px]">
+                      {editSpaceDescription.length}/200
                     </span>
                   </div>
+                </div>
+
+                {/* Profile Upload */}
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full">
+                  <label className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                    Profile (Optional)
+                  </label>
+                  <ImageUploader
+                    type="avatar"
+                    currentImage={editSpaceFaceUrl || spaceInfo?.faceUrl}
+                    key={`avatar-uploader-${showEditModal}-${editSpaceFaceUrl || spaceInfo?.faceUrl}`}
+                    onUploadStatusChange={(uploading) => {
+                      console.log('🔄 SPACE EDIT: Avatar upload status changed:', uploading);
+                      setIsImageUploading(uploading);
+                    }}
+                    onImageUploaded={async (url) => {
+                      console.log('🔥🔥🔥 SPACE EDIT: Received avatar URL:', url);
+                      setEditSpaceFaceUrl(url);
+                      console.log('🔥🔥🔥 SPACE EDIT: Avatar state updated with URL:', url);
+                    }}
+                    onError={(error) => showToast(error, 'error')}
+                  />
                 </div>
 
                 {/* Cover Image Upload */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <div className="flex flex-col gap-2 relative self-stretch w-full flex-[0_0_auto]">
-                    <ImageUploader
-                      type="banner"
-                      currentImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
-                      key={`image-uploader-${showEditModal}-${editSpaceCoverUrl || spaceInfo?.coverUrl}`} // 强制重新渲染
-                      onUploadStatusChange={(uploading) => {
-                        console.log('🔄 SPACE EDIT: Image upload status changed:', uploading);
-                        setIsImageUploading(uploading);
-                      }}
-                      onImageUploaded={async (url) => {
-                        console.log('🔥🔥🔥 SPACE EDIT: Received image URL:', url);
-                        setEditSpaceCoverUrl(url);
-                        console.log('🔥🔥🔥 SPACE EDIT: State updated with URL:', url);
+                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full">
+                  <ImageUploader
+                    type="banner"
+                    currentImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
+                    key={`image-uploader-${showEditModal}-${editSpaceCoverUrl || spaceInfo?.coverUrl}`}
+                    onUploadStatusChange={(uploading) => {
+                      console.log('🔄 SPACE EDIT: Image upload status changed:', uploading);
+                      setIsImageUploading(uploading);
+                    }}
+                    onImageUploaded={async (url) => {
+                      console.log('🔥🔥🔥 SPACE EDIT: Received image URL:', url);
+                      setEditSpaceCoverUrl(url);
+                      console.log('🔥🔥🔥 SPACE EDIT: State updated with URL:', url);
 
-                        // 当图片被删除时（url为空），自动保存删除操作
-                        if (!url && (editSpaceCoverUrl || spaceInfo?.coverUrl)) {
-                          console.log('🔥🔥🔥 SPACE EDIT: Auto-saving cover image removal...');
+                      // 当图片被删除时（url为空），自动保存删除操作
+                      if (!url && (editSpaceCoverUrl || spaceInfo?.coverUrl)) {
+                        console.log('🔥🔥🔥 SPACE EDIT: Auto-saving cover image removal...');
 
-                          if (!spaceId) {
-                            showToast('Space ID not available', 'error');
-                            return;
-                          }
-
-                          try {
-                            const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
-                            const currentDescription = spaceInfo?.description || '';
-
-                            // 立即保存删除操作到服务器
-                            await AuthService.updateSpace(spaceId, currentName, currentDescription, ''); // 传入空字符串删除封面图
-
-                            showToast('Cover image removed successfully', 'success');
-
-                            // 更新本地 spaceInfo 状态
-                            setSpaceInfo(prev => prev ? { ...prev, coverUrl: '' } : null);
-
-                            console.log('🔥🔥🔥 SPACE EDIT: Cover image removal saved successfully');
-                          } catch (error) {
-                            console.error('🔥🔥🔥 SPACE EDIT: Failed to save cover image removal:', error);
-                            showToast('Failed to remove cover image', 'error');
-                            // 回滚状态
-                            setEditSpaceCoverUrl(spaceInfo?.coverUrl || '');
-                          }
+                        if (!spaceId) {
+                          showToast('Space ID not available', 'error');
+                          return;
                         }
-                      }}
-                      onError={(error) => showToast(error, 'error')}
-                    />
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm tracking-[0] leading-[18px]">
-                      Recommended size: 1200x200px (6:1 ratio)
-                    </span>
-                  </div>
+
+                        try {
+                          const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
+                          const currentDescription = spaceInfo?.description || '';
+
+                          // 立即保存删除操作到服务器
+                          await AuthService.updateSpace(spaceId, currentName, currentDescription, ''); // 传入空字符串删除封面图
+
+                          showToast('Cover image removed successfully', 'success');
+
+                          // 更新本地 spaceInfo 状态
+                          setSpaceInfo(prev => prev ? { ...prev, coverUrl: '' } : null);
+
+                          console.log('🔥🔥🔥 SPACE EDIT: Cover image removal saved successfully');
+                        } catch (error) {
+                          console.error('🔥🔥🔥 SPACE EDIT: Failed to save cover image removal:', error);
+                          showToast('Failed to remove cover image', 'error');
+                          // 回滚状态
+                          setEditSpaceCoverUrl(spaceInfo?.coverUrl || '');
+                        }
+                      }
+                    }}
+                    onError={(error) => showToast(error, 'error')}
+                  />
                 </div>
 
               </div>

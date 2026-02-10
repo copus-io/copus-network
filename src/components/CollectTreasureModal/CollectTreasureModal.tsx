@@ -266,6 +266,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       isSelected: true, // Auto-select the newly created treasury
       wasOriginallyBound: false,
       spaceType: createdSpace.spaceType || 0,
+      visibility: createdSpace.visibility, // Include visibility for private tag display
       namespace: createdSpace.namespace,
       firstLetter: treasuryName.charAt(0).toUpperCase(),
     }]);
@@ -302,12 +303,12 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         {/* Close button */}
         <button
           onClick={handleCancel}
-          className="absolute top-4 right-4 cursor-pointer z-20 hover:opacity-70 transition-opacity"
+          className="absolute top-5 right-5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-20"
           aria-label="Close dialog"
           type="button"
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400">
-            <path d="M1 1L11 11M1 11L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
@@ -411,24 +412,24 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                           )}
                         </div>
 
-                        {collection.image ? (
-                          <img
-                            className="relative w-12 h-12 object-cover rounded-full"
-                            alt={collection.name}
-                            src={collection.image}
-                          />
-                        ) : (
-                          <div className="relative w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-lg font-medium text-gray-600">
-                              {collection.firstLetter}
-                            </span>
-                          </div>
-                        )}
-                        <div className="inline-flex flex-col items-start justify-center gap-1 relative flex-[0_0_auto]">
-                          <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
-                            {collection.name}
-                          </span>
+                        <div className="relative">
+                          {collection.image ? (
+                            <img
+                              className="w-12 h-12 object-cover rounded-full"
+                              alt={collection.name}
+                              src={collection.image}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-lg font-medium text-gray-600">
+                                {collection.firstLetter}
+                              </span>
+                            </div>
+                          )}
                         </div>
+                        <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
+                          {collection.name}
+                        </span>
                       </div>
                     </li>
                   ))}

@@ -53,6 +53,7 @@ export interface SpaceData {
 export interface TreasuryCardProps {
   space: SpaceData;
   onClick?: () => void;
+  onEdit?: () => void; // Edit button callback - only shown when provided (for owner's own collections)
   emptyAction?: {
     label: string;
     href: string;
@@ -145,6 +146,7 @@ const getDisplayHostname = (url: string): string => {
 export const TreasuryCard = ({
   space,
   onClick,
+  onEdit,
   emptyAction,
 }: TreasuryCardProps): JSX.Element => {
   const title = getSpaceDisplayName(space);
@@ -160,21 +162,7 @@ export const TreasuryCard = ({
         className={`relative w-full h-fit flex flex-col items-start gap-2 ${onClick ? 'cursor-pointer' : ''}`}
         onClick={onClick}
       >
-        {/* Private space corner badge */}
-        {isPrivateSpace && (
-          <div className="absolute top-0 right-0 w-0 h-0 border-l-[0px] border-r-[30px] border-t-[30px] border-b-[0px] border-r-transparent border-t-red/30 z-20">
-            <div className="absolute -top-[28px] -right-[26px] w-6 h-6 flex items-center justify-center">
-              <svg className="w-3 h-3 text-red rotate-45" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-        )}
-        <div className={`flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] overflow-hidden ${
-          isPrivateSpace
-            ? 'border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10'
-            : 'bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]'
-        } ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`} style={{ aspectRatio: '16 / 9' }}>
+        <div className={`flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`} style={{ aspectRatio: '16 / 9' }}>
           {emptyAction ? (
             <Link
               to={emptyAction.href}
@@ -199,21 +187,39 @@ export const TreasuryCard = ({
         </div>
         <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
           <div className="flex items-center gap-2 min-w-0 flex-1">
+            {isPrivateSpace && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E0E0E0] rounded-[100px] flex-shrink-0">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                  <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                <span className="text-[#454545] text-[12px] font-medium">Private</span>
+              </span>
+            )}
             <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
               {title}
             </h2>
-            {isPrivateSpace && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 flex-shrink-0">
-                <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap">
+              {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
+            </p>
+            {/* Edit button - only shown for owner */}
+            {onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                aria-label="Edit collection"
+              >
+                <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
-                <span className="text-red text-xs font-medium leading-none">私享</span>
-              </div>
+              </button>
             )}
           </div>
-          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap flex-shrink-0">
-            {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
-          </p>
         </header>
       </section>
     );
@@ -226,21 +232,7 @@ export const TreasuryCard = ({
       className="relative w-full h-fit flex flex-col items-start gap-2 cursor-pointer"
       onClick={onClick}
     >
-      {/* Private space corner badge */}
-      {isPrivateSpace && (
-        <div className="absolute top-0 right-0 w-0 h-0 border-l-[0px] border-r-[30px] border-t-[30px] border-b-[0px] border-r-transparent border-t-red/30 z-20">
-          <div className="absolute -top-[28px] -right-[26px] w-6 h-6 flex items-center justify-center">
-            <svg className="w-3 h-3 text-red rotate-45" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-        </div>
-      )}
-      <div className={`flex items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden ${
-        isPrivateSpace
-          ? 'border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10 hover:border-red/30 hover:from-red/8 hover:to-red/15'
-          : 'bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]'
-      }`} style={{ aspectRatio: '16 / 9' }}>
+      <div className="flex items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]" style={{ aspectRatio: '16 / 9' }}>
         {/* Main item on the left - takes ~65% width */}
         <article className="flex flex-col items-start justify-center gap-[5px] px-[15px] py-[15px] relative self-stretch w-[65%] flex-shrink-0 rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <div
@@ -303,21 +295,39 @@ export const TreasuryCard = ({
 
       <header className="justify-between flex items-center relative self-stretch w-full flex-[0_0_auto]">
         <div className="flex items-center gap-2 min-w-0 flex-1">
+          {isPrivateSpace && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E0E0E0] rounded-[100px] flex-shrink-0">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+              <span className="text-[#454545] text-[12px] font-medium">Private</span>
+            </span>
+          )}
           <h2 className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-5 whitespace-nowrap">
             {title}
           </h2>
-          {isPrivateSpace && (
-            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 flex-shrink-0">
-              <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap">
+            {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
+          </p>
+          {/* Edit button - only shown for owner */}
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              aria-label="Edit collection"
+            >
+              <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
-              <span className="text-red text-xs font-medium leading-none">私享</span>
-            </div>
+            </button>
           )}
         </div>
-        <p className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[12px] tracking-[0] leading-4 whitespace-nowrap flex-shrink-0">
-          {treasureCount} {treasureCount === 1 ? 'treasure' : 'treasures'}
-        </p>
       </header>
     </section>
   );

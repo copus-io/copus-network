@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { Button } from '../ui/button';
 import { useToast } from '../ui/toast';
 import {
   parseCSV,
@@ -30,7 +29,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
-  // 重置状态
+  // Reset state
   const resetState = () => {
     setStep('upload');
     setParseResult(null);
@@ -41,7 +40,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
     }
   };
 
-  // 处理文件选择
+  // Handle file selection
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -50,44 +49,44 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
       const content = await detectAndConvertEncoding(file);
       let result: CSVParseResult;
 
-      // 根据文件扩展名选择解析方式
+      // Select parsing method based on file extension
       if (file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm')) {
-        // 处理浏览器书签HTML文件
+        // Handle browser bookmarks HTML file
         const bookmarks = parseBookmarksHTML(content);
         result = {
           success: bookmarks.length > 0,
           data: bookmarks,
-          errors: bookmarks.length === 0 ? ['未在HTML文件中找到有效的书签'] : [],
+          errors: bookmarks.length === 0 ? ['No valid bookmarks found in HTML file'] : [],
           totalRows: bookmarks.length,
           validRows: bookmarks.length
         };
       } else {
-        // 处理CSV文件
+        // Handle CSV file
         result = parseCSV(content);
       }
 
       setParseResult(result);
 
       if (result.success) {
-        // 默认选中所有有效项
+        // Select all valid items by default
         setSelectedItems(new Set(Array.from({ length: result.data.length }, (_, i) => i)));
         setStep('preview');
-        showToast(`成功解析 ${result.validRows} 条收藏记录`, 'success');
+        showToast(`Successfully parsed ${result.validRows} bookmarks`, 'success');
       } else {
-        showToast(`解析失败: ${result.errors[0]}`, 'error');
+        showToast(`Parse failed: ${result.errors[0]}`, 'error');
       }
 
-      // 显示警告信息
+      // Show warning messages
       if (result.errors.length > 0) {
-        console.warn('CSV解析警告:', result.errors);
+        console.warn('CSV parsing warnings:', result.errors);
       }
     } catch (error) {
-      console.error('文件处理失败:', error);
-      showToast('文件处理失败，请检查文件格式', 'error');
+      console.error('File processing failed:', error);
+      showToast('File processing failed, please check file format', 'error');
     }
   };
 
-  // 切换选择状态
+  // Toggle selection state
   const toggleItemSelection = (index: number) => {
     const newSelected = new Set(selectedItems);
     if (newSelected.has(index)) {
@@ -98,7 +97,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
     setSelectedItems(newSelected);
   };
 
-  // 全选/全不选
+  // Select all / Deselect all
   const toggleSelectAll = () => {
     if (selectedItems.size === parseResult?.data.length) {
       setSelectedItems(new Set());
@@ -107,7 +106,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
     }
   };
 
-  // 执行导入
+  // Execute import
   const handleImport = async () => {
     if (!parseResult || selectedItems.size === 0) return;
 
@@ -117,23 +116,23 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
     try {
       const itemsToImport = Array.from(selectedItems).map(index => ({
         ...parseResult.data[index],
-        url: normalizeUrl(parseResult.data[index].url) // 规范化URL
+        url: normalizeUrl(parseResult.data[index].url) // Normalize URL
       }));
 
       await onImport(itemsToImport);
-      showToast(`成功导入 ${itemsToImport.length} 条收藏`, 'success');
+      showToast(`Successfully imported ${itemsToImport.length} bookmarks`, 'success');
       onClose();
       resetState();
     } catch (error) {
-      console.error('导入失败:', error);
-      showToast(`导入失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error');
-      setStep('preview'); // 回到预览状态
+      console.error('Import failed:', error);
+      showToast(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+      setStep('preview'); // Return to preview state
     } finally {
       setIsImporting(false);
     }
   };
 
-  // 下载CSV模板
+  // Download CSV template
   const downloadTemplate = () => {
     const template = generateCSVTemplate();
     const blob = new Blob([template], { type: 'text/csv;charset=utf-8' });
@@ -145,51 +144,53 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast('CSV模板已下载', 'success');
+    showToast('CSV template downloaded', 'success');
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        {/* 标题栏 */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {step === 'upload' && '导入收藏'}
-            {step === 'preview' && '预览导入数据'}
-            {step === 'importing' && '正在导入...'}
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col relative">
+        {/* Close button */}
+        <button
+          onClick={() => {
+            onClose();
+            resetState();
+          }}
+          className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-10"
+          disabled={isImporting}
+        >
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* Title bar */}
+        <div className="flex items-center justify-between pt-10 px-6 pb-3">
+          <h2 className="text-2xl font-normal text-gray-800">
+            {step === 'upload' && 'Import bookmarks'}
+            {step === 'preview' && 'Preview import data'}
+            {step === 'importing' && 'Importing...'}
           </h2>
-          <button
-            onClick={() => {
-              onClose();
-              resetState();
-            }}
-            className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
-            disabled={isImporting}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
-        {/* 内容区域 */}
+        {/* Content area */}
         <div className="flex-1 overflow-y-auto">
           {step === 'upload' && (
             <div className="p-6">
-              {/* 上传区域 */}
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200 cursor-pointer group"
+              {/* Upload area */}
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-gray-400 hover:bg-gray-50/30 transition-all duration-200 cursor-pointer group"
                    onClick={() => fileInputRef.current?.click()}>
-                <div className="space-y-6">
-                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto group-hover:bg-blue-200 transition-colors">
-                    <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto group-hover:bg-gray-200 transition-colors">
+                    <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">拖拽或点击上传文件</h3>
-                    <p className="text-gray-600">支持 CSV 文件或浏览器书签文件 (.html)</p>
+                    <h3 className="text-base font-medium text-gray-800 mb-1">Drag and drop or click to upload</h3>
+                    <p className="text-sm text-gray-500">Supports CSV files or browser bookmark files (.html)</p>
                   </div>
                   <input
                     ref={fileInputRef}
@@ -199,30 +200,30 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                     className="hidden"
                   />
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         fileInputRef.current?.click();
                       }}
-                      className="bg-blue-600 hover:bg-blue-700 px-8"
+                      className="inline-flex items-center justify-center px-5 py-2.5 rounded-[100px] text-base font-medium transition-colors hover:bg-red/90 bg-red"
+                      style={{ color: '#ffffff' }}
                     >
-                      选择文件
-                    </Button>
-                    <Button
-                      variant="outline"
+                      Select File
+                    </button>
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         downloadTemplate();
                       }}
-                      className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                      className="inline-flex items-center justify-center px-5 py-2.5 rounded-[100px] text-base font-medium border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                     >
-                      下载CSV模板
-                    </Button>
+                      Download CSV Template
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* 帮助按钮和折叠说明 */}
+              {/* Help button and collapsible instructions */}
               <div className="mt-6">
                 <button
                   onClick={() => setShowHelp(!showHelp)}
@@ -231,7 +232,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                   <svg className={`w-5 h-5 transition-transform ${showHelp ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  <span className="text-sm font-medium">文件格式说明</span>
+                  <span className="text-sm font-medium">File Format Guide</span>
                 </button>
 
                 {showHelp && (
@@ -242,23 +243,23 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                           <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                             <span className="text-lg">📄</span>
                           </div>
-                          <h5 className="font-semibold text-gray-800">CSV 文件</h5>
+                          <h5 className="font-semibold text-gray-800">CSV File</h5>
                         </div>
                         <p className="text-sm text-gray-600 mb-4">
-                          结构化数据文件，包含标题、URL、封面等字段
+                          Structured data file with title, URL, cover, and other fields
                         </p>
 
                         <div className="bg-white/50 p-3 rounded-lg mb-4">
-                          <h6 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">支持字段</h6>
+                          <h6 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Supported Fields</h6>
                           <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div><span className="font-medium text-green-700">title*</span> 标题</div>
-                            <div><span className="font-medium text-green-700">url*</span> 链接</div>
-                            <div><span className="font-medium text-blue-600">description</span> 描述</div>
-                            <div><span className="font-medium text-blue-600">category</span> 分类</div>
-                            <div><span className="font-medium text-blue-600">tags</span> 标签</div>
-                            <div><span className="font-medium text-purple-600">cover</span> 封面</div>
+                            <div><span className="font-medium text-green-700">title*</span> Title</div>
+                            <div><span className="font-medium text-green-700">url*</span> Link</div>
+                            <div><span className="font-medium text-blue-600">description</span> Description</div>
+                            <div><span className="font-medium text-blue-600">category</span> Category</div>
+                            <div><span className="font-medium text-blue-600">tags</span> Tags</div>
+                            <div><span className="font-medium text-purple-600">cover</span> Cover</div>
                           </div>
-                          <p className="text-xs text-gray-500 mt-2">* 必需字段</p>
+                          <p className="text-xs text-gray-500 mt-2">* Required fields</p>
                         </div>
                       </div>
 
@@ -267,14 +268,14 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                           <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                             <span className="text-lg">🌐</span>
                           </div>
-                          <h5 className="font-semibold text-gray-800">浏览器书签</h5>
+                          <h5 className="font-semibold text-gray-800">Browser Bookmarks</h5>
                         </div>
                         <p className="text-sm text-gray-600 mb-4">
-                          从各种浏览器导出的HTML格式书签文件
+                          HTML format bookmark files exported from various browsers
                         </p>
 
                         <div className="bg-white/50 p-3 rounded-lg">
-                          <h6 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">支持浏览器</h6>
+                          <h6 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Supported Browsers</h6>
                           <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
                             <div>• Chrome</div>
                             <div>• Firefox</div>
@@ -292,7 +293,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
 
           {step === 'preview' && parseResult && (
             <div className="p-6 space-y-6">
-              {/* 顶部统计卡片 */}
+              {/* Top statistics card */}
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -303,24 +304,23 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                     </div>
                     <div>
                       <h4 className="text-lg font-bold text-green-800">
-                        解析成功：{parseResult.validRows} 条有效记录
+                        Successfully parsed: {parseResult.validRows} valid records
                       </h4>
                       <p className="text-green-600">
-                        已选择 <span className="font-semibold">{selectedItems.size}</span> 条记录导入
+                        Selected <span className="font-semibold">{selectedItems.size}</span> records to import
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
+                  <button
                     onClick={toggleSelectAll}
-                    className="text-green-700 border-green-300 hover:bg-green-100 font-medium"
+                    className="inline-flex items-center justify-center h-9 px-4 rounded-md text-sm font-medium border border-green-300 text-green-700 bg-white hover:bg-green-100 transition-colors"
                   >
-                    {selectedItems.size === parseResult.data.length ? '全不选' : '全选'}
-                  </Button>
+                    {selectedItems.size === parseResult.data.length ? 'Deselect All' : 'Select All'}
+                  </button>
                 </div>
               </div>
 
-              {/* 警告信息（如果有） */}
+              {/* Warning messages (if any) */}
               {parseResult.errors.length > 0 && (
                 <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg">
                   <div className="flex items-start gap-3">
@@ -328,7 +328,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                     <div className="flex-1">
-                      <h4 className="font-medium text-amber-800 mb-2">发现 {parseResult.errors.length} 个问题</h4>
+                      <h4 className="font-medium text-amber-800 mb-2">Found {parseResult.errors.length} issues</h4>
                       <div className="text-sm text-amber-700 space-y-1">
                         {parseResult.errors.slice(0, 3).map((error, index) => (
                           <div key={index}>• {error}</div>
@@ -336,7 +336,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                         {parseResult.errors.length > 3 && (
                           <details className="mt-2">
                             <summary className="cursor-pointer text-amber-600 hover:text-amber-800 font-medium">
-                              查看更多 ({parseResult.errors.length - 3} 个)
+                              View more ({parseResult.errors.length - 3})
                             </summary>
                             <div className="mt-2 space-y-1">
                               {parseResult.errors.slice(3).map((error, index) => (
@@ -351,23 +351,23 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                 </div>
               )}
 
-              {/* 数据预览 */}
+              {/* Data preview */}
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800">数据预览</h3>
-                  <p className="text-sm text-gray-600 mt-1">预览前20条记录，确认数据正确性</p>
+                  <h3 className="text-lg font-semibold text-gray-800">Data Preview</h3>
+                  <p className="text-sm text-gray-600 mt-1">Preview first 20 records to confirm data accuracy</p>
                 </div>
 
                 <div className="max-h-80 overflow-y-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 sticky top-0 border-b border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide w-16">选择</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">标题</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide w-16">Select</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Title</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">URL</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">分类</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Category</th>
                         {parseResult.data.some(item => item.cover) && (
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">封面</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Cover</th>
                         )}
                       </tr>
                     </thead>
@@ -417,7 +417,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                               {item.cover ? (
                                 <img
                                   src={item.cover}
-                                  alt="封面"
+                                  alt="Cover"
                                   className="w-8 h-8 object-cover rounded border"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
@@ -425,7 +425,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                                   }}
                                 />
                               ) : (
-                                <span className="text-gray-400 text-xs">无</span>
+                                <span className="text-gray-400 text-xs">None</span>
                               )}
                             </td>
                           )}
@@ -437,7 +437,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                   {parseResult.data.length > 20 && (
                     <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 text-center">
                       <p className="text-sm text-gray-600">
-                        还有 {parseResult.data.length - 20} 条记录未显示
+                        {parseResult.data.length - 20} more records not shown
                       </p>
                     </div>
                   )}
@@ -463,9 +463,9 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="text-xl font-bold text-gray-800">正在导入您的收藏</h3>
+                  <h3 className="text-xl font-bold text-gray-800">Importing your bookmarks</h3>
                   <p className="text-gray-600 leading-relaxed">
-                    正在将 <span className="font-semibold text-blue-600">{selectedItems.size}</span> 条记录导入到您的空间
+                    Importing <span className="font-semibold text-blue-600">{selectedItems.size}</span> records to your space
                   </p>
                 </div>
 
@@ -474,7 +474,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                     <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
-                    <span>请勿关闭此窗口，导入过程可能需要几分钟</span>
+                    <span>Please do not close this window, import may take a few minutes</span>
                   </div>
                 </div>
               </div>
@@ -482,49 +482,41 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
           )}
         </div>
 
-        {/* 操作按钮 */}
+        {/* Action buttons */}
         {step !== 'importing' && (
-          <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-            <Button
-              variant="outline"
+          <div className="flex items-center justify-end gap-2.5 p-6 border-t border-gray-200 bg-gray-50">
+            {step === 'preview' && (
+              <button
+                onClick={() => setStep('upload')}
+                className="inline-flex items-center justify-center px-5 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                  Back
+                </span>
+              </button>
+            )}
+            <button
               onClick={() => {
                 onClose();
                 resetState();
               }}
-              className="text-gray-600 border-gray-300 hover:bg-gray-100"
+              className="inline-flex items-center justify-center px-5 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
             >
-              取消
-            </Button>
-
-            <div className="flex gap-3">
-              {step === 'preview' && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setStep('upload')}
-                    className="text-gray-600 border-gray-300 hover:bg-gray-100"
-                  >
-                    重新选择
-                  </Button>
-                  <Button
-                    onClick={handleImport}
-                    disabled={selectedItems.size === 0}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed px-6"
-                  >
-                    {selectedItems.size > 0 ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        导入 {selectedItems.size} 条记录
-                      </span>
-                    ) : (
-                      '请选择要导入的记录'
-                    )}
-                  </Button>
-                </>
-              )}
-            </div>
+              <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                Cancel
+              </span>
+            </button>
+            {step === 'preview' && (
+              <button
+                onClick={handleImport}
+                disabled={selectedItems.size === 0}
+                className="inline-flex items-center justify-center px-5 py-2.5 rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                  {selectedItems.size > 0 ? `Import ${selectedItems.size} Items` : 'Select items to import'}
+                </span>
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -216,7 +216,7 @@ const TreasuryHeaderSection = ({
           {onCreate && isOwnProfile && (
             <button
               onClick={onCreate}
-              className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-4 py-2 bg-red hover:bg-red/90 text-white rounded-[50px] shadow-lg transition-colors [font-family:'Lato',Helvetica] font-bold text-sm"
+              className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-4 py-2 bg-red hover:bg-red/90 text-white rounded-[50px] shadow-lg transition-colors [font-family:'Lato',Helvetica] font-normal text-sm"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M6 0V12M0 6H12" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
@@ -289,7 +289,7 @@ const TreasuryHeaderSection = ({
             {onCreate && isOwnProfile && (
               <button
                 onClick={onCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-red hover:bg-red/90 text-white rounded-[50px] shadow-lg transition-colors [font-family:'Lato',Helvetica] font-bold text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-red hover:bg-red/90 text-white rounded-[50px] shadow-lg transition-colors [font-family:'Lato',Helvetica] font-normal text-sm"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M6 0V12M0 6H12" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
@@ -419,6 +419,10 @@ export const MainContentSection = (): JSX.Element => {
 
   // Create Space Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Edit Space Modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSpace, setEditingSpace] = useState<any>(null);
 
   // Import CSV Modal state
   const [showImportModal, setShowImportModal] = useState(false);
@@ -783,13 +787,11 @@ export const MainContentSection = (): JSX.Element => {
                 ownerInfo: space.ownerInfo || { username: displayUser?.username || 'Anonymous' },
               }}
               onClick={() => handleSpaceClick(space)}
-              isEditable={!isViewingOtherUser}
-              onEdit={() => {
-                // Navigate to edit page or open edit modal for custom spaces (spaceType 0)
-                if (space.namespace) {
-                  navigate(`/treasury/${space.namespace}`);
-                }
-              }}
+              onEdit={!isViewingOtherUser && space.spaceType !== 1 && space.spaceType !== 2 ? () => {
+                // Open edit modal for custom spaces (spaceType 0)
+                setEditingSpace(space);
+                setShowEditModal(true);
+              } : undefined}
             />
           ))
         )}
@@ -802,6 +804,37 @@ export const MainContentSection = (): JSX.Element => {
         onSuccess={handleSpaceCreated}
         mode="full"
         title="Create new treasury"
+      />
+
+      {/* Edit Space Modal */}
+      <CreateSpaceModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingSpace(null);
+        }}
+        onSuccess={(updatedSpace) => {
+          // Update the space in the local state
+          setSpaces(prevSpaces =>
+            prevSpaces.map(s =>
+              s.id === editingSpace?.id ? { ...s, ...updatedSpace } : s
+            )
+          );
+          setShowEditModal(false);
+          setEditingSpace(null);
+        }}
+        mode="full"
+        title="Edit collection"
+        submitLabel="Save"
+        editMode={true}
+        editSpaceId={editingSpace?.id}
+        initialData={editingSpace ? {
+          name: editingSpace.name,
+          description: editingSpace.description,
+          coverUrl: editingSpace.coverUrl,
+          faceUrl: editingSpace.faceUrl,
+          visibility: editingSpace.visibility
+        } : undefined}
       />
 
       {/* Import CSV Modal */}

@@ -44,6 +44,7 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
   const [parsedItems, setParsedItems] = useState<ParsedCSVItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [spaceName, setSpaceName] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
 
   // Parse CSV content
   const parseCSV = (content: string): CSVRecord[] => {
@@ -117,7 +118,7 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
     // File size limit: 10MB
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      showToast('文件过大，请选择小于10MB的CSV文件', 'error');
+      showToast('File too large, please select a CSV file smaller than 10MB', 'error');
       return;
     }
 
@@ -130,7 +131,7 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
       const transformedItems = transformCSVRecords(csvRecords);
 
       if (transformedItems.length === 0) {
-        showToast('没有找到有效的条目。请确保CSV文件包含title和url列，并且至少有一行有效数据。', 'error');
+        showToast('No valid entries found. Please ensure the CSV file contains title and url columns with at least one valid row.', 'error');
         return;
       }
 
@@ -145,7 +146,7 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
       });
 
       if (validItems.length !== transformedItems.length) {
-        showToast(`已解析 ${transformedItems.length} 个条目，其中 ${validItems.length} 个有效。已过滤掉无效的URL。`, 'success');
+        showToast(`Parsed ${transformedItems.length} entries, ${validItems.length} are valid. Invalid URLs have been filtered out.`, 'success');
       }
 
       // 限制每次导入数量（防止性能问题）
@@ -155,7 +156,7 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
         : transformedItems;
 
       if (transformedItems.length > maxItems) {
-        showToast(`文件包含 ${transformedItems.length} 个条目，已限制为前 ${maxItems} 个以确保性能。`, 'success');
+        showToast(`File contains ${transformedItems.length} entries, limited to first ${maxItems} for performance.`, 'success');
       }
 
       setParsedItems(finalItems);
@@ -214,7 +215,7 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
     onImportComplete({
       spaceName: spaceName.trim(),
       items: selectedItemsData,
-      isPrivate: true // CSV导入默认为私享空间
+      isPrivate: isPrivate
     });
 
     handleClose();
@@ -225,6 +226,7 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
     setParsedItems([]);
     setSelectedItems(new Set());
     setSpaceName('');
+    setIsPrivate(false);
     setIsLoading(false);
     onClose();
   };
@@ -304,12 +306,6 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
                     <p className="font-medium mb-1">Expected CSV format:</p>
                     <p>• Required: <code className="bg-gray-100 px-1 rounded">title</code>, <code className="bg-gray-100 px-1 rounded">url</code></p>
                     <p>• Optional: <code className="bg-gray-100 px-1 rounded">note</code>, <code className="bg-gray-100 px-1 rounded">excerpt</code>, <code className="bg-gray-100 px-1 rounded">cover</code>, <code className="bg-gray-100 px-1 rounded">tags</code></p>
-
-                    <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-md">
-                      <p className="text-amber-800 text-sm">
-                        🔒 <strong>隐私保护：</strong>CSV导入的内容将创建为私享空间，只有你能看到。你可以稍后选择将内容设为公开。
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -335,7 +331,7 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
                   htmlFor="space-name-input"
                   className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
                 >
-                  Private Space Name
+                  Space Name
                 </label>
                 <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                   <input
@@ -347,9 +343,27 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
                     className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
                   />
                 </div>
+              </div>
 
-                <div className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-md">
-                  🔒 将创建为私享空间 · 只有你可以查看这些导入的书签
+              {/* Private Toggle */}
+              <div className="flex items-center gap-3 w-full">
+                <div
+                  onClick={() => setIsPrivate(!isPrivate)}
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer flex-shrink-0 ${
+                    isPrivate
+                      ? 'bg-red border-red'
+                      : 'bg-white border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {isPrivate && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700">Private</span>
+                  <span className="text-xs text-gray-500">Only you can see this space</span>
                 </div>
               </div>
 
@@ -363,14 +377,14 @@ export const CSVImportModal: React.FC<CSVImportModalProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={selectAll}
-                    className="px-3 py-1 text-sm rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="px-3 py-1 text-sm text-gray-700 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
                     type="button"
                   >
                     Select All
                   </button>
                   <button
                     onClick={selectNone}
-                    className="px-3 py-1 text-sm rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="px-3 py-1 text-sm text-gray-700 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
                     type="button"
                   >
                     Select None

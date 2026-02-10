@@ -274,14 +274,14 @@ export const ArenaImportModal: React.FC<ArenaImportModalProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={selectAll}
-                    className="px-3 py-1 text-sm rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="px-3 py-1 text-sm text-gray-700 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
                     type="button"
                   >
                     Select All
                   </button>
                   <button
                     onClick={selectNone}
-                    className="px-3 py-1 text-sm rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+                    className="px-3 py-1 text-sm text-gray-700 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
                     type="button"
                   >
                     Select None

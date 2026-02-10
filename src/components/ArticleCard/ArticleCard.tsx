@@ -190,10 +190,10 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
     switch (layout) {
       case 'preview':
         return (
-          <CardContent className="flex flex-col items-start gap-[20px] py-5 px-[30px] w-full">
-            <div className="flex flex-col items-start justify-center gap-[15px] w-full min-w-0 max-w-full">
+          <CardContent className="flex flex-col items-start gap-4 py-4 px-5 w-full">
+            <div className="flex flex-col items-start justify-center gap-3 w-full min-w-0 max-w-full">
               <div
-                className="flex flex-col items-end justify-end p-2.5 w-full bg-cover bg-[50%_50%] rounded-lg relative"
+                className="flex flex-col items-end justify-end p-2 w-full bg-cover bg-[50%_50%] rounded-lg relative"
                 style={{
                   backgroundImage: article.coverImage
                     ? `url(${article.coverImage})`
@@ -204,61 +204,49 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 {!article.coverImage && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-1.5">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-gray-500 text-base">Cover Preview</p>
+                      <p className="text-gray-500 text-sm">Cover preview</p>
                     </div>
                   </div>
                 )}
 
                 {/* Hide website link for paid/locked content */}
                 {!article.isPaymentRequired && (
-                  <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-white rounded-[15px] overflow-hidden">
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-sm text-right tracking-[0] leading-[18.2px] whitespace-nowrap">
+                  <div className="inline-flex items-start gap-1 px-2 py-1 bg-white rounded-[12px] overflow-hidden">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-xs text-right tracking-[0] leading-4 whitespace-nowrap">
                       {article.website || 'Visit content'}
                     </span>
                   </div>
                 )}
               </div>
 
-              <div className="flex flex-col items-start gap-[15px] w-full min-w-0 max-w-full">
+              <div className="flex flex-col items-start gap-3 w-full min-w-0 max-w-full">
                 {/* Title with x402 payment badge - Same line */}
-                <div className="w-full min-h-[72px] overflow-hidden">
+                <div className="w-full min-h-[54px] overflow-hidden">
                   {article.isPaymentRequired && article.paymentPrice && (
-                    <div className="float-left h-[36px] px-1.5 mr-[5px] mb-[10px] border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[3px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
+                    <div className="float-left h-[28px] px-1.5 mr-1 mb-1 border-[#0052ff] bg-[linear-gradient(0deg,rgba(0,82,255,0.8)_0%,rgba(0,82,255,0.8)_100%),linear-gradient(0deg,rgba(255,254,254,1)_0%,rgba(255,254,254,1)_100%)] rounded-[50px] inline-flex items-center justify-center gap-[2px] backdrop-blur-[2px] backdrop-brightness-[100%] [-webkit-backdrop-filter:blur(2px)_brightness(100%)] border border-solid">
                       <img
-                        className="w-[21px] h-5 flex-shrink-0"
+                        className="w-4 h-4 flex-shrink-0"
                         alt="x402 payment"
                         src={getIconUrl('X402_PAYMENT')}
                       />
-                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-base tracking-[0] leading-4 whitespace-nowrap">
+                      <span className="[font-family:'Lato',Helvetica] font-light text-[#ffffff] text-sm tracking-[0] leading-3.5 whitespace-nowrap">
                         {article.paymentPrice}
                       </span>
                     </div>
                   )}
-                  <div className="flex items-start gap-2 w-full">
-                    <div className="flex items-start gap-2 flex-1">
-                      {isArticlePrivate() && (
-                        <div className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 mt-1">
-                          <svg className="w-3 h-3 text-red" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
-                          </svg>
-                          <span className="text-red text-xs font-medium leading-none">私享</span>
-                        </div>
-                      )}
-                      <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-[36px] break-words line-clamp-2 flex-1 min-w-0">
-                        {article.title || 'Enter a title...'}
-                      </h3>
-                    </div>
-                  </div>
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-lg tracking-[0] leading-[27px] break-words line-clamp-2 min-w-0">
+                    {article.title || 'Enter a title...'}
+                  </h3>
                 </div>
 
-                <div className="flex flex-col gap-[15px] px-2.5 py-[15px] w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                <div className="flex flex-col gap-3 px-2 py-3 w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
                   <p
-                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-[27px] overflow-hidden min-h-[54px]"
+                    className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-[21px] overflow-hidden min-h-[42px]"
                     style={{
                       display: '-webkit-box',
                       WebkitBoxOrient: 'vertical',
@@ -273,20 +261,78 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                   </p>
 
                   <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-2 min-w-0 max-w-[60%]">
-                      <Avatar className="w-[18px] h-[18px] flex-shrink-0">
+                    <div className="flex items-center gap-1.5 min-w-0 max-w-[60%]">
+                      <Avatar className="w-4 h-4 flex-shrink-0">
                         <AvatarImage src={article.userAvatar} alt={article.userName} className="object-cover" />
                       </Avatar>
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] truncate">
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-xs tracking-[0] leading-4 truncate">
                         {article.userName}
                       </span>
                     </div>
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-xs tracking-[0] leading-4">
                       Preview
                     </span>
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Action buttons area */}
+            <div className="flex items-center justify-between w-full">
+              {/* Left side: Treasure count, comment count, and view count */}
+              <div className="flex items-center gap-3">
+                {/* Treasure count */}
+                <div className="flex items-center gap-1.5">
+                  <img
+                    className="w-[11px] h-4"
+                    alt="Treasure"
+                    src="https://c.animaapp.com/mft5gmofxQLTNf/img/treasure-icon.svg"
+                    style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                  />
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[#696969] text-center tracking-[0] leading-4 text-[13px]">
+                    {typeof article.treasureCount === 'string' ? parseInt(article.treasureCount) || 0 : article.treasureCount}
+                  </span>
+                </div>
+                {/* Comment count - hide for private articles */}
+                {!isArticlePrivate() && (
+                  <div className="flex items-center gap-1.5">
+                    <img
+                      className="w-4 h-4"
+                      alt="Comments"
+                      src={commentIcon}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-bold text-[#696969] text-center tracking-[0] leading-4 text-[13px]">
+                      {article.commentCount || 0}
+                    </span>
+                  </div>
+                )}
+                {/* View count - only show for non-private */}
+                {!isArticlePrivate() && (
+                  <div className="flex items-center gap-1.5">
+                    <img
+                      className="w-4 h-4"
+                      alt="Views"
+                      src={getIconUrl('VIEW')}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-[#696969] text-center tracking-[0] leading-4 text-[13px]">
+                      {article.visitCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right side: Private tag for private articles */}
+              {isArticlePrivate() && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E0E0E0] rounded-[100px]">
+                  <svg className="w-4 h-4" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                    <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                  </svg>
+                  <span className="text-[#454545] text-[14px] font-medium">Private</span>
+                </span>
+              )}
             </div>
           </CardContent>
         );
@@ -330,29 +376,9 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <div className="flex items-start gap-2 w-full">
-                    <div className="flex items-start gap-2 flex-1">
-                      {isArticlePrivate() && (
-                        <div className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 mt-0.5">
-                          <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
-                          </svg>
-                          <span className="text-red text-xs font-medium leading-none">私享</span>
-                        </div>
-                      )}
-                      <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] tracking-[0] leading-[27px] break-words line-clamp-2 flex-1 min-w-0">
-                        {article.title}
-                      </h3>
-                    </div>
-                    {isArticlePrivate() && (
-                      <div className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 mt-0.5">
-                        <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-red text-xs font-medium leading-none">私享</span>
-                      </div>
-                    )}
-                  </div>
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] tracking-[0] leading-[27px] break-words line-clamp-2 min-w-0">
+                    {article.title}
+                  </h3>
                 </div>
 
                 <div className="flex flex-col gap-[15px] px-2.5 py-[15px] rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
@@ -417,24 +443,26 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     disabled={!onLike} // Disable when no onLike callback (user not logged in)
                   />
                 )}
-                {/* Comment count */}
-                <div
-                  className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg transition-all duration-200"
-                  onClick={handleCommentClick}
-                  title="View comments"
-                >
-                  <img
-                    className="w-4 h-4 transition-all duration-200"
-                    alt="Comments"
-                    src={commentIcon}
-                    style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
-                  />
-                  <span className="[font-family:'Lato',Helvetica] font-bold text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
-                    {article.commentCount || 0}
-                  </span>
-                </div>
-                {/* View count - moved to left side */}
-                {actions.showVisits && (
+                {/* Comment count - hide for private articles */}
+                {!isArticlePrivate() && (
+                  <div
+                    className="flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg transition-all duration-200"
+                    onClick={handleCommentClick}
+                    title="View comments"
+                  >
+                    <img
+                      className="w-4 h-4 transition-all duration-200"
+                      alt="Comments"
+                      src={commentIcon}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-bold text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
+                      {article.commentCount || 0}
+                    </span>
+                  </div>
+                )}
+                {/* View count - hide for private articles */}
+                {actions.showVisits && !isArticlePrivate() && (
                   <div className="flex items-center gap-1.5">
                     <img
                       className="w-4 h-4"
@@ -449,8 +477,18 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 )}
               </div>
 
-              {/* Right side: Edit/Delete buttons */}
+              {/* Right side: Private tag or Edit/Delete buttons */}
               <div className="flex items-center gap-3">
+                {/* Private tag */}
+                {isArticlePrivate() && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E0E0E0] rounded-[100px]">
+                    <svg className="w-4 h-4" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                      <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                    </svg>
+                    <span className="text-[#454545] text-[14px] font-medium">Private</span>
+                  </span>
+                )}
                 {/* Edit and delete buttons area */}
                 {(actions.showEdit || actions.showDelete) && (
                   <div className="flex items-center gap-3 min-h-[24px]">
@@ -541,19 +579,9 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <div className="flex items-start gap-1.5 w-full">
-                    {isArticlePrivate() && (
-                      <div className="flex-shrink-0 flex items-center gap-1 px-1 py-0.5 bg-red/8 rounded border border-red/15 mt-0.5">
-                        <svg className="w-2 h-2 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-red text-[10px] font-medium leading-none">私享</span>
-                      </div>
-                    )}
-                    <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-[20px] break-words line-clamp-2 flex-1">
-                      {article.title}
-                    </h3>
-                  </div>
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[14px] tracking-[0] leading-[20px] break-words line-clamp-2">
+                    {article.title}
+                  </h3>
                 </div>
 
                 <div className="flex flex-col gap-1.5 px-2 py-2 rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors flex-1">
@@ -587,9 +615,20 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                         {(article.userName && article.userName.trim() !== '') ? article.userName : 'Anonymous'}
                       </span>
                     </div>
-                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[11px] tracking-[0] leading-[14px] flex-shrink-0 ml-2">
-                      {formatDate(article.date)}
-                    </span>
+                    {/* Private tag at bottom right for compact layout */}
+                    {isArticlePrivate() ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#E0E0E0] rounded-[100px] flex-shrink-0 ml-2">
+                        <svg className="w-3 h-3" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                          <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                        </svg>
+                        <span className="text-[#454545] text-[11px] font-medium">Private</span>
+                      </span>
+                    ) : (
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-[11px] tracking-[0] leading-[14px] flex-shrink-0 ml-2">
+                        {formatDate(article.date)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -638,19 +677,9 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       </span>
                     </div>
                   )}
-                  <div className="flex items-start gap-2 w-full">
-                    {isArticlePrivate() && (
-                      <div className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-red/8 rounded-md border border-red/15 mt-0.5">
-                        <svg className="w-3 h-3 text-red" fill="currentColor" stroke="none" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-red text-xs font-medium leading-none">私享</span>
-                      </div>
-                    )}
-                    <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] 3xl:text-[20px] 4xl:text-[22px] tracking-[0] leading-[27px] 3xl:leading-[30px] 4xl:leading-[33px] break-words line-clamp-2 flex-1 min-w-0">
-                      {article.title}
-                    </h3>
-                  </div>
+                  <h3 className="[font-family:'Lato',Helvetica] font-semibold text-dark-grey text-[18px] 3xl:text-[20px] 4xl:text-[22px] tracking-[0] leading-[27px] 3xl:leading-[30px] 4xl:leading-[33px] break-words line-clamp-2 min-w-0">
+                    {article.title}
+                  </h3>
                 </div>
 
                 <div className="flex flex-col gap-2 3xl:gap-2.5 4xl:gap-3 px-2 py-2.5 3xl:px-2.5 3xl:py-3 4xl:px-3 4xl:py-3.5 rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] group-hover:bg-[linear-gradient(0deg,rgba(224,224,224,0.45)_0%,rgba(224,224,224,0.45)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] transition-colors">
@@ -712,24 +741,26 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                     disabled={!onLike} // Disable when no onLike callback (user not logged in)
                   />
                 )}
-                {/* Comment count */}
-                <div
-                  className="inline-flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg transition-all duration-200"
-                  onClick={handleCommentClick}
-                  title="View comments"
-                >
-                  <img
-                    className="w-4 h-4 transition-all duration-200"
-                    alt="Comments"
-                    src={commentIcon}
-                    style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
-                  />
-                  <span className="[font-family:'Lato',Helvetica] font-bold text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
-                    {article.commentCount || 0}
-                  </span>
-                </div>
-                {/* View count - moved to left side */}
-                {actions.showVisits && (
+                {/* Comment count - hide for private articles */}
+                {!isArticlePrivate() && (
+                  <div
+                    className="inline-flex items-center gap-1.5 cursor-pointer hover:bg-gray-100 rounded-lg transition-all duration-200"
+                    onClick={handleCommentClick}
+                    title="View comments"
+                  >
+                    <img
+                      className="w-4 h-4 transition-all duration-200"
+                      alt="Comments"
+                      src={commentIcon}
+                      style={{ filter: 'brightness(0) saturate(100%) invert(44%) sepia(0%) saturate(0%) hue-rotate(186deg) brightness(94%) contrast(88%)' }}
+                    />
+                    <span className="[font-family:'Lato',Helvetica] font-bold text-[#696969] text-center tracking-[0] leading-[16px] text-[13px] transition-colors duration-200">
+                      {article.commentCount || 0}
+                    </span>
+                  </div>
+                )}
+                {/* View count - hide for private articles */}
+                {actions.showVisits && !isArticlePrivate() && (
                   <div className="inline-flex items-center gap-1.5">
                     <img
                       className="w-4 h-4"
@@ -744,8 +775,18 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                 )}
               </div>
 
-              {/* Right side: Edit/Delete buttons */}
+              {/* Right side: Private tag or Edit/Delete buttons */}
               <div className="flex items-center gap-3">
+                {/* Private tag */}
+                {isArticlePrivate() && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E0E0E0] rounded-[100px]">
+                    <svg className="w-4 h-4" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                      <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                    </svg>
+                    <span className="text-[#454545] text-[14px] font-medium">Private</span>
+                  </span>
+                )}
                 {(actions.showEdit || actions.showDelete) && (
                   <div className="flex items-center gap-3">
                     {actions.showEdit && (
@@ -804,12 +845,12 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
     if (!isPrivate) return "";
 
     if (layout === 'preview') {
-      return "border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10";
+      return "bg-[#E0E0E0]/40";
     }
     if (layout === 'compact') {
-      return "border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10 hover:border-red/30 hover:from-red/8 hover:to-red/15";
+      return "bg-[#E0E0E0]/40 hover:bg-[#E0E0E0]/50";
     }
-    return "border-2 border-red/20 bg-gradient-to-br from-red/5 to-red/10 hover:border-red/30 hover:from-red/8 hover:to-red/15";
+    return "bg-[#E0E0E0]/40 hover:bg-[#E0E0E0]/50";
   };
 
   // Regular styling for non-private articles
@@ -840,16 +881,6 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
 
   const cardContent = (
     <Card className={`${cardClasses} relative overflow-hidden`}>
-      {/* Private article corner badge */}
-      {isPrivate && (
-        <div className="absolute top-0 right-0 w-0 h-0 border-l-[0px] border-r-[30px] border-t-[30px] border-b-[0px] border-r-transparent border-t-red/30 z-10">
-          <div className="absolute -top-[28px] -right-[26px] w-6 h-6 flex items-center justify-center">
-            <svg className="w-3 h-3 text-red rotate-45" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-        </div>
-      )}
       {renderCardContent()}
     </Card>
   );

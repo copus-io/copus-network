@@ -2065,22 +2065,7 @@ export const Content = (): JSX.Element => {
           <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
             <HeaderSection articleAuthorId={content?.userId} />
 
-        {/* Privacy Banner for Private Articles - Outside main layout */}
-        {article && (
-          <PrivacyBanner
-            isPrivate={article.isPrivate}
-            visibility={article.visibility}
-            isAuthor={user?.id === article.authorInfo?.id}
-            className="w-full max-w-[1250px] mx-auto px-4 lg:px-[30px] mt-[70px] lg:mt-[120px]"
-          />
-        )}
-
-        <main className={`flex flex-col lg:flex-row items-start pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow ${
-          // Dynamic top padding based on whether privacy banner is visible
-          article && article.visibility === 1 && user?.id === article.authorInfo?.id
-            ? 'pt-6 lg:pt-6' // Smaller padding when privacy banner is shown
-            : 'pt-16 lg:pt-20' // Larger padding when no privacy banner
-        }`}>
+        <main className="flex flex-col lg:flex-row items-start pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow pt-16 lg:pt-20">
           {/* Main Content Column */}
           <div className="flex-1 w-full">
             <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow">
@@ -2101,6 +2086,17 @@ export const Content = (): JSX.Element => {
                           {article.priceInfo.price}
                         </span>
                       </div>
+                    )}
+
+                    {/* Private pill - shown above title for private articles */}
+                    {article?.visibility === 1 && (
+                      <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#E0E0E0] rounded-[100px] mb-3 w-fit">
+                        <svg className="w-5 h-5" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                          <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                        </svg>
+                        <span className="text-[#454545] text-[16px] font-medium">Private</span>
+                      </span>
                     )}
 
                     <h1
@@ -2186,17 +2182,20 @@ export const Content = (): JSX.Element => {
               </time>
 
               <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
-                <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
-                  <img
-                    className="relative w-[21px] h-[15px] aspect-[1.4]"
-                    alt="Ic view"
-                    src="https://c.animaapp.com/5EW1c9Rn/img/ic-view.svg"
-                  />
+                {/* View count - hide for private articles */}
+                {article?.visibility !== 1 && (
+                  <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
+                    <img
+                      className="relative w-[21px] h-[15px] aspect-[1.4]"
+                      alt="Ic view"
+                      src="https://c.animaapp.com/5EW1c9Rn/img/ic-view.svg"
+                    />
 
-                  <span className="mt-[-1.00px] relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm text-center tracking-[0] leading-5 whitespace-nowrap">
-                    {article?.viewCount || 0}
-                  </span>
-                </div>
+                    <span className="mt-[-1.00px] relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm text-center tracking-[0] leading-5 whitespace-nowrap">
+                      {article?.viewCount || 0}
+                    </span>
+                  </div>
+                )}
 
                 {/* Arweave onchain storage link - Always show as clickable */}
                 <button
@@ -2241,8 +2240,8 @@ export const Content = (): JSX.Element => {
 
             </article>
 
-            {/* Comment Section Modal - NetEase Music Style */}
-            {shouldShowModal && article && (
+            {/* Comment Section Modal - NetEase Music Style - hide for private articles */}
+            {shouldShowModal && article && article.visibility !== 1 && (
               <>
                 {/* Apple-style frosted glass backdrop */}
                 <div
@@ -2427,13 +2426,15 @@ export const Content = (): JSX.Element => {
                 size="large"
               />
 
-              {/* Comment button */}
-              <CommentButton
-                commentCount={totalComments || 0}
-                isLoading={loading}
-                onClick={() => setIsCommentSectionOpen(prev => !prev)}
-                isExpanded={isCommentSectionOpen}
-              />
+              {/* Comment button - hide for private articles */}
+              {article?.visibility !== 1 && (
+                <CommentButton
+                  commentCount={totalComments || 0}
+                  isLoading={loading}
+                  onClick={() => setIsCommentSectionOpen(prev => !prev)}
+                  isExpanded={isCommentSectionOpen}
+                />
+              )}
 
               {/* Share dropdown menu */}
               <ShareDropdown
