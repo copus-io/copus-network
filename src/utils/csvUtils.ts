@@ -253,8 +253,11 @@ export const normalizeUrl = (url: string): string => {
  * 生成CSV模板
  */
 export const generateCSVTemplate = (): string => {
-  const headers = ['title', 'url', 'description', 'category', 'tags', 'cover'];
-  const examples = [
+  // Headers with required/optional indicators
+  const headers = ['title (required)', 'url (required)', 'description (optional)', 'category (optional)', 'tags (optional)', 'cover (optional)'];
+
+  // Example row
+  const example = [
     '"OpenAI GPT-4 Documentation"',
     '"https://platform.openai.com/docs"',
     '"Official documentation for GPT-4 API"',
@@ -263,7 +266,11 @@ export const generateCSVTemplate = (): string => {
     '"https://example.com/cover-image.jpg"'
   ];
 
-  return `${headers.join(',')}\n${examples.join(',')}`;
+  // Generate 100 empty rows for easy filling
+  const emptyRow = ',,,,,';
+  const emptyRows = Array(100).fill(emptyRow).join('\n');
+
+  return `${headers.join(',')}\n${example.join(',')}\n${emptyRows}`;
 };
 
 /**
