@@ -73,6 +73,11 @@ export const Create = (): JSX.Element => {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
   const [showImageCropper, setShowImageCropper] = useState(false);
 
+  // Auto-fetch cover image states
+  const [autoFetchedCoverUrl, setAutoFetchedCoverUrl] = useState<string>('');
+  const [isFetchingCover, setIsFetchingCover] = useState(false);
+  const [autoFetchDismissed, setAutoFetchDismissed] = useState(false);
+
   // Extension detection state
   const [isExtensionInstalled, setIsExtensionInstalled] = useState(false);
 
@@ -317,13 +322,20 @@ export const Create = (): JSX.Element => {
   const selectedCategoryStyle = getCategoryStyle(formData.selectedTopic, selectedCategoryData?.color);
 
   // Memoize preview cover image URL to prevent flickering on re-renders
-  // Only recreate blob URL when coverImage file actually changes
+  // Priority: user uploaded > existing cover > auto-fetched
   const previewCoverImageUrl = useMemo(() => {
     if (formData.coverImage) {
       return URL.createObjectURL(formData.coverImage);
     }
-    return coverImageUrl || '';
-  }, [formData.coverImage, coverImageUrl]);
+    if (coverImageUrl) {
+      return coverImageUrl;
+    }
+    // Use auto-fetched cover only if not dismissed
+    if (autoFetchedCoverUrl && !autoFetchDismissed) {
+      return autoFetchedCoverUrl;
+    }
+    return '';
+  }, [formData.coverImage, coverImageUrl, autoFetchedCoverUrl, autoFetchDismissed]);
 
   // Clean up blob URL when component unmounts or image changes
   useEffect(() => {
@@ -375,6 +387,9 @@ export const Create = (): JSX.Element => {
       // Limit URL to 255 characters (common database field limit)
       if (value.length <= 255) {
         setFormData(prev => ({ ...prev, [field]: value }));
+        // Reset auto-fetch state when URL changes
+        setAutoFetchedCoverUrl('');
+        setAutoFetchDismissed(false);
         // Validate URL as user types (with debounce effect)
         setTimeout(() => {
           const validation = validateUrl(value);
@@ -494,6 +509,44 @@ export const Create = (): JSX.Element => {
     }
   }, [sortedCategories]);
 
+  // Auto-fetch cover image from URL when link is validated
+  useEffect(() => {
+    const fetchCoverFromUrl = async () => {
+      // Only fetch if:
+      // 1. URL is valid
+      // 2. No cover image already set (user uploaded or existing)
+      // 3. Not in edit mode (existing articles already have covers)
+      // 4. User hasn't dismissed the auto-fetch
+      // 5. Not already fetching
+      if (!linkValidation.isValid || !formData.link.trim()) return;
+      if (formData.coverImage || coverImageUrl) return;
+      if (isEditMode) return;
+      if (autoFetchDismissed) return;
+      if (isFetchingCover) return;
+
+      // Don't fetch for IPFS or Arweave links (they won't have og:image)
+      if (formData.link.startsWith('ipfs://') || formData.link.startsWith('ar://')) return;
+
+      setIsFetchingCover(true);
+      try {
+        const metadata = await AuthService.fetchUrlMetadata(formData.link);
+        if (metadata.ogImage) {
+          console.log('🖼️ Auto-fetched cover image:', metadata.ogImage);
+          setAutoFetchedCoverUrl(metadata.ogImage);
+        }
+      } catch (error) {
+        // Fail silently - this is an optional enhancement
+        console.log('🖼️ Auto-fetch cover failed (optional):', error);
+      } finally {
+        setIsFetchingCover(false);
+      }
+    };
+
+    // Debounce the fetch to avoid too many requests
+    const timeoutId = setTimeout(fetchCoverFromUrl, 800);
+    return () => clearTimeout(timeoutId);
+  }, [formData.link, linkValidation.isValid, formData.coverImage, coverImageUrl, isEditMode, autoFetchDismissed, isFetchingCover]);
+
   // Edit mode: Load article data
   useEffect(() => {
     const loadArticleForEdit = async () => {
@@ -610,8 +663,9 @@ export const Create = (): JSX.Element => {
         return;
       }
 
-      // Cover image required for public works
-      if (!isEditMode && !formData.coverImage) {
+      // Cover image required for public works (accept user upload, existing, or auto-fetched)
+      const hasValidCover = formData.coverImage || coverImageUrl || (autoFetchedCoverUrl && !autoFetchDismissed);
+      if (!isEditMode && !hasValidCover) {
         showToast('Please upload a cover image', 'error');
         return;
       }
@@ -633,7 +687,8 @@ export const Create = (): JSX.Element => {
     setIsPublishing(true);
 
     try {
-      let finalCoverUrl = coverImageUrl; // Default to existing cover URL (edit mode)
+      // Priority: existing cover URL > auto-fetched URL (if not dismissed)
+      let finalCoverUrl = coverImageUrl || (!autoFetchDismissed ? autoFetchedCoverUrl : '');
 
       // If new image uploaded, upload to S3
       if (formData.coverImage) {
@@ -1050,6 +1105,40 @@ export const Create = (): JSX.Element => {
                         </span>
                       </div>
                     </>
+                  ) : autoFetchedCoverUrl && !autoFetchDismissed ? (
+                    <>
+                      <div
+                        className="w-20 h-12 bg-cover bg-center rounded-lg border border-blue-400 relative"
+                        style={{
+                          backgroundImage: `url(${autoFetchedCoverUrl})`
+                        }}
+                      />
+                      <div className="flex flex-col flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm">
+                            Auto-fetched from URL
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setAutoFetchDismissed(true)}
+                            className="text-medium-grey hover:text-red text-xs underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-xs">
+                          Click Upload to use a different image
+                        </span>
+                      </div>
+                    </>
+                  ) : isFetchingCover ? (
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4 text-medium-grey" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Fetching cover from URL...
+                    </span>
                   ) : (
                     <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm">
                       Supports JPG, PNG formats
@@ -1237,7 +1326,8 @@ export const Create = (): JSX.Element => {
                 onClick={() => {
                   const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
                   const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
-                  const publicValid = baseValid && formData.recommendation && (formData.coverImage || coverImageUrl);
+                  const hasValidCover = formData.coverImage || coverImageUrl || (autoFetchedCoverUrl && !autoFetchDismissed);
+                  const publicValid = baseValid && formData.recommendation && hasValidCover;
                   const canPublish = isPrivate ? baseValid : publicValid;
                   if (canPublish) handlePublish();
                 }}
@@ -1245,13 +1335,15 @@ export const Create = (): JSX.Element => {
                     opacity: (() => {
                       const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
                       const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
-                      const publicValid = baseValid && formData.recommendation && (formData.coverImage || coverImageUrl);
+                      const hasValidCover = formData.coverImage || coverImageUrl || (autoFetchedCoverUrl && !autoFetchDismissed);
+                      const publicValid = baseValid && formData.recommendation && hasValidCover;
                       return (isPrivate ? baseValid : publicValid) ? 1 : 0.5;
                     })(),
                     cursor: (() => {
                       const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
                       const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
-                      const publicValid = baseValid && formData.recommendation && (formData.coverImage || coverImageUrl);
+                      const hasValidCover = formData.coverImage || coverImageUrl || (autoFetchedCoverUrl && !autoFetchDismissed);
+                      const publicValid = baseValid && formData.recommendation && hasValidCover;
                       return (isPrivate ? baseValid : publicValid) ? 'pointer' : 'not-allowed';
                     })()
                   }}

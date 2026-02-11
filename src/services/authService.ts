@@ -2126,6 +2126,55 @@ export class AuthService {
     return response;
   }
 
+  /**
+   * Fetch URL metadata including og:image for auto-fill cover image
+   * This calls a backend endpoint that handles CORS-protected external URLs
+   * @param url The URL to fetch metadata from
+   * @returns Promise with og:image URL and other metadata
+   */
+  static async fetchUrlMetadata(url: string): Promise<{
+    ogImage?: string;
+    title?: string;
+    description?: string;
+    favicon?: string;
+  }> {
+    try {
+      console.log('🔍 Fetching URL metadata for:', url);
+
+      const response = await apiRequest(`/client/common/urlInfo?url=${encodeURIComponent(url)}`, {
+        method: 'GET',
+        requiresAuth: false,
+      });
+
+      console.log('🔍 URL metadata response:', response);
+
+      // Handle different response formats
+      if (response?.data) {
+        return {
+          ogImage: response.data.ogImage || response.data.image || response.data.coverUrl,
+          title: response.data.title || response.data.ogTitle,
+          description: response.data.description || response.data.ogDescription,
+          favicon: response.data.favicon || response.data.icon,
+        };
+      }
+
+      if (response?.ogImage || response?.image) {
+        return {
+          ogImage: response.ogImage || response.image,
+          title: response.title,
+          description: response.description,
+          favicon: response.favicon,
+        };
+      }
+
+      return {};
+    } catch (error) {
+      // Fail gracefully - this is an optional enhancement
+      console.log('🔍 URL metadata fetch failed (this is optional):', error);
+      return {};
+    }
+  }
+
 }
 
 // Verification code type constants

@@ -83,6 +83,11 @@ export const API_ENDPOINTS = {
   PAYMENT: {
     X402_INFO: '/client/payment/x402Info',          // 🔍 SEARCH: x402-payment-info-endpoint
     UNLOCK_CONTENT: '/client/payment/unlockContent', // 🔍 SEARCH: unlock-content-endpoint
+  },
+
+  // 🔍 SEARCH: common-endpoints
+  COMMON: {
+    URL_INFO: '/client/common/urlInfo',             // 🔍 SEARCH: url-info-endpoint (fetch og:image from URL)
   }
 } as const;
 
