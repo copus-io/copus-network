@@ -87,7 +87,7 @@ export const API_ENDPOINTS = {
 
   // 🔍 SEARCH: common-endpoints
   COMMON: {
-    URL_INFO: '/client/common/urlInfo',             // 🔍 SEARCH: url-info-endpoint (fetch og:image from URL)
+    GET_URL_METADATA: '/client/common/getUrlMetadata',  // 🔍 SEARCH: url-metadata-endpoint (fetch og:image from URL)
   }
 } as const;
 

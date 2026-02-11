@@ -2141,7 +2141,7 @@ export class AuthService {
     try {
       console.log('🔍 Fetching URL metadata for:', url);
 
-      const response = await apiRequest(`/client/common/urlInfo?url=${encodeURIComponent(url)}`, {
+      const response = await apiRequest(`/client/common/getUrlMetadata?targetUrl=${encodeURIComponent(url)}`, {
         method: 'GET',
         requiresAuth: false,
       });
