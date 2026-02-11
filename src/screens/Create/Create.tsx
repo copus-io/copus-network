@@ -77,6 +77,7 @@ export const Create = (): JSX.Element => {
   const [autoFetchedCoverUrl, setAutoFetchedCoverUrl] = useState<string>('');
   const [isFetchingCover, setIsFetchingCover] = useState(false);
   const [autoFetchDismissed, setAutoFetchDismissed] = useState(false);
+  const [lastFetchedUrl, setLastFetchedUrl] = useState<string>(''); // Track which URL we already fetched
 
   // Extension detection state
   const [isExtensionInstalled, setIsExtensionInstalled] = useState(false);
@@ -390,6 +391,7 @@ export const Create = (): JSX.Element => {
         // Reset auto-fetch state when URL changes
         setAutoFetchedCoverUrl('');
         setAutoFetchDismissed(false);
+        setLastFetchedUrl(''); // Allow fetching for new URL
         // Validate URL as user types (with debounce effect)
         setTimeout(() => {
           const validation = validateUrl(value);
@@ -512,24 +514,29 @@ export const Create = (): JSX.Element => {
   // Auto-fetch cover image from URL when link is validated
   useEffect(() => {
     const fetchCoverFromUrl = async () => {
+      const trimmedLink = formData.link.trim();
+
       // Only fetch if:
-      // 1. URL is valid
+      // 1. URL is valid and not empty
       // 2. No cover image already set (user uploaded or existing)
       // 3. Not in edit mode (existing articles already have covers)
       // 4. User hasn't dismissed the auto-fetch
-      // 5. Not already fetching
-      if (!linkValidation.isValid || !formData.link.trim()) return;
+      // 5. Haven't already fetched this URL
+      if (!linkValidation.isValid || !trimmedLink) return;
       if (formData.coverImage || coverImageUrl) return;
       if (isEditMode) return;
       if (autoFetchDismissed) return;
-      if (isFetchingCover) return;
+      if (lastFetchedUrl === trimmedLink) return; // Already fetched this URL
 
       // Don't fetch for IPFS or Arweave links (they won't have og:image)
-      if (formData.link.startsWith('ipfs://') || formData.link.startsWith('ar://')) return;
+      if (trimmedLink.startsWith('ipfs://') || trimmedLink.startsWith('ar://')) return;
 
       setIsFetchingCover(true);
+      setLastFetchedUrl(trimmedLink); // Mark this URL as being fetched
+
       try {
-        const metadata = await AuthService.fetchUrlMetadata(formData.link);
+        const metadata = await AuthService.fetchUrlMetadata(trimmedLink);
+        console.log('🖼️ URL metadata result:', metadata);
         if (metadata.ogImage) {
           console.log('🖼️ Auto-fetched cover image:', metadata.ogImage);
           setAutoFetchedCoverUrl(metadata.ogImage);
@@ -545,7 +552,7 @@ export const Create = (): JSX.Element => {
     // Debounce the fetch to avoid too many requests
     const timeoutId = setTimeout(fetchCoverFromUrl, 800);
     return () => clearTimeout(timeoutId);
-  }, [formData.link, linkValidation.isValid, formData.coverImage, coverImageUrl, isEditMode, autoFetchDismissed, isFetchingCover]);
+  }, [formData.link, linkValidation.isValid, formData.coverImage, coverImageUrl, isEditMode, autoFetchDismissed, lastFetchedUrl]);
 
   // Edit mode: Load article data
   useEffect(() => {
