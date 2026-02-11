@@ -254,20 +254,18 @@ export const normalizeUrl = (url: string): string => {
  */
 export const generateCSVTemplate = (): string => {
   // Headers with required/optional indicators
-  const headers = ['title (required)', 'url (required)', 'description (optional)', 'recommendation (optional)', 'tags (optional)', 'cover (optional)'];
+  const headers = ['title (required)', 'url (required)', 'recommendation (optional)', 'cover (optional)'];
 
   // Example row using Copus SEO data
   const example = [
     '"Copus - Internet Treasure Map"',
     '"https://copus.network"',
-    '"Copus is an open-web curation network that rewards tastemakers for sharing valuable web content."',
     '"A great platform for curating and discovering content"',
-    '"curation,bookmarks,discovery,rewards"',
     '"https://copus.network/og-image.jpg"'
   ];
 
   // Generate 100 empty rows for easy filling
-  const emptyRow = ',,,,,';
+  const emptyRow = ',,,';
   const emptyRows = Array(100).fill(emptyRow).join('\n');
 
   return `${headers.join(',')}\n${example.join(',')}\n${emptyRows}`;

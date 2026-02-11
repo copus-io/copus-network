@@ -224,10 +224,8 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div><span className="font-medium text-green-700">title*</span> Title</div>
                       <div><span className="font-medium text-green-700">url*</span> Link</div>
-                      <div><span className="font-medium text-gray-500">description</span> Description (optional)</div>
-                      <div><span className="font-medium text-gray-500">cover</span> Cover image URL (optional)</div>
                       <div><span className="font-medium text-gray-500">recommendation</span> Recommendation/notes (optional)</div>
-                      <div><span className="font-medium text-gray-500">tags</span> Tags (optional)</div>
+                      <div><span className="font-medium text-gray-500">cover</span> Cover image URL (optional)</div>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">* Required fields</p>
                   </div>
