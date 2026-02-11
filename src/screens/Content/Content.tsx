@@ -34,16 +34,10 @@ import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, To
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
 import { SEO, ArticleSchema } from '../../components/SEO/SEO';
-import { EnhancedArticleSchema, buildEnhancedMetaTags } from '../../components/SEO/EnhancedArticleSchema';
 import { UserCard } from '../../components/ui/UserCard';
 import { PrivateContentGuard } from '../../components/PrivateContentGuard/PrivateContentGuard';
 import { PrivacyBanner } from '../../components/PrivacyBanner/PrivacyBanner';
 import { NoAccessPermission } from '../../components/NoAccessPermission/NoAccessPermission';
-import {
-  generateSEOSchema,
-  parseSEOData
-} from '../../services/seoSchemaService';
-import { GeneratedSEOSchema, GenerateSEORequest } from '../../types/seoSchema';
 
 // Debug logging helper - only logs in development mode
 const debugLog = (...args: any[]) => {
@@ -158,10 +152,6 @@ export const Content = (): JSX.Element => {
   const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
   const [shouldShowModal, setShouldShowModal] = useState(false);
   const commentScrollRef = useRef<HTMLDivElement>(null);
-
-  // SEO/AEO Schema state - generated asynchronously for search engines
-  const [generatedSchema, setGeneratedSchema] = useState<GeneratedSEOSchema | null>(null);
-  const [schemaGenerationAttempted, setSchemaGenerationAttempted] = useState(false);
 
   // Show success toast when arriving from browser extension after publishing
   // Handle cache refresh for updated articles (from edit mode)
@@ -742,48 +732,6 @@ export const Content = (): JSX.Element => {
       updateArticleLikeState(article.uuid, article.isLiked || false, article.likeCount || 0);
     }
   }, [content, article, updateArticleLikeState]);
-
-  // Generate SEO schema asynchronously for search engines
-  // This runs in background and doesn't affect page load time
-  useEffect(() => {
-    const generateSchema = async () => {
-      if (!article || !content || schemaGenerationAttempted) return;
-
-      // Mark as attempted to prevent duplicate calls
-      setSchemaGenerationAttempted(true);
-
-      // First, check if we have existing seoData
-      const existingSchema = parseSEOData(article.seoData);
-      if (existingSchema && existingSchema.description && existingSchema.keywords?.length > 0) {
-        // Schema already exists and is complete, use it
-        setGeneratedSchema(existingSchema);
-        debugLog('[SEO Schema] Using existing schema from article.seoData');
-        return;
-      }
-
-      // Generate new schema using AI
-      debugLog('[SEO Schema] Generating new schema for article:', content.title);
-
-      try {
-        const request: GenerateSEORequest = {
-          title: content.title,
-          url: content.url || '',
-          recommendationText: content.description || '',
-          category: content.category || 'General',
-          userBio: content.userBio || undefined
-        };
-
-        const schema = await generateSEOSchema(request);
-        setGeneratedSchema(schema);
-        debugLog('[SEO Schema] Successfully generated schema:', schema);
-      } catch (error) {
-        console.warn('[SEO Schema] Generation failed, using basic schema:', error);
-        // Fallback is handled inside generateSEOSchema
-      }
-    };
-
-    generateSchema();
-  }, [article, content, schemaGenerationAttempted]);
 
   // Fetch "Collected in" data - get spaces that contain this article
   // Use article.id directly in useEffect to avoid callback recreation on every article change
@@ -2102,64 +2050,29 @@ export const Content = (): JSX.Element => {
       {!content && <SEO />}
       {content && (
         <>
-          {/* Get enhanced meta tags from generated schema if available */}
-          {(() => {
-            const enhancedMeta = generatedSchema ? buildEnhancedMetaTags(generatedSchema) : null;
-            const seoDescription = enhancedMeta?.description || content.seoDescription?.trim() || content.description?.substring(0, 160) || content.title;
-            const seoKeywords = enhancedMeta?.keywords || content.seoKeywords?.trim() || undefined;
-
-            return (
-              <SEO
-                title={content.title}
-                description={seoDescription}
-                keywords={seoKeywords}
-                image={content.coverImage || 'https://copus.network/og-image.jpg'}
-                url={`https://copus.network/work/${id}`}
-                type="article"
-                article={{
-                  publishedTime: article?.createAt ? new Date(article.createAt * 1000).toISOString() : undefined,
-                  author: content.userName,
-                  section: content.category,
-                }}
-                noIndex={false}
-              />
-            );
-          })()}
-
-          {/* Enhanced JSON-LD schema with multiple schema types for AEO */}
-          {generatedSchema ? (
-            <EnhancedArticleSchema
-              article={{
-                id: id || '',
-                title: content.title,
-                description: content.description || '',
-                url: content.url || '',
-                coverImage: content.coverImage,
-                category: content.category,
-                userName: content.userName,
-                userBio: content.userBio,
-                userAvatar: content.userAvatar,
-                userId: content.userId || 0,
-                namespace: content.userNamespace,
-                date: article?.createAt ? new Date(article.createAt * 1000).toISOString() : new Date().toISOString(),
-                treasureCount: content.treasureCount || 0,
-                commentCount: totalComments || 0,
-              }}
-              seoData={generatedSchema}
-              baseUrl="https://copus.network"
-            />
-          ) : (
-            /* Fallback to basic ArticleSchema while enhanced schema generates */
-            <ArticleSchema
-              title={content.title}
-              description={content.seoDescription?.trim() || content.description?.substring(0, 300) || content.title}
-              image={content.coverImage || 'https://copus.network/og-image.jpg'}
-              url={`https://copus.network/work/${id}`}
-              datePublished={article?.createAt ? new Date(article.createAt * 1000).toISOString() : new Date().toISOString()}
-              authorName={content.userName}
-              authorUrl={content.userNamespace ? `https://copus.network/user/${content.userNamespace}` : undefined}
-            />
-          )}
+          <SEO
+            title={content.title}
+            description={content.seoDescription?.trim() || content.description?.substring(0, 160) || content.title}
+            keywords={content.seoKeywords?.trim() || undefined}
+            image={content.coverImage || 'https://copus.network/og-image.jpg'}
+            url={`https://copus.network/work/${id}`}
+            type="article"
+            article={{
+              publishedTime: article?.createAt ? new Date(article.createAt * 1000).toISOString() : undefined,
+              author: content.userName,
+              section: content.category,
+            }}
+            noIndex={false}
+          />
+          <ArticleSchema
+            title={content.title}
+            description={content.seoDescription?.trim() || content.description?.substring(0, 300) || content.title}
+            image={content.coverImage || 'https://copus.network/og-image.jpg'}
+            url={`https://copus.network/work/${id}`}
+            datePublished={article?.createAt ? new Date(article.createAt * 1000).toISOString() : new Date().toISOString()}
+            authorName={content.userName}
+            authorUrl={content.userNamespace ? `https://copus.network/user/${content.userNamespace}` : undefined}
+          />
         </>
       )}
 
