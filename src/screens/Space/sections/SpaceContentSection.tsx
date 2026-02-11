@@ -1585,7 +1585,7 @@ export const SpaceContentSection = (): JSX.Element => {
               // Transform bookmarks to articles format for batch import
               const articles = bookmarks.map(bookmark => ({
                 title: bookmark.title || 'Untitled',
-                content: bookmark.description || bookmark.title || 'Imported bookmark',
+                content: bookmark.description || '', // Don't auto-fill - leave empty if user didn't provide
                 targetUrl: bookmark.url,
                 coverUrl: bookmark.cover || '' // Use cover from CSV if available
               }));
