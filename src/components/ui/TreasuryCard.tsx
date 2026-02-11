@@ -124,7 +124,7 @@ export const transformSpaceToItems = (space: SpaceData): TreasuryItem[] => {
       title: article.title || 'Untitled',
       url: article.targetUrl || '',
       website, // Extracted hostname for display
-      coverImage: article.coverUrl || 'https://c.animaapp.com/V3VIhpjY/img/cover@2x.png',
+      coverImage: article.coverUrl || '', // No placeholder - empty if no cover
     };
   });
 };

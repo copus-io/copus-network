@@ -146,7 +146,7 @@ export const FollowingContentSection = (): JSX.Element => {
       uuid: article.uuid,
       title: article.title,
       description: article.content,
-      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      coverImage: article.coverUrl || '', // No placeholder - empty if no cover
       category: article.categoryInfo?.name || 'General',
       categoryColor: article.categoryInfo?.color || '#666666',
       userName: article.authorInfo?.username || 'Anonymous',
