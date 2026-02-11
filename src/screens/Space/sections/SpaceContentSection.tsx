@@ -1583,9 +1583,10 @@ export const SpaceContentSection = (): JSX.Element => {
               showToast(`Importing ${bookmarks.length} bookmarks to space...`, 'info');
 
               // Transform bookmarks to articles format for batch import
+              // Note: CSV "recommendation" field maps to bookmark.category, not bookmark.description
               const articles = bookmarks.map(bookmark => ({
                 title: bookmark.title || 'Untitled',
-                content: bookmark.description || '', // Don't auto-fill - leave empty if user didn't provide
+                content: bookmark.category || '', // Use category (recommendation field from CSV) - empty if not provided
                 targetUrl: bookmark.url,
                 coverUrl: bookmark.cover || '' // Use cover from CSV if available
               }));
