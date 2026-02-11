@@ -135,17 +135,8 @@ const router = createBrowserRouter([
     element: <LazyRoute><MyTreasury /></LazyRoute>,
   },
   {
-    path: "/treasury/:namespace",
+    path: "/space/:namespace",
     element: <LazyRoute><Space /></LazyRoute>,
-  },
-  {
-    // Keep old /space route for backwards compatibility
-    path: "/space/:category",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><Space /></LazyRoute>
-      </AuthGuard>
-    ),
   },
   {
     path: "/u/:namespace",
