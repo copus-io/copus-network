@@ -226,7 +226,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                       <div><span className="font-medium text-green-700">url*</span> Link</div>
                       <div><span className="font-medium text-gray-500">description</span> Description (optional)</div>
                       <div><span className="font-medium text-gray-500">cover</span> Cover image URL (optional)</div>
-                      <div><span className="font-medium text-gray-500">category</span> Category (optional)</div>
+                      <div><span className="font-medium text-gray-500">recommendation</span> Recommendation/notes (optional)</div>
                       <div><span className="font-medium text-gray-500">tags</span> Tags (optional)</div>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">* Required fields</p>
@@ -300,7 +300,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide w-16">Select</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Title</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">URL</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Category</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Recommendation</th>
                         {parseResult.data.some(item => item.cover) && (
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Cover</th>
                         )}

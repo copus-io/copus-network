@@ -65,7 +65,7 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
 
     // 可选字段索引
     const descriptionIndex = findHeaderIndex(headers, ['description', 'desc', 'note', '描述', '说明', '备注']);
-    const categoryIndex = findHeaderIndex(headers, ['category', 'type', 'folder', '分类', '类型', '文件夹']);
+    const categoryIndex = findHeaderIndex(headers, ['recommendation', 'category', 'type', 'folder', 'notes', '分类', '类型', '文件夹', '推荐', '备注']);
     const tagsIndex = findHeaderIndex(headers, ['tags', 'keywords', 'labels', '标签', '关键词']);
     const coverIndex = findHeaderIndex(headers, ['cover', 'coverurl', 'cover_url', 'image', 'thumbnail', '封面', '图片']);
 
@@ -254,14 +254,14 @@ export const normalizeUrl = (url: string): string => {
  */
 export const generateCSVTemplate = (): string => {
   // Headers with required/optional indicators
-  const headers = ['title (required)', 'url (required)', 'description (optional)', 'category (optional)', 'tags (optional)', 'cover (optional)'];
+  const headers = ['title (required)', 'url (required)', 'description (optional)', 'recommendation (optional)', 'tags (optional)', 'cover (optional)'];
 
   // Example row using Copus SEO data
   const example = [
     '"Copus - Internet Treasure Map"',
     '"https://copus.network"',
     '"Copus is an open-web curation network that rewards tastemakers for sharing valuable web content."',
-    '"Curation"',
+    '"A great platform for curating and discovering content"',
     '"curation,bookmarks,discovery,rewards"',
     '"https://copus.network/og-image.jpg"'
   ];
