@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { useToast } from '../ui/toast';
 import {
   parseCSV,
-  parseBookmarksHTML,
   generateCSVTemplate,
   detectAndConvertEncoding,
   normalizeUrl,
@@ -25,7 +24,6 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
   const [parseResult, setParseResult] = useState<CSVParseResult | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [isImporting, setIsImporting] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
@@ -47,23 +45,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
 
     try {
       const content = await detectAndConvertEncoding(file);
-      let result: CSVParseResult;
-
-      // Select parsing method based on file extension
-      if (file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm')) {
-        // Handle browser bookmarks HTML file
-        const bookmarks = parseBookmarksHTML(content);
-        result = {
-          success: bookmarks.length > 0,
-          data: bookmarks,
-          errors: bookmarks.length === 0 ? ['No valid bookmarks found in HTML file'] : [],
-          totalRows: bookmarks.length,
-          validRows: bookmarks.length
-        };
-      } else {
-        // Handle CSV file
-        result = parseCSV(content);
-      }
+      const result = parseCSV(content);
 
       setParseResult(result);
 
@@ -190,12 +172,12 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                   </div>
                   <div>
                     <h3 className="text-base font-medium text-gray-800 mb-1">Drop or click to upload</h3>
-                    <p className="text-sm text-gray-500">Supports CSV files or browser bookmark files (.html)</p>
+                    <p className="text-sm text-gray-500">Supports CSV files only</p>
                   </div>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv,.html,.htm"
+                    accept=".csv"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -223,70 +205,33 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                 </div>
               </div>
 
-              {/* Help button and collapsible instructions */}
+              {/* File Format Guide */}
               <div className="mt-6">
-                <button
-                  onClick={() => setShowHelp(!showHelp)}
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors mb-4"
-                >
-                  <svg className={`w-5 h-5 transition-transform ${showHelp ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  <span className="text-sm font-medium">File Format Guide</span>
-                </button>
-
-                {showHelp && (
-                  <div className="space-y-4 animate-in slide-in-from-top-1 duration-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <span className="text-lg">📄</span>
-                          </div>
-                          <h5 className="font-semibold text-gray-800">CSV File</h5>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Structured data file with title, URL, cover, and other fields
-                        </p>
-
-                        <div className="bg-white/50 p-3 rounded-lg mb-4">
-                          <h6 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Supported Fields</h6>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div><span className="font-medium text-green-700">title*</span> Title</div>
-                            <div><span className="font-medium text-green-700">url*</span> Link</div>
-                            <div><span className="font-medium text-blue-600">description</span> Description</div>
-                            <div><span className="font-medium text-blue-600">category</span> Category</div>
-                            <div><span className="font-medium text-blue-600">tags</span> Tags</div>
-                            <div><span className="font-medium text-purple-600">cover</span> Cover</div>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2">* Required fields</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border border-green-100">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                            <span className="text-lg">🌐</span>
-                          </div>
-                          <h5 className="font-semibold text-gray-800">Browser Bookmarks</h5>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-4">
-                          HTML format bookmark files exported from various browsers
-                        </p>
-
-                        <div className="bg-white/50 p-3 rounded-lg">
-                          <h6 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Supported Browsers</h6>
-                          <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
-                            <div>• Chrome</div>
-                            <div>• Firefox</div>
-                            <div>• Safari</div>
-                            <div>• Edge</div>
-                          </div>
-                        </div>
-                      </div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">File Format Guide</h4>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span className="text-lg">📄</span>
                     </div>
+                    <h5 className="font-semibold text-gray-800">CSV File Format</h5>
                   </div>
-                )}
+                  <p className="text-sm text-gray-600 mb-4">
+                    Structured data file with title, URL, and optional fields
+                  </p>
+
+                  <div className="bg-white/50 p-3 rounded-lg">
+                    <h6 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Supported Fields</h6>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><span className="font-medium text-green-700">title*</span> Title</div>
+                      <div><span className="font-medium text-green-700">url*</span> Link</div>
+                      <div><span className="font-medium text-gray-500">description</span> Description (optional)</div>
+                      <div><span className="font-medium text-gray-500">cover</span> Cover image URL (optional)</div>
+                      <div><span className="font-medium text-gray-500">category</span> Category (optional)</div>
+                      <div><span className="font-medium text-gray-500">tags</span> Tags (optional)</div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">* Required fields</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -58,6 +58,7 @@ export interface TreasuryCardProps {
     label: string;
     href: string;
     icon?: string;
+    onClick?: () => void; // Optional click handler for button actions
   };
 }
 
@@ -164,23 +165,45 @@ export const TreasuryCard = ({
       >
         <div className={`flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`} style={{ aspectRatio: '16 / 9' }}>
           {emptyAction ? (
-            <Link
-              to={emptyAction.href}
-              className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {emptyAction.icon && (
-                <img
-                  className="w-5 h-5"
-                  alt={emptyAction.label}
-                  src={emptyAction.icon}
-                  style={{ filter: 'brightness(0) invert(1)' }}
-                />
-              )}
-              <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5">
-                {emptyAction.label}
-              </span>
-            </Link>
+            emptyAction.onClick ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  emptyAction.onClick?.();
+                }}
+                className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors"
+              >
+                {emptyAction.icon && (
+                  <img
+                    className="w-5 h-5"
+                    alt={emptyAction.label}
+                    src={emptyAction.icon}
+                    style={{ filter: 'brightness(0) invert(1)' }}
+                  />
+                )}
+                <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5">
+                  {emptyAction.label}
+                </span>
+              </button>
+            ) : (
+              <Link
+                to={emptyAction.href}
+                className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {emptyAction.icon && (
+                  <img
+                    className="w-5 h-5"
+                    alt={emptyAction.label}
+                    src={emptyAction.icon}
+                    style={{ filter: 'brightness(0) invert(1)' }}
+                  />
+                )}
+                <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5">
+                  {emptyAction.label}
+                </span>
+              </Link>
+            )
           ) : (
             <p className="text-gray-500">No treasures yet</p>
           )}

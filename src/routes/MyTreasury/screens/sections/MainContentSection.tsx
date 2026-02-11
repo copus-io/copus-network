@@ -790,22 +790,49 @@ export const MainContentSection = (): JSX.Element => {
           />
         ) : (
           /* Render all spaces from pageMySpaces API */
-          spaces.map((space) => (
-            <TreasuryCard
-              key={space.id || space.namespace}
-              space={{
-                ...space,
-                // Add owner username for display name generation
-                ownerInfo: space.ownerInfo || { username: displayUser?.username || 'Anonymous' },
-              }}
-              onClick={() => handleSpaceClick(space)}
-              onEdit={!isViewingOtherUser && space.spaceType !== 1 && space.spaceType !== 2 ? () => {
-                // Open edit modal for custom spaces (spaceType 0)
-                setEditingSpace(space);
-                setShowEditModal(true);
-              } : undefined}
-            />
-          ))
+          spaces.map((space) => {
+            // Determine empty action based on space type
+            // spaceType 1 = Treasury (Collections) -> Discover button
+            // spaceType 2 = Curations -> Import button
+            const getEmptyAction = () => {
+              if (!isViewingOtherUser) {
+                if (space.spaceType === 2) {
+                  // Curations - show Import button
+                  return {
+                    label: 'Import',
+                    href: '#',
+                    onClick: () => setShowImportModal(true),
+                  };
+                }
+                if (space.spaceType === 1) {
+                  // Treasury/Collections - show Discover button
+                  return {
+                    label: 'Discover',
+                    href: '/',
+                  };
+                }
+              }
+              return undefined;
+            };
+
+            return (
+              <TreasuryCard
+                key={space.id || space.namespace}
+                space={{
+                  ...space,
+                  // Add owner username for display name generation
+                  ownerInfo: space.ownerInfo || { username: displayUser?.username || 'Anonymous' },
+                }}
+                onClick={() => handleSpaceClick(space)}
+                onEdit={!isViewingOtherUser && space.spaceType !== 1 && space.spaceType !== 2 ? () => {
+                  // Open edit modal for custom spaces (spaceType 0)
+                  setEditingSpace(space);
+                  setShowEditModal(true);
+                } : undefined}
+                emptyAction={getEmptyAction()}
+              />
+            );
+          })
         )}
       </div>
 
