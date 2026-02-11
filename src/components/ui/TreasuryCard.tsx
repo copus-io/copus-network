@@ -165,12 +165,12 @@ export const TreasuryCard = ({
   if (items.length === 0) {
     return (
       <section
-        className={`relative w-full h-fit flex flex-col items-start gap-2 ${onClick ? 'cursor-pointer' : ''}`}
+        className="relative w-full h-fit flex flex-col items-start gap-2 cursor-pointer"
         onClick={onClick}
       >
-        <div className={`flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] ${onClick ? 'hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow' : ''}`} style={{ aspectRatio: '16 / 9' }}>
+        <div className="flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow cursor-pointer" style={{ aspectRatio: '16 / 9' }}>
           {emptyAction ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 cursor-pointer">
               {/* Primary action button */}
               {emptyAction.onClick ? (
                 <button
