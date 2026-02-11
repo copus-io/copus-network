@@ -27,6 +27,7 @@ import { getSpaceDisplayName } from "../../components/ui/TreasuryCard";
 import { ChooseTreasuriesModal, SelectedSpace } from "../../components/ChooseTreasuriesModal/ChooseTreasuriesModal";
 import { BindableSpace } from "../../types/space";
 import { CreateSpaceModal } from "../../components/CreateSpaceModal";
+import { SEO } from "../../components/SEO/SEO";
 
 
 export const Create = (): JSX.Element => {
@@ -739,6 +740,7 @@ export const Create = (): JSX.Element => {
 
   return (
     <div className="w-full min-h-screen overflow-x-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+      <SEO title={isEditMode ? "Edit Treasure" : "Share Treasure"} />
       <HeaderSection hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
       <div className="lg:ml-[350px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[110px] overflow-x-hidden">

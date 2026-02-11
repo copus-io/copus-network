@@ -13,6 +13,7 @@ import { devLog } from "../../../utils/devLogger";
 import { ErrorHandler } from "../../../utils/errorHandler";
 import { API_ENDPOINTS } from "../../../config/apiEndpoints";
 import { spaceShortcuts, eventHandlers } from "../../../utils/devShortcuts";
+import { SEO } from "../../../components/SEO/SEO";
 
 // Add debug logging for Space component
 console.log('📍 SpaceContentSection module loaded');
@@ -1086,6 +1087,7 @@ export const SpaceContentSection = (): JSX.Element => {
   if (loading) {
     return (
       <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
+        <SEO />
         <div className="flex items-center justify-center w-full h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -1096,6 +1098,7 @@ export const SpaceContentSection = (): JSX.Element => {
   if (error) {
     return (
       <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
+        <SEO />
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
           <div className="text-red-500">{error}</div>
           <Button
@@ -1111,6 +1114,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
   return (
     <main className="flex flex-col items-start gap-2 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
+      <SEO title={displaySpaceName || spaceInfo?.name || category || 'Treasury'} />
       {/* Space Info Section */}
       <SpaceInfoSection
         spaceName={displaySpaceName || spaceInfo?.name || category || 'Space'}

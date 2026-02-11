@@ -33,8 +33,15 @@ import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils'
 import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
-// SEO meta tags are now handled by Cloudflare Worker - see functions/work/[id].js
+// SEO meta tags for crawlers are handled by Cloudflare Worker - see functions/work/[id].js
+// SEO component is still needed for client-side document.title updates during SPA navigation
+import { SEO } from '../../components/SEO/SEO';
 import { UserCard } from '../../components/ui/UserCard';
+import {
+  generateSEOSchema,
+  parseSEOData
+} from '../../services/seoSchemaService';
+import { GeneratedSEOSchema, GenerateSEORequest } from '../../types/seoSchema';
 
 // Debug logging helper - only logs in development mode
 const debugLog = (...args: any[]) => {
@@ -148,6 +155,10 @@ export const Content = (): JSX.Element => {
   const [isCommentSectionOpen, setIsCommentSectionOpen] = useState(false);
   const [shouldShowModal, setShouldShowModal] = useState(false);
   const commentScrollRef = useRef<HTMLDivElement>(null);
+
+  // SEO/AEO Schema state - generated asynchronously for search engines
+  const [generatedSchema, setGeneratedSchema] = useState<GeneratedSEOSchema | null>(null);
+  const [schemaGenerationAttempted, setSchemaGenerationAttempted] = useState(false);
 
   // Show success toast when arriving from browser extension after publishing
   useEffect(() => {
@@ -713,6 +724,48 @@ export const Content = (): JSX.Element => {
       updateArticleLikeState(article.uuid, article.isLiked || false, article.likeCount || 0);
     }
   }, [content, article, updateArticleLikeState]);
+
+  // Generate SEO schema asynchronously for search engines
+  // This runs in background and doesn't affect page load time
+  useEffect(() => {
+    const generateSchema = async () => {
+      if (!article || !content || schemaGenerationAttempted) return;
+
+      // Mark as attempted to prevent duplicate calls
+      setSchemaGenerationAttempted(true);
+
+      // First, check if we have existing seoData
+      const existingSchema = parseSEOData(article.seoData);
+      if (existingSchema && existingSchema.description && existingSchema.keywords?.length > 0) {
+        // Schema already exists and is complete, use it
+        setGeneratedSchema(existingSchema);
+        debugLog('[SEO Schema] Using existing schema from article.seoData');
+        return;
+      }
+
+      // Generate new schema using AI
+      debugLog('[SEO Schema] Generating new schema for article:', content.title);
+
+      try {
+        const request: GenerateSEORequest = {
+          title: content.title,
+          url: content.url || '',
+          recommendationText: content.description || '',
+          category: content.category || 'General',
+          userBio: content.userBio || undefined
+        };
+
+        const schema = await generateSEOSchema(request);
+        setGeneratedSchema(schema);
+        debugLog('[SEO Schema] Successfully generated schema:', schema);
+      } catch (error) {
+        console.warn('[SEO Schema] Generation failed, using basic schema:', error);
+        // Fallback is handled inside generateSEOSchema
+      }
+    };
+
+    generateSchema();
+  }, [article, content, schemaGenerationAttempted]);
 
   // Fetch "Collected in" data - get spaces that contain this article
   // Use article.id directly in useEffect to avoid callback recreation on every article change
@@ -2005,10 +2058,10 @@ export const Content = (): JSX.Element => {
   // ========================================
   return (
     <>
-      {/* SEO meta tags are now handled by Cloudflare Worker at the edge.
-          The worker injects AI-generated meta tags before JS loads,
-          so we don't need React Helmet here anymore.
-          See: functions/work/[id].js */}
+      {/* Full SEO meta tags are handled by Cloudflare Worker at the edge.
+          We only set document.title here for client-side SPA navigation. */}
+      {!content && <SEO />}
+      {content && <SEO title={content.title} />}
 
 
       <div
