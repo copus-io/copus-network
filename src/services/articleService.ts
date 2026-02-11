@@ -380,8 +380,8 @@ export const publishArticle = async (articleData: {
   title: string;
   content: string;
   coverUrl: string;
-  targetUrl: string;
-  categoryId: number;
+  targetUrl?: string; // Optional in edit mode (cannot be changed)
+  categoryId?: number; // Deprecated - no longer in use
   spaceIds?: number[]; // Optional: array of space IDs to save the article to
   targetUrlIsLocked?: boolean;
   priceInfo?: {

@@ -687,10 +687,12 @@ export const Create = (): JSX.Element => {
 
       const articleParams = {
         ...(isEditMode && editId ? { uuid: editId } : {}), // Add uuid in edit mode
-        categoryId: formData.selectedTopicId,
-        content: formData.recommendation.substring(0, 1000), // Ensure max 1000 chars
-        coverUrl: finalCoverUrl.substring(0, 500), // Ensure max 500 chars
-        targetUrl: finalUrl.substring(0, 255), // Ensure max 255 chars
+        // Content/recommendation - always include, can be empty for private
+        content: formData.recommendation.substring(0, 1000),
+        // Cover URL - always include, can be empty for private
+        coverUrl: finalCoverUrl.substring(0, 500),
+        // Target URL - only include for new articles (cannot change in edit mode)
+        ...(!isEditMode ? { targetUrl: finalUrl.substring(0, 255) } : {}),
         title: formData.title.substring(0, 75), // Ensure max 75 chars
         // Send all selected space IDs to backend (convert to numbers for API)
         ...(selectedTreasuries.length > 0 ? {
@@ -725,9 +727,8 @@ export const Create = (): JSX.Element => {
       console.log('📤 Detailed params:', {
         title: `"${articleParams.title}" (${articleParams.title.length} chars)`,
         content: `"${articleParams.content}" (${articleParams.content.length} chars)`,
-        targetUrl: `"${articleParams.targetUrl}" (${articleParams.targetUrl.length} chars)`,
+        ...(!isEditMode ? { targetUrl: `"${finalUrl}" (${finalUrl.length} chars)` } : {}),
         coverUrl: `"${articleParams.coverUrl}" (${articleParams.coverUrl.length} chars)`,
-        categoryId: articleParams.categoryId,
         targetUrlIsLocked: articleParams.targetUrlIsLocked,
         ...(payToUnlock && articleParams.priceInfo ? { priceInfo: articleParams.priceInfo } : {})
       });
@@ -872,25 +873,37 @@ export const Create = (): JSX.Element => {
                 </label>
               </div>
 
-              <div className={`flex items-center px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid transition-all ${
+              <div className={`flex items-center px-[15px] py-2.5 w-full rounded-[15px] border border-solid transition-all ${
+                isEditMode ? 'bg-gray-100' : 'bg-white'
+              } ${
                 !linkValidation.isValid ? 'border-red shadow-sm' :
                 focusedField === 'link' ? 'border-red shadow-sm' : 'border-light-grey'
               }`}>
                 <input
                   type="text"
                   value={formData.link}
-                  onChange={(e) => handleInputChange("link", e.target.value)}
-                  onFocus={() => setFocusedField('link')}
+                  onChange={(e) => !isEditMode && handleInputChange("link", e.target.value)}
+                  onFocus={() => !isEditMode && setFocusedField('link')}
                   onBlur={() => setFocusedField(null)}
-                  className="flex-1 [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-5 placeholder:text-medium-grey border-0 bg-transparent focus:outline-none"
+                  disabled={isEditMode}
+                  className={`flex-1 [font-family:'Lato',Helvetica] font-normal text-lg tracking-[0] leading-5 placeholder:text-medium-grey border-0 bg-transparent focus:outline-none ${
+                    isEditMode ? 'text-medium-grey cursor-not-allowed' : 'text-dark-grey'
+                  }`}
                   placeholder="Enter or paste your link here (http://, https://, ipfs://, ar://)..."
                   aria-label="Link URL"
                   maxLength={255}
                 />
               </div>
 
+              {/* Edit mode notice */}
+              {isEditMode && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-medium-grey text-sm">Link cannot be changed after creation</span>
+                </div>
+              )}
+
               {/* URL Validation Message */}
-              {!linkValidation.isValid && formData.link && (
+              {!isEditMode && !linkValidation.isValid && formData.link && (
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-red text-sm">⚠</span>
                   <span className="text-red text-sm">{linkValidation.message}</span>
@@ -898,7 +911,7 @@ export const Create = (): JSX.Element => {
               )}
 
               {/* URL Format Helper */}
-              {linkValidation.isValid && formData.link && (
+              {!isEditMode && linkValidation.isValid && formData.link && (
                 <div className="flex items-center justify-between w-full mt-1">
                   <div className="flex items-center gap-2">
                     <span className="text-green text-sm">✓</span>
