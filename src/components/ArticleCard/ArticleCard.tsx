@@ -434,9 +434,10 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                         <span className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px]">
                           {formatDate(article.date)}
                         </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
