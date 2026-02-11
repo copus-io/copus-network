@@ -793,15 +793,14 @@ export const MainContentSection = (): JSX.Element => {
           spaces.map((space) => {
             // Determine empty action based on space type
             // spaceType 1 = Treasury (Collections) -> Discover button
-            // spaceType 2 = Curations -> Import button
+            // spaceType 2 = Curations -> Curate button (primary) + Import icon (secondary)
             const getEmptyAction = () => {
               if (!isViewingOtherUser) {
                 if (space.spaceType === 2) {
-                  // Curations - show Import button
+                  // Curations - show Curate button (primary)
                   return {
-                    label: 'Import',
-                    href: '#',
-                    onClick: () => setShowImportModal(true),
+                    label: 'Curate',
+                    href: '/curate',
                   };
                 }
                 if (space.spaceType === 1) {
@@ -811,6 +810,17 @@ export const MainContentSection = (): JSX.Element => {
                     href: '/',
                   };
                 }
+              }
+              return undefined;
+            };
+
+            // Secondary action for curations - Import icon
+            const getSecondaryAction = () => {
+              if (!isViewingOtherUser && space.spaceType === 2) {
+                return {
+                  label: 'Import',
+                  onClick: () => setShowImportModal(true),
+                };
               }
               return undefined;
             };
@@ -830,6 +840,7 @@ export const MainContentSection = (): JSX.Element => {
                   setShowEditModal(true);
                 } : undefined}
                 emptyAction={getEmptyAction()}
+                secondaryAction={getSecondaryAction()}
               />
             );
           })
