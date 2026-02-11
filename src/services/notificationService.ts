@@ -30,9 +30,6 @@ export class NotificationService {
         msgType: msgType.toString(), // Always pass msgType, default is 0(all)
       });
 
-      console.log(`[NotificationService] Fetching page ${page}, pageSize ${pageSize}, msgType ${msgType}`);
-
-
       const response: any = await apiRequest(
         `/client/user/msg/pageMsg?${params.toString()}`,
         {
@@ -40,19 +37,6 @@ export class NotificationService {
           requiresAuth: true,
         }
       );
-
-      console.log('API response analysis:', {
-        hasData: !!response.data,
-        dataType: typeof response.data,
-        isDataArray: Array.isArray(response.data),
-        dataKeys: response.data ? Object.keys(response.data) : 'none',
-        dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
-        status: response.status,
-        statusType: typeof response.status,
-        hasNestedData: response.data && !!response.data.data,
-        nestedDataArray: response.data && Array.isArray(response.data.data),
-        fullDataStructure: JSON.stringify(response, null, 2)
-      });
 
       let notifications: Notification[] = [];
       let totalCount = 0;
@@ -82,7 +66,7 @@ export class NotificationService {
         currentPage: page
       };
     } catch (error) {
-      console.error('❌ Failed to get message list:', error);
+      console.error(' Failed to get message list:', error);
       
       // Special handling for authentication errors (401/403)
       // When these occur, re-throw the error so global handler can catch it
@@ -118,20 +102,10 @@ export class NotificationService {
         body: JSON.stringify({ id: parseInt(notificationId) }),
       });
 
-      console.log('Mark notification as read response:', {
-        responseType: typeof response,
-        hasStatus: 'status' in response,
-        statusValue: response.status,
-        statusType: typeof response.status,
-        isSuccess: response.status === 1,
-        fullResponse: JSON.stringify(response)
-      });
-
       const isSuccess = response.status === 1;
       return isSuccess;
     } catch (error) {
-      console.error('❌ Exception occurred when marking notification as read:', error);
-      console.error('🚨 Warning! Returning false instead of simulating success');
+      console.error('Exception occurred when marking notification as read:', error);
       // No longer simulate success, return failure if API fails
       return false;
     }
@@ -149,7 +123,7 @@ export class NotificationService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ Failed to mark all notifications as read:', error);
+      console.error(' Failed to mark all notifications as read:', error);
       // Don't simulate success - return false so caller knows it failed
       return false;
     }
@@ -179,7 +153,7 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      console.error('❌ Failed to delete notification:', error);
+      console.error(' Failed to delete notification:', error);
       // Return false when deletion fails, don't simulate success
       return false;
     }
@@ -198,7 +172,7 @@ export class NotificationService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ Failed to clear all notifications:', error);
+      console.error(' Failed to clear all notifications:', error);
       // Don't simulate success - return false so caller knows it failed
       return false;
     }
@@ -329,15 +303,6 @@ export class NotificationService {
           processedMessage = `[${senderName}] interacted with you`;
         }
     }
-
-    console.log('Timestamp conversion analysis:', {
-      original_timestamp_seconds: apiMessage.createdAt,
-      converted_timestamp_milliseconds: apiMessage.createdAt * 1000,
-      timestamp_type: typeof apiMessage.createdAt,
-      converted_to_date: new Date(apiMessage.createdAt * 1000),
-      current_time: new Date(),
-      time_difference_milliseconds: Date.now() - new Date(apiMessage.createdAt * 1000).getTime()
-    });
 
     return {
       id: apiMessage.id.toString(),

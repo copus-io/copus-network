@@ -99,15 +99,6 @@ export class CommentService {
         : undefined
     };
 
-    // 调试信息
-    if (apiComment.imageUrls) {
-      console.log('🔍 API评论图片数据:', {
-        originalImageUrls: apiComment.imageUrls,
-        convertedImages: finalComment.images,
-        commentId: apiComment.id
-      });
-    }
-
     return finalComment;
   }
 
@@ -152,25 +143,20 @@ export class CommentService {
       const commentsWithReplies = topLevelComments.comments.filter(comment => comment.repliesCount > 0);
 
       if (commentsWithReplies.length > 0) {
-        // 🔥 优化：批量获取策略
+        // 优化：批量获取策略
 
         // 策略1：如果评论数较少，并行获取所有回复
         if (commentsWithReplies.length <= 5) {
-          console.log(`📊 Loading replies in parallel for ${commentsWithReplies.length} comments`);
-
           const repliesPromises = commentsWithReplies.map(comment =>
             this.fetchRepliesForComment(targetId, parseInt(comment.id))
               .then(replies => ({ commentId: comment.id, replies }))
-              .catch(error => {
-                console.warn(`Failed to load replies for comment ${comment.id}:`, error);
-                return { commentId: comment.id, replies: [] };
-              })
+              .catch(() => ({ commentId: comment.id, replies: [] }))
           );
 
           const repliesResults = await Promise.all(repliesPromises);
 
           // 将所有回复添加到评论列表中
-          repliesResults.forEach(({ commentId, replies }) => {
+          repliesResults.forEach(({ replies }) => {
             if (replies.length > 0) {
               allComments.push(...replies);
             }
@@ -178,8 +164,6 @@ export class CommentService {
         }
         // 策略2：如果评论数较多，优先加载最近有回复的评论
         else {
-          console.log(`📊 Loading replies for top 5 comments only (${commentsWithReplies.length} total)`);
-
           // 按回复数量和评论ID排序，优先加载回复多且较新的评论
           const sortedCommentsWithReplies = commentsWithReplies
             .sort((a, b) => {
@@ -195,23 +179,18 @@ export class CommentService {
           const repliesPromises = topCommentsWithReplies.map(comment =>
             this.fetchRepliesForComment(targetId, parseInt(comment.id))
               .then(replies => ({ commentId: comment.id, replies }))
-              .catch(error => {
-                console.warn(`Failed to load replies for comment ${comment.id}:`, error);
-                return { commentId: comment.id, replies: [] };
-              })
+              .catch(() => ({ commentId: comment.id, replies: [] }))
           );
 
           const repliesResults = await Promise.all(repliesPromises);
 
-          repliesResults.forEach(({ commentId, replies }) => {
+          repliesResults.forEach(({ replies }) => {
             if (replies.length > 0) {
               allComments.push(...replies);
             }
           });
         }
       }
-
-      console.log(`📊 Comment loading summary: ${topLevelComments.comments.length} main comments, ${allComments.length - topLevelComments.comments.length} replies loaded`);
 
       return {
         comments: allComments,
@@ -281,31 +260,6 @@ export class CommentService {
     // Convert API comments to frontend format
     const comments = commentsArray.map((apiComment, index) => {
       try {
-        // 🔍 调试：检查后端返回的原始数据结构
-        if (index < 3) { // Only log first 3 to avoid spam
-          console.log('🔍 Raw API comment data FULL STRUCTURE:', {
-            id: apiComment.id,
-            commentCount: apiComment.commentCount,
-            likeCount: apiComment.likeCount,
-            hasRootId: 'rootId' in apiComment,
-            rootId: (apiComment as any).rootId,
-            hasParentId: 'parentId' in apiComment,
-            parentId: (apiComment as any).parentId,
-            replyToUser: apiComment.replyToUser,
-            // 完整的用户信息
-            userInfo: apiComment.userInfo,
-            // 检查是否有其他相关字段
-            replyTo: (apiComment as any).replyTo,
-            replyUser: (apiComment as any).replyUser,
-            targetUser: (apiComment as any).targetUser,
-            replyToInfo: (apiComment as any).replyToInfo,
-            replyToUserInfo: (apiComment as any).replyToUserInfo,
-            allKeys: Object.keys(apiComment),
-            // 完整数据
-            fullData: apiComment
-          });
-        }
-
         const converted = CommentService.convertApiCommentToComment(
           apiComment,
           'article',
@@ -390,13 +344,6 @@ export class CommentService {
       // 检查API返回的评论数据结构 - 支持两种格式
       const commentData = response.comment || response.data?.comment || response.data;
 
-      // 调试信息（生产环境可移除）
-      console.log('🏗️ CommentService: Comment created successfully:', {
-        commentId: commentData?.id,
-        hasImageUrls: !!commentData?.imageUrls,
-        requestImageUrls: requestData.imageUrls
-      });
-
       const convertedComment = CommentService.convertApiCommentToComment(
         commentData,
         data.targetType,
@@ -404,13 +351,12 @@ export class CommentService {
         data.parentId
       );
 
-      // 🔧 临时修复：确保图片数据显示（直到后端API修复）
+      // 临时修复：确保图片数据显示（直到后端API修复）
       if (!convertedComment.images && data.imageUrls) {
         convertedComment.images = data.imageUrls.split(',').map(url => url.trim()).filter(url => url);
-        console.log('🔧 Client-side image fallback applied for comment:', convertedComment.id);
       }
 
-      // 🔧 设置回复信息（如果存在）
+      // 设置回复信息（如果存在）
 
       if (data.replyToId) {
         convertedComment.replyToId = data.replyToId;
@@ -440,21 +386,11 @@ export class CommentService {
         ...(data.images && data.images.length > 0 && { imageUrls: data.images.join(',') })
       };
 
-      console.log('📝 Update comment request data:', {
-        commentId,
-        content: requestData.content,
-        images: data.images,
-        imageUrls: requestData.imageUrls,
-        hasImages: !!requestData.imageUrls
-      });
-
       const response: any = await apiRequest('/client/reader/article/comment/createOrEdit', {
         method: 'POST',
         body: JSON.stringify(requestData),
         requiresAuth: true
       });
-
-      console.log('Update comment API response:', response);
 
       // 后端使用 {status: 1, msg: 'success'} 格式，不是 {success: true} 格式
       if (response.status !== 1) {

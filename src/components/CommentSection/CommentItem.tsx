@@ -81,11 +81,6 @@ const EditCommentForm: React.FC<EditCommentFormProps> = ({
 
   // 处理图片变化
   const handleImagesChange = (newImages: CommentImage[]) => {
-    console.log('📸 编辑模式图片变化:', {
-      oldCount: images.length,
-      newCount: newImages.length
-    });
-
     // 转换为编辑用的图片格式
     const editImages: EditCommentImage[] = newImages.map(img => ({
       id: img.id,
@@ -286,7 +281,6 @@ const ReplyItemComponent: React.FC<{
       return;
     }
     // 使用统一回复系统，传递parentId以便正确构建回复层级
-    console.log('🚨🚨🚨 2级评论Reply按钮被点击!!! reply.id=', reply.id, 'authorName=', reply.authorName, 'parentComment.id=', parentComment.id);
     onReplyClick?.(reply.id, reply.authorName, parentComment.id);
   };
 
@@ -337,23 +331,9 @@ const ReplyItemComponent: React.FC<{
 
   // 新的内容格式：实现3级评论视觉效果
   const formatReplyContent = () => {
-    console.log('🔍🔥🔥🔥 FormatReplyContent Debug - Reply:', {
-      replyId: reply.id,
-      replyToUser: reply.replyToUser,
-      targetContent: (reply as any).targetContent,
-      hasReplyToUser: !!reply.replyToUser,
-      replyToUserType: typeof reply.replyToUser
-    });
-
-    // 🎯 最高优先级：新的引用显示逻辑
+    // 最高优先级：新的引用显示逻辑
     // 当 replyToUser 对象存在时，显示引用样式
     if (reply.replyToUser && typeof reply.replyToUser === 'object') {
-      console.log('🎯✅ 使用新的引用显示逻辑:', {
-        replyId: reply.id,
-        replyToUser: reply.replyToUser,
-        targetContent: (reply as any).targetContent
-      });
-
       // 获取用户显示名称
       const getUserDisplayName = (userObj) => {
         if (!userObj) return '';
@@ -363,14 +343,7 @@ const ReplyItemComponent: React.FC<{
       const displayUserName = getUserDisplayName(reply.replyToUser);
       const quoteContent = (reply as any).targetContent;
 
-      console.log('🔍 Display details:', {
-        displayUserName,
-        quoteContent,
-        willShowQuote: !!displayUserName
-      });
-
       if (displayUserName) {
-        console.log('🎯✅✅✅ 即将返回新的引用UI，数据:', { displayUserName, quoteContent });
         return (
           <div className="space-y-1">
             {/* 简洁的网易云风格回复引用 */}
@@ -400,14 +373,8 @@ const ReplyItemComponent: React.FC<{
       return content.substring(0, maxLength).trim() + '...';
     };
 
-    // 🔧 优先级0：检查localStorage恢复的引用信息（最高优先级）
+    // 优先级0：检查localStorage恢复的引用信息（最高优先级）
     if (reply.replyToId && reply.replyToUser) {
-      console.log('🎯 Using recovered reply context:', {
-        replyId: reply.id,
-        replyToId: reply.replyToId,
-        replyToUser: reply.replyToUser
-      });
-
       // 在所有回复中查找目标评论（包括主评论和其他回复）
       const allComments = [parentComment, ...allReplies];
       const targetComment = allComments.find(c =>
@@ -443,36 +410,24 @@ const ReplyItemComponent: React.FC<{
       }
     }
 
-    // 🔧 优先级1：检查请求上下文 - 如果这个回复是通过rootId获取的，说明它回复了rootId评论或其子评论
+    // 优先级1：检查请求上下文 - 如果这个回复是通过rootId获取的，说明它回复了rootId评论或其子评论
     const requestContext = (reply as any)._requestContext;
-    console.log('🔧 CommentItem: Checking request context for reply:', {
-      replyId: reply.id,
-      hasRequestContext: !!requestContext,
-      rootId: requestContext?.rootId,
-      parentCommentId: parentComment.id,
-      replyToUser: reply.replyToUser
-    });
 
     if (requestContext?.rootId) {
-      console.log('🔧 CommentItem: Found rootId context, analyzing reply target...');
-
-      // 🎯 核心逻辑：
+      // 核心逻辑：
       // 1. rootId告诉我们这是对某个评论线程的回复
       // 2. 如果有replyToUser，通过时间顺序找到具体的目标评论
       // 3. 如果没有replyToUser，默认回复主评论（rootId评论）
 
       let targetComment = null;
 
-      // 🔧 策略：因为后端不提供replyToUser，我们需要智能推断
-      console.log('🔍 Backend replyToUser not available, using intelligent inference');
-
+      // 策略：因为后端不提供replyToUser，我们需要智能推断
       // 如果这个回复时间是最新的，可能是刚创建的，检查localStorage
       const currentReplyTime = new Date(reply.createdAt).getTime();
       const now = Date.now();
       const isRecentReply = (now - currentReplyTime) < 60000; // 1分钟内的回复
 
       if (isRecentReply) {
-        console.log('🔍 Recent reply detected, checking localStorage for context');
         // 这可能是刚创建的回复，检查localStorage中是否有引用信息
         // 注意：此时localStorage可能已经被清理了，所以我们需要其他方法
       }
@@ -480,7 +435,6 @@ const ReplyItemComponent: React.FC<{
       // 策略：如果线程中只有主评论，默认回复主评论
       if (allReplies.length === 0) {
         targetComment = parentComment;
-        console.log('🎯 Only main comment in thread, replying to main comment');
       }
       // 策略：如果线程中有其他回复，默认回复最近的那条回复
       else {
@@ -494,26 +448,14 @@ const ReplyItemComponent: React.FC<{
 
         if (sortedReplies.length > 0) {
           targetComment = sortedReplies[0]; // 最近的其他回复
-          console.log('🎯 Found most recent reply as target:', {
-            targetId: targetComment.id,
-            targetAuthor: targetComment.authorName,
-            timeDiff: (currentReplyTime - new Date(targetComment.createdAt).getTime()) / 1000 + ' seconds'
-          });
         } else {
           targetComment = parentComment; // 回退到主评论
-          console.log('🔄 No valid previous replies, defaulting to main comment');
         }
       }
 
       // 展示找到的引用结果
       if (targetComment) {
         const targetUser = reply.replyToUser || formatUsername(targetComment);
-        console.log('✅ Using rootId-based reply context:', {
-          rootId: requestContext.rootId,
-          targetCommentId: targetComment.id,
-          targetUser,
-          targetContent: targetComment.content.substring(0, 40)
-        });
 
         // 🔧 3级评论逻辑：只有当 replyToUser 有值时才显示引用（表示3级评论）
         // 2级评论（直接回复1级）的 replyToUser 为空，不显示引用信息
@@ -543,20 +485,13 @@ const ReplyItemComponent: React.FC<{
       }
     }
 
-    // 🔧 优先级2：检查是否有准确的replyToId（来自前端创建的回复）
+    // 优先级2：检查是否有准确的replyToId（来自前端创建的回复）
     if (reply.replyToId) {
-      console.log('🔧 CommentItem: Found replyToId, searching for target comment...');
       const targetComment = allReplies.find(r => r.id === reply.replyToId) ||
                            (parentComment.id === reply.replyToId ? parentComment : null);
 
       if (targetComment) {
         const targetUser = reply.replyToUser || targetComment.authorName || targetComment.authorNamespace;
-        console.log('🔧 Using replyToId logic:', {
-          replyToId: reply.replyToId,
-          targetComment: targetComment.id,
-          targetUser,
-          targetContent: targetComment.content.substring(0, 40)
-        });
         // 🔧 3级评论逻辑：只有当 replyToUser 有值时才显示引用（表示3级评论）
         // 2级评论（直接回复1级）的 replyToUser 为空，不显示引用信息
         const shouldShowReply = reply.replyToUser &&
@@ -577,19 +512,9 @@ const ReplyItemComponent: React.FC<{
       }
     }
 
-    // 🔧 优先级2：根据API文档，使用replyToUser字段显示引用 + 智能时间匹配
+    // 优先级2：根据API文档，使用replyToUser字段显示引用 + 智能时间匹配
     if (reply.replyToUser) {
-      console.log('🔧 CommentItem: Using replyToUser logic for reply:', {
-        replyId: reply.id,
-        replyToUser: reply.replyToUser ? {
-          username: reply.replyToUser.username,
-          namespace: reply.replyToUser.namespace,
-          id: reply.replyToUser.id
-        } : null,
-        replyCreatedAt: reply.createdAt
-      });
-
-      // 🚀 智能算法：基于时间序列 + 用户信息精确匹配被回复的评论
+      // 智能算法：基于时间序列 + 用户信息精确匹配被回复的评论
       const currentReplyTime = new Date(reply.createdAt).getTime();
 
       // 策略1：查找同一用户在此时间之前的最近一条评论
@@ -613,24 +538,10 @@ const ReplyItemComponent: React.FC<{
         // 找到了候选评论，选择最近的一条
         targetComment = candidateComments[0];
         targetContent = `"${truncateContent(targetComment.content)}"`;
-
-        console.log('🎯 CommentItem: Found target comment via time matching:', {
-          targetCommentId: targetComment.id,
-          targetAuthor: targetComment.authorName,
-          targetContent: targetComment.content.substring(0, 30),
-          timeDiff: (currentReplyTime - new Date(targetComment.createdAt).getTime()) / 1000 / 60 + ' minutes ago'
-        });
       } else if (isReplyingToMainComment) {
         // 如果没找到2级评论，但回复的是主评论作者，则指向主评论
         targetComment = parentComment;
         targetContent = `"${truncateContent(parentComment.content)}"`;
-
-        console.log('🎯 CommentItem: Targeting main comment:', {
-          mainCommentId: parentComment.id,
-          mainAuthor: parentComment.authorName
-        });
-      } else {
-        console.log('⚠️ CommentItem: Could not find specific target comment for replyToUser:', reply.replyToUser);
       }
 
       // 🔧 检查是否应该显示引用信息：如果 replyToUser 对象为空则完全不显示引用信息
@@ -886,54 +797,29 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                           hash === `#comment-${comment.id}`;
 
     if (shouldScrollTo && commentRef.current) {
-      // 🔧 检查并恢复引用信息
+      // 检查并恢复引用信息
       const storedContext = localStorage.getItem('pendingReplyContext');
-      console.log('🔍 Checking localStorage for reply context:', {
-        hasStoredContext: !!storedContext,
-        storedContext: storedContext,
-        newCommentId: comment.id
-      });
 
       if (storedContext) {
         try {
           const replyContext = JSON.parse(storedContext);
-          console.log('🔄 Found stored reply context:', replyContext);
 
           // 检查是否是同一个target的评论，且时间在5分钟内
           const isValidContext = replyContext.targetType === targetType &&
                                 replyContext.targetId === targetId &&
                                 (Date.now() - replyContext.timestamp) < 5 * 60 * 1000;
 
-          console.log('🔧 Context validation:', {
-            targetTypeMatch: replyContext.targetType === targetType,
-            targetIdMatch: replyContext.targetId === targetId,
-            timeValid: (Date.now() - replyContext.timestamp) < 5 * 60 * 1000,
-            timeDiff: Date.now() - replyContext.timestamp,
-            isValidContext
-          });
-
           if (isValidContext) {
             // 为新评论添加引用信息
             (comment as any).replyToId = replyContext.replyToId;
             (comment as any).replyToUser = replyContext.replyToUser;
-            console.log('✅ Applied stored reply context to new comment:', {
-              commentId: comment.id,
-              replyToId: replyContext.replyToId,
-              replyToUser: replyContext.replyToUser
-            });
-          } else {
-            console.log('❌ Invalid context, not applying');
           }
 
           // 清理localStorage
           localStorage.removeItem('pendingReplyContext');
-          console.log('🧹 Cleaned up localStorage');
         } catch (error) {
-          console.error('❌ Failed to parse reply context:', error);
           localStorage.removeItem('pendingReplyContext');
         }
-      } else {
-        console.log('📭 No stored reply context found');
       }
 
       setTimeout(() => {
@@ -958,7 +844,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           }, 3000);
         }
 
-        console.log('📍 Scrolled to new comment:', comment.id);
       }, 100);
 
       // 清理 URL 参数，避免刷新时再次滚动
@@ -986,30 +871,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   // 使用懒加载的回复数据，如果没有则使用传入的replies作为后备
   const actualReplies = repliesData?.replies || replies || [];
-
-  // 🔍 调试：查看回复数量信息
-  console.log('🔍 CommentItem Debug - Reply Count Info:', {
-    commentId: comment.id,
-    backendRepliesCount: comment.repliesCount,
-    actualRepliesLength: actualReplies.length,
-    repliesVisible,
-    repliesData: !!repliesData,
-    repliesFromProps: replies?.length || 0
-  });
-
-  // 🔍 调试：检查回复中是否有 targetContent 字段
-  if (actualReplies.length > 0) {
-    actualReplies.forEach((reply, index) => {
-      console.log(`🔍 Reply ${index} targetContent check:`, {
-        replyId: reply.id,
-        hasTargetContent: 'targetContent' in reply,
-        targetContent: (reply as any).targetContent,
-        allKeys: Object.keys(reply)
-      });
-    });
-  }
-
-
 
   const handleLike = () => {
     if (!user) {
@@ -1146,12 +1007,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           {comment.images && comment.images.length > 0 && (
             <CommentImageGallery images={comment.images} className="mb-3" />
           )}
-          {/* 调试信息 */}
-          {comment.images && console.log('🖼️ CommentItem图片数据:', {
-            commentId: comment.id,
-            images: comment.images,
-            imageCount: comment.images.length
-          })}
 
           {/* Action buttons */}
           <div className="flex items-center gap-4">
@@ -1181,7 +1036,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 }
 
                 // 统一回复系统：直接回复该评论（创建2级评论）
-                console.log('🚨🚨🚨 1级评论Reply按钮被点击!!! comment.id=', comment.id, 'authorName=', comment.authorName);
                 onReplyClick?.(comment.id, comment.authorName);
               }}
               className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-blue-600 transition-all duration-200 [font-family:'Lato',Helvetica]"

@@ -109,17 +109,6 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
   const categoryStyle = getCategoryStyle(article.category, article.categoryColor);
   const categoryInlineStyle = getCategoryInlineStyle(article.categoryColor);
 
-  // Debug: Log payment data for this card (only in development)
-  React.useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log(`💳 Card payment data for "${article.title.substring(0, 30)}...":`, {
-        isPaymentRequired: article.isPaymentRequired,
-        paymentPrice: article.paymentPrice,
-        hasPaymentData: !!(article.isPaymentRequired && article.paymentPrice)
-      });
-    }
-  }, [article.title, article.isPaymentRequired, article.paymentPrice]);
-
   // Image preview related state
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState("");

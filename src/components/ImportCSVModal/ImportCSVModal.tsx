@@ -102,7 +102,6 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
           const metadata = await AuthService.fetchUrlMetadata(item.url);
           return { index, metadata };
         } catch (error) {
-          console.log(`Failed to fetch metadata for ${item.url}:`, error);
           return { index, metadata: null };
         }
       });
@@ -322,7 +321,6 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                   </div>
                   <div>
                     <h3 className="text-base font-medium text-gray-800 mb-1">Drop or click to upload</h3>
-                    <p className="text-sm text-gray-500">Supports CSV files only</p>
                   </div>
                   <input
                     ref={fileInputRef}
@@ -340,7 +338,7 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                       className="inline-flex items-center justify-center px-5 py-2.5 rounded-[100px] text-base font-medium transition-colors hover:bg-red/90 bg-red"
                       style={{ color: '#ffffff' }}
                     >
-                      Select File
+                      Upload CSV file
                     </button>
                     <button
                       onClick={(e) => {
@@ -349,35 +347,24 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                       }}
                       className="inline-flex items-center justify-center px-5 py-2.5 rounded-[100px] text-base font-medium border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                     >
-                      Download CSV Template
+                      Download template
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* File Format Guide */}
+              {/* CSV File Format */}
               <div className="mt-6">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">File Format Guide</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">CSV File Format</h4>
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <span className="text-lg">📄</span>
-                    </div>
-                    <h5 className="font-semibold text-gray-800">CSV File Format</h5>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Structured data file with title, URL, and optional fields
-                  </p>
-
                   <div className="bg-white/50 p-3 rounded-lg">
                     <h6 className="font-medium text-gray-800 mb-2 text-xs uppercase tracking-wide">Supported Fields</h6>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div><span className="font-medium text-green-700">url*</span> Link (required)</div>
-                      <div><span className="font-medium text-gray-500">title</span> Title (auto-fetched if missing)</div>
-                      <div><span className="font-medium text-gray-500">recommendation</span> Recommendation/notes (optional)</div>
-                      <div><span className="font-medium text-gray-500">cover</span> Cover image URL (auto-fetched if missing)</div>
+                      <div><span className="font-medium text-green-700">title*</span> Required (auto-fetched if blank)</div>
+                      <div><span className="font-medium text-gray-500">recommendation</span> Notes (optional)</div>
+                      <div><span className="font-medium text-green-700">cover*</span> Required (auto-fetched if blank)</div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">* URL is required. Title and cover will be auto-fetched from URL if not provided.</p>
                   </div>
                 </div>
               </div>
@@ -397,19 +384,6 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                   <p className="text-gray-600">
                     Getting titles and cover images from URLs...
                   </p>
-                  {fetchProgress.total > 0 && (
-                    <div className="mt-4">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${(fetchProgress.current / fetchProgress.total) * 100}%` }}
-                        />
-                      </div>
-                      <p className="text-sm text-gray-500 mt-2">
-                        {fetchProgress.current} / {fetchProgress.total}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

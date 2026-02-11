@@ -19,8 +19,6 @@ import { useCategory } from "../../../contexts/CategoryContext";
 import { NoAccessPermission } from "../../../components/NoAccessPermission/NoAccessPermission";
 import { SEO } from "../../../components/SEO/SEO";
 
-// Add debug logging for Space component
-console.log('📍 SpaceContentSection module loaded');
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 interface SpaceFetchCacheEntry {
@@ -374,7 +372,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
       // If we have cached data and it's still valid, use it immediately
       if (cached && cached.data && (now - cached.timestamp < SPACE_CACHE_TTL)) {
-        console.log('[Space] Using cached data for:', cacheKey);
         setSpaceInfo(cached.data.spaceInfo);
         setArticles(cached.data.articles);
         setTotalArticleCount(cached.data.totalCount);
@@ -386,7 +383,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
       // If fetch is already in progress, skip to prevent duplicate calls
       if (cached && cached.inProgress) {
-        console.log('[Space] Fetch already in progress for:', cacheKey, '- skipping');
         return;
       }
 
@@ -407,14 +403,10 @@ export const SpaceContentSection = (): JSX.Element => {
 
         if (isNamespaceRoute) {
           // Fetch space info by namespace using getSpaceInfo API
-          console.log('[Space] Fetching space info by namespace:', decodedIdentifier);
           const spaceInfoResponse = await AuthService.getSpaceInfo(decodedIdentifier);
-          console.log('[Space] Space info API response:', spaceInfoResponse);
-          console.log('🔥🔥🔥 SPACE COVERURL DEBUG: Raw API response:', JSON.stringify(spaceInfoResponse, null, 2));
 
           // Check for 2104 status code in response
           if (spaceInfoResponse?.status === 2104) {
-            console.log('[Space] Detected 2104 no access permission in response');
             setError('2104 - You do not have access permission');
             setLoading(false);
             return;
@@ -422,7 +414,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
           // Extract space info from response - faceUrl is now at root level
           const spaceData = spaceInfoResponse?.data || spaceInfoResponse;
-          console.log('🔥🔥🔥 SPACE DATA DEBUG: Extracted space data:', JSON.stringify(spaceData, null, 2));
 
           // Get author username for display name with comprehensive fallback chain
           // Note: Do NOT fall back to logged-in user's username - use API data only
@@ -470,13 +461,10 @@ export const SpaceContentSection = (): JSX.Element => {
           // Set follow status from space data
           const followStatus = spaceData?.isFollowed || spaceData?.followed || false;
           setIsFollowing(followStatus);
-          console.log('[Space] Setting follow status:', followStatus);
 
           // Fetch articles using spaceId from the space info
           if (fetchedSpaceId) {
-            console.log('[Space] Fetching articles for spaceId:', fetchedSpaceId, 'page:', 1, 'pageSize:', PAGE_SIZE);
             const articlesResponse = await AuthService.getSpaceArticles(fetchedSpaceId, 1, PAGE_SIZE);
-            console.log('[Space] Space articles API response:', articlesResponse);
 
             // Extract articles from paginated response
             if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
@@ -484,17 +472,6 @@ export const SpaceContentSection = (): JSX.Element => {
             } else if (articlesResponse?.data?.data && Array.isArray(articlesResponse.data.data)) {
               articlesArray = articlesResponse.data.data;
             }
-
-            // 添加原始文章数据的调试信息
-            console.log('🔥 DEBUG: Raw articles from API:', {
-              count: articlesArray.length,
-              firstArticleSample: articlesArray[0] ? {
-                id: articlesArray[0].id,
-                uuid: articlesArray[0].uuid,
-                title: articlesArray[0].title,
-                keys: Object.keys(articlesArray[0])
-              } : 'no articles'
-            });
           }
 
           // Set all states
@@ -535,7 +512,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
             if (isCurationsSpace) {
               // Fetch created/curated articles for curations space
-              console.log('Fetching curated articles for user:', userId);
               const curatedResponse = await AuthService.getMyCreatedArticles(1, 100, userId);
 
               if (curatedResponse?.data?.data && Array.isArray(curatedResponse.data.data)) {
@@ -648,14 +624,6 @@ export const SpaceContentSection = (): JSX.Element => {
       // Privacy field - article visibility (0: public, 1: private, 2: unlisted)
       visibility: article.visibility
     };
-
-    // 添加调试信息
-    console.log('🔥 DEBUG: Transformed article:', {
-      originalId: article.id,
-      uuid: article.uuid,
-      numericId: transformedArticle.numericId,
-      transformedKeys: Object.keys(transformedArticle)
-    });
 
     return transformedArticle;
   };
@@ -785,10 +753,7 @@ export const SpaceContentSection = (): JSX.Element => {
     setLoadingMore(true);
     try {
       const nextPage = currentPage + 1;
-      console.log('Loading more articles, page:', nextPage);
-
       const articlesResponse = await AuthService.getSpaceArticles(spaceId, nextPage, PAGE_SIZE);
-      console.log('Load more response:', articlesResponse);
 
       let newArticles: any[] = [];
       if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
@@ -863,32 +828,13 @@ export const SpaceContentSection = (): JSX.Element => {
     const currentCoverUrl = spaceInfo?.coverUrl || '';
     const currentFaceUrl = spaceInfo?.faceUrl || '';
 
-    console.log('🔥🔥🔥 SPACE EDIT MODAL DEBUG:', {
-      spaceInfo: spaceInfo,
-      spaceInfoKeys: spaceInfo ? Object.keys(spaceInfo) : 'null',
-      currentCoverUrl: currentCoverUrl,
-      currentFaceUrl: currentFaceUrl,
-      coverUrlFromSpaceInfo: spaceInfo?.coverUrl,
-      faceUrlFromSpaceInfo: spaceInfo?.faceUrl,
-      faceUrlFromEdit: currentFaceUrl,
-      allSpaceData: JSON.stringify(spaceInfo, null, 2)
-    });
-
     setEditSpaceName(currentName);
     setEditSpaceDescription(currentDescription);
     setEditSpaceCoverUrl(currentCoverUrl);
     setEditSpaceFaceUrl(currentFaceUrl);
 
-    console.log('🔥🔥🔥 SPACE EDIT: Setting edit states:', {
-      editSpaceName: currentName,
-      editSpaceDescription: currentDescription,
-      editSpaceCoverUrl: currentCoverUrl,
-      editSpaceFaceUrl: currentFaceUrl
-    });
-
     setShowEditModal(true);
-    setIsImageUploading(false); // 重置图片上传状态
-    console.log('🔥🔥🔥 SPACE EDIT: Modal opened');
+    setIsImageUploading(false);
 
     // 🔍 SEARCH: dev-log-space-edit-modal
     devLog.userAction('open-space-edit-modal', {
@@ -960,7 +906,6 @@ export const SpaceContentSection = (): JSX.Element => {
         setDisplaySpaceName(nameToUse);
       }
 
-      console.log('🚀 SPACE EDIT: Local state updated immediately with new coverUrl:', coverUrl);
       showToast('Space updated successfully', 'success');
       setShowEditModal(false);
 
@@ -969,10 +914,6 @@ export const SpaceContentSection = (): JSX.Element => {
       setEditSpaceDescription("");
       setEditSpaceCoverUrl("");
       setEditSpaceFaceUrl("");
-
-      // 移除页面刷新，改为依赖本地状态更新
-      // 这样可以避免测试环境中的网络延迟问题
-      console.log('🚀 SPACE EDIT: Skipping page reload, using immediate state update');
     } catch (err) {
       const errorMessage = ErrorHandler.handleApiError(err, {
         component: 'SpaceContentSection',
@@ -1049,12 +990,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
         // Find the article to get its numeric ID
         const article = articles.find(a => a.uuid === articleToDelete);
-        console.log('🔥 DEBUG: Found article for deletion:', {
-          articleToDelete,
-          foundArticle: article,
-          allArticles: articles.map(a => ({ uuid: a.uuid, numericId: a.numericId, id: a.id })),
-          articleKeys: article ? Object.keys(article) : 'article not found'
-        });
 
         if (!article) {
           showToast('Article not found', 'error');
@@ -1063,23 +998,11 @@ export const SpaceContentSection = (): JSX.Element => {
 
         // 尝试获取数字 ID，优先使用 numericId，其次使用 id
         const articleNumericId = article.numericId || article.id;
-        console.log('🔥 DEBUG: Article ID resolution:', {
-          numericId: article.numericId,
-          id: article.id,
-          finalId: articleNumericId
-        });
 
         if (!articleNumericId) {
           showToast('Article numeric ID not available', 'error');
-          console.error('🔥 ERROR: No valid article ID found:', article);
           return;
         }
-
-        console.log('🔥 Removing article from space:', {
-          articleId: articleNumericId,
-          spaceId: spaceId,
-          articleUuid: articleToDelete
-        });
 
         await removeArticleFromSpace({
           articleId: articleNumericId,
@@ -1345,15 +1268,8 @@ export const SpaceContentSection = (): JSX.Element => {
                     type="avatar"
                     currentImage={editSpaceFaceUrl || spaceInfo?.faceUrl}
                     key={`avatar-uploader-${showEditModal}-${editSpaceFaceUrl || spaceInfo?.faceUrl}`}
-                    onUploadStatusChange={(uploading) => {
-                      console.log('🔄 SPACE EDIT: Avatar upload status changed:', uploading);
-                      setIsImageUploading(uploading);
-                    }}
-                    onImageUploaded={async (url) => {
-                      console.log('🔥🔥🔥 SPACE EDIT: Received avatar URL:', url);
-                      setEditSpaceFaceUrl(url);
-                      console.log('🔥🔥🔥 SPACE EDIT: Avatar state updated with URL:', url);
-                    }}
+                    onUploadStatusChange={(uploading) => setIsImageUploading(uploading)}
+                    onImageUploaded={(url) => setEditSpaceFaceUrl(url)}
                     onError={(error) => showToast(error, 'error')}
                   />
                 </div>
@@ -1364,19 +1280,12 @@ export const SpaceContentSection = (): JSX.Element => {
                     type="banner"
                     currentImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
                     key={`image-uploader-${showEditModal}-${editSpaceCoverUrl || spaceInfo?.coverUrl}`}
-                    onUploadStatusChange={(uploading) => {
-                      console.log('🔄 SPACE EDIT: Image upload status changed:', uploading);
-                      setIsImageUploading(uploading);
-                    }}
+                    onUploadStatusChange={(uploading) => setIsImageUploading(uploading)}
                     onImageUploaded={async (url) => {
-                      console.log('🔥🔥🔥 SPACE EDIT: Received image URL:', url);
                       setEditSpaceCoverUrl(url);
-                      console.log('🔥🔥🔥 SPACE EDIT: State updated with URL:', url);
 
                       // 当图片被删除时（url为空），自动保存删除操作
                       if (!url && (editSpaceCoverUrl || spaceInfo?.coverUrl)) {
-                        console.log('🔥🔥🔥 SPACE EDIT: Auto-saving cover image removal...');
-
                         if (!spaceId) {
                           showToast('Space ID not available', 'error');
                           return;
@@ -1386,19 +1295,11 @@ export const SpaceContentSection = (): JSX.Element => {
                           const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
                           const currentDescription = spaceInfo?.description || '';
 
-                          // 立即保存删除操作到服务器
-                          await AuthService.updateSpace(spaceId, currentName, currentDescription, ''); // 传入空字符串删除封面图
-
+                          await AuthService.updateSpace(spaceId, currentName, currentDescription, '');
                           showToast('Cover image removed successfully', 'success');
-
-                          // 更新本地 spaceInfo 状态
                           setSpaceInfo(prev => prev ? { ...prev, coverUrl: '' } : null);
-
-                          console.log('🔥🔥🔥 SPACE EDIT: Cover image removal saved successfully');
                         } catch (error) {
-                          console.error('🔥🔥🔥 SPACE EDIT: Failed to save cover image removal:', error);
                           showToast('Failed to remove cover image', 'error');
-                          // 回滚状态
                           setEditSpaceCoverUrl(spaceInfo?.coverUrl || '');
                         }
                       }
@@ -1589,43 +1490,21 @@ export const SpaceContentSection = (): JSX.Element => {
                 coverUrl: bookmark.cover || ''
               }));
 
-              console.log('Batch importing articles:', articles);
-
-              console.log('Batch importing articles:', articles);
-              console.log('Target spaceId:', spaceId);
-              console.log('Cover URLs in articles:', articles.map(a => ({ title: a.title, coverUrl: a.coverUrl })));
-
               // Use new batch import API
               const importResponse = await AuthService.importArticles(spaceId, articles);
-              console.log('Batch import response:', importResponse);
-
-              // Check if the import was actually successful
-              console.log('🔍 Checking import response success:', {
-                hasResponse: !!importResponse,
-                status: importResponse?.status,
-                success: importResponse?.success,
-                code: importResponse?.code,
-                msg: importResponse?.msg,
-                fullResponse: importResponse
-              });
 
               if (importResponse && (importResponse.status === 1 || importResponse.success === true || importResponse.code === 200)) {
-                console.log('✅ Import successful, showing toast and refreshing page');
                 showToast(`Successfully imported ${articles.length} bookmarks to space`, 'success');
 
                 // Refresh the page to show the new articles
                 setTimeout(() => {
-                  console.log('📄 Refreshing page to show imported articles');
                   window.location.reload();
-                }, 1500); // 增加刷新延迟到1.5秒
+                }, 1500);
               } else {
-                // If response indicates failure, throw an error with details
-                console.error('❌ Import API returned error:', importResponse);
                 const errorMsg = importResponse?.msg || importResponse?.message || 'Unknown import error';
                 throw new Error(`Import failed: ${errorMsg}`);
               }
             } catch (error) {
-              console.error('Failed to import bookmarks to space:', error);
               throw error;
             }
           }}

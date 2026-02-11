@@ -35,13 +35,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   useEffect(() => {
     // 当 currentImage 变为空时，清理所有本地状态
     if (!currentImage) {
-      console.log('🔥🔥🔥 SPACE ImageUploader: currentImage is empty, cleaning up states');
-
       // 使用当前状态值进行清理，避免依赖循环
       setLocalPreviewUrl(prev => {
         if (prev) {
           revokeImagePreview(prev);
-          console.log('🔥🔥🔥 SPACE ImageUploader: Revoked localPreviewUrl');
         }
         return '';
       });
@@ -49,7 +46,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       setPreviewUrl(prev => {
         if (prev) {
           revokeImagePreview(prev);
-          console.log('🔥🔥🔥 SPACE ImageUploader: Revoked previewUrl');
         }
         return '';
       });
@@ -60,19 +56,16 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       // 重置文件输入
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
-        console.log('🔥🔥🔥 SPACE ImageUploader: Reset file input');
       }
     }
   }, [currentImage]); // 只依赖 currentImage，避免无限循环
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    console.log('🔥 ImageUploader: File selected, type:', type, 'file:', file?.name);
     if (!file) return;
 
     // Validate file
     const validation = validateImageFile(file);
-    console.log('🔥 ImageUploader: File validation result:', validation);
     if (!validation.isValid) {
       onError?.(validation.error || 'File format not supported');
       return;
@@ -82,30 +75,19 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     const preview = createImagePreview(file);
     setPreviewUrl(preview);
     setShowCropper(true);
-    console.log('🔥 ImageUploader: Cropper should show now');
   };
 
   const handleCrop = async (croppedFile: File) => {
     try {
-      console.log('🔥 Processing cropped image:', {
-        fileName: croppedFile.name,
-        fileSize: croppedFile.size,
-        fileType: croppedFile.type,
-        isAvatar,
-        aspectRatio
-      });
-
       // 立即创建本地预览，无需等待上传完成
       const localPreview = createImagePreview(croppedFile);
       setLocalPreviewUrl(localPreview);
-      console.log('🚀 FAST PREVIEW: Created local preview immediately:', localPreview);
 
       setIsUploading(true);
       onUploadStatusChange?.(true); // 通知开始上传
       setShowCropper(false);
 
       // Compress image
-      console.log('🔥 Starting image compression...');
       const compressedFile = await compressImage(croppedFile, {
         maxWidth: isAvatar ? 400 : 1920,
         maxHeight: isAvatar ? 400 : 1080,
@@ -113,19 +95,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         format: 'jpeg'
       });
 
-      console.log('🔥 Image compression complete:', {
-        originalSize: croppedFile.size,
-        compressedSize: compressedFile.size,
-        compression: `${((1 - compressedFile.size / croppedFile.size) * 100).toFixed(1)}%`
-      });
-
       // Upload to server
-      console.log('🔥 Starting upload to server...');
       const result = await AuthService.uploadImage(compressedFile);
-      console.log('🔥 Upload successful, server response:', result);
 
       onImageUploaded(result.url);
-      console.log('🔥🔥🔥 SPACE ImageUploader: Image URL passed to parent component:', result.url);
 
       // Clean up resources
       if (previewUrl) {
@@ -135,18 +108,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       if (localPreviewUrl) {
         revokeImagePreview(localPreviewUrl);
         setLocalPreviewUrl('');
-        console.log('🚀 FAST PREVIEW: Cleaned up local preview after successful upload');
       }
       setSelectedFile(null);
 
     } catch (error) {
-      console.error('🔥 Image upload failed - detailed error information:', {
-        error,
-        errorMessage: error.message,
-        errorStack: error.stack,
-        errorType: typeof error,
-        errorString: String(error)
-      });
+      console.error('Image upload failed:', error);
 
       let errorMessage = 'Image upload failed, please try again';
       if (error.message) {
@@ -159,7 +125,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       if (localPreviewUrl) {
         revokeImagePreview(localPreviewUrl);
         setLocalPreviewUrl('');
-        console.log('🚀 FAST PREVIEW: Cleaned up local preview after upload error');
       }
     } finally {
       setIsUploading(false);
@@ -182,26 +147,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const handleButtonClick = () => {
-    console.log('🔥🔥🔥 SPACE ImageUploader: Button clicked, type:', type);
-    console.log('🔥🔥🔥 SPACE ImageUploader: Current state:', {
-      currentImage,
-      localPreviewUrl,
-      isUploading,
-      showCropper,
-      fileInputExists: !!fileInputRef.current
-    });
-
     if (fileInputRef.current) {
       fileInputRef.current.click();
-      console.log('🔥🔥🔥 SPACE ImageUploader: File input clicked');
-    } else {
-      console.error('🔥🔥🔥 SPACE ImageUploader: File input ref is null');
     }
   };
 
   const handleRemoveImage = () => {
-    console.log('🔥🔥🔥 SPACE ImageUploader: Remove image clicked');
-
     // 清理所有本地状态
     if (localPreviewUrl) {
       revokeImagePreview(localPreviewUrl);
@@ -221,7 +172,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
     // 通知父组件图片已删除
     onImageUploaded('');
-    console.log('🔥🔥🔥 SPACE ImageUploader: Image removed, notifying parent component');
   };
 
   if (isAvatar) {
@@ -355,16 +305,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           )}
 
           {/* Upload button - only show when no image and no local preview */}
-          {(() => {
-            const showUploadButton = !currentImage && !localPreviewUrl;
-            console.log('🔥 DEBUG: Upload button visibility:', {
-              currentImage: currentImage,
-              localPreviewUrl: localPreviewUrl,
-              showUploadButton: showUploadButton,
-              isUploading: isUploading
-            });
-            return showUploadButton;
-          })() && (
+          {!currentImage && !localPreviewUrl && (
             <div className="flex flex-col items-center justify-center gap-2.5 relative flex-1 self-stretch w-full grow">
               <Button
                 type="button"

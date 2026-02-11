@@ -47,7 +47,6 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
 
     // 解析标题行
     const headers = parseCSVLine(lines[0]);
-    console.log('🔍 CSV Headers:', headers);
 
     // 检查必需的字段
     const titleIndex = findHeaderIndex(headers, ['title', 'name', '标题', '名称']);
@@ -81,11 +80,11 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
 
         const fields = parseCSVLine(line);
 
-        const title = fields[titleIndex]?.trim();
+        const title = fields[titleIndex]?.trim() || '';
         const url = fields[urlIndex]?.trim();
 
-        // Skip rows with missing title or URL (don't report as error for cleaner UX)
-        if (!title || !url) {
+        // Skip rows with missing URL (title is optional since we can fetch it from URL metadata)
+        if (!url) {
           continue;
         }
 
@@ -96,7 +95,7 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
         }
 
         const bookmark: ImportedBookmark = {
-          title,
+          title, // May be empty - will be fetched from URL metadata if needed
           url,
           description: descriptionIndex !== -1 ? fields[descriptionIndex]?.trim() : undefined,
           category: categoryIndex !== -1 ? fields[categoryIndex]?.trim() : undefined,
@@ -253,13 +252,13 @@ export const normalizeUrl = (url: string): string => {
  * 生成CSV模板
  */
 export const generateCSVTemplate = (): string => {
-  // Headers with required/optional indicators
-  const headers = ['title (required)', 'url (required)', 'recommendation (optional)', 'cover (optional)'];
+  // Headers - URL first, title can be left blank (we'll auto-fetch it)
+  const headers = ['url (required)', 'title (auto-fetched if blank)', 'recommendation (optional)', 'cover image url (optional)'];
 
   // Example row using Copus SEO data
   const example = [
-    '"Copus - Internet Treasure Map"',
     '"https://copus.network"',
+    '"Copus - Internet Treasure Map"',
     '"A great platform for curating and discovering content"',
     '"https://copus.network/og-image.jpg"'
   ];
