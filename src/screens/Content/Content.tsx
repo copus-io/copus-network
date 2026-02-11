@@ -152,23 +152,32 @@ export const Content = (): JSX.Element => {
   const [shouldShowModal, setShouldShowModal] = useState(false);
   const commentScrollRef = useRef<HTMLDivElement>(null);
 
+  // Track if we've already handled the URL params to prevent infinite loops
+  const hasHandledUrlParams = useRef(false);
+
   // Show success toast when arriving from browser extension after publishing
   // Handle cache refresh for updated articles (from edit mode)
   useEffect(() => {
+    // Skip if we've already handled these params in this session
+    if (hasHandledUrlParams.current) return;
+
     const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get('published') === 'true') {
+    const hasPublished = searchParams.get('published') === 'true';
+    const hasRefresh = searchParams.get('refresh');
+
+    if (hasPublished) {
+      hasHandledUrlParams.current = true;
       showToast('Done! You just surfaced an internet gem!', 'success');
-      // Remove the query param from URL without reload
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      // Use navigate with replace to properly update React Router's location
+      navigate(location.pathname, { replace: true });
     }
 
     // Handle refresh parameter (from edit mode redirect)
-    if (searchParams.get('refresh') && id) {
+    if (hasRefresh && id) {
+      hasHandledUrlParams.current = true;
       console.log('🔄 Cache refresh requested for article:', id);
-      // Clean URL immediately to prevent multiple refreshes
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      // Use navigate with replace to properly update React Router's location
+      navigate(location.pathname, { replace: true });
       // Force refresh with cache busting - clears all caches and fetches fresh data
       bustCacheAndRefresh(id).then(() => {
         console.log('✅ Article cache refreshed successfully');
@@ -176,7 +185,12 @@ export const Content = (): JSX.Element => {
         console.error('❌ Failed to refresh article cache:', err);
       });
     }
-  }, [location.search, showToast, id, bustCacheAndRefresh]);
+  }, [location.search, location.pathname, showToast, id, bustCacheAndRefresh, navigate]);
+
+  // Reset the handler flag when the article ID changes (navigating to a different article)
+  useEffect(() => {
+    hasHandledUrlParams.current = false;
+  }, [id]);
 
   // Handle modal animation timing and body scroll lock
   useEffect(() => {

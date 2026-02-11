@@ -1,6 +1,7 @@
 // React hook for article detail with TanStack Query integration
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import {
   getArticleDetail,
   GetArticleDetailOptions,
@@ -69,22 +70,22 @@ export const usePreloadArticleDetail = () => {
 export const useArticleDetailActions = () => {
   const queryClient = useQueryClient();
 
-  const refreshArticleDetail = (uuid: string) => {
+  const refreshArticleDetail = useCallback((uuid: string) => {
     // Clear both service cache and React Query cache
     clearArticleDetailCache(uuid);
     queryClient.invalidateQueries({ queryKey: ['articleDetail', uuid] });
     queryClient.invalidateQueries({ queryKey: ['articleId', uuid] });
-  };
+  }, [queryClient]);
 
-  const clearAllArticleCache = () => {
+  const clearAllArticleCache = useCallback(() => {
     // Clear all article detail queries
     queryClient.removeQueries({ queryKey: ['articleDetail'] });
     queryClient.removeQueries({ queryKey: ['articleId'] });
     // Clear service cache
     clearArticleDetailCache();
-  };
+  }, [queryClient]);
 
-  const bustCacheAndRefresh = async (uuid: string) => {
+  const bustCacheAndRefresh = useCallback(async (uuid: string) => {
     // Clear internal service cache
     clearArticleDetailCache(uuid);
     // Invalidate queries to trigger refetch while keeping existing data visible
@@ -95,7 +96,7 @@ export const useArticleDetailActions = () => {
     // Also invalidate legacy query keys
     queryClient.invalidateQueries({ queryKey: ['articleDetail', uuid] });
     queryClient.invalidateQueries({ queryKey: ['articleId', uuid] });
-  };
+  }, [queryClient]);
 
   return {
     refreshArticleDetail,
