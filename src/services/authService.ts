@@ -2147,26 +2147,35 @@ export class AuthService {
       });
 
       console.log('🔍 URL metadata response:', response);
+      console.log('🔍 Response keys:', response ? Object.keys(response) : 'null');
+      console.log('🔍 Response.data:', response?.data);
+      console.log('🔍 Response.data keys:', response?.data ? Object.keys(response.data) : 'no data');
+      console.log('🔍 Response.data stringified:', JSON.stringify(response?.data, null, 2));
 
       // Handle different response formats
       if (response?.data) {
-        return {
-          ogImage: response.data.ogImage || response.data.imageUrl || response.data.image || response.data.coverUrl || '',
-          title: response.data.title || response.data.ogTitle || '',
-          description: response.data.description || response.data.ogDescription || '',
-          favicon: response.data.favicon || response.data.icon || '',
+        const result = {
+          ogImage: response.data.ogImage || response.data.imageUrl || response.data.image || response.data.coverUrl || response.data.OgImage || '',
+          title: response.data.title || response.data.ogTitle || response.data.Title || '',
+          description: response.data.description || response.data.ogDescription || response.data.Description || '',
+          favicon: response.data.favicon || response.data.icon || response.data.Favicon || '',
         };
+        console.log('🔍 Parsed result (from response.data):', result);
+        return result;
       }
 
-      if (response?.ogImage || response?.imageUrl || response?.image) {
-        return {
-          ogImage: response.ogImage || response.imageUrl || response.image,
-          title: response.title,
-          description: response.description,
-          favicon: response.favicon,
+      if (response?.ogImage || response?.imageUrl || response?.image || response?.OgImage) {
+        const result = {
+          ogImage: response.ogImage || response.imageUrl || response.image || response.OgImage,
+          title: response.title || response.Title,
+          description: response.description || response.Description,
+          favicon: response.favicon || response.Favicon,
         };
+        console.log('🔍 Parsed result (from response root):', result);
+        return result;
       }
 
+      console.log('🔍 No recognized metadata format, returning empty');
       return {};
     } catch (error) {
       // Fail gracefully - this is an optional enhancement

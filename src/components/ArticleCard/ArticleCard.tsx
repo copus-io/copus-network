@@ -59,6 +59,7 @@ export interface ArticleCardProps {
   layout?: LayoutMode;
   actions?: ActionConfig;
   isHovered?: boolean;
+  isFetchingCover?: boolean; // For preview layout: show loading indicator in image area
   onLike?: (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => Promise<void>; // Now optional for backward compatibility
   onComment?: (articleId: string, articleUuid?: string) => void; // Comment button callback
   onEdit?: (articleId: string) => void;
@@ -78,6 +79,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
     showWebsite: false
   },
   isHovered = false,
+  isFetchingCover = false,
   onLike,
   onComment,
   onEdit,
@@ -204,17 +206,29 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
           <CardContent className="flex flex-col items-start gap-4 py-4 px-5 w-full">
             <div className="flex flex-col items-start justify-center gap-3 w-full min-w-0 max-w-full">
               <div
-                className="flex flex-col items-end justify-end p-2 w-full bg-cover bg-[50%_50%] rounded-lg relative"
+                className="flex flex-col items-center justify-center p-2 w-full bg-cover bg-[50%_50%] rounded-lg relative"
                 style={{
                   backgroundImage: article.coverImage ? `url(${article.coverImage})` : 'none',
                   backgroundColor: article.coverImage ? 'transparent' : '#f5f5f5',
                   aspectRatio: '16 / 9'
                 }}
               >
+                {/* Loading indicator when fetching cover from URL */}
+                {isFetchingCover && !article.coverImage && (
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <svg className="animate-spin h-8 w-8 text-medium-grey" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-xs">
+                      Fetching cover...
+                    </span>
+                  </div>
+                )}
 
-                {/* Hide website link for paid/locked content */}
-                {!article.isPaymentRequired && (
-                  <div className="inline-flex items-start gap-1 px-2 py-1 bg-white rounded-[12px] overflow-hidden">
+                {/* Hide website link for paid/locked content - show at bottom right */}
+                {!isFetchingCover && !article.isPaymentRequired && (
+                  <div className="absolute bottom-2 right-2 inline-flex items-start gap-1 px-2 py-1 bg-white rounded-[12px] overflow-hidden">
                     <span className="[font-family:'Lato',Helvetica] font-normal text-blue text-xs text-right tracking-[0] leading-4 whitespace-nowrap">
                       {article.website || 'Visit content'}
                     </span>

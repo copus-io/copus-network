@@ -541,6 +541,13 @@ export const Create = (): JSX.Element => {
           console.log('🖼️ Auto-fetched cover image:', metadata.ogImage);
           setAutoFetchedCoverUrl(metadata.ogImage);
         }
+        // Auto-fill title if empty and og:title is available
+        if (metadata.title && !formData.title) {
+          console.log('📝 Auto-filled title:', metadata.title);
+          const truncatedTitle = metadata.title.substring(0, 75); // Limit to 75 chars
+          setFormData(prev => ({ ...prev, title: truncatedTitle }));
+          setTitleCharacterCount(truncatedTitle.length);
+        }
       } catch (error) {
         // Fail silently - this is an optional enhancement
         console.log('🖼️ Auto-fetch cover failed (optional):', error);
@@ -1324,6 +1331,7 @@ export const Create = (): JSX.Element => {
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
+                  isFetchingCover={isFetchingCover}
                   className="w-full"
                 />
               </div>
