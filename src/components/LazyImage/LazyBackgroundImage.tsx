@@ -12,24 +12,31 @@ export const LazyBackgroundImage: React.FC<LazyBackgroundImageProps> = ({
   src,
   className = '',
   style = {},
-  placeholder = 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+  placeholder = 'none', // No placeholder image - just empty
   children
 }) => {
-  const [backgroundImage, setBackgroundImage] = useState<string>(placeholder);
+  const [backgroundImage, setBackgroundImage] = useState<string>(src ? placeholder : 'none');
   const [elementRef, setElementRef] = useState<HTMLDivElement | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(!src); // Already "loaded" if no src
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
+    // If no src provided, don't try to load anything
+    if (!src) {
+      setBackgroundImage('none');
+      setIsLoaded(true);
+      return;
+    }
+
     if (!elementRef) return;
 
-    // 如果浏览器支持 IntersectionObserver
+    // If browser supports IntersectionObserver
     if ('IntersectionObserver' in window) {
       observerRef.current = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
-              // 预加载图片
+              // Preload image
               const img = new Image();
               img.src = src;
               img.onload = () => {
@@ -37,11 +44,12 @@ export const LazyBackgroundImage: React.FC<LazyBackgroundImageProps> = ({
                 setIsLoaded(true);
               };
               img.onerror = () => {
-                // 如果加载失败，保持占位背景
-                setBackgroundImage(placeholder);
+                // If loading fails, show nothing (no placeholder)
+                setBackgroundImage('none');
+                setIsLoaded(true);
               };
 
-              // 停止观察
+              // Stop observing
               if (observerRef.current) {
                 observerRef.current.disconnect();
               }
@@ -49,13 +57,13 @@ export const LazyBackgroundImage: React.FC<LazyBackgroundImageProps> = ({
           });
         },
         {
-          rootMargin: '50px' // 提前50px开始加载
+          rootMargin: '50px' // Start loading 50px before visible
         }
       );
 
       observerRef.current.observe(elementRef);
     } else {
-      // 如果不支持 IntersectionObserver，直接加载
+      // If IntersectionObserver not supported, load directly
       setBackgroundImage(`url(${src})`);
       setIsLoaded(true);
     }
