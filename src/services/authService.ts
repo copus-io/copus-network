@@ -2151,16 +2151,16 @@ export class AuthService {
       // Handle different response formats
       if (response?.data) {
         return {
-          ogImage: response.data.ogImage || response.data.image || response.data.coverUrl,
-          title: response.data.title || response.data.ogTitle,
-          description: response.data.description || response.data.ogDescription,
-          favicon: response.data.favicon || response.data.icon,
+          ogImage: response.data.ogImage || response.data.imageUrl || response.data.image || response.data.coverUrl || '',
+          title: response.data.title || response.data.ogTitle || '',
+          description: response.data.description || response.data.ogDescription || '',
+          favicon: response.data.favicon || response.data.icon || '',
         };
       }
 
-      if (response?.ogImage || response?.image) {
+      if (response?.ogImage || response?.imageUrl || response?.image) {
         return {
-          ogImage: response.ogImage || response.image,
+          ogImage: response.ogImage || response.imageUrl || response.image,
           title: response.title,
           description: response.description,
           favicon: response.favicon,
