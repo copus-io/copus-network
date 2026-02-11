@@ -1580,69 +1580,16 @@ export const SpaceContentSection = (): JSX.Element => {
                 throw new Error('User not logged in');
               }
 
-              // Filter out items without URL - URL is required
-              const validBookmarks = bookmarks.filter(bookmark => bookmark.url && bookmark.url.trim() !== '');
-
-              if (validBookmarks.length === 0) {
-                throw new Error('No valid bookmarks found. All items must have a URL.');
-              }
-
-              if (validBookmarks.length < bookmarks.length) {
-                showToast(`${bookmarks.length - validBookmarks.length} items without URL were skipped`, 'warning');
-              }
-
-              showToast(`Importing ${validBookmarks.length} bookmarks to space...`, 'info');
-
+              // Items are already validated and enriched by ImportCSVModal
               // Transform bookmarks to articles format for batch import
-              // Note: CSV "recommendation" field maps to bookmark.category, not bookmark.description
-              let articles = validBookmarks.map(bookmark => ({
-                title: bookmark.title || 'Untitled',
-                content: bookmark.category || '', // Use category (recommendation field from CSV) - empty if not provided
+              const articles = bookmarks.map(bookmark => ({
+                title: bookmark.title || '',
+                content: bookmark.category || '', // Use category (recommendation field from CSV)
                 targetUrl: bookmark.url,
-                coverUrl: bookmark.cover || '' // Use cover from CSV if available
+                coverUrl: bookmark.cover || ''
               }));
 
-              // Batch fetch cover images for items without cover
-              const itemsNeedingCover = articles.filter(a => !a.coverUrl);
-              if (itemsNeedingCover.length > 0) {
-                showToast(`Fetching cover images for ${itemsNeedingCover.length} items...`, 'info');
-                console.log(`🖼️ Fetching covers for ${itemsNeedingCover.length} items`);
-
-                // Fetch metadata in parallel (limit to 5 concurrent requests)
-                const batchSize = 5;
-                for (let i = 0; i < itemsNeedingCover.length; i += batchSize) {
-                  const batch = itemsNeedingCover.slice(i, i + batchSize);
-                  const metadataPromises = batch.map(async (article) => {
-                    try {
-                      const metadata = await AuthService.fetchUrlMetadata(article.targetUrl);
-                      return { targetUrl: article.targetUrl, metadata };
-                    } catch (error) {
-                      console.log(`Failed to fetch metadata for ${article.targetUrl}:`, error);
-                      return { targetUrl: article.targetUrl, metadata: null };
-                    }
-                  });
-
-                  const results = await Promise.all(metadataPromises);
-
-                  // Update articles with fetched cover images and titles
-                  results.forEach(({ targetUrl, metadata }) => {
-                    if (metadata) {
-                      const articleIndex = articles.findIndex(a => a.targetUrl === targetUrl);
-                      if (articleIndex !== -1) {
-                        if (metadata.ogImage && !articles[articleIndex].coverUrl) {
-                          articles[articleIndex].coverUrl = metadata.ogImage;
-                          console.log(`🖼️ Set cover for "${articles[articleIndex].title}": ${metadata.ogImage}`);
-                        }
-                        // Also update title if it's "Untitled" and we got a title from metadata
-                        if (articles[articleIndex].title === 'Untitled' && metadata.title) {
-                          articles[articleIndex].title = metadata.title.substring(0, 75);
-                          console.log(`📝 Set title: ${articles[articleIndex].title}`);
-                        }
-                      }
-                    }
-                  });
-                }
-              }
+              console.log('Batch importing articles:', articles);
 
               console.log('Batch importing articles:', articles);
               console.log('Target spaceId:', spaceId);
@@ -1664,7 +1611,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
               if (importResponse && (importResponse.status === 1 || importResponse.success === true || importResponse.code === 200)) {
                 console.log('✅ Import successful, showing toast and refreshing page');
-                showToast(`Successfully imported ${bookmarks.length} bookmarks to space`, 'success');
+                showToast(`Successfully imported ${articles.length} bookmarks to space`, 'success');
 
                 // Refresh the page to show the new articles
                 setTimeout(() => {
