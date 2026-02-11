@@ -150,92 +150,6 @@ const TreasuryHeaderSection = ({
               <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
             </div>
           )}
-
-          {/* Edit, Import and Share buttons - positioned at top right when cover exists */}
-          <div className="absolute top-3 right-3 flex items-center gap-2">
-            {onEdit && (
-              <button
-                type="button"
-                aria-label="Edit profile"
-                className="w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center hover:opacity-70 transition-opacity"
-                onClick={onEdit}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            )}
-
-            {onImportCSV && isOwnProfile && (
-              <button
-                type="button"
-                aria-label="Import bookmarks"
-                className="w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center hover:opacity-70 transition-opacity"
-                onClick={onImportCSV}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-            )}
-
-            {onShare && (
-              <div className="relative">
-                <button
-                  type="button"
-                  aria-label="Share profile"
-                  className="w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center hover:opacity-70 transition-opacity"
-                  onClick={() => setShowShareDropdown(!showShareDropdown)}
-                >
-                  <img
-                    alt="Share"
-                    src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
-                    className="w-4 h-4"
-                  />
-                </button>
-                {showShareDropdown && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowShareDropdown(false)} />
-                    <div className="absolute top-full right-0 mt-1 w-[183px] bg-white rounded-[15px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] z-20">
-                      <button
-                        onClick={handleCopyLink}
-                        className="flex items-center gap-4 pl-5 pr-5 py-4 w-full text-left rounded-t-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)]"
-                      >
-                        <svg className="w-[18px] h-[18px]" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M7.5 10.5C7.89782 11.0052 8.40206 11.4133 8.97664 11.6955C9.55121 11.9777 10.1815 12.1267 10.8214 12.1321C11.4613 12.1375 12.094 12.0992 12.6729 11.8202C13.2518 11.5412 13.7627 11.1286 14.1675 10.6125L16.4175 8.3625C17.1977 7.53784 17.6309 6.44599 17.6221 5.31271C17.6133 4.17943 17.163 3.09441 16.3705 2.28195C15.578 1.46948 14.503 1.01919 13.3797 1.01039C12.2564 1.00159 11.1746 1.43483 10.35 2.215L9.1125 3.4525" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M10.5 7.5C10.1022 6.99475 9.59794 6.58669 9.02336 6.30453C8.44879 6.02237 7.81854 5.87331 7.17863 5.86789C6.53872 5.86247 5.90598 5.90083 5.32709 6.17978C4.7482 6.45873 4.23726 6.87144 3.8325 7.3875L1.5825 9.6375C0.802299 10.4622 0.369062 11.554 0.377857 12.6873C0.386652 13.8206 0.836948 14.9056 1.62948 15.718C2.422 16.5305 3.49702 16.9808 4.62031 16.9896C5.74359 16.9984 6.82543 16.5652 7.65 15.785L8.8875 14.5475" stroke="#454545" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Copy link</span>
-                      </button>
-                      <button
-                        onClick={handleShareOnX}
-                        className="flex items-center gap-4 pl-5 pr-5 py-4 w-full text-left rounded-b-[15px] transition-colors hover:bg-[rgba(224,224,224,0.25)] border-t border-[#e0e0e0]"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="#454545"/>
-                        </svg>
-                        <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">Share on X</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Create new treasury button - positioned at bottom right */}
-          {onCreate && isOwnProfile && (
-            <button
-              onClick={onCreate}
-              className="absolute bottom-3 right-3 z-10 flex items-center gap-2 px-4 py-2 bg-red hover:bg-red/90 text-white rounded-[50px] shadow-lg transition-colors [font-family:'Lato',Helvetica] font-normal text-sm"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6 0V12M0 6H12" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-              Create new treasury
-            </button>
-          )}
         </div>
       )}
 
@@ -294,9 +208,8 @@ const TreasuryHeaderSection = ({
           </nav>
         )}
 
-        {/* Action buttons - Create new treasury, Edit, Import, Share - shown when no cover */}
-        {!coverUrl && (
-          <div className="flex items-center gap-3 mt-1">
+        {/* Action buttons - Create new treasury, Edit, Import, Share - always shown below user info */}
+        <div className="flex items-center gap-3 mt-3">
             {/* Create new treasury button */}
             {onCreate && isOwnProfile && (
               <button
@@ -383,7 +296,6 @@ const TreasuryHeaderSection = ({
               </div>
             )}
           </div>
-        )}
       </div>
     </header>
   );
