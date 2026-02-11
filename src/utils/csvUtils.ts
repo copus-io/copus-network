@@ -256,14 +256,14 @@ export const generateCSVTemplate = (): string => {
   // Headers with required/optional indicators
   const headers = ['title (required)', 'url (required)', 'description (optional)', 'category (optional)', 'tags (optional)', 'cover (optional)'];
 
-  // Example row
+  // Example row using Copus SEO data
   const example = [
-    '"OpenAI GPT-4 Documentation"',
-    '"https://platform.openai.com/docs"',
-    '"Official documentation for GPT-4 API"',
-    '"AI"',
-    '"AI,GPT,API"',
-    '"https://example.com/cover-image.jpg"'
+    '"Copus - Internet Treasure Map"',
+    '"https://copus.network"',
+    '"Copus is an open-web curation network that rewards tastemakers for sharing valuable web content."',
+    '"Curation"',
+    '"curation,bookmarks,discovery,rewards"',
+    '"https://copus.network/og-image.jpg"'
   ];
 
   // Generate 100 empty rows for easy filling
