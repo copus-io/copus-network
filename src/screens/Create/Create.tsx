@@ -595,10 +595,31 @@ export const Create = (): JSX.Element => {
 
   // Publish article
   const handlePublish = async () => {
-    // Basic validation - including cover image
-    if (!formData.link || !formData.title || !formData.recommendation) {
-      showToast('Please fill in all required fields (link, title, recommendation)', 'error');
+    const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
+
+    // Basic validation - Link and Title are always required
+    if (!formData.link || !formData.title) {
+      showToast('Please fill in all required fields (link, title)', 'error');
       return;
+    }
+
+    // For public works: Cover and Recommendation are also required
+    if (!isPrivate) {
+      if (!formData.recommendation) {
+        showToast('Please fill in the recommendation field', 'error');
+        return;
+      }
+
+      // Cover image required for public works
+      if (!isEditMode && !formData.coverImage) {
+        showToast('Please upload a cover image', 'error');
+        return;
+      }
+
+      if (isEditMode && !formData.coverImage && !coverImageUrl) {
+        showToast('Please upload a cover image', 'error');
+        return;
+      }
     }
 
     // URL validation
@@ -606,17 +627,6 @@ export const Create = (): JSX.Element => {
     if (!urlValidation.isValid) {
       showToast(`Invalid URL: ${urlValidation.message}`, 'error');
       setLinkValidation(urlValidation);
-      return;
-    }
-
-    // In edit mode, allow if no new image uploaded but original cover URL exists
-    if (!isEditMode && !formData.coverImage) {
-      showToast('Please upload a cover image', 'error');
-      return;
-    }
-
-    if (isEditMode && !formData.coverImage && !coverImageUrl) {
-      showToast('Please upload a cover image', 'error');
       return;
     }
 
@@ -965,11 +975,13 @@ export const Create = (): JSX.Element => {
             </div>
 
             <div className="flex flex-col items-start gap-2.5 w-full">
-              <div className="flex w-[60px] items-center gap-2.5">
+              <div className="flex items-center gap-2.5">
                 <label className="items-center justify-center w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-transparent text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap relative flex [font-style:var(--p-l-font-style)]">
-                  <span className="text-[#f23a00] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] text-[length:var(--p-l-font-size)]">
-                    *
-                  </span>
+                  {visibility !== ARTICLE_VISIBILITY.PRIVATE && (
+                    <span className="text-[#f23a00] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] text-[length:var(--p-l-font-size)]">
+                      *
+                    </span>
+                  )}
                   <span className="text-[#686868] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] text-[length:var(--p-l-font-size)]">
                     Cover
                   </span>
@@ -1036,9 +1048,11 @@ export const Create = (): JSX.Element => {
 
             <div className="flex flex-col items-start gap-2.5 w-full min-w-0">
               <label className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-transparent text-base tracking-[0] leading-4">
-                <span className="text-[#f23a00] leading-[var(--p-line-height)] font-p [font-style:var(--p-font-style)] font-[number:var(--p-font-weight)] tracking-[var(--p-letter-spacing)] text-[length:var(--p-font-size)]">
-                  *
-                </span>
+                {visibility !== ARTICLE_VISIBILITY.PRIVATE && (
+                  <span className="text-[#f23a00] leading-[var(--p-line-height)] font-p [font-style:var(--p-font-style)] font-[number:var(--p-font-weight)] tracking-[var(--p-letter-spacing)] text-[length:var(--p-font-size)]">
+                    *
+                  </span>
+                )}
                 <span className="text-[#686868] text-[length:var(--p-l-font-size)] leading-[var(--p-l-line-height)] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)]">
                   Recommendation
                 </span>
@@ -1207,10 +1221,26 @@ export const Create = (): JSX.Element => {
 
               <div
                 className="inline-flex items-center justify-center gap-2.5 px-6 py-2.5 bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors"
-                onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
+                onClick={() => {
+                  const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
+                  const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
+                  const publicValid = baseValid && formData.recommendation && (formData.coverImage || coverImageUrl);
+                  const canPublish = isPrivate ? baseValid : publicValid;
+                  if (canPublish) handlePublish();
+                }}
                 style={{
-                    opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,
-                    cursor: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 'not-allowed' : 'pointer'
+                    opacity: (() => {
+                      const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
+                      const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
+                      const publicValid = baseValid && formData.recommendation && (formData.coverImage || coverImageUrl);
+                      return (isPrivate ? baseValid : publicValid) ? 1 : 0.5;
+                    })(),
+                    cursor: (() => {
+                      const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
+                      const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
+                      const publicValid = baseValid && formData.recommendation && (formData.coverImage || coverImageUrl);
+                      return (isPrivate ? baseValid : publicValid) ? 'pointer' : 'not-allowed';
+                    })()
                   }}
                 >
                   <span className="[font-family:'Lato',Helvetica] font-bold text-white text-lg tracking-[0] leading-[27px] whitespace-nowrap">
