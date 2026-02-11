@@ -508,10 +508,16 @@ export const Create = (): JSX.Element => {
         setEditingArticle(articleData);
 
         // Fill form data
+        // If content equals title, it means user never provided a recommendation (was auto-filled)
+        // In that case, clear it so user can provide their own
+        const hasRealRecommendation = articleData.content &&
+          articleData.content.trim() !== '' &&
+          articleData.content.trim() !== articleData.title?.trim();
+
         setFormData({
           link: articleData.targetUrl || "",
           title: articleData.title || "",
-          recommendation: articleData.content || "",
+          recommendation: hasRealRecommendation ? articleData.content : "",
           selectedTopic: articleData.categoryInfo?.name || "Life",
           selectedTopicId: articleData.categoryInfo?.id || 1,
           coverImage: null, // Don't load image file directly in edit mode
@@ -519,7 +525,8 @@ export const Create = (): JSX.Element => {
 
         // Set cover image URL for display
         setCoverImageUrl(articleData.coverUrl || "");
-        setCharacterCount(articleData.content?.length || 0);
+        // Only count characters if there's a real recommendation (not auto-filled from title)
+        setCharacterCount(hasRealRecommendation ? (articleData.content?.length || 0) : 0);
         setTitleCharacterCount(articleData.title?.length || 0);
 
         // Set payment information if exists
