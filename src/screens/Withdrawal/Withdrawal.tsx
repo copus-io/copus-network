@@ -4,6 +4,7 @@ import { PageWrapper } from "../../components/layout/PageWrapper";
 import { IncomeDetailsSection } from "./sections/IncomeDetailsSection";
 import { AuthService } from "../../services/authService";
 import { WithdrawalService } from "../../services/withdrawalService";
+import { SEO } from "../../components/SEO/SEO";
 
 export const Withdrawal = (): JSX.Element => {
   const location = useLocation();
@@ -143,6 +144,7 @@ export const Withdrawal = (): JSX.Element => {
 
   return (
     <PageWrapper activeMenuItem="income" requireAuth={true}>
+      <SEO title="Earnings" />
       <IncomeDetailsSection
         userInfo={userInfo}
         accountInfo={accountInfo}

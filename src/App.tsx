@@ -32,7 +32,7 @@ import { ShortLinkHandler } from "./components/ShortLinkHandler";
 const Following = lazy(() => import("./screens/Following/Following").then(m => ({ default: m.Following })));
 const Notification = lazy(() => import("./screens/Notification/Notification").then(m => ({ default: m.Notification })));
 const Setting = lazy(() => import("./screens/Setting/Setting").then(m => ({ default: m.Setting })));
-const Treasury = lazy(() => import("./screens/Treasury/Treasury").then(m => ({ default: m.Treasury })));
+
 const Create = lazy(() => import("./screens/Create/Create").then(m => ({ default: m.Create })));
 const UserProfile = lazy(() => import("./screens/UserProfile/UserProfile").then(m => ({ default: m.UserProfile })));
 const Space = lazy(() => import("./screens/Space/Space").then(m => ({ default: m.Space })));
@@ -77,14 +77,7 @@ const router = createBrowserRouter([
       </AuthGuard>
     ),
   },
-  {
-    path: "/treasury",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><Treasury /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
+
   {
     path: "/notification",
     element: (
