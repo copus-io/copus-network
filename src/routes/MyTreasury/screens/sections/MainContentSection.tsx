@@ -811,12 +811,13 @@ export const MainContentSection = (): JSX.Element => {
                   const articleUuid = CryptoJS.lib.WordArray.random(16).toString();
 
                   // Create article data from bookmark
+                  // Use category field as recommendation (content), leave empty if not provided
                   const articleData = {
                     uuid: articleUuid,
                     title: bookmark.title || 'Untitled',
-                    content: bookmark.description || bookmark.title || 'Imported bookmark',
+                    content: bookmark.category || '', // Recommendation field - empty if not provided
                     targetUrl: bookmark.url,
-                    coverUrl: '', // No cover image for imported bookmarks
+                    coverUrl: bookmark.cover || '', // Cover image from CSV if provided
                     categoryId: defaultCategoryId,
                   };
 

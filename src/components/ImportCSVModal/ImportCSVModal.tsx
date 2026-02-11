@@ -346,10 +346,8 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-sm text-gray-600">
-                              {item.category ? (
+                              {item.category && (
                                 <span className="bg-gray-100 px-2 py-1 rounded-full text-xs">{item.category}</span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
                               )}
                             </span>
                           </td>
