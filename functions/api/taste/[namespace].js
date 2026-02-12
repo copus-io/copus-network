@@ -328,13 +328,24 @@ async function buildTasteProfile(userInfo, treasuries) {
     bio: userInfo.bio || null,
     avatar: userInfo.faceUrl || null,
 
-    // Statistics
+    // Statistics with explanations
     stats: {
       curationsCreated: userInfo.statistics?.articleCount || 0,
       publicWorks: userInfo.statistics?.publicArticleCount || 0,
       privateWorks: userInfo.statistics?.privateArticleCount || 0,
       itemsCollected: userInfo.statistics?.collectedArticleCount || 0,
       collectionsReceived: userInfo.statistics?.myArticleCollectedCount || 0
+    },
+
+    // IMPORTANT: Data visibility scope - READ THIS FIRST
+    _dataScope: {
+      whatIsIncluded: 'Only PUBLIC curations are shown in this taste profile. Private works are counted but NOT listed.',
+      publicWorksCount: userInfo.statistics?.publicArticleCount || 0,
+      privateWorksCount: userInfo.statistics?.privateArticleCount || 0,
+      privateWorksNote: (userInfo.statistics?.privateArticleCount || 0) > 0
+        ? `This curator has ${userInfo.statistics.privateArticleCount} private work(s) not shown here. Their full taste may be broader than what's visible.`
+        : 'This curator has no private works. All their curations are visible in this profile.',
+      totalWorks: userInfo.statistics?.articleCount || 0
     },
 
     // Treasuries with access control
@@ -346,12 +357,15 @@ async function buildTasteProfile(userInfo, treasuries) {
     // Instructions for AI agents
     _aiHints: {
       description: 'This is a curator taste profile on Copus. Each treasury contains curated articles with curation notes.',
+      importantNote: 'Check _dataScope above to understand visibility. Private works exist but are not listed here.',
       deeperData: {
         treasury: 'Append ?format=json to any treasury URL for full structured data, e.g., /treasury/{namespace}?format=json',
         article: 'Append ?format=json to any work URL for article details with AI-generated keywords and takeaways, e.g., /work/{uuid}?format=json',
         search: 'Use /api/search?q=QUERY to search across all curated content'
       },
       fieldsExplained: {
+        publicWorks: 'Number of curations visible in this profile',
+        privateWorks: 'Number of curations the user has kept private (NOT shown in treasuries below)',
         keywords: 'AI-generated keywords representing the treasury themes (empty if not yet processed)',
         keyThemes: 'AI-identified common threads across curated items',
         targetAudience: 'Who would benefit from this treasury',
@@ -592,7 +606,18 @@ function generateSummary(userInfo, treasuries) {
     .slice(0, 3)
     .map(a => `"${a.curationNote.slice(0, 100)}${a.curationNote.length > 100 ? '...' : ''}"`)
 
-  let summary = `${userInfo.username} is a curator on Copus with ${userInfo.statistics?.articleCount || 0} total curations`
+  const publicWorksCount = userInfo.statistics?.publicArticleCount || 0
+  const privateWorksCount = userInfo.statistics?.privateArticleCount || 0
+  const totalWorks = userInfo.statistics?.articleCount || 0
+
+  let summary = `${userInfo.username} is a curator on Copus with ${totalWorks} total curations`
+
+  // Explicitly mention public vs private breakdown
+  if (privateWorksCount > 0) {
+    summary += ` (${publicWorksCount} public, ${privateWorksCount} private - private works are NOT shown in this profile)`
+  } else {
+    summary += ` (all ${publicWorksCount} are public)`
+  }
 
   if (topCategories.length > 0) {
     summary += ` focusing on ${topCategories.join(', ')}`
