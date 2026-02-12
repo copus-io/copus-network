@@ -68,8 +68,8 @@ export interface UserHomeResponse {
     articleCount: number;
     publicArticleCount?: number;  // Public works count (for taste profile)
     privateArticleCount?: number; // Private works count
-    likedArticleCount: number;
-    myArticleLikedCount: number;
+    collectedArticleCount: number;
+    myArticleCollectedCount: number;
   };
   username: string;
   walletAddress: string;
@@ -939,8 +939,8 @@ export class AuthService {
     }>;
     statistics: {
       articleCount: number;
-      likedArticleCount: number;
-      myArticleLikedCount: number;
+      collectedArticleCount: number;
+      myArticleCollectedCount: number;
     };
     username: string;
     walletAddress: string;
@@ -1130,8 +1130,8 @@ export class AuthService {
     }>;
     statistics: {
       articleCount: number;
-      likedArticleCount: number;
-      myArticleLikedCount: number;
+      collectedArticleCount: number;
+      myArticleCollectedCount: number;
     };
     username: string;
     walletAddress: string;
@@ -1174,8 +1174,8 @@ export class AuthService {
     }>;
     statistics: {
       articleCount: number;
-      likedArticleCount: number;
-      myArticleLikedCount: number;
+      collectedArticleCount: number;
+      myArticleCollectedCount: number;
     };
     username: string;
     walletAddress: string;

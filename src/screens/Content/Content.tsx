@@ -33,7 +33,9 @@ import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils'
 import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
 import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
-import { SEO, ArticleSchema } from '../../components/SEO/SEO';
+// SEO meta tags for crawlers are handled by Cloudflare Worker - see functions/work/[id].js
+// SEO component is still needed for client-side document.title updates during SPA navigation
+import { SEO } from '../../components/SEO/SEO';
 import { UserCard } from '../../components/ui/UserCard';
 import { PrivateContentGuard } from '../../components/PrivateContentGuard/PrivateContentGuard';
 import { PrivacyBanner } from '../../components/PrivacyBanner/PrivacyBanner';
@@ -2059,35 +2061,10 @@ export const Content = (): JSX.Element => {
   // ========================================
   return (
     <>
-      {/* SEO meta tags - show default title during loading, article title when loaded */}
+      {/* Full SEO meta tags are handled by Cloudflare Worker at the edge.
+          We only set document.title here for client-side SPA navigation. */}
       {!content && <SEO />}
-      {content && (
-        <>
-          <SEO
-            title={content.title}
-            description={content.seoDescription?.trim() || content.description?.substring(0, 160) || content.title}
-            keywords={content.seoKeywords?.trim() || undefined}
-            image={content.coverImage || 'https://copus.network/og-image.jpg'}
-            url={`https://copus.network/work/${id}`}
-            type="article"
-            article={{
-              publishedTime: article?.createAt ? new Date(article.createAt * 1000).toISOString() : undefined,
-              author: content.userName,
-              section: content.category,
-            }}
-            noIndex={false}
-          />
-          <ArticleSchema
-            title={content.title}
-            description={content.seoDescription?.trim() || content.description?.substring(0, 300) || content.title}
-            image={content.coverImage || 'https://copus.network/og-image.jpg'}
-            url={`https://copus.network/work/${id}`}
-            datePublished={article?.createAt ? new Date(article.createAt * 1000).toISOString() : new Date().toISOString()}
-            authorName={content.userName}
-            authorUrl={content.userNamespace ? `https://copus.network/user/${content.userNamespace}` : undefined}
-          />
-        </>
-      )}
+      {content && <SEO title={content.title} />}
 
 
       <div

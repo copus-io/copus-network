@@ -381,7 +381,7 @@ export const convertVisibilityToLegacyPrivate = (visibility?: number): boolean =
 /**
  * Taste Profile API Response
  *
- * This is the structure returned by /api/taste/{username}.json
+ * This is the structure returned by /api/taste/{namespace}.json
  * Used by external AIs (ChatGPT, Claude, etc.) to understand a user's taste/preferences
  *
  * Note: Only PUBLIC works are included in the curations array.

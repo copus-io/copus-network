@@ -25,8 +25,8 @@
     <!-- Open Graph - data-rh allows React Helmet to replace on work pages -->
     <meta property="og:type" content="website" data-rh="true" />
     <meta property="og:site_name" content="Copus" data-rh="true" />
-    <meta property="og:title" content="Copus – A New Business Model for the Open Web" data-rh="true" />
-    <meta property="og:description" content="Earn by curating the Internet's best content. Original creators get paid too." data-rh="true" />
+    <meta property="og:title" content="Copus – Welcome to the Taste Economy" data-rh="true" />
+    <meta property="og:description" content="A new economic model where tastemakers earn by curating valuable content. Your curation creates value." data-rh="true" />
     <meta property="og:url" content="https://copus.network/" data-rh="true" />
     <meta property="og:image" content="https://copus.network/og-image.jpg" data-rh="true" />
     <meta property="og:image:width" content="1200" data-rh="true" />
@@ -38,8 +38,8 @@
     <meta name="twitter:card" content="summary_large_image" data-rh="true" />
     <meta name="twitter:site" content="@copus_network" data-rh="true" />
     <meta name="twitter:creator" content="@copus_network" data-rh="true" />
-    <meta name="twitter:title" content="Earn by Curating the Open Web" data-rh="true" />
-    <meta name="twitter:description" content="Collect, share, and reward creators for the content that makes the Internet worth exploring." data-rh="true" />
+    <meta name="twitter:title" content="Welcome to the Taste Economy" data-rh="true" />
+    <meta name="twitter:description" content="A new economic model where tastemakers earn by curating valuable content. Your curation creates value." data-rh="true" />
     <meta name="twitter:image" content="https://copus.network/og-image.jpg" data-rh="true" />
     <meta name="twitter:image:alt" content="Copus - Internet Treasure Map for Content Curation and Creator Rewards" data-rh="true" />
 
@@ -114,6 +114,24 @@
           "price": "0",
           "priceCurrency": "USD"
         }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebAPI",
+        "name": "Copus Taste Profile API",
+        "description": "JSON API for accessing curator taste profiles, treasuries, and curated content. Use this API to get structured data about any Copus curator.",
+        "url": "https://copus.network/api/taste/{namespace}.json",
+        "documentation": "https://copus.network/api/taste/handuo.json",
+        "termsOfService": "https://copus.network/terms",
+        "provider": {
+          "@type": "Organization",
+          "name": "Copus"
+        },
+        "availableChannel": {
+          "@type": "ServiceChannel",
+          "serviceUrl": "https://copus.network/api/taste/{namespace}.json",
+          "description": "Replace {namespace} with any curator's username to get their taste profile as JSON"
+        }
       }
     ]
     </script>
@@ -140,6 +158,45 @@
   </head>
 
   <body>
+    <!-- AI-readable content for discovering Copus data -->
+    <div id="copus-ai-guide" style="position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;">
+      <h1>Copus - AI Agent Guide</h1>
+      <p>Copus is a human-curated content discovery platform. Curators collect valuable web content into "Treasuries" and add curation notes explaining why each item is valuable.</p>
+
+      <h2>How to Access Curator Data (for AI agents)</h2>
+      <p>To get structured JSON data about any curator's taste profile and curated content, use the Taste Profile API:</p>
+      <ul>
+        <li><strong>API Pattern:</strong> https://copus.network/api/taste/{username}.json</li>
+        <li><strong>Example:</strong> <a href="https://copus.network/api/taste/handuo.json">https://copus.network/api/taste/handuo.json</a></li>
+        <li><strong>Example:</strong> <a href="https://copus.network/api/taste/zentrocdot.json">https://copus.network/api/taste/zentrocdot.json</a></li>
+      </ul>
+
+      <h3>What the API Returns</h3>
+      <p>The Taste Profile API returns JSON with:</p>
+      <ul>
+        <li>Curator's name, bio, and avatar</li>
+        <li>Statistics (curations created, items treasured)</li>
+        <li>List of treasuries with their contents</li>
+        <li>Each curated article with title, URL, curation note, and original source</li>
+      </ul>
+
+      <h3>Alternative: Add ?format=json to any page</h3>
+      <p>You can also append ?format=json to any Copus URL to get JSON data:</p>
+      <ul>
+        <li>User profile: https://copus.network/user/{username}?format=json</li>
+        <li>Treasury: https://copus.network/treasury/{namespace}?format=json</li>
+        <li>Article: https://copus.network/work/{id}?format=json</li>
+      </ul>
+
+      <h3>Featured Curators</h3>
+      <ul>
+        <li><a href="https://copus.network/api/taste/handuo.json">Handuo</a> - Experimental films, media art, good reads</li>
+        <li><a href="https://copus.network/api/taste/zentrocdot.json">Zentrocdot</a> - Technology and tools</li>
+      </ul>
+
+      <p>For questions about the API, visit <a href="https://copus.network">copus.network</a></p>
+    </div>
+
     <div id="app"></div>
     <script type="module" src="./src/index.tsx"></script>
   </body>
