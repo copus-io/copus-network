@@ -844,12 +844,16 @@ export const Content = (): JSX.Element => {
     return <ContentPageSkeleton />;
   }
 
-  // Check if this is a private content access denied error (status 2104)
+  // Check if this is a private content access denied error
   const isNoAccessPermission = error && (
     error.includes('2104') ||
-    error.includes('无权限') ||
-    error.includes('private') ||
-    error.includes('access denied')
+    error.toLowerCase().includes('无权限') ||
+    error.toLowerCase().includes('private') ||
+    error.toLowerCase().includes('access denied') ||
+    error.toLowerCase().includes('no permission') ||
+    error.toLowerCase().includes('unauthorized') ||
+    error.toLowerCase().includes('forbidden') ||
+    error.toLowerCase().includes('visibility')
   );
 
   // If no access permission, show the NoAccessPermission component
