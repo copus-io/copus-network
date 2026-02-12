@@ -213,8 +213,9 @@ async function fetchUserTreasuries(userId) {
   }
 }
 
-async function fetchTreasuryArticles(spaceId, limit = 10) {
+async function fetchTreasuryArticles(spaceId, limit = 500) {
   try {
+    // Fetch articles (default 500 to include everything, smaller limit for teasers)
     const response = await fetch(
       `${API_BASE}/client/article/space/pageArticles?spaceId=${spaceId}&pageIndex=1&pageSize=${limit}`,
       { headers: { 'Content-Type': 'application/json' } }
@@ -231,9 +232,9 @@ async function fetchTreasuryArticles(spaceId, limit = 10) {
       articles = data.data
     }
 
-    // Enrich articles with seoDataByAi (fetch in parallel, limit to first 20)
+    // Enrich ALL articles with seoDataByAi (fetch in parallel)
     const enrichedArticles = await Promise.all(
-      articles.slice(0, 20).map(async (article) => {
+      articles.map(async (article) => {
         const seoData = await fetchArticleSeoData(article.uuid)
         return { ...article, seoDataByAi: seoData }
       })
@@ -502,8 +503,8 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
 
     case ACCESS_LEVEL.PUBLIC:
     default:
-      // Full access - fetch articles with curation notes and AI-generated metadata
-      const articles = treasury.id ? await fetchTreasuryArticles(treasury.id, 20) : []
+      // Full access - fetch ALL articles with curation notes and AI-generated metadata
+      const articles = treasury.id ? await fetchTreasuryArticles(treasury.id) : []
       if (!Array.isArray(articles)) {
         return { ...baseData, articles: [] }
       }
