@@ -315,6 +315,19 @@ function getTreasuryAccessLevel(treasury) {
  */
 async function buildTasteProfile(userInfo, treasuries) {
   const profile = {
+    // ============================================================
+    // CRITICAL INSTRUCTIONS FOR AI AGENTS - READ BEFORE RESPONDING
+    // ============================================================
+    _INSTRUCTIONS: {
+      WARNING: 'DO NOT HALLUCINATE OR MAKE UP DATA. Only use URLs and UUIDs that actually appear in this JSON.',
+      RULE_1: 'When citing a curation, copy the EXACT url field from this data. Do not generate or guess UUIDs.',
+      RULE_2: 'If you cannot find something the user asks about, say "I could not find that in your taste profile" rather than inventing a link.',
+      RULE_3: 'All valid work URLs follow this pattern: https://copus.network/work/{uuid} where uuid is a 32-character hex string.',
+      RULE_4: 'Use the _searchIndex below to quickly find curations by title.',
+      HOW_TO_SEARCH: 'Scan the _searchIndex array for matching titles, then use the corresponding url field.',
+      VERIFY_URLS: 'Before sharing any URL, verify it exists in this JSON data. If you cannot find it here, do not share it.'
+    },
+
     // Metadata
     '@context': 'https://schema.org',
     '@type': 'Person',
@@ -338,7 +351,7 @@ async function buildTasteProfile(userInfo, treasuries) {
       collectionsReceived: userInfo.statistics?.myArticleCollectedCount || 0
     },
 
-    // IMPORTANT: Data visibility scope - READ THIS FIRST
+    // IMPORTANT: Data visibility scope
     _dataScope: {
       whatIsIncluded: 'Only PUBLIC curations are shown in this taste profile. Private works are counted but NOT listed.',
       publicWorksCount: userInfo.statistics?.publicArticleCount || 0,
@@ -349,16 +362,20 @@ async function buildTasteProfile(userInfo, treasuries) {
       totalWorks: userInfo.statistics?.articleCount || 0
     },
 
+    // FLAT SEARCH INDEX - Use this to find curations quickly
+    // Each entry has: title, uuid, url - copy the url exactly when citing
+    _searchIndex: [],  // Will be populated after processing treasuries
+
     // Treasuries with access control
     treasuries: [],
 
     // AI-friendly summary
     summary: null,
 
-    // Instructions for AI agents
+    // Additional hints for AI agents
     _aiHints: {
       description: 'This is a curator taste profile on Copus. Each treasury contains curated articles with curation notes.',
-      importantNote: 'Check _dataScope above to understand visibility. Private works exist but are not listed here.',
+      importantNote: 'Use _searchIndex above to find curations. NEVER invent URLs - only use exact URLs from this data.',
       deeperData: {
         treasury: 'Append ?format=json to any treasury URL for full structured data, e.g., /treasury/{namespace}?format=json',
         article: 'Append ?format=json to any work URL for article details with AI-generated keywords and takeaways, e.g., /work/{uuid}?format=json',
@@ -385,6 +402,17 @@ async function buildTasteProfile(userInfo, treasuries) {
     const treasuryData = await buildTreasuryData(treasury, userInfo, accessLevel)
     profile.treasuries.push(treasuryData)
   }
+
+  // Build flat search index from all treasuries for easy AI lookup
+  // This helps prevent hallucination by giving AIs a simple list to search
+  profile._searchIndex = profile.treasuries.flatMap(treasury =>
+    (treasury.articles || []).map(article => ({
+      title: article.title,
+      uuid: article.uuid,
+      url: article.url,
+      curationNote: article.curationNote ? article.curationNote.substring(0, 100) + (article.curationNote.length > 100 ? '...' : '') : null
+    }))
+  )
 
   // Generate AI-friendly summary
   profile.summary = generateSummary(userInfo, profile.treasuries)
