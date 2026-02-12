@@ -6,6 +6,7 @@ import { Button } from "../../../../components/ui/button";
 import { TreasuryCard } from "../../../../components/ui/TreasuryCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import defaultBanner from "../../../../assets/images/default-banner.svg";
+import tasteProfileIcon from "../../../../assets/images/taste-profile-icon.png";
 import { useToast } from "../../../../components/ui/toast";
 import { CreateSpaceModal } from "../../../../components/CreateSpaceModal";
 import { ImportCSVModal } from "../../../../components/ImportCSVModal";
@@ -13,6 +14,7 @@ import { type ImportedBookmark } from "../../../../utils/csvUtils";
 import { useCategory } from "../../../../contexts/CategoryContext";
 import CryptoJS from 'crypto-js';
 import { NoAccessPermission } from "../../../../components/NoAccessPermission/NoAccessPermission";
+import { TasteProfileModal } from "../../../../components/TasteProfileModal";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -50,6 +52,7 @@ const TreasuryHeaderSection = ({
   onCoverUpload,
   onCreate,
   onImportCSV,
+  onTasteProfile,
 }: {
   username: string;
   namespace: string;
@@ -63,6 +66,7 @@ const TreasuryHeaderSection = ({
   onCoverUpload?: (imageUrl: string) => void;
   onCreate?: () => void;
   onImportCSV?: () => void;
+  onTasteProfile?: () => void;
 }): JSX.Element => {
   const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
   const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
@@ -281,6 +285,19 @@ const TreasuryHeaderSection = ({
                 )}
               </div>
             )}
+
+            {/* Taste Profile button - only visible to profile owner */}
+            {onTasteProfile && isOwnProfile && (
+              <button
+                type="button"
+                aria-label="Taste Profile"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[rgba(242,58,0,0.08)] transition-colors duration-200"
+                onClick={onTasteProfile}
+                title="Your Taste Profile"
+              >
+                <img src={tasteProfileIcon} alt="Taste Profile" className="h-5 w-auto" />
+              </button>
+            )}
           </div>
       </div>
     </header>
@@ -336,6 +353,9 @@ export const MainContentSection = (): JSX.Element => {
 
   // Import CSV Modal state
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // Taste Profile Modal state
+  const [showTasteProfileModal, setShowTasteProfileModal] = useState(false);
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -434,10 +454,18 @@ export const MainContentSection = (): JSX.Element => {
               targetUserId = user.id;
             }
           } else {
-            // Viewing own treasury - use logged-in user's info
-            processedInfo = user;
-            targetUserId = user.id;
-            console.log('Using logged-in user info, userId:', targetUserId);
+            // Viewing own treasury - fetch full user info to get complete statistics
+            try {
+              console.log('Viewing own treasury, fetching full user info by namespace:', user.namespace);
+              processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(user.namespace);
+              targetUserId = processedInfo?.id || user.id;
+              console.log('Own user full info:', processedInfo, 'userId:', targetUserId);
+            } catch (err) {
+              // Fall back to basic user info if fetch fails
+              console.warn('Failed to fetch full user info, using basic user info:', err);
+              processedInfo = user;
+              targetUserId = user.id;
+            }
           }
         } else if (namespace) {
           // Not logged in but have namespace - fetch that user's info
@@ -670,6 +698,7 @@ export const MainContentSection = (): JSX.Element => {
         onCoverUpload={handleCoverUpload}
         onCreate={() => setShowCreateModal(true)}
         onImportCSV={() => setShowImportModal(true)}
+        onTasteProfile={() => setShowTasteProfileModal(true)}
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
@@ -853,6 +882,18 @@ export const MainContentSection = (): JSX.Element => {
               throw error;
             }
           }}
+        />
+      )}
+
+      {/* Taste Profile Modal - only for own profile */}
+      {/* Use treasuryUserInfo which has full statistics including publicArticleCount */}
+      {!isViewingOtherUser && (treasuryUserInfo || displayUser) && (
+        <TasteProfileModal
+          isOpen={showTasteProfileModal}
+          onClose={() => setShowTasteProfileModal(false)}
+          namespace={(treasuryUserInfo || displayUser).namespace}
+          username={(treasuryUserInfo || displayUser).username}
+          totalWorks={(treasuryUserInfo?.statistics?.publicArticleCount || 0) + (treasuryUserInfo?.statistics?.collectedArticleCount || 0)}
         />
       )}
     </main>

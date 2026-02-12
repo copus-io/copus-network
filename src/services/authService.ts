@@ -1130,6 +1130,7 @@ export class AuthService {
     }>;
     statistics: {
       articleCount: number;
+      publicArticleCount: number;
       collectedArticleCount: number;
       myArticleCollectedCount: number;
     };

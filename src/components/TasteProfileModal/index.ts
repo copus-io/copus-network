@@ -1,0 +1,1 @@
+export { TasteProfileModal } from './TasteProfileModal';

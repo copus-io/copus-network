@@ -496,7 +496,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             onClick={handleAvatarClick}
           />
 
-          {/* Username and Share button */}
+          {/* Username and action buttons */}
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl font-bold text-gray-900">{userInfo.username}</h1>
             <button
