@@ -105,8 +105,10 @@ function buildUserJsonResponse(user, treasuries) {
     avatar: user.faceUrl || DEFAULT_AVATAR,
     stats: {
       curationsCreated: user.statistics?.articleCount || 0,
-      itemsTreasured: user.statistics?.likedArticleCount || 0,
-      treasuresReceived: user.statistics?.myArticleLikedCount || 0
+      publicWorks: user.statistics?.publicArticleCount || 0,
+      privateWorks: user.statistics?.privateArticleCount || 0,
+      itemsCollected: user.statistics?.collectedArticleCount || 0,
+      collectionsReceived: user.statistics?.myArticleCollectedCount || 0
     },
     treasuries: (treasuries || []).map(t => ({
       name: t.name || 'Unnamed Treasury',
@@ -201,7 +203,7 @@ class HeadInjector {
     const avatar = user.faceUrl || DEFAULT_AVATAR
     const profileUrl = `${SITE_URL}/user/${user.namespace}`
     const articleCount = user.statistics?.articleCount || 0
-    const treasuredCount = user.statistics?.likedArticleCount || 0
+    const collectedCount = user.statistics?.collectedArticleCount || 0
 
     // IMPORTANT: Use prepend to inject BEFORE the default meta tags
     // Link preview scrapers use the first occurrence of each meta tag
@@ -243,7 +245,7 @@ class BodyInjector {
     const name = user.username || user.namespace
     const bio = user.bio || `${name} is a curator on Copus.`
     const articleCount = user.statistics?.articleCount || 0
-    const treasuredCount = user.statistics?.likedArticleCount || 0
+    const collectedCount = user.statistics?.collectedArticleCount || 0
 
     // Person schema with treasuries
     const personSchema = {
@@ -266,7 +268,7 @@ class BodyInjector {
         {
           "@type": "InteractionCounter",
           "interactionType": "https://schema.org/LikeAction",
-          "userInteractionCount": treasuredCount,
+          "userInteractionCount": collectedCount,
           "description": "Number of items treasured"
         }
       ]
@@ -332,7 +334,7 @@ class BodyInjector {
           <h1>${escapeHtml(name)} - Curator Profile</h1>
           <p><strong>Username:</strong> @${escapeHtml(user.namespace)}</p>
           <p><strong>Bio:</strong> ${escapeHtml(bio)}</p>
-          <p><strong>Stats:</strong> ${articleCount} curations created, ${treasuredCount} items treasured</p>
+          <p><strong>Stats:</strong> ${articleCount} curations created, ${collectedCount} items treasured</p>
           <p><strong>Profile URL:</strong> <a href="${profileUrl}">${profileUrl}</a></p>
           <p><strong>Taste Profile (JSON):</strong> <a href="${SITE_URL}/api/taste/${user.namespace}.json">${SITE_URL}/api/taste/${user.namespace}.json</a></p>
         </header>

@@ -200,8 +200,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           socialLinks: [],
           statistics: {
             articleCount: 0,
-            likedArticleCount: 0,
-            myArticleLikedCount: 0
+            collectedArticleCount: 0,
+            myArticleCollectedCount: 0
           },
           email: '',
           coverUrl: 'https://c.animaapp.com/w7obk4mX/img/banner.png',
@@ -519,9 +519,9 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           <div className="flex items-center gap-4 mb-3">
             <span className="text-sm text-gray-500">{userInfo.statistics?.articleCount || 0} Articles</span>
             <span className="text-gray-300">·</span>
-            <span className="text-sm text-gray-500">{userInfo.statistics?.likedArticleCount || 0} Treasured</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.collectedArticleCount || 0} Treasured</span>
             <span className="text-gray-300">·</span>
-            <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleLikedCount || 0} Received</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleCollectedCount || 0} Received</span>
           </div>
 
           {/* Subscribe button (only shown when viewing other users) */}

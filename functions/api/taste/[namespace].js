@@ -331,8 +331,10 @@ async function buildTasteProfile(userInfo, treasuries) {
     // Statistics
     stats: {
       curationsCreated: userInfo.statistics?.articleCount || 0,
-      itemsTreasured: userInfo.statistics?.likedArticleCount || 0,
-      treasuresReceived: userInfo.statistics?.myArticleLikedCount || 0
+      publicWorks: userInfo.statistics?.publicArticleCount || 0,
+      privateWorks: userInfo.statistics?.privateArticleCount || 0,
+      itemsCollected: userInfo.statistics?.collectedArticleCount || 0,
+      collectionsReceived: userInfo.statistics?.myArticleCollectedCount || 0
     },
 
     // Treasuries with access control
