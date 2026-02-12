@@ -377,3 +377,57 @@ export const canUserViewArticle = (
 export const convertVisibilityToLegacyPrivate = (visibility?: number): boolean => {
   return visibility === ARTICLE_VISIBILITY.PRIVATE;
 };
+
+/**
+ * Taste Profile API Response
+ *
+ * This is the structure returned by /api/taste/{username}.json
+ * Used by external AIs (ChatGPT, Claude, etc.) to understand a user's taste/preferences
+ *
+ * Note: Only PUBLIC works are included in the curations array.
+ * The stats.privateWorksCount tells AIs how many private works exist but aren't included.
+ */
+export interface TasteProfileResponse {
+  /** Username */
+  user: string;
+  /** User's namespace (URL slug) */
+  namespace: string;
+  /** URL to user's Copus profile */
+  profileUrl: string;
+
+  /** Work statistics */
+  stats: {
+    /** Number of public works (included in curations) */
+    publicWorksCount: number;
+    /** Number of private works (NOT included in curations) */
+    privateWorksCount: number;
+    /** Total works count */
+    totalWorksCount: number;
+  };
+
+  /** Array of public curations with AI-generated taste data */
+  curations: TasteProfileCuration[];
+
+  /** Note for AI explaining the data scope */
+  note: string;
+}
+
+/**
+ * Individual curation entry in taste profile
+ */
+export interface TasteProfileCuration {
+  /** Article UUID */
+  uuid: string;
+  /** Article title */
+  title: string;
+  /** User's recommendation/curation note */
+  recommendation: string;
+  /** Original content URL */
+  targetUrl: string;
+  /** Cover image URL */
+  coverUrl?: string;
+  /** AI-generated SEO/taste data (JSON string) */
+  seoDataByAi?: string;
+  /** Creation timestamp */
+  createdAt: string;
+}

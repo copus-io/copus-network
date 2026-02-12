@@ -171,26 +171,30 @@ export const TreasuryCard = ({
         <div className="flex items-center justify-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow cursor-pointer" style={{ aspectRatio: '16 / 9' }}>
           {emptyAction ? (
             <div className="flex items-center gap-3 cursor-pointer">
-              {/* Primary action button */}
+              {/* Primary action button - matches header Curate button style */}
               {emptyAction.onClick ? (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     emptyAction.onClick?.();
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-white text-red border border-red rounded-[50px] hover:bg-red/5 transition-colors cursor-pointer"
+                  className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
                 >
-                  {/* Curate icon (export/share style - square with arrow) */}
+                  {/* Curate icon - same as header */}
                   {emptyAction.label === 'Curate' && (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                    </svg>
+                    <img
+                      className="w-4 h-4"
+                      alt="Curate"
+                      src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+                    />
                   )}
                   {/* Import icon */}
                   {emptyAction.label === 'Import' && (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
+                    <img
+                      className="w-4 h-4"
+                      alt="Import"
+                      src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+                    />
                   )}
                   {/* Discover icon (eyes) */}
                   {emptyAction.label === 'Discover' && (
@@ -205,27 +209,31 @@ export const TreasuryCard = ({
                       src={emptyAction.icon}
                     />
                   )}
-                  <span className="[font-family:'Lato',Helvetica] font-medium text-base leading-5">
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
                     {emptyAction.label}
                   </span>
                 </button>
               ) : (
                 <Link
                   to={emptyAction.href}
-                  className="flex items-center gap-2 px-4 py-2 bg-white text-red border border-red rounded-[50px] hover:bg-red/5 transition-colors cursor-pointer"
+                  className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Curate icon (export/share style - square with arrow) */}
+                  {/* Curate icon - same as header */}
                   {emptyAction.label === 'Curate' && (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                    </svg>
+                    <img
+                      className="w-4 h-4"
+                      alt="Curate"
+                      src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+                    />
                   )}
                   {/* Import icon */}
                   {emptyAction.label === 'Import' && (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
+                    <img
+                      className="w-4 h-4"
+                      alt="Import"
+                      src="https://c.animaapp.com/mft4oqz6uyUKY7/img/vector.svg"
+                    />
                   )}
                   {/* Discover icon (eyes) */}
                   {emptyAction.label === 'Discover' && (
@@ -240,7 +248,7 @@ export const TreasuryCard = ({
                       src={emptyAction.icon}
                     />
                   )}
-                  <span className="[font-family:'Lato',Helvetica] font-medium text-base leading-5">
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
                     {emptyAction.label}
                   </span>
                 </Link>

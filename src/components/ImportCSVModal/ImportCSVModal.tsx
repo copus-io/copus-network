@@ -222,7 +222,6 @@ export const ImportCSVModal: React.FC<ImportCSVModalProps> = ({
           return {
             title: item.title || item.fetchedTitle || '',
             url: normalizeUrl(item.url),
-            description: item.description,
             category: item.category || item.fetchedDescription || '',
             cover: item.cover || item.fetchedCover || ''
           };

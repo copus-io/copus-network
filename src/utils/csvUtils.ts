@@ -3,8 +3,7 @@
 export interface ImportedBookmark {
   title: string;
   url: string;
-  description?: string;
-  category?: string;
+  category?: string; // Recommendation text
   tags?: string[];
   folder?: string;
   cover?: string; // Cover image URL
@@ -63,7 +62,6 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
     }
 
     // 可选字段索引
-    const descriptionIndex = findHeaderIndex(headers, ['description', 'desc', 'note', '描述', '说明', '备注']);
     const categoryIndex = findHeaderIndex(headers, ['recommendation', 'category', 'type', 'folder', 'notes', '分类', '类型', '文件夹', '推荐', '备注']);
     const tagsIndex = findHeaderIndex(headers, ['tags', 'keywords', 'labels', '标签', '关键词']);
     const coverIndex = findHeaderIndex(headers, ['cover', 'coverurl', 'cover_url', 'image', 'thumbnail', '封面', '图片']);
@@ -97,7 +95,6 @@ export const parseCSV = (csvContent: string): CSVParseResult => {
         const bookmark: ImportedBookmark = {
           title, // May be empty - will be fetched from URL metadata if needed
           url,
-          description: descriptionIndex !== -1 ? fields[descriptionIndex]?.trim() : undefined,
           category: categoryIndex !== -1 ? fields[categoryIndex]?.trim() : undefined,
           tags: tagsIndex !== -1 ? parseTags(fields[tagsIndex]) : undefined,
           cover: coverIndex !== -1 ? fields[coverIndex]?.trim() : undefined

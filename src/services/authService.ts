@@ -66,6 +66,8 @@ export interface UserHomeResponse {
   }>;
   statistics: {
     articleCount: number;
+    publicArticleCount?: number;  // Public works count (for taste profile)
+    privateArticleCount?: number; // Private works count
     likedArticleCount: number;
     myArticleLikedCount: number;
   };
