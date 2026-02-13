@@ -79,25 +79,25 @@ export const useArticles = (
         }
 
         setState(prev => {
-        let mergedArticles;
-        if (append) {
-          // Deduplicate when merging, based on article.id
-          const existingIds = new Set(prev.articles.map(article => article.id));
-          const newArticles = response.articles.filter(article => !existingIds.has(article.id));
-          mergedArticles = [...prev.articles, ...newArticles];
-        } else {
-          mergedArticles = response.articles;
-        }
+          let mergedArticles;
+          if (append) {
+            // Deduplicate when merging, based on article.id
+            const existingIds = new Set(prev.articles.map(article => article.id));
+            const newArticles = response.articles.filter(article => !existingIds.has(article.id));
+            mergedArticles = [...prev.articles, ...newArticles];
+          } else {
+            mergedArticles = response.articles;
+          }
 
-        return {
-          ...prev,
-          articles: mergedArticles,
-          loading: false,
-          hasMore: response.hasMore,
-          page: response.page,
-          total: response.total,
-        };
-      });
+          return {
+            ...prev,
+            articles: mergedArticles,
+            loading: false,
+            hasMore: response.hasMore,
+            page: response.page,
+            total: response.total,
+          };
+        });
       } catch (error) {
         let errorMessage = 'Failed to fetch articles';
 
