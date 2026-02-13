@@ -34,7 +34,7 @@ interface UserJourneyEvent extends AnalyticsEvent {
 }
 
 interface ShareButtonClickEvent extends AnalyticsEvent {
-  shareType: 'wechat' | 'weibo' | 'qq' | 'link' | 'qrcode' | 'email' | 'other';
+  shareType: 'twitter' | 'facebook' | 'linkedin' | 'reddit' | 'telegram' | 'whatsapp' | 'link' | 'email' | 'other';
   contentType: 'article' | 'profile' | 'treasury' | 'space' | 'other';
   contentId?: string;
   contentTitle?: string;

@@ -31,7 +31,7 @@ export const SharePanel: React.FC<SharePanelProps> = ({ isOpen, onClose }) => {
   // Mock content data for demo
   const [currentContent] = useState({
     id: 'demo-article-123',
-    title: '示例文章：数字化转型的关键策略',
+    title: 'Demo Article: Key Strategies for Digital Transformation',
     type: 'article' as const,
     url: window.location.href
   });
@@ -57,12 +57,14 @@ export const SharePanel: React.FC<SharePanelProps> = ({ isOpen, onClose }) => {
   ];
 
   const shareTypes = [
-    { id: 'wechat', label: '微信', icon: '💬', color: 'bg-green-500', desc: '分享到微信好友' },
-    { id: 'weibo', label: '微博', icon: '📱', color: 'bg-red-500', desc: '分享到新浪微博' },
-    { id: 'qq', label: 'QQ', icon: '🐧', color: 'bg-blue-500', desc: '分享到QQ好友' },
-    { id: 'link', label: '复制链接', icon: '🔗', color: 'bg-gray-500', desc: '复制页面链接' },
-    { id: 'qrcode', label: '二维码', icon: '📷', color: 'bg-purple-500', desc: '生成二维码' },
-    { id: 'email', label: '邮件', icon: '📧', color: 'bg-orange-500', desc: '通过邮件分享' }
+    { id: 'twitter', label: 'Twitter', icon: '🐦', color: 'bg-blue-400', desc: 'Share on Twitter' },
+    { id: 'facebook', label: 'Facebook', icon: '📘', color: 'bg-blue-600', desc: 'Share on Facebook' },
+    { id: 'linkedin', label: 'LinkedIn', icon: '💼', color: 'bg-blue-700', desc: 'Share on LinkedIn' },
+    { id: 'reddit', label: 'Reddit', icon: '🤖', color: 'bg-orange-600', desc: 'Share on Reddit' },
+    { id: 'telegram', label: 'Telegram', icon: '✈️', color: 'bg-blue-500', desc: 'Share on Telegram' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'bg-green-500', desc: 'Share on WhatsApp' },
+    { id: 'link', label: 'Copy Link', icon: '🔗', color: 'bg-gray-500', desc: 'Copy page link' },
+    { id: 'email', label: 'Email', icon: '📧', color: 'bg-orange-500', desc: 'Share via email' }
   ];
 
   const handleShare = async (shareType: string) => {
@@ -72,32 +74,35 @@ export const SharePanel: React.FC<SharePanelProps> = ({ isOpen, onClose }) => {
       switch (shareType) {
         case 'link':
           await navigator.clipboard.writeText(currentContent.url);
-          alert('链接已复制到剪贴板！');
+          alert('Link copied to clipboard!');
           break;
-        case 'wechat':
-          // 微信分享逻辑
-          if (typeof window !== 'undefined' && (window as any).wx) {
-            // 微信 JS SDK 分享
-            alert('正在打开微信分享...');
-          } else {
-            alert('请在微信中打开或安装微信客户端');
-            shareSuccess = false;
-          }
+        case 'twitter':
+          const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentContent.url)}&text=${encodeURIComponent(currentContent.title)}`;
+          window.open(twitterUrl, '_blank', 'width=550,height=420');
           break;
-        case 'weibo':
-          const weiboUrl = `https://service.weibo.com/share/share.php?url=${encodeURIComponent(currentContent.url)}&title=${encodeURIComponent(currentContent.title)}`;
-          window.open(weiboUrl, '_blank');
+        case 'facebook':
+          const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentContent.url)}`;
+          window.open(facebookUrl, '_blank', 'width=600,height=400');
           break;
-        case 'qq':
-          const qqUrl = `https://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(currentContent.url)}&title=${encodeURIComponent(currentContent.title)}`;
-          window.open(qqUrl, '_blank');
+        case 'linkedin':
+          const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentContent.url)}`;
+          window.open(linkedinUrl, '_blank', 'width=600,height=500');
+          break;
+        case 'reddit':
+          const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(currentContent.url)}&title=${encodeURIComponent(currentContent.title)}`;
+          window.open(redditUrl, '_blank');
+          break;
+        case 'telegram':
+          const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(currentContent.url)}&text=${encodeURIComponent(currentContent.title)}`;
+          window.open(telegramUrl, '_blank');
+          break;
+        case 'whatsapp':
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${currentContent.title} ${currentContent.url}`)}`;
+          window.open(whatsappUrl, '_blank');
           break;
         case 'email':
-          const mailtoUrl = `mailto:?subject=${encodeURIComponent(currentContent.title)}&body=${encodeURIComponent(`我想与您分享这篇文章：\n\n${currentContent.title}\n\n链接：${currentContent.url}`)}`;
+          const mailtoUrl = `mailto:?subject=${encodeURIComponent(currentContent.title)}&body=${encodeURIComponent(`I'd like to share this article with you:\n\n${currentContent.title}\n\nLink: ${currentContent.url}`)}`;
           window.open(mailtoUrl);
-          break;
-        case 'qrcode':
-          alert('正在生成二维码...');
           break;
         default:
           shareSuccess = false;
@@ -124,7 +129,7 @@ export const SharePanel: React.FC<SharePanelProps> = ({ isOpen, onClose }) => {
       }, 100);
 
     } catch (error) {
-      console.error('分享失败:', error);
+      console.error('Share failed:', error);
       trackShareClick(
         shareType as any,
         currentContent.type,
@@ -140,13 +145,15 @@ export const SharePanel: React.FC<SharePanelProps> = ({ isOpen, onClose }) => {
 
   const getShareTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      'wechat': '微信',
-      'weibo': '微博',
-      'qq': 'QQ',
-      'link': '复制链接',
-      'qrcode': '二维码',
-      'email': '邮件',
-      'other': '其他'
+      'twitter': 'Twitter',
+      'facebook': 'Facebook',
+      'linkedin': 'LinkedIn',
+      'reddit': 'Reddit',
+      'telegram': 'Telegram',
+      'whatsapp': 'WhatsApp',
+      'link': 'Copy Link',
+      'email': 'Email',
+      'other': 'Other'
     };
     return labels[type] || type;
   };
@@ -319,15 +326,15 @@ export const SharePanel: React.FC<SharePanelProps> = ({ isOpen, onClose }) => {
             <div className="space-y-6">
               {/* 当前内容信息 */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
-                <h4 className="font-medium mb-2 text-gray-800">当前内容</h4>
+                <h4 className="font-medium mb-2 text-gray-800">Current Content</h4>
                 <h3 className="text-lg font-bold text-gray-900 mb-2">{currentContent.title}</h3>
-                <p className="text-sm text-gray-600 mb-4">类型: {getContentTypeLabel(currentContent.type)} | ID: {currentContent.id}</p>
+                <p className="text-sm text-gray-600 mb-4">Type: {getContentTypeLabel(currentContent.type)} | ID: {currentContent.id}</p>
                 <p className="text-xs text-gray-500 break-all">{currentContent.url}</p>
               </div>
 
               {/* 分享按钮区域 */}
               <div>
-                <h4 className="font-medium mb-4 text-gray-800">选择分享方式</h4>
+                <h4 className="font-medium mb-4 text-gray-800">Choose Share Platform</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {shareTypes.map((shareType) => (
                     <button
@@ -345,12 +352,12 @@ export const SharePanel: React.FC<SharePanelProps> = ({ isOpen, onClose }) => {
 
               {/* 分享说明 */}
               <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
-                <h5 className="font-medium text-yellow-800 mb-2">📝 分享功能说明</h5>
+                <h5 className="font-medium text-yellow-800 mb-2">📝 Share Function Guide</h5>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• 点击任意分享按钮将自动记录分享数据</li>
-                  <li>• 数据包括分享方式、内容类型、位置等信息</li>
-                  <li>• 可在"数据概览"标签页查看详细统计</li>
-                  <li>• 所有数据存储在本地，用于演示分析功能</li>
+                  <li>• Clicking any share button will automatically track sharing data</li>
+                  <li>• Data includes sharing method, content type, location, and more</li>
+                  <li>• View detailed statistics in the "Data Overview" tab</li>
+                  <li>• All data is stored locally for analytics demonstration</li>
                 </ul>
               </div>
             </div>
