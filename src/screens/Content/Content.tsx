@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy, startTransition } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -156,7 +156,9 @@ export const Content = (): JSX.Element => {
     if (isCommentSectionOpen) {
       console.log('🔒 CommentSection: Locking body scroll');
       // Show modal immediately when opening
-      setShouldShowModal(true);
+      startTransition(() => {
+        setShouldShowModal(true);
+      });
 
       // Save original styles
       const originalOverflow = window.getComputedStyle(document.body).overflow;
@@ -241,7 +243,9 @@ export const Content = (): JSX.Element => {
       const hasQuestionOnly = window.location.href.endsWith('?');
 
       if (hasCommentsParam || hasQuestionOnly) {
-        setIsCommentSectionOpen(true);
+        startTransition(() => {
+          setIsCommentSectionOpen(true);
+        });
       }
     };
 
@@ -814,7 +818,9 @@ export const Content = (): JSX.Element => {
 
     // Always show the collect modal (whether liked or not)
     // User can uncollect from within the modal
-    setCollectModalOpen(true);
+    startTransition(() => {
+      setCollectModalOpen(true);
+    });
   };
 
   const handleUserClick = () => {
@@ -1130,7 +1136,9 @@ export const Content = (): JSX.Element => {
     }
 
     // Just open the payment modal, don't fetch payment info yet
-    setIsPayConfirmOpen(true);
+    startTransition(() => {
+      setIsPayConfirmOpen(true);
+    });
 
     // Get suggested network based on user's auth method
     const authMethod = localStorage.getItem('copus_auth_method');
