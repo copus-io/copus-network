@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy, startTransition } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarImage } from "../../ui/avatar";
 import { Button } from "../../ui/button";
@@ -63,6 +63,13 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
   const { unreadCount } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Wrapped navigate function with startTransition
+  const navigateWithTransition = useCallback((path: string) => {
+    startTransition(() => {
+      navigate(path);
+    });
+  }, [navigate]);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -128,7 +135,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
   }, []);
 
   const handleAvatarDoubleClick = () => {
-    navigate('/setting');
+    navigateWithTransition('/setting');
     setShowUserMenu(false);
   };
 
@@ -297,11 +304,11 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
   const handleResultClick = (result: SearchResultItem) => {
     if (result.type === 'article') {
-      navigate(`/work/${result.id}`);
+      navigateWithTransition(`/work/${result.id}`);
     } else if (result.type === 'user') {
-      navigate(`/user/${result.namespace || result.id}`);
+      navigateWithTransition(`/user/${result.namespace || result.id}`);
     } else if (result.type === 'treasury') {
-      navigate(`/user/${result.namespace || result.id}`);
+      navigateWithTransition(`/user/${result.namespace || result.id}`);
     }
     handleCloseSearch();
   };
@@ -463,7 +470,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         </button>
                         <div className="space-y-4">
                           {articleResults.items.slice(0, 3).map((article) => (
-                            <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                            <div key={article.id} onClick={() => { navigateWithTransition(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
                               <ArticleCard article={{
                                 id: article.uuid,
                                 uuid: article.uuid,
@@ -505,7 +512,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         </button>
                         <div className="space-y-4">
                           {spaceResults.items.slice(0, 3).map((space) => (
-                            <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                            <div key={space.id} onClick={() => { navigateWithTransition(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                               <TreasuryCard space={space as SpaceData} />
                             </div>
                           ))}
@@ -532,7 +539,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           {userResults.items.slice(0, 6).map((user) => (
                             <button
                               key={user.id}
-                              onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
+                              onClick={() => { navigateWithTransition(`/u/${user.namespace}`); handleCloseSearch(); }}
                               className="rounded-[10px] px-2 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
                             >
                               <div className="flex flex-col items-center gap-2">
@@ -565,7 +572,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 ) : activeTab === 'works' ? (
                   <div className="space-y-4">
                     {articleResults.items.map((article) => (
-                      <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                      <div key={article.id} onClick={() => { navigateWithTransition(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
                         <ArticleCard article={{
                           id: article.uuid,
                           uuid: article.uuid,
@@ -599,7 +606,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 ) : activeTab === 'treasuries' ? (
                   <div className="space-y-4">
                     {spaceResults.items.map((space) => (
-                      <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                      <div key={space.id} onClick={() => { navigateWithTransition(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                         <TreasuryCard space={space as SpaceData} />
                       </div>
                     ))}
@@ -618,7 +625,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     {userResults.items.map((user) => (
                       <button
                         key={user.id}
-                        onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
+                        onClick={() => { navigateWithTransition(`/u/${user.namespace}`); handleCloseSearch(); }}
                         className="rounded-[10px] px-2 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
                       >
                         <div className="flex flex-col items-center gap-2">
@@ -713,7 +720,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       </button>
                       <div className="grid gap-4 grid-cols-3 auto-rows-fr">
                         {articleResults.items.slice(0, 3).map((article) => (
-                          <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
+                          <div key={article.id} onClick={() => { navigateWithTransition(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
                             <ArticleCard article={{
                               id: article.uuid,
                               uuid: article.uuid,
@@ -757,7 +764,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       </button>
                       <div className="grid gap-4 grid-cols-3">
                         {spaceResults.items.slice(0, 3).map((space) => (
-                          <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                          <div key={space.id} onClick={() => { navigateWithTransition(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                             <TreasuryCard space={space as SpaceData} />
                           </div>
                         ))}
@@ -786,7 +793,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         {userResults.items.slice(0, 4).map((user) => (
                           <button
                             key={user.id}
-                            onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
+                            onClick={() => { navigateWithTransition(`/u/${user.namespace}`); handleCloseSearch(); }}
                             className="rounded-[10px] px-2.5 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_12px_#c5c5c5] transition-shadow text-left"
                           >
                             <div className="flex flex-col items-center gap-2">
@@ -821,7 +828,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 <div>
                   <div className="grid gap-4 grid-cols-3 auto-rows-fr">
                     {articleResults.items.map((article) => (
-                      <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
+                      <div key={article.id} onClick={() => { navigateWithTransition(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
                         <ArticleCard article={{
                           id: article.uuid,
                           uuid: article.uuid,
@@ -860,7 +867,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 <div>
                   <div className="grid gap-4 grid-cols-3">
                     {spaceResults.items.map((space) => (
-                      <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                      <div key={space.id} onClick={() => { navigateWithTransition(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                         <TreasuryCard space={space as SpaceData} />
                       </div>
                     ))}
@@ -884,7 +891,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     {userResults.items.map((user) => (
                       <button
                         key={user.id}
-                        onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
+                        onClick={() => { navigateWithTransition(`/u/${user.namespace}`); handleCloseSearch(); }}
                         className="rounded-[10px] px-2.5 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_12px_#c5c5c5] transition-shadow text-left"
                       >
                         <div className="flex flex-col items-center gap-2">
