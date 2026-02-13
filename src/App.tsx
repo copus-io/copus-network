@@ -25,6 +25,9 @@ import { Content } from "./screens/Content/Content";
 // Test components for development
 import { TestNoAccess } from "./screens/Test/TestNoAccess";
 
+// Analytics page
+import { Analytics } from "./screens/Analytics/Analytics";
+
 // ShortLinkHandler - eagerly loaded to prevent dynamic import errors
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
@@ -198,6 +201,10 @@ const router = createBrowserRouter([
         <LazyRoute><SEOSet /></LazyRoute>
       </AuthGuard>
     ),
+  },
+  {
+    path: "/analytics",
+    element: <Analytics />,
   },
   // 404 catch-all route - must be last
   {

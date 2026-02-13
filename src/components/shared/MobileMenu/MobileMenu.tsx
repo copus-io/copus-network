@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useToast } from '../../ui/toast';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { trackPublishClick } from '../../../services/analyticsService';
 import profileDefaultAvatar from '../../../assets/images/profile-default.svg';
 import searchIcon from '../../../assets/images/icon-search.svg';
 
@@ -124,7 +125,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   ];
 
   const handleMenuItemClick = (item: MenuItem) => {
-    navigate(item.path);
+    // Track publish button clicks
+    if (item.path === '/curate') {
+      trackPublishClick('mobile_menu', isLoggedIn);
+    }
+
+    startTransition(() => {
+      navigate(item.path);
+    });
     onClose();
   };
 

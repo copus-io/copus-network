@@ -18,6 +18,7 @@ import { publishArticle, getArticleDetail } from "../../services/articleService"
 import { useNavigate } from "react-router-dom";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../components/ArticleCard";
+import { trackCurateAccess, trackCurateProgress, trackContentPublished } from "../../services/analyticsService";
 import { ARTICLE_VISIBILITY } from "../../types/article";
 import { ImageCropper } from "../../components/ImageCropper/ImageCropper";
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from "../../utils/imageUtils";
@@ -41,6 +42,36 @@ export const Create = (): JSX.Element => {
   // Check if in edit mode
   const editId = searchParams.get('edit');
   const isEditMode = !!editId;
+
+  // Analytics state
+  const [pageLoadTime] = useState(Date.now());
+  const [stepStartTime, setStepStartTime] = useState<number | null>(null);
+
+  // Track page access for analytics
+  useEffect(() => {
+    // Get referrer to track the source of the visit
+    const referrer = document.referrer;
+    let source = 'direct';
+
+    if (referrer) {
+      if (referrer.includes('/home') || referrer.includes('/copus') || referrer.includes('/discovery')) {
+        source = 'discovery';
+      } else if (referrer.includes('/treasury')) {
+        source = 'treasury';
+      } else if (referrer.includes('/notification')) {
+        source = 'notification';
+      } else {
+        source = 'other';
+      }
+    }
+
+    trackCurateAccess(source);
+
+    // Track page load for creation funnel
+    if (!isEditMode) {
+      trackCurateProgress('page_load');
+    }
+  }, []); // Only run once when component mounts
   const [editingArticle, setEditingArticle] = useState<any>(null);
   const [isLoadingArticle, setIsLoadingArticle] = useState(false);
   const [coverImageUrl, setCoverImageUrl] = useState<string>("");
@@ -377,12 +408,29 @@ export const Create = (): JSX.Element => {
       if (value.length <= 75) {
         setFormData(prev => ({ ...prev, [field]: value }));
         setTitleCharacterCount(value.length);
+
+        // Track title input for analytics (only for first meaningful input)
+        if (!isEditMode && formData.title.length === 0 && value.length > 0) {
+          const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
+          trackCurateProgress('title_input', { timeOnStep });
+          setStepStartTime(Date.now());
+        }
       }
     } else if (field === "recommendation") {
       // Limit recommendation to 1000 characters
       if (value.length <= 1000) {
         setFormData(prev => ({ ...prev, [field]: value }));
         setCharacterCount(value.length);
+
+        // Track content input for analytics (only for first meaningful input)
+        if (!isEditMode && formData.recommendation.length === 0 && value.length > 2) {
+          const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
+          trackCurateProgress('content_input', {
+            timeOnStep,
+            contentLength: value.length
+          });
+          setStepStartTime(Date.now());
+        }
       }
     } else if (field === "link") {
       // Limit URL to 255 characters (common database field limit)
@@ -407,6 +455,16 @@ export const Create = (): JSX.Element => {
     setFormData(prev => ({ ...prev, selectedTopic: topicName, selectedTopicId: topicId }));
     // Track this category as recently used
     addRecentCategory(topicId, topicName);
+
+    // Track category selection for analytics
+    if (!isEditMode) {
+      const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
+      trackCurateProgress('category_select', {
+        timeOnStep,
+        category: topicName
+      });
+      setStepStartTime(Date.now());
+    }
   };
 
   // Handle creating a new treasury
@@ -700,6 +758,16 @@ export const Create = (): JSX.Element => {
 
     setIsPublishing(true);
 
+    // Track publish attempt for analytics
+    if (!isEditMode) {
+      const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
+      trackCurateProgress('publish_attempt', {
+        timeOnStep,
+        contentLength: formData.recommendation.length,
+        category: formData.selectedTopic
+      });
+    }
+
     try {
       // Priority: existing cover URL > auto-fetched URL (if not dismissed)
       let finalCoverUrl = coverImageUrl || (!autoFetchDismissed ? autoFetchedCoverUrl : '');
@@ -810,6 +878,27 @@ export const Create = (): JSX.Element => {
       // when the user clicks Save - no need to call bindArticles here
 
       showToast(isEditMode ? 'Updated successfully!' : 'Done! You just surfaced an internet gem!', 'success');
+
+      // Track successful publish for analytics
+      if (!isEditMode) {
+        const timeToComplete = Date.now() - pageLoadTime;
+        const hasImages = !!(formData.coverImage || coverImageUrl || autoFetchedCoverUrl);
+        const hasLinks = !!(formData.link);
+
+        trackContentPublished({
+          category: formData.selectedTopic,
+          contentLength: formData.recommendation.length,
+          hasImages,
+          hasLinks,
+          timeToComplete
+        });
+
+        trackCurateProgress('publish_success', {
+          timeOnStep: stepStartTime ? Date.now() - stepStartTime : undefined,
+          contentLength: formData.recommendation.length,
+          category: formData.selectedTopic
+        });
+      }
 
       // Invalidate article caches to ensure fresh data is loaded
       // This is especially important for edit mode to show updated content

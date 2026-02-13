@@ -12,6 +12,7 @@ import searchIcon from "../../../assets/images/icon-search.svg";
 import { ArticleCard, ArticleData } from "../../ArticleCard";
 import { TreasuryCard, SpaceData } from "../../ui/TreasuryCard";
 import { getIconUrl } from "../../../config/icons";
+import { trackPublishClick } from "../../../services/analyticsService";
 import {
   searchAll,
   searchArticles,
@@ -1105,7 +1106,11 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   className="flex items-center gap-[15px] px-5 h-[35px] rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-all duration-300 relative overflow-hidden"
                   asChild
                 >
-                  <Link to="/curate" className="relative">
+                  <Link
+                    to="/curate"
+                    className="relative"
+                    onClick={() => trackPublishClick('header', !!user)}
+                  >
                     {/* 涟漪发现动效 */}
                     <div className="absolute inset-0 pointer-events-none">
                       {/* 第一层涟漪 */}
@@ -1369,10 +1374,20 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 <Link to="/login">Log in / Sign up</Link>
               </Button>
             )}
+
+            {/* Hidden analytics link for production - accessible via URL /analytics */}
+            <Link
+              to="/analytics"
+              className="hidden"
+              aria-label="Analytics"
+            >
+              Analytics
+            </Link>
           </div>
         )}
       </div>
       </header>
+
     </>
   );
 };
