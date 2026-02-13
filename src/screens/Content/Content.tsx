@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -18,20 +18,19 @@ import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { CommentButton } from "../../components/ui/CommentButton";
 import { CollectTreasureModal } from "../../components/CollectTreasureModal";
 import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
-import { CommentSection } from "../../components/CommentSection";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import commentIcon from "../../assets/images/comment.svg";
-import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
-import {
-  generateNonce,
-  signTransferWithAuthorization,
-  signTransferWithAuthorizationOKXBrowser,
-  createX402PaymentHeader
-} from "../../utils/x402Utils";
-import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils';
-import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
-import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
+
+// Lazy load heavy payment and comment components
+const PayConfirmModal = lazy(() => import("../../components/PayConfirmModal/PayConfirmModal").then(m => ({ default: m.PayConfirmModal })));
+const CommentSection = lazy(() => import("../../components/CommentSection").then(m => ({ default: m.CommentSection })));
+
+// Lazy load heavy payment utilities only when needed
+const loadPaymentUtils = () => import("../../utils/x402Utils");
+const loadEnvUtils = () => import("../../utils/envUtils");
+const loadContractConfig = () => import("../../config/contracts");
+const loadPaymentTypes = () => import("../../types/payment");
 import { getIconUrl, getIconStyle } from '../../config/icons';
 import { SEO, ArticleSchema } from '../../components/SEO/SEO';
 import SEOTester from '../../components/SEOTester/SEOTester';

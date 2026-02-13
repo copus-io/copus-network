@@ -1,8 +1,15 @@
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense, lazy } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { PageWrapper } from "../../components/layout/PageWrapper";
-import { UserProfileContent } from "./sections/UserProfileContent";
+import { ArticleListSkeleton } from "../../components/ui/skeleton";
+
+// Lazy load the heavy UserProfileContent component
+const UserProfileContent = lazy(() =>
+  import("./sections/UserProfileContent").then(m => ({
+    default: m.UserProfileContent
+  }))
+);
 
 export const UserProfile = (): JSX.Element => {
   const { namespace } = useParams<{ namespace: string }>();
@@ -34,7 +41,9 @@ export const UserProfile = (): JSX.Element => {
 
   return (
     <PageWrapper>
-      <UserProfileContent namespace={namespace} />
+      <Suspense fallback={<ArticleListSkeleton />}>
+        <UserProfileContent namespace={namespace} />
+      </Suspense>
     </PageWrapper>
   );
 };

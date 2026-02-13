@@ -11,6 +11,9 @@ import { ToastProvider } from "./components/ui/toast";
 import { GlobalImagePreview } from "./components/ui/GlobalImagePreview";
 import { AuthGuard } from "./components/guards/AuthGuard";
 import { CopusLoading } from "./components/ui/copus-loading";
+import { PerformanceMonitor } from "./components/DevTools/PerformanceMonitor";
+import { resourcePreloader } from "./utils/resourcePreloader";
+import { cssOptimizer } from "./utils/cssOptimizer";
 
 // Eagerly loaded - critical path
 import { Discovery } from "./screens/Discovery/Discovery";
@@ -218,6 +221,7 @@ export const App = () => {
                 <ToastProvider>
                   <RouterProvider router={router} />
                   <GlobalImagePreview />
+                  <PerformanceMonitor />
                 </ToastProvider>
               </ImagePreviewProvider>
             </NotificationProvider>

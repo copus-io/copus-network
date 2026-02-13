@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarImage } from "../../ui/avatar";
 import { Button } from "../../ui/button";
@@ -9,19 +9,14 @@ import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { MobileMenu } from "../MobileMenu";
 import { Menu, X, Search, ChevronLeft } from "lucide-react";
 import searchIcon from "../../../assets/images/icon-search.svg";
-import { ArticleCard, ArticleData } from "../../ArticleCard";
-import { TreasuryCard, SpaceData } from "../../ui/TreasuryCard";
-import { getIconUrl } from "../../../config/icons";
-import {
-  searchAll,
-  searchArticles,
-  searchSpaces,
-  searchUsers,
-  SearchArticleItem,
-  SearchSpaceItem,
-  SearchUserItem,
-  SearchResult as SearchResultData,
-} from "../../../services/searchService";
+
+// Lazy load heavy search components only when needed
+const ArticleCard = lazy(() => import("../../ArticleCard").then(m => ({ default: m.ArticleCard })));
+const TreasuryCard = lazy(() => import("../../ui/TreasuryCard").then(m => ({ default: m.TreasuryCard })));
+
+// Lazy load search services when search is activated
+const loadSearchServices = () => import("../../../services/searchService");
+const loadIconConfig = () => import("../../../config/icons");
 
 interface SearchResultItem {
   id: string;

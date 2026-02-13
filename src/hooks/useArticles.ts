@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getPageArticles } from '../services/articleService';
 import { Article, PageArticleParams } from '../types/article';
 
@@ -24,23 +24,61 @@ export const useArticles = (
     total: 0,
   });
 
+  // Request debouncing and caching
+  const requestTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastRequestRef = useRef<string>('');
+  const cacheRef = useRef<Map<string, { data: Article[]; timestamp: number }>>(new Map());
+
   const fetchArticles = useCallback(async (params: PageArticleParams = {}, append = false) => {
     console.log('🔄 fetchArticles called:', { params, append, initialParams });
+
+    // Clear any pending requests
+    if (requestTimeoutRef.current) {
+      clearTimeout(requestTimeoutRef.current);
+    }
+
+    const finalParams = {
+      pageSize: 15, // Increased from 10 to 15 for better balance of performance and content
+      ...initialParams,
+      ...params,
+      page: append ? (params.page || 1) : 1, // Use provided page number in append mode, otherwise start from page 1
+    };
+
+    const requestKey = JSON.stringify(finalParams);
+
+    // Check cache first (5 minutes cache)
+    const cached = cacheRef.current.get(requestKey);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp < 5 * 60 * 1000) && !append) {
+      console.log('📦 Using cached data for:', finalParams);
+      setState(prev => ({
+        ...prev,
+        articles: cached.data,
+        loading: false,
+        hasMore: cached.data.length >= finalParams.pageSize,
+        page: finalParams.page || 1,
+        total: cached.data.length,
+      }));
+      return;
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }));
 
-    try {
-      const finalParams = {
-        pageSize: 10, // Optimize loading performance for better UX
-        ...initialParams,
-        ...params,
-        page: append ? (params.page || 1) : 1, // Use provided page number in append mode, otherwise start from page 1
-      };
+    // Debounce the request by 200ms
+    requestTimeoutRef.current = setTimeout(async () => {
+      try {
+        console.log('📡 About to call getPageArticles with:', finalParams);
+        const response = await getPageArticles(finalParams);
 
-      console.log('📡 About to call getPageArticles with:', finalParams);
-      const response = await getPageArticles(finalParams);
+        // Cache the result for non-append requests
+        if (!append) {
+          cacheRef.current.set(requestKey, {
+            data: response.articles,
+            timestamp: now
+          });
+        }
 
-
-      setState(prev => {
+        setState(prev => {
         let mergedArticles;
         if (append) {
           // Deduplicate when merging, based on article.id
@@ -60,23 +98,24 @@ export const useArticles = (
           total: response.total,
         };
       });
-    } catch (error) {
-      let errorMessage = 'Failed to fetch articles';
+      } catch (error) {
+        let errorMessage = 'Failed to fetch articles';
 
-      if (error instanceof Error) {
-        if (error.message.includes('System internal error')) {
-          errorMessage = 'Backend service temporarily unavailable, please contact technical team to check service status';
-        } else {
-          errorMessage = error.message;
+        if (error instanceof Error) {
+          if (error.message.includes('System internal error')) {
+            errorMessage = 'Backend service temporarily unavailable, please contact technical team to check service status';
+          } else {
+            errorMessage = error.message;
+          }
         }
-      }
 
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: errorMessage,
-      }));
-    }
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: errorMessage,
+        }));
+      }
+    }, 200); // 200ms debounce
   }, [initialParams]); // Add initialParams dependency
 
   const loadMore = useCallback(() => {

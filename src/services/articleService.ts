@@ -1,6 +1,7 @@
 import { apiRequest } from './api';
 import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
+import { cacheWithApi, articleCache } from '../utils/cacheManager';
 
 // Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
@@ -99,7 +100,7 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
   return transformedArticle;
 };
 
-// Get paginated article list
+// Get paginated article list with caching
 export const getPageArticles = async (params: PageArticleParams = {}): Promise<PageArticleResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -108,7 +109,7 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
   queryParams.append('pageIndex', page.toString()); // Backend also uses 1-based page numbering
 
   // Ensure pageSize parameter is always present
-  const pageSize = params.pageSize || 10;
+  const pageSize = params.pageSize || 15; // Updated default to match useArticles
   queryParams.append('pageSize', pageSize.toString());
 
   if (params.category) queryParams.append('keyword', params.category);
@@ -122,7 +123,27 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
 
   const endpoint = `/client/home/pageArticle?${queryParams.toString()}`;
 
+  // Create cache key based on all parameters
+  const cacheKey = `articles:${JSON.stringify(params)}`;
 
+  // Use cache for page 1 only (to avoid caching infinite scroll data)
+  const shouldCache = page === 1;
+
+  if (shouldCache) {
+    return cacheWithApi(
+      cacheKey,
+      () => fetchArticlesFromAPI(endpoint),
+      articleCache,
+      5 * 60 * 1000 // 5 minutes cache for first page
+    );
+  } else {
+    // Direct API call for other pages (infinite scroll)
+    return fetchArticlesFromAPI(endpoint);
+  }
+};
+
+// Extracted API call function for reuse
+const fetchArticlesFromAPI = async (endpoint: string): Promise<PageArticleResponse> => {
   // Make the request - token will be included automatically if available
   let backendResponse: BackendApiResponse;
   try {
