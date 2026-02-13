@@ -1383,6 +1383,15 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
             >
               Analytics
             </Link>
+
+            {/* Hidden share analytics link for production - accessible via URL /share */}
+            <Link
+              to="/share"
+              className="hidden"
+              aria-label="Share Analytics"
+            >
+              Share Analytics
+            </Link>
           </div>
         )}
       </div>

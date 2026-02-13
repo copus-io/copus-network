@@ -33,6 +33,15 @@ interface UserJourneyEvent extends AnalyticsEvent {
   daysSinceLastVisit?: number;
 }
 
+interface ShareButtonClickEvent extends AnalyticsEvent {
+  shareType: 'wechat' | 'weibo' | 'qq' | 'link' | 'qrcode' | 'email' | 'other';
+  contentType: 'article' | 'profile' | 'treasury' | 'space' | 'other';
+  contentId?: string;
+  contentTitle?: string;
+  shareLocation: 'article_detail' | 'profile_page' | 'treasury_item' | 'floating_button' | 'other';
+  shareSuccess: boolean;
+}
+
 class AnalyticsService {
   private sessionId: string;
   private events: AnalyticsEvent[] = [];
@@ -234,6 +243,49 @@ class AnalyticsService {
   }
 
   /**
+   * Track share button click
+   */
+  trackShareButtonClick(
+    shareType: ShareButtonClickEvent['shareType'],
+    contentType: ShareButtonClickEvent['contentType'],
+    shareLocation: ShareButtonClickEvent['shareLocation'],
+    options: {
+      contentId?: string;
+      contentTitle?: string;
+      shareSuccess?: boolean;
+    } = {}
+  ): void {
+    const event: ShareButtonClickEvent = {
+      event: 'click',
+      category: 'share_button',
+      action: 'share',
+      label: `${shareType}_${contentType}`,
+      shareType,
+      contentType,
+      contentId: options.contentId,
+      contentTitle: options.contentTitle,
+      shareLocation,
+      shareSuccess: options.shareSuccess ?? true,
+      timestamp: Date.now(),
+      page: window.location.pathname,
+      userAgent: navigator.userAgent,
+      sessionId: this.sessionId,
+      userId: this.getUserId(),
+    };
+
+    this.events.push(event);
+    this.saveEvents();
+
+    if (import.meta.env.DEV) {
+      console.log('📊 Analytics: Share button clicked', event);
+    }
+
+    if (import.meta.env.PROD) {
+      this.sendEventToBackend(event);
+    }
+  }
+
+  /**
    * Get click-through rate for publish buttons
    */
   getPublishButtonStats(): {
@@ -378,6 +430,78 @@ class AnalyticsService {
   }
 
   /**
+   * Get share button analytics
+   */
+  getShareButtonStats(): {
+    totalShares: number;
+    sharesByType: Record<string, number>;
+    sharesByContentType: Record<string, number>;
+    sharesByLocation: Record<string, number>;
+    successfulShares: number;
+    failedShares: number;
+    successRate: number;
+    popularContent: Array<{ contentId: string; contentTitle: string; shareCount: number }>;
+    timeRange: { start: number; end: number };
+  } {
+    const shareEvents = this.events.filter(
+      (event): event is ShareButtonClickEvent =>
+        event.category === 'share_button' && event.action === 'share'
+    );
+
+    const sharesByType: Record<string, number> = {};
+    const sharesByContentType: Record<string, number> = {};
+    const sharesByLocation: Record<string, number> = {};
+    const contentShares: Record<string, { title: string; count: number }> = {};
+    let successfulShares = 0;
+    let failedShares = 0;
+
+    shareEvents.forEach(event => {
+      sharesByType[event.shareType] = (sharesByType[event.shareType] || 0) + 1;
+      sharesByContentType[event.contentType] = (sharesByContentType[event.contentType] || 0) + 1;
+      sharesByLocation[event.shareLocation] = (sharesByLocation[event.shareLocation] || 0) + 1;
+
+      if (event.shareSuccess) {
+        successfulShares++;
+      } else {
+        failedShares++;
+      }
+
+      if (event.contentId && event.contentTitle) {
+        if (!contentShares[event.contentId]) {
+          contentShares[event.contentId] = { title: event.contentTitle, count: 0 };
+        }
+        contentShares[event.contentId].count++;
+      }
+    });
+
+    const popularContent = Object.entries(contentShares)
+      .map(([contentId, data]) => ({
+        contentId,
+        contentTitle: data.title,
+        shareCount: data.count
+      }))
+      .sort((a, b) => b.shareCount - a.shareCount)
+      .slice(0, 10);
+
+    const timestamps = shareEvents.map(e => e.timestamp);
+
+    return {
+      totalShares: shareEvents.length,
+      sharesByType,
+      sharesByContentType,
+      sharesByLocation,
+      successfulShares,
+      failedShares,
+      successRate: shareEvents.length > 0 ? (successfulShares / shareEvents.length) * 100 : 0,
+      popularContent,
+      timeRange: {
+        start: Math.min(...timestamps, Date.now()),
+        end: Math.max(...timestamps, Date.now())
+      }
+    };
+  }
+
+  /**
    * Get time-based analytics
    */
   getTimeAnalytics(): {
@@ -387,7 +511,7 @@ class AnalyticsService {
     peakDays: number[];
   } {
     const allEvents = this.events.filter(
-      event => event.category === 'publish_button' || event.category === 'curate'
+      event => event.category === 'publish_button' || event.category === 'curate' || event.category === 'share_button'
     );
 
     const hourlyDistribution: Record<number, number> = {};
@@ -541,7 +665,21 @@ export const trackContentPublished = (metadata: {
   analyticsService.trackContentPublished(metadata);
 };
 
+export const trackShareClick = (
+  shareType: ShareButtonClickEvent['shareType'],
+  contentType: ShareButtonClickEvent['contentType'],
+  shareLocation: ShareButtonClickEvent['shareLocation'],
+  options?: {
+    contentId?: string;
+    contentTitle?: string;
+    shareSuccess?: boolean;
+  }
+) => {
+  analyticsService.trackShareButtonClick(shareType, contentType, shareLocation, options);
+};
+
 export const getPublishStats = () => analyticsService.getPublishButtonStats();
+export const getShareStats = () => analyticsService.getShareButtonStats();
 export const getConversionRate = () => analyticsService.getConversionRate();
 export const getCreationFunnel = () => analyticsService.getCreationFunnel();
 export const getUserJourney = () => analyticsService.getUserJourney();

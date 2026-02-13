@@ -28,6 +28,9 @@ import { TestNoAccess } from "./screens/Test/TestNoAccess";
 // Analytics page
 import { Analytics } from "./screens/Analytics/Analytics";
 
+// Share page
+import { Share } from "./screens/Share/Share";
+
 // ShortLinkHandler - eagerly loaded to prevent dynamic import errors
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
@@ -205,6 +208,10 @@ const router = createBrowserRouter([
   {
     path: "/fx",
     element: <Analytics />,
+  },
+  {
+    path: "/share",
+    element: <Share />,
   },
   // 404 catch-all route - must be last
   {
