@@ -1375,9 +1375,9 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
               </Button>
             )}
 
-            {/* Hidden analytics link for production - accessible via URL /analytics */}
+            {/* Hidden analytics link for production - accessible via URL /fx */}
             <Link
-              to="/analytics"
+              to="/fx"
               className="hidden"
               aria-label="Analytics"
             >

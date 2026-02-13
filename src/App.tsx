@@ -203,7 +203,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/analytics",
+    path: "/fx",
     element: <Analytics />,
   },
   // 404 catch-all route - must be last
