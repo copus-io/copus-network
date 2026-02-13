@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, startTransition } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { UploadIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -551,7 +551,7 @@ export const Create = (): JSX.Element => {
       } catch (error) {
         console.error('Failed to load article data:', error);
         showToast('Failed to load data, please try again', 'error');
-        navigate('/my-treasury');
+        startTransition(() => { navigate('/my-treasury'); });
       } finally {
         setIsLoadingArticle(false);
       }
@@ -726,7 +726,7 @@ export const Create = (): JSX.Element => {
           const targetUrl = isEditMode
             ? `/work/${articleUuid}?refresh=${Date.now()}`
             : `/work/${articleUuid}`;
-          navigate(targetUrl, { replace: true });
+          startTransition(() => { navigate(targetUrl, { replace: true }); });
         }, redirectDelay);
       } else {
         // This should rarely happen
@@ -734,7 +734,7 @@ export const Create = (): JSX.Element => {
         console.error('Response was:', response);
         showToast('Published but could not navigate to it. Please check My Treasury.', 'warning');
         setTimeout(() => {
-          navigate('/my-treasury');
+          startTransition(() => { navigate('/my-treasury'); });
         }, 1500);
       }
 

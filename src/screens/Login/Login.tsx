@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
@@ -517,7 +517,9 @@ export const Login = (): JSX.Element => {
               }, 1000);
             }
 
-            navigate('/', { replace: true });
+            startTransition(() => {
+              navigate('/', { replace: true });
+            });
           } else if (provider === 'x') {
             // X (Twitter) login handling
             response = await AuthService.xLogin(code, state, hasExistingToken);
@@ -559,7 +561,9 @@ export const Login = (): JSX.Element => {
 
             await fetchUserInfo(response.token);
 
-            navigate('/', { replace: true });
+            startTransition(() => {
+              navigate('/', { replace: true });
+            });
           } else {
             // Default fallback (for backward compatibility)
             response = await AuthService.xLogin(code, state, hasExistingToken);
@@ -568,7 +572,9 @@ export const Login = (): JSX.Element => {
               showToast('Login successful! Welcome back 🎉', 'success');
               const tokenToUse = response.token || response.data?.token;
               await fetchUserInfo(tokenToUse);
-              navigate('/', { replace: true });
+              startTransition(() => {
+                navigate('/', { replace: true });
+              });
             } else {
               throw new Error('No authentication token received');
             }
@@ -804,7 +810,9 @@ export const Login = (): JSX.Element => {
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
-        navigate('/');
+        startTransition(() => {
+          navigate('/');
+        });
       } else {
         // Handle wallet address not registered case
         if (response.msg && (
@@ -939,7 +947,9 @@ export const Login = (): JSX.Element => {
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
-        navigate('/');
+        startTransition(() => {
+          navigate('/');
+        });
       } else {
         // Handle wallet address not registered case
         if (response.msg && (
@@ -1079,7 +1089,9 @@ export const Login = (): JSX.Element => {
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
-        navigate('/');
+        startTransition(() => {
+          navigate('/');
+        });
       } else {
         // Handle wallet address not registered case
         if (response.msg && (
@@ -1234,7 +1246,9 @@ export const Login = (): JSX.Element => {
         }
 
         showToast('Login successful! Welcome back 🎉', 'success');
-        navigate('/');
+        startTransition(() => {
+          navigate('/');
+        });
       } else {
         // Translate error messages
         let errorMessage = 'Login failed';

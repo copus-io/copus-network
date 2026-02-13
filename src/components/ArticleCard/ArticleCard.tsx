@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, startTransition } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
@@ -129,7 +129,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
       onComment(article.uuid || article.id, article.uuid);
     } else {
       // Fallback: navigate directly to the article with comment parameter
-      navigate(`/work/${article.uuid || article.id}?comments=open`);
+      startTransition(() => { navigate(`/work/${article.uuid || article.id}?comments=open`); });
     }
   }, [onComment, article.uuid, article.id, navigate]);
 

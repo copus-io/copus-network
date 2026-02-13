@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../../contexts/UserContext";
 import { AuthService } from "../../../../services/authService";
@@ -396,7 +396,7 @@ export const MainContentSection = (): JSX.Element => {
   const handleSpaceClick = (space: any) => {
     if (space.namespace) {
       const targetPath = `/treasury/${space.namespace}`;
-      navigate(targetPath);
+      startTransition(() => { navigate(targetPath); });
     }
   };
 
@@ -473,7 +473,7 @@ export const MainContentSection = (): JSX.Element => {
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
           <div className="text-red-500">{error}</div>
           <Button
-            onClick={() => navigate('/')}
+            onClick={() => startTransition(() => { navigate('/'); })}
             className="bg-red hover:bg-red/90 text-white px-6 py-2 rounded-lg"
           >
             Back to Home
@@ -529,7 +529,7 @@ export const MainContentSection = (): JSX.Element => {
               onEdit={() => {
                 // Navigate to edit page or open edit modal for custom spaces (spaceType 0)
                 if (space.namespace) {
-                  navigate(`/treasury/${space.namespace}`);
+                  startTransition(() => { navigate(`/treasury/${space.namespace}`); });
                 }
               }}
             />

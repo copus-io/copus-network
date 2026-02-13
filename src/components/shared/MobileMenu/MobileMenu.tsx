@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useToast } from '../../ui/toast';
@@ -124,7 +124,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   ];
 
   const handleMenuItemClick = (item: MenuItem) => {
-    navigate(item.path);
+    startTransition(() => {
+      navigate(item.path);
+    });
     onClose();
   };
 
@@ -223,7 +225,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             {isLoggedIn && (
               <button
                 onClick={() => {
-                  navigate('/setting');
+                  startTransition(() => {
+                    navigate('/setting');
+                  });
                   onClose();
                 }}
                 className="cursor-pointer hover:opacity-80 transition-opacity"
@@ -254,7 +258,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             {isLoggedIn && (
               <button
                 onClick={() => {
-                  navigate('/notification');
+                  startTransition(() => {
+                    navigate('/notification');
+                  });
                   onClose();
                 }}
                 className="flex items-center justify-center relative"
@@ -271,7 +277,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             {!isLoggedIn && (
               <button
                 onClick={() => {
-                  navigate('/login');
+                  startTransition(() => {
+                    navigate('/login');
+                  });
                   onClose();
                 }}
                 className="inline-flex items-center justify-center gap-2 px-4 h-[32px] bg-white rounded-[50px] border border-solid border-[#454545] hover:bg-gray-50 transition-colors cursor-pointer"

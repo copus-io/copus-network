@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, startTransition } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { AuthService } from "../../../services/authService";
@@ -553,7 +553,7 @@ export const SpaceContentSection = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => navigate('/login')
+          onClick: () => startTransition(() => { navigate('/login'); })
         }
       });
       return;
@@ -587,9 +587,9 @@ export const SpaceContentSection = (): JSX.Element => {
   // Handle user click
   const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
     if (userNamespace) {
-      navigate(`/u/${userNamespace}`);
+      startTransition(() => { navigate(`/u/${userNamespace}`); });
     } else if (userId) {
-      navigate(`/user/${userId}/treasury`);
+      startTransition(() => { navigate(`/user/${userId}/treasury`); });
     }
   };
 
@@ -733,7 +733,7 @@ export const SpaceContentSection = (): JSX.Element => {
   // Handle author click - navigate to treasury page
   const handleAuthorClick = () => {
     if (spaceInfo?.authorNamespace) {
-      navigate(`/user/${spaceInfo.authorNamespace}/treasury`);
+      startTransition(() => { navigate(`/user/${spaceInfo.authorNamespace}/treasury`); });
     }
   };
 
@@ -809,7 +809,7 @@ export const SpaceContentSection = (): JSX.Element => {
       await AuthService.deleteSpace(spaceId);
       showToast('Treasury deleted', 'success');
       setShowEditModal(false);
-      navigate('/my-treasury');
+      startTransition(() => { navigate('/my-treasury'); });
     } catch (err) {
       console.error('Failed to delete space:', err);
       showToast('Failed to delete treasury', 'error');
@@ -829,7 +829,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
   // Handle edit article
   const handleEditArticle = (articleId: string) => {
-    navigate(`/curate?edit=${articleId}`);
+    startTransition(() => { navigate(`/curate?edit=${articleId}`); });
   };
 
   // Handle delete article - shows confirmation modal
@@ -919,7 +919,7 @@ export const SpaceContentSection = (): JSX.Element => {
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
           <div className="text-red-500">{error}</div>
           <Button
-            onClick={() => navigate('/my-treasury')}
+            onClick={() => startTransition(() => { navigate('/my-treasury'); })}
             className="bg-red hover:bg-red/90 text-white px-6 py-2 rounded-lg"
           >
             Back to Treasury
@@ -955,7 +955,7 @@ export const SpaceContentSection = (): JSX.Element => {
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
             <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">This space is empty</h3>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => startTransition(() => { navigate('/'); })}
               className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors [font-family:'Lato',Helvetica] font-bold text-lg leading-5"
             >
               Discover
