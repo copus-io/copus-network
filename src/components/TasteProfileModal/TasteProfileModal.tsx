@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useToast } from '../ui/toast';
-import tasteProfileIcon from '../../assets/images/taste-profile-icon.png';
 
 interface TasteProfileModalProps {
   isOpen: boolean;
@@ -298,15 +297,9 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          {/* Taste Profile Icon */}
-          <div className="w-16 h-16 bg-red/10 rounded-full flex items-center justify-center">
-            <img src={tasteProfileIcon} alt="Taste Profile" className="h-11 w-auto" />
-          </div>
-          <div>
-            <h2 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px]">Your Taste Profile</h2>
-            <p className="text-sm text-gray-500">Your taste, made queryable.</p>
-          </div>
+        <div className="mb-6">
+          <h2 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px]">Your Taste Profile</h2>
+          <p className="text-sm text-gray-500">Your taste, made queryable.</p>
         </div>
 
         {/* Content */}

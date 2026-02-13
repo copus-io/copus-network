@@ -218,7 +218,7 @@ const TreasuryHeaderSection = ({
             {onCreate && isOwnProfile && (
               <button
                 onClick={onCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-red hover:bg-red/90 text-white rounded-[50px] shadow-lg transition-colors [font-family:'Lato',Helvetica] font-normal text-sm"
+                className="flex items-center gap-2 px-4 h-8 bg-red hover:bg-red/90 text-white rounded-[50px] shadow-lg transition-colors [font-family:'Lato',Helvetica] font-normal text-sm leading-none"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M6 0V12M0 6H12" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
@@ -227,12 +227,25 @@ const TreasuryHeaderSection = ({
               </button>
             )}
 
+            {/* Taste Profile button - only visible to profile owner */}
+            {onTasteProfile && isOwnProfile && (
+              <button
+                type="button"
+                aria-label="Taste Profile"
+                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center hover:opacity-80 transition-opacity duration-200"
+                onClick={onTasteProfile}
+                title="Your Taste Profile"
+              >
+                <img src={tasteProfileIcon} alt="Taste Profile" className="w-full h-full object-cover" />
+              </button>
+            )}
+
             {/* Edit button */}
             {onEdit && (
               <button
                 type="button"
                 aria-label="Edit profile"
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+                className="w-8 h-8 rounded-full border-[0.5px] border-[#686868] flex items-center justify-center hover:opacity-70 transition-opacity"
                 onClick={onEdit}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -248,7 +261,7 @@ const TreasuryHeaderSection = ({
                 <button
                   type="button"
                   aria-label="Share profile"
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+                  className="w-8 h-8 rounded-full border-[0.5px] border-[#2191fb] flex items-center justify-center hover:opacity-70 transition-opacity"
                   onClick={() => setShowShareDropdown(!showShareDropdown)}
                 >
                   <img
@@ -285,19 +298,6 @@ const TreasuryHeaderSection = ({
                 )}
               </div>
             )}
-
-            {/* Taste Profile button - only visible to profile owner */}
-            {onTasteProfile && isOwnProfile && (
-              <button
-                type="button"
-                aria-label="Taste Profile"
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[rgba(242,58,0,0.08)] transition-colors duration-200"
-                onClick={onTasteProfile}
-                title="Your Taste Profile"
-              >
-                <img src={tasteProfileIcon} alt="Taste Profile" className="h-5 w-auto" />
-              </button>
-            )}
           </div>
       </div>
     </header>
@@ -308,7 +308,7 @@ const TreasuryHeaderSection = ({
 export const MainContentSection = (): JSX.Element => {
   const navigate = useNavigate();
   const { namespace } = useParams<{ namespace?: string }>();
-  const { user, socialLinks: socialLinksData, fetchSocialLinks, updateUser } = useUser();
+  const { user, socialLinks: socialLinksData, fetchSocialLinks, updateUser, loading: userLoading } = useUser();
   const { showToast } = useToast();
   const { categories } = useCategory();
 
@@ -364,6 +364,13 @@ export const MainContentSection = (): JSX.Element => {
   // Fetch user info and spaces using pageMySpaces API
   useEffect(() => {
     const fetchData = async () => {
+      // Wait for user context to finish loading before fetching
+      // This prevents race condition where we fetch as "not logged in" before user loads
+      if (userLoading) {
+        console.log('User context still loading, waiting...');
+        return;
+      }
+
       // For logged-in user viewing their own treasury, we can use user.id directly
       // For viewing other users, we need to fetch their info by namespace
       if (!user?.id && !namespace) {
@@ -570,13 +577,12 @@ export const MainContentSection = (): JSX.Element => {
 
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.namespace, namespace]);
+  }, [user?.id, user?.namespace, namespace, userLoading]);
 
   // Navigate to a specific space/treasury
   const handleSpaceClick = (space: any) => {
     if (space.namespace) {
-      const targetPath = `/treasury/${space.namespace}`;
-      navigate(targetPath);
+      navigate(`/treasury/${space.namespace}`);
     }
   };
 
