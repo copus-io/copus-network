@@ -28,8 +28,8 @@ export const PerformanceMonitor: React.FC = () => {
   const [cacheStats, setCacheStats] = useState<CacheStats>({ articles: 0, images: 0, users: 0 });
   const [apiRequests, setApiRequests] = useState<number>(0);
 
-  // Only show in development mode
-  if (process.env.NODE_ENV !== 'development') {
+  // Show in development and test environments
+  if (process.env.NODE_ENV === 'production') {
     return null;
   }
 

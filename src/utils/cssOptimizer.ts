@@ -165,8 +165,8 @@ class CSSOptimizer {
       // Add selectors that are definitely not used on current page
     ];
 
-    // Find and disable unused style rules (development only)
-    if (process.env.NODE_ENV === 'development') {
+    // Find and disable unused style rules (development and test only)
+    if (process.env.NODE_ENV !== 'production') {
       unusedSelectors.forEach(selector => {
         const rules = document.styleSheets;
         for (let i = 0; i < rules.length; i++) {
@@ -221,7 +221,7 @@ class CSSOptimizer {
           return total + (entry.responseEnd - entry.startTime);
         }, 0);
 
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV !== 'production') {
           console.log(`📊 CSS Performance: ${cssEntries.length} stylesheets loaded in ${totalCSSTime.toFixed(2)}ms`);
         }
       }, 2000);
