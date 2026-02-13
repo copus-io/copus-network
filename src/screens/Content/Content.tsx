@@ -19,6 +19,7 @@ import { CommentButton } from "../../components/ui/CommentButton";
 import { CollectTreasureModal } from "../../components/CollectTreasureModal";
 import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
+import { getNetworkConfig } from "../../config/contracts";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import commentIcon from "../../assets/images/comment.svg";
 
