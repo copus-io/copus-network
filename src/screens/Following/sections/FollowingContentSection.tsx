@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
@@ -221,7 +221,7 @@ export const FollowingContentSection = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => navigate('/login')
+          onClick: () => startTransition(() => navigate('/login'))
         }
       });
       return;
@@ -255,9 +255,9 @@ export const FollowingContentSection = (): JSX.Element => {
   // Handle user click
   const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
     if (userNamespace) {
-      navigate(`/u/${userNamespace}`);
+      startTransition(() => navigate(`/u/${userNamespace}`));
     } else if (userId) {
-      navigate(`/user/${userId}/treasury`);
+      startTransition(() => navigate(`/user/${userId}/treasury`));
     }
   };
 
@@ -273,7 +273,7 @@ export const FollowingContentSection = (): JSX.Element => {
             Log in to follow your favorite spaces and creators. Their latest content will appear here.
           </p>
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => startTransition(() => navigate('/login'))}
             className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
           >
             Log In
@@ -351,7 +351,7 @@ export const FollowingContentSection = (): JSX.Element => {
             <p className="text-gray-500 mb-4">{selectedTab === "all" ? "Follow spaces to see their articles here" : "No articles from this space yet"}</p>
             {selectedTab === "all" && (
               <button
-                onClick={() => navigate('/')}
+                onClick={() => startTransition(() => navigate('/'))
                 className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
               >
                 Discover Spaces

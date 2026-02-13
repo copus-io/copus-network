@@ -810,7 +810,7 @@ export const Content = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => navigate('/login')
+          onClick: () => startTransition(() => navigate('/login'))
         }
       });
       return;
@@ -828,10 +828,10 @@ export const Content = (): JSX.Element => {
 
     // If logged in and it's the current user's own article, navigate to my treasury page
     if (user && user.id === content.userId) {
-      navigate('/my-treasury');
+      startTransition(() => navigate('/my-treasury'));
     } else {
       // Navigate to the user's profile page using short link format
-      navigate(`/u/${content.userNamespace}`);
+      startTransition(() => navigate(`/u/${content.userNamespace}`));
     }
   };
 
@@ -1988,7 +1988,7 @@ export const Content = (): JSX.Element => {
                       return isAuthor;
                     })() && (
                       <button
-                        onClick={() => navigate(`/curate?edit=${article.uuid}`)}
+                        onClick={() => startTransition(() => navigate(`/curate?edit=${article.uuid}`))}
                         className="w-[32px] h-[32px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0 border border-solid border-[#686868] hover:bg-gray-100 self-start"
                         aria-label="Edit"
                         title="Edit"
@@ -2127,7 +2127,7 @@ export const Content = (): JSX.Element => {
                     <TreasuryCard
                       key={space.namespace || space.id?.toString()}
                       space={space}
-                      onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
+                      onClick={() => startTransition(() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/'))}
                     />
                   ))}
                 </div>

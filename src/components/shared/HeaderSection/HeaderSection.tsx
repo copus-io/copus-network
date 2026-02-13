@@ -980,7 +980,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   window.location.reload();
                 } else {
                   // 在其他页面时，正常跳转到通知页面
-                  navigate('/notification');
+                  navigateWithTransition('/notification');
                 }
               }}
               className="flex items-center cursor-pointer relative focus:outline-none"

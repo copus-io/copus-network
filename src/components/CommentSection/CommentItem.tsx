@@ -1,6 +1,6 @@
 // Individual comment item component
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Comment } from '../../types/comment';
 import { useToggleCommentLike, useDeleteComment, useUpdateComment, useLoadCommentReplies } from '../../hooks/queries/useComments';
@@ -262,9 +262,9 @@ const ReplyItemComponent: React.FC<{
   // Handle user click to navigate to profile page
   const handleUserClick = (comment: Comment) => {
     if (comment.authorNamespace) {
-      navigate(`/u/${comment.authorNamespace}`);
+      startTransition(() => navigate(`/u/${comment.authorNamespace}`));
     } else if (comment.authorId) {
-      navigate(`/user/${comment.authorId}/treasury`);
+      startTransition(() => navigate(`/user/${comment.authorId}/treasury`));
     }
   };
 
@@ -869,9 +869,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   // Handle user click to navigate to profile page
   const handleUserClick = (comment: Comment) => {
     if (comment.authorNamespace) {
-      navigate(`/u/${comment.authorNamespace}`);
+      startTransition(() => navigate(`/u/${comment.authorNamespace}`));
     } else if (comment.authorId) {
-      navigate(`/user/${comment.authorId}/treasury`);
+      startTransition(() => navigate(`/user/${comment.authorId}/treasury`));
     }
   };
 

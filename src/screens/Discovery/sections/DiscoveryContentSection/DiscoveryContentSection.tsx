@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, startTransition } from "react";
 import { useNavigate } from "react-router-dom";
 import { useArticles } from "../../../../hooks/useArticles";
 import { Article } from "../../../../types/article";
@@ -166,7 +166,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
             <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
               <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={() => startTransition(() => navigate('/login'))}
                   className="text-[#2191FB] hover:underline cursor-pointer font-normal"
                 >
                   Join us
@@ -229,7 +229,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => navigate('/login')
+          onClick: () => startTransition(() => navigate('/login'))
         }
       });
       return;
@@ -268,19 +268,19 @@ export const DiscoveryContentSection = (): JSX.Element => {
     const article = localArticles.find(a => a.userId === userId);
 
     if (user && user.id === userId) {
-      navigate('/my-treasury');
+      startTransition(() => navigate('/my-treasury'));
     } else if (article?.namespace) {
       // Prioritize using namespace to navigate to user profile page
-      navigate(`/u/${article.namespace}`);
+      startTransition(() => navigate(`/u/${article.namespace}`));
     } else {
       // Fallback to using userId
-      navigate(`/user/${userId}/treasury`);
+      startTransition(() => navigate(`/user/${userId}/treasury`));
     }
   };
 
   // Handle comment navigation
   const handleComment = (articleId: string, articleUuid?: string) => {
-    navigate(`/work/${articleUuid || articleId}?comments=open`);
+    startTransition(() => navigate(`/work/${articleUuid || articleId}?comments=open`));
   };
 
   const renderPostCard = (post: Article, index: number) => {

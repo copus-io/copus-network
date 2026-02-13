@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense, lazy } from "react";
+import React, { useEffect, Suspense, lazy, startTransition } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { PageWrapper } from "../../components/layout/PageWrapper";
@@ -25,7 +25,7 @@ export const UserProfile = (): JSX.Element => {
   useEffect(() => {
     // If viewing own namespace, redirect to /my-treasury
     if (user && namespace === user.namespace) {
-      navigate('/my-treasury', { replace: true });
+      startTransition(() => navigate('/my-treasury', { replace: true }));
     }
   }, [user, namespace, navigate]);
 

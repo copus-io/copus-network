@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, startTransition } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -646,10 +646,10 @@ export const NotificationListSection = (): JSX.Element => {
     // Prefer namespace, fallback to userId
     if (notification.namespace) {
       // Use short link format to navigate to user profile page
-      navigate(`/u/${notification.namespace}`);
+      startTransition(() => navigate(`/u/${notification.namespace}`));
     } else if (notification.userId) {
       // Fallback: use userId
-      navigate(`/user/${notification.userId}/treasury`);
+      startTransition(() => navigate(`/user/${notification.userId}/treasury`));
     }
   };
 
@@ -665,10 +665,10 @@ export const NotificationListSection = (): JSX.Element => {
     console.log('[Follow Treasury Avatar Click]', { spaceNamespace, spaceId, articleUuid, articleId });
 
     if (spaceNamespace) {
-      navigate(`/treasury/${spaceNamespace}`);
+      startTransition(() => navigate(`/treasury/${spaceNamespace}`));
     } else if (articleUuid || articleId) {
       // Fallback to article page
-      navigate(`/work/${articleUuid || articleId}`);
+      startTransition(() => navigate(`/work/${articleUuid || articleId}`));
     }
   };
 
@@ -725,7 +725,7 @@ export const NotificationListSection = (): JSX.Element => {
                                   notification.articleId;
                   console.log('[Follow Treasury Click] Navigating to article:', articleId);
                   if (articleId) {
-                    navigate(`/work/${articleId}`);
+                    startTransition(() => navigate(`/work/${articleId}`));
                   }
                 } else {
                   // First bracket is space name - navigate to the space
@@ -737,11 +737,11 @@ export const NotificationListSection = (): JSX.Element => {
                   console.log('[Follow Treasury Click] Space info:', { spaceNamespace, spaceId, articleUuid, articleId });
 
                   if (spaceNamespace) {
-                    navigate(`/treasury/${spaceNamespace}`);
+                    startTransition(() => navigate(`/treasury/${spaceNamespace}`));
                   } else if (articleUuid || articleId) {
                     // Fallback: if no space namespace, navigate to the article which shows the space
                     console.log('[Follow Treasury Click] No namespace, navigating to article instead');
-                    navigate(`/work/${articleUuid || articleId}`);
+                    startTransition(() => navigate(`/work/${articleUuid || articleId}`));
                   } else {
                     console.warn('[Follow Treasury Click] No space namespace or article found! Extra:', notification.metadata?.extra);
                   }
@@ -773,14 +773,14 @@ export const NotificationListSection = (): JSX.Element => {
                                   notification.metadata?.extra?.articleId ||
                                   notification.articleId;
                   if (articleId) {
-                    navigate(`/work/${articleId}`);
+                    startTransition(() => navigate(`/work/${articleId}`));
                   }
                 } else if (isFirstBracket) {
                   // Click on username - navigate to user profile
                   const senderNamespace = notification.metadata?.senderNamespace ||
                                          notification.namespace;
                   if (senderNamespace) {
-                    navigate(`/u/${senderNamespace}`);
+                    startTransition(() => navigate(`/u/${senderNamespace}`));
                   }
                 } else if (isSpaceName) {
                   // Click on space name - find the corresponding space and navigate
@@ -788,7 +788,7 @@ export const NotificationListSection = (): JSX.Element => {
                   const clickedSpace = spaces.find((space: any) => space.name === linkText);
 
                   if (clickedSpace && clickedSpace.namespace) {
-                    navigate(`/treasury/${clickedSpace.namespace}`);
+                    startTransition(() => navigate(`/treasury/${clickedSpace.namespace}`));
                   } else {
                     console.warn('Could not find space namespace for:', linkText, spaces);
                     // Fallback to article
@@ -796,7 +796,7 @@ export const NotificationListSection = (): JSX.Element => {
                                     notification.metadata?.extra?.articleId ||
                                     notification.articleId;
                     if (articleId) {
-                      navigate(`/work/${articleId}`);
+                      startTransition(() => navigate(`/work/${articleId}`));
                     }
                   }
                 }
@@ -843,7 +843,7 @@ export const NotificationListSection = (): JSX.Element => {
                                         notification.metadata?.extra?.namespace;
                   console.log('[Follow Click] Using space namespace:', spaceNamespace);
                   if (spaceNamespace) {
-                    navigate(`/treasury/${spaceNamespace}`);
+                    startTransition(() => navigate(`/treasury/${spaceNamespace}`));
                   } else {
                     console.warn('[Follow Click] No space namespace found in metadata. Checking alternative locations...');
                     console.log('[Follow Click] Full extra object:', JSON.stringify(notification.metadata?.extra, null, 2));
@@ -852,7 +852,7 @@ export const NotificationListSection = (): JSX.Element => {
                   const senderNamespace = notification.metadata?.senderNamespace ||
                                          notification.namespace;
                   if (senderNamespace) {
-                    navigate(`/u/${senderNamespace}`);
+                    startTransition(() => navigate(`/u/${senderNamespace}`));
                   }
                 }
               }}
@@ -885,7 +885,7 @@ export const NotificationListSection = (): JSX.Element => {
                   e.stopPropagation();
                   const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
                   if (articleId) {
-                    navigate(`/work/${articleId}`);
+                    startTransition(() => navigate(`/work/${articleId}`));
                   }
                 }}
                 title="Click to view content"
@@ -903,7 +903,7 @@ export const NotificationListSection = (): JSX.Element => {
                   e.stopPropagation();
                   const namespace = notification.namespace || notification.metadata?.senderNamespace;
                   if (namespace) {
-                    navigate(`/u/${namespace}`);
+                    startTransition(() => navigate(`/u/${namespace}`));
                   }
                 }}
                 title="Click to view user profile"
@@ -926,7 +926,7 @@ export const NotificationListSection = (): JSX.Element => {
 
                   if (articleId) {
                     // 使用新的评论参数格式打开评论区
-                    navigate(`/work/${articleId}?comments=open`);
+                    startTransition(() => navigate(`/work/${articleId}?comments=open`));
                   }
                 }}
                 title="Click to view comment"
@@ -944,7 +944,7 @@ export const NotificationListSection = (): JSX.Element => {
                   e.stopPropagation();
                   const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
                   if (articleId) {
-                    navigate(`/work/${articleId}`);
+                    startTransition(() => navigate(`/work/${articleId}`));
                   }
                 }}
                 title="Click to view content"
@@ -962,7 +962,7 @@ export const NotificationListSection = (): JSX.Element => {
                   e.stopPropagation();
                   const senderNamespace = notification.metadata?.senderNamespace;
                   if (senderNamespace) {
-                    navigate(`/u/${senderNamespace}`);
+                    startTransition(() => navigate(`/u/${senderNamespace}`));
                   }
                 }}
                 title="Click to view user profile"
@@ -981,7 +981,7 @@ export const NotificationListSection = (): JSX.Element => {
                 e.stopPropagation();
                 const articleId = notification.articleId || notification.metadata?.targetUuid || notification.metadata?.targetId;
                 if (articleId) {
-                  navigate(`/work/${articleId}`);
+                  startTransition(() => navigate(`/work/${articleId}`));
                 }
               }}
               title="Click to view content"
