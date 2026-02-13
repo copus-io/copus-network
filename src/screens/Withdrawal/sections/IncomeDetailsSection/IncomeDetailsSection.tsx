@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
 import { useToast } from "../../../../components/ui/toast";
+import { trackPublishClick } from "../../../../services/analyticsService";
 import { WithdrawalModal } from "../../../../components/WithdrawalModal";
 import { EmailVerificationModal } from "../../../../components/EmailVerificationModal";
 import { WalletBindEmailModal } from "../../../../components/WalletBindEmailModal";
@@ -487,7 +488,12 @@ export const IncomeDetailsSection = ({
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
-                onClick={() => navigate('/curate')}
+                onClick={() => {
+                  trackPublishClick('withdrawal_page', true); // Users on withdrawal page are likely logged in
+                  startTransition(() => {
+                    navigate('/curate');
+                  });
+                }}
                 className="px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base"
               >
                 Start Curating
