@@ -25,8 +25,9 @@ import { Content } from "./screens/Content/Content";
 // Test components for development
 import { TestNoAccess } from "./screens/Test/TestNoAccess";
 
-// Analytics page
-import { Analytics } from "./screens/Analytics/Analytics";
+
+// Taste test component
+import { TasteTest } from "./components/TasteTest/TasteTest";
 
 
 // ShortLinkHandler - eagerly loaded to prevent dynamic import errors
@@ -204,8 +205,8 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/fx",
-    element: <Analytics />,
+    path: "/taste-test",
+    element: <TasteTest />,
   },
   // 404 catch-all route - must be last
   {
