@@ -2065,10 +2065,16 @@ export const Content = (): JSX.Element => {
   // ========================================
   return (
     <>
-      {/* Full SEO meta tags are handled by Cloudflare Worker at the edge.
-          We only set document.title here for client-side SPA navigation. */}
+      {/* SEO meta tags for work pages */}
       {!content && <SEO />}
-      {content && <SEO title={content.title} />}
+      {content && (
+        <SEO
+          title={content.title}
+          description={content.description || undefined}
+          image={content.coverImage || undefined}
+          type="article"
+        />
+      )}
 
 
       <div

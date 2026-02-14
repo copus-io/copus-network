@@ -232,11 +232,11 @@ const TreasuryHeaderSection = ({
               <button
                 type="button"
                 aria-label="Taste Profile"
-                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center hover:opacity-80 transition-opacity duration-200"
+                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border-[0.5px] border-[#F23A00] hover:opacity-80 transition-opacity duration-200"
                 onClick={onTasteProfile}
                 title="Your Taste Profile"
               >
-                <img src={tasteProfileIcon} alt="Taste Profile" className="w-full h-full object-cover" />
+                <img src={tasteProfileIcon} alt="Taste Profile" className="w-5 h-5 object-cover mt-1" />
               </button>
             )}
 
