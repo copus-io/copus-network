@@ -2,7 +2,6 @@ import React, { useState, useEffect, startTransition } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
 import { useToast } from "../../../../components/ui/toast";
-import { trackPublishClick } from "../../../../services/analyticsService";
 import { WithdrawalModal } from "../../../../components/WithdrawalModal";
 import { EmailVerificationModal } from "../../../../components/EmailVerificationModal";
 import { WalletBindEmailModal } from "../../../../components/WalletBindEmailModal";
@@ -489,7 +488,7 @@ export const IncomeDetailsSection = ({
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={() => {
-                  trackPublishClick('withdrawal_page', true); // Users on withdrawal page are likely logged in
+                  // Analytics tracking removed
                   startTransition(() => {
                     navigate('/curate');
                   });

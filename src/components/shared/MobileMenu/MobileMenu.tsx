@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useToast } from '../../ui/toast';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { trackPublishClick } from '../../../services/analyticsService';
+// Analytics service removed
 import profileDefaultAvatar from '../../../assets/images/profile-default.svg';
 import searchIcon from '../../../assets/images/icon-search.svg';
 
@@ -127,7 +127,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
   const handleMenuItemClick = (item: MenuItem) => {
     // Track publish button clicks
     if (item.path === '/curate') {
-      trackPublishClick('mobile_menu', isLoggedIn);
+      // Analytics tracking removed
     }
 
     startTransition(() => {
