@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { TreasureButton } from "../ui/TreasureButton";
 import { ImagePreviewModal } from "../ui/image-preview-modal";
-import { LazyImage } from "../ui/lazy-image";
+import { OptimizedImage } from "../ui/OptimizedImage";
 import { getCategoryStyle, getCategoryInlineStyle, formatCount, formatDate } from "../../utils/categoryStyles";
 import { getIconUrl, getIconStyle } from "../../config/icons";
 import commentIcon from "../../assets/images/comment.svg";
@@ -194,14 +194,24 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
         return (
           <CardContent className="flex flex-col items-start gap-4 py-4 px-5 w-full">
             <div className="flex flex-col items-start justify-center gap-3 w-full min-w-0 max-w-full">
-              <div
-                className="flex flex-col items-center justify-center p-2 w-full bg-cover bg-[50%_50%] rounded-lg relative"
-                style={{
-                  backgroundImage: article.coverImage ? `url(${article.coverImage})` : 'none',
-                  backgroundColor: article.coverImage ? 'transparent' : '#f5f5f5',
-                  aspectRatio: '16 / 9'
-                }}
-              >
+              <div className="w-full rounded-lg relative cursor-pointer transition-transform hover:scale-[1.02]" title="Click to view content details">
+                <OptimizedImage
+                  src={article.coverImage || ''}
+                  alt={`${article.title} cover`}
+                  className="w-full"
+                  aspectRatio="16 / 9"
+                  priority={false}
+                />
+                {/* Website link - hide for paid content */}
+                <div className="absolute bottom-[15px] right-[15px]">
+                  {actions.showWebsite && article.website && !article.isPaymentRequired && (
+                    <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
+                      <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
+                        {article.website}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 {/* Loading indicator when fetching cover from URL */}
                 {isFetchingCover && !article.coverImage && (
                   <div className="flex flex-col items-center justify-center gap-2">
@@ -345,16 +355,16 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
         return (
           <CardContent className="flex flex-col gap-[20px] py-5 px-[30px] flex-1">
             <div className="flex flex-col gap-5 flex-1">
-              <div
-                className="flex flex-col w-full justify-end p-[15px] rounded-lg bg-cover bg-center bg-no-repeat cursor-pointer transition-transform hover:scale-[1.02]"
-                style={{
-                  backgroundImage: `url(${article.coverImage})`,
-                  aspectRatio: '16 / 9'
-                }}
-                title="Click to view content details"
-              >
-                {/* Website link - hide for paid content */}
-                <div className="flex justify-end">
+              <div className="w-full relative cursor-pointer transition-transform hover:scale-[1.02]" title="Click to view content details">
+                <OptimizedImage
+                  src={article.coverImage}
+                  alt={`${article.title} cover`}
+                  className="w-full rounded-lg"
+                  aspectRatio="16 / 9"
+                  priority={false}
+                />
+                {/* Website link overlay */}
+                <div className="absolute bottom-[15px] right-[15px]">
                   {actions.showWebsite && article.website && !article.isPaymentRequired && (
                     <div className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-sm text-right tracking-[0] leading-[18.2px]">
@@ -550,16 +560,16 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
         return (
           <CardContent className="flex flex-col gap-[10px] py-3 px-4 flex-1 h-full">
             <div className="flex flex-col gap-2.5 flex-1 h-full">
-              <div
-                className="flex flex-col w-full justify-end p-2 rounded-lg bg-cover bg-center bg-no-repeat"
-                style={{
-                  backgroundImage: article.coverImage ? `url(${article.coverImage})` : 'none',
-                  backgroundColor: article.coverImage ? 'transparent' : '#f5f5f5',
-                  aspectRatio: '16 / 9'
-                }}
-              >
-                {/* Website link - hide for paid content */}
-                <div className="flex justify-end">
+              <div className="w-full relative">
+                <OptimizedImage
+                  src={article.coverImage || ''}
+                  alt={`${article.title} cover`}
+                  className="w-full rounded-lg"
+                  aspectRatio="16 / 9"
+                  priority={false}
+                />
+                {/* Website link overlay */}
+                <div className="absolute bottom-2 right-2">
                   {article.website && !article.isPaymentRequired && (
                     <div className="inline-flex items-start gap-[3px] px-2 py-1 bg-[#ffffffcc] rounded-[10px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-[10px] text-right tracking-[0] leading-[13px]">
@@ -650,16 +660,16 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
         return (
           <CardContent className="flex flex-col gap-[15px] 3xl:gap-[18px] 4xl:gap-[20px] py-4 px-[20px] 3xl:px-[24px] 4xl:px-[28px] flex-1">
             <div className="flex flex-col gap-3 3xl:gap-3.5 4xl:gap-4 flex-1">
-              <div
-                className="flex flex-col w-full justify-end p-2.5 3xl:p-3 4xl:p-4 rounded-lg bg-cover bg-center bg-no-repeat"
-                style={{
-                  backgroundImage: article.coverImage ? `url(${article.coverImage})` : 'none',
-                  backgroundColor: article.coverImage ? 'transparent' : '#f5f5f5',
-                  aspectRatio: '16 / 9'
-                }}
-              >
-                {/* Website link - hide for paid content */}
-                <div className="flex justify-end">
+              <div className="w-full relative">
+                <OptimizedImage
+                  src={article.coverImage || ''}
+                  alt={`${article.title} cover`}
+                  className="w-full rounded-lg"
+                  aspectRatio="16 / 9"
+                  priority={false}
+                />
+                {/* Website link overlay */}
+                <div className="absolute bottom-2.5 right-2.5 3xl:bottom-3 3xl:right-3 4xl:bottom-4 4xl:right-4">
                   {article.website && !article.isPaymentRequired && (
                     <div className="inline-flex items-start gap-[5px] px-2 py-1 3xl:px-2.5 3xl:py-1.5 4xl:px-3 4xl:py-2 bg-[#ffffffcc] rounded-[12px] overflow-hidden">
                       <span className="[font-family:'Lato',Helvetica] font-medium text-blue text-xs 3xl:text-sm 4xl:text-base text-right tracking-[0] leading-[16px] 3xl:leading-[18px] 4xl:leading-[20px]">
