@@ -15,6 +15,7 @@ import { useToast } from "../../components/ui/toast";
 import { PaperPlane } from "../../components/ui/copus-loading";
 import { AuthService } from "../../services/authService";
 import { publishArticle, getArticleDetail } from "../../services/articleService";
+import { decodeHtmlEntities } from "../../utils/htmlUtils";
 import { useNavigate } from "react-router-dom";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../components/ArticleCard";
@@ -594,8 +595,9 @@ export const Create = (): JSX.Element => {
         }
         // Auto-fill title if empty and og:title is available
         if (metadata.title && !formData.title) {
-          console.log('📝 Auto-filled title:', metadata.title);
-          const truncatedTitle = metadata.title.substring(0, 75); // Limit to 75 chars
+          const decodedTitle = decodeHtmlEntities(metadata.title);
+          console.log('📝 Auto-filled title:', decodedTitle);
+          const truncatedTitle = decodedTitle.substring(0, 75); // Limit to 75 chars
           setFormData(prev => ({ ...prev, title: truncatedTitle }));
           setTitleCharacterCount(truncatedTitle.length);
         }

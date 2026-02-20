@@ -1,6 +1,7 @@
 import { apiRequest } from './api';
 import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest, BindArticlesRequest, BindArticlesApiResponse, RemoveArticleFromSpaceRequest, RemoveArticleFromSpaceResponse } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
+import { decodeHtmlEntities } from '../utils/htmlUtils';
 
 // Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
@@ -70,8 +71,8 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
   const transformedArticle = {
     id: backendArticle.uuid,
     numericId: backendArticle.id, // Numeric ID for bindArticles API
-    title: backendArticle.title,
-    description: backendArticle.content,
+    title: decodeHtmlEntities(backendArticle.title),
+    description: backendArticle.content ? decodeHtmlEntities(backendArticle.content) : '',
     category: backendArticle.categoryInfo?.name || '',
     categoryColor: backendArticle.categoryInfo?.color, // Save category color returned from backend
     coverImage: processImageUrl(backendArticle.coverUrl),

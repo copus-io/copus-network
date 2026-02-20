@@ -13,6 +13,7 @@ import { useArticleDetail, useArticleDetailActions } from "../../hooks/queries";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { devLog } from "../../utils/devLogger";
+import { decodeHtmlEntities } from "../../utils/htmlUtils";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { CommentButton } from "../../components/ui/CommentButton";
@@ -711,7 +712,7 @@ export const Content = (): JSX.Element => {
 
     return {
       id: article.uuid,
-      title: article.title,
+      title: decodeHtmlEntities(article.title || ''),
       description: article.content,
       coverImage: article.coverUrl,
       url: article.targetUrl,

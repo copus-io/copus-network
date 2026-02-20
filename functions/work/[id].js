@@ -149,9 +149,25 @@ function parseSeoData(seoDataString) {
   }
 }
 
-function escapeHtml(str) {
+function decodeHtmlEntities(str) {
   if (!str) return ''
   return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+}
+
+function escapeHtml(str) {
+  if (!str) return ''
+  // Decode first to prevent double-encoding (API may return pre-encoded entities)
+  const decoded = decodeHtmlEntities(str)
+  return decoded
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

@@ -12,7 +12,8 @@ import searchIcon from "../../../assets/images/icon-search.svg";
 import { ArticleCard, ArticleData } from "../../ArticleCard";
 import { TreasuryCard, SpaceData } from "../../ui/TreasuryCard";
 import { getIconUrl } from "../../../config/icons";
-// Analytics service removed
+import { decodeHtmlEntities } from "../../../utils/htmlUtils";
+import { formatDate } from "../../../utils/categoryStyles";
 import {
   searchAll,
   searchArticles,
@@ -489,8 +490,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                               <ArticleCard article={{
                                 id: article.uuid,
                                 uuid: article.uuid,
-                                title: article.title,
-                                description: article.content,
+                                title: decodeHtmlEntities(article.title),
+                                description: article.content ? decodeHtmlEntities(article.content) : undefined,
                                 coverImage: article.coverUrl,
                                 category: article.categoryInfo?.name || '',
                                 categoryColor: article.categoryInfo?.color,
@@ -498,7 +499,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                                 userAvatar: article.authorInfo?.faceUrl || '',
                                 userId: article.authorInfo?.id,
                                 userNamespace: article.authorInfo?.namespace,
-                                date: new Date(article.createAt).toLocaleDateString(),
+                                date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
                                 treasureCount: article.likeCount,
                                 visitCount: article.viewCount?.toString() || '0',
                                 isLiked: article.isLiked,
@@ -591,8 +592,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         <ArticleCard article={{
                           id: article.uuid,
                           uuid: article.uuid,
-                          title: article.title,
-                          description: article.content,
+                          title: decodeHtmlEntities(article.title),
+                          description: article.content ? decodeHtmlEntities(article.content) : undefined,
                           coverImage: article.coverUrl,
                           category: article.categoryInfo?.name || '',
                           categoryColor: article.categoryInfo?.color,
@@ -600,7 +601,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           userAvatar: article.authorInfo?.faceUrl || '',
                           userId: article.authorInfo?.id,
                           userNamespace: article.authorInfo?.namespace,
-                          date: new Date(article.createAt).toLocaleDateString(),
+                          date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
                           treasureCount: article.likeCount,
                           visitCount: article.viewCount?.toString() || '0',
                           isLiked: article.isLiked,
@@ -739,8 +740,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                             <ArticleCard article={{
                               id: article.uuid,
                               uuid: article.uuid,
-                              title: article.title,
-                              description: article.content,
+                              title: decodeHtmlEntities(article.title),
+                              description: article.content ? decodeHtmlEntities(article.content) : undefined,
                               coverImage: article.coverUrl,
                               category: article.categoryInfo?.name || '',
                               categoryColor: article.categoryInfo?.color,
@@ -748,7 +749,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                               userAvatar: article.authorInfo?.faceUrl || '',
                               userId: article.authorInfo?.id,
                               userNamespace: article.authorInfo?.namespace,
-                              date: new Date(article.createAt).toLocaleDateString(),
+                              date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
                               treasureCount: article.likeCount,
                               visitCount: article.viewCount?.toString() || '0',
                               isLiked: article.isLiked,
@@ -847,8 +848,8 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         <ArticleCard article={{
                           id: article.uuid,
                           uuid: article.uuid,
-                          title: article.title,
-                          description: article.content,
+                          title: decodeHtmlEntities(article.title),
+                          description: article.content ? decodeHtmlEntities(article.content) : undefined,
                           coverImage: article.coverUrl,
                           category: article.categoryInfo?.name || '',
                           categoryColor: article.categoryInfo?.color,
@@ -856,7 +857,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           userAvatar: article.authorInfo?.faceUrl || '',
                           userId: article.authorInfo?.id,
                           userNamespace: article.authorInfo?.namespace,
-                          date: new Date(article.createAt).toLocaleDateString(),
+                          date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
                           treasureCount: article.likeCount,
                           visitCount: article.viewCount?.toString() || '0',
                           isLiked: article.isLiked,
