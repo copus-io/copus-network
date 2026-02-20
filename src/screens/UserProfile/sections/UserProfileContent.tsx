@@ -94,10 +94,11 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         console.log('[UserProfile] isEnabled value:', userData.isEnabled);
         console.log('[UserProfile] isEnabled type:', typeof userData.isEnabled);
 
-        // Check if the returned user actually matches the requested namespace
-        // The API may return a default/anonymous user for non-existent namespaces
-        if (userData.namespace && userData.namespace !== namespace) {
-          console.log('[UserProfile] Namespace mismatch - user not found. Requested:', namespace, 'Got:', userData.namespace);
+        // Check if the API returned valid user data
+        // API returns empty string "" when namespace doesn't exist (status 1102)
+        // Also check for namespace mismatch (API returning default/anonymous user)
+        if (!userData || typeof userData !== 'object' || !userData.namespace || userData.namespace !== namespace) {
+          console.log('[UserProfile] User not found. Requested:', namespace, 'Got:', userData?.namespace || 'empty response');
           setAccountExists(false);
           setUserInfo({
             id: 0,
