@@ -15,7 +15,7 @@ const PERSONALITY_COVER_CONFIGS = {
       "Ancient library with floating books and glowing wisdom scrolls, deep thinking atmosphere, warm golden lights",
       "Cosmic observatory with telescopes and star maps, person silhouette contemplating universe, dark purple and blue gradient"
     ],
-    styles: ["深度探索", "知识海洋", "宇宙思考"]
+    styles: ["Deep Exploration", "Ocean of Knowledge", "Cosmic Thinking"]
   },
   quickExecutor: {
     prompts: [
@@ -23,7 +23,7 @@ const PERSONALITY_COVER_CONFIGS = {
       "Rocket launching with dynamic speed lines, explosive orange and red colors, action-packed composition",
       "Running figure with motion trails, urban background, energetic yellow and red color scheme"
     ],
-    styles: ["闪电速度", "火箭推进", "极速行动"]
+    styles: ["Lightning Speed", "Rocket Power", "Swift Action"]
   },
   creativeCatalyst: {
     prompts: [
@@ -31,7 +31,7 @@ const PERSONALITY_COVER_CONFIGS = {
       "Artist's studio with floating art supplies and magical creative energy, vibrant multicolored atmosphere",
       "Abstract geometric shapes morphing into creative ideas, neon colors and dynamic composition"
     ],
-    styles: ["艺术爆发", "创意工坊", "想象力"]
+    styles: ["Artistic Burst", "Creative Workshop", "Imagination"]
   },
   logicArchitect: {
     prompts: [
@@ -39,7 +39,7 @@ const PERSONALITY_COVER_CONFIGS = {
       "3D wireframe city construction, logical grid systems, minimalist blue and gray color palette",
       "Circuit board patterns forming architectural structures, tech-inspired green and blue gradient"
     ],
-    styles: ["逻辑蓝图", "架构设计", "系统构建"]
+    styles: ["Logic Blueprint", "Architecture Design", "System Building"]
   },
   socialConnector: {
     prompts: [
@@ -47,7 +47,7 @@ const PERSONALITY_COVER_CONFIGS = {
       "Community gathering with hearts and communication bubbles, friendly pink and orange atmosphere",
       "Bridge connecting different islands with people, collaborative spirit, sunset warm colors"
     ],
-    styles: ["人脉网络", "社交桥梁", "温暖连接"]
+    styles: ["Social Network", "Connection Bridge", "Warm Link"]
   },
   experimentalPioneer: {
     prompts: [
@@ -55,7 +55,7 @@ const PERSONALITY_COVER_CONFIGS = {
       "Laboratory with futuristic experiments and glowing innovations, sci-fi green and blue lighting",
       "Explorer with cutting-edge gear in alien landscape, adventurous teal and orange sunset"
     ],
-    styles: ["太空探索", "实验室", "前沿冒险"]
+    styles: ["Space Exploration", "Laboratory", "Frontier Adventure"]
   },
   cautiousAnalyst: {
     prompts: [
@@ -63,7 +63,7 @@ const PERSONALITY_COVER_CONFIGS = {
       "Traditional desk with careful document analysis, warm brown and gold classical atmosphere",
       "Shield protecting valuable information, security-focused dark blue and silver design"
     ],
-    styles: ["细致分析", "专业审查", "安全防护"]
+    styles: ["Detailed Analysis", "Professional Review", "Security Shield"]
   },
   intuitiveArtist: {
     prompts: [
@@ -71,7 +71,7 @@ const PERSONALITY_COVER_CONFIGS = {
       "Artistic figure painting with flowing creative energy, romantic purple and gold atmosphere",
       "Musical notes transforming into visual art, synesthetic pink and blue magical composition"
     ],
-    styles: ["情感流淌", "艺术创作", "直觉魔法"]
+    styles: ["Emotional Flow", "Artistic Creation", "Intuitive Magic"]
   }
 };
 
@@ -149,7 +149,7 @@ const DEMO_COVER_IMAGES = {
   deepExplorer: [
     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=200&fit=crop",
     "https://images.unsplash.com/photo-1454391304352-2bf4678b1a7a?w=400&h=200&fit=crop",
-    "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&h=200&fit=crop"
+    "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=200&fit=crop"
   ],
   quickExecutor: [
     "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=200&fit=crop",
@@ -164,7 +164,7 @@ const DEMO_COVER_IMAGES = {
   logicArchitect: [
     "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=200&fit=crop",
     "https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400&h=200&fit=crop",
-    "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=200&fit=crop"
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=200&fit=crop"
   ],
   socialConnector: [
     "https://images.unsplash.com/photo-1529390079861-591de354faf5?w=400&h=200&fit=crop",
@@ -174,17 +174,17 @@ const DEMO_COVER_IMAGES = {
   experimentalPioneer: [
     "https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=400&h=200&fit=crop",
     "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=400&h=200&fit=crop",
-    "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=200&fit=crop"
+    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&h=200&fit=crop"
   ],
   cautiousAnalyst: [
     "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=200&fit=crop",
     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=200&fit=crop",
-    "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=200&fit=crop"
+    "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=200&fit=crop"
   ],
   intuitiveArtist: [
     "https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=200&fit=crop",
     "https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=400&h=200&fit=crop",
-    "https://images.unsplash.com/photo-1541980236426-b12e0940a20b?w=400&h=200&fit=crop"
+    "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=200&fit=crop"
   ]
 };
 
