@@ -10,6 +10,7 @@ import { CollectTreasureModal } from "../../../../components/CollectTreasureModa
 import { getCategoryStyle, getCategoryInlineStyle, formatDate, formatCount } from "../../../../utils/categoryStyles";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import { canUserViewArticle } from "../../../../types/article";
+import { decodeHtmlEntities } from "../../../../utils/htmlUtils";
 
 export const DiscoveryContentSection = (): JSX.Element => {
   const { showToast } = useToast();
@@ -179,7 +180,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
     return {
       id: article.id,
       uuid: article.id, // Use id as uuid
-      title: article.title,
+      title: decodeHtmlEntities(article.title),
       description: article.description,
       coverImage: article.coverImage,
       category: article.category,
@@ -222,7 +223,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       setSelectedArticle({
         uuid: articleId, // This is actually the UUID
         numericId: article.numericId, // Numeric ID for bindArticles API
-        title: article.title,
+        title: decodeHtmlEntities(article.title),
         isLiked: currentIsLiked,
         likeCount: currentLikeCount
       });

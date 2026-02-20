@@ -1,15 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-
-/**
- * Decode HTML entities (e.g. &amp; → &, &#235; → ë) so OG/Twitter meta tags
- * render correctly for social-media link previews.
- */
-function decodeHtmlEntities(text: string): string {
-  if (typeof document === 'undefined') return text;
-  const el = document.createElement('textarea');
-  el.innerHTML = text;
-  return el.value;
-}
+import { decodeHtmlEntities } from '../../utils/htmlUtils';
 
 interface SEOProps {
   title?: string;
