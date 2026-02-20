@@ -163,7 +163,8 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           description,
           coverUrl,
           faceUrl,
-          visibility
+          undefined,    // isPrivate (legacy, not used)
+          visibility    // visibility (correct position - 7th param)
         );
         console.log('Update space response:', response);
         resultSpace = response.data || response;

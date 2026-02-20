@@ -58,27 +58,27 @@ export const DiscoveryContentSection = (): JSX.Element => {
     return () => timeouts.forEach(clearTimeout);
   }, [isExtensionInstalled]);
 
-  // Check if this is the first visit today (based on login status)
+  // Check if welcome guide was permanently dismissed
   React.useEffect(() => {
-    const today = new Date().toDateString();
-    // Use different storage keys for logged-in and guest users
-    const storageKey = user ? `copus_last_guide_shown_${user.id}` : 'copus_last_guide_shown_guest';
-    const lastVisitDate = localStorage.getItem(storageKey);
+    // Check both guest and user-specific keys for dismissal
+    const guestDismissed = localStorage.getItem('copus_welcome_dismissed_guest') === 'true';
+    const userDismissed = user ? localStorage.getItem(`copus_welcome_dismissed_${user.id}`) === 'true' : false;
 
-    if (lastVisitDate !== today) {
+    if (guestDismissed || userDismissed) {
+      setShowWelcomeGuide(false);
+    } else {
       setShowWelcomeGuide(true);
-      const userType = user ? 'logged-in user' : 'guest';
     }
-  }, [user]); // Depends on user state
+  }, [user]);
 
-  // Close welcome guide
+  // Close welcome guide permanently
   const handleCloseWelcomeGuide = () => {
-    const today = new Date().toDateString();
-    // Use different storage keys for logged-in and guest users
-    const storageKey = user ? `copus_last_guide_shown_${user.id}` : 'copus_last_guide_shown_guest';
-    localStorage.setItem(storageKey, today);
+    // Save dismissal for both guest and user-specific keys so it persists
+    localStorage.setItem('copus_welcome_dismissed_guest', 'true');
+    if (user) {
+      localStorage.setItem(`copus_welcome_dismissed_${user.id}`, 'true');
+    }
     setShowWelcomeGuide(false);
-    const userType = user ? 'logged-in user' : 'guest';
   };
 
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
