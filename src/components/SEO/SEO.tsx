@@ -1,5 +1,16 @@
 import { Helmet } from 'react-helmet-async';
 
+/**
+ * Decode HTML entities (e.g. &amp; → &, &#235; → ë) so OG/Twitter meta tags
+ * render correctly for social-media link previews.
+ */
+function decodeHtmlEntities(text: string): string {
+  if (typeof document === 'undefined') return text;
+  const el = document.createElement('textarea');
+  el.innerHTML = text;
+  return el.value;
+}
+
 interface SEOProps {
   title?: string;
   description?: string;
@@ -32,14 +43,16 @@ export const SEO = ({
   article,
   noIndex = false,
 }: SEOProps) => {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : DEFAULT_TITLE;
+  const decodedTitle = title ? decodeHtmlEntities(title) : undefined;
+  const decodedDescription = decodeHtmlEntities(description);
+  const fullTitle = decodedTitle ? `${decodedTitle} | ${SITE_NAME}` : DEFAULT_TITLE;
   const canonicalUrl = url || (typeof window !== 'undefined' ? window.location.href : 'https://copus.network');
 
   return (
     <Helmet>
       {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
-      <meta name="description" content={description} />
+      <meta name="description" content={decodedDescription} />
       {keywords && <meta name="keywords" content={keywords} />}
       {noIndex && <meta name="robots" content="noindex,nofollow" />}
       <link rel="canonical" href={canonicalUrl} />
@@ -48,7 +61,7 @@ export const SEO = ({
       <meta property="og:type" content={type} />
       <meta property="og:site_name" content={SITE_NAME} />
       <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
+      <meta property="og:description" content={decodedDescription} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:image" content={image} />
       <meta property="og:image:width" content="1200" />
@@ -74,7 +87,7 @@ export const SEO = ({
       <meta name="twitter:site" content={TWITTER_HANDLE} />
       <meta name="twitter:creator" content={TWITTER_HANDLE} />
       <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
+      <meta name="twitter:description" content={decodedDescription} />
       <meta name="twitter:image" content={image} />
     </Helmet>
   );

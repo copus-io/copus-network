@@ -188,7 +188,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
               rel="noopener noreferrer"
               className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px] hover:text-dark-grey transition-colors"
             >
-              © 2025 S31 Labs
+              © 2026 S31 Labs
             </a>
           </div>
         </footer>
