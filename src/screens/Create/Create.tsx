@@ -601,8 +601,12 @@ export const Create = (): JSX.Element => {
         }
         // Auto-fill title if empty and og:title is available
         if (metadata.title && !formData.title) {
-          console.log('📝 Auto-filled title:', metadata.title);
-          const truncatedTitle = metadata.title.substring(0, 75); // Limit to 75 chars
+          // Decode HTML entities (e.g. &amp; → &, &#235; → ë)
+          const el = document.createElement('textarea');
+          el.innerHTML = metadata.title;
+          const decodedTitle = el.value;
+          console.log('📝 Auto-filled title:', decodedTitle);
+          const truncatedTitle = decodedTitle.substring(0, 75); // Limit to 75 chars
           setFormData(prev => ({ ...prev, title: truncatedTitle }));
           setTitleCharacterCount(truncatedTitle.length);
         }
