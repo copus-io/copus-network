@@ -2500,7 +2500,17 @@ export const Content = (): JSX.Element => {
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
               <button
-                onClick={() => window.open(unlockedUrl, '_blank', 'noopener,noreferrer')}
+                onClick={() => {
+                  console.log('🔍 Visit button (unlocked) clicked!', unlockedUrl);
+                  // Check if it's a taste-test URL and we're in local development
+                  if (unlockedUrl && unlockedUrl.includes('taste-test') && window.location.hostname === 'localhost') {
+                    console.log('🏠 Local development detected, navigating to /taste-test');
+                    navigate('/taste-test');
+                  } else {
+                    console.log('🌐 Opening external URL:', unlockedUrl);
+                    window.open(unlockedUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }}
                 className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
@@ -2516,7 +2526,17 @@ export const Content = (): JSX.Element => {
             ) : article?.targetUrl && article.targetUrl.trim() !== '' ? (
               // Content has targetUrl - show "Visit" button regardless of lock status
               <button
-                onClick={() => window.open(article.targetUrl, '_blank', 'noopener,noreferrer')}
+                onClick={() => {
+                  console.log('🔍 Visit button (article) clicked!', article.targetUrl);
+                  // Check if it's a taste-test URL and we're in local development
+                  if (article.targetUrl && article.targetUrl.includes('taste-test') && window.location.hostname === 'localhost') {
+                    console.log('🏠 Local development detected, navigating to /taste-test');
+                    navigate('/taste-test');
+                  } else {
+                    console.log('🌐 Opening external URL:', article.targetUrl);
+                    window.open(article.targetUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }}
                 className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
