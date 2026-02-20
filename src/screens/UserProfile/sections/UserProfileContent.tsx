@@ -94,6 +94,35 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         console.log('[UserProfile] isEnabled value:', userData.isEnabled);
         console.log('[UserProfile] isEnabled type:', typeof userData.isEnabled);
 
+        // Check if the returned user actually matches the requested namespace
+        // The API may return a default/anonymous user for non-existent namespaces
+        if (userData.namespace && userData.namespace !== namespace) {
+          console.log('[UserProfile] Namespace mismatch - user not found. Requested:', namespace, 'Got:', userData.namespace);
+          setAccountExists(false);
+          setUserInfo({
+            id: 0,
+            username: 'User Not Found',
+            namespace: namespace,
+            faceUrl: profileDefaultAvatar,
+            bio: "This user doesn't exist or has been removed.",
+            articlesCount: 0,
+            followersCount: 0,
+            followingCount: 0,
+            socialLinks: [],
+            statistics: {
+              articleCount: 0,
+              collectedArticleCount: 0,
+              myArticleCollectedCount: 0
+            },
+            email: '',
+            coverUrl: 'https://c.animaapp.com/w7obk4mX/img/banner.png',
+            walletAddress: ''
+          });
+          setHasMoreArticles(false);
+          setLoading(false);
+          return;
+        }
+
         // Check if account is disabled/deleted (check both false and 0)
         if (userData.isEnabled === false || userData.isEnabled === 0) {
           console.log('[UserProfile] Account is disabled/deleted');

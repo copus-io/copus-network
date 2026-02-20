@@ -17,6 +17,8 @@ import {
   SearchUserItem,
 } from '@/services/searchService';
 import { canUserViewArticle } from '@/types/article';
+import { decodeHtmlEntities } from '@/utils/htmlUtils';
+import { formatDate } from '@/utils/categoryStyles';
 
 // 🔍 SEARCH: search-result-types
 interface SearchResultItem {
@@ -108,9 +110,9 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
 
   const transformArticleToSearchResult = (article: SearchArticleItem): SearchResultItem => ({
     id: article.id.toString(),
-    title: article.title,
+    title: decodeHtmlEntities(article.title),
     type: 'article',
-    description: article.content,
+    description: article.content ? decodeHtmlEntities(article.content) : undefined,
     coverImage: article.coverUrl,
     category: article.categoryInfo?.name,
     categoryColor: article.categoryInfo?.color,
@@ -119,7 +121,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
     userId: article.authorInfo?.id,
     namespace: article.authorInfo?.namespace,
     userNamespace: article.authorInfo?.namespace,
-    date: new Date(article.createAt * 1000).toLocaleDateString(),
+    date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
     treasureCount: article.likeCount || 0,
     visitCount: `${article.viewCount || 0} Visits`,
     isLiked: false,
