@@ -51,7 +51,5 @@ export const formatTimeAgo = (timestamp: string): string => {
 export const navigateToUser = (navigate: (path: string) => void, comment: Comment): void => {
   if (comment.authorNamespace) {
     navigate(`/u/${comment.authorNamespace}`);
-  } else if (comment.authorId) {
-    navigate(`/user/${comment.authorId}/treasury`);
   }
 };

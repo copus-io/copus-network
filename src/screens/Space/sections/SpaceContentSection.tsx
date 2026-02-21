@@ -672,8 +672,8 @@ export const SpaceContentSection = (): JSX.Element => {
   const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
     if (userNamespace) {
       navigate(`/u/${userNamespace}`);
-    } else if (userId) {
-      navigate(`/user/${userId}/treasury`);
+    } else if (user && user.id === userId && user.namespace) {
+      navigate(`/u/${user.namespace}`);
     }
   };
 
@@ -811,10 +811,10 @@ export const SpaceContentSection = (): JSX.Element => {
     };
   }, [hasMoreArticles, spaceId, handleLoadMore]);
 
-  // Handle author click - navigate to treasury page
+  // Handle author click - navigate to user profile page
   const handleAuthorClick = () => {
     if (spaceInfo?.authorNamespace) {
-      navigate(`/user/${spaceInfo.authorNamespace}/treasury`);
+      navigate(`/u/${spaceInfo.authorNamespace}`);
     }
   };
 

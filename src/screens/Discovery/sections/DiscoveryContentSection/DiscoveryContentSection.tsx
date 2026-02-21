@@ -244,10 +244,13 @@ export const DiscoveryContentSection = (): JSX.Element => {
   };
 
   // Handle user click
-  const handleUserClick = (userId: number) => {
-    // Find the corresponding user's namespace from current articles
+  const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
+    if (userNamespace) {
+      navigate(`/u/${userNamespace}`);
+      return;
+    }
+    // Fallback: look up namespace from current articles
     const article = localArticles.find(a => a.userId === userId);
-
     if (article?.namespace) {
       navigate(`/u/${article.namespace}`);
     } else if (user && user.id === userId && user.namespace) {

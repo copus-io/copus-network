@@ -371,13 +371,15 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   };
 
   // Handle user click (view other users)
-  const handleUserClick = (userId: number) => {
+  const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
     // Already on this user's profile page, don't navigate if clicking same user
     if (userInfo && userId === userInfo.id) {
       return;
     }
     // Navigate to other user's profile page
-    navigate(`/user/${namespace}`);
+    if (userNamespace) {
+      navigate(`/u/${userNamespace}`);
+    }
   };
 
   // Check if viewing own profile

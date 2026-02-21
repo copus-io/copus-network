@@ -323,9 +323,9 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
     if (result.type === 'article') {
       navigate(`/work/${result.id}`);
     } else if (result.type === 'user') {
-      navigate(`/user/${result.namespace || result.id}`);
+      navigate(`/u/${result.namespace || result.id}`);
     } else if (result.type === 'treasury') {
-      navigate(`/user/${result.namespace || result.id}`);
+      navigate(`/u/${result.namespace || result.id}`);
     }
     handleCloseSearch();
   };
