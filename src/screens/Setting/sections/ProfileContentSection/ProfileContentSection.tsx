@@ -12,6 +12,8 @@ import { ImageUploader } from "../../../../components/ImageUploader/ImageUploade
 import { PopUp } from "../../../../components/PopUp/PopUp";
 import { ChangePasswordModal } from "../../../../components/ChangePasswordModal/ChangePasswordModal";
 import { CustomSwitch } from "../../../../components/ui/custom-switch";
+import { Card, CardContent, CardHeader } from "../../../../components/ui/card";
+import { OptimizedImage } from "../../../../components/ui/OptimizedImage";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 
 
@@ -682,14 +684,18 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
   };
 
   return (
-    <main className="flex flex-col items-start gap-5 px-4 lg:pl-[60px] lg:pr-10 pt-5 pb-5 relative flex-1 self-stretch grow bg-transparent">
+    <main className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+      <div className="flex justify-center w-full">
+        <div className="w-[1120px] max-w-[1120px] px-10 py-10">
+          <div className="flex flex-col items-start gap-[30px] w-full">
       {/* Identity section */}
-      <section className="flex flex-col items-start gap-3 relative self-stretch w-full flex-[0_0_auto] pb-8 border-b border-[#E0E0E0]">
-        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
-          <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
+      <Card className="w-full bg-white border border-white rounded-lg shadow-none">
+        <CardHeader className="pb-6">
+          <h2 className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-2xl tracking-[0] leading-[32px]">
             Identity
           </h2>
-        </div>
+        </CardHeader>
+        <CardContent className="pt-0">
 
         {/* Username and Bio */}
         <div className="flex flex-col items-start gap-5 relative w-full max-w-[500px]">
@@ -712,14 +718,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <button
                   onClick={handleSaveName}
                   disabled={isSavingName}
-                  className="px-4 py-2 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 bg-red text-white rounded-[50px] text-sm font-medium hover:bg-red/90 transition-colors disabled:opacity-50"
                 >
                   {isSavingName ? 'Saving...' : 'Save'}
                 </button>
                 <button
                   onClick={handleCancelEditingName}
                   disabled={isSavingName}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-[50px] text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -767,14 +773,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <button
                   onClick={handleSaveCustomId}
                   disabled={isSavingCustomId}
-                  className="px-4 py-2 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 bg-red text-white rounded-[50px] text-sm font-medium hover:bg-red/90 transition-colors disabled:opacity-50"
                 >
                   {isSavingCustomId ? 'Saving...' : 'Save'}
                 </button>
                 <button
                   onClick={handleCancelEditingCustomId}
                   disabled={isSavingCustomId}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-[50px] text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -840,14 +846,14 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                 <button
                   onClick={handleSaveDescription}
                   disabled={isSavingDescription}
-                  className="px-4 py-2 mb-3 bg-red text-white rounded-[20px] text-sm hover:bg-red/90 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 mb-3 bg-red text-white rounded-[50px] text-sm font-medium hover:bg-red/90 transition-colors disabled:opacity-50"
                 >
                   {isSavingDescription ? 'Saving...' : 'Save'}
                 </button>
                 <button
                   onClick={handleCancelEditingDescription}
                   disabled={isSavingDescription}
-                  className="px-4 py-2 mb-3 bg-gray-200 text-gray-700 rounded-[20px] text-sm hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 mb-3 bg-gray-100 text-gray-700 rounded-[50px] text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -887,14 +893,13 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               title="Click to change avatar"
               aria-label="Click to change avatar"
             >
-              <img
+              <OptimizedImage
                 key={user?.faceUrl || 'default'}
                 src={(user?.faceUrl && user.faceUrl.trim()) ? user.faceUrl : profileDefaultAvatar}
                 alt="Profile avatar"
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = profileDefaultAvatar;
-                }}
+                aspectRatio="1 / 1"
+                priority={true}
               />
               <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                 <svg
@@ -929,12 +934,12 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         >
           {bannerImage ? (
             <>
-              <div
-                className="w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-200"
-                style={{
-                  backgroundImage: `url(${bannerImage})`,
-                  backgroundColor: '#f3f4f6'
-                }}
+              <OptimizedImage
+                src={bannerImage}
+                alt="Cover image"
+                className="w-full h-full object-cover transition-opacity duration-200"
+                aspectRatio="6 / 1"
+                placeholder="#f3f4f6"
               />
               {showLoadingSpinner && (
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl flex items-center justify-center">
@@ -1006,13 +1011,11 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
                     title={link.title || link.url}
                   >
                     {link.iconUrl && (
-                      <img
+                      <OptimizedImage
                         src={link.iconUrl}
                         alt=""
                         className="w-5 h-5 rounded-sm object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
+                        aspectRatio="1 / 1"
                       />
                     )}
                     <span className="[font-family:'Lato',Helvetica] font-normal text-sm text-off-black max-w-[150px] truncate">
@@ -1055,14 +1058,16 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             <span className="[font-family:'Lato',Helvetica] font-normal text-[16px] leading-5">Add links</span>
           </button>
         </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className="flex flex-col items-start gap-5 pt-0 pb-8 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
-        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
-          <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
+      <Card className="w-full bg-white border border-white rounded-lg shadow-none">
+        <CardHeader className="pb-6">
+          <h2 className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-2xl tracking-[0] leading-[32px]">
             Account
           </h2>
-        </div>
+        </CardHeader>
+        <CardContent className="pt-0">
 
         <div className="flex flex-col items-start gap-5 relative w-full">
           <div className="inline-flex flex-col items-start justify-center gap-1.5 relative flex-[0_0_auto]">
@@ -1098,16 +1103,18 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </div>
           )}
         </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className="flex flex-col items-start gap-5 pt-0 relative self-stretch w-full flex-[0_0_auto]">
-        <div className="pt-0 pb-1 px-0 flex-[0_0_auto] inline-flex flex-col items-start justify-center relative">
-          <h2 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
+      <Card className="w-full bg-white border border-white rounded-lg shadow-none">
+        <CardHeader className="pb-6">
+          <h2 className="[font-family:'Lato',Helvetica] font-bold text-dark-grey text-2xl tracking-[0] leading-[32px]">
             Notification
           </h2>
-        </div>
+        </CardHeader>
+        <CardContent className="pt-0">
 
-        <div className="flex flex-col items-start gap-3 pt-0 pb-8 px-0 relative self-stretch w-full flex-[0_0_auto] border-b [border-bottom-style:solid] border-[#E0E0E0]">
+        <div className="flex flex-col items-start gap-3 w-full">
           {!user ? (
             <div className="flex justify-center items-center py-4">
               <div className="text-sm text-gray-500">Please log in to view notification settings</div>
@@ -1137,28 +1144,33 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
             </div>
           )}
         </div>
-      </section>
+        </CardContent>
+      </Card>
 
 
-      <section className="inline-flex flex-col items-start gap-5 relative flex-[0_0_auto]">
-        <button
-          className="inline-flex items-center justify-center gap-2.5 relative flex-[0_0_auto] cursor-pointer hover:opacity-80 focus:outline-none"
-          onClick={handleDeleteAccount}
-        >
-          <span className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-red text-lg tracking-[0] leading-[23px] whitespace-nowrap">
-            Delete account
-          </span>
-        </button>
+      <Card className="w-full bg-white border border-white rounded-lg shadow-none">
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-5">
+            <button
+              className="inline-flex items-center justify-start gap-2.5 cursor-pointer hover:opacity-80 focus:outline-none"
+              onClick={handleDeleteAccount}
+            >
+              <span className="[font-family:'Lato',Helvetica] font-normal text-red text-lg tracking-[0] leading-[23px]">
+                Delete account
+              </span>
+            </button>
 
-        <button
-          className="inline-flex items-center justify-center gap-2.5 relative flex-[0_0_auto] cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red"
-          onClick={handleLogout}
-        >
-          <span className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-red text-lg tracking-[0] leading-[23px] whitespace-nowrap">
-            Log out
-          </span>
-        </button>
-      </section>
+            <button
+              className="inline-flex items-center justify-start gap-2.5 cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red"
+              onClick={handleLogout}
+            >
+              <span className="[font-family:'Lato',Helvetica] font-normal text-red text-lg tracking-[0] leading-[23px]">
+                Log out
+              </span>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Edit Popup */}
       {showEditPopup && (
@@ -1369,7 +1381,9 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
         </div>
       )}
 
-
+          </div>
+        </div>
+      </div>
     </main>
   );
 };

@@ -211,6 +211,8 @@ export const FollowingContentSection = (): JSX.Element => {
   const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
     if (userNamespace) {
       navigate(`/u/${userNamespace}`);
+    } else if (userId) {
+      navigate(`/user/${userId}/treasury`);
     }
   };
 

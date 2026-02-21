@@ -19,7 +19,6 @@ import { decodeHtmlEntities } from "../../utils/htmlUtils";
 import { useNavigate } from "react-router-dom";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../components/ArticleCard";
-import { trackCurateAccess, trackCurateProgress, trackContentPublished } from "../../services/analyticsService";
 import { ARTICLE_VISIBILITY } from "../../types/article";
 import { ImageCropper } from "../../components/ImageCropper/ImageCropper";
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from "../../utils/imageUtils";
@@ -66,11 +65,11 @@ export const Create = (): JSX.Element => {
       }
     }
 
-    trackCurateAccess(source);
+    // Analytics tracking removed
 
     // Track page load for creation funnel
     if (!isEditMode) {
-      trackCurateProgress('page_load');
+      // Analytics tracking removed
     }
   }, []); // Only run once when component mounts
   const [editingArticle, setEditingArticle] = useState<any>(null);
@@ -413,7 +412,7 @@ export const Create = (): JSX.Element => {
         // Track title input for analytics (only for first meaningful input)
         if (!isEditMode && formData.title.length === 0 && value.length > 0) {
           const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
-          trackCurateProgress('title_input', { timeOnStep });
+          // Analytics tracking removed
           setStepStartTime(Date.now());
         }
       }
@@ -426,10 +425,7 @@ export const Create = (): JSX.Element => {
         // Track content input for analytics (only for first meaningful input)
         if (!isEditMode && formData.recommendation.length === 0 && value.length > 2) {
           const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
-          trackCurateProgress('content_input', {
-            timeOnStep,
-            contentLength: value.length
-          });
+          // Analytics tracking removed
           setStepStartTime(Date.now());
         }
       }
@@ -460,10 +456,7 @@ export const Create = (): JSX.Element => {
     // Track category selection for analytics
     if (!isEditMode) {
       const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
-      trackCurateProgress('category_select', {
-        timeOnStep,
-        category: topicName
-      });
+      // Analytics tracking removed
       setStepStartTime(Date.now());
     }
   };
@@ -711,14 +704,14 @@ export const Create = (): JSX.Element => {
       } catch (error) {
         console.error('Failed to load article data:', error);
         showToast('Failed to load data, please try again', 'error');
-        navigate(user?.namespace ? `/u/${user.namespace}` : '/');
+        navigate('/my-treasury');
       } finally {
         setIsLoadingArticle(false);
       }
     };
 
     loadArticleForEdit();
-  }, [isEditMode, editId, navigate, showToast, user?.username, user?.namespace]);
+  }, [isEditMode, editId, navigate, showToast, user?.username]);
 
   // Publish article
   const handlePublish = async () => {
@@ -763,11 +756,7 @@ export const Create = (): JSX.Element => {
     // Track publish attempt for analytics
     if (!isEditMode) {
       const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
-      trackCurateProgress('publish_attempt', {
-        timeOnStep,
-        contentLength: formData.recommendation.length,
-        category: formData.selectedTopic
-      });
+      // Analytics tracking removed
     }
 
     try {
@@ -887,19 +876,9 @@ export const Create = (): JSX.Element => {
         const hasImages = !!(formData.coverImage || coverImageUrl || autoFetchedCoverUrl);
         const hasLinks = !!(formData.link);
 
-        trackContentPublished({
-          category: formData.selectedTopic,
-          contentLength: formData.recommendation.length,
-          hasImages,
-          hasLinks,
-          timeToComplete
-        });
+        // Analytics tracking removed
 
-        trackCurateProgress('publish_success', {
-          timeOnStep: stepStartTime ? Date.now() - stepStartTime : undefined,
-          contentLength: formData.recommendation.length,
-          category: formData.selectedTopic
-        });
+        // Analytics tracking removed
       }
 
       // Invalidate article caches to ensure fresh data is loaded
@@ -958,9 +937,9 @@ export const Create = (): JSX.Element => {
         // This should rarely happen
         console.error('❌ No UUID found in response');
         console.error('Response was:', response);
-        showToast('Published but could not navigate to it. Please check your profile.', 'warning');
+        showToast('Published but could not navigate to it. Please check My Treasury.', 'warning');
         setTimeout(() => {
-          navigate(user?.namespace ? `/u/${user.namespace}` : '/');
+          navigate('/my-treasury');
         }, 1500);
       }
 

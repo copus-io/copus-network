@@ -647,6 +647,9 @@ export const NotificationListSection = (): JSX.Element => {
     if (notification.namespace) {
       // Use short link format to navigate to user profile page
       navigate(`/u/${notification.namespace}`);
+    } else if (notification.userId) {
+      // Fallback: use userId
+      navigate(`/user/${notification.userId}/treasury`);
     }
   };
 

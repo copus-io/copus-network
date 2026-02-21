@@ -12,7 +12,6 @@ import searchIcon from "../../../assets/images/icon-search.svg";
 import { ArticleCard, ArticleData } from "../../ArticleCard";
 import { TreasuryCard, SpaceData } from "../../ui/TreasuryCard";
 import { getIconUrl } from "../../../config/icons";
-import { trackPublishClick } from "../../../services/analyticsService";
 import { decodeHtmlEntities } from "../../../utils/htmlUtils";
 import { formatDate } from "../../../utils/categoryStyles";
 import {
@@ -323,9 +322,9 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
     if (result.type === 'article') {
       navigate(`/work/${result.id}`);
     } else if (result.type === 'user') {
-      navigate(`/u/${result.namespace || result.id}`);
+      navigate(`/user/${result.namespace || result.id}`);
     } else if (result.type === 'treasury') {
-      navigate(`/u/${result.namespace || result.id}`);
+      navigate(`/user/${result.namespace || result.id}`);
     }
     handleCloseSearch();
   };
@@ -1111,7 +1110,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   <Link
                     to="/curate"
                     className="relative"
-                    onClick={() => trackPublishClick('header', !!user)}
+                    onClick={() => {/* Analytics tracking removed */}}
                   >
                     {/* 涟漪发现动效 */}
                     <div className="absolute inset-0 pointer-events-none">

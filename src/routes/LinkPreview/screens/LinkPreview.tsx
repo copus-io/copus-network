@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
 import { AuthService } from "../../../services/authService";
@@ -16,6 +16,7 @@ export const LinkPreview = (): JSX.Element => {
   const { id } = useParams();
   const { user, isLoggedIn } = useUser();
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   // 文章数据（实际应该从API获取）
   const [articleData, setArticleData] = useState({
@@ -71,8 +72,10 @@ export const LinkPreview = (): JSX.Element => {
   };
 
   const handleVisitClick = () => {
-    // 使用文章数据中的URL
-    window.open(articleData.url, '_blank');
+    console.log('🔍 Visit button clicked! Navigating to /taste-test');
+    console.log('Current location:', window.location.href);
+    // 跳转到本地的味觉测试页面
+    navigate('/taste-test');
   };
 
   const handleShareClick = () => {
@@ -137,7 +140,7 @@ export const LinkPreview = (): JSX.Element => {
             />
           </Link>
 
-          <Link to="/">
+          <Link to="/my-treasury">
             <Avatar className="w-[47px] h-[47px]">
               <AvatarImage
                 src="https://c.animaapp.com/mfuxsdcbXwMuVe/img/avatar.png"

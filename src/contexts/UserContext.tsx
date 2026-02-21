@@ -278,7 +278,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // Redirect to Discovery page if on a protected page
       const currentPath = window.location.pathname;
-      const protectedPaths = ['/notification', '/setting'];
+      const protectedPaths = ['/my-treasury', '/notification', '/setting', '/u/'];
       const isOnProtectedPage = protectedPaths.some(path => currentPath.startsWith(path));
 
       if (isOnProtectedPage) {

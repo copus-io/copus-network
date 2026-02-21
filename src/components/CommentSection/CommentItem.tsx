@@ -258,6 +258,8 @@ const ReplyItemComponent: React.FC<{
   const handleUserClick = (comment: Comment) => {
     if (comment.authorNamespace) {
       navigate(`/u/${comment.authorNamespace}`);
+    } else if (comment.authorId) {
+      navigate(`/user/${comment.authorId}/treasury`);
     }
   };
 
@@ -779,6 +781,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   const handleUserClick = (comment: Comment) => {
     if (comment.authorNamespace) {
       navigate(`/u/${comment.authorNamespace}`);
+    } else if (comment.authorId) {
+      navigate(`/user/${comment.authorId}/treasury`);
     }
   };
 

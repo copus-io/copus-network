@@ -63,10 +63,10 @@ export const NotFoundPage: React.FC = () => {
 
             {user ? (
               <Link
-                to={`/u/${user.namespace}`}
+                to="/my-treasury"
                 className="block w-full text-gray-500 hover:text-gray-700 py-2 transition-colors"
               >
-                My Profile
+                My Treasures
               </Link>
             ) : (
               <Link

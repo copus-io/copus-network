@@ -25,10 +25,13 @@ import { Content } from "./screens/Content/Content";
 // Test components for development
 import { TestNoAccess } from "./screens/Test/TestNoAccess";
 
-// Analytics page
-import { Analytics } from "./screens/Analytics/Analytics";
+
+// Taste test component
+import { TasteTest } from "./components/TasteTest/TasteTest";
 
 
+// ShortLinkHandler - eagerly loaded to prevent dynamic import errors
+import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
 // Lazy loaded routes - split code for better initial load
 const Following = lazy(() => import("./screens/Following/Following").then(m => ({ default: m.Following })));
@@ -43,6 +46,7 @@ const SEOSet = lazy(() => import("./screens/SEOSet/SEOSet").then(m => ({ default
 // Lazy loaded route modules
 const NotLogIn = lazy(() => import("./routes/NotLogIn/screens/NotLogIn").then(m => ({ default: m.NotLogIn })));
 const NewExplore = lazy(() => import("./routes/NewExplore/screens/NewExplore").then(m => ({ default: m.NewExplore })));
+const MyTreasury = lazy(() => import("./routes/MyTreasury/screens/MyTreasury").then(m => ({ default: m.MyTreasury })));
 const LinkPreview = lazy(() => import("./routes/LinkPreview/screens/LinkPreview").then(m => ({ default: m.LinkPreview })));
 const DeleteAccount = lazy(() => import("./routes/DeleteAccount/screens/DeleteAccount").then(m => ({ default: m.DeleteAccount })));
 const Published = lazy(() => import("./routes/Published/screens/Published").then(m => ({ default: m.Published })));
@@ -120,6 +124,22 @@ const router = createBrowserRouter([
     element: <LazyRoute><NewExplore /></LazyRoute>,
   },
   {
+    path: "/my-treasury",
+    element: (
+      <AuthGuard requireAuth={true} showUnauthorized={true}>
+        <LazyRoute><MyTreasury /></LazyRoute>
+      </AuthGuard>
+    ),
+  },
+  {
+    path: "/user/:namespace",
+    element: <LazyRoute><UserProfile /></LazyRoute>,
+  },
+  {
+    path: "/user/:namespace/treasury",
+    element: <LazyRoute><MyTreasury /></LazyRoute>,
+  },
+  {
     path: "/treasury/:namespace",
     element: <LazyRoute><Space /></LazyRoute>,
   },
@@ -134,7 +154,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/u/:namespace",
-    element: <LazyRoute><UserProfile /></LazyRoute>, // Canonical user profile route
+    element: <ShortLinkHandler />, // Short link format: /u/namespace
   },
   {
     path: "/curate",
@@ -185,8 +205,8 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/fx",
-    element: <Analytics />,
+    path: "/taste-test",
+    element: <TasteTest />,
   },
   // 404 catch-all route - must be last
   {

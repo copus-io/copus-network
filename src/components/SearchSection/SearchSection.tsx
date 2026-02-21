@@ -227,7 +227,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
     if (result.type === 'article') {
       navigate(`/content/${result.id}`);
     } else if (result.type === 'user') {
-      navigate(`/u/${result.namespace}`);
+      navigate(`/user/${result.namespace}`);
     } else if (result.type === 'treasury') {
       navigate(`/space/${result.namespace}`);
     }
