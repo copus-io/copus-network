@@ -172,18 +172,20 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
 
         console.log('[UserProfile] User info set successfully, now fetching liked articles...');
 
-        // Fetch user's liked articles using targetUserId
-        const articlesData = await AuthService.getMyLikedArticlesCorrect(1, 20, userData.id);
-        console.log('[UserProfile] Successfully fetched liked articles:', articlesData);
+        // Fetch articles in a separate try/catch so failure doesn't break the profile
+        try {
+          const articlesResponse = await AuthService.getMyLikedArticlesCorrect(1, 20, userData.id);
+          // apiRequest returns { status, msg, data: { pageIndex, pageSize, data: [...] } }
+          // Unwrap the nested data structure
+          const articlesData = articlesResponse?.data || articlesResponse;
+          const articlesList = Array.isArray(articlesData?.data) ? articlesData.data : (Array.isArray(articlesData) ? articlesData : []);
 
-        // Set pagination state based on real API response
-        setCurrentPage(articlesData.pageIndex || 1);
-        setHasMoreArticles(articlesData.pageIndex < articlesData.pageCount);
+          // Set pagination state
+          setCurrentPage(articlesData?.pageIndex || 1);
+          setHasMoreArticles((articlesData?.pageIndex || 0) < (articlesData?.pageCount || 0));
 
-        // Transform API data to ArticleData format
-        const transformedArticles: ArticleData[] = articlesData.data.map(article => {
-
-          return {
+          // Transform API data to ArticleData format
+          const transformedArticles: ArticleData[] = articlesList.map((article: any) => ({
             id: article.uuid,
             title: article.title,
             content: article.content,
@@ -205,17 +207,16 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             link: article.targetUrl,
             viewCount: article.viewCount,
             visibility: article.visibility
-          };
-        });
+          }));
 
-        setArticles(transformedArticles);
-        console.log('[UserProfile] All data loaded successfully');
+          setArticles(transformedArticles);
+          console.log('[UserProfile] All data loaded successfully');
+        } catch (articlesError) {
+          console.error('[UserProfile] Failed to load articles (non-fatal):', articlesError);
+          // Profile still shows — just no articles
+        }
       } catch (error) {
         console.error("[UserProfile] Failed to fetch user data:", error);
-        console.error("[UserProfile] Error details:", {
-          message: error instanceof Error ? error.message : String(error),
-          namespace: namespace
-        });
 
         // Set account as non-existent and show default profile
         setAccountExists(false);
@@ -265,11 +266,14 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     setArticlesLoading(true);
     try {
       const nextPage = currentPage + 1;
-      const articlesData = await AuthService.getMyLikedArticlesCorrect(nextPage, 20, userInfo.id);
-      console.log(`[UserProfile] Loaded page ${nextPage} articles:`, articlesData);
+      const articlesResponse = await AuthService.getMyLikedArticlesCorrect(nextPage, 20, userInfo.id);
+      // Unwrap the nested data structure from apiRequest
+      const articlesData = articlesResponse?.data || articlesResponse;
+      const articlesList = Array.isArray(articlesData?.data) ? articlesData.data : (Array.isArray(articlesData) ? articlesData : []);
+      console.log(`[UserProfile] Loaded page ${nextPage} articles:`, articlesList.length);
 
       // Transform new articles
-      const newTransformedArticles: ArticleData[] = articlesData.data.map(article => ({
+      const newTransformedArticles: ArticleData[] = articlesList.map((article: any) => ({
         id: article.uuid,
         title: article.title,
         content: article.content,
@@ -295,10 +299,10 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
 
       // Append new articles to existing ones
       setArticles(prev => [...prev, ...newTransformedArticles]);
-      setCurrentPage(articlesData.pageIndex || nextPage);
-      setHasMoreArticles(articlesData.pageIndex < articlesData.pageCount);
+      setCurrentPage(articlesData?.pageIndex || nextPage);
+      setHasMoreArticles((articlesData?.pageIndex || 0) < (articlesData?.pageCount || 0));
 
-      console.log(`[UserProfile] Page ${nextPage} loaded, hasMore: ${articlesData.pageIndex < articlesData.pageCount}`);
+      console.log(`[UserProfile] Page ${nextPage} loaded, hasMore: ${(articlesData?.pageIndex || 0) < (articlesData?.pageCount || 0)}`);
     } catch (error) {
       console.error('[UserProfile] Failed to load more articles:', error);
       showToast('Failed to load more content', 'error');

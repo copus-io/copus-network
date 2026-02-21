@@ -1137,22 +1137,16 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    // Include auth token since the backend requires it for this endpoint
-    // The namespace parameter determines which user's data is returned
+    // Make a direct fetch call without the Authorization header
+    // This ensures we get the target user's data, not the logged-in user's
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network';
     const url = `${API_BASE_URL}/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`;
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    const token = localStorage.getItem('copus_token');
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const response = await fetch(url, {
       method: 'GET',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
