@@ -146,7 +146,7 @@ const SpaceInfoSection = ({
         )}
 
         {/* Space name */}
-        <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-3">{spaceName}</h1>
+        <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1">{spaceName}</h1>
 
         {/* Treasure count and author info */}
         <div className="flex items-center gap-2 mb-1">
@@ -172,7 +172,7 @@ const SpaceInfoSection = ({
         )}
 
         {/* Action buttons - always show below description */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mt-1">
           {/* Edit button */}
           {canEdit && (
             <button
