@@ -137,7 +137,7 @@ export const LinkPreview = (): JSX.Element => {
             />
           </Link>
 
-          <Link to="/my-treasury">
+          <Link to="/">
             <Avatar className="w-[47px] h-[47px]">
               <AvatarImage
                 src="https://c.animaapp.com/mfuxsdcbXwMuVe/img/avatar.png"

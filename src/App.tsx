@@ -43,7 +43,6 @@ const SEOSet = lazy(() => import("./screens/SEOSet/SEOSet").then(m => ({ default
 // Lazy loaded route modules
 const NotLogIn = lazy(() => import("./routes/NotLogIn/screens/NotLogIn").then(m => ({ default: m.NotLogIn })));
 const NewExplore = lazy(() => import("./routes/NewExplore/screens/NewExplore").then(m => ({ default: m.NewExplore })));
-const MyTreasury = lazy(() => import("./routes/MyTreasury/screens/MyTreasury").then(m => ({ default: m.MyTreasury })));
 const LinkPreview = lazy(() => import("./routes/LinkPreview/screens/LinkPreview").then(m => ({ default: m.LinkPreview })));
 const DeleteAccount = lazy(() => import("./routes/DeleteAccount/screens/DeleteAccount").then(m => ({ default: m.DeleteAccount })));
 const Published = lazy(() => import("./routes/Published/screens/Published").then(m => ({ default: m.Published })));
@@ -121,22 +120,6 @@ const router = createBrowserRouter([
     element: <LazyRoute><NewExplore /></LazyRoute>,
   },
   {
-    path: "/my-treasury",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><MyTreasury /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/user/:namespace",
-    element: <LazyRoute><UserProfile /></LazyRoute>,
-  },
-  {
-    path: "/user/:namespace/treasury",
-    element: <LazyRoute><MyTreasury /></LazyRoute>,
-  },
-  {
     path: "/treasury/:namespace",
     element: <LazyRoute><Space /></LazyRoute>,
   },
@@ -151,7 +134,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/u/:namespace",
-    element: <LazyRoute><UserProfile /></LazyRoute>, // Short link format: /u/namespace
+    element: <LazyRoute><UserProfile /></LazyRoute>, // Canonical user profile route
   },
   {
     path: "/curate",

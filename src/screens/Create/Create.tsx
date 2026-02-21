@@ -711,14 +711,14 @@ export const Create = (): JSX.Element => {
       } catch (error) {
         console.error('Failed to load article data:', error);
         showToast('Failed to load data, please try again', 'error');
-        navigate('/my-treasury');
+        navigate(user?.namespace ? `/u/${user.namespace}` : '/');
       } finally {
         setIsLoadingArticle(false);
       }
     };
 
     loadArticleForEdit();
-  }, [isEditMode, editId, navigate, showToast, user?.username]);
+  }, [isEditMode, editId, navigate, showToast, user?.username, user?.namespace]);
 
   // Publish article
   const handlePublish = async () => {
@@ -958,9 +958,9 @@ export const Create = (): JSX.Element => {
         // This should rarely happen
         console.error('❌ No UUID found in response');
         console.error('Response was:', response);
-        showToast('Published but could not navigate to it. Please check My Treasury.', 'warning');
+        showToast('Published but could not navigate to it. Please check your profile.', 'warning');
         setTimeout(() => {
-          navigate('/my-treasury');
+          navigate(user?.namespace ? `/u/${user.namespace}` : '/');
         }, 1500);
       }
 

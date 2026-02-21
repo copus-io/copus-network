@@ -942,7 +942,7 @@ export const SpaceContentSection = (): JSX.Element => {
       await AuthService.deleteSpace(spaceId);
       showToast('Treasury deleted', 'success');
       setShowEditModal(false);
-      navigate('/my-treasury');
+      navigate(user?.namespace ? `/u/${user.namespace}` : '/');
     } catch (err) {
       console.error('Failed to delete space:', err);
       showToast('Failed to delete treasury', 'error');
@@ -1088,7 +1088,7 @@ export const SpaceContentSection = (): JSX.Element => {
         <main className="flex flex-col items-start gap-5 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
           <NoAccessPermission
             message="该空间为作者私享内容，仅作者本人可查看"
-            onBackToHome={() => navigate('/my-treasury')}
+            onBackToHome={() => navigate(user?.namespace ? `/u/${user.namespace}` : '/')}
           />
         </main>
       );
@@ -1100,7 +1100,7 @@ export const SpaceContentSection = (): JSX.Element => {
         <div className="flex flex-col items-center justify-center w-full h-64 text-center gap-4">
           <div className="text-red-500">{error}</div>
           <Button
-            onClick={() => navigate('/my-treasury')}
+            onClick={() => navigate(user?.namespace ? `/u/${user.namespace}` : '/')}
             className="bg-red hover:bg-red/90 text-white px-6 py-2 rounded-lg"
           >
             Back to Treasury

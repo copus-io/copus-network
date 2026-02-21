@@ -248,14 +248,10 @@ export const DiscoveryContentSection = (): JSX.Element => {
     // Find the corresponding user's namespace from current articles
     const article = localArticles.find(a => a.userId === userId);
 
-    if (user && user.id === userId) {
-      navigate('/my-treasury');
-    } else if (article?.namespace) {
-      // Prioritize using namespace to navigate to user profile page
+    if (article?.namespace) {
       navigate(`/u/${article.namespace}`);
-    } else {
-      // Fallback to using userId
-      navigate(`/user/${userId}/treasury`);
+    } else if (user && user.id === userId && user.namespace) {
+      navigate(`/u/${user.namespace}`);
     }
   };
 

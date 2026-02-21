@@ -945,13 +945,7 @@ export const Content = (): JSX.Element => {
   const handleUserClick = () => {
     if (!content?.userNamespace) return;
 
-    // If logged in and it's the current user's own article, navigate to my treasury page
-    if (user && user.id === content.userId) {
-      navigate('/my-treasury');
-    } else {
-      // Navigate to the user's profile page using short link format
-      navigate(`/u/${content.userNamespace}`);
-    }
+    navigate(`/u/${content.userNamespace}`);
   };
 
   // 处理空间点击事件 - 导航到对应的空间页面
