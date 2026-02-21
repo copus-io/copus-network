@@ -29,8 +29,6 @@ import { TestNoAccess } from "./screens/Test/TestNoAccess";
 import { Analytics } from "./screens/Analytics/Analytics";
 
 
-// ShortLinkHandler - eagerly loaded to prevent dynamic import errors
-import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
 // Lazy loaded routes - split code for better initial load
 const Following = lazy(() => import("./screens/Following/Following").then(m => ({ default: m.Following })));
@@ -153,7 +151,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/u/:namespace",
-    element: <ShortLinkHandler />, // Short link format: /u/namespace
+    element: <LazyRoute><UserProfile /></LazyRoute>, // Short link format: /u/namespace
   },
   {
     path: "/curate",
