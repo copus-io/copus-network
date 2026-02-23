@@ -185,6 +185,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [popupTab, setPopupTab] = useState<'curator' | 'treasuries'>('curator');
+  const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<string | null>(null);
 
   // Check scroll state
   const updateScrollState = useCallback(() => {
@@ -378,8 +379,12 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             {/* My profile card */}
             {user && (
               <Card
-                className="w-44 flex-shrink-0 bg-white border border-gray-200 cursor-pointer"
-                onClick={() => navigate(user.namespace ? `/u/${user.namespace}` : `/user/${user.id}`)}
+                className={`w-44 flex-shrink-0 cursor-pointer transition-colors ${
+                  selectedAuthorFilter === (user.username || 'Me')
+                    ? 'bg-gray-100 border-gray-400'
+                    : 'bg-white border border-gray-200'
+                }`}
+                onClick={() => setSelectedAuthorFilter(prev => prev === (user.username || 'Me') ? null : (user.username || 'Me'))}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
@@ -410,8 +415,12 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             {subscribedAuthors.map((author) => (
               <Card
                 key={author.userId}
-                className="w-44 flex-shrink-0 bg-white border border-gray-200 cursor-pointer"
-                onClick={() => handleAuthorClick(author)}
+                className={`w-44 flex-shrink-0 cursor-pointer transition-colors ${
+                  selectedAuthorFilter === author.displayName
+                    ? 'bg-gray-100 border-gray-400'
+                    : 'bg-white border border-gray-200'
+                }`}
+                onClick={() => setSelectedAuthorFilter(prev => prev === author.displayName ? null : author.displayName)}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
@@ -445,7 +454,12 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             {sampleProfiles.map((profile) => (
               <Card
                 key={profile.userId}
-                className="w-44 flex-shrink-0 bg-white border border-gray-200 cursor-pointer"
+                className={`w-44 flex-shrink-0 cursor-pointer transition-colors ${
+                  selectedAuthorFilter === profile.displayName
+                    ? 'bg-gray-100 border-gray-400'
+                    : 'bg-white border border-gray-200'
+                }`}
+                onClick={() => setSelectedAuthorFilter(prev => prev === profile.displayName ? null : profile.displayName)}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
@@ -489,8 +503,27 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
 
       {/* Content section */}
       <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
+        {selectedAuthorFilter && (
+          <div className="flex items-center gap-2 mb-4">
+            <span className="[font-family:'Lato',Helvetica] text-sm text-gray-500">
+              Showing content from <span className="font-semibold text-gray-900">{selectedAuthorFilter}</span>
+            </span>
+            <button
+              onClick={() => setSelectedAuthorFilter(null)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-          {sampleArticles.map((article) => (
+          {(selectedAuthorFilter
+            ? sampleArticles.filter(a => a.userName === selectedAuthorFilter)
+            : sampleArticles
+          ).map((article) => (
             <ArticleCard
               key={article.id}
               article={article}
@@ -501,6 +534,11 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
               }}
             />
           ))}
+          {selectedAuthorFilter && sampleArticles.filter(a => a.userName === selectedAuthorFilter).length === 0 && (
+            <div className="col-span-full text-center py-10">
+              <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">No content from this author yet</p>
+            </div>
+          )}
         </div>
       </section>
 
