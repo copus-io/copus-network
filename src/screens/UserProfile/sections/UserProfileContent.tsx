@@ -8,6 +8,7 @@ import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
+import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 
 interface UserProfileContentProps {
@@ -498,18 +499,23 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             )}
           </div>
 
-          {/* Follow button or account status (only shown when viewing other users) */}
+          {/* Subscribe button or account status (only shown when viewing other users) */}
           {user && user.namespace !== namespace && (
-            <button
-              className={`px-6 py-2 rounded-full transition-colors ${
-                accountExists
-                  ? 'bg-red text-white hover:bg-red/90'
-                  : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-              }`}
-              disabled={!accountExists}
-            >
-              {accountExists ? 'Follow' : "This account doesn't exist"}
-            </button>
+            accountExists ? (
+              <SubscribeButton
+                authorUserId={userInfo?.id}
+                authorName={userInfo?.username || userInfo?.namespace}
+                variant="default"
+                size="medium"
+              />
+            ) : (
+              <button
+                className="px-6 py-2 rounded-full bg-gray-300 text-gray-600 cursor-not-allowed"
+                disabled
+              >
+                This account doesn't exist
+              </button>
+            )
           )}
           </div>
         </div>

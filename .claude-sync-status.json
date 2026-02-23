@@ -1,0 +1,10 @@
+{
+  "service": "performance_monitor",
+  "status": "running",
+  "data": {
+    "cpu_cores": 10,
+    "system": "macOS",
+    "timestamp": "2026-02-23T19:56:49.038866"
+  },
+  "last_update": "2026-02-23T19:56:49.038926"
+}

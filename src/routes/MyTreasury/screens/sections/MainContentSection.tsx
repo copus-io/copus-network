@@ -7,6 +7,7 @@ import { TreasuryCard } from "../../../../components/ui/TreasuryCard";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import { useToast } from "../../../../components/ui/toast";
 import { ImageUploader } from "../../../../components/ImageUploader/ImageUploader";
+import SubscribeButton from "../../../../components/SubscribeButton/SubscribeButton";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -40,6 +41,8 @@ const TreasuryHeaderSection = ({
   onShare,
   onCreateSpace,
   showCreateButton = false,
+  authorUserId,
+  isViewingOtherUser = false,
 }: {
   username: string;
   namespace: string;
@@ -49,6 +52,8 @@ const TreasuryHeaderSection = ({
   onShare?: () => void;
   onCreateSpace?: () => void;
   showCreateButton?: boolean;
+  authorUserId?: number;
+  isViewingOtherUser?: boolean;
 }): JSX.Element => {
   return (
     <header className="flex flex-col items-start relative self-stretch w-full flex-[0_0_auto]">
@@ -79,6 +84,16 @@ const TreasuryHeaderSection = ({
                     className="w-5 h-5"
                   />
                 </button>
+              )}
+
+              {/* Subscribe Button - only shown when viewing other user's treasury */}
+              {isViewingOtherUser && authorUserId && (
+                <SubscribeButton
+                  authorUserId={authorUserId}
+                  authorName={username}
+                  variant="default"
+                  size="medium"
+                />
               )}
             </div>
 
@@ -498,6 +513,8 @@ export const MainContentSection = (): JSX.Element => {
         onShare={handleShare}
         onCreateSpace={() => setShowCreateSpaceModal(true)}
         showCreateButton={!isViewingOtherUser}
+        authorUserId={displayUser?.id}
+        isViewingOtherUser={isViewingOtherUser}
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}

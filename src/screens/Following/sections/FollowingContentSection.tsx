@@ -351,7 +351,7 @@ export const FollowingContentSection = (): JSX.Element => {
             <p className="text-gray-500 mb-4">{selectedTab === "all" ? "Follow spaces to see their articles here" : "No articles from this space yet"}</p>
             {selectedTab === "all" && (
               <button
-                onClick={() => startTransition(() => navigate('/'))
+                onClick={() => startTransition(() => navigate('/'))}
                 className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
               >
                 Discover Spaces
