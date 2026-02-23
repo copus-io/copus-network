@@ -8,6 +8,7 @@ import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
+import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import defaultBanner from "../../../assets/images/default-banner.svg";
 
@@ -526,22 +527,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             onClick={handleAvatarClick}
           />
 
-          {/* Username and action buttons */}
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold text-gray-900">{userInfo.username}</h1>
-            <button
-              type="button"
-              aria-label="Share profile"
-              className="relative hover:opacity-70 transition-opacity"
-              onClick={handleShare}
-            >
-              <img
-                alt="Share"
-                src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
-                className="w-5 h-5"
-              />
-            </button>
-          </div>
+          {/* Username */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
 
           {/* Namespace and bio */}
           <p className="text-sm text-gray-400 mb-2">@{userInfo.namespace}</p>
@@ -556,19 +543,31 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleCollectedCount || 0} Received</span>
           </div>
 
-          {/* Subscribe button (only shown when viewing other users) */}
-          {user && user.namespace !== namespace && (
+          {/* Action buttons - Subscribe and Share on the same line */}
+          <div className="flex items-center gap-3">
+            {!isOwnProfile && userInfo?.id && (
+              <SubscribeButton
+                authorUserId={userInfo.id}
+                authorName={userInfo.username}
+                size="medium"
+                variant="default"
+                showSubscriberCount={false}
+              />
+            )}
+
             <button
-              className={`px-6 py-2 rounded-full transition-colors ${
-                accountExists
-                  ? 'bg-red text-white hover:bg-red/90'
-                  : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-              }`}
-              disabled={!accountExists}
+              type="button"
+              aria-label="Share profile"
+              className="relative hover:opacity-70 transition-opacity"
+              onClick={handleShare}
             >
-              {accountExists ? 'Subscribe' : "This account doesn't exist"}
+              <img
+                alt="Share"
+                src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
+                className="w-5 h-5"
+              />
             </button>
-          )}
+          </div>
         </div>
       </section>
 

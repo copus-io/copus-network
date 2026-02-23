@@ -75,7 +75,7 @@ const router = createBrowserRouter([
     element: <Discovery />,
   },
   {
-    path: "/following",
+    path: "/subscription",
     element: (
       <AuthGuard requireAuth={true} showUnauthorized={true}>
         <LazyRoute><Following /></LazyRoute>
