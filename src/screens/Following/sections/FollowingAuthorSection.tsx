@@ -4,6 +4,7 @@ import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
+import { UserCard } from "../../../components/ui/UserCard";
 import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 import subscriptionService from "../../../services/subscriptionService";
 import { AuthService } from "../../../services/authService";
@@ -36,7 +37,6 @@ export const FollowingAuthorSection = (): JSX.Element => {
   const navigate = useNavigate();
   const [subscribedAuthors, setSubscribedAuthors] = useState<SubscribedAuthor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'recently-updated'>('all');
 
   // Fetch subscribed authors
   useEffect(() => {
@@ -101,16 +101,6 @@ export const FollowingAuthorSection = (): JSX.Element => {
     fetchSubscribedAuthors();
   }, [user?.id, showToast]);
 
-  // Filter authors based on selected filter
-  const filteredAuthors = subscribedAuthors.filter(author => {
-    if (selectedFilter === 'all') return true;
-    if (selectedFilter === 'active') return author.newArticlesSinceLastVisit > 0;
-    if (selectedFilter === 'recently-updated') {
-      const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
-      return new Date(author.lastUpdated).getTime() > threeDaysAgo;
-    }
-    return true;
-  });
 
   // Handle author click - navigate to author's treasury
   const handleAuthorClick = (author: SubscribedAuthor) => {
@@ -143,15 +133,6 @@ export const FollowingAuthorSection = (): JSX.Element => {
     }
   };
 
-  // Get filter counts
-  const filterCounts = {
-    all: subscribedAuthors.length,
-    active: subscribedAuthors.filter(a => a.newArticlesSinceLastVisit > 0).length,
-    recentlyUpdated: subscribedAuthors.filter(a => {
-      const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
-      return new Date(a.lastUpdated).getTime() > threeDaysAgo;
-    }).length
-  };
 
   // If user is not logged in, show login prompt
   if (!user) {
@@ -179,37 +160,6 @@ export const FollowingAuthorSection = (): JSX.Element => {
 
   return (
     <div className="flex flex-col gap-6 py-0">
-      {/* Filter Tabs */}
-      <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
-        <div className="flex items-center gap-3 flex-wrap mb-6">
-          <Button
-            onClick={() => setSelectedFilter('all')}
-            variant={selectedFilter === 'all' ? 'copus-secondary' : 'copus-ghost'}
-            size="sm"
-            className="h-10 px-5 rounded-[100px]"
-          >
-            All Authors ({filterCounts.all})
-          </Button>
-
-          <Button
-            onClick={() => setSelectedFilter('active')}
-            variant={selectedFilter === 'active' ? 'copus-secondary' : 'copus-ghost'}
-            size="sm"
-            className="h-10 px-5 rounded-[100px]"
-          >
-            🔥 New Content ({filterCounts.active})
-          </Button>
-
-          <Button
-            onClick={() => setSelectedFilter('recently-updated')}
-            variant={selectedFilter === 'recently-updated' ? 'copus-secondary' : 'copus-ghost'}
-            size="sm"
-            className="h-10 px-5 rounded-[100px]"
-          >
-            ⏰ Recently Updated ({filterCounts.recentlyUpdated})
-          </Button>
-        </div>
-      </section>
 
       {/* Authors Grid */}
       {loading ? (
@@ -230,13 +180,12 @@ export const FollowingAuthorSection = (): JSX.Element => {
             </div>
           ))}
         </section>
-      ) : filteredAuthors.length === 0 ? (
+      ) : subscribedAuthors.length === 0 ? (
         <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="text-6xl mb-4">👥</div>
             <h3 className="text-xl font-semibold text-medium-grey mb-2 [font-family:'Lato',Helvetica]">
-              {selectedFilter === 'all' ? 'No authors subscribed yet' :
-               selectedFilter === 'active' ? 'No active authors' : 'No recent author updates'}
+              No authors subscribed yet
             </h3>
             <p className="text-medium-grey mb-6 [font-family:'Lato',Helvetica]">
               Go to the discovery page to find interesting authors and subscribe to their content
@@ -253,104 +202,105 @@ export const FollowingAuthorSection = (): JSX.Element => {
         </section>
       ) : (
         <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-          {filteredAuthors.map((author) => (
-            <Card
-              key={author.userId}
-              className="cursor-pointer hover:shadow-lg transition-shadow duration-200 relative w-80 bg-white border border-gray-200 shadow-lg"
-              onClick={() => handleAuthorClick(author)}
-            >
-              <CardContent className="p-4">
-                {/* New Content Badge */}
-                {author.newArticlesSinceLastVisit > 0 && (
-                  <div className="absolute top-3 right-3 bg-red text-white text-xs font-bold px-2 py-1 rounded-full z-10">
-                    {author.newArticlesSinceLastVisit} New
-                  </div>
-                )}
+          {subscribedAuthors.map((author) => (
+            <div key={author.userId} className="relative">
+              <UserCard
+                userId={author.userId}
+                userName={author.displayName}
+                userNamespace={author.username}
+                userAvatar={author.avatar || profileDefaultAvatar}
+                userBio={author.bio}
+                userSpaces={[]} // 可以后续添加作者的空间数据
+                onUserClick={() => handleAuthorClick(author)}
+                delay={300}
+                hideDelay={200}
+              >
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow duration-200 relative w-80 bg-white border border-gray-200 shadow-lg">
+                  <CardContent className="p-4">
 
-                <div className="flex items-start gap-3">
-                  {/* Author Avatar */}
-                  <img
-                    src={author.avatar || profileDefaultAvatar}
-                    alt={`${author.displayName}'s avatar`}
-                    className="w-12 h-12 rounded-full object-cover flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = profileDefaultAvatar;
-                    }}
-                  />
+                    <div className="flex items-start gap-3">
+                      {/* Author Avatar */}
+                      <img
+                        src={author.avatar || profileDefaultAvatar}
+                        alt={`${author.displayName}'s avatar`}
+                        className="w-12 h-12 rounded-full object-cover flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-200"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = profileDefaultAvatar;
+                        }}
+                      />
 
-                  <div className="flex-1 min-w-0">
-                    {/* Author Name and Username */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4
-                        className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-base cursor-pointer hover:text-blue-600 transition-colors duration-200 truncate"
-                        title={author.displayName}
-                      >
-                        {author.displayName}
-                      </h4>
-                      {author.username && (
-                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-sm truncate">
-                          @{author.username}
-                        </span>
-                      )}
+                      <div className="flex-1 min-w-0">
+                        {/* Author Name and Username */}
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4
+                            className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-base cursor-pointer hover:text-blue-600 transition-colors duration-200 truncate"
+                            title={author.displayName}
+                          >
+                            {author.displayName}
+                          </h4>
+                          {author.username && (
+                            <span className="[font-family:'Lato',Helvetica] text-gray-500 text-sm truncate">
+                              @{author.username}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Author Bio */}
+                        {author.bio && author.bio.trim() && (
+                          <p className="[font-family:'Lato',Helvetica] text-gray-600 text-sm leading-snug overflow-hidden"
+                             style={{
+                               display: '-webkit-box',
+                               WebkitLineClamp: 2,
+                               WebkitBoxOrient: 'vertical'
+                             }}>
+                            {author.bio}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Author Bio */}
-                    {author.bio && author.bio.trim() && (
-                      <p className="[font-family:'Lato',Helvetica] text-gray-600 text-sm leading-snug overflow-hidden"
-                         style={{
-                           display: '-webkit-box',
-                           WebkitLineClamp: 2,
-                           WebkitBoxOrient: 'vertical'
-                         }}>
-                        {author.bio}
-                      </p>
+                    {/* Subscribe Button - positioned at bottom right for better visibility */}
+                    <div className="flex justify-end mt-3">
+                      <SubscribeButton
+                        authorUserId={author.userId}
+                        authorName={author.displayName}
+                        size="small"
+                        variant="minimal"
+                        showSubscriberCount={true}
+                        onSubscriptionChange={(isSubscribed) => {
+                          if (!isSubscribed) {
+                            setSubscribedAuthors(prev => prev.filter(a => a.userId !== author.userId));
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {/* Subscription Statistics - matching UserCard's treasuries section */}
+                    {author.spacesCount > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className="[font-family:'Lato',Helvetica] text-xs font-medium text-gray-700">
+                            Statistics
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500 [font-family:'Lato',Helvetica] space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span>🏷️ Spaces: {author.spacesCount}</span>
+                            <span>📄 Articles: {author.totalArticles}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Last updated</span>
+                            <span>
+                              {new Date(author.lastUpdated).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
-
-                {/* Subscribe Button - centered with margin top */}
-                <div className="flex justify-center mt-3">
-                  <SubscribeButton
-                    authorUserId={author.userId}
-                    authorName={author.displayName}
-                    size="small"
-                    variant="minimal"
-                    showSubscriberCount={true}
-                    onSubscriptionChange={(isSubscribed) => {
-                      if (!isSubscribed) {
-                        setSubscribedAuthors(prev => prev.filter(a => a.userId !== author.userId));
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* Subscription Statistics - matching UserCard's treasuries section */}
-                {author.spacesCount > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <div className="flex items-start gap-2 mb-2">
-                      <span className="[font-family:'Lato',Helvetica] text-xs font-medium text-gray-700">
-                        Statistics
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 [font-family:'Lato',Helvetica] space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span>🏷️ Spaces: {author.spacesCount}</span>
-                        <span>📄 Articles: {author.totalArticles}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>
-                          {author.emailFrequency === 'IMMEDIATE' ? 'Immediate' :
-                           author.emailFrequency === 'DAILY' ? 'Daily Digest' : 'Weekly Digest'}
-                        </span>
-                        <span>
-                          {new Date(author.lastUpdated).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              </UserCard>
+            </div>
           ))}
         </section>
       )}

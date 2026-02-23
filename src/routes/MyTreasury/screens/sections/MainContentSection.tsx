@@ -15,6 +15,7 @@ import { useCategory } from "../../../../contexts/CategoryContext";
 import CryptoJS from 'crypto-js';
 import { NoAccessPermission } from "../../../../components/NoAccessPermission/NoAccessPermission";
 import { TasteProfileModal } from "../../../../components/TasteProfileModal";
+import SubscribeButton from "../../../../components/SubscribeButton/SubscribeButton";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -40,6 +41,7 @@ interface SocialLink {
 
 // Header Section Component
 const TreasuryHeaderSection = ({
+  userId,
   username,
   namespace,
   bio,
@@ -54,6 +56,7 @@ const TreasuryHeaderSection = ({
   onImportCSV,
   onTasteProfile,
 }: {
+  userId?: number;
   username: string;
   namespace: string;
   bio?: string;
@@ -68,6 +71,7 @@ const TreasuryHeaderSection = ({
   onImportCSV?: () => void;
   onTasteProfile?: () => void;
 }): JSX.Element => {
+  const { user } = useUser(); // Add this for subscribe button
   const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
   const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -166,10 +170,23 @@ const TreasuryHeaderSection = ({
           alt={`${username} profile`}
         />
 
-        {/* Username */}
-        <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1">
-          {username}
-        </h1>
+        {/* Username and Subscribe Button */}
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4]">
+            {username}
+          </h1>
+
+          {/* Subscribe Button - show for all non-own profiles, including non-logged users */}
+          {!isOwnProfile && userId && (
+            <SubscribeButton
+              authorUserId={userId}
+              authorName={username}
+              size="medium"
+              variant="default"
+              showSubscriberCount={false}
+            />
+          )}
+        </div>
 
         {/* Namespace */}
         <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] mb-1">
@@ -692,6 +709,7 @@ export const MainContentSection = (): JSX.Element => {
     <main className="flex flex-col items-start px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
       {/* Header Section */}
       <TreasuryHeaderSection
+        userId={displayUser?.id}
         username={displayUser?.username || 'Anonymous'}
         namespace={displayUser?.namespace || 'user'}
         bio={displayUser?.bio || ''}

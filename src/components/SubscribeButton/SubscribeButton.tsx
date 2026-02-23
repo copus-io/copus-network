@@ -5,8 +5,10 @@ import antiAbuseService from '../../services/antiAbuseService';
 import { AuthorInfo, SubscribeButtonState, EmailFrequency, SPACE_TYPES } from '../../types/subscription';
 
 interface SubscribeButtonProps {
-  authorUserId: number;
+  authorUserId?: number;
   authorName?: string;
+  spaceId?: number;
+  spaceName?: string;
   size?: 'small' | 'medium' | 'large';
   onSubscriptionChange?: (isSubscribed: boolean) => void;
   className?: string;
@@ -16,6 +18,8 @@ interface SubscribeButtonProps {
   position?: 'inline' | 'fixed-bottom' | 'sticky';
   // Space type check - private spaces don't show subscribe button
   spaceType?: number;
+  // Subscription type
+  subscriptionType?: 'author' | 'space';
 }
 
 /**
@@ -32,13 +36,16 @@ interface SubscribeButtonProps {
 const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   authorUserId,
   authorName = 'Author',
+  spaceId,
+  spaceName = 'Space',
   size = 'medium',
   onSubscriptionChange,
   className = '',
   showSubscriberCount = true,
   variant = 'default',
   position = 'inline',
-  spaceType
+  spaceType,
+  subscriptionType = 'author'
 }) => {
   const [state, setState] = useState<SubscribeButtonState>({
     isSubscribed: false,
@@ -48,7 +55,6 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   });
 
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [email, setEmail] = useState('');
   const [authorInfo, setAuthorInfo] = useState<AuthorInfo | null>(null);
 
@@ -61,14 +67,16 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
 
   // Debug: Monitor state changes
   useEffect(() => {
-    console.log('🔵 Modal state change:', { showEmailModal, showConfirmModal });
-  }, [showEmailModal, showConfirmModal]);
+    console.log('🔵 Modal state change:', { showEmailModal });
+  }, [showEmailModal]);
 
   // Check subscription status
   useEffect(() => {
     loadSubscriptionStatus();
-    loadAuthorInfo();
-  }, [authorUserId]);
+    if (subscriptionType === 'author') {
+      loadAuthorInfo();
+    }
+  }, [authorUserId, spaceId, subscriptionType]);
 
   const loadSubscriptionStatus = async () => {
     setState(prev => ({ ...prev, isLoading: true }));
@@ -125,9 +133,9 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
       return;
     }
 
-    // Users with email, directly show confirmation modal
-    console.log('🔵 Logged in and has email, show confirmation modal');
-    setShowConfirmModal(true);
+    // Users with email, directly subscribe
+    console.log('🔵 Logged in and has email, directly subscribe');
+    await handleConfirmSubscribe();
   };
 
   const handleEmailSubmit = async () => {
@@ -152,13 +160,13 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
       const emailValidation = antiAbuseService.validateEmailForSubscription(email);
       if (!emailValidation.isValid) {
         console.log('❌ Email validation failed:', emailValidation.reason);
-        showToast(`Invalid email: ${emailValidation.reason === 'disposable_email' ? 'Disposable email not supported' : 'Email format error'}`, 'error');
+        showToast(`Invalid email: ${emailValidation.reason === 'disposable_email' ? 'Temporary email not supported' : 'Invalid email format'}`, 'error');
         return;
       }
 
       if (emailValidation.risk === 'high') {
         console.log('⚠️ High-risk email, blocking subscription');
-        showToast('This email has risks, please use another email', 'error');
+        showToast('This email has security risks, please use another email', 'error');
         return;
       }
 
@@ -179,18 +187,19 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
       }
 
       if (riskAssessment.action === 'manual_review') {
-        showToast(riskAssessment.message || 'Subscription request needs review, we will process within 24 hours', 'info');
+        showToast(riskAssessment.message || 'Subscription request requires review, we will process it within 24 hours', 'info');
         return;
       }
 
       if (riskAssessment.action === 'warn') {
         // Show warning but allow continue
-        showToast(riskAssessment.message || 'System detected potential risk, please confirm your operation', 'warning');
+        showToast(riskAssessment.message || 'System detected potential risks, please confirm your operation', 'warning');
       }
 
       // Pass all checks, continue flow
       setShowEmailModal(false);
-      setShowConfirmModal(true);
+      // 直接订阅，不显示推送频率确认
+      await handleConfirmSubscribe();
 
     } catch (error) {
       console.error('Anti-abuse check failed:', error);
@@ -198,14 +207,13 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     }
   };
 
-  const handleConfirmSubscribe = async (frequency: EmailFrequency = 'DAILY') => {
+  const handleConfirmSubscribe = async () => {
     setState(prev => ({ ...prev, isLoading: true }));
-    setShowConfirmModal(false);
 
     try {
       const result = await subscriptionService.subscribeToAuthor({
         authorUserId,
-        emailFrequency: frequency,
+        emailFrequency: 'DAILY', // 默认使用每日摘要
         email: email || undefined
       });
 
@@ -217,10 +225,8 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
           isLoading: false
         }));
 
-        showToast('🎉 Subscription successful! You will receive update notifications via email.', 'success');
+        showToast('🎉 Successfully subscribed! You will receive email notifications for updates.', 'success');
         onSubscriptionChange?.(true);
-
-        // According to product requirements: subscription takes effect immediately, no email verification needed
       } else {
         showToast(result.message || 'Subscription failed, please try again later', 'error');
         setState(prev => ({ ...prev, isLoading: false }));
@@ -246,15 +252,15 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
           isLoading: false
         }));
 
-        showToast('Unsubscribed', 'info');
+        showToast('Successfully unsubscribed', 'info');
         onSubscriptionChange?.(false);
       } else {
-        showToast(result.message || 'Unsubscribe failed', 'error');
+        showToast(result.message || 'Failed to unsubscribe', 'error');
         setState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
       console.error('Unsubscribe failed:', error);
-      showToast('Unsubscribe failed, please try again later', 'error');
+      showToast('Failed to unsubscribe, please try again later', 'error');
       setState(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -347,15 +353,17 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
       return (
         <>
           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-          Processing...
+          Loading...
         </>
       );
     }
 
     if (state.isSubscribed) {
+      const subscribedText = subscriptionType === 'space' ? 'Following' : 'Subscribed';
+
       return (
         <>
-          ✅ Subscribed
+          ✅ {subscribedText}
           {showSubscriberCount && size !== 'small' && (
             <span className="text-xs opacity-75">({state.subscriberCount})</span>
           )}
@@ -363,11 +371,14 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
       );
     }
 
+    const targetName = subscriptionType === 'space' ? spaceName : authorName;
+    const subscribeText = subscriptionType === 'space' ? 'Follow' : 'Subscribe';
+
     return (
       <>
-        📧 Subscribe to {authorName}
+        📧 {subscribeText} {targetName}
         {showSubscriberCount && size !== 'small' && state.subscriberCount > 0 && (
-          <span className="text-xs opacity-90">({state.subscriberCount} subscribers)</span>
+          <span className="text-xs opacity-90">({state.subscriberCount} {subscriptionType === 'space' ? 'followers' : 'subscribers'})</span>
         )}
       </>
     );
@@ -413,7 +424,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
         disabled={state.isLoading}
         className={`${getButtonStyles()} touch-target subscribe-button no-zoom`}
         style={getInlineStyles()}
-        title={state.isSubscribed ? 'Click to unsubscribe' : 'Click to subscribe to author'}
+        title={state.isSubscribed ? 'Click to unsubscribe' : 'Click to subscribe'}
       >
         {getButtonContent()}
       </button>
@@ -454,18 +465,18 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold mb-4" style={{ color: '#1f2937' }}>
-              📧 Subscription requires email address
+              📧 {subscriptionType === 'space' ? 'Following' : 'Subscription'} requires email address
             </h3>
 
             <p className="text-gray-600 mb-4" style={{ color: '#6b7280' }}>
-              To receive subscription notifications from <strong>{authorName}</strong>, please provide your email address
+              To receive {subscriptionType === 'space' ? 'updates' : 'subscription'} notifications from <strong>{subscriptionType === 'space' ? spaceName : authorName}</strong>, please provide your email address
             </p>
 
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter email address"
+              placeholder="Please enter email address"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               style={{
                 width: '100%',
@@ -536,7 +547,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
               >
-                Continue Subscribe
+                Continue {subscriptionType === 'space' ? 'Following' : 'Subscription'}
               </button>
             </div>
           </div>
@@ -544,136 +555,6 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
         document.body
       )}
 
-      {/* Subscription confirmation modal */}
-      {showConfirmModal && createPortal(
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-          style={{
-            zIndex: 99999,
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowConfirmModal(false);
-            }
-          }}
-        >
-          <div
-            className="bg-white rounded-lg p-6 w-full max-w-lg mx-4"
-            style={{ backgroundColor: '#ffffff', borderRadius: '0.5rem' }}
-          >
-            <h3 className="text-lg font-semibold mb-4" style={{ color: '#1f2937' }}>
-              📧 Subscription Confirmation
-            </h3>
-
-            {authorInfo && (
-              <div
-                className="bg-gray-50 rounded-lg p-4 mb-4"
-                style={{ backgroundColor: '#f9fafb', borderRadius: '0.5rem' }}
-              >
-                <div className="flex items-center gap-3">
-                  <img
-                    src={authorInfo.avatar || '/placeholder-avatar.png'}
-                    alt={authorInfo.displayName}
-                    className="w-12 h-12 rounded-full"
-                    style={{ width: '3rem', height: '3rem', borderRadius: '50%' }}
-                  />
-                  <div>
-                    <h4 className="font-medium" style={{ color: '#1f2937', fontWeight: '500' }}>
-                      {authorInfo.displayName}
-                    </h4>
-                    <p className="text-sm text-gray-600" style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                      {authorInfo.spacesCount} spaces
-                    </p>
-                  </div>
-                </div>
-                {authorInfo.bio && (
-                  <p className="text-sm text-gray-600 mt-2" style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                    {authorInfo.bio}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-3 mb-6">
-              <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input type="radio" name="frequency" value="IMMEDIATE" defaultChecked={false} />
-                <div>
-                  <div className="font-medium" style={{ color: '#1f2937', fontWeight: '500' }}>Immediate Notification</div>
-                  <div className="text-sm text-gray-600" style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                    Send email immediately when new content is available
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input type="radio" name="frequency" value="DAILY" defaultChecked={true} />
-                <div>
-                  <div className="font-medium" style={{ color: '#1f2937', fontWeight: '500' }}>Daily Summary</div>
-                  <div className="text-sm text-gray-600" style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                    Send daily summary (Recommended)
-                  </div>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input type="radio" name="frequency" value="WEEKLY" defaultChecked={false} />
-                <div>
-                  <div className="font-medium" style={{ color: '#1f2937', fontWeight: '500' }}>Weekly Summary</div>
-                  <div className="text-sm text-gray-600" style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-                    Send weekly summary
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                style={{
-                  backgroundColor: '#e5e7eb',
-                  color: '#374151',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem 1rem',
-                  cursor: 'pointer',
-                  fontWeight: '500'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const selected = document.querySelector('input[name="frequency"]:checked') as HTMLInputElement;
-                  const frequency = (selected?.value as EmailFrequency) || 'DAILY';
-                  handleConfirmSubscribe(frequency);
-                }}
-                style={{
-                  backgroundColor: '#dc2626',
-                  color: '#ffffff',
-                  border: '2px solid #b91c1c',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem 1.5rem',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                Confirm Subscribe
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </>
   );
 };

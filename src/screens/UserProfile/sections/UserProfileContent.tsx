@@ -8,6 +8,7 @@ import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
+import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import defaultBanner from "../../../assets/images/default-banner.svg";
 
@@ -527,8 +528,20 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           />
 
           {/* Username and action buttons */}
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-bold text-gray-900">{userInfo.username}</h1>
+
+            {/* Subscribe Button - show for all non-own profiles, including non-logged users */}
+            {!isOwnProfile && userInfo?.id && (
+              <SubscribeButton
+                authorUserId={userInfo.id}
+                authorName={userInfo.username}
+                size="medium"
+                variant="default"
+                showSubscriberCount={false}
+              />
+            )}
+
             <button
               type="button"
               aria-label="Share profile"
