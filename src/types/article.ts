@@ -8,6 +8,17 @@
  */
 
 /**
+ * Article visibility constants
+ */
+export const ARTICLE_VISIBILITY = {
+  PUBLIC: 0,   // 公开 - 所有人可见
+  PRIVATE: 1,  // 私享 - 仅作者可见
+  UNLISTED: 2  // 未列出 - 仅通过直链访问
+} as const;
+
+export type ArticleVisibility = typeof ARTICLE_VISIBILITY[keyof typeof ARTICLE_VISIBILITY];
+
+/**
  * Price information for paid content from backend API.
  *
  * @interface PriceInfo
@@ -57,6 +68,7 @@ export interface BackendAuthorInfo {
   namespace: string;
   username: string;
   faceUrl: string;
+  bio?: string; // 作者个人简介，60字符限制
 }
 
 export interface BackendCategoryInfo {
@@ -96,6 +108,13 @@ export interface BackendArticle {
    */
   seoDescription?: string;
   seoKeywords?: string;
+  /**
+   * Article visibility status
+   * 0: Public (公开) - visible to everyone
+   * 1: Private (私享) - only visible to author
+   * 2: Unlisted (未列出) - accessible via direct link but not in public feeds
+   */
+  visibility?: number;
 }
 
 export interface BackendApiResponse {
@@ -137,6 +156,8 @@ export interface Article {
   // x402 payment fields
   paymentPrice?: string; // Price in USDC (e.g., "0.01")
   isPaymentRequired?: boolean; // Whether content requires payment
+  // Article visibility status (0: public, 1: private, 2: unlisted)
+  visibility?: number;
   // SEO fields
   seoDescription?: string;
   seoKeywords?: string;
@@ -167,6 +188,8 @@ export interface ArticleDetailResponse {
     id: number;
     namespace: string;
     username: string;
+    bio?: string; // 作者个人简介
+    coverUrl?: string; // 作者封面图
   };
   categoryInfo: {
     articleCount: number;
@@ -186,6 +209,13 @@ export interface ArticleDetailResponse {
   viewCount: number;
   commentCount: number; // Total number of comments for this article
   /**
+   * Article visibility status
+   * 0: Public (公开) - visible to everyone
+   * 1: Private (私享) - only visible to author
+   * 2: Unlisted (未列出) - accessible via direct link but not in public feeds
+   */
+  visibility: number;
+  /**
    * Arweave chain ID for onchain content storage
    * @see https://arseed.web3infra.dev/
    */
@@ -200,6 +230,10 @@ export interface ArticleDetailResponse {
    * SEO data - JSON string containing custom SEO settings
    */
   seoData?: string;
+  /**
+   * AI-generated SEO data
+   */
+  seoDataByAi?: string;
 }
 
 // My created articles API parameters
@@ -251,4 +285,149 @@ export interface SEOSettingsResponse {
   status: number;
   msg: string;
   data: boolean;
+}
+
+// Bind articles to spaces API types
+export interface BindArticlesRequest {
+  articleId: number;
+  spaceIds: number[];
+}
+
+export interface BindArticlesResponse {
+  isLiked: boolean;
+  likeCount: number;
+  state: boolean;
+}
+
+// Bind articles API response wrapper
+export interface BindArticlesApiResponse {
+  status: number;
+  msg: string;
+  data: BindArticlesResponse;
+}
+
+// Remove article from space request
+export interface RemoveArticleFromSpaceRequest {
+  articleId: number;
+  spaceId: number;
+}
+
+// Remove article from space response
+export interface RemoveArticleFromSpaceResponse {
+  status: number;
+  msg: string;
+  data: boolean;
+}
+
+/**
+ * Utility functions for article visibility
+ */
+
+/**
+ * Check if an article is private
+ */
+export const isArticlePrivate = (article: { visibility?: number } | ArticleDetailResponse): boolean => {
+  return article.visibility === ARTICLE_VISIBILITY.PRIVATE;
+};
+
+/**
+ * Check if an article is public
+ */
+export const isArticlePublic = (article: { visibility?: number } | ArticleDetailResponse): boolean => {
+  return article.visibility === ARTICLE_VISIBILITY.PUBLIC;
+};
+
+/**
+ * Check if an article is unlisted
+ */
+export const isArticleUnlisted = (article: { visibility?: number } | ArticleDetailResponse): boolean => {
+  return article.visibility === ARTICLE_VISIBILITY.UNLISTED;
+};
+
+/**
+ * Check if a user can view an article based on visibility and ownership
+ */
+export const canUserViewArticle = (
+  article: { visibility?: number; authorInfo?: { id: number }; userId?: number },
+  userId?: number
+): boolean => {
+  // Public articles are always visible
+  if (article.visibility === ARTICLE_VISIBILITY.PUBLIC) {
+    return true;
+  }
+
+  // Private articles are only visible to the author
+  if (article.visibility === ARTICLE_VISIBILITY.PRIVATE) {
+    const authorId = article.authorInfo?.id || article.userId;
+    return userId !== undefined && authorId === userId;
+  }
+
+  // Unlisted articles are visible via direct link (assume yes if checking)
+  if (article.visibility === ARTICLE_VISIBILITY.UNLISTED) {
+    return true;
+  }
+
+  // Default to public if visibility is not set
+  return true;
+};
+
+/**
+ * Convert visibility number to legacy isPrivate boolean (for backward compatibility)
+ */
+export const convertVisibilityToLegacyPrivate = (visibility?: number): boolean => {
+  return visibility === ARTICLE_VISIBILITY.PRIVATE;
+};
+
+/**
+ * Taste Profile API Response
+ *
+ * This is the structure returned by /api/taste/{namespace}.json
+ * Used by external AIs (ChatGPT, Claude, etc.) to understand a user's taste/preferences
+ *
+ * Note: Only PUBLIC works are included in the curations array.
+ * The stats.privateWorksCount tells AIs how many private works exist but aren't included.
+ */
+export interface TasteProfileResponse {
+  /** Username */
+  user: string;
+  /** User's namespace (URL slug) */
+  namespace: string;
+  /** URL to user's Copus profile */
+  profileUrl: string;
+
+  /** Work statistics */
+  stats: {
+    /** Number of public works (included in curations) */
+    publicWorksCount: number;
+    /** Number of private works (NOT included in curations) */
+    privateWorksCount: number;
+    /** Total works count */
+    totalWorksCount: number;
+  };
+
+  /** Array of public curations with AI-generated taste data */
+  curations: TasteProfileCuration[];
+
+  /** Note for AI explaining the data scope */
+  note: string;
+}
+
+/**
+ * Individual curation entry in taste profile
+ */
+export interface TasteProfileCuration {
+  /** Article UUID */
+  uuid: string;
+  /** Article title */
+  title: string;
+  /** User's recommendation/curation note */
+  recommendation: string;
+  /** Original content URL */
+  targetUrl: string;
+  /** Cover image URL */
+  coverUrl?: string;
+  /** AI-generated SEO/taste data (JSON string) */
+  seoDataByAi?: string;
+  /** Creation timestamp */
+  createdAt: string;
 }

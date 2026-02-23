@@ -26,7 +26,7 @@ export const CommentQuote: React.FC<CommentQuoteProps> = ({
       <div className="text-sm text-gray-500 leading-relaxed">
         <span className="text-blue-400">@{displayUserName}</span>
         <span className="mx-1 text-gray-400">:</span>
-        <span className="italic text-gray-400">"{quoteContent || '原评论内容'}"</span>
+        <span className="italic text-gray-400">"{quoteContent || 'Original comment'}"</span>
       </div>
 
       {/* 用户的实际回复内容 */}

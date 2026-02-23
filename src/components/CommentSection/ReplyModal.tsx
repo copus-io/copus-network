@@ -140,7 +140,7 @@ export const ReplyModal: React.FC<ReplyModalProps> = ({
 
                     {/* 评论内容 */}
                     <div className="text-blue-800 text-sm leading-relaxed [font-family:'Lato',Helvetica] font-light">
-                      {targetComment.content === '回复的评论' ? (
+                      {targetComment.content === 'Reply comment' ? (
                         <span className="italic text-gray-500">Replying to @{targetComment.authorName}</span>
                       ) : (
                         targetComment.content.split('\n').map((line, index) => (

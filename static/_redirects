@@ -1,3 +1,7 @@
 # Cloudflare Pages _redirects file
+
+# Redirect www to non-www (critical for AI agents that don't execute JS)
+https://www.copus.network/* https://copus.network/:splat 301
+
 # Handle SPA routing - serve index.html for all routes with 200 status
 /*    /index.html   200

@@ -83,7 +83,7 @@ export const CommentImageUploader = forwardRef<CommentImageUploaderRef, CommentI
         // 验证文件
         const validation = validateImageFile(file);
         if (!validation.isValid) {
-          errors.push(`${file.name}: ${validation.error || '文件格式不支持'}`);
+          errors.push(`${file.name}: ${validation.error || 'File format not supported'}`);
           return null;
         }
 
@@ -125,7 +125,7 @@ export const CommentImageUploader = forwardRef<CommentImageUploaderRef, CommentI
 
       } catch (error) {
         console.error(`🖼️ 图片处理失败 ${index + 1}:`, error);
-        errors.push(`${file.name}: 图片处理失败`);
+        errors.push(`${file.name}: Image processing failed`);
         return null;
       }
     }));
@@ -135,7 +135,7 @@ export const CommentImageUploader = forwardRef<CommentImageUploaderRef, CommentI
       if (result.status === 'fulfilled' && result.value) {
         newImages.push(result.value);
       } else if (result.status === 'rejected') {
-        errors.push('图片处理失败');
+        errors.push('Image processing failed');
       }
     });
 
@@ -179,7 +179,7 @@ export const CommentImageUploader = forwardRef<CommentImageUploaderRef, CommentI
 
   // 处理图片点击预览
   const handleImageClick = (clickedImageUrl: string) => {
-    openPreview(clickedImageUrl, '图片预览');
+    openPreview(clickedImageUrl, 'Image preview');
   };
 
   // 检查是否可以添加更多图片

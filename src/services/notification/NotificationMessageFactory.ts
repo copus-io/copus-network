@@ -76,12 +76,12 @@ export class NotificationTemplates {
   }> = {
     [NotificationType.FOLLOW]: {
       title: '新关注',
-      messageTemplate: (data) => `[${data.senderUsername}] followed your treasury [${data.targetTitle}]`,
+      messageTemplate: (data) => `[${data.senderUsername}] subscribed to your treasury [${data.targetTitle}]`,
       actionUrl: (data) => `/treasury/${data.spaceNamespace || data.senderNamespace || data.senderUsername}`
     },
     [NotificationType.FOLLOW_TREASURY]: {
       title: '关注空间更新',
-      messageTemplate: (data) => `[${data.targetTitle}] you follow has listed a new treasure [${data.articleTitle}]`,
+      messageTemplate: (data) => `[${data.targetTitle}] you subscribe to has listed a new treasure [${data.articleTitle}]`,
       actionUrl: (data) => `/work/${data.articleUuid || data.articleId}`
     },
     [NotificationType.TREASURY]: {
@@ -141,7 +141,16 @@ export class NotificationTemplates {
     [NotificationType.COLLECT]: {
       title: '收藏通知',
       messageTemplate: (data) => {
-        const spaceNames = data.spaces?.map((space: any) => `[${space.name}]`).join('，') || '[空间]';
+        const spaceNames = data.spaces?.map((space: any) => {
+          // Transform "Default Collections Space" to "Username's Treasury"
+          let spaceName = space.name;
+          if (spaceName === 'Default Collections Space') {
+            // Use the space owner's username if available, otherwise use sender's username
+            const username = space.username || space.ownerUsername || data.senderUsername;
+            spaceName = `${username}'s Treasury`;
+          }
+          return `[${spaceName}]`;
+        }).join('，') || '[空间]';
         return `[${data.senderUsername}] collected [${data.articleTitle}] in ${spaceNames}`;
       },
       actionUrl: (data) => `/work/${data.articleUuid || data.articleId}`
@@ -214,6 +223,7 @@ export class MessageContentProcessor {
         });
 
         // 处理新的collect类型数据结构 (收藏消息)
+        // Note: Don't transform space names here - let the template do it with senderUsername
         if (parsed.spaces && parsed.articleInfo) {
           return {
             targetTitle: parsed.articleInfo.title,
@@ -221,7 +231,6 @@ export class MessageContentProcessor {
             targetUuid: parsed.articleInfo.uuid,
             parsedData: {
               ...parsed,
-              spaces: parsed.spaces,
               articleTitle: parsed.articleInfo.title,
               articleId: parsed.articleInfo.id,
               articleUuid: parsed.articleInfo.uuid

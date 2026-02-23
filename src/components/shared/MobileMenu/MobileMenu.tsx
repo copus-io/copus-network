@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useToast } from '../../ui/toast';
 import { useNotification } from '../../../contexts/NotificationContext';
+// Analytics service removed
 import profileDefaultAvatar from '../../../assets/images/profile-default.svg';
 import searchIcon from '../../../assets/images/icon-search.svg';
 
@@ -108,8 +109,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
     },
     {
       id: "following",
-      label: "Following",
-      path: "/following",
+      label: "Subscriptions",
+      path: userNamespace ? "/following" : "/login",
     },
     {
       id: "treasury",
@@ -119,11 +120,16 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
     {
       id: "earnings",
       label: "Earnings",
-      path: "/earning",
+      path: userNamespace ? "/earning" : "/login",
     },
   ];
 
   const handleMenuItemClick = (item: MenuItem) => {
+    // Track publish button clicks
+    if (item.path === '/curate') {
+      // Analytics tracking removed
+    }
+
     startTransition(() => {
       navigate(item.path);
     });
@@ -225,9 +231,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             {isLoggedIn && (
               <button
                 onClick={() => {
-                  startTransition(() => {
-                    navigate('/setting');
-                  });
+                  navigate('/setting');
                   onClose();
                 }}
                 className="cursor-pointer hover:opacity-80 transition-opacity"
@@ -258,9 +262,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             {isLoggedIn && (
               <button
                 onClick={() => {
-                  startTransition(() => {
-                    navigate('/notification');
-                  });
+                  navigate('/notification');
                   onClose();
                 }}
                 className="flex items-center justify-center relative"
@@ -277,9 +279,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
             {!isLoggedIn && (
               <button
                 onClick={() => {
-                  startTransition(() => {
-                    navigate('/login');
-                  });
+                  navigate('/login');
                   onClose();
                 }}
                 className="inline-flex items-center justify-center gap-2 px-4 h-[32px] bg-white rounded-[50px] border border-solid border-[#454545] hover:bg-gray-50 transition-colors cursor-pointer"
@@ -381,7 +381,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                   rel="noopener noreferrer"
                   className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px] hover:text-dark-grey transition-colors"
                 >
-                  © 2025 S31 Labs
+                  © 2026 S31 Labs
                 </a>
               </p>
             </footer>

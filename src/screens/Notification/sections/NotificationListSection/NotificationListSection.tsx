@@ -591,7 +591,7 @@ export const NotificationListSection = (): JSX.Element => {
     const targetComment: Comment = {
       id: notification.metadata?.commentId || notification.metadata?.extra?.commentId || notification.id.toString(),
       uuid: notification.metadata?.commentId || notification.metadata?.extra?.commentId || notification.id.toString(),
-      content: notification.metadata?.extra?.commentContent || notification.metadata?.commentContent || '评论内容',
+      content: notification.metadata?.extra?.commentContent || notification.metadata?.commentContent || 'Comment content',
       contentType: 'text',
       targetType: 'article', // 默认为文章
       targetId: notification.articleId || notification.metadata?.targetId || notification.metadata?.targetUuid || '',

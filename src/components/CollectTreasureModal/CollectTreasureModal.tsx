@@ -4,6 +4,9 @@ import { AuthService } from "../../services/authService";
 import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
 import { logger } from "../../utils/logger";
+import { ImageUploader } from "../ImageUploader/ImageUploader";
+import { BindableSpace } from "../../types/space";
+import { CreateSpaceModal } from "../CreateSpaceModal/CreateSpaceModal";
 
 interface CollectTreasureModalProps {
   isOpen: boolean;
@@ -16,20 +19,7 @@ interface CollectTreasureModalProps {
   onSaveComplete?: (isCollected: boolean, collectionCount: number) => void; // Callback with collection state
 }
 
-interface BindableSpace {
-  articleCount: number;
-  data: Array<{
-    coverUrl: string;
-    targetUrl: string;
-    title: string;
-  }>;
-  id: number;
-  isBind: boolean;
-  name: string;
-  namespace: string;
-  spaceType: number;
-  userId: number;
-}
+// BindableSpace type imported from types/space.ts
 
 interface Collection {
   id: string;
@@ -39,6 +29,7 @@ interface Collection {
   isSelected: boolean; // Current selection state in modal
   wasOriginallyBound: boolean; // Was bound when modal opened
   spaceType?: number;
+  visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
   namespace?: string;
   firstLetter: string; // First letter of space name for avatar fallback
 }
@@ -60,7 +51,6 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateNew, setShowCreateNew] = useState(false);
-  const [newTreasuryName, setNewTreasuryName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedArticleId, setResolvedArticleId] = useState<number | null>(null);
   const [curationsSpaceId, setCurationsSpaceId] = useState<number | null>(null); // Store Curations space ID to always include in save
@@ -116,19 +106,19 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
           // For default spaces, show "Username's Treasury" or "Username's Curations"
           let displayName: string;
           if (spaceTypeNum === 1) {
-            displayName = `${user.username || 'User'}'s Treasury`;
+            displayName = `${user.username || 'Anonymous'}'s Treasury`;
           } else if (spaceTypeNum === 2) {
-            displayName = `${user.username || 'User'}'s Curations`;
+            displayName = `${user.username || 'Anonymous'}'s Curations`;
           } else {
             displayName = space.name || 'Untitled Treasury';
           }
 
           // For default Treasury/Curations (spaceType 1 & 2), use user's profile image
-          // For custom spaces, use the first article's cover image from this collection
+          // For custom spaces, use space's faceUrl (avatar) if available, fallback to first article's cover image
           const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
           const coverImage = isDefaultSpace
             ? (user.faceUrl || '')
-            : (space.data?.[0]?.coverUrl || '');
+            : (space.faceUrl || space.data?.[0]?.coverUrl || '');
 
           // Get first letter of space name for avatar fallback
           const spaceName = space.name || displayName;
@@ -142,6 +132,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             isSelected: space.isBind, // Initially selected if already bound
             wasOriginallyBound: space.isBind,
             spaceType: spaceTypeNum,
+            visibility: space.visibility, // Include visibility from API
             namespace: space.namespace,
             firstLetter,
           };
@@ -193,9 +184,23 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
     if (!isOpen) {
       setSearchQuery("");
       setShowCreateNew(false);
-      setNewTreasuryName("");
       setIsSubmitting(false);
     }
+  }, [isOpen]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
   }, [isOpen]);
 
   // Toggle selection for a collection
@@ -264,51 +269,24 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
     onClose();
   };
 
-  const handleCreateNewTreasury = async () => {
-    if (!newTreasuryName.trim()) {
-      showToast('Please enter a treasury name', 'error');
-      return;
-    }
+  const handleTreasuryCreated = (createdSpace: any) => {
+    // Add the new treasury to collections list and select it
+    // Use empty string for image to trigger firstLetter fallback (custom treasuries don't use profile image)
+    const treasuryName = createdSpace.name;
+    setCollections(prev => [...prev, {
+      id: createdSpace.id.toString(),
+      numericId: createdSpace.id,
+      name: treasuryName,
+      image: '', // Empty to trigger firstLetter fallback
+      isSelected: true, // Auto-select the newly created treasury
+      wasOriginallyBound: false,
+      spaceType: createdSpace.spaceType || 0,
+      visibility: createdSpace.visibility, // Include visibility for private tag display
+      namespace: createdSpace.namespace,
+      firstLetter: treasuryName.charAt(0).toUpperCase(),
+    }]);
 
-    try {
-      setIsSubmitting(true);
-
-      // Call the createSpace API to create a new treasury
-      const createResponse = await AuthService.createSpace(newTreasuryName.trim());
-      logger.log('Create space response:', createResponse);
-
-      // Extract the created space from response
-      const createdSpace = createResponse?.data || createResponse;
-
-      if (!createdSpace?.id) {
-        throw new Error('Failed to create treasury - no ID returned');
-      }
-
-      showToast(`Created "${newTreasuryName.trim()}"`, 'success');
-
-      // Add the new treasury to collections list and select it
-      // Use empty string for image to trigger firstLetter fallback (custom treasuries don't use profile image)
-      const treasuryName = createdSpace.name || newTreasuryName.trim();
-      setCollections(prev => [...prev, {
-        id: createdSpace.id.toString(),
-        numericId: createdSpace.id,
-        name: treasuryName,
-        image: '', // Empty to trigger firstLetter fallback
-        isSelected: true, // Auto-select the newly created treasury
-        wasOriginallyBound: false,
-        spaceType: createdSpace.spaceType || 0,
-        namespace: createdSpace.namespace,
-        firstLetter: treasuryName.charAt(0).toUpperCase(),
-      }]);
-
-      setShowCreateNew(false);
-      setNewTreasuryName("");
-    } catch (err) {
-      logger.error('Failed to create treasury:', err);
-      showToast('Failed to create treasury', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
+    setShowCreateNew(false);
   };
 
   // Filter collections by search query
@@ -322,6 +300,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   if (!isOpen) return null;
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
@@ -331,7 +310,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       {/* Modal */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 max-h-[80vh]"
+        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 pb-4 max-h-[80vh]`}
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
@@ -339,84 +318,17 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         {/* Close button */}
         <button
           onClick={handleCancel}
-          className="absolute top-[20px] right-[20px] p-2.5 cursor-pointer hover:opacity-70 transition-opacity z-20"
+          className="absolute top-5 right-5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-20"
           aria-label="Close dialog"
           type="button"
         >
-          <svg
-            className="w-3 h-3"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#686868"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
-        {showCreateNew ? (
-          // Create New Treasury View
-          <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
-            <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-              <h2
-                id="collect-dialog-title"
-                className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-              >
-                New treasury
-              </h2>
-
-              <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                <label
-                  htmlFor="treasury-name"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                >
-                  Name
-                </label>
-
-                <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                  <input
-                    id="treasury-name"
-                    type="text"
-                    value={newTreasuryName}
-                    onChange={(e) => setNewTreasuryName(e.target.value)}
-                    placeholder="Like &quot;Place to go&quot;"
-                    className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
-                    aria-required="true"
-                    autoFocus
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-              <button
-                className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => setShowCreateNew(false)}
-                type="button"
-              >
-                <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                  Cancel
-                </span>
-              </button>
-
-              <button
-                className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                onClick={handleCreateNewTreasury}
-                disabled={!newTreasuryName.trim() || isSubmitting}
-                type="button"
-              >
-                <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                  {isSubmitting ? 'Creating...' : 'Create'}
-                </span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          // Collection List View
-          <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-5">
+        {/* Collection List View */}
+        <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-5">
             <div className="flex flex-col items-start justify-center gap-5 relative self-stretch w-full flex-[0_0_auto]">
               {/* Title and New Treasury on same line */}
               <div className="flex items-center justify-between w-full">
@@ -464,21 +376,21 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               </div>
             </div>
 
-            {/* Collections List - scrollbar hidden until hover */}
+            {/* Collections List - scrollbar hidden until hover, fixed height */}
             <div
-              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex flex-col items-start gap-0 relative self-stretch w-full h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
               onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
             >
               {loading ? (
                 <div className="flex items-center justify-center w-full py-8">
-                  <div className="text-gray-500">Loading collections...</div>
+                  <div className="text-gray-500">Loading treasuries...</div>
                 </div>
               ) : filteredCollections.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 w-full text-center">
                   <p className="text-gray-500 text-sm">
-                    {searchQuery ? 'No collections found' : 'No collections yet'}
+                    No treasuries found
                   </p>
                 </div>
               ) : (
@@ -515,24 +427,24 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                           )}
                         </div>
 
-                        {collection.image ? (
-                          <img
-                            className="relative w-12 h-12 object-cover rounded-full"
-                            alt={collection.name}
-                            src={collection.image}
-                          />
-                        ) : (
-                          <div className="relative w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-lg font-medium text-gray-600">
-                              {collection.firstLetter}
-                            </span>
-                          </div>
-                        )}
-                        <div className="inline-flex flex-col items-start justify-center gap-1 relative flex-[0_0_auto]">
-                          <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
-                            {collection.name}
-                          </span>
+                        <div className="relative">
+                          {collection.image ? (
+                            <img
+                              className="w-12 h-12 object-cover rounded-full"
+                              alt={collection.name}
+                              src={collection.image}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-lg font-medium text-gray-600">
+                                {collection.firstLetter}
+                              </span>
+                            </div>
+                          )}
                         </div>
+                        <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
+                          {collection.name}
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -565,9 +477,21 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+
+      {/* Unified CreateSpaceModal */}
+      <CreateSpaceModal
+        isOpen={showCreateNew}
+        onClose={() => setShowCreateNew(false)}
+        onSuccess={handleTreasuryCreated}
+        mode="full"
+        title="Create new treasury"
+        nameLabel="Name"
+        namePlaceholder="Enter collection name"
+        submitLabel="Create"
+      />
+    </>
   );
 };
 

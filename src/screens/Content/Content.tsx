@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy, startTransition } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -9,32 +9,38 @@ import { HeaderSection } from "../../components/shared/HeaderSection/HeaderSecti
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../../components/ui/toast";
 import { ContentPageSkeleton } from "../../components/ui/skeleton";
-import { useArticleDetail } from "../../hooks/queries";
-import { useArticleWithComments } from "../../hooks/queries/useArticleWithComments";
+import { useArticleDetail, useArticleDetailActions } from "../../hooks/queries";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
+import { devLog } from "../../utils/devLogger";
+import { decodeHtmlEntities } from "../../utils/htmlUtils";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
 import { CommentButton } from "../../components/ui/CommentButton";
 import { CollectTreasureModal } from "../../components/CollectTreasureModal";
 import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
+import { CommentSection } from "../../components/CommentSection";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
-import { getNetworkConfig } from "../../config/contracts";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import commentIcon from "../../assets/images/comment.svg";
-
-// Lazy load heavy payment and comment components
-const PayConfirmModal = lazy(() => import("../../components/PayConfirmModal/PayConfirmModal").then(m => ({ default: m.PayConfirmModal })));
-const CommentSection = lazy(() => import("../../components/CommentSection").then(m => ({ default: m.CommentSection })));
-
-// Lazy load heavy payment utilities only when needed
-const loadPaymentUtils = () => import("../../utils/x402Utils");
-const loadEnvUtils = () => import("../../utils/envUtils");
-const loadContractConfig = () => import("../../config/contracts");
-const loadPaymentTypes = () => import("../../types/payment");
+import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
+import {
+  generateNonce,
+  signTransferWithAuthorization,
+  signTransferWithAuthorizationOKXBrowser,
+  createX402PaymentHeader
+} from "../../utils/x402Utils";
+import { getCurrentEnvironment, logEnvironmentInfo } from '../../utils/envUtils';
+import { getNetworkConfig, getTokenContract, getSupportedTokens, NetworkType, TokenType } from '../../config/contracts';
+import { SUPPORTED_TOKENS, TokenInfo } from '../../types/payment';
 import { getIconUrl, getIconStyle } from '../../config/icons';
-import { SEO, ArticleSchema } from '../../components/SEO/SEO';
-import SEOTester from '../../components/SEOTester/SEOTester';
+// SEO meta tags for crawlers are handled by Cloudflare Worker - see functions/work/[id].js
+// SEO component is still needed for client-side document.title updates during SPA navigation
+import { SEO } from '../../components/SEO/SEO';
+import { UserCard } from '../../components/ui/UserCard';
+import { PrivateContentGuard } from '../../components/PrivateContentGuard/PrivateContentGuard';
+import { PrivacyBanner } from '../../components/PrivacyBanner/PrivacyBanner';
+import { NoAccessPermission } from '../../components/NoAccessPermission/NoAccessPermission';
 
 // Debug logging helper - only logs in development mode
 const debugLog = (...args: any[]) => {
@@ -48,16 +54,15 @@ const getTokenInfo = (tokenType: TokenType): TokenInfo => {
   return SUPPORTED_TOKENS[tokenType];
 };
 
-// Image URL validation and fallback function
+// Image URL validation function - returns empty string for invalid/missing images (no placeholders)
 const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
   if (!imageUrl || imageUrl.trim() === '') {
-    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+    return ''; // No placeholder - return empty
   }
 
   // Check if it's a blob URL (from file upload) - these URLs don't work in new sessions
   if (imageUrl.startsWith('blob:')) {
-    // Return placeholder as blob URLs are invalid after page refresh
-    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5VcGxvYWRlZCBJbWFnZTwvdGV4dD48L3N2Zz4=';
+    return ''; // No placeholder - return empty
   }
 
   // Fix malformed extensions like '.svg+xml' -> '.svg'
@@ -72,10 +77,10 @@ const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
     if (url.protocol === 'http:' || url.protocol === 'https:') {
       return imageUrl;
     } else {
-      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbnZhbGlkIFVSTDwvdGV4dD48L3N2Zz4=';
+      return ''; // No placeholder - return empty
     }
   } catch (error) {
-    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMyMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM2NjY2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbnZhbGlkIFVSTDwvdGV4dD48L3N2Zz4=';
+    return ''; // No placeholder - return empty
   }
 };
 
@@ -91,6 +96,9 @@ export const Content = (): JSX.Element => {
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
+
+  // User spaces state for hover card
+  const [userSpaces, setUserSpaces] = useState<SpaceData[]>([]);
 
   // ========================================
   // x402 Payment Protocol State Management
@@ -132,16 +140,12 @@ export const Content = (): JSX.Element => {
   // Payment progress state to prevent duplicate submissions
   const [isPaymentInProgress, setIsPaymentInProgress] = useState(false);
 
-  // Use new article detail API hook
+  // Use new article detail API hook (includes commentCount)
   const { article, loading, error, refetch: refetchArticle } = useArticleDetail(id || '');
+  const { bustCacheAndRefresh } = useArticleDetailActions();
 
-  // Get comment count for the comment button
-  const { totalComments, isLoading: isCommentsLoading } = useArticleWithComments(
-    id || '',
-    {
-      commentsEnabled: false // Only get comment count, not the full comments
-    }
-  );
+  // Comment count is already in article data - no need for separate hook
+  const totalComments = article?.commentCount || 0;
 
   // State for "Collected in" section - stores spaces directly
   const [collectedInData, setCollectedInData] = useState<SpaceData[]>([]);
@@ -151,14 +155,52 @@ export const Content = (): JSX.Element => {
   const [shouldShowModal, setShouldShowModal] = useState(false);
   const commentScrollRef = useRef<HTMLDivElement>(null);
 
+  // Track if we've already handled the URL params to prevent infinite loops
+  const hasHandledUrlParams = useRef(false);
+
+  // Show success toast when arriving from browser extension after publishing
+  // Handle cache refresh for updated articles (from edit mode)
+  useEffect(() => {
+    // Skip if we've already handled these params in this session
+    if (hasHandledUrlParams.current) return;
+
+    const searchParams = new URLSearchParams(location.search);
+    const hasPublished = searchParams.get('published') === 'true';
+    const hasRefresh = searchParams.get('refresh');
+
+    if (hasPublished) {
+      hasHandledUrlParams.current = true;
+      showToast('Done! You just surfaced an internet gem!', 'success');
+      // Use navigate with replace to properly update React Router's location
+      navigate(location.pathname, { replace: true });
+    }
+
+    // Handle refresh parameter (from edit mode redirect)
+    if (hasRefresh && id) {
+      hasHandledUrlParams.current = true;
+      console.log('🔄 Cache refresh requested for article:', id);
+      // Use navigate with replace to properly update React Router's location
+      navigate(location.pathname, { replace: true });
+      // Force refresh with cache busting - clears all caches and fetches fresh data
+      bustCacheAndRefresh(id).then(() => {
+        console.log('✅ Article cache refreshed successfully');
+      }).catch((err) => {
+        console.error('❌ Failed to refresh article cache:', err);
+      });
+    }
+  }, [location.search, location.pathname, showToast, id, bustCacheAndRefresh, navigate]);
+
+  // Reset the handler flag when the article ID changes (navigating to a different article)
+  useEffect(() => {
+    hasHandledUrlParams.current = false;
+  }, [id]);
+
   // Handle modal animation timing and body scroll lock
   useEffect(() => {
     if (isCommentSectionOpen) {
       console.log('🔒 CommentSection: Locking body scroll');
       // Show modal immediately when opening
-      startTransition(() => {
-        setShouldShowModal(true);
-      });
+      setShouldShowModal(true);
 
       // Save original styles
       const originalOverflow = window.getComputedStyle(document.body).overflow;
@@ -243,9 +285,7 @@ export const Content = (): JSX.Element => {
       const hasQuestionOnly = window.location.href.endsWith('?');
 
       if (hasCommentsParam || hasQuestionOnly) {
-        startTransition(() => {
-          setIsCommentSectionOpen(true);
-        });
+        setIsCommentSectionOpen(true);
       }
     };
 
@@ -672,7 +712,7 @@ export const Content = (): JSX.Element => {
 
     return {
       id: article.uuid,
-      title: article.title,
+      title: decodeHtmlEntities(article.title || ''),
       description: article.content,
       coverImage: article.coverUrl,
       url: article.targetUrl,
@@ -684,6 +724,7 @@ export const Content = (): JSX.Element => {
       userId: article.authorInfo?.id,
       userNamespace: article.authorInfo?.namespace,
       userAvatar: article.authorInfo?.faceUrl && article.authorInfo.faceUrl.trim() !== '' ? article.authorInfo.faceUrl : profileDefaultAvatar,
+      userBio: article.authorInfo?.bio || '', // 作者个人简介
       date: new Date(article.createAt * 1000).toLocaleDateString(),
       treasureCount: article.likeCount || 0,
       visitCount: `${article.viewCount || 0} Visits`,
@@ -709,45 +750,125 @@ export const Content = (): JSX.Element => {
   }, [content, article, updateArticleLikeState]);
 
   // Fetch "Collected in" data - get spaces that contain this article
-  // Wrapped in useCallback to prevent unnecessary re-creations
-  const fetchCollectedInData = useCallback(async () => {
-    if (!article || !article.id) {
-      return;
-    }
-
-    try {
-      // Fetch spaces that contain this article using the article's id field
-      const spacesResponse = await AuthService.getSpacesByArticleId(article.id);
-      debugLog('Spaces by article ID response:', spacesResponse);
-
-      // Parse the response - handle different possible formats
-      let spacesArray: SpaceData[] = [];
-      if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
-        spacesArray = spacesResponse.data.data;
-      } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
-        spacesArray = spacesResponse.data;
-      } else if (Array.isArray(spacesResponse)) {
-        spacesArray = spacesResponse;
+  // Use article.id directly in useEffect to avoid callback recreation on every article change
+  useEffect(() => {
+    const fetchCollectedInData = async () => {
+      if (!article?.id) {
+        setCollectedInData([]);
+        return;
       }
 
-      // Use space data directly from API response
-      setCollectedInData(spacesArray);
-    } catch (err) {
-      console.error('Failed to fetch collected in data:', err);
-      setCollectedInData([]);
-    }
-  }, [article]);
+      try {
+        // Fetch spaces that contain this article using the article's id field
+        const spacesResponse = await AuthService.getSpacesByArticleId(article.id);
+        debugLog('Spaces by article ID response:', spacesResponse);
 
-  useEffect(() => {
+        // Parse the response - handle different possible formats
+        let spacesArray: SpaceData[] = [];
+        if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
+          spacesArray = spacesResponse.data.data;
+        } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
+          spacesArray = spacesResponse.data;
+        } else if (Array.isArray(spacesResponse)) {
+          spacesArray = spacesResponse;
+        }
+
+        // Use space data directly from API response
+        setCollectedInData(spacesArray);
+      } catch (err) {
+        console.error('Failed to fetch collected in data:', err);
+        setCollectedInData([]);
+      }
+    };
+
     fetchCollectedInData();
-  }, [fetchCollectedInData]);
+  }, [article?.id]); // Only depend on article.id, not the full article object
+
+  // 🔍 SEARCH: user-card-spaces-fetch
+  // Fetch user spaces for user hover card display (limited to 2 for UI optimization)
+  useEffect(() => {
+    const fetchUserSpaces = async () => {
+      if (!article?.authorInfo?.id) {
+        setUserSpaces([]);
+        return;
+      }
+
+      const startTime = performance.now();
+      const endpoint = '/client/userHome/pageMySpaces';
+      const authorId = article.authorInfo.id;
+
+      devLog.apiCall(endpoint, { targetUserId: authorId, pageSize: 2 }, {
+        component: 'Content',
+        action: 'fetch-user-spaces',
+        userId: authorId
+      });
+
+      try {
+        // 🔍 SEARCH: pageMySpaces-api-call-user-card
+        const response = await AuthService.getMySpaces(authorId, 1, 2);
+        const duration = performance.now() - startTime;
+
+        // 🔍 SEARCH: spaces-response-parsing
+        // Parse nested API response structure from pageMySpaces endpoint
+        const spacesData = response?.data?.data && Array.isArray(response.data.data)
+          ? response.data.data
+          : response?.data && Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        devLog.apiResponse(endpoint, { count: spacesData.length }, duration, {
+          component: 'Content',
+          userId: authorId
+        });
+
+        setUserSpaces(spacesData);
+      } catch (error) {
+        const duration = performance.now() - startTime;
+        devLog.apiError(endpoint, error, {
+          component: 'Content',
+          action: 'fetch-user-spaces-error',
+          userId: authorId
+        });
+        console.error('🚨 Failed to fetch user spaces:', error);
+        setUserSpaces([]);
+      }
+    };
+
+    fetchUserSpaces();
+  }, [article?.authorInfo?.id]);
 
   // ========================================
-  // Event Handlers
+  // Early Returns (After All Hooks)
   // ========================================
 
   if (loading) {
     return <ContentPageSkeleton />;
+  }
+
+  // Check if this is a private content access denied error
+  const isNoAccessPermission = error && (
+    error.includes('2104') ||
+    error.toLowerCase().includes('无权限') ||
+    error.toLowerCase().includes('private') ||
+    error.toLowerCase().includes('access denied') ||
+    error.toLowerCase().includes('no permission') ||
+    error.toLowerCase().includes('unauthorized') ||
+    error.toLowerCase().includes('forbidden') ||
+    error.toLowerCase().includes('visibility')
+  );
+
+  // If no access permission, show the NoAccessPermission component
+  if (isNoAccessPermission) {
+    return (
+      <div className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+        <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
+          <HeaderSection articleAuthorId={undefined} />
+          <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-center justify-center pt-[70px] lg:pt-[120px]">
+            <NoAccessPermission />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Check if the article has been deleted
@@ -790,7 +911,7 @@ export const Content = (): JSX.Element => {
                 {!isArticleDeleted && (
                   <button
                     onClick={() => window.location.reload()}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors font-medium"
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors font-button"
                   >
                     Reload Page
                   </button>
@@ -810,7 +931,7 @@ export const Content = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => startTransition(() => navigate('/login'))
+          onClick: () => navigate('/login')
         }
       });
       return;
@@ -818,9 +939,7 @@ export const Content = (): JSX.Element => {
 
     // Always show the collect modal (whether liked or not)
     // User can uncollect from within the modal
-    startTransition(() => {
-      setCollectModalOpen(true);
-    });
+    setCollectModalOpen(true);
   };
 
   const handleUserClick = () => {
@@ -828,10 +947,23 @@ export const Content = (): JSX.Element => {
 
     // If logged in and it's the current user's own article, navigate to my treasury page
     if (user && user.id === content.userId) {
-      startTransition(() => navigate('/my-treasury'));
+      navigate('/my-treasury');
     } else {
       // Navigate to the user's profile page using short link format
-      startTransition(() => navigate(`/u/${content.userNamespace}`));
+      navigate(`/u/${content.userNamespace}`);
+    }
+  };
+
+  // 处理空间点击事件 - 导航到对应的空间页面
+  const handleSpaceClick = (space: SpaceData) => {
+    if (space.namespace) {
+      // 使用 /treasury/:namespace 格式导航到空间页面
+      navigate(`/treasury/${space.namespace}`);
+    } else if (space.id) {
+      // 如果没有namespace，使用旧版 /space/:id 格式
+      navigate(`/space/${space.id}`);
+    } else {
+      console.warn('Space missing both namespace and id:', space);
     }
   };
 
@@ -1136,9 +1268,7 @@ export const Content = (): JSX.Element => {
     }
 
     // Just open the payment modal, don't fetch payment info yet
-    startTransition(() => {
-      setIsPayConfirmOpen(true);
-    });
+    setIsPayConfirmOpen(true);
 
     // Get suggested network based on user's auth method
     const authMethod = localStorage.getItem('copus_auth_method');
@@ -1936,72 +2066,44 @@ export const Content = (): JSX.Element => {
   // ========================================
   return (
     <>
-      {/* Dynamic SEO meta tags for article pages */}
+      {/* SEO meta tags for work pages */}
+      {!content && <SEO />}
       {content && (
-        <>
-          <SEO
-            title={content.title}
-            description={content.seoDescription?.trim() || content.description?.substring(0, 160) || content.title}
-            keywords={content.seoKeywords?.trim() || undefined}
-            image={content.coverImage || 'https://copus.network/og-image.jpg'}
-            url={`https://copus.network/work/${id}`}
-            type="article"
-            article={{
-              publishedTime: article?.createAt ? new Date(article.createAt * 1000).toISOString() : undefined,
-              author: content.userName,
-              section: content.category,
-            }}
-          />
-          <ArticleSchema
-            title={content.title}
-            description={content.seoDescription?.trim() || content.description?.substring(0, 300) || content.title}
-            image={content.coverImage || 'https://copus.network/og-image.jpg'}
-            url={`https://copus.network/work/${id}`}
-            datePublished={article?.createAt ? new Date(article.createAt * 1000).toISOString() : new Date().toISOString()}
-            authorName={content.userName}
-            authorUrl={content.userNamespace ? `https://copus.network/user/${content.userNamespace}` : undefined}
-          />
-        </>
+        <SEO
+          title={content.title}
+          description={content.description || undefined}
+          image={content.coverImage || undefined}
+          type="article"
+        />
       )}
+
+
       <div
         className="min-h-screen w-full flex justify-center overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.2)_0%,rgba(224,224,224,0.2)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
         data-model-id="9091:54529"
       >
-      <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
-        <HeaderSection articleAuthorId={content?.userId} />
+        <PrivateContentGuard
+          article={{
+            isPrivate: article?.isPrivate,
+            visibility: article?.visibility,
+            userId: article?.authorInfo?.id,
+            userName: article?.authorInfo?.username,
+            title: article?.title,
+            authorInfo: article?.authorInfo
+          }}
+        >
+          <div className="flex mt-0 w-full min-h-screen ml-0 relative flex-col items-start">
+            <HeaderSection articleAuthorId={content?.userId} />
 
-        <main className="flex flex-col lg:flex-row items-start pt-[70px] lg:pt-[120px] pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow">
+        <main className="flex flex-col lg:flex-row items-start pb-[120px] px-4 lg:px-[30px] relative flex-1 w-full max-w-[1250px] mx-auto grow pt-16 lg:pt-20">
           {/* Main Content Column */}
           <div className="flex-1 w-full">
             <article className="flex flex-col items-start justify-between pt-0 pb-[30px] px-0 relative flex-1 self-stretch w-full grow">
             <div className="flex flex-col items-start gap-[30px] self-stretch w-full relative flex-[0_0_auto]">
               <div className="flex flex-col lg:flex-row items-start gap-[40px] pt-0 pb-[30px] px-0 relative self-stretch w-full flex-[0_0_auto]">
-                <div className="flex flex-col lg:h-[205px] items-start justify-start relative flex-1 grow gap-6">
+                <div className="flex flex-col lg:h-[250px] items-start justify-start relative flex-1 grow gap-6">
                   {/* Title with x402 payment badge above on mobile, inline on desktop */}
                   <div className="flex flex-col gap-2 w-full">
-                    {/* Edit button - only visible to author, positioned above title */}
-                    {(() => {
-                      const isAuthor = (user && article?.authorInfo) && (
-                        (user.namespace && user.namespace === article.authorInfo.namespace) ||
-                        (user.id && user.id === article.authorInfo.id)
-                      );
-                      return isAuthor;
-                    })() && (
-                      <button
-                        onClick={() => startTransition(() => navigate(`/curate?edit=${article.uuid}`))}
-                        className="w-[32px] h-[32px] relative cursor-pointer rounded-full transition-all duration-200 flex items-center justify-center p-0 border border-solid border-[#686868] hover:bg-gray-100 self-start"
-                        aria-label="Edit"
-                        title="Edit"
-                      >
-                        <img
-                          className="w-[18px] h-[18px]"
-                          alt="Edit"
-                          src={getIconUrl('EDIT')}
-                          style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
-                        />
-                      </button>
-                    )}
-
                     {/* Payment badge - show above title on mobile */}
                     {article?.targetUrlIsLocked && article?.priceInfo && (
                       <div className="h-[30px] lg:h-[34px] px-2 lg:px-2.5 py-1 lg:py-[5px] border border-solid border-[#0052ff] bg-white rounded-[50px] inline-flex items-center gap-[3px] self-start">
@@ -2016,8 +2118,19 @@ export const Content = (): JSX.Element => {
                       </div>
                     )}
 
+                    {/* Private pill - shown above title for private articles */}
+                    {article?.visibility === 1 && (
+                      <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#E0E0E0] rounded-[100px] mt-2 mb-1 w-fit">
+                        <svg className="w-5 h-5" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                          <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                        </svg>
+                        <span className="text-[#454545] text-[16px] font-medium">Private</span>
+                      </span>
+                    )}
+
                     <h1
-                      className="relative w-full [font-family:'Lato',Helvetica] font-semibold text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
+                      className="relative w-full [font-family:'Lato',Helvetica] font-medium text-[#231f20] text-[36px] lg:text-[40px] tracking-[-0.5px] leading-[44px] lg:leading-[50px] break-words"
                       style={{
                         wordBreak: 'break-word',
                         overflowWrap: 'break-word'
@@ -2028,7 +2141,7 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <div className="relative w-full lg:w-[280px] h-[158px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
+                <div className="relative w-full lg:w-[400px] h-[200px] lg:h-[225px] rounded-lg aspect-[1.78] bg-[url(https://c.animaapp.com/5EW1c9Rn/img/image@2x.png)] bg-cover bg-[50%_50%]"
                      style={{
                        backgroundImage: `url(${getValidDetailImageUrl(content.coverImage)})`
                      }}
@@ -2057,21 +2170,39 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <cite
-                  className="inline-flex items-center gap-2.5 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                  onClick={handleUserClick}
-                  title={`View ${content.userName}'s profile`}
+                <UserCard
+                  userId={content.userId}
+                  userName={content.userName}
+                  userNamespace={content.userNamespace}
+                  userAvatar={content.userAvatar}
+                  userBio={content.userBio}
+                  userSpaces={userSpaces}
+                  onUserClick={handleUserClick}
+                  onSpaceClick={handleSpaceClick}
                 >
-                  <img
-                    className="w-[25px] h-[25px] object-cover relative aspect-[1] rounded-full"
-                    alt="Profile image"
-                    src={content.userAvatar}
-                  />
+                  <cite
+                    className="inline-flex items-center gap-3 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                    onClick={handleUserClick}
+                    title={`View ${content.userName}'s profile`}
+                  >
+                    <img
+                      className="w-10 h-10 object-cover relative aspect-[1] rounded-full"
+                      alt="Profile image"
+                      src={content.userAvatar}
+                    />
 
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
-                    {content.userName}
-                  </span>
-                </cite>
+                    <div className="flex flex-col items-start gap-0.5">
+                      <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
+                        {content.userName}
+                      </span>
+                      {content.userBio && content.userBio.trim() && (
+                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-sm leading-relaxed">
+                          {content.userBio}
+                        </span>
+                      )}
+                    </div>
+                  </cite>
+                </UserCard>
               </blockquote>
             </div>
 
@@ -2081,26 +2212,29 @@ export const Content = (): JSX.Element => {
               </time>
 
               <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
-                <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
-                  <img
-                    className="relative w-[21px] h-[15px] aspect-[1.4]"
-                    alt="Ic view"
-                    src="https://c.animaapp.com/5EW1c9Rn/img/ic-view.svg"
-                  />
+                {/* View count - hide for private articles */}
+                {article?.visibility !== 1 && (
+                  <div className="inline-flex items-center gap-[5px] relative flex-[0_0_auto]">
+                    <img
+                      className="relative w-[21px] h-[15px] aspect-[1.4]"
+                      alt="Ic view"
+                      src="https://c.animaapp.com/5EW1c9Rn/img/ic-view.svg"
+                    />
 
-                  <span className="mt-[-1.00px] relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm text-center tracking-[0] leading-5 whitespace-nowrap">
-                    {article?.viewCount || 0}
-                  </span>
-                </div>
+                    <span className="mt-[-1.00px] relative w-fit [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm text-center tracking-[0] leading-5 whitespace-nowrap">
+                      {article?.viewCount || 0}
+                    </span>
+                  </div>
+                )}
 
                 {/* Arweave onchain storage link - Always show as clickable */}
-                <div
-                  className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity"
+                <button
+                  type="button"
+                  className="relative w-6 h-6 cursor-pointer hover:opacity-80 transition-opacity bg-transparent border-none p-0"
                   title={article?.arChainId ? "View on Arweave" : "Arweave storage not available"}
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
                     if (!article?.arChainId) {
-                      console.warn('No arChainId available for this article');
+                      showToast('Arweave storage not available for this article', 'info');
                     } else {
                       const arweaveUrl = `https://arseed.web3infra.dev/${article.arChainId}`;
                       window.open(arweaveUrl, '_blank', 'noopener,noreferrer');
@@ -2108,11 +2242,11 @@ export const Content = (): JSX.Element => {
                   }}
                 >
                   <img
-                    className="w-full h-full"
+                    className="w-full h-full pointer-events-none"
                     alt="Arweave ar logo"
                     src="https://c.animaapp.com/5EW1c9Rn/img/arweave-ar-logo-1.svg"
                   />
-                </div>
+                </button>
               </div>
             </div>
 
@@ -2122,21 +2256,22 @@ export const Content = (): JSX.Element => {
                 <h2 className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-xl tracking-[0] leading-[28px] mb-[20px]">
                   Collected in
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {collectedInData.map((space) => (
                     <TreasuryCard
                       key={space.namespace || space.id?.toString()}
                       space={space}
-                      onClick={() => startTransition(() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/'))}
+                      onClick={() => navigate(space.namespace ? `/treasury/${space.namespace}` : '/')}
                     />
                   ))}
                 </div>
               </section>
             )}
+
             </article>
 
-            {/* Comment Section Modal - NetEase Music Style */}
-            {shouldShowModal && article && (
+            {/* Comment Section Modal - NetEase Music Style - hide for private articles */}
+            {shouldShowModal && article && article.visibility !== 1 && (
               <>
                 {/* Apple-style frosted glass backdrop */}
                 <div
@@ -2194,21 +2329,21 @@ export const Content = (): JSX.Element => {
                             filter: 'brightness(0) saturate(100%) invert(27%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(55%) contrast(90%)'
                           }}
                         />
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-end gap-2">
                           <h3
-                            className="[font-family:'Lato',Helvetica] font-semibold text-xl"
+                            className="[font-family:'Lato',Helvetica] font-semibold text-xl leading-none"
                             style={{ color: 'rgba(0, 0, 0, 0.9)' }}
                           >
                             Comments
                           </h3>
-                          {!isCommentsLoading && (
+                          {!loading && (
                             <>
                               <div
-                                className="w-1 h-1 rounded-full"
+                                className="w-1 h-1 rounded-full mb-1"
                                 style={{ background: 'rgba(0, 0, 0, 0.3)' }}
                               />
                               <span
-                                className="[font-family:'Lato',Helvetica] text-sm"
+                                className="[font-family:'Lato',Helvetica] text-sm leading-none"
                                 style={{ color: 'rgba(0, 0, 0, 0.6)' }}
                               >
                                 {totalComments === 0 ? 'No comments yet' : `${totalComments} ${totalComments === 1 ? 'comment' : 'comments'}`}
@@ -2310,9 +2445,9 @@ export const Content = (): JSX.Element => {
         </main>
 
         {/* Sticky bottom button bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-3 lg:py-5 px-3 lg:px-[30px] z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto">
-            <div className="inline-flex items-center gap-1.5 lg:gap-5 relative flex-[0_0_auto]">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-[#E0E0E0] py-3 lg:py-5 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center w-full max-w-[1250px] mx-auto px-4 lg:px-[30px]">
+            <div className="inline-flex items-center gap-5 relative flex-[0_0_auto]">
               {/* Use unified treasure button component - large size suitable for detail page */}
               <TreasureButton
                 isLiked={isLiked}
@@ -2321,27 +2456,61 @@ export const Content = (): JSX.Element => {
                 size="large"
               />
 
-              {/* Comment button */}
-              <CommentButton
-                commentCount={totalComments || 0}
-                isLoading={isCommentsLoading}
-                onClick={() => setIsCommentSectionOpen(prev => !prev)}
-                isExpanded={isCommentSectionOpen}
-              />
+              {/* Comment button - hide for private articles */}
+              {article?.visibility !== 1 && (
+                <CommentButton
+                  commentCount={totalComments || 0}
+                  isLoading={loading}
+                  onClick={() => setIsCommentSectionOpen(prev => !prev)}
+                  isExpanded={isCommentSectionOpen}
+                />
+              )}
 
               {/* Share dropdown menu */}
               <ShareDropdown
                 title={content.title}
-                url={window.location.href}
               />
             </div>
 
-            <div className="flex items-center gap-1.5 lg:gap-5">
+            <div className="flex items-center gap-5">
+              {/* Edit button - only visible to author */}
+              {(() => {
+                const isAuthor = (user && article?.authorInfo) && (
+                  (user.namespace && user.namespace === article.authorInfo.namespace) ||
+                  (user.id && user.id === article.authorInfo.id)
+                );
+                return isAuthor;
+              })() && (
+                <button
+                  onClick={() => navigate(`/curate?edit=${article.uuid}`)}
+                  className="cursor-pointer transition-all duration-200 flex items-center justify-center p-0 hover:opacity-70"
+                  aria-label="Edit"
+                  title="Edit"
+                >
+                  <img
+                    className="w-[25px] h-[25px]"
+                    alt="Edit"
+                    src={getIconUrl('EDIT')}
+                    style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
+                  />
+                </button>
+              )}
+
 {/* Conditional button - "Visit" for unlocked/targetUrl content, "Unlock now" for locked content without targetUrl */}
             {unlockedUrl ? (
               // Content has been unlocked via payment - show "Visit" button
               <button
-                onClick={() => window.open(unlockedUrl, '_blank', 'noopener,noreferrer')}
+                onClick={() => {
+                  console.log('🔍 Visit button (unlocked) clicked!', unlockedUrl);
+                  // Check if it's a taste-test URL and we're in local development
+                  if (unlockedUrl && unlockedUrl.includes('taste-test') && window.location.hostname === 'localhost') {
+                    console.log('🏠 Local development detected, navigating to /taste-test');
+                    navigate('/taste-test');
+                  } else {
+                    console.log('🌐 Opening external URL:', unlockedUrl);
+                    window.open(unlockedUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }}
                 className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
@@ -2357,7 +2526,17 @@ export const Content = (): JSX.Element => {
             ) : article?.targetUrl && article.targetUrl.trim() !== '' ? (
               // Content has targetUrl - show "Visit" button regardless of lock status
               <button
-                onClick={() => window.open(article.targetUrl, '_blank', 'noopener,noreferrer')}
+                onClick={() => {
+                  console.log('🔍 Visit button (article) clicked!', article.targetUrl);
+                  // Check if it's a taste-test URL and we're in local development
+                  if (article.targetUrl && article.targetUrl.includes('taste-test') && window.location.hostname === 'localhost') {
+                    console.log('🏠 Local development detected, navigating to /taste-test');
+                    navigate('/taste-test');
+                  } else {
+                    console.log('🌐 Opening external URL:', article.targetUrl);
+                    window.open(article.targetUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }}
                 className="group inline-flex items-center justify-center gap-[15px] px-5 lg:px-[30px] py-2 relative flex-[0_0_auto] bg-red rounded-[100px] border border-solid border-red hover:bg-red/90 transition-all"
               >
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-white text-xl tracking-[0] leading-[30px] whitespace-nowrap">
@@ -2477,11 +2656,10 @@ export const Content = (): JSX.Element => {
           />
         )}
 
+          </div>
+        </PrivateContentGuard>
       </div>
-    </div>
 
-    {/* SEO功能测试组件 - 仅在开发环境显示 */}
-    <SEOTester />
 
     </>
   );

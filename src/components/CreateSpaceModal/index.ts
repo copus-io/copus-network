@@ -1,0 +1,1 @@
+export { CreateSpaceModal, type CreateSpaceModalProps } from './CreateSpaceModal';

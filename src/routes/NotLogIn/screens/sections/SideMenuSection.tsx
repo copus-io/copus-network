@@ -13,14 +13,6 @@ export const SideMenuSection = (): JSX.Element => {
       href: "/copus",
     },
     {
-      id: "treasury",
-      label: "Treasury",
-      icon: "https://c.animaapp.com/mft5gmofxQLTNf/img/icon-wrap.svg",
-      isActive: false,
-      iconType: "img",
-      href: "/treasury",
-    },
-    {
       id: "notification",
       label: "Notification",
       icon: "https://c.animaapp.com/mft5gmofxQLTNf/img/icon-wrap-2.svg",

@@ -12,13 +12,6 @@ export const apiRequest = async <T>(
   const { requiresAuth, ...fetchOptions } = options;
   const url = `${API_BASE_URL}${endpoint}`;
 
-  console.log('🔗 apiRequest called:', {
-    endpoint,
-    url,
-    requiresAuth,
-    method: fetchOptions.method || 'GET'
-  });
-
   const defaultHeaders: Record<string, string> = {};
 
   // Set JSON Content-Type only when body is not FormData
@@ -30,30 +23,20 @@ export const apiRequest = async <T>(
   // Use storage utility to check both localStorage and sessionStorage
   const token = storage.getItem('copus_token');
 
-  console.log('🔐 Token check:', {
-    tokenExists: !!token,
-    tokenLength: token?.length,
-    tokenPreview: token ? `${token.substring(0, 20)}...` : null,
-    requiresAuth
-  });
-
   if (token && token.trim() !== '') {
     // Check token format (JWT typically has 3 parts separated by dots)
     const tokenParts = token.split('.');
     if (tokenParts.length === 3) {
       // Add token to all requests when available and valid
       defaultHeaders.Authorization = `Bearer ${token}`;
-      console.log('✅ Valid JWT token added to headers');
     } else if (requiresAuth) {
       // Only clear invalid token and throw error if auth is required
-      console.error('❌ Invalid token format detected, clearing storage');
       storage.removeItem('copus_token');
       storage.removeItem('copus_user');
       throw new Error('Invalid authentication token format, please log in again');
     }
   } else if (requiresAuth) {
     // Only throw error if auth is specifically required
-    console.error('❌ No valid token found but auth required');
     throw new Error('Valid authentication token not found, please log in again');
   }
 
@@ -96,13 +79,9 @@ export const apiRequest = async <T>(
 
           throw new Error(`Authentication failed: ${errorMessage}, please log in again`);
         } else {
-          // For public endpoints, log warning and error details
-          console.warn(`⚠️ Public endpoint ${endpoint} returned ${response.status}`);
-          console.warn('Response text:', errorText);
-          // Try to parse the response anyway in case there's useful data
+          // For public endpoints, try to parse the response
           try {
             const data = JSON.parse(errorText);
-            console.warn('Parsed error response:', data);
             // Throw error with the actual API error message
             const errorMsg = data.msg || data.message || errorText;
             throw new Error(`API error: ${errorMsg}`);
@@ -121,7 +100,7 @@ export const apiRequest = async <T>(
 
     return data;
   } catch (error) {
-    console.error(`❌ API request failed for ${endpoint}:`, error);
+    console.error(`API request failed for ${endpoint}:`, error);
 
     // Check if it's a CORS error
     if (error instanceof TypeError && error.message.includes('fetch')) {

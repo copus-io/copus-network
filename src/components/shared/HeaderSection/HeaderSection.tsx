@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, Suspense, lazy, startTransition } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarImage } from "../../ui/avatar";
 import { Button } from "../../ui/button";
@@ -9,14 +9,21 @@ import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import { MobileMenu } from "../MobileMenu";
 import { Menu, X, Search, ChevronLeft } from "lucide-react";
 import searchIcon from "../../../assets/images/icon-search.svg";
-
-// Lazy load heavy search components only when needed
-const ArticleCard = lazy(() => import("../../ArticleCard").then(m => ({ default: m.ArticleCard })));
-const TreasuryCard = lazy(() => import("../../ui/TreasuryCard").then(m => ({ default: m.TreasuryCard })));
-
-// Lazy load search services when search is activated
-const loadSearchServices = () => import("../../../services/searchService");
-const loadIconConfig = () => import("../../../config/icons");
+import { ArticleCard, ArticleData } from "../../ArticleCard";
+import { TreasuryCard, SpaceData } from "../../ui/TreasuryCard";
+import { getIconUrl } from "../../../config/icons";
+import { decodeHtmlEntities } from "../../../utils/htmlUtils";
+import { formatDate } from "../../../utils/categoryStyles";
+import {
+  searchAll,
+  searchArticles,
+  searchSpaces,
+  searchUsers,
+  SearchArticleItem,
+  SearchSpaceItem,
+  SearchUserItem,
+  SearchResult as SearchResultData,
+} from "../../../services/searchService";
 
 interface SearchResultItem {
   id: string;
@@ -63,13 +70,6 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
   const { unreadCount } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Wrapped navigate function with startTransition
-  const navigateWithTransition = useCallback((path: string) => {
-    startTransition(() => {
-      navigate(path);
-    });
-  }, [navigate]);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -87,9 +87,14 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLogout = () => {
-    logout();
-    setShowUserMenu(false);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setShowUserMenu(false);
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setShowUserMenu(false);
+    }
   };
 
   // Load search history from localStorage
@@ -108,6 +113,17 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
       setSearchHistory([]);
     }
   }, []);
+
+  // Auto-open search if ?search=true is in URL (triggered from browser extension)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('search') === 'true') {
+      setIsSearchOpen(true);
+      // Clean up the URL by removing the search param
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location.search]);
 
   // Save search history to localStorage
   const saveSearchHistory = useCallback((history: string[]) => {
@@ -135,7 +151,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
   }, []);
 
   const handleAvatarDoubleClick = () => {
-    navigateWithTransition('/setting');
+    navigate('/setting');
     setShowUserMenu(false);
   };
 
@@ -304,11 +320,11 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
 
   const handleResultClick = (result: SearchResultItem) => {
     if (result.type === 'article') {
-      navigateWithTransition(`/work/${result.id}`);
+      navigate(`/work/${result.id}`);
     } else if (result.type === 'user') {
-      navigateWithTransition(`/user/${result.namespace || result.id}`);
+      navigate(`/user/${result.namespace || result.id}`);
     } else if (result.type === 'treasury') {
-      navigateWithTransition(`/user/${result.namespace || result.id}`);
+      navigate(`/user/${result.namespace || result.id}`);
     }
     handleCloseSearch();
   };
@@ -470,12 +486,12 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         </button>
                         <div className="space-y-4">
                           {articleResults.items.slice(0, 3).map((article) => (
-                            <div key={article.id} onClick={() => { navigateWithTransition(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                            <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
                               <ArticleCard article={{
                                 id: article.uuid,
                                 uuid: article.uuid,
-                                title: article.title,
-                                description: article.content,
+                                title: decodeHtmlEntities(article.title),
+                                description: article.content ? decodeHtmlEntities(article.content) : undefined,
                                 coverImage: article.coverUrl,
                                 category: article.categoryInfo?.name || '',
                                 categoryColor: article.categoryInfo?.color,
@@ -483,7 +499,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                                 userAvatar: article.authorInfo?.faceUrl || '',
                                 userId: article.authorInfo?.id,
                                 userNamespace: article.authorInfo?.namespace,
-                                date: new Date(article.createAt).toLocaleDateString(),
+                                date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
                                 treasureCount: article.likeCount,
                                 visitCount: article.viewCount?.toString() || '0',
                                 isLiked: article.isLiked,
@@ -512,7 +528,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         </button>
                         <div className="space-y-4">
                           {spaceResults.items.slice(0, 3).map((space) => (
-                            <div key={space.id} onClick={() => { navigateWithTransition(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                            <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                               <TreasuryCard space={space as SpaceData} />
                             </div>
                           ))}
@@ -539,7 +555,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           {userResults.items.slice(0, 6).map((user) => (
                             <button
                               key={user.id}
-                              onClick={() => { navigateWithTransition(`/u/${user.namespace}`); handleCloseSearch(); }}
+                              onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
                               className="rounded-[10px] px-2 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
                             >
                               <div className="flex flex-col items-center gap-2">
@@ -572,12 +588,12 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 ) : activeTab === 'works' ? (
                   <div className="space-y-4">
                     {articleResults.items.map((article) => (
-                      <div key={article.id} onClick={() => { navigateWithTransition(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
+                      <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer">
                         <ArticleCard article={{
                           id: article.uuid,
                           uuid: article.uuid,
-                          title: article.title,
-                          description: article.content,
+                          title: decodeHtmlEntities(article.title),
+                          description: article.content ? decodeHtmlEntities(article.content) : undefined,
                           coverImage: article.coverUrl,
                           category: article.categoryInfo?.name || '',
                           categoryColor: article.categoryInfo?.color,
@@ -585,7 +601,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           userAvatar: article.authorInfo?.faceUrl || '',
                           userId: article.authorInfo?.id,
                           userNamespace: article.authorInfo?.namespace,
-                          date: new Date(article.createAt).toLocaleDateString(),
+                          date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
                           treasureCount: article.likeCount,
                           visitCount: article.viewCount?.toString() || '0',
                           isLiked: article.isLiked,
@@ -606,7 +622,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 ) : activeTab === 'treasuries' ? (
                   <div className="space-y-4">
                     {spaceResults.items.map((space) => (
-                      <div key={space.id} onClick={() => { navigateWithTransition(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                      <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                         <TreasuryCard space={space as SpaceData} />
                       </div>
                     ))}
@@ -625,7 +641,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     {userResults.items.map((user) => (
                       <button
                         key={user.id}
-                        onClick={() => { navigateWithTransition(`/u/${user.namespace}`); handleCloseSearch(); }}
+                        onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
                         className="rounded-[10px] px-2 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]"
                       >
                         <div className="flex flex-col items-center gap-2">
@@ -664,7 +680,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         </div>
       )}
 
-      <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:pt-[20px] lg:pb-[20px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
+      <header className="flex items-center justify-between px-2.5 py-[5px] lg:px-[30px] lg:py-[10px] w-full bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] fixed top-0 left-0 right-0 z-40">
         {/* Search Results Dropdown - Desktop only */}
         {showResults && (
           <div className="hidden lg:flex fixed right-[30px] top-[70px] w-[900px] max-h-[80vh] bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] rounded-2xl shadow-xl border border-gray-200 z-50 flex-col overflow-hidden">
@@ -720,12 +736,12 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       </button>
                       <div className="grid gap-4 grid-cols-3 auto-rows-fr">
                         {articleResults.items.slice(0, 3).map((article) => (
-                          <div key={article.id} onClick={() => { navigateWithTransition(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
+                          <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
                             <ArticleCard article={{
                               id: article.uuid,
                               uuid: article.uuid,
-                              title: article.title,
-                              description: article.content,
+                              title: decodeHtmlEntities(article.title),
+                              description: article.content ? decodeHtmlEntities(article.content) : undefined,
                               coverImage: article.coverUrl,
                               category: article.categoryInfo?.name || '',
                               categoryColor: article.categoryInfo?.color,
@@ -733,7 +749,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                               userAvatar: article.authorInfo?.faceUrl || '',
                               userId: article.authorInfo?.id,
                               userNamespace: article.authorInfo?.namespace,
-                              date: new Date(article.createAt).toLocaleDateString(),
+                              date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
                               treasureCount: article.likeCount,
                               visitCount: article.viewCount?.toString() || '0',
                               isLiked: article.isLiked,
@@ -764,7 +780,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                       </button>
                       <div className="grid gap-4 grid-cols-3">
                         {spaceResults.items.slice(0, 3).map((space) => (
-                          <div key={space.id} onClick={() => { navigateWithTransition(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                          <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                             <TreasuryCard space={space as SpaceData} />
                           </div>
                         ))}
@@ -793,7 +809,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                         {userResults.items.slice(0, 4).map((user) => (
                           <button
                             key={user.id}
-                            onClick={() => { navigateWithTransition(`/u/${user.namespace}`); handleCloseSearch(); }}
+                            onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
                             className="rounded-[10px] px-2.5 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_12px_#c5c5c5] transition-shadow text-left"
                           >
                             <div className="flex flex-col items-center gap-2">
@@ -828,12 +844,12 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 <div>
                   <div className="grid gap-4 grid-cols-3 auto-rows-fr">
                     {articleResults.items.map((article) => (
-                      <div key={article.id} onClick={() => { navigateWithTransition(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
+                      <div key={article.id} onClick={() => { navigate(`/work/${article.uuid}`); handleCloseSearch(); }} className="cursor-pointer h-full">
                         <ArticleCard article={{
                           id: article.uuid,
                           uuid: article.uuid,
-                          title: article.title,
-                          description: article.content,
+                          title: decodeHtmlEntities(article.title),
+                          description: article.content ? decodeHtmlEntities(article.content) : undefined,
                           coverImage: article.coverUrl,
                           category: article.categoryInfo?.name || '',
                           categoryColor: article.categoryInfo?.color,
@@ -841,7 +857,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                           userAvatar: article.authorInfo?.faceUrl || '',
                           userId: article.authorInfo?.id,
                           userNamespace: article.authorInfo?.namespace,
-                          date: new Date(article.createAt).toLocaleDateString(),
+                          date: formatDate(article.createAt ? new Date(article.createAt * 1000).toISOString() : ''),
                           treasureCount: article.likeCount,
                           visitCount: article.viewCount?.toString() || '0',
                           isLiked: article.isLiked,
@@ -867,7 +883,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 <div>
                   <div className="grid gap-4 grid-cols-3">
                     {spaceResults.items.map((space) => (
-                      <div key={space.id} onClick={() => { navigateWithTransition(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
+                      <div key={space.id} onClick={() => { navigate(`/treasury/${space.namespace}`); handleCloseSearch(); }} className="cursor-pointer">
                         <TreasuryCard space={space as SpaceData} />
                       </div>
                     ))}
@@ -891,7 +907,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                     {userResults.items.map((user) => (
                       <button
                         key={user.id}
-                        onClick={() => { navigateWithTransition(`/u/${user.namespace}`); handleCloseSearch(); }}
+                        onClick={() => { navigate(`/u/${user.namespace}`); handleCloseSearch(); }}
                         className="rounded-[10px] px-2.5 py-4 shadow-[1px_1px_8px_#d5d5d5] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] hover:shadow-[2px_2px_12px_#c5c5c5] transition-shadow text-left"
                       >
                         <div className="flex flex-col items-center gap-2">
@@ -964,7 +980,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         >
           <Menu className="w-6 h-6 text-dark-grey" />
           {unreadCount > 0 && (
-            <div className="absolute top-2.5 -right-0.5 w-3 h-3 bg-red rounded-full" />
+            <div className="absolute top-2.5 -right-0.5 w-2 h-2 bg-red rounded-full" />
           )}
         </button>
 
@@ -980,19 +996,19 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   window.location.reload();
                 } else {
                   // 在其他页面时，正常跳转到通知页面
-                  navigateWithTransition('/notification');
+                  navigate('/notification');
                 }
               }}
               className="flex items-center cursor-pointer relative focus:outline-none"
-              title={location.pathname === '/notification' ? "刷新通知" : "前往通知页面"}
+              title={location.pathname === '/notification' ? "Refresh notifications" : "Go to notifications"}
             >
               <img
-                className="w-[40px] h-[40px] rotate-[12deg] hover:rotate-[17deg] transition-transform duration-200 translate-y-[-2px]"
+                className="w-[28px] h-[28px] rotate-[12deg] hover:rotate-[17deg] transition-transform duration-200"
                 alt="Notification"
                 src="https://c.animaapp.com/mft4oqz6uyUKY7/img/notification.svg"
               />
               {unreadCount > 0 && (
-                <div className="absolute -top-1 -right-1 bg-red text-white text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1">
+                <div className="absolute -top-0.5 -right-0.5 bg-red text-white text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-0.5">
                   {unreadCount > 99 ? '99' : unreadCount}
                 </div>
               )}
@@ -1076,7 +1092,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   aria-label="Search"
                 >
                   <img
-                    className="w-[32px] h-[32px] rotate-[0deg] hover:rotate-[12deg] transition-transform duration-200"
+                    className="w-[24px] h-[24px] rotate-[0deg] hover:rotate-[12deg] transition-transform duration-200"
                     alt="Search"
                     src={searchIcon}
                   />
@@ -1091,7 +1107,11 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   className="flex items-center gap-[15px] px-5 h-[35px] rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-all duration-300 relative overflow-hidden"
                   asChild
                 >
-                  <Link to="/curate" className="relative">
+                  <Link
+                    to="/curate"
+                    className="relative"
+                    onClick={() => {/* Analytics tracking removed */}}
+                  >
                     {/* 涟漪发现动效 */}
                     <div className="absolute inset-0 pointer-events-none">
                       {/* 第一层涟漪 */}
@@ -1331,7 +1351,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   aria-label="Search"
                 >
                   <img
-                    className="w-[32px] h-[32px] rotate-[0deg] hover:rotate-[12deg] transition-transform duration-200"
+                    className="w-[24px] h-[24px] rotate-[0deg] hover:rotate-[12deg] transition-transform duration-200"
                     alt="Search"
                     src={searchIcon}
                   />
@@ -1355,10 +1375,20 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                 <Link to="/login">Log in / Sign up</Link>
               </Button>
             )}
+
+            {/* Hidden analytics link for production - accessible via URL /fx */}
+            <Link
+              to="/fx"
+              className="hidden"
+              aria-label="Analytics Dashboard with Share Features"
+            >
+              Analytics Dashboard
+            </Link>
           </div>
         )}
       </div>
       </header>
+
     </>
   );
 };

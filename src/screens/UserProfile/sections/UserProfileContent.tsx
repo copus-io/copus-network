@@ -8,8 +8,8 @@ import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
-import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
+import defaultBanner from "../../../assets/images/default-banner.svg";
 
 interface UserProfileContentProps {
   namespace: string;
@@ -30,15 +30,52 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   const [hasMoreArticles, setHasMoreArticles] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const isLoadingMoreRef = useRef(false); // Ref to prevent race conditions in scroll handler
+  const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
+  const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
-  // Create Space Modal state
-  const [showCreateSpaceModal, setShowCreateSpaceModal] = useState(false);
-  const [newSpaceName, setNewSpaceName] = useState("");
-  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+  // 智能Banner图片加载检测
+  const checkBannerImageLoad = React.useCallback((imageUrl: string) => {
+    if (!imageUrl || imageUrl === defaultBanner) {
+      setBannerImageLoaded(true);
+      setShowBannerLoadingSpinner(false);
+      return;
+    }
+
+    setBannerImageLoaded(false);
+    setShowBannerLoadingSpinner(false);
+
+    let isLoaded = false;
+
+    // 延迟300ms显示loading，如果图片快速加载完成就不显示loading
+    const loadingTimer = setTimeout(() => {
+      if (!isLoaded) {
+        setShowBannerLoadingSpinner(true);
+      }
+    }, 300);
+
+    // 创建新图片对象检测加载
+    const img = new Image();
+    img.onload = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true);
+      setShowBannerLoadingSpinner(false);
+    };
+    img.onerror = () => {
+      isLoaded = true;
+      clearTimeout(loadingTimer);
+      setBannerImageLoaded(true); // 即使加载失败也显示，避免持续loading
+      setShowBannerLoadingSpinner(false);
+    };
+    img.src = imageUrl;
+
+    // 清理函数
+    return () => clearTimeout(loadingTimer);
+  }, []);
 
   // Fetch user info and articles list
   useEffect(() => {
@@ -56,6 +93,36 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         console.log('[UserProfile] Successfully fetched user data:', userData);
         console.log('[UserProfile] isEnabled value:', userData.isEnabled);
         console.log('[UserProfile] isEnabled type:', typeof userData.isEnabled);
+
+        // Check if the API returned valid user data
+        // API returns empty string "" when namespace doesn't exist (status 1102)
+        // Also check for namespace mismatch (API returning default/anonymous user)
+        if (!userData || typeof userData !== 'object' || !userData.namespace || userData.namespace !== namespace) {
+          console.log('[UserProfile] User not found. Requested:', namespace, 'Got:', userData?.namespace || 'empty response');
+          setAccountExists(false);
+          setUserInfo({
+            id: 0,
+            username: 'User Not Found',
+            namespace: namespace,
+            faceUrl: profileDefaultAvatar,
+            bio: "This user doesn't exist or has been removed.",
+            articlesCount: 0,
+            followersCount: 0,
+            followingCount: 0,
+            socialLinks: [],
+            statistics: {
+              articleCount: 0,
+              collectedArticleCount: 0,
+              myArticleCollectedCount: 0
+            },
+            email: '',
+            coverUrl: 'https://c.animaapp.com/w7obk4mX/img/banner.png',
+            walletAddress: ''
+          });
+          setHasMoreArticles(false);
+          setLoading(false);
+          return;
+        }
 
         // Check if account is disabled/deleted (check both false and 0)
         if (userData.isEnabled === false || userData.isEnabled === 0) {
@@ -97,6 +164,10 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             coverUrl: userData.coverUrl,
             walletAddress: userData.walletAddress
           });
+
+          // 检测banner图片加载
+          const bannerUrl = userData.coverUrl || defaultBanner;
+          checkBannerImageLoad(bannerUrl);
         }
 
         console.log('[UserProfile] User info set successfully, now fetching liked articles...');
@@ -132,7 +203,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             createTime: article.createAt,
             publishTime: article.publishAt,
             link: article.targetUrl,
-            viewCount: article.viewCount
+            viewCount: article.viewCount,
+            visibility: article.visibility
           };
         });
 
@@ -159,8 +231,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           socialLinks: [],
           statistics: {
             articleCount: 0,
-            likedArticleCount: 0,
-            myArticleLikedCount: 0
+            collectedArticleCount: 0,
+            myArticleCollectedCount: 0
           },
           email: '',
           coverUrl: 'https://c.animaapp.com/w7obk4mX/img/banner.png',
@@ -217,7 +289,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
         createTime: article.createAt,
         publishTime: article.publishAt,
         link: article.targetUrl,
-        viewCount: article.viewCount
+        viewCount: article.viewCount,
+        visibility: article.visibility
       }));
 
       // Append new articles to existing ones
@@ -370,34 +443,12 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
     }
   };
 
-  // Handle creating a new space
-  const handleCreateNewSpace = async () => {
-    if (!newSpaceName.trim()) {
-      showToast('Please enter a space name', 'error');
-      return;
-    }
-
-    setIsCreatingSpace(true);
-
-    try {
-      // Call the createSpace API to create a new space
-      const createResponse = await AuthService.createSpace(newSpaceName.trim());
-      console.log('Create space response:', createResponse);
-
-      showToast(`Space "${newSpaceName.trim()}" created successfully`, 'success');
-
-      // Reset and close modal
-      setNewSpaceName("");
-      setShowCreateSpaceModal(false);
-
-      // Refresh the page to show the new space in user's profile
-      // Or you could add the space to local state if you want to avoid page refresh
-      window.location.reload();
-    } catch (err) {
-      console.error('Failed to create space:', err);
-      showToast('Failed to create space', 'error');
-    } finally {
-      setIsCreatingSpace(false);
+  // Handle share
+  const handleShare = () => {
+    if (userInfo?.namespace) {
+      const url = `${window.location.origin}/u/${userInfo.namespace}`;
+      navigator.clipboard.writeText(url);
+      showToast('Profile link copied to clipboard', 'success');
     }
   };
 
@@ -428,96 +479,96 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   }
 
   return (
-    <main className="flex flex-col gap-10 px-5 py-0 relative">
+    <main className="flex flex-col gap-5 px-4 lg:px-2.5 pt-0 pb-0 relative">
       {/* User info header */}
-      <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        {/* Cover image */}
-        <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
-          <img
-            src={userInfo.coverUrl || 'https://c.animaapp.com/w7obk4mX/img/banner.png'}
-            alt="Cover"
-            className={`w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300 ${
-              isOwnProfile ? 'cursor-pointer' : ''
-            }`}
-            onClick={handleCoverClick}
-          />
-          {/* Edit overlay - only shown on own profile */}
-          {isOwnProfile && (
-            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* User information */}
-        <div className="p-8 mt-[-64px] relative">
-          <div className="flex items-start gap-8">
-            <img
-              src={userInfo.faceUrl}
-              alt={userInfo.username}
-              className="w-32 h-32 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer"
-              onClick={handleAvatarClick}
+      <section className="w-full">
+        {/* Cover image - only show if user has a cover image */}
+        {userInfo.coverUrl && (
+          <div className="w-full h-48 overflow-hidden rounded-t-2xl bg-gradient-to-r from-blue-100 to-purple-100 relative group">
+            <div
+              className={`w-full h-full bg-cover bg-center bg-no-repeat ${
+                isOwnProfile ? 'cursor-pointer' : ''
+              } ${
+                bannerImageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                backgroundImage: `url(${userInfo.coverUrl})`,
+                backgroundColor: '#f3f4f6'
+              }}
+              onClick={handleCoverClick}
             />
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
-            <p className="text-gray-600 mb-4">@{userInfo.namespace}</p>
-            <p className="text-gray-700 mb-6">{userInfo.bio}</p>
-
-            <div className="flex gap-8">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.articleCount || 0}</div>
-                <div className="text-sm text-gray-600">Articles</div>
+            {showBannerLoadingSpinner && (
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-gray-400 border-t-gray-600 rounded-full animate-spin"></div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.likedArticleCount || 0}</div>
-                <div className="text-sm text-gray-600">Treasured</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{userInfo.statistics?.myArticleLikedCount || 0}</div>
-                <div className="text-sm text-gray-600">Received</div>
-              </div>
-            </div>
-
-            {/* Create Space button (only shown on own profile) */}
+            )}
+            {/* Edit overlay - only shown on own profile */}
             {isOwnProfile && (
-              <div className="mt-4">
-                <button
-                  onClick={() => setShowCreateSpaceModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red text-white rounded-full hover:bg-red/90 transition-colors font-medium"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer" onClick={handleCoverClick}>
+                <div className="bg-white bg-opacity-90 rounded-full p-3 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                  <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  Create Space
-                </button>
+                </div>
               </div>
             )}
           </div>
+        )}
 
-          {/* Subscribe button or account status (only shown when viewing other users) */}
-          {user && user.namespace !== namespace && (
-            accountExists ? (
-              <SubscribeButton
-                authorUserId={userInfo?.id}
-                authorName={userInfo?.username || userInfo?.namespace}
-                variant="default"
-                size="medium"
+        {/* User information - centered layout */}
+        <div className={`relative flex flex-col items-center text-center ${userInfo.coverUrl ? 'mt-[-40px]' : ''}`}>
+          {/* Avatar */}
+          <img
+            src={userInfo.faceUrl}
+            alt={userInfo.username}
+            className="w-20 h-20 rounded-full border-4 border-white shadow-lg hover:scale-105 transition-transform duration-300 cursor-pointer mb-3"
+            onClick={handleAvatarClick}
+          />
+
+          {/* Username and action buttons */}
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900">{userInfo.username}</h1>
+            <button
+              type="button"
+              aria-label="Share profile"
+              className="relative hover:opacity-70 transition-opacity"
+              onClick={handleShare}
+            >
+              <img
+                alt="Share"
+                src="https://c.animaapp.com/V3VIhpjY/img/share.svg"
+                className="w-5 h-5"
               />
-            ) : (
-              <button
-                className="px-6 py-2 rounded-full bg-gray-300 text-gray-600 cursor-not-allowed"
-                disabled
-              >
-                This account doesn't exist
-              </button>
-            )
-          )}
+            </button>
           </div>
+
+          {/* Namespace and bio */}
+          <p className="text-sm text-gray-400 mb-2">@{userInfo.namespace}</p>
+          <p className="text-gray-700 mb-4 max-w-md">{userInfo.bio}</p>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 mb-3">
+            <span className="text-sm text-gray-500">{userInfo.statistics?.articleCount || 0} Articles</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.collectedArticleCount || 0} Treasured</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleCollectedCount || 0} Received</span>
+          </div>
+
+          {/* Subscribe button (only shown when viewing other users) */}
+          {user && user.namespace !== namespace && (
+            <button
+              className={`px-6 py-2 rounded-full transition-colors ${
+                accountExists
+                  ? 'bg-red text-white hover:bg-red/90'
+                  : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+              }`}
+              disabled={!accountExists}
+            >
+              {accountExists ? 'Subscribe' : "This account doesn't exist"}
+            </button>
+          )}
         </div>
       </section>
 
@@ -630,107 +681,6 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           isAlreadyCollected={selectedArticle.isLiked}
           onCollectSuccess={handleCollectSuccess}
         />
-      )}
-
-      {/* Create Space Modal */}
-      {showCreateSpaceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => {
-              setShowCreateSpaceModal(false);
-              setNewSpaceName("");
-            }}
-          />
-
-          {/* Modal */}
-          <div
-            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
-            role="dialog"
-            aria-labelledby="new-space-title"
-            aria-modal="true"
-          >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setShowCreateSpaceModal(false);
-                setNewSpaceName("");
-              }}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
-              aria-label="Close dialog"
-              type="button"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                <h2
-                  id="new-space-title"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-                >
-                  Create New Space
-                </h2>
-
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="space-name-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Space Name
-                  </label>
-
-                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-50 border border-gray-200">
-                    <input
-                      id="space-name-input"
-                      type="text"
-                      value={newSpaceName}
-                      onChange={(e) => setNewSpaceName(e.target.value)}
-                      placeholder="Enter space name..."
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-gray-700 text-base tracking-[0] leading-[23px] outline-none placeholder:text-gray-400"
-                      aria-required="true"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleCreateNewSpace();
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                <button
-                  className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => {
-                    setShowCreateSpaceModal(false);
-                    setNewSpaceName("");
-                  }}
-                  type="button"
-                >
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    Cancel
-                  </span>
-                </button>
-
-                <button
-                  className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                  onClick={handleCreateNewSpace}
-                  disabled={!newSpaceName.trim() || isCreatingSpace}
-                  type="button"
-                >
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    {isCreatingSpace ? 'Creating...' : 'Create'}
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </main>
   );

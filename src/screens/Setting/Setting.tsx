@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 import { PageWrapper } from "../../components/layout/PageWrapper";
 import { ProfileContentSection } from "./sections/ProfileContentSection/ProfileContentSection";
+import { SEO } from "../../components/SEO/SEO";
 
 export const Setting = (): JSX.Element => {
   const location = useLocation();
@@ -30,6 +31,7 @@ export const Setting = (): JSX.Element => {
 
   return (
     <PageWrapper activeMenuItem="setting" requireAuth={true}>
+      <SEO title="Settings" />
       <ProfileContentSection onLogout={logout} />
     </PageWrapper>
   );

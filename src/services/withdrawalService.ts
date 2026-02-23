@@ -77,35 +77,15 @@ export class WithdrawalService {
    * Submit withdrawal request
    */
   static async submitWithdrawal(data: WithdrawalRequest): Promise<WithdrawalResponse> {
-    console.log('🔗 WithdrawalService.submitWithdrawal 调用:', {
-      endpoint: '/client/user/withdrawal/request',
-      method: 'POST',
-      requestData: data,
-      requestJSON: JSON.stringify(data),
-      timestamp: new Date().toISOString()
-    });
-
     try {
       const response = await apiRequest<WithdrawalResponse>('/client/user/withdrawal/request', {
         method: 'POST',
         body: JSON.stringify(data),
       });
 
-      console.log('📡 WithdrawalService API响应:', {
-        response,
-        responseType: typeof response,
-        responseKeys: response ? Object.keys(response) : 'null',
-        timestamp: new Date().toISOString()
-      });
-
       return response;
     } catch (error) {
-      console.error('🔥 WithdrawalService API错误:', {
-        error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        requestData: data,
-        timestamp: new Date().toISOString()
-      });
+      console.error('Withdrawal request failed:', error);
       throw error;
     }
   }
@@ -115,8 +95,6 @@ export class WithdrawalService {
    * Uses the common verification code endpoint with codeType=5 for withdrawal
    */
   static async sendVerificationCode(email: string): Promise<{ message: string }> {
-    console.log('📧 Sending verification code for withdrawal to email:', email);
-
     const queryParams = new URLSearchParams({
       codeType: '5', // 5 = 提现申请
       email: email
@@ -140,8 +118,6 @@ export class WithdrawalService {
    * Uses the common verification code endpoint with codeType=4 for wallet binding
    */
   static async sendBindingVerificationCode(email: string): Promise<{ message: string }> {
-    console.log('📧 Sending verification code for wallet binding to email:', email);
-
     const queryParams = new URLSearchParams({
       codeType: '4', // 4 = 钱包绑定邮箱
       email: email
@@ -212,22 +188,9 @@ export class WithdrawalService {
    * Bind email to wallet for users who haven't bound an email yet
    */
   static async bindWalletEmail(data: WalletBindEmailRequest): Promise<any> {
-    console.log('🔍 API Request Debug:', {
-      endpoint: '/client/user/walletBindEmail',
-      method: 'POST',
-      requestBody: data,
-      requestBodyJSON: JSON.stringify(data)
-    });
-
     const response = await apiRequest<any>('/client/user/walletBindEmail', {
       method: 'POST',
       body: JSON.stringify(data),
-    });
-
-    console.log('📥 API Response Debug:', {
-      response: response,
-      responseType: typeof response,
-      responseKeys: Object.keys(response || {})
     });
 
     return response;

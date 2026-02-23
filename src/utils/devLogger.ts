@@ -1,96 +1,108 @@
 /**
- * Development logging utility
+ * 🔍 SEARCH: dev-logger-utility
+ * Development logging utility for debugging and performance monitoring
  */
 
-interface LogContext {
+// 🔍 SEARCH: dev-logger-types
+export interface DevLogContext {
   component?: string;
   action?: string;
-  endpoint?: string;
   userId?: number;
-  [key: string]: any;
+  articleId?: string | number;
+  endpoint?: string;
+  duration?: number;
+  error?: any;
 }
 
-class DevLogger {
-  private isEnabled = process.env.NODE_ENV !== 'production';
+// 🔍 SEARCH: dev-logger-main-class
+export class DevLogger {
+  private static isEnabled = process.env.NODE_ENV === 'development';
 
-  /**
-   * Log API calls with context
-   */
-  apiCall(endpoint: string, data: any, context: LogContext = {}) {
+  // 🔍 SEARCH: api-call-logger
+  static apiCall(endpoint: string, data?: any, context?: DevLogContext) {
     if (!this.isEnabled) return;
 
-    console.log(`🔄 API Call: ${endpoint}`, {
-      data,
-      ...context,
-      timestamp: new Date().toISOString()
-    });
+    const timestamp = new Date().toISOString().slice(11, 23);
+    console.log(
+      `🌐 [${timestamp}] API Call: ${endpoint}`,
+      data ? `\nData:` : '',
+      data || '',
+      context ? `\nContext:` : '',
+      context || ''
+    );
   }
 
-  /**
-   * Log API responses with timing
-   */
-  apiResponse(endpoint: string, response: any, duration: number, context: LogContext = {}) {
+  // 🔍 SEARCH: api-response-logger
+  static apiResponse(endpoint: string, response: any, duration?: number, context?: DevLogContext) {
     if (!this.isEnabled) return;
 
-    console.log(`✅ API Response: ${endpoint} (${duration}ms)`, {
-      response,
-      duration,
-      ...context,
-      timestamp: new Date().toISOString()
-    });
+    const timestamp = new Date().toISOString().slice(11, 23);
+    const durationText = duration ? ` (${duration}ms)` : '';
+    console.log(
+      `✅ [${timestamp}] API Response: ${endpoint}${durationText}`,
+      `\nStatus: ${response?.status || 'unknown'}`,
+      response?.data ? `\nData count: ${Array.isArray(response.data) ? response.data.length : 'object'}` : '',
+      context ? `\nContext:` : '',
+      context || ''
+    );
   }
 
-  /**
-   * Log API errors with context
-   */
-  apiError(endpoint: string, error: any, context: LogContext = {}) {
+  // 🔍 SEARCH: api-error-logger
+  static apiError(endpoint: string, error: any, context?: DevLogContext) {
     if (!this.isEnabled) return;
 
-    console.error(`❌ API Error: ${endpoint}`, {
-      error,
-      ...context,
-      timestamp: new Date().toISOString()
-    });
+    const timestamp = new Date().toISOString().slice(11, 23);
+    console.error(
+      `🚨 [${timestamp}] API Error: ${endpoint}`,
+      `\nError: ${error?.message || error}`,
+      `\nStatus: ${error?.status || 'unknown'}`,
+      context ? `\nContext:` : '',
+      context || ''
+    );
   }
 
-  /**
-   * Log general info
-   */
-  info(message: string, data?: any, context: LogContext = {}) {
+  // 🔍 SEARCH: component-render-logger
+  static componentRender(componentName: string, props?: any, context?: DevLogContext) {
     if (!this.isEnabled) return;
 
-    console.log(`ℹ️ ${message}`, {
-      data,
-      ...context,
-      timestamp: new Date().toISOString()
-    });
+    const timestamp = new Date().toISOString().slice(11, 23);
+    console.log(
+      `⚛️ [${timestamp}] Component Render: ${componentName}`,
+      props ? `\nProps:` : '',
+      props || '',
+      context ? `\nContext:` : '',
+      context || ''
+    );
   }
 
-  /**
-   * Log warnings
-   */
-  warn(message: string, data?: any, context: LogContext = {}) {
+  // 🔍 SEARCH: user-action-logger
+  static userAction(action: string, data?: any, context?: DevLogContext) {
     if (!this.isEnabled) return;
 
-    console.warn(`⚠️ ${message}`, {
-      data,
-      ...context,
-      timestamp: new Date().toISOString()
-    });
+    const timestamp = new Date().toISOString().slice(11, 23);
+    console.log(
+      `👤 [${timestamp}] User Action: ${action}`,
+      data ? `\nData:` : '',
+      data || '',
+      context ? `\nContext:` : '',
+      context || ''
+    );
   }
 
-  /**
-   * Log errors
-   */
-  error(message: string, error?: any, context: LogContext = {}) {
+  // 🔍 SEARCH: state-change-logger
+  static stateChange(stateName: string, oldValue: any, newValue: any, context?: DevLogContext) {
     if (!this.isEnabled) return;
 
-    console.error(`💥 ${message}`, {
-      error,
-      ...context,
-      timestamp: new Date().toISOString()
-    });
+    const timestamp = new Date().toISOString().slice(11, 23);
+    console.log(
+      `📊 [${timestamp}] State Change: ${stateName}`,
+      `\nOld:`, oldValue,
+      `\nNew:`, newValue,
+      context ? `\nContext:` : '',
+      context || ''
+    );
   }
 }
 
-export const devLog = new DevLogger();
+// 🔍 SEARCH: dev-logger-shortcuts
+export const devLog = DevLogger;

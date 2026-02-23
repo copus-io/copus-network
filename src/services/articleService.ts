@@ -1,7 +1,7 @@
 import { apiRequest } from './api';
-import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest } from '../types/article';
+import { PageArticleResponse, PageArticleParams, BackendApiResponse, Article, BackendArticle, ArticleDetailResponse, MyCreatedArticleResponse, MyCreatedArticleParams, MyUnlockedArticleResponse, MyUnlockedArticleParams, SEOSettings, SEOSettingsResponse, SEOSettingsRequest, BindArticlesRequest, BindArticlesApiResponse, RemoveArticleFromSpaceRequest, RemoveArticleFromSpaceResponse } from '../types/article';
 import profileDefaultAvatar from '../assets/images/profile-default.svg';
-import { cacheWithApi, articleCache } from '../utils/cacheManager';
+import { decodeHtmlEntities } from '../utils/htmlUtils';
 
 // Transform backend data to frontend required format
 const transformBackendArticle = (backendArticle: BackendArticle): Article => {
@@ -71,8 +71,8 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
   const transformedArticle = {
     id: backendArticle.uuid,
     numericId: backendArticle.id, // Numeric ID for bindArticles API
-    title: backendArticle.title,
-    description: backendArticle.content,
+    title: decodeHtmlEntities(backendArticle.title),
+    description: backendArticle.content ? decodeHtmlEntities(backendArticle.content) : '',
     category: backendArticle.categoryInfo?.name || '',
     categoryColor: backendArticle.categoryInfo?.color, // Save category color returned from backend
     coverImage: processImageUrl(backendArticle.coverUrl),
@@ -95,12 +95,14 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     // SEO fields
     seoDescription: backendArticle.seoDescription,
     seoKeywords: backendArticle.seoKeywords,
+    // Article visibility status
+    visibility: backendArticle.visibility,
   };
 
   return transformedArticle;
 };
 
-// Get paginated article list with caching
+// Get paginated article list
 export const getPageArticles = async (params: PageArticleParams = {}): Promise<PageArticleResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -109,7 +111,7 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
   queryParams.append('pageIndex', page.toString()); // Backend also uses 1-based page numbering
 
   // Ensure pageSize parameter is always present
-  const pageSize = params.pageSize || 15; // Updated default to match useArticles
+  const pageSize = params.pageSize || 10;
   queryParams.append('pageSize', pageSize.toString());
 
   if (params.category) queryParams.append('keyword', params.category);
@@ -123,33 +125,13 @@ export const getPageArticles = async (params: PageArticleParams = {}): Promise<P
 
   const endpoint = `/client/home/pageArticle?${queryParams.toString()}`;
 
-  // Create cache key based on all parameters
-  const cacheKey = `articles:${JSON.stringify(params)}`;
 
-  // Use cache for page 1 only (to avoid caching infinite scroll data)
-  const shouldCache = page === 1;
-
-  if (shouldCache) {
-    return cacheWithApi(
-      cacheKey,
-      () => fetchArticlesFromAPI(endpoint),
-      articleCache,
-      5 * 60 * 1000 // 5 minutes cache for first page
-    );
-  } else {
-    // Direct API call for other pages (infinite scroll)
-    return fetchArticlesFromAPI(endpoint);
-  }
-};
-
-// Extracted API call function for reuse
-const fetchArticlesFromAPI = async (endpoint: string): Promise<PageArticleResponse> => {
   // Make the request - token will be included automatically if available
   let backendResponse: BackendApiResponse;
   try {
     backendResponse = await apiRequest<BackendApiResponse>(endpoint);
   } catch (error) {
-    console.error('❌ Failed to fetch articles:', error);
+    console.error(' Failed to fetch articles:', error);
     throw new Error('Failed to load articles. Please refresh the page and try again.');
   }
 
@@ -232,12 +214,8 @@ export const getArticleDetail = async (
       const endpoint = `/client/reader/article/info?uuid=${uuid}${cacheBuster}`;
 
       // Article details are publicly viewable but will include token if available for personalized data
+      // Note: Cache busting is done via _t query param, not headers (to avoid CORS issues)
       const response = await apiRequest<{status: number, msg: string, data: ArticleDetailResponse}>(endpoint, {
-        headers: bustCache ? {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        } : {},
         timeout: 10000 // 10 second timeout
       });
 
@@ -285,7 +263,7 @@ export const getArticleDetail = async (
       if (shouldRetry) {
         // Exponential backoff: wait 1s, 2s, 4s...
         const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
-        console.warn(`🔄 Retrying article detail request in ${delay}ms...`);
+        console.warn(`Retrying article detail request in ${delay}ms...`);
 
         await new Promise(resolve => setTimeout(resolve, delay));
         return executeRequest(attempt + 1);
@@ -294,7 +272,7 @@ export const getArticleDetail = async (
       // If all retries failed, try to return cached data if available
       const cached = articleDetailCache.get(cacheKey);
       if (cached) {
-        console.warn('⚠️ Using stale cached data due to API failure');
+        console.warn('Using stale cached data due to API failure');
         return cached.data;
       }
 
@@ -360,7 +338,7 @@ export const getMyCreatedArticles = async (params: MyCreatedArticleParams = {}):
 
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch my created articles:', error);
+    console.error(' Failed to fetch my created articles:', error);
     throw new Error(`Failed to fetch my created articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
@@ -384,7 +362,7 @@ export const getMyUnlockedArticles = async (params: MyUnlockedArticleParams): Pr
 
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to fetch my unlocked articles:', error);
+    console.error(' Failed to fetch my unlocked articles:', error);
     throw new Error(`Failed to fetch my unlocked articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
@@ -395,8 +373,8 @@ export const publishArticle = async (articleData: {
   title: string;
   content: string;
   coverUrl: string;
-  targetUrl: string;
-  categoryId: number;
+  targetUrl?: string; // Optional in edit mode (cannot be changed)
+  categoryId?: number; // Deprecated - no longer in use
   spaceIds?: number[]; // Optional: array of space IDs to save the article to
   targetUrlIsLocked?: boolean;
   priceInfo?: {
@@ -404,23 +382,16 @@ export const publishArticle = async (articleData: {
     currency: string;
     price: number;
   };
+  visibility?: number; // Article visibility (0: public, 1: private, 2: unlisted)
 }): Promise<{ uuid: string }> => {
 
   const endpoint = '/client/author/article/edit';
 
   try {
-    console.log('📤 Calling publishArticle API with data:', articleData);
-    console.log('📤 Payment fields being sent to API:', {
-      targetUrlIsLocked: articleData.targetUrlIsLocked,
-      priceInfo: articleData.priceInfo || 'undefined/not included',
-      fullPayload: JSON.stringify(articleData)
-    });
     const response = await apiRequest<{status: number, msg: string, data: { uuid: string }}>(endpoint, {
       method: 'POST',
       body: JSON.stringify(articleData),
     });
-
-    console.log('📥 publishArticle API response:', response);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'Failed to publish article');
@@ -428,7 +399,7 @@ export const publishArticle = async (articleData: {
 
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to publish article:', error);
+    console.error(' Failed to publish article:', error);
     throw new Error(`Failed to publish article: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
@@ -445,19 +416,10 @@ export const setSEOSettings = async (seoData: SEOSettings): Promise<boolean> => 
   };
 
   try {
-    console.log('📤 Setting SEO for article:', {
-      uuid: seoData.uuid,
-      description: seoData.description?.substring(0, 50) + '...',
-      keywords: seoData.keywords,
-      requestData: requestData
-    });
-
     const response = await apiRequest<SEOSettingsResponse>(endpoint, {
       method: 'POST',
       body: JSON.stringify(requestData),
     });
-
-    console.log('📥 SEO settings API response:', response);
 
     if (response.status !== 1) {
       throw new Error(response.msg || 'Failed to set SEO settings');
@@ -465,7 +427,49 @@ export const setSEOSettings = async (seoData: SEOSettings): Promise<boolean> => 
 
     return response.data;
   } catch (error) {
-    console.error('❌ Failed to set SEO settings:', error);
+    console.error('Failed to set SEO settings:', error);
     throw new Error(`Failed to set SEO settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Bind articles to spaces
+export const bindArticles = async (bindData: BindArticlesRequest): Promise<BindArticlesApiResponse> => {
+  const endpoint = '/client/article/bind/bindArticles';
+
+  try {
+    const response = await apiRequest<BindArticlesApiResponse>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(bindData),
+    });
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'Failed to bind articles');
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Failed to bind articles:', error);
+    throw new Error(`Failed to bind articles: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Remove article from space
+export const removeArticleFromSpace = async (removeData: RemoveArticleFromSpaceRequest): Promise<boolean> => {
+  const endpoint = '/client/article/bind/unbindArticle';
+
+  try {
+    const response = await apiRequest<RemoveArticleFromSpaceResponse>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(removeData),
+    });
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'Failed to remove article from space');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('Failed to remove article from space:', error);
+    throw new Error(`Failed to remove article from space: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

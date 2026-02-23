@@ -294,6 +294,115 @@ refactor(utils): simplify date formatting logic
 
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
 
+## Claude Code Optimization Guidelines
+
+### ⚡ Rapid Development System (2-3 minute modifications)
+
+**NEW: Use the rapid development system for lightning-fast modifications:**
+
+```typescript
+// 🔍 SEARCH: rapid-space-edit-example
+import { spaceShortcuts, eventHandlers } from './utils/devShortcuts';
+
+// Instead of manual permission checks (old way - 11 minutes)
+const canEditSpaceName = !spaceInfo?.spaceType || spaceInfo?.spaceType === 0;
+
+// Use rapid system (new way - 2 minutes)
+const spaceSetup = spaceShortcuts.setupSpaceEdit(spaceInfo, user?.id);
+const { canEditName } = spaceSetup.permissions;
+const handlers = eventHandlers.createSpaceEditHandler(spaceInfo, 'ComponentName');
+```
+
+**Available Rapid Systems:**
+- `src/config/featureFlags.ts` - Feature flags for instant permission changes
+- `src/utils/componentAtomics.ts` - Atomic component functions
+- `src/config/componentConfigs.ts` - Declarative UI configurations
+- `src/utils/devShortcuts.ts` - Development shortcuts and templates
+
+### 🔍 Search Comments
+Add search comments to critical code sections for faster debugging:
+
+```typescript
+// 🔍 SEARCH: user-card-spaces-fetch
+// 🔍 SEARCH: pageMySpaces-api-call-user-card
+// 🔍 SEARCH: space-edit-functionality
+```
+
+### 📊 Development Logging
+Use the DevLogger utility for consistent debugging:
+
+```typescript
+import { devLog } from '../../utils/devLogger';
+
+// Log API calls with context
+devLog.apiCall(endpoint, data, { component: 'Content', action: 'fetch-spaces' });
+
+// Log API responses with timing
+devLog.apiResponse(endpoint, response, duration, { userId: 123 });
+
+// Log errors with context
+devLog.apiError(endpoint, error, { component: 'Content', action: 'save-space' });
+```
+
+### 🛠️ Error Handling
+Use centralized error handling:
+
+```typescript
+import { ErrorHandler } from '../../utils/errorHandler';
+
+try {
+  await AuthService.updateSpace(id, name, description);
+} catch (error) {
+  const message = ErrorHandler.handleApiError(error, {
+    component: 'SpaceContentSection',
+    action: 'update-space',
+    endpoint: API_ENDPOINTS.SPACE.UPDATE,
+    userId: user?.id
+  });
+  showToast(message, 'error');
+}
+```
+
+### 📋 API Endpoints
+Use centralized endpoint configuration:
+
+```typescript
+import { API_ENDPOINTS } from '../../config/apiEndpoints';
+
+// Instead of hardcoded strings
+const response = await apiRequest(API_ENDPOINTS.SPACE.UPDATE, { ... });
+```
+
+### 🏷️ Naming Conventions
+Use consistent prefixes for related functions:
+
+```typescript
+// ✅ Good - grouped by functionality
+const handleSpaceEdit = () => {};
+const handleSpaceCreate = () => {};
+const handleSpaceDelete = () => {};
+
+// ❌ Avoid - inconsistent naming
+const editSpace = () => {};
+const createNewSpace = () => {};
+const removeSpace = () => {};
+```
+
+### 🎯 Function Documentation
+Document function purpose and context:
+
+```typescript
+/**
+ * 🎯 PURPOSE: Handle space description editing with page refresh
+ * 🔗 API: /client/article/space/update
+ * 🔄 REFRESH: Auto-refreshes page after successful edit
+ * 🛠️ USED_IN: SpaceContentSection.tsx
+ */
+export const handleSpaceEdit = async (spaceData: SpaceData) => {
+  // Implementation
+}
+```
+
 ## Environment Variables
 
 Required environment variables (see `.env.example`):

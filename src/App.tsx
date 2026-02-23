@@ -25,6 +25,14 @@ import { Login } from "./screens/Login/Login";
 // Content - eagerly loaded to prevent dynamic import errors
 import { Content } from "./screens/Content/Content";
 
+// Test components for development
+import { TestNoAccess } from "./screens/Test/TestNoAccess";
+
+
+// Taste test component
+import { TasteTest } from "./components/TasteTest/TasteTest";
+
+
 // ShortLinkHandler - eagerly loaded to prevent dynamic import errors
 import { ShortLinkHandler } from "./components/ShortLinkHandler";
 
@@ -32,7 +40,7 @@ import { ShortLinkHandler } from "./components/ShortLinkHandler";
 const Following = lazy(() => import("./screens/Following/Following").then(m => ({ default: m.Following })));
 const Notification = lazy(() => import("./screens/Notification/Notification").then(m => ({ default: m.Notification })));
 const Setting = lazy(() => import("./screens/Setting/Setting").then(m => ({ default: m.Setting })));
-const Treasury = lazy(() => import("./screens/Treasury/Treasury").then(m => ({ default: m.Treasury })));
+
 const Create = lazy(() => import("./screens/Create/Create").then(m => ({ default: m.Create })));
 const UserProfile = lazy(() => import("./screens/UserProfile/UserProfile").then(m => ({ default: m.UserProfile })));
 const Space = lazy(() => import("./screens/Space/Space").then(m => ({ default: m.Space })));
@@ -122,14 +130,7 @@ const router = createBrowserRouter([
       </AuthGuard>
     ),
   },
-  {
-    path: "/treasury",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><Treasury /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
+
   {
     path: "/notification",
     element: (
@@ -216,6 +217,10 @@ const router = createBrowserRouter([
     element: <Content />,
   },
   {
+    path: "/test/no-access",
+    element: <TestNoAccess />,
+  },
+  {
     path: "/auth/unauthorized",
     element: <LazyRoute><NotLogIn /></LazyRoute>,
   },
@@ -246,6 +251,10 @@ const router = createBrowserRouter([
         <LazyRoute><SEOSet /></LazyRoute>
       </AuthGuard>
     ),
+  },
+  {
+    path: "/taste-test",
+    element: <TasteTest />,
   },
   // 404 catch-all route - must be last
   {

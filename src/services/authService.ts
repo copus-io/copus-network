@@ -6,6 +6,10 @@ import {
   CachedUserInfo,
   ApiUserInfoResponse
 } from '../types/user';
+import {
+  BindableSpacesRequest,
+  BindableSpacesResponse
+} from '../types/space';
 
 export interface VerificationCodeParams {
   email: string;
@@ -62,8 +66,10 @@ export interface UserHomeResponse {
   }>;
   statistics: {
     articleCount: number;
-    likedArticleCount: number;
-    myArticleLikedCount: number;
+    publicArticleCount?: number;  // Public works count (for taste profile)
+    privateArticleCount?: number; // Private works count
+    collectedArticleCount: number;
+    myArticleCollectedCount: number;
   };
   username: string;
   walletAddress: string;
@@ -145,8 +151,6 @@ export class AuthService {
           requiresAuth: true
         });
 
-        console.log('🔍 X OAuth URL API response (with auth):', response);
-
         if (typeof response === 'string') {
           return response;
         }
@@ -167,8 +171,6 @@ export class AuthService {
         requiresAuth: false
       });
 
-      console.log('🔍 X OAuth URL API response (without auth):', response);
-
       if (typeof response === 'string') {
         return response;
       }
@@ -182,10 +184,10 @@ export class AuthService {
         }
       }
 
-      console.error('❌ Unexpected API response format:', response);
+      console.error(' Unexpected API response format:', response);
       throw new Error('Did not receive a valid X OAuth URL');
     } catch (error) {
-      console.error('❌ Failed to get X OAuth URL:', error);
+      console.error(' Failed to get X OAuth URL:', error);
       throw new Error(`Failed to get X OAuth URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -205,9 +207,6 @@ export class AuthService {
           requiresAuth: true
         });
 
-        console.log('🔍 X login API response (binding mode):', response);
-        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
-
         // Response format can be:
         // 1. { "namespace": "string", "token": "string" }
         // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "..." } }
@@ -216,7 +215,6 @@ export class AuthService {
 
         if (token) {
           localStorage.setItem('copus_token', token);
-          console.log('✅ Token saved to localStorage (binding)');
         }
 
         return {
@@ -231,9 +229,6 @@ export class AuthService {
           requiresAuth: false
         });
 
-        console.log('🔍 X login API response (login mode):', response);
-        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
-
         // Response format can be:
         // 1. { "namespace": "string", "token": "string", "username": "...", "faceUrl": "..." }
         // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "...", "username": "...", "faceUrl": "..." } }
@@ -247,15 +242,8 @@ export class AuthService {
           bio: response.data?.bio || response.bio || response.data?.description || response.description
         };
 
-        console.log('🔑 Extracted token:', token ? token.substring(0, 20) + '...' : 'NONE');
-        console.log('👤 Extracted namespace:', namespace);
-        console.log('📸 Extracted X profile:', xProfile);
-
         if (token) {
           localStorage.setItem('copus_token', token);
-          console.log('✅ Token saved to localStorage');
-        } else {
-          console.error('❌ No token found in response!', response);
         }
 
         return {
@@ -266,7 +254,7 @@ export class AuthService {
         };
       }
     } catch (error) {
-      console.error('❌ X Login/Binding failed:', error);
+      console.error(' X Login/Binding failed:', error);
       throw new Error(`X ${hasToken ? 'account binding' : 'login'} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -288,8 +276,6 @@ export class AuthService {
         requiresAuth: true
       });
 
-      console.log('🔍 X profile API response:', response);
-
       // Handle different response formats
       if (response.data) {
         return response.data;
@@ -297,7 +283,7 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('❌ Failed to get X profile:', error);
+      console.error(' Failed to get X profile:', error);
       throw new Error(`Failed to get X profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -323,7 +309,7 @@ export class AuthService {
 
       throw new Error('Did not receive a valid Facebook OAuth URL');
     } catch (error) {
-      console.error('❌ Failed to get Facebook OAuth URL:', error);
+      console.error(' Failed to get Facebook OAuth URL:', error);
       throw new Error(`Failed to get Facebook OAuth URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -366,7 +352,7 @@ export class AuthService {
         return { ...response, isBinding: false };
       }
     } catch (error) {
-      console.error('❌ Facebook Login/Binding failed:', error);
+      console.error(' Facebook Login/Binding failed:', error);
       throw new Error(`Facebook ${hasToken ? 'account binding' : 'login'}failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -426,7 +412,7 @@ export class AuthService {
 
       throw new Error('Did not receive a valid Google OAuth URL');
     } catch (error) {
-      console.error('❌ Failed to get Google OAuth URL:', error);
+      console.error(' Failed to get Google OAuth URL:', error);
       throw new Error(`Failed to get Google OAuth URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -446,8 +432,6 @@ export class AuthService {
           requiresAuth: true
         });
 
-        console.log('🔍 Google login API response (binding mode):', response);
-
         // Response format can be:
         // 1. { "namespace": "string", "token": "string" }
         // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "..." } }
@@ -456,7 +440,6 @@ export class AuthService {
 
         if (token) {
           localStorage.setItem('copus_token', token);
-          console.log('✅ Token saved to localStorage (binding)');
         }
 
         return {
@@ -471,9 +454,6 @@ export class AuthService {
           requiresAuth: false
         });
 
-        console.log('🔍 Google login API response (login mode):', response);
-        console.log('🔍 Full response structure:', JSON.stringify(response, null, 2));
-
         // Response format can be:
         // 1. { "namespace": "string", "token": "string", "username": "...", "faceUrl": "..." }
         // 2. { "status": 1, "msg": "success", "data": { "token": "...", "namespace": "...", "username": "...", "faceUrl": "..." } }
@@ -487,15 +467,8 @@ export class AuthService {
           email: response.data?.email || response.email
         };
 
-        console.log('🔑 Extracted token:', token ? token.substring(0, 20) + '...' : 'NONE');
-        console.log('👤 Extracted namespace:', namespace);
-        console.log('📸 Extracted Google profile:', googleProfile);
-
         if (token) {
           localStorage.setItem('copus_token', token);
-          console.log('✅ Token saved to localStorage');
-        } else {
-          console.error('❌ No token found in response!', response);
         }
 
         return {
@@ -506,7 +479,7 @@ export class AuthService {
         };
       }
     } catch (error) {
-      console.error('❌ Google Login/Binding failed:', error);
+      console.error(' Google Login/Binding failed:', error);
       throw new Error(`Google ${hasToken ? 'account binding' : 'login'}failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -528,8 +501,6 @@ export class AuthService {
         requiresAuth: true
       });
 
-      console.log('🔍 Google profile API response:', response);
-
       // Handle different response formats
       if (response.data) {
         return response.data;
@@ -537,7 +508,7 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('❌ Failed to get Google profile:', error);
+      console.error(' Failed to get Google profile:', error);
       throw new Error(`Failed to get Google profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -557,7 +528,7 @@ export class AuthService {
 
       return response;
     } catch (error) {
-      console.error('❌ Get Metamask signature data failed:', error);
+      console.error(' Get Metamask signature data failed:', error);
       throw new Error(`Failed to get signature data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -587,7 +558,7 @@ export class AuthService {
 
       return { ...response, isBinding: hasToken };
     } catch (error) {
-      console.error('❌ Metamask Login/Binding failed:', error);
+      console.error(' Metamask Login/Binding failed:', error);
       throw new Error(`Metamask ${hasToken ? 'account binding' : 'login'}failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -774,33 +745,15 @@ export class AuthService {
    * Upload image to S3
    */
   static async uploadImage(file: File): Promise<{ url: string }> {
-    console.log('🔥 AuthService.uploadImage starting upload:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      lastModified: file.lastModified
-    });
-
     // Check authentication token before attempting upload
     const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
-    const user = localStorage.getItem('copus_user');
-    console.log('🔥 Authentication check:', {
-      hasToken: !!token,
-      tokenLength: token?.length || 0,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : 'NO_TOKEN',
-      hasUser: !!user,
-      userPreview: user ? JSON.parse(user).username : 'NO_USER'
-    });
 
     if (!token || token.trim() === '') {
-      console.error('🔥 No authentication token found in localStorage');
       throw new Error('Please log in to upload images. Your session may have expired.');
     }
 
     const formData = new FormData();
     formData.append('file', file);
-
-    console.log('🔥 FormData created, calling API...');
 
     try {
       const response = await apiRequest('/client/common/uploadImage2S3', {
@@ -809,48 +762,26 @@ export class AuthService {
         body: formData,
       });
 
-      console.log('🔥 API response raw data:', {
-        response,
-        responseType: typeof response,
-        responseKeys: Object.keys(response || {}),
-        status: response?.status,
-        data: response?.data,
-        url: response?.url,
-        msg: response?.msg,
-        message: response?.message
-      });
-
       // Check different possible response formats
       if (response.status === 1 && response.data) {
         // Possible response format: { status: 1, data: { url: "..." } }
         if (response.data.url) {
-          console.log('🔥 Found URL in response.data.url:', response.data.url);
           return { url: response.data.url };
         }
         // Possible response format: { status: 1, data: "url" }
         if (typeof response.data === 'string' && (response.data.startsWith('http') || response.data.startsWith('https'))) {
-          console.log('🔥 Found URL in response.data (string):', response.data);
           return { url: response.data };
         }
       }
 
       // Check if URL is returned directly
       if (response.url) {
-        console.log('🔥 Found URL in response.url:', response.url);
         return { url: response.url };
       }
 
-      console.error('🔥 No valid URL found in response, throwing error');
       const errorMsg = response.msg || response.message || 'Server did not return a valid image URL';
       throw new Error(errorMsg);
     } catch (error) {
-      console.error('🔥 API request failed:', {
-        error,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name
-      });
-
       // Extract error message from different error formats
       let errorMessage = 'Image upload failed';
 
@@ -870,7 +801,6 @@ export class AuthService {
         }
       }
 
-      console.error('🔥 Extracted error message:', errorMessage);
       throw new Error(errorMessage);
     }
   }
@@ -881,47 +811,18 @@ export class AuthService {
    * @returns Promise<string[]> 图片URL数组
    */
   static async uploadCommentImages(files: File[]): Promise<string[]> {
-    console.log('🔥 AuthService.uploadCommentImages starting batch upload:', {
-      fileCount: files.length,
-      files: files.map(file => ({
-        name: file.name,
-        size: (file.size / 1024).toFixed(2) + 'KB',
-        type: file.type
-      }))
-    });
-
     if (files.length === 0) {
       return [];
     }
 
     try {
       // 并行上传所有图片
-      const uploadPromises = files.map(async (file, index) => {
-        console.log(`🔥 Uploading image ${index + 1}/${files.length}:`, {
-          name: file.name,
-          size: (file.size / 1024).toFixed(2) + 'KB'
-        });
-
+      const uploadPromises = files.map(async (file) => {
         const result = await this.uploadImage(file);
-
-        console.log(`🔥 Image ${index + 1} uploaded successfully:`, {
-          name: file.name,
-          url: result.url,
-          size: (file.size / 1024).toFixed(2) + 'KB'
-        });
-
         return result.url;
       });
 
       const urls = await Promise.all(uploadPromises);
-
-      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-      console.log('🔥 All images uploaded successfully:', {
-        count: urls.length,
-        totalSize: (totalSize / 1024 / 1024).toFixed(2) + 'MB',
-        urls: urls
-      });
-
       return urls;
 
     } catch (error) {
@@ -976,20 +877,6 @@ export class AuthService {
     const response = await apiRequest(`/client/reader/article/info?uuid=${uuid}`, {
       method: 'GET',
       requiresAuth: true,
-    });
-
-    // Add detailed debug logs for article API
-    console.log('Article data details:', {
-      rawData: response,
-      articleData: response.data || response,
-      authorFields: {
-        'response.author': response.author,
-        'response.data.author': response.data?.author,
-        'response.user': response.user,
-        'response.data.user': response.data?.user,
-        'response.creator': response.creator,
-        'response.data.creator': response.data?.creator
-      }
     });
 
     return response;
@@ -1052,8 +939,8 @@ export class AuthService {
     }>;
     statistics: {
       articleCount: number;
-      likedArticleCount: number;
-      myArticleLikedCount: number;
+      collectedArticleCount: number;
+      myArticleCollectedCount: number;
     };
     username: string;
     walletAddress: string;
@@ -1101,7 +988,6 @@ export class AuthService {
     // Check if user has token, if not, return null instead of throwing error
     const token = localStorage.getItem('copus_token');
     if (!token || token.trim() === '') {
-      console.log('📝 No token found, skipping liked articles request');
       return null;
     }
 
@@ -1244,8 +1130,9 @@ export class AuthService {
     }>;
     statistics: {
       articleCount: number;
-      likedArticleCount: number;
-      myArticleLikedCount: number;
+      publicArticleCount: number;
+      collectedArticleCount: number;
+      myArticleCollectedCount: number;
     };
     username: string;
     walletAddress: string;
@@ -1288,8 +1175,8 @@ export class AuthService {
     }>;
     statistics: {
       articleCount: number;
-      likedArticleCount: number;
-      myArticleLikedCount: number;
+      collectedArticleCount: number;
+      myArticleCollectedCount: number;
     };
     username: string;
     walletAddress: string;
@@ -1472,7 +1359,7 @@ export class AuthService {
       // API returns boolean true
       return response === true || response;
     } catch (error) {
-      console.error('❌ Failed to update namespace:', error);
+      console.error(' Failed to update namespace:', error);
       throw error;
     }
   }
@@ -1492,7 +1379,7 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ Failed to change password:', error);
+      console.error(' Failed to change password:', error);
       throw error;
     }
   }
@@ -1510,8 +1397,6 @@ export class AuthService {
         requiresAuth: false, // Public endpoint - authenticates using verification code
       });
 
-      console.log('Reset password API response:', response);
-
       if (response.status === 1) {
         return { success: true };
       } else {
@@ -1519,7 +1404,7 @@ export class AuthService {
         return { success: false, message: response.msg || 'Reset password failed' };
       }
     } catch (error) {
-      console.error('❌ Failed to reset password:', error);
+      console.error(' Failed to reset password:', error);
       throw error;
     }
   }
@@ -1555,7 +1440,7 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ Failed to update user info:', error);
+      console.error(' Failed to update user info:', error);
       throw error;
     }
   }
@@ -1585,7 +1470,7 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ Failed to delete account:', error);
+      console.error(' Failed to delete account:', error);
       throw error;
     }
   }
@@ -1609,7 +1494,7 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ Verification code validation failed:', error);
+      console.error(' Verification code validation failed:', error);
       throw error;
     }
   }
@@ -1630,7 +1515,7 @@ export class AuthService {
 
       return response.status === 1;
     } catch (error) {
-      console.error('❌ Failed to update password:', error);
+      console.error(' Failed to update password:', error);
       throw error;
     }
   }
@@ -1703,7 +1588,7 @@ export class AuthService {
         treasureCount: 0,
       };
     } catch (error) {
-      console.error('❌ Failed to get unread message count:', error);
+      console.error(' Failed to get unread message count:', error);
       
       // Special handling for authentication errors (401/403)
       // When these occur, we need to trigger a logout
@@ -1756,7 +1641,7 @@ export class AuthService {
 
       return [];
     } catch (error) {
-      console.error('❌ Failed to get message notification settings:', error);
+      console.error(' Failed to get message notification settings:', error);
       return [];
     }
   }
@@ -1781,7 +1666,7 @@ export class AuthService {
              (response && response.data === true) ||
              (response && response.success === true);
     } catch (error) {
-      console.error('❌ Failed to update message notification setting:', error);
+      console.error(' Failed to update message notification setting:', error);
       return false;
     }
   }
@@ -1833,14 +1718,12 @@ export class AuthService {
 
     if (hasValidToken) {
       // With token: get personalized data with like status
-      console.log('📝 Fetching liked articles with authentication for personalized data');
       return apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
         method: 'GET',
         requiresAuth: true,
       });
     } else {
       // Without token: get public data without like status
-      console.log('📝 No token found, fetching public liked articles data');
       const response = await apiRequest(`/client/userHome/pageMyLikedArticle?${params.toString()}`, {
         method: 'GET',
         requiresAuth: false,
@@ -1968,9 +1851,9 @@ export class AuthService {
    * Get user's bindable spaces for collecting an article
    * Returns spaces with isBind flag indicating if article is already bound
    * @param articleId - Optional article ID to check binding status for each space
-   * @returns Array of spaces with articleCount, data, id, isBind, name, namespace, spaceType, userId
+   * @returns Array of bindable spaces with enhanced data structure
    */
-  static async getBindableSpaces(articleId?: number): Promise<any> {
+  static async getBindableSpaces(articleId?: number): Promise<BindableSpacesResponse> {
     // Build query parameters
     let url = '/client/article/bind/bindableSpaces';
     if (articleId) {
@@ -1984,26 +1867,47 @@ export class AuthService {
 
   /**
    * Create a new space/treasury
-   * @param spaceData - The space data including name, optional description, and optional cover image
+   * @param name - The name of the new space
+   * @param description - Optional description for the space
+   * @param coverUrl - Optional cover image URL for the space
+   * @param faceUrl - Optional avatar/face image URL for the space
    * @returns The created space object with id, name, namespace, spaceType, userId, etc.
    */
-  static async createSpace(spaceData: { name: string; description?: string; coverUrl?: string }): Promise<any> {
+  static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string, visibility?: number): Promise<any> {
     return apiRequest(`/client/article/space/create`, {
       method: 'POST',
-      body: JSON.stringify(spaceData),
+      body: JSON.stringify({
+        name,
+        ...(description && { description }),
+        ...(coverUrl && { coverUrl }),
+        ...(faceUrl && { faceUrl }),
+        ...(visibility !== undefined && { visibility })
+      }),
     });
   }
 
   /**
-   * Update a space/treasury name, description, and cover image
+   * Update a space/treasury
    * API: POST /client/article/space/update
    * @param id - The space ID
-   * @param data - The data to update (name, optional description, and optional cover image)
+   * @param name - The new name for the space
+   * @param description - Optional new description for the space
+   * @param coverUrl - Optional new cover image URL for the space
+   * @param faceUrl - Optional new avatar/face image URL for the space
    */
-  static async updateSpace(id: number, data: { name: string; description?: string; coverUrl?: string }): Promise<any> {
+  static async updateSpace(id: number, name: string, description?: string, coverUrl?: string, faceUrl?: string, isPrivate?: boolean, visibility?: number): Promise<any> {
     return apiRequest(`/client/article/space/update`, {
       method: 'POST',
-      body: JSON.stringify({ id, ...data }),
+      body: JSON.stringify({
+        id,
+        name,
+        ...(description !== undefined && { description }),
+        ...(coverUrl !== undefined && { coverUrl }),
+        ...(faceUrl !== undefined && { faceUrl }),
+        // Send both new visibility and legacy isPrivate for backward compatibility
+        ...(visibility !== undefined && { visibility }),
+        ...(isPrivate !== undefined && { isPrivate })
+      }),
     });
   }
 
@@ -2065,6 +1969,82 @@ export class AuthService {
       method: 'GET',
       requiresAuth: true,
     });
+  }
+
+  /**
+   * Batch import articles to a space
+   * API: POST /client/article/space/importArticles
+   * @param spaceId - The space ID to import articles to
+   * @param articles - Array of articles to import
+   */
+  static async importArticles(spaceId: number, articles: Array<{
+    title: string;
+    content: string;
+    targetUrl: string;
+    coverUrl?: string;
+  }>): Promise<any> {
+    // According to API docs, the request body should be an object with spaceId and articles
+    const requestBody = {
+      spaceId,
+      articles: articles.map(article => ({
+        title: article.title,
+        content: article.content,
+        targetUrl: article.targetUrl,
+        coverUrl: article.coverUrl || ''
+      }))
+    };
+
+    const response = await apiRequest(`/client/article/space/importArticles`, {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+    });
+
+    return response;
+  }
+
+  /**
+   * Fetch URL metadata including og:image for auto-fill cover image
+   * This calls a backend endpoint that handles CORS-protected external URLs
+   * @param url The URL to fetch metadata from
+   * @returns Promise with og:image URL and other metadata
+   */
+  static async fetchUrlMetadata(url: string): Promise<{
+    ogImage?: string;
+    title?: string;
+    description?: string;
+    favicon?: string;
+  }> {
+    try {
+      const response = await apiRequest(`/client/common/getUrlMetadata?targetUrl=${encodeURIComponent(url)}`, {
+        method: 'GET',
+        requiresAuth: false,
+      });
+
+      // Handle different response formats
+      if (response?.data) {
+        return {
+          ogImage: response.data.ogImage || response.data.imageUrl || response.data.image || response.data.coverUrl || response.data.OgImage || '',
+          title: response.data.title || response.data.ogTitle || response.data.Title || '',
+          description: response.data.description || response.data.ogDescription || response.data.Description || '',
+          favicon: response.data.favicon || response.data.icon || response.data.Favicon || '',
+        };
+      }
+
+      if (response?.ogImage || response?.imageUrl || response?.image || response?.OgImage) {
+        return {
+          ogImage: response.ogImage || response.imageUrl || response.image || response.OgImage,
+          title: response.title || response.Title,
+          description: response.description || response.Description,
+          favicon: response.favicon || response.Favicon,
+        };
+      }
+
+      return {};
+    } catch (error) {
+      // Fail gracefully - this is an optional enhancement
+      // URL metadata fetch failed - this is optional, so we ignore it
+      return {};
+    }
   }
 
 }

@@ -140,7 +140,25 @@ module.exports = {
         'float-up': "float-up 1s infinite ease-out",
       },
     },
-    container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+        "3xl": "1920px",  // For 4K displays
+        "4xl": "2560px"   // For ultra-wide and large 4K displays
+      }
+    },
+    screens: {
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+      '3xl': '1920px',  // 1080p+ screens
+      '4xl': '2560px',  // 4K screens
+      '5xl': '3840px'   // Ultra-wide 4K
+    },
   },
   plugins: [],
   darkMode: ["class"],

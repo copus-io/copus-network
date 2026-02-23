@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, startTransition } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { UploadIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -15,9 +15,11 @@ import { useToast } from "../../components/ui/toast";
 import { PaperPlane } from "../../components/ui/copus-loading";
 import { AuthService } from "../../services/authService";
 import { publishArticle, getArticleDetail } from "../../services/articleService";
+import { decodeHtmlEntities } from "../../utils/htmlUtils";
 import { useNavigate } from "react-router-dom";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { ArticleCard, ArticleData } from "../../components/ArticleCard";
+import { ARTICLE_VISIBILITY } from "../../types/article";
 import { ImageCropper } from "../../components/ImageCropper/ImageCropper";
 import { validateImageFile, compressImage, createImagePreview, revokeImagePreview } from "../../utils/imageUtils";
 import { addRecentCategory, sortCategoriesByRecent } from "../../utils/recentCategories";
@@ -25,6 +27,9 @@ import profileDefaultAvatar from "../../assets/images/profile-default.svg";
 import { queryClient } from "../../lib/queryClient";
 import { getSpaceDisplayName } from "../../components/ui/TreasuryCard";
 import { ChooseTreasuriesModal, SelectedSpace } from "../../components/ChooseTreasuriesModal/ChooseTreasuriesModal";
+import { BindableSpace } from "../../types/space";
+import { CreateSpaceModal } from "../../components/CreateSpaceModal";
+import { SEO } from "../../components/SEO/SEO";
 
 
 export const Create = (): JSX.Element => {
@@ -37,6 +42,36 @@ export const Create = (): JSX.Element => {
   // Check if in edit mode
   const editId = searchParams.get('edit');
   const isEditMode = !!editId;
+
+  // Analytics state
+  const [pageLoadTime] = useState(Date.now());
+  const [stepStartTime, setStepStartTime] = useState<number | null>(null);
+
+  // Track page access for analytics
+  useEffect(() => {
+    // Get referrer to track the source of the visit
+    const referrer = document.referrer;
+    let source = 'direct';
+
+    if (referrer) {
+      if (referrer.includes('/home') || referrer.includes('/copus') || referrer.includes('/discovery')) {
+        source = 'discovery';
+      } else if (referrer.includes('/treasury')) {
+        source = 'treasury';
+      } else if (referrer.includes('/notification')) {
+        source = 'notification';
+      } else {
+        source = 'other';
+      }
+    }
+
+    // Analytics tracking removed
+
+    // Track page load for creation funnel
+    if (!isEditMode) {
+      // Analytics tracking removed
+    }
+  }, []); // Only run once when component mounts
   const [editingArticle, setEditingArticle] = useState<any>(null);
   const [isLoadingArticle, setIsLoadingArticle] = useState(false);
   const [coverImageUrl, setCoverImageUrl] = useState<string>("");
@@ -45,7 +80,7 @@ export const Create = (): JSX.Element => {
     link: "",
     title: "",
     recommendation: "",
-    selectedTopic: "生活", // Default to Chinese category
+    selectedTopic: "Life", // Default to Life category
     selectedTopicId: 1, // Corresponding ID
     coverImage: null as File | null,
   });
@@ -53,6 +88,9 @@ export const Create = (): JSX.Element => {
   // x402 pay-to-unlock states
   const [payToUnlock, setPayToUnlock] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("0.01");
+
+  // Privacy state - using visibility system (0: public, 1: private, 2: unlisted)
+  const [visibility, setVisibility] = useState(ARTICLE_VISIBILITY.PUBLIC);
 
   const [characterCount, setCharacterCount] = useState(0);
   const [titleCharacterCount, setTitleCharacterCount] = useState(0);
@@ -66,6 +104,12 @@ export const Create = (): JSX.Element => {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>('');
   const [showImageCropper, setShowImageCropper] = useState(false);
 
+  // Auto-fetch cover image states
+  const [autoFetchedCoverUrl, setAutoFetchedCoverUrl] = useState<string>('');
+  const [isFetchingCover, setIsFetchingCover] = useState(false);
+  const [autoFetchDismissed, setAutoFetchDismissed] = useState(false);
+  const [lastFetchedUrl, setLastFetchedUrl] = useState<string>(''); // Track which URL we already fetched
+
   // Extension detection state
   const [isExtensionInstalled, setIsExtensionInstalled] = useState(false);
 
@@ -75,8 +119,6 @@ export const Create = (): JSX.Element => {
 
   // New treasury modal state
   const [showNewTreasuryModal, setShowNewTreasuryModal] = useState(false);
-  const [newTreasuryName, setNewTreasuryName] = useState("");
-  const [isCreatingTreasury, setIsCreatingTreasury] = useState(false);
 
   // Choose treasuries modal state
   const [showChooseTreasuriesModal, setShowChooseTreasuriesModal] = useState(false);
@@ -102,7 +144,7 @@ export const Create = (): JSX.Element => {
         console.log('Bindable spaces response (Create page):', response);
 
         // Parse the response - handle different possible formats
-        let spacesArray: any[] = [];
+        let spacesArray: BindableSpace[] = [];
         if (response?.data && Array.isArray(response.data)) {
           spacesArray = response.data;
         } else if (Array.isArray(response)) {
@@ -110,11 +152,11 @@ export const Create = (): JSX.Element => {
         }
 
         // Transform spaces to the format expected by the dropdown
-        const spaces: { id: string; name: string }[] = spacesArray.map((space: any) => {
+        const spaces: { id: string; name: string }[] = spacesArray.map((space: BindableSpace) => {
           // Get display name using the same logic as TreasuryCard
           const displayName = getSpaceDisplayName({
             ...space,
-            ownerInfo: { username: user.username || 'User' },
+            ownerInfo: { username: user.username || 'Anonymous' },
           });
 
           return {
@@ -312,13 +354,20 @@ export const Create = (): JSX.Element => {
   const selectedCategoryStyle = getCategoryStyle(formData.selectedTopic, selectedCategoryData?.color);
 
   // Memoize preview cover image URL to prevent flickering on re-renders
-  // Only recreate blob URL when coverImage file actually changes
+  // Priority: user uploaded > existing cover > auto-fetched
   const previewCoverImageUrl = useMemo(() => {
     if (formData.coverImage) {
       return URL.createObjectURL(formData.coverImage);
     }
-    return coverImageUrl || '';
-  }, [formData.coverImage, coverImageUrl]);
+    if (coverImageUrl) {
+      return coverImageUrl;
+    }
+    // Use auto-fetched cover only if not dismissed
+    if (autoFetchedCoverUrl && !autoFetchDismissed) {
+      return autoFetchedCoverUrl;
+    }
+    return '';
+  }, [formData.coverImage, coverImageUrl, autoFetchedCoverUrl, autoFetchDismissed]);
 
   // Clean up blob URL when component unmounts or image changes
   useEffect(() => {
@@ -348,7 +397,9 @@ export const Create = (): JSX.Element => {
     website: extractDomain(formData.link),
     // x402 payment fields
     isPaymentRequired: payToUnlock,
-    paymentPrice: payToUnlock ? paymentAmount : undefined
+    paymentPrice: payToUnlock ? paymentAmount : undefined,
+    // Privacy field
+    visibility
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -357,17 +408,35 @@ export const Create = (): JSX.Element => {
       if (value.length <= 75) {
         setFormData(prev => ({ ...prev, [field]: value }));
         setTitleCharacterCount(value.length);
+
+        // Track title input for analytics (only for first meaningful input)
+        if (!isEditMode && formData.title.length === 0 && value.length > 0) {
+          const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
+          // Analytics tracking removed
+          setStepStartTime(Date.now());
+        }
       }
     } else if (field === "recommendation") {
       // Limit recommendation to 1000 characters
       if (value.length <= 1000) {
         setFormData(prev => ({ ...prev, [field]: value }));
         setCharacterCount(value.length);
+
+        // Track content input for analytics (only for first meaningful input)
+        if (!isEditMode && formData.recommendation.length === 0 && value.length > 2) {
+          const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
+          // Analytics tracking removed
+          setStepStartTime(Date.now());
+        }
       }
     } else if (field === "link") {
       // Limit URL to 255 characters (common database field limit)
       if (value.length <= 255) {
         setFormData(prev => ({ ...prev, [field]: value }));
+        // Reset auto-fetch state when URL changes
+        setAutoFetchedCoverUrl('');
+        setAutoFetchDismissed(false);
+        setLastFetchedUrl(''); // Allow fetching for new URL
         // Validate URL as user types (with debounce effect)
         setTimeout(() => {
           const validation = validateUrl(value);
@@ -383,55 +452,39 @@ export const Create = (): JSX.Element => {
     setFormData(prev => ({ ...prev, selectedTopic: topicName, selectedTopicId: topicId }));
     // Track this category as recently used
     addRecentCategory(topicId, topicName);
+
+    // Track category selection for analytics
+    if (!isEditMode) {
+      const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
+      // Analytics tracking removed
+      setStepStartTime(Date.now());
+    }
   };
 
   // Handle creating a new treasury
-  const handleCreateNewTreasury = async () => {
-    if (!newTreasuryName.trim()) {
-      showToast('Please enter a treasury name', 'error');
+  const handleTreasuryCreated = (createdSpace: any) => {
+    if (!createdSpace?.id) {
+      console.error('Failed to create treasury - no ID returned');
+      showToast('Failed to create treasury', 'error');
       return;
     }
 
-    setIsCreatingTreasury(true);
+    // Add the new treasury to the spaces list with real data from API
+    const newSpace = {
+      id: createdSpace.id.toString(),
+      name: createdSpace.name || 'New Treasury',
+      numericId: createdSpace.id,
+      spaceType: createdSpace.spaceType || 0,
+      visibility: createdSpace.visibility,
+      namespace: createdSpace.namespace
+    };
 
-    try {
-      // Call the createSpace API to create a new treasury
-      const createResponse = await AuthService.createSpace(newTreasuryName.trim());
-      console.log('Create space response:', createResponse);
+    setUserSpaces(prev => [...prev, newSpace]);
 
-      // Extract the created space from response
-      const createdSpace = createResponse?.data || createResponse;
+    // Add the new treasury to the selected treasuries list
+    setSelectedTreasuries(prev => [...prev, newSpace]);
 
-      if (!createdSpace?.id) {
-        throw new Error('Failed to create treasury - no ID returned');
-      }
-
-      // Add the new treasury to the spaces list with real data from API
-      const newSpace = {
-        id: createdSpace.id.toString(),
-        name: createdSpace.name || newTreasuryName.trim()
-      };
-
-      setUserSpaces(prev => [...prev, newSpace]);
-
-      // Select the new treasury
-      setFormData(prev => ({
-        ...prev,
-        selectedTopic: newSpace.name,
-        selectedTopicId: parseInt(newSpace.id)
-      }));
-
-      showToast(`Treasury "${newTreasuryName.trim()}" created`, 'success');
-
-      // Reset and close modal
-      setNewTreasuryName("");
-      setShowNewTreasuryModal(false);
-    } catch (err) {
-      console.error('Failed to create treasury:', err);
-      showToast('Failed to create treasury', 'error');
-    } finally {
-      setIsCreatingTreasury(false);
-    }
+    showToast(`Treasury "${newSpace.name}" created and selected`, 'success');
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -510,6 +563,57 @@ export const Create = (): JSX.Element => {
     }
   }, [sortedCategories]);
 
+  // Auto-fetch cover image from URL when link is validated
+  useEffect(() => {
+    const fetchCoverFromUrl = async () => {
+      const trimmedLink = formData.link.trim();
+
+      // Only fetch if:
+      // 1. URL is valid and not empty
+      // 2. No cover image already set (user uploaded or existing)
+      // 3. Not in edit mode (existing articles already have covers)
+      // 4. User hasn't dismissed the auto-fetch
+      // 5. Haven't already fetched this URL
+      if (!linkValidation.isValid || !trimmedLink) return;
+      if (formData.coverImage || coverImageUrl) return;
+      if (isEditMode) return;
+      if (autoFetchDismissed) return;
+      if (lastFetchedUrl === trimmedLink) return; // Already fetched this URL
+
+      // Don't fetch for IPFS or Arweave links (they won't have og:image)
+      if (trimmedLink.startsWith('ipfs://') || trimmedLink.startsWith('ar://')) return;
+
+      setIsFetchingCover(true);
+      setLastFetchedUrl(trimmedLink); // Mark this URL as being fetched
+
+      try {
+        const metadata = await AuthService.fetchUrlMetadata(trimmedLink);
+        console.log('🖼️ URL metadata result:', metadata);
+        if (metadata.ogImage) {
+          console.log('🖼️ Auto-fetched cover image:', metadata.ogImage);
+          setAutoFetchedCoverUrl(metadata.ogImage);
+        }
+        // Auto-fill title if empty and og:title is available
+        if (metadata.title && !formData.title) {
+          const decodedTitle = decodeHtmlEntities(metadata.title);
+          console.log('📝 Auto-filled title:', decodedTitle);
+          const truncatedTitle = decodedTitle.substring(0, 75); // Limit to 75 chars
+          setFormData(prev => ({ ...prev, title: truncatedTitle }));
+          setTitleCharacterCount(truncatedTitle.length);
+        }
+      } catch (error) {
+        // Fail silently - this is an optional enhancement
+        console.log('🖼️ Auto-fetch cover failed (optional):', error);
+      } finally {
+        setIsFetchingCover(false);
+      }
+    };
+
+    // Debounce the fetch to avoid too many requests
+    const timeoutId = setTimeout(fetchCoverFromUrl, 800);
+    return () => clearTimeout(timeoutId);
+  }, [formData.link, linkValidation.isValid, formData.coverImage, coverImageUrl, isEditMode, autoFetchDismissed, lastFetchedUrl]);
+
   // Edit mode: Load article data
   useEffect(() => {
     const loadArticleForEdit = async () => {
@@ -517,7 +621,8 @@ export const Create = (): JSX.Element => {
 
       setIsLoadingArticle(true);
       try {
-        const articleData = await getArticleDetail(editId);
+        // Bust cache to get fresh article data in edit mode
+        const articleData = await getArticleDetail(editId, { bustCache: true });
 
         // Set article data
         setEditingArticle(articleData);
@@ -527,7 +632,7 @@ export const Create = (): JSX.Element => {
           link: articleData.targetUrl || "",
           title: articleData.title || "",
           recommendation: articleData.content || "",
-          selectedTopic: articleData.categoryInfo?.name || "生活",
+          selectedTopic: articleData.categoryInfo?.name || "Life",
           selectedTopicId: articleData.categoryInfo?.id || 1,
           coverImage: null, // Don't load image file directly in edit mode
         });
@@ -548,24 +653,94 @@ export const Create = (): JSX.Element => {
           console.log('ℹ️ Article has no payment lock');
         }
 
+        // Set visibility state based on article's visibility field
+        console.log('📋 Article visibility from API:', {
+          visibility: articleData.visibility,
+          type: typeof articleData.visibility,
+          isPrivate: articleData.visibility === ARTICLE_VISIBILITY.PRIVATE
+        });
+        if (articleData.visibility !== undefined) {
+          setVisibility(articleData.visibility);
+          console.log('✅ Loaded visibility setting:', articleData.visibility === ARTICLE_VISIBILITY.PRIVATE ? 'Private' : 'Public');
+        } else {
+          // Fallback for older articles without visibility field
+          setVisibility(ARTICLE_VISIBILITY.PUBLIC);
+          console.log('ℹ️ No visibility field found, defaulting to public');
+        }
+
+        // Load existing space bindings for edit mode
+        try {
+          const bindableSpaces = await AuthService.getBindableSpaces(articleData.id);
+          console.log('📦 Bindable spaces for article:', bindableSpaces);
+
+          // Parse the response - handle different possible formats
+          let spacesArray: BindableSpace[] = [];
+          if (bindableSpaces?.data && Array.isArray(bindableSpaces.data)) {
+            spacesArray = bindableSpaces.data;
+          } else if (Array.isArray(bindableSpaces)) {
+            spacesArray = bindableSpaces;
+          }
+
+          // Filter for spaces where the article is already bound
+          const boundSpaces = spacesArray.filter((space: BindableSpace) => space.isBind);
+          console.log('✅ Found', boundSpaces.length, 'bound spaces for article');
+
+          // Convert to SelectedSpace format
+          const selectedSpaces: SelectedSpace[] = boundSpaces.map((space: BindableSpace) => ({
+            id: space.id.toString(),
+            name: space.name || getSpaceDisplayName({
+              ...space,
+              ownerInfo: { username: user?.username || 'Anonymous' },
+            }),
+          }));
+
+          setSelectedTreasuries(selectedSpaces);
+          console.log('✅ Loaded existing treasury bindings:', selectedSpaces);
+        } catch (bindError) {
+          console.error('Failed to load space bindings:', bindError);
+          // Don't fail the entire edit load if space bindings fail
+        }
+
       } catch (error) {
         console.error('Failed to load article data:', error);
         showToast('Failed to load data, please try again', 'error');
-        startTransition(() => { navigate('/my-treasury'); });
+        navigate('/my-treasury');
       } finally {
         setIsLoadingArticle(false);
       }
     };
 
     loadArticleForEdit();
-  }, [isEditMode, editId, navigate, showToast]);
+  }, [isEditMode, editId, navigate, showToast, user?.username]);
 
   // Publish article
   const handlePublish = async () => {
-    // Basic validation - including cover image
-    if (!formData.link || !formData.title || !formData.recommendation) {
-      showToast('Please fill in all required fields (link, title, recommendation)', 'error');
+    const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
+
+    // Basic validation - Link and Title are always required
+    if (!formData.link || !formData.title) {
+      showToast('Please fill in all required fields (link, title)', 'error');
       return;
+    }
+
+    // For public works: Cover and Recommendation are also required
+    if (!isPrivate) {
+      if (!formData.recommendation) {
+        showToast('Please fill in the recommendation field', 'error');
+        return;
+      }
+
+      // Cover image required for public works (accept user upload, existing, or auto-fetched)
+      const hasValidCover = formData.coverImage || coverImageUrl || (autoFetchedCoverUrl && !autoFetchDismissed);
+      if (!isEditMode && !hasValidCover) {
+        showToast('Please upload a cover image', 'error');
+        return;
+      }
+
+      if (isEditMode && !formData.coverImage && !coverImageUrl) {
+        showToast('Please upload a cover image', 'error');
+        return;
+      }
     }
 
     // URL validation
@@ -576,21 +751,17 @@ export const Create = (): JSX.Element => {
       return;
     }
 
-    // In edit mode, allow if no new image uploaded but original cover URL exists
-    if (!isEditMode && !formData.coverImage) {
-      showToast('Please upload a cover image', 'error');
-      return;
-    }
-
-    if (isEditMode && !formData.coverImage && !coverImageUrl) {
-      showToast('Please upload a cover image', 'error');
-      return;
-    }
-
     setIsPublishing(true);
 
+    // Track publish attempt for analytics
+    if (!isEditMode) {
+      const timeOnStep = stepStartTime ? Date.now() - stepStartTime : undefined;
+      // Analytics tracking removed
+    }
+
     try {
-      let finalCoverUrl = coverImageUrl; // Default to existing cover URL (edit mode)
+      // Priority: existing cover URL > auto-fetched URL (if not dismissed)
+      let finalCoverUrl = coverImageUrl || (!autoFetchDismissed ? autoFetchedCoverUrl : '');
 
       // If new image uploaded, upload to S3
       if (formData.coverImage) {
@@ -644,14 +815,16 @@ export const Create = (): JSX.Element => {
 
       const articleParams = {
         ...(isEditMode && editId ? { uuid: editId } : {}), // Add uuid in edit mode
-        categoryId: formData.selectedTopicId,
-        content: formData.recommendation.substring(0, 1000), // Ensure max 1000 chars
-        coverUrl: finalCoverUrl.substring(0, 500), // Ensure max 500 chars
-        targetUrl: finalUrl.substring(0, 255), // Ensure max 255 chars
+        // Content/recommendation - always include, can be empty for private
+        content: formData.recommendation.substring(0, 1000),
+        // Cover URL - always include, can be empty for private
+        coverUrl: finalCoverUrl.substring(0, 500),
+        // Target URL - only include for new articles (cannot change in edit mode)
+        ...(!isEditMode ? { targetUrl: finalUrl.substring(0, 255) } : {}),
         title: formData.title.substring(0, 75), // Ensure max 75 chars
-        // Send all selected space IDs to backend
+        // Send all selected space IDs to backend (convert to numbers for API)
         ...(selectedTreasuries.length > 0 ? {
-          spaceIds: selectedTreasuries.map(t => t.id)
+          spaceIds: selectedTreasuries.map(t => parseInt(t.id, 10))
         } : {}),
         // x402 payment fields
         ...(payToUnlock ? {
@@ -663,9 +836,15 @@ export const Create = (): JSX.Element => {
           }
         } : {
           targetUrlIsLocked: false
-        })
+        }),
+        // Privacy field - article visibility (0: public, 1: private, 2: unlisted)
+        visibility
       };
 
+      console.log('🔒 Privacy settings:', {
+        visibility_state: visibility,
+        sent_visibility: articleParams.visibility
+      });
       console.log('📤 Sending article params:', articleParams);
       console.log('📤 Payment settings:', {
         payToUnlock_state: payToUnlock,
@@ -676,9 +855,8 @@ export const Create = (): JSX.Element => {
       console.log('📤 Detailed params:', {
         title: `"${articleParams.title}" (${articleParams.title.length} chars)`,
         content: `"${articleParams.content}" (${articleParams.content.length} chars)`,
-        targetUrl: `"${articleParams.targetUrl}" (${articleParams.targetUrl.length} chars)`,
+        ...(!isEditMode ? { targetUrl: `"${finalUrl}" (${finalUrl.length} chars)` } : {}),
         coverUrl: `"${articleParams.coverUrl}" (${articleParams.coverUrl.length} chars)`,
-        categoryId: articleParams.categoryId,
         targetUrlIsLocked: articleParams.targetUrlIsLocked,
         ...(payToUnlock && articleParams.priceInfo ? { priceInfo: articleParams.priceInfo } : {})
       });
@@ -690,13 +868,40 @@ export const Create = (): JSX.Element => {
       // Note: Treasury bindings are now handled in ChooseTreasuriesModal
       // when the user clicks Save - no need to call bindArticles here
 
-      showToast(isEditMode ? 'Updated successfully!' : 'Published successfully!', 'success');
+      showToast(isEditMode ? 'Updated successfully!' : 'Done! You just surfaced an internet gem!', 'success');
+
+      // Track successful publish for analytics
+      if (!isEditMode) {
+        const timeToComplete = Date.now() - pageLoadTime;
+        const hasImages = !!(formData.coverImage || coverImageUrl || autoFetchedCoverUrl);
+        const hasLinks = !!(formData.link);
+
+        // Analytics tracking removed
+
+        // Analytics tracking removed
+      }
 
       // Invalidate article caches to ensure fresh data is loaded
       // This is especially important for edit mode to show updated content
       queryClient.invalidateQueries({ queryKey: ['article'] });
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['myCreatedArticles'] });
+
+      // Force clear specific article cache if we have UUID (especially for edit mode)
+      if (typeof response === 'string') {
+        // Clear the specific article cache to ensure fresh data
+        queryClient.removeQueries({ queryKey: ['articleDetail', response] });
+        queryClient.removeQueries({ queryKey: ['articleId', response] });
+        console.log('🗑️ Cleared cache for article:', response);
+      } else if (response?.uuid) {
+        queryClient.removeQueries({ queryKey: ['articleDetail', response.uuid] });
+        queryClient.removeQueries({ queryKey: ['articleId', response.uuid] });
+        console.log('🗑️ Cleared cache for article:', response.uuid);
+      } else if (editId) {
+        queryClient.removeQueries({ queryKey: ['articleDetail', editId] });
+        queryClient.removeQueries({ queryKey: ['articleId', editId] });
+        console.log('🗑️ Cleared cache for edited article:', editId);
+      }
 
       // The API returns the UUID as a string directly in response.data
       // So publishArticle returns the UUID string, not an object
@@ -717,16 +922,16 @@ export const Create = (): JSX.Element => {
 
       // Always redirect to the work page if we have a UUID
       if (articleUuid) {
-        console.log(`✅ Redirecting to /work/${articleUuid}`);
         // Longer delay for edit mode to ensure server has processed the update
         const redirectDelay = isEditMode ? 2000 : 1500;
         setTimeout(() => {
-          console.log(`🚀 Now navigating to /work/${articleUuid}`);
-          // Add cache-busting timestamp for edit mode to force fresh fetch
-          const targetUrl = isEditMode
-            ? `/work/${articleUuid}?refresh=${Date.now()}`
-            : `/work/${articleUuid}`;
-          startTransition(() => { navigate(targetUrl, { replace: true }); });
+          if (isEditMode) {
+            // Use window.location.href for edit mode to force full page refresh
+            // This ensures the updated data is fetched fresh from the server
+            window.location.href = `/work/${articleUuid}`;
+          } else {
+            navigate(`/work/${articleUuid}`, { replace: true });
+          }
         }, redirectDelay);
       } else {
         // This should rarely happen
@@ -734,7 +939,7 @@ export const Create = (): JSX.Element => {
         console.error('Response was:', response);
         showToast('Published but could not navigate to it. Please check My Treasury.', 'warning');
         setTimeout(() => {
-          startTransition(() => { navigate('/my-treasury'); });
+          navigate('/my-treasury');
         }, 1500);
       }
 
@@ -762,9 +967,10 @@ export const Create = (): JSX.Element => {
 
   return (
     <div className="w-full min-h-screen overflow-x-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.18)_0%,rgba(224,224,224,0.18)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+      <SEO title={isEditMode ? "Edit Treasure" : "Share Treasure"} />
       <HeaderSection hideCreateButton={true} />
       <SideMenuSection activeItem="create" />
-      <div className="lg:ml-[350px] lg:mr-[70px] min-h-screen pt-[70px] lg:pt-[110px] overflow-x-hidden">
+      <div className="lg:ml-[350px] lg:mr-[70px] min-h-screen pt-[50px] lg:pt-[80px] overflow-x-hidden">
         <div className="flex flex-col items-start gap-[20px] sm:gap-[30px] px-3 sm:px-5 md:px-8 lg:pl-8 lg:pr-4 xl:pl-12 xl:pr-6 2xl:pl-20 2xl:pr-10 py-0 pb-[100px] w-full overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full">
             <h1 className="relative w-fit mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-[#231f20] text-[length:var(--h-3-font-size)] text-left sm:text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] whitespace-nowrap [font-style:var(--h-3-font-style)]">
@@ -806,25 +1012,37 @@ export const Create = (): JSX.Element => {
                 </label>
               </div>
 
-              <div className={`flex items-center px-[15px] py-2.5 w-full bg-white rounded-[15px] border border-solid transition-all ${
+              <div className={`flex items-center px-[15px] py-2.5 w-full rounded-[15px] border border-solid transition-all ${
+                isEditMode ? 'bg-gray-100' : 'bg-white'
+              } ${
                 !linkValidation.isValid ? 'border-red shadow-sm' :
                 focusedField === 'link' ? 'border-red shadow-sm' : 'border-light-grey'
               }`}>
                 <input
                   type="text"
                   value={formData.link}
-                  onChange={(e) => handleInputChange("link", e.target.value)}
-                  onFocus={() => setFocusedField('link')}
+                  onChange={(e) => !isEditMode && handleInputChange("link", e.target.value)}
+                  onFocus={() => !isEditMode && setFocusedField('link')}
                   onBlur={() => setFocusedField(null)}
-                  className="flex-1 [font-family:'Lato',Helvetica] font-normal text-dark-grey text-lg tracking-[0] leading-5 placeholder:text-medium-grey border-0 bg-transparent focus:outline-none"
+                  disabled={isEditMode}
+                  className={`flex-1 [font-family:'Lato',Helvetica] font-normal text-lg tracking-[0] leading-5 placeholder:text-medium-grey border-0 bg-transparent focus:outline-none ${
+                    isEditMode ? 'text-medium-grey cursor-not-allowed' : 'text-dark-grey'
+                  }`}
                   placeholder="Enter or paste your link here (http://, https://, ipfs://, ar://)..."
                   aria-label="Link URL"
                   maxLength={255}
                 />
               </div>
 
+              {/* Edit mode notice */}
+              {isEditMode && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-medium-grey text-sm">Link cannot be changed after creation</span>
+                </div>
+              )}
+
               {/* URL Validation Message */}
-              {!linkValidation.isValid && formData.link && (
+              {!isEditMode && !linkValidation.isValid && formData.link && (
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-red text-sm">⚠</span>
                   <span className="text-red text-sm">{linkValidation.message}</span>
@@ -832,7 +1050,7 @@ export const Create = (): JSX.Element => {
               )}
 
               {/* URL Format Helper */}
-              {linkValidation.isValid && formData.link && (
+              {!isEditMode && linkValidation.isValid && formData.link && (
                 <div className="flex items-center justify-between w-full mt-1">
                   <div className="flex items-center gap-2">
                     <span className="text-green text-sm">✓</span>
@@ -875,12 +1093,47 @@ export const Create = (): JSX.Element => {
               </div>
             </div>
 
+            {/* Private Article Toggle */}
+            <div className="flex items-center gap-3 w-full">
+              <div
+                onClick={() => setVisibility(visibility === ARTICLE_VISIBILITY.PRIVATE ? ARTICLE_VISIBILITY.PUBLIC : ARTICLE_VISIBILITY.PRIVATE)}
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${
+                  visibility === ARTICLE_VISIBILITY.PRIVATE
+                    ? 'bg-red border-red'
+                    : 'bg-white border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                {visibility === ARTICLE_VISIBILITY.PRIVATE && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <div
+                onClick={() => setVisibility(visibility === ARTICLE_VISIBILITY.PRIVATE ? ARTICLE_VISIBILITY.PUBLIC : ARTICLE_VISIBILITY.PRIVATE)}
+                className="inline-flex items-center gap-2 cursor-pointer"
+              >
+                <svg className="w-6 h-6" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                  <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                <span className="text-[#686868] text-[length:var(--p-l-font-size)] leading-[var(--p-l-line-height)] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)]">Make Private</span>
+              </div>
+              {visibility === ARTICLE_VISIBILITY.PRIVATE && (
+                <span className="text-medium-grey text-sm [font-family:'Lato',Helvetica]">
+                  Cover and Recommendation are optional for private curations
+                </span>
+              )}
+            </div>
+
             <div className="flex flex-col items-start gap-2.5 w-full">
-              <div className="flex w-[60px] items-center gap-2.5">
+              <div className="flex items-center gap-2.5">
                 <label className="items-center justify-center w-fit mt-[-1.00px] font-p-l font-[number:var(--p-l-font-weight)] text-transparent text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] whitespace-nowrap relative flex [font-style:var(--p-l-font-style)]">
-                  <span className="text-[#f23a00] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] text-[length:var(--p-l-font-size)]">
-                    *
-                  </span>
+                  {visibility !== ARTICLE_VISIBILITY.PRIVATE && (
+                    <span className="text-[#f23a00] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] text-[length:var(--p-l-font-size)]">
+                      *
+                    </span>
+                  )}
                   <span className="text-[#686868] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] text-[length:var(--p-l-font-size)]">
                     Cover
                   </span>
@@ -936,6 +1189,40 @@ export const Create = (): JSX.Element => {
                         </span>
                       </div>
                     </>
+                  ) : autoFetchedCoverUrl && !autoFetchDismissed ? (
+                    <>
+                      <div
+                        className="w-20 h-12 bg-cover bg-center rounded-lg border border-blue-400 relative"
+                        style={{
+                          backgroundImage: `url(${autoFetchedCoverUrl})`
+                        }}
+                      />
+                      <div className="flex flex-col flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="[font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm">
+                            Auto-fetched from URL
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setAutoFetchDismissed(true)}
+                            className="text-medium-grey hover:text-red text-xs underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-xs">
+                          Click Upload to use a different image
+                        </span>
+                      </div>
+                    </>
+                  ) : isFetchingCover ? (
+                    <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4 text-medium-grey" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Fetching cover from URL...
+                    </span>
                   ) : (
                     <span className="[font-family:'Lato',Helvetica] font-normal text-medium-grey text-sm">
                       Supports JPG, PNG formats
@@ -947,9 +1234,11 @@ export const Create = (): JSX.Element => {
 
             <div className="flex flex-col items-start gap-2.5 w-full min-w-0">
               <label className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-normal text-transparent text-base tracking-[0] leading-4">
-                <span className="text-[#f23a00] leading-[var(--p-line-height)] font-p [font-style:var(--p-font-style)] font-[number:var(--p-font-weight)] tracking-[var(--p-letter-spacing)] text-[length:var(--p-font-size)]">
-                  *
-                </span>
+                {visibility !== ARTICLE_VISIBILITY.PRIVATE && (
+                  <span className="text-[#f23a00] leading-[var(--p-line-height)] font-p [font-style:var(--p-font-style)] font-[number:var(--p-font-weight)] tracking-[var(--p-letter-spacing)] text-[length:var(--p-font-size)]">
+                    *
+                  </span>
+                )}
                 <span className="text-[#686868] text-[length:var(--p-l-font-size)] leading-[var(--p-l-line-height)] font-p-l [font-style:var(--p-l-font-style)] font-[number:var(--p-l-font-weight)] tracking-[var(--p-l-letter-spacing)]">
                   Recommendation
                 </span>
@@ -961,7 +1250,7 @@ export const Create = (): JSX.Element => {
                   onChange={(e) => handleInputChange("recommendation", e.target.value)}
                   onFocus={() => setFocusedField('recommendation')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="What did you find valuable about this link?"
+                  placeholder="What did you find valuable about this link, and who might benefit from it?"
                   className="w-full min-w-0 flex-1 resize-none font-p-l font-[number:var(--p-l-font-weight)] text-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] placeholder:text-medium-grey border-0 bg-transparent focus:outline-none overflow-y-auto overflow-x-hidden"
                   aria-label="Recommendation"
                   maxLength={1000}
@@ -1013,8 +1302,8 @@ export const Create = (): JSX.Element => {
               )}
             </div>
 
-            {/* x402 Pay-to-unlock section */}
-            <div className="flex flex-col items-start gap-5 w-full pt-5">
+            {/* x402 Pay-to-unlock section - Hidden for now */}
+            <div className="hidden flex flex-col items-start gap-5 w-full pt-5">
 
               {/* Toggle section */}
               <div className="flex items-center justify-between w-full">
@@ -1108,20 +1397,40 @@ export const Create = (): JSX.Element => {
             </div>
 
             <div className="flex flex-col items-start gap-10 w-full">
-              <div className="w-full lg:max-w-[350px] xl:max-w-[400px] 2xl:max-w-[450px]">
+              <div className="w-full lg:max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px]">
                 <ArticleCard
                   article={previewArticleData}
                   layout="preview"
+                  isFetchingCover={isFetchingCover}
                   className="w-full"
                 />
               </div>
 
               <div
-                className="inline-flex items-center justify-center gap-[15px] px-10 py-[15px] bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors lg:w-full lg:max-w-[350px] xl:max-w-[400px] 2xl:max-w-[450px]"
-                onClick={!isPublishing && formData.link && formData.title && formData.recommendation && (formData.coverImage || coverImageUrl) && linkValidation.isValid ? handlePublish : undefined}
+                className="inline-flex items-center justify-center gap-2.5 px-6 py-2.5 bg-red rounded-[50px] cursor-pointer hover:bg-red/90 transition-colors"
+                onClick={() => {
+                  const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
+                  const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
+                  const hasValidCover = formData.coverImage || coverImageUrl || (autoFetchedCoverUrl && !autoFetchDismissed);
+                  const publicValid = baseValid && formData.recommendation && hasValidCover;
+                  const canPublish = isPrivate ? baseValid : publicValid;
+                  if (canPublish) handlePublish();
+                }}
                 style={{
-                    opacity: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 0.5 : 1,
-                    cursor: isPublishing || !formData.link || !formData.title || !formData.recommendation || (!formData.coverImage && !coverImageUrl) || !linkValidation.isValid ? 'not-allowed' : 'pointer'
+                    opacity: (() => {
+                      const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
+                      const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
+                      const hasValidCover = formData.coverImage || coverImageUrl || (autoFetchedCoverUrl && !autoFetchDismissed);
+                      const publicValid = baseValid && formData.recommendation && hasValidCover;
+                      return (isPrivate ? baseValid : publicValid) ? 1 : 0.5;
+                    })(),
+                    cursor: (() => {
+                      const isPrivate = visibility === ARTICLE_VISIBILITY.PRIVATE;
+                      const baseValid = !isPublishing && formData.link && formData.title && linkValidation.isValid;
+                      const hasValidCover = formData.coverImage || coverImageUrl || (autoFetchedCoverUrl && !autoFetchDismissed);
+                      const publicValid = baseValid && formData.recommendation && hasValidCover;
+                      return (isPrivate ? baseValid : publicValid) ? 'pointer' : 'not-allowed';
+                    })()
                   }}
                 >
                   <span className="[font-family:'Lato',Helvetica] font-bold text-white text-lg tracking-[0] leading-[27px] whitespace-nowrap">
@@ -1154,107 +1463,16 @@ export const Create = (): JSX.Element => {
       )}
 
       {/* New Treasury Modal */}
-      {showNewTreasuryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => {
-              setShowNewTreasuryModal(false);
-              setNewTreasuryName("");
-            }}
-          />
-
-          {/* Modal */}
-          <div
-            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
-            role="dialog"
-            aria-labelledby="new-treasury-title"
-            aria-modal="true"
-          >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setShowNewTreasuryModal(false);
-                setNewTreasuryName("");
-              }}
-              className="relative self-stretch w-full flex-[0_0_auto] cursor-pointer"
-              aria-label="Close dialog"
-              type="button"
-            >
-              <img
-                className="w-full"
-                alt=""
-                src="https://c.animaapp.com/RWdJi6d2/img/close.svg"
-              />
-            </button>
-
-            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
-              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                <h2
-                  id="new-treasury-title"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-                >
-                  New treasury
-                </h2>
-
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="treasury-name-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Name
-                  </label>
-
-                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                    <input
-                      id="treasury-name-input"
-                      type="text"
-                      value={newTreasuryName}
-                      onChange={(e) => setNewTreasuryName(e.target.value)}
-                      placeholder="Like &quot;Place to go&quot;"
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
-                      aria-required="true"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleCreateNewTreasury();
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                <button
-                  className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => {
-                    setShowNewTreasuryModal(false);
-                    setNewTreasuryName("");
-                  }}
-                  type="button"
-                >
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    Cancel
-                  </span>
-                </button>
-
-                <button
-                  className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                  onClick={handleCreateNewTreasury}
-                  disabled={!newTreasuryName.trim() || isCreatingTreasury}
-                  type="button"
-                >
-                  <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    {isCreatingTreasury ? 'Creating...' : 'Create'}
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateSpaceModal
+        isOpen={showNewTreasuryModal}
+        onClose={() => setShowNewTreasuryModal(false)}
+        onSuccess={handleTreasuryCreated}
+        mode="simple"
+        title="New treasury"
+        nameLabel="Name"
+        namePlaceholder='Like "Place to go"'
+        submitLabel="Create"
+      />
 
       {/* Choose Treasuries Modal */}
       <ChooseTreasuriesModal

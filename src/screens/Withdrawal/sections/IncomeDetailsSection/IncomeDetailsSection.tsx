@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, startTransition } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../../components/ui/button";
 import { useToast } from "../../../../components/ui/toast";
@@ -417,7 +417,7 @@ export const IncomeDetailsSection = ({
       </div>
 
       {/* History Table Header */}
-      <div className="flex items-start gap-4 px-3 sm:px-5 py-2 sm:py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-gray-100">
+      <div className="flex items-start gap-4 px-3 sm:px-5 py-2 sm:py-[5px] relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[#e0e0e0]/40">
         <div className="relative flex items-start w-[50%] sm:w-[60%] min-w-0 font-normal text-gray-600 text-xs sm:text-sm">
           Description
         </div>
@@ -487,7 +487,12 @@ export const IncomeDetailsSection = ({
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
-                onClick={() => navigate('/curate')}
+                onClick={() => {
+                  // Analytics tracking removed
+                  startTransition(() => {
+                    navigate('/curate');
+                  });
+                }}
                 className="px-5 py-2 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors h-auto text-sm sm:text-base"
               >
                 Start Curating

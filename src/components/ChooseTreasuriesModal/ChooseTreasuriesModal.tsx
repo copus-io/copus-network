@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { AuthService } from "../../services/authService";
 import { useToast } from "../ui/toast";
+import { BindableSpace } from "../../types/space";
+import { CreateSpaceModal } from "../CreateSpaceModal/CreateSpaceModal";
 
 interface ChooseTreasuriesModalProps {
   isOpen: boolean;
@@ -16,22 +18,10 @@ export interface SelectedSpace {
   name: string;
   namespace?: string;
   spaceType?: number;
+  visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
 }
 
-interface BindableSpace {
-  articleCount: number;
-  data: Array<{
-    coverUrl: string;
-    targetUrl: string;
-    title: string;
-  }>;
-  id: number;
-  isBind: boolean;
-  name: string;
-  namespace: string;
-  spaceType: number;
-  userId: number;
-}
+// BindableSpace type imported from types/space.ts
 
 interface Collection {
   id: string;
@@ -41,6 +31,7 @@ interface Collection {
   isSelected: boolean;
   wasOriginallyBound: boolean; // Track if this was already bound when modal opened
   spaceType?: number;
+  visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
   namespace?: string;
   firstLetter: string; // First letter of space name for avatar fallback
 }
@@ -59,7 +50,6 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateNew, setShowCreateNew] = useState(false);
-  const [newTreasuryName, setNewTreasuryName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch user's bindable spaces
@@ -106,9 +96,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           // For default spaces, show "Username's Treasury" or "Username's Curations"
           let displayName: string;
           if (spaceTypeNum === 1) {
-            displayName = `${user.username || 'User'}'s Treasury`;
+            displayName = `${user.username || 'Anonymous'}'s Treasury`;
           } else if (spaceTypeNum === 2) {
-            displayName = `${user.username || 'User'}'s Curations`;
+            displayName = `${user.username || 'Anonymous'}'s Curations`;
           } else {
             displayName = space.name || 'Untitled Treasury';
           }
@@ -116,11 +106,11 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           console.log('Space display name for', space.name, ':', displayName, 'spaceType:', spaceTypeNum);
 
           // For default Treasury/Curations (spaceType 1 & 2), use user's profile image
-          // For custom spaces, use the first article's cover image from this collection
+          // For custom spaces, use space's faceUrl (avatar) if available, fallback to first article's cover image
           const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
           const coverImage = isDefaultSpace
             ? (user.faceUrl || '')
-            : (space.data?.[0]?.coverUrl || '');
+            : (space.faceUrl || space.data?.[0]?.coverUrl || '');
 
           // Get first letter of space name (not display name which may have username)
           const spaceName = space.name || displayName;
@@ -139,6 +129,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             isSelected: shouldBeSelected,
             wasOriginallyBound, // Track original binding state
             spaceType: spaceTypeNum,
+            visibility: space.visibility, // Include visibility from API
             namespace: space.namespace,
             firstLetter,
           };
@@ -173,9 +164,23 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
     if (!isOpen) {
       setSearchQuery("");
       setShowCreateNew(false);
-      setNewTreasuryName("");
       setIsSubmitting(false);
     }
+  }, [isOpen]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
   }, [isOpen]);
 
   // Toggle selection for a collection
@@ -194,6 +199,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         name: c.name,
         namespace: c.namespace,
         spaceType: c.spaceType,
+        visibility: c.visibility, // Include visibility field
       }));
 
     // SECURITY: Only bind to the current user's own treasuries
@@ -238,48 +244,23 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
     onClose();
   };
 
-  const handleCreateNewTreasury = async () => {
-    if (!newTreasuryName.trim()) {
-      showToast('Please enter a treasury name', 'error');
-      return;
-    }
+  const handleTreasuryCreated = (createdSpace: any) => {
+    // Add the new treasury to collections list and select it
+    const treasuryName = createdSpace.name;
+    setCollections(prev => [...prev, {
+      id: createdSpace.id.toString(),
+      numericId: createdSpace.id,
+      name: treasuryName,
+      image: '', // No cover image for new treasury
+      isSelected: true, // Auto-select the newly created treasury
+      wasOriginallyBound: false, // New treasury is not originally bound
+      spaceType: createdSpace.spaceType || 0,
+      visibility: createdSpace.visibility, // Include visibility from created space
+      namespace: createdSpace.namespace,
+      firstLetter: treasuryName.charAt(0).toUpperCase(),
+    }]);
 
-    try {
-      setIsSubmitting(true);
-
-      const createResponse = await AuthService.createSpace(newTreasuryName.trim());
-      console.log('Create space response:', createResponse);
-
-      const createdSpace = createResponse?.data || createResponse;
-
-      if (!createdSpace?.id) {
-        throw new Error('Failed to create treasury - no ID returned');
-      }
-
-      showToast(`Created "${newTreasuryName.trim()}"`, 'success');
-
-      // Add the new treasury to collections list and select it
-      const treasuryName = createdSpace.name || newTreasuryName.trim();
-      setCollections(prev => [...prev, {
-        id: createdSpace.id.toString(),
-        numericId: createdSpace.id,
-        name: treasuryName,
-        image: '', // No cover image for new treasury
-        isSelected: true, // Auto-select the newly created treasury
-        wasOriginallyBound: false, // New treasury is not originally bound
-        spaceType: createdSpace.spaceType || 0,
-        namespace: createdSpace.namespace,
-        firstLetter: treasuryName.charAt(0).toUpperCase(),
-      }]);
-
-      setShowCreateNew(false);
-      setNewTreasuryName("");
-    } catch (err) {
-      console.error('Failed to create treasury:', err);
-      showToast('Failed to create treasury', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
+    setShowCreateNew(false);
   };
 
   // Filter collections by search query
@@ -302,7 +283,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
 
       {/* Modal */}
       <div
-        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] overflow-hidden z-10 ${showCreateNew ? '' : 'h-[500px]'}`}
+        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] pb-4 relative bg-white rounded-[15px] overflow-hidden z-10 h-[500px]"
         role="dialog"
         aria-labelledby="choose-dialog-title"
         aria-modal="true"
@@ -310,82 +291,17 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
         {/* Close button */}
         <button
           onClick={handleCancel}
-          className="absolute top-[20px] right-[20px] p-2.5 cursor-pointer hover:opacity-70 transition-opacity z-20"
+          className="absolute top-5 right-5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-20"
           aria-label="Close dialog"
           type="button"
         >
-          <svg
-            className="w-3 h-3"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#686868"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
 
-        {showCreateNew ? (
-          // Create New Treasury View
-          <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
-            <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-              <h2
-                id="choose-dialog-title"
-                className="relative w-fit [font-family:'Lato',Helvetica] font-semibold text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-              >
-                New treasury
-              </h2>
-
-              <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                <label
-                  htmlFor="treasury-name"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                >
-                  Name
-                </label>
-
-                <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                  <input
-                    id="treasury-name"
-                    type="text"
-                    value={newTreasuryName}
-                    onChange={(e) => setNewTreasuryName(e.target.value)}
-                    placeholder="Like &quot;Place to go&quot;"
-                    className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey"
-                    aria-required="true"
-                    autoFocus
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-b-[15px]">
-              <button
-                className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => setShowCreateNew(false)}
-                type="button"
-              >
-                <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                  Cancel
-                </span>
-              </button>
-
-              <button
-                className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                onClick={handleCreateNewTreasury}
-                disabled={!newTreasuryName.trim() || isSubmitting}
-                type="button"
-              >
-                <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                  {isSubmitting ? 'Creating...' : 'Create'}
-                </span>
-              </button>
-            </div>
-          </div>
-        ) : (
+        {/* No inline create form - using unified CreateSpaceModal */}
+        {!showCreateNew && (
           // Collection List View
           <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-5">
             <div className="flex flex-col items-start justify-center gap-5 relative self-stretch w-full flex-[0_0_auto]">
@@ -499,10 +415,19 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
                             </span>
                           </div>
                         )}
-                        <div className="inline-flex flex-col items-start justify-center gap-1 relative flex-[0_0_auto]">
+                        <div className="inline-flex items-center gap-2 relative flex-[0_0_auto]">
                           <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
                             {collection.name}
                           </span>
+                          {collection.visibility === 1 && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E0E0E0] rounded-[100px]">
+                              <svg className="w-3.5 h-3.5" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                                <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                              </svg>
+                              <span className="text-[#454545] text-[12px] font-medium">Private</span>
+                            </span>
+                          )}
                         </div>
                       </div>
                     </li>
@@ -538,6 +463,18 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* Unified CreateSpaceModal */}
+      <CreateSpaceModal
+        isOpen={showCreateNew}
+        onClose={() => setShowCreateNew(false)}
+        onSuccess={handleTreasuryCreated}
+        mode="full"
+        title="New treasury"
+        nameLabel="Name"
+        namePlaceholder='Like "Place to go"'
+        submitLabel="Create"
+      />
     </div>
   );
 };

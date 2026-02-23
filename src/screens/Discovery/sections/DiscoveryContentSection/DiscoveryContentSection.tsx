@@ -1,4 +1,4 @@
-import React, { useState, startTransition } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useArticles } from "../../../../hooks/useArticles";
 import { Article } from "../../../../types/article";
@@ -9,6 +9,8 @@ import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../../components/CollectTreasureModal";
 import { getCategoryStyle, getCategoryInlineStyle, formatDate, formatCount } from "../../../../utils/categoryStyles";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
+import { canUserViewArticle } from "../../../../types/article";
+import { decodeHtmlEntities } from "../../../../utils/htmlUtils";
 
 export const DiscoveryContentSection = (): JSX.Element => {
   const { showToast } = useToast();
@@ -56,27 +58,27 @@ export const DiscoveryContentSection = (): JSX.Element => {
     return () => timeouts.forEach(clearTimeout);
   }, [isExtensionInstalled]);
 
-  // Check if this is the first visit today (based on login status)
+  // Check if welcome guide was permanently dismissed
   React.useEffect(() => {
-    const today = new Date().toDateString();
-    // Use different storage keys for logged-in and guest users
-    const storageKey = user ? `copus_last_guide_shown_${user.id}` : 'copus_last_guide_shown_guest';
-    const lastVisitDate = localStorage.getItem(storageKey);
+    // Check both guest and user-specific keys for dismissal
+    const guestDismissed = localStorage.getItem('copus_welcome_dismissed_guest') === 'true';
+    const userDismissed = user ? localStorage.getItem(`copus_welcome_dismissed_${user.id}`) === 'true' : false;
 
-    if (lastVisitDate !== today) {
+    if (guestDismissed || userDismissed) {
+      setShowWelcomeGuide(false);
+    } else {
       setShowWelcomeGuide(true);
-      const userType = user ? 'logged-in user' : 'guest';
     }
-  }, [user]); // Depends on user state
+  }, [user]);
 
-  // Close welcome guide
+  // Close welcome guide permanently
   const handleCloseWelcomeGuide = () => {
-    const today = new Date().toDateString();
-    // Use different storage keys for logged-in and guest users
-    const storageKey = user ? `copus_last_guide_shown_${user.id}` : 'copus_last_guide_shown_guest';
-    localStorage.setItem(storageKey, today);
+    // Save dismissal for both guest and user-specific keys so it persists
+    localStorage.setItem('copus_welcome_dismissed_guest', 'true');
+    if (user) {
+      localStorage.setItem(`copus_welcome_dismissed_${user.id}`, 'true');
+    }
     setShowWelcomeGuide(false);
-    const userType = user ? 'logged-in user' : 'guest';
   };
 
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
@@ -109,84 +111,61 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Render different guide content based on user login status
   const renderGuideContent = () => {
-    if (user) {
-      // Logged-in users: functional guidance
-      return (
-        <>
-          <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus!
-          </h1>
-          <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                Discover Internet gems hand-picked by people. No algorithmic feeds here.
-              </span>
-            </p>
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                Click "Curate" (top-right) to share your finds.
-              </span>
-            </p>
-            {!isExtensionInstalled && (
-              <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-                <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                  <a
-                    href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb?authuser=5&hl=en"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#2191FB] hover:underline cursor-pointer font-normal"
-                  >
-                    Install our browser extension
-                  </a>{' '}
-                  to easily save and share content while browsing.
-                </span>
-              </p>
-            )}
-          </div>
-        </>
-      );
-    } else {
-      // Guest users: platform introduction (using English, maintaining same styling)
-      return (
-        <>
-          <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus!
-          </h1>
-          <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                Today's internet is noisy. Finding what's truly worth your time is more valuable than ever.
-              </span>
-            </p>
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                We value human taste and power it with an economic engine that rewards quality sharing and creation.
-              </span>
-            </p>
-            <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-              <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-                <button
-                  onClick={() => startTransition(() => navigate('/login'))}
-                  className="text-[#2191FB] hover:underline cursor-pointer font-normal"
-                >
-                  Join us
-                </button>{' '}
-                in weaving a new internet: our collective opus. :)
-              </span>
-            </p>
-          </div>
-        </>
-      );
-    }
+    // Same welcome content for both logged-in and guest users
+    return (
+      <>
+        <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+          Welcome to Copus!
+        </h1>
+        <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
+          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+              Copus is an open curation space where people share links to meaningful content they find online, along with a short reflection.
+            </span>
+          </p>
+          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
+            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+              You can subscribe to people whose taste you trust, or use the{' '}
+              <a
+                href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#2191FB] hover:underline cursor-pointer font-normal"
+              >
+                browser extension
+              </a>{' '}
+              to collect and share as you browse :)
+            </span>
+          </p>
+        </div>
+      </>
+    );
   };
 
   // Sync local article state and like status
   React.useEffect(() => {
-    setLocalArticles(articles);
+    // Filter out private articles from public discovery
+    // On discovery page, ONLY show articles that are explicitly public (visibility === 0)
+    // or have no visibility set AND no isPrivate flag
+    const filteredArticles = articles.filter(article => {
+      // If visibility is set, only show if it's PUBLIC (0)
+      if (article.visibility !== undefined) {
+        return article.visibility === 0; // ARTICLE_VISIBILITY.PUBLIC
+      }
+      // If visibility is not set, fall back to isPrivate check
+      // Don't show if isPrivate is true
+      if ((article as any).isPrivate === true) {
+        return false;
+      }
+      // Default: show if no privacy indicators
+      return true;
+    });
+
+    setLocalArticles(filteredArticles);
 
     // Sync like status to localStorage
-    if (articles.length > 0) {
-      const articlesForSync = articles.map(article => ({
+    if (filteredArticles.length > 0) {
+      const articlesForSync = filteredArticles.map(article => ({
         id: article.id,
         uuid: article.id,
         isLiked: article.isLiked, // Use actual like status returned from server
@@ -194,14 +173,14 @@ export const DiscoveryContentSection = (): JSX.Element => {
       }));
       syncArticleStates(articlesForSync);
     }
-  }, [articles]); // Remove syncArticleStates dependency to avoid infinite loop
+  }, [articles, user]); // Add user dependency for filtering updates
 
   // Transform article data format
   const transformArticleToCardData = (article: Article): ArticleData => {
     return {
       id: article.id,
       uuid: article.id, // Use id as uuid
-      title: article.title,
+      title: decodeHtmlEntities(article.title),
       description: article.description,
       coverImage: article.coverImage,
       category: article.category,
@@ -219,7 +198,9 @@ export const DiscoveryContentSection = (): JSX.Element => {
       website: article.website,
       // x402 payment fields - pass through from article
       isPaymentRequired: article.isPaymentRequired,
-      paymentPrice: article.paymentPrice
+      paymentPrice: article.paymentPrice,
+      // Privacy field - article visibility
+      visibility: article.visibility
     };
   };
 
@@ -229,7 +210,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => startTransition(() => navigate('/login'))
+          onClick: () => navigate('/login')
         }
       });
       return;
@@ -242,7 +223,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       setSelectedArticle({
         uuid: articleId, // This is actually the UUID
         numericId: article.numericId, // Numeric ID for bindArticles API
-        title: article.title,
+        title: decodeHtmlEntities(article.title),
         isLiked: currentIsLiked,
         likeCount: currentLikeCount
       });
@@ -268,22 +249,32 @@ export const DiscoveryContentSection = (): JSX.Element => {
     const article = localArticles.find(a => a.userId === userId);
 
     if (user && user.id === userId) {
-      startTransition(() => navigate('/my-treasury'));
+      navigate('/my-treasury');
     } else if (article?.namespace) {
       // Prioritize using namespace to navigate to user profile page
-      startTransition(() => navigate(`/u/${article.namespace}`));
+      navigate(`/u/${article.namespace}`);
     } else {
       // Fallback to using userId
-      startTransition(() => navigate(`/user/${userId}/treasury`));
+      navigate(`/user/${userId}/treasury`);
     }
   };
 
   // Handle comment navigation
   const handleComment = (articleId: string, articleUuid?: string) => {
-    startTransition(() => navigate(`/work/${articleUuid || articleId}?comments=open`));
+    navigate(`/work/${articleUuid || articleId}?comments=open`);
   };
 
   const renderPostCard = (post: Article, index: number) => {
+    // Filter out private articles in discovery - only show explicitly public articles
+    // If visibility is set, must be PUBLIC (0)
+    if (post.visibility !== undefined && post.visibility !== 0) {
+      return null;
+    }
+    // Also check legacy isPrivate flag
+    if ((post as any).isPrivate === true) {
+      return null;
+    }
+
     const articleData = transformArticleToCardData(post);
 
     // Only show like states for logged-in users
@@ -345,7 +336,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
   }
 
   return (
-    <main className="flex flex-col items-start gap-10 py-0 relative flex-1">
+    <main className="flex flex-col items-start gap-5 py-0 relative flex-1">
       {/* Welcome Guide Bar - Display different content based on login status */}
       {showWelcomeGuide && (
         <section className="mx-4 sm:mx-0 pl-4 sm:pl-[30px] pr-4 py-4 sm:py-[30px] rounded-lg border-l-[3px] [border-left-style:solid] border-red shadow-[1px_1px_10px_#c5c5c5] bg-[linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] flex items-start gap-[15px] relative w-auto sm:w-full min-h-fit overflow-hidden">
@@ -394,7 +385,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
           </div>
         </section>
       ) : (
-        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-4 lg:pl-[15px] lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] 3xl:grid-cols-[repeat(auto-fill,minmax(320px,1fr))] 4xl:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] 5xl:grid-cols-[repeat(auto-fill,minmax(420px,1fr))] gap-4 lg:gap-6 3xl:gap-8 4xl:gap-10 5xl:gap-12 relative z-10">
           {localArticles.map((post, index) => renderPostCard(post, index))}
         </section>
       )}

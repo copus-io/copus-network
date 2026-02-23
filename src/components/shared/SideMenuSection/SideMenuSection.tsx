@@ -51,8 +51,8 @@ const getMenuItems = (userNamespace?: string) => [
   },
   {
     icon: FollowingIcon,
-    label: "Following",
-    href: "/following",
+    label: "Subscriptions",
+    href: userNamespace ? "/following" : "/login",
     key: "following",
   },
   {
@@ -64,7 +64,7 @@ const getMenuItems = (userNamespace?: string) => [
   {
     icon: IncomeIcon,
     label: "Earnings",
-    href: "/earning",
+    href: userNamespace ? "/earning" : "/login",
     key: "income",
   },
 ];
@@ -91,7 +91,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
   };
 
   return (
-    <aside className="hidden lg:flex flex-col h-screen w-[300px] fixed left-0 top-0 pt-[110px] px-[30px] pb-[15px]">
+    <aside className="hidden lg:flex flex-col h-screen w-[300px] fixed left-0 top-0 pt-[60px] px-[30px] pb-[15px]">
       <nav className="inline-flex items-center gap-2.5 px-5 py-[30px] bg-[#ffffff] flex-col relative flex-[0_0_auto] rounded-lg w-[240px]">
         {menuItems.map((item, index) => {
           const isActive = activeItem === item.key;
@@ -188,7 +188,7 @@ export const SideMenuSection = ({ activeItem }: SideMenuSectionProps): JSX.Eleme
               rel="noopener noreferrer"
               className="[font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px] hover:text-dark-grey transition-colors"
             >
-              © 2025 S31 Labs
+              © 2026 S31 Labs
             </a>
           </div>
         </footer>

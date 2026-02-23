@@ -1,4 +1,4 @@
-import React, { useState, useEffect, startTransition } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
@@ -34,11 +34,9 @@ export const FollowingContentSection = (): JSX.Element => {
   const { showToast } = useToast();
   const { user, getArticleLikeState, toggleLike } = useUser();
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState("all");
   const [followedSpaces, setFollowedSpaces] = useState<FollowedSpaceWithUsername[]>([]);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
   const [allArticles, setAllArticles] = useState<any[]>([]); // All followed articles
-  const [spaceArticles, setSpaceArticles] = useState<any[]>([]); // Articles for selected space
   const [loadingArticles, setLoadingArticles] = useState(true);
 
   // Collect Treasure Modal state
@@ -141,49 +139,6 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedArticles();
   }, [user]);
 
-  // Fetch articles for selected space when tab changes
-  useEffect(() => {
-    const fetchSpaceArticles = async () => {
-      // If "all" tab selected, use allArticles
-      if (selectedTab === "all") {
-        setSpaceArticles([]);
-        return;
-      }
-
-      // Find the selected space
-      const selectedSpace = followedSpaces.find(s => s.id.toString() === selectedTab);
-      if (!selectedSpace) {
-        setSpaceArticles([]);
-        return;
-      }
-
-      try {
-        setLoadingArticles(true);
-        const response = await AuthService.getSpaceArticles(selectedSpace.id, 1, 50);
-        console.log('Space articles response:', response);
-
-        // Parse the response
-        let articlesArray: any[] = [];
-        if (response?.data?.data && Array.isArray(response.data.data)) {
-          articlesArray = response.data.data;
-        } else if (response?.data && Array.isArray(response.data)) {
-          articlesArray = response.data;
-        } else if (Array.isArray(response)) {
-          articlesArray = response;
-        }
-
-        setSpaceArticles(articlesArray);
-      } catch (err) {
-        console.error('Failed to fetch space articles:', err);
-        setSpaceArticles([]);
-      } finally {
-        setLoadingArticles(false);
-      }
-    };
-
-    fetchSpaceArticles();
-  }, [selectedTab, followedSpaces]);
-
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
     return {
@@ -191,7 +146,7 @@ export const FollowingContentSection = (): JSX.Element => {
       uuid: article.uuid,
       title: article.title,
       description: article.content,
-      coverImage: article.coverUrl || 'https://c.animaapp.com/mft5gmofxQLTNf/img/cover-1.png',
+      coverImage: article.coverUrl || '', // No placeholder - empty if no cover
       category: article.categoryInfo?.name || 'General',
       categoryColor: article.categoryInfo?.color || '#666666',
       userName: article.authorInfo?.username || 'Anonymous',
@@ -207,13 +162,13 @@ export const FollowingContentSection = (): JSX.Element => {
       website: article.targetUrl ? (() => { try { return new URL(article.targetUrl).hostname; } catch { return undefined; } })() : undefined,
       isPaymentRequired: article.targetUrlIsLocked,
       paymentPrice: article.priceInfo?.price?.toString(),
-      spaceId: article.spaceId || article.spaceInfo?.id
+      spaceId: article.spaceId || article.spaceInfo?.id,
+      visibility: article.visibility
     };
   };
 
-  // Get articles to display based on selected tab
-  // For "all" tab, use allArticles; for specific space, use spaceArticles (fetched per space)
-  const displayedArticles = selectedTab === "all" ? allArticles : spaceArticles;
+  // Get articles to display - all followed articles
+  const displayedArticles = allArticles;
 
   // Handle like action - opens the collect modal
   const handleLike = async (articleId: string, currentIsLiked: boolean, currentLikeCount: number) => {
@@ -221,7 +176,7 @@ export const FollowingContentSection = (): JSX.Element => {
       showToast('Please log in to treasure this content', 'error', {
         action: {
           label: 'Login',
-          onClick: () => startTransition(() => navigate('/login'))
+          onClick: () => navigate('/login')
         }
       });
       return;
@@ -255,9 +210,9 @@ export const FollowingContentSection = (): JSX.Element => {
   // Handle user click
   const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
     if (userNamespace) {
-      startTransition(() => navigate(`/u/${userNamespace}`));
+      navigate(`/u/${userNamespace}`);
     } else if (userId) {
-      startTransition(() => navigate(`/user/${userId}/treasury`));
+      navigate(`/user/${userId}/treasury`);
     }
   };
 
@@ -267,13 +222,13 @@ export const FollowingContentSection = (): JSX.Element => {
       <main className="flex flex-col items-center justify-center gap-6 py-20 relative flex-1">
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-semibold text-dark-grey mb-4">
-            Follow Spaces to See Content Here
+            Subscribe to Spaces to See Content Here
           </h2>
           <p className="text-gray-500 mb-6">
-            Log in to follow your favorite spaces and creators. Their latest content will appear here.
+            Log in to subscribe to your favorite spaces and creators. Their latest content will appear here.
           </p>
           <button
-            onClick={() => startTransition(() => navigate('/login'))}
+            onClick={() => navigate('/login')}
             className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
           >
             Log In
@@ -288,14 +243,9 @@ export const FollowingContentSection = (): JSX.Element => {
       {/* Followed Spaces Bubbles Section */}
       <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
         <div className="flex items-center gap-3 flex-wrap">
-          {/* All button */}
+          {/* All button - always active since this page shows all followed content */}
           <button
-            onClick={() => setSelectedTab("all")}
-            className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
-              selectedTab === "all"
-                ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
-                : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
-            }`}
+            className="h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
           >
             All
           </button>
@@ -316,15 +266,14 @@ export const FollowingContentSection = (): JSX.Element => {
                 ? space.resolvedUsername
                 : space.name;
 
+              // Navigate to treasury page using space namespace
+              const navPath = `/treasury/${space.namespace}`;
+
               return (
                 <button
                   key={space.id}
-                  onClick={() => setSelectedTab(space.id.toString())}
-                  className={`h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center ${
-                    selectedTab === space.id.toString()
-                      ? "bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] text-[#454545] border border-[#a8a8a8] font-bold"
-                      : "bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
-                  }`}
+                  onClick={() => navigate(navPath)}
+                  className="h-10 px-5 rounded-[100px] text-[16px] transition-colors flex items-center justify-center bg-white text-[#454545] border border-[#a8a8a8] font-medium hover:bg-gray-50"
                 >
                   {displayName}
                 </button>
@@ -332,62 +281,69 @@ export const FollowingContentSection = (): JSX.Element => {
             })
           )}
 
-          {/* Show message if no followed spaces */}
+          {/* Show message if no subscribed spaces */}
           {!loadingSpaces && followedSpaces.length === 0 && (
-            <span className="text-gray-400 text-sm ml-2">No spaces followed yet</span>
+            <span className="text-gray-400 text-sm ml-2">No subscriptions yet</span>
           )}
         </div>
       </section>
 
       {/* Content Cards Section */}
-      <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
-        {loadingArticles ? (
-          <div className="flex items-center justify-center w-full py-20">
-            <div className="text-gray-500">Loading articles...</div>
-          </div>
-        ) : displayedArticles.length === 0 ? (
+      {loadingArticles ? (
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+          {Array.from({ length: 15 }).map((_, index) => (
+            <div key={index} className="w-full bg-white rounded-lg animate-pulse">
+              <div className="p-4">
+                <div className="w-full aspect-video bg-gray-200 rounded-lg mb-4" />
+                <div className="h-6 bg-gray-200 rounded mb-2 w-3/4" />
+                <div className="h-4 bg-gray-200 rounded mb-4 w-full" />
+                <div className="h-4 bg-gray-200 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : displayedArticles.length === 0 ? (
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
-            <p className="text-gray-500 mb-4">{selectedTab === "all" ? "Follow spaces to see their articles here" : "No articles from this space yet"}</p>
-            {selectedTab === "all" && (
-              <button
-                onClick={() => startTransition(() => navigate('/'))}
-                className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
-              >
-                Discover Spaces
-              </button>
-            )}
+            <p className="text-gray-500 mb-4">Subscribe to spaces to see their articles here</p>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
+            >
+              Discover Spaces
+            </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] gap-4 lg:gap-8">
-            {displayedArticles.map((article) => {
-              const card = transformArticleToCard(article);
-              const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+        </section>
+      ) : (
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+          {displayedArticles.map((article) => {
+            const card = transformArticleToCard(article);
+            const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
-              const articleData = {
-                ...card,
-                isLiked: articleLikeState.isLiked,
-                treasureCount: articleLikeState.likeCount
-              };
+            const articleData = {
+              ...card,
+              isLiked: articleLikeState.isLiked,
+              treasureCount: articleLikeState.likeCount
+            };
 
-              return (
-                <div key={article.uuid}>
-                  <ArticleCard
-                    article={articleData}
-                    layout="discovery"
-                    actions={{
-                      showTreasure: true,
-                      showVisits: true
-                    }}
-                    onLike={handleLike}
-                    onUserClick={handleUserClick}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+            return (
+              <div key={article.uuid}>
+                <ArticleCard
+                  article={articleData}
+                  layout="discovery"
+                  actions={{
+                    showTreasure: true,
+                    showVisits: true
+                  }}
+                  onLike={handleLike}
+                  onUserClick={handleUserClick}
+                />
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {/* Collect Treasure Modal */}
       {selectedArticle && (

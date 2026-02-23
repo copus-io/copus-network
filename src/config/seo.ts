@@ -26,10 +26,10 @@ export const SEO_CONSTANTS = {
   META: {
     DEFAULT_TITLE: 'Copus – Open-Web Curation & Creator Rewards',
     DEFAULT_DESCRIPTION: 'Copus is an open-web curation network that rewards curators and original creators for sharing valuable web content. A sustainable alternative to ads-based monetization.',
-    OG_TITLE: 'Copus – A New Business Model for the Open Web',
-    OG_DESCRIPTION: 'Earn by curating the Internet\'s best content. Original creators get paid too.',
-    TWITTER_TITLE: 'Earn by Curating the Open Web',
-    TWITTER_DESCRIPTION: 'Collect, share, and reward creators for the content that makes the Internet worth exploring.',
+    OG_TITLE: 'Copus – Welcome to the Taste Economy',
+    OG_DESCRIPTION: 'A new economic model where tastemakers earn by curating valuable content. Your curation creates value.',
+    TWITTER_TITLE: 'Welcome to the Taste Economy',
+    TWITTER_DESCRIPTION: 'A new economic model where tastemakers earn by curating valuable content. Your curation creates value.',
   },
 
   // URLs

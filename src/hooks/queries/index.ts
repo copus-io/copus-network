@@ -11,6 +11,10 @@ export {
 } from './useArticleDetailQuery';
 
 export {
+  useArticleDetailActions,
+} from './useArticleDetail';
+
+export {
   useMyCreatedArticlesQuery,
   useMyCreatedArticles,
 } from './useMyCreatedArticlesQuery';
