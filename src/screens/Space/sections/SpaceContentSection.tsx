@@ -25,7 +25,7 @@ import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton
 interface SpaceFetchCacheEntry {
   timestamp: number;
   inProgress: boolean;
-  data?: { spaceInfo: any; articles: any[]; totalCount: number; spaceId: number | null; isFollowing: boolean };
+  data?: { spaceInfo: any; articles: any[]; totalCount: number; spaceId: number | null; isFollowing: boolean; followerCount: number };
 }
 const spaceFetchCache: Map<string, SpaceFetchCacheEntry> = new Map();
 const SPACE_CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles
@@ -358,6 +358,7 @@ export const SpaceContentSection = (): JSX.Element => {
         setTotalArticleCount(cached.data.totalCount);
         if (cached.data.spaceId) setSpaceId(cached.data.spaceId);
         if (cached.data.isFollowing !== undefined) setIsFollowing(cached.data.isFollowing);
+        if (cached.data.followerCount !== undefined) setSubscriberCount(cached.data.followerCount);
         setLoading(false);
         return;
       }
@@ -442,6 +443,9 @@ export const SpaceContentSection = (): JSX.Element => {
           // Set follow status from space data
           const followStatus = spaceData?.isFollowed || spaceData?.followed || false;
           setIsFollowing(followStatus);
+          // Set follower count from space data
+          const followerCount = spaceData?.followerCount || 0;
+          setSubscriberCount(followerCount);
 
           // Fetch articles using spaceId from the space info
           if (fetchedSpaceId) {
@@ -467,7 +471,7 @@ export const SpaceContentSection = (): JSX.Element => {
           spaceFetchCache.set(cacheKey, {
             timestamp: Date.now(),
             inProgress: false,
-            data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: fetchedTotalCount, spaceId: fetchedSpaceId, isFollowing: followStatus }
+            data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: fetchedTotalCount, spaceId: fetchedSpaceId, isFollowing: followStatus, followerCount: followerCount }
           });
         } else {
           // Old category-based route (for backwards compatibility)

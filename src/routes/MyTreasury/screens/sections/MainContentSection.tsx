@@ -16,7 +16,6 @@ import CryptoJS from 'crypto-js';
 import { NoAccessPermission } from "../../../../components/NoAccessPermission/NoAccessPermission";
 import { TasteProfileModal } from "../../../../components/TasteProfileModal";
 import SubscribeButton from "../../../../components/SubscribeButton/SubscribeButton";
-import subscriptionService from "../../../../services/subscriptionService";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -387,14 +386,7 @@ export const MainContentSection = (): JSX.Element => {
   // Taste Profile Modal state
   const [showTasteProfileModal, setShowTasteProfileModal] = useState(false);
 
-  // Fetch subscriber count for own profile
-  useEffect(() => {
-    if (user?.id && (!namespace || namespace === user?.namespace)) {
-      subscriptionService.checkSubscriptionStatus(user.id).then(status => {
-        setSubscriberCount(status.subscriberCount);
-      });
-    }
-  }, [user?.id, namespace]);
+  // Subscriber count will be fetched from API with user info
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -542,6 +534,10 @@ export const MainContentSection = (): JSX.Element => {
         }
 
         setTreasuryUserInfo(processedInfo);
+        // Set follower count from API response
+        if (processedInfo?.followerCount !== undefined) {
+          setSubscriberCount(processedInfo.followerCount);
+        }
 
         if (!targetUserId) {
           console.warn('No target user ID available');

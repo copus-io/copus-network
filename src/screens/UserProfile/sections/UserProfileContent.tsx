@@ -156,8 +156,9 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             faceUrl: userData.faceUrl || profileDefaultAvatar,
             bio: userData.bio || "This user is mysterious and left nothing~",
             articlesCount: userData.statistics.articleCount,
-            followersCount: 0, // API doesn't provide follower data yet
+            followersCount: userData.followerCount || 0, // Use new followerCount field from API
             followingCount: 0, // API doesn't provide following data yet
+            isFollowed: userData.isFollowed || false, // Add follow status from API
             // Save other data from API response
             socialLinks: userData.socialLinks,
             statistics: userData.statistics,
@@ -538,6 +539,8 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
           <div className="flex items-center gap-4 mb-3">
             <span className="text-sm text-gray-500">{userInfo.statistics?.articleCount || 0} Articles</span>
             <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.followersCount || 0} Followers</span>
+            <span className="text-gray-300">·</span>
             <span className="text-sm text-gray-500">{userInfo.statistics?.collectedArticleCount || 0} Treasured</span>
             <span className="text-gray-300">·</span>
             <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleCollectedCount || 0} Received</span>
@@ -551,7 +554,11 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
                 authorName={userInfo.username}
                 size="medium"
                 variant="default"
-                showSubscriberCount={false}
+                showSubscriberCount={true}
+                onSubscriberCountLoaded={(count) => {
+                  // Update local follower count when subscription service provides updated count
+                  setUserInfo(prev => prev ? { ...prev, followersCount: count } : prev);
+                }}
               />
             )}
 
