@@ -226,19 +226,16 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
       ) : subscribedAuthors.length === 0 ? (
         <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <h3 className="text-lg font-normal text-medium-grey mb-2 [font-family:'Lato',Helvetica]">
-              No authors subscribed yet
+            <h3 className="text-lg font-normal text-medium-grey mb-4 [font-family:'Lato',Helvetica]">
+              No subscribed curators or treasuries yet
             </h3>
-            <p className="text-medium-grey text-sm mb-6 [font-family:'Lato',Helvetica]">
-              Go to the discovery page to find interesting authors and subscribe to their content
-            </p>
             <Button
               onClick={() => navigate('/')}
-              variant="copus"
+              variant="outline"
               size="lg"
-              className="px-6 py-3 rounded-full"
+              className="px-6 py-3 rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
             >
-              Discover Authors
+              Discovery
             </Button>
           </div>
         </section>
@@ -352,12 +349,15 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         </section>
       )}
 
-      {/* Grey divider */}
-      <div className="w-full px-2.5 lg:pl-2.5 lg:pr-0 my-6">
-        <div className="border-t border-gray-200" />
-      </div>
+      {/* Grey divider - only show when there are authors */}
+      {!loading && subscribedAuthors.length > 0 && (
+        <div className="w-full px-2.5 lg:pl-2.5 lg:pr-0 my-6">
+          <div className="border-t border-gray-200" />
+        </div>
+      )}
 
-      {/* Content section */}
+      {/* Content section - only show when there are authors */}
+      {!loading && subscribedAuthors.length > 0 && (
       <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
         {selectedAuthorFilter && (
           <div className="flex items-center gap-2 mb-4">
@@ -376,23 +376,8 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
           </div>
         )}
         {followedArticles.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="max-w-md mx-auto">
-              <h3 className="text-lg font-normal text-medium-grey mb-2 [font-family:'Lato',Helvetica]">
-                No followed articles yet
-              </h3>
-              <p className="text-medium-grey text-sm mb-6 [font-family:'Lato',Helvetica]">
-                Follow some authors and spaces to see their latest articles here
-              </p>
-              <Button
-                onClick={() => navigate('/')}
-                variant="copus"
-                size="lg"
-                className="px-6 py-3 rounded-full"
-              >
-                Discover Content
-              </Button>
-            </div>
+          <div className="text-center py-10">
+            <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">No content yet</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
@@ -421,6 +406,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
           </div>
         )}
       </section>
+      )}
 
       {/* My Subscriptions Popup */}
       {showSubscriptionsPopup && (
@@ -429,14 +415,11 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
           onClick={() => setShowSubscriptionsPopup(false)}
         >
           <div
-            className="bg-white rounded-xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+            className="bg-white rounded-xl w-full max-w-lg h-[70vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Popup header */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-200">
-              <h2 className="[font-family:'Lato',Helvetica] text-lg font-semibold text-gray-900">
-                My Subscriptions
-              </h2>
+            {/* Close button */}
+            <div className="flex justify-end px-5 pt-4">
               <button
                 onClick={() => setShowSubscriptionsPopup(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -448,8 +431,15 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
               </button>
             </div>
 
+            {/* Popup header */}
+            <div className="px-5 pb-1">
+              <h2 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[33.6px]">
+                My Subscriptions
+              </h2>
+            </div>
+
             {/* Tabs */}
-            <div className="flex items-center gap-2 px-5 pt-3 pb-1.5">
+            <div className="flex items-center gap-2 px-5 pt-1 pb-1.5">
               <button
                 onClick={() => setPopupTab('curator')}
                 className={`text-[12px] [font-family:'Lato',Helvetica] px-3 py-1 rounded-full border transition-colors ${
@@ -473,7 +463,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             </div>
 
             {/* Popup content - scrollable list */}
-            <div className="overflow-y-auto px-5 py-3 flex flex-col gap-2">
+            <div className="overflow-y-auto px-5 py-3 flex flex-col gap-2 flex-1">
               {popupTab === 'curator' ? (
                 <>
                   {/* Real subscribed authors */}
@@ -520,9 +510,9 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
 
                   {/* Show message if no followed authors */}
                   {subscribedAuthors.length === 0 && (
-                    <div className="text-center py-8">
+                    <div className="flex-1 flex items-center justify-center">
                       <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">
-                        No followed authors yet
+                        No subscribed curators yet
                       </p>
                     </div>
                   )}
@@ -595,9 +585,9 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
 
                   {/* Show message if no followed spaces */}
                   {followedSpaces.length === 0 && (
-                    <div className="text-center py-8">
+                    <div className="flex-1 flex items-center justify-center">
                       <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">
-                        No followed treasuries yet
+                        No subscribed treasuries yet
                       </p>
                     </div>
                   )}

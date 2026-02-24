@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import subscriptionService from '../../services/subscriptionService';
 import antiAbuseService from '../../services/antiAbuseService';
+import { AuthService } from '../../services/authService';
 import { AuthorInfo, SubscribeButtonState, EmailFrequency, SPACE_TYPES } from '../../types/subscription';
 
 interface SubscribeButtonProps {
@@ -229,8 +230,30 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
           isLoading: false
         }));
 
-        showToast('🎉 Successfully subscribed! You will receive email notifications for updates.', 'success');
+        showToast('Successfully subscribed! You will receive email notifications for updates.', 'success');
         onSubscriptionChange?.(true);
+
+        // Auto-follow all of the author's treasuries
+        if (authorUserId) {
+          try {
+            const spacesResponse = await AuthService.getMySpaces(authorUserId);
+            const spaces = spacesResponse?.data || spacesResponse?.records || spacesResponse || [];
+            if (Array.isArray(spaces) && spaces.length > 0) {
+              const followPromises = spaces.map((space: any) => {
+                if (space.id) {
+                  return AuthService.followSpace(space.id).catch(err => {
+                    console.warn(`Failed to auto-follow space ${space.id}:`, err);
+                  });
+                }
+                return Promise.resolve();
+              });
+              await Promise.all(followPromises);
+              console.log(`Auto-followed ${spaces.length} treasuries for author ${authorUserId}`);
+            }
+          } catch (err) {
+            console.warn('Failed to auto-follow author treasuries:', err);
+          }
+        }
       } else {
         showToast(result.message || 'Subscription failed, please try again later', 'error');
         setState(prev => ({ ...prev, isLoading: false }));
@@ -440,123 +463,94 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
       {/* Email input modal - use Portal to ensure correct rendering */}
       {showEmailModal && createPortal(
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-          style={{
-            zIndex: 99999,
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={(e) => {
-            console.log('🔵 Modal background clicked');
             if (e.target === e.currentTarget) {
               setShowEmailModal(false);
             }
           }}
         >
           <div
-            className="bg-white rounded-lg p-6 w-full max-w-md mx-4"
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: '0.5rem',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              maxWidth: '28rem',
-              width: '100%',
-              margin: '0 1rem'
-            }}
+            className="bg-white rounded-xl w-full max-w-md overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold mb-4" style={{ color: '#1f2937' }}>
-              📧 Subscription requires email address
-            </h3>
-
-            <p className="text-gray-600 mb-4" style={{ color: '#6b7280' }}>
-              To receive {subscriptionType === 'space' ? 'updates' : 'subscription'} notifications from <strong>{subscriptionType === 'space' ? spaceName : authorName}</strong>, please provide your email address
-            </p>
-
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Please enter email address"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              style={{
-                width: '100%',
-                padding: '0.5rem 0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.5rem',
-                outline: 'none',
-                fontSize: '16px' // Prevent iOS zoom
-              }}
-              autoFocus
-            />
-
-            {/* 🍯 Honeypot fields - invisible to users, bots might fill them */}
-            <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }} aria-hidden="true">
-              <input
-                type="text"
-                name="website"
-                value={honeypotFields.website}
-                onChange={(e) => setHoneypotFields(prev => ({...prev, website: e.target.value}))}
-                tabIndex={-1}
-                autoComplete="off"
-              />
-              <input
-                type="tel"
-                name="phone"
-                value={honeypotFields.phone}
-                onChange={(e) => setHoneypotFields(prev => ({...prev, phone: e.target.value}))}
-                tabIndex={-1}
-                autoComplete="off"
-              />
-              <input
-                type="text"
-                name="company"
-                value={honeypotFields.company}
-                onChange={(e) => setHoneypotFields(prev => ({...prev, company: e.target.value}))}
-                tabIndex={-1}
-                autoComplete="off"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
+            {/* Close button */}
+            <div className="flex justify-end px-5 pt-4">
               <button
                 onClick={() => setShowEmailModal(false)}
-                style={{
-                  backgroundColor: '#e5e7eb',
-                  color: '#374151',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem 1rem',
-                  cursor: 'pointer',
-                  fontWeight: '500'
-                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                Cancel
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
-              <button
-                onClick={handleEmailSubmit}
-                disabled={!email.trim()}
-                style={{
-                  backgroundColor: '#dc2626',
-                  color: '#ffffff',
-                  border: '2px solid #b91c1c',
-                  borderRadius: '0.5rem',
-                  padding: '0.5rem 1.5rem',
-                  cursor: email.trim() ? 'pointer' : 'not-allowed',
-                  opacity: email.trim() ? 1 : 0.5,
-                  fontWeight: '600',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                Continue Subscription
-              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-5 pb-5">
+              <h3 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[33.6px] mb-4">
+                Subscribe
+              </h3>
+
+              <p className="[font-family:'Lato',Helvetica] text-[14px] text-gray-600 mb-2 leading-relaxed">
+                Please <a href="/login" className="text-red underline hover:opacity-80 font-semibold">log in</a> or enter your email address to subscribe to <strong>{subscriptionType === 'space' ? spaceName : authorName}</strong>.
+              </p>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="[font-family:'Lato',Helvetica] w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:border-gray-300"
+                autoFocus
+              />
+              <p className="[font-family:'Lato',Helvetica] text-xs text-gray-400 mt-2 leading-relaxed">
+                You'll receive an email notification when {subscriptionType === 'space' ? spaceName : authorName} publishes new treasures.
+              </p>
+
+              {/* Honeypot fields */}
+              <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }} aria-hidden="true">
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypotFields.website}
+                  onChange={(e) => setHoneypotFields(prev => ({...prev, website: e.target.value}))}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={honeypotFields.phone}
+                  onChange={(e) => setHoneypotFields(prev => ({...prev, phone: e.target.value}))}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+                <input
+                  type="text"
+                  name="company"
+                  value={honeypotFields.company}
+                  onChange={(e) => setHoneypotFields(prev => ({...prev, company: e.target.value}))}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowEmailModal(false)}
+                  className="[font-family:'Lato',Helvetica] font-normal text-sm rounded-full px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEmailSubmit}
+                  disabled={!email.trim()}
+                  className="[font-family:'Lato',Helvetica] font-normal text-sm rounded-full px-4 py-2 bg-red text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Subscribe
+                </button>
+              </div>
             </div>
           </div>
         </div>,
