@@ -215,11 +215,25 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const result = await subscriptionService.subscribeToAuthor({
-        authorUserId,
-        emailFrequency: 'DAILY', // 默认使用每日摘要
-        email: email || undefined
-      });
+      let result;
+
+      if (subscriptionType === 'space' && spaceId) {
+        // Subscribe to space using new API
+        result = await subscriptionService.subscribeToSpace(
+          spaceId,
+          spaceName,
+          email || undefined
+        );
+      } else if (authorUserId) {
+        // Subscribe to author using new API
+        result = await subscriptionService.subscribeToAuthor({
+          authorUserId,
+          emailFrequency: 'DAILY', // 默认使用每日摘要
+          email: email || undefined
+        });
+      } else {
+        throw new Error('Invalid subscription target');
+      }
 
       if (result.success) {
         setState(prev => ({
@@ -229,7 +243,11 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
           isLoading: false
         }));
 
-        showToast('🎉 Successfully subscribed! You will receive email notifications for updates.', 'success');
+        const successMessage = subscriptionType === 'space'
+          ? `🎉 Successfully followed ${spaceName}! You will receive notifications for updates.`
+          : '🎉 Successfully subscribed! You will receive email notifications for updates.';
+
+        showToast(successMessage, 'success');
         onSubscriptionChange?.(true);
       } else {
         showToast(result.message || 'Subscription failed, please try again later', 'error');
@@ -246,7 +264,17 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const result = await subscriptionService.unsubscribeFromAuthor(authorUserId);
+      let result;
+
+      if (subscriptionType === 'space' && spaceId) {
+        // Unsubscribe from space using new API
+        result = await subscriptionService.unsubscribeFromSpace(spaceId, spaceName);
+      } else if (authorUserId) {
+        // Unsubscribe from author
+        result = await subscriptionService.unsubscribeFromAuthor(authorUserId);
+      } else {
+        throw new Error('Invalid unsubscription target');
+      }
 
       if (result.success) {
         setState(prev => ({
@@ -256,7 +284,11 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
           isLoading: false
         }));
 
-        showToast('Successfully unsubscribed', 'info');
+        const successMessage = subscriptionType === 'space'
+          ? `Successfully unfollowed ${spaceName}`
+          : 'Successfully unsubscribed';
+
+        showToast(successMessage, 'info');
         onSubscriptionChange?.(false);
       } else {
         showToast(result.message || 'Failed to unsubscribe', 'error');

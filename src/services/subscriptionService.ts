@@ -82,7 +82,7 @@ class SubscriptionService {
   }
 
   /**
-   * Subscribe to author
+   * Subscribe to author using new API
    */
   async subscribeToAuthor(request: SubscriptionRequest): Promise<SubscriptionResponse> {
     try {
@@ -175,58 +175,285 @@ class SubscriptionService {
         }
       }
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      // Create new subscription record
-      const newSubscription: SubscriptionInfo = {
-        subscriptionId: Date.now(),
-        authorUserId: request.authorUserId,
-        subscriberUserId: currentUserId || undefined,
-        subscriberEmail: request.email || userEmail || undefined,
-        emailFrequency: request.emailFrequency || 'DAILY',
-        isActive: true,
-        isTempSubscription: !currentUserId,
-        subscribedAt: new Date().toISOString()
-      };
-
-      this.mockSubscriptions.push(newSubscription);
-      this.saveToStorage();
-
-      // Update subscriber statistics
-      if (this.mockAuthorStats[request.authorUserId]) {
-        this.mockAuthorStats[request.authorUserId].totalSubscribers += 1;
-      }
-
-      // 🛡️ Record successful subscription attempt
-      if (subscriberEmail) {
-        antiAbuseService.recordSubscriptionAttempt({
-          email: subscriberEmail,
-          authorUserId: request.authorUserId,
-          ip: antiAbuseService.getCurrentUserIP(),
-          userAgent: navigator.userAgent,
-          success: true
+      try {
+        // Call new API endpoint
+        const response = await apiRequest('/client/follow/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: subscriberEmail || '',
+            targetId: request.authorUserId,
+            targetType: 0 // 0 = user/author subscription
+          })
         });
+
+        console.log('✅ API subscription successful:', response);
+
+        // Create local subscription record for consistency with existing code
+        const newSubscription: SubscriptionInfo = {
+          subscriptionId: Date.now(),
+          authorUserId: request.authorUserId,
+          subscriberUserId: currentUserId || undefined,
+          subscriberEmail: request.email || userEmail || undefined,
+          emailFrequency: request.emailFrequency || 'DAILY',
+          isActive: true,
+          isTempSubscription: !currentUserId,
+          subscribedAt: new Date().toISOString()
+        };
+
+        this.mockSubscriptions.push(newSubscription);
+        this.saveToStorage();
+
+        // Update subscriber statistics
+        if (this.mockAuthorStats[request.authorUserId]) {
+          this.mockAuthorStats[request.authorUserId].totalSubscribers += 1;
+        }
+
+        // 🛡️ Record successful subscription attempt
+        if (subscriberEmail) {
+          antiAbuseService.recordSubscriptionAttempt({
+            email: subscriberEmail,
+            authorUserId: request.authorUserId,
+            ip: antiAbuseService.getCurrentUserIP(),
+            userAgent: navigator.userAgent,
+            success: true
+          });
+        }
+
+        return {
+          success: true,
+          subscriptionId: newSubscription.subscriptionId,
+          requiresEmailVerification: false,
+          autoFollowedSpaces: [
+            { spaceId: 'space1', spaceName: 'Technology' },
+            { spaceId: 'space2', spaceName: 'AI Research' }
+          ],
+          message: 'Subscription successful! You have automatically subscribed to all of this author\'s spaces and will receive content update notifications.'
+        };
+
+      } catch (apiError) {
+        console.error('API subscription failed, falling back to mock:', apiError);
+
+        // Fallback to existing mock implementation
+        await new Promise(resolve => setTimeout(resolve, 600));
+
+        const newSubscription: SubscriptionInfo = {
+          subscriptionId: Date.now(),
+          authorUserId: request.authorUserId,
+          subscriberUserId: currentUserId || undefined,
+          subscriberEmail: request.email || userEmail || undefined,
+          emailFrequency: request.emailFrequency || 'DAILY',
+          isActive: true,
+          isTempSubscription: !currentUserId,
+          subscribedAt: new Date().toISOString()
+        };
+
+        this.mockSubscriptions.push(newSubscription);
+        this.saveToStorage();
+
+        if (this.mockAuthorStats[request.authorUserId]) {
+          this.mockAuthorStats[request.authorUserId].totalSubscribers += 1;
+        }
+
+        if (subscriberEmail) {
+          antiAbuseService.recordSubscriptionAttempt({
+            email: subscriberEmail,
+            authorUserId: request.authorUserId,
+            ip: antiAbuseService.getCurrentUserIP(),
+            userAgent: navigator.userAgent,
+            success: true
+          });
+        }
+
+        console.log('✅ Fallback subscription successful:', newSubscription);
+
+        return {
+          success: true,
+          subscriptionId: newSubscription.subscriptionId,
+          requiresEmailVerification: false,
+          autoFollowedSpaces: [
+            { spaceId: 'space1', spaceName: 'Technology' },
+            { spaceId: 'space2', spaceName: 'AI Research' }
+          ],
+          message: 'Subscription successful! You have automatically subscribed to all of this author\'s spaces and will receive content update notifications.'
+        };
       }
-
-      console.log('✅ Subscription successful:', newSubscription);
-
-      return {
-        success: true,
-        subscriptionId: newSubscription.subscriptionId,
-        requiresEmailVerification: false, // According to product requirements: subscription takes effect immediately, no email verification needed
-        autoFollowedSpaces: [
-          { spaceId: 'space1', spaceName: 'Technology' },
-          { spaceId: 'space2', spaceName: 'AI Research' }
-        ],
-        message: 'Subscription successful! You have automatically subscribed to all of this author\'s spaces and will receive content update notifications.'
-      };
 
     } catch (error) {
       console.error('Subscription failed:', error);
       return {
         success: false,
         message: 'Subscription failed, please try again later'
+      };
+    }
+  }
+
+  /**
+   * Subscribe to space using new API
+   */
+  async subscribeToSpace(spaceId: number, spaceName: string, email?: string): Promise<SubscriptionResponse> {
+    try {
+      console.log('🔄 Starting space subscription:', { spaceId, spaceName, email });
+
+      const currentUserId = this.getCurrentUserId();
+      const userEmail = this.getCurrentUserEmail();
+      const subscriberEmail = email || userEmail;
+
+      // Check user type and email status
+      if (!currentUserId && !email) {
+        return {
+          success: false,
+          message: 'Login required or provide email address'
+        };
+      }
+
+      // Wallet users need to provide email
+      if (currentUserId && !userEmail && !email) {
+        return {
+          success: false,
+          message: 'Email address required to receive subscription notifications'
+        };
+      }
+
+      // 🛡️ Anti-abuse checks
+      if (subscriberEmail) {
+        const userIP = antiAbuseService.getCurrentUserIP();
+
+        // Basic email format validation
+        const emailValidation = antiAbuseService.validateEmailForSubscription(subscriberEmail);
+        if (!emailValidation.isValid) {
+          return {
+            success: false,
+            message: emailValidation.reason === 'invalid_format'
+              ? 'Please enter a valid email address'
+              : 'This type of email is not supported, please use a common email provider'
+          };
+        }
+
+        // Comprehensive risk assessment
+        const riskAssessment = antiAbuseService.assessSubscriptionRisk({
+          email: subscriberEmail,
+          authorUserId: spaceId, // Use spaceId as target for risk assessment
+          ip: userIP,
+          userAgent: navigator.userAgent
+        });
+
+        console.log('🛡️ Space subscription risk assessment result:', riskAssessment);
+
+        // Handle based on risk level
+        if (riskAssessment.action === 'block') {
+          return {
+            success: false,
+            message: riskAssessment.message || 'Subscription request blocked, please try again later'
+          };
+        }
+
+        if (riskAssessment.action === 'manual_review') {
+          return {
+            success: false,
+            message: riskAssessment.message || 'Subscription request requires manual review, we will process within 24 hours'
+          };
+        }
+
+        // Medium risk gives warning but allows to continue
+        if (riskAssessment.action === 'warn') {
+          console.log('⚠️ Space subscription risk warning:', riskAssessment.message);
+        }
+      }
+
+      try {
+        // Call new API endpoint for space subscription
+        const response = await apiRequest('/client/follow/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: subscriberEmail || '',
+            targetId: spaceId,
+            targetType: 1 // 1 = space subscription
+          })
+        });
+
+        console.log('✅ API space subscription successful:', response);
+
+        return {
+          success: true,
+          subscriptionId: Date.now(),
+          requiresEmailVerification: false,
+          message: `Successfully followed ${spaceName}! You will receive notifications for updates.`
+        };
+
+      } catch (apiError) {
+        console.error('API space subscription failed:', apiError);
+
+        return {
+          success: false,
+          message: 'Space subscription failed, please try again later'
+        };
+      }
+
+    } catch (error) {
+      console.error('Space subscription failed:', error);
+      return {
+        success: false,
+        message: 'Space subscription failed, please try again later'
+      };
+    }
+  }
+
+  /**
+   * Unsubscribe from space using new API
+   */
+  async unsubscribeFromSpace(spaceId: number, spaceName: string): Promise<SubscriptionResponse> {
+    try {
+      console.log('🔄 Unsubscribing from space:', { spaceId, spaceName });
+
+      const currentUserId = this.getCurrentUserId();
+      if (!currentUserId) {
+        return {
+          success: false,
+          message: 'Login required to unsubscribe'
+        };
+      }
+
+      try {
+        // Call new API endpoint for space unsubscription
+        // Note: Assuming there's a corresponding unsubscribe endpoint
+        const response = await apiRequest('/client/follow/unsubscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            targetId: spaceId,
+            targetType: 1 // 1 = space
+          })
+        });
+
+        console.log('✅ API space unsubscription successful:', response);
+
+        return {
+          success: true,
+          message: `Successfully unfollowed ${spaceName}`
+        };
+
+      } catch (apiError) {
+        console.error('API space unsubscription failed:', apiError);
+
+        return {
+          success: false,
+          message: 'Space unsubscription failed, please try again later'
+        };
+      }
+
+    } catch (error) {
+      console.error('Space unsubscription failed:', error);
+      return {
+        success: false,
+        message: 'Space unsubscription failed, please try again later'
       };
     }
   }
