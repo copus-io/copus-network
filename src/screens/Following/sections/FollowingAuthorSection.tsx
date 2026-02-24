@@ -7,7 +7,6 @@ import { Card, CardContent } from "../../../components/ui/card";
 import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 import { ArticleCard } from "../../../components/ArticleCard";
 import type { ArticleData } from "../../../components/ArticleCard";
-import subscriptionService from "../../../services/subscriptionService";
 import { AuthService } from "../../../services/authService";
 import { SubscriptionInfo, AuthorInfo } from "../../../types/subscription";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
@@ -23,152 +22,6 @@ interface SubscribedAuthor extends AuthorInfo {
   spaces: any[];
 }
 
-// Sample content cards data
-const sampleArticles: ArticleData[] = [
-  {
-    id: 'sample-1',
-    title: 'The Future of Decentralized Content Creation',
-    description: 'Exploring how blockchain technology is reshaping the way creators publish and monetize their work in the digital age.',
-    coverImage: '',
-    category: 'Technology',
-    userName: 'Alex Chen',
-    userAvatar: '',
-    date: new Date().toISOString(),
-    treasureCount: 42,
-    visitCount: '1.2k',
-    commentCount: 8,
-  },
-  {
-    id: 'sample-2',
-    title: 'A Guide to Digital Art Curation',
-    description: 'How to build meaningful collections that tell a story and connect communities through shared aesthetic values.',
-    coverImage: '',
-    category: 'Art',
-    userName: 'Maya Johnson',
-    userAvatar: '',
-    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    treasureCount: 28,
-    visitCount: '856',
-    commentCount: 5,
-  },
-  {
-    id: 'sample-3',
-    title: 'Web3 Communities: Building Trust in the Digital Age',
-    description: 'Understanding the social dynamics that drive successful decentralized communities and creator economies.',
-    coverImage: '',
-    category: 'Technology',
-    userName: 'Sam Rivera',
-    userAvatar: '',
-    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    treasureCount: 67,
-    visitCount: '2.3k',
-    commentCount: 12,
-  },
-  {
-    id: 'sample-4',
-    title: 'The Rise of Creator Economies in Southeast Asia',
-    description: 'A deep dive into how creators across the region are building sustainable businesses through digital platforms.',
-    coverImage: '',
-    category: 'Life',
-    userName: 'Jordan Lee',
-    userAvatar: '',
-    date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    treasureCount: 35,
-    visitCount: '1.5k',
-    commentCount: 6,
-  },
-  {
-    id: 'sample-5',
-    title: 'Photography as a Medium for Social Change',
-    description: 'How visual storytelling is being used to raise awareness and drive meaningful conversations around the world.',
-    coverImage: '',
-    category: 'Art',
-    userName: 'Taylor Kim',
-    userAvatar: '',
-    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    treasureCount: 51,
-    visitCount: '980',
-    commentCount: 9,
-  },
-  {
-    id: 'sample-6',
-    title: 'Understanding Smart Contract Security',
-    description: 'Essential best practices for auditing and securing smart contracts before deploying to production.',
-    coverImage: '',
-    category: 'Technology',
-    userName: 'Chris Zhang',
-    userAvatar: '',
-    date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    treasureCount: 89,
-    visitCount: '3.1k',
-    commentCount: 15,
-  },
-  {
-    id: 'sample-7',
-    title: 'Minimalist Design Principles for Web Apps',
-    description: 'Less is more — applying minimalist thinking to create clean, intuitive user interfaces that users love.',
-    coverImage: '',
-    category: 'Art',
-    userName: 'Emma Wilson',
-    userAvatar: '',
-    date: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    treasureCount: 44,
-    visitCount: '1.8k',
-    commentCount: 7,
-  },
-  {
-    id: 'sample-8',
-    title: 'Building a Personal Brand as a Creator',
-    description: 'Practical strategies for establishing your unique voice and growing an engaged audience online.',
-    coverImage: '',
-    category: 'Life',
-    userName: 'David Park',
-    userAvatar: '',
-    date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    treasureCount: 31,
-    visitCount: '720',
-    commentCount: 4,
-  },
-  {
-    id: 'sample-9',
-    title: 'The Evolution of Digital Collectibles',
-    description: 'From early NFTs to curated digital treasuries — tracing the journey of collectible culture on the internet.',
-    coverImage: '',
-    category: 'Technology',
-    userName: 'Olivia Martinez',
-    userAvatar: '',
-    date: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-    treasureCount: 73,
-    visitCount: '2.7k',
-    commentCount: 11,
-  },
-];
-
-// Sample profile cards to fill the row
-const sampleProfiles = [
-  { userId: -1, displayName: 'Alex Chen', username: 'alexchen', avatar: '', spaces: [] },
-  { userId: -2, displayName: 'Maya Johnson', username: 'mayaj', avatar: '', spaces: [] },
-  { userId: -3, displayName: 'Sam Rivera', username: 'samrivera', avatar: '', spaces: [] },
-  { userId: -4, displayName: 'Jordan Lee', username: 'jordanlee', avatar: '', spaces: [] },
-  { userId: -5, displayName: 'Taylor Kim', username: 'taylork', avatar: '', spaces: [] },
-  { userId: -6, displayName: 'Chris Zhang', username: 'chrisz', avatar: '', spaces: [] },
-  { userId: -7, displayName: 'Emma Wilson', username: 'emmaw', avatar: '', spaces: [] },
-  { userId: -8, displayName: 'David Park', username: 'davidp', avatar: '', spaces: [] },
-  { userId: -9, displayName: 'Olivia Martinez', username: 'oliviam', avatar: '', spaces: [] },
-  { userId: -10, displayName: 'Noah Thompson', username: 'noaht', avatar: '', spaces: [] },
-];
-
-// Sample subscribed treasuries
-const sampleTreasuries = [
-  { id: -1, name: 'Digital Art Collection', namespace: 'digital-art', authorName: 'Alex Chen', authorUsername: 'alexchen' },
-  { id: -2, name: 'Web3 Research Hub', namespace: 'web3-research', authorName: 'Maya Johnson', authorUsername: 'mayaj' },
-  { id: -3, name: 'Tech Innovation Weekly', namespace: 'tech-innovation', authorName: 'Sam Rivera', authorUsername: 'samrivera' },
-  { id: -4, name: 'Creative Writing Corner', namespace: 'creative-writing', authorName: 'Jordan Lee', authorUsername: 'jordanlee' },
-  { id: -5, name: 'Photography Showcase', namespace: 'photo-showcase', authorName: 'Taylor Kim', authorUsername: 'taylork' },
-  { id: -6, name: 'AI & Machine Learning', namespace: 'ai-ml', authorName: 'Chris Zhang', authorUsername: 'chrisz' },
-  { id: -7, name: 'Design Patterns', namespace: 'design-patterns', authorName: 'Emma Wilson', authorUsername: 'emmaw' },
-  { id: -8, name: 'Startup Insights', namespace: 'startup-insights', authorName: 'David Park', authorUsername: 'davidp' },
-];
 
 interface FollowingAuthorSectionProps {
   showSubscriptionsPopup: boolean;
@@ -180,7 +33,10 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
   const { user } = useUser();
   const navigate = useNavigate();
   const [subscribedAuthors, setSubscribedAuthors] = useState<SubscribedAuthor[]>([]);
+  const [followedSpaces, setFollowedSpaces] = useState<any[]>([]);
+  const [followedArticles, setFollowedArticles] = useState<ArticleData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -209,9 +65,9 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
     return () => clearTimeout(timer);
   }, [subscribedAuthors, loading, updateScrollState]);
 
-  // Fetch subscribed authors and their spaces
+  // Fetch all followed data from APIs
   useEffect(() => {
-    const fetchSubscribedAuthors = async () => {
+    const fetchFollowedData = async () => {
       if (!user?.id) {
         setLoading(false);
         return;
@@ -219,63 +75,94 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
 
       try {
         setLoading(true);
-        subscriptionService.reinitializeMockData();
-        const subscriptions = await subscriptionService.getUserSubscriptionsWithDetails(user.id);
 
-        const authorsMap = new Map<number, SubscribedAuthor>();
-        for (const subscription of subscriptions) {
-          if (subscription.authorUserId && subscription.authorInfo) {
-            const authorId = subscription.authorUserId;
-            if (authorsMap.has(authorId)) {
-              const existing = authorsMap.get(authorId)!;
-              existing.spacesCount += 1;
-            } else {
-              authorsMap.set(authorId, {
-                userId: authorId,
-                username: subscription.authorInfo.username || '',
-                displayName: subscription.authorInfo.displayName || subscription.authorInfo.username || 'Unknown Author',
-                avatar: subscription.authorInfo.avatar || profileDefaultAvatar,
-                bio: subscription.authorInfo.bio || '',
-                spacesCount: 1,
-                totalArticles: Math.floor(Math.random() * 50) + 10,
-                newArticlesSinceLastVisit: Math.floor(Math.random() * 8),
-                lastUpdated: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-                emailFrequency: subscription.emailFrequency,
-                subscriptionInfo: subscription,
-                spaces: [],
-              });
-            }
-          }
+        // Fetch followed users
+        const followedUsers = await AuthService.getFollowedUsers();
+        console.log('✅ Fetched followed users from API:', followedUsers);
+
+        // Fetch followed spaces
+        const followedSpacesData = await AuthService.getFollowedSpaces();
+        console.log('✅ Fetched followed spaces from API:', followedSpacesData);
+        setFollowedSpaces(followedSpacesData);
+
+        // Fetch followed articles
+        const followedArticlesResponse = await AuthService.getPageMyFollowedArticle(1, 20);
+        console.log('✅ Fetched followed articles from API:', followedArticlesResponse);
+
+        // Transform API data to ArticleData format
+        if (followedArticlesResponse?.data && Array.isArray(followedArticlesResponse.data)) {
+          const transformedArticles: ArticleData[] = followedArticlesResponse.data.map((article: any) => ({
+            id: article.id?.toString() || article.uuid || `article_${Date.now()}_${Math.random()}`,
+            title: article.title || 'Untitled',
+            description: article.content || '',
+            coverImage: article.coverUrl || '',
+            category: 'Technology', // Default category, could be enhanced
+            userName: article.authorInfo?.username || 'Unknown Author',
+            userAvatar: article.authorInfo?.faceUrl || '',
+            date: new Date(article.publishAt || article.createAt || Date.now()).toISOString(),
+            treasureCount: 0, // Not provided in API response
+            visitCount: article.viewCount?.toString() || '0',
+            commentCount: article.commentCount || 0,
+          }));
+          setFollowedArticles(transformedArticles);
+        } else {
+          setFollowedArticles([]);
         }
 
-        const authorsArray = Array.from(authorsMap.values());
+        // Transform followed users to SubscribedAuthor format
+        const authorsArray: SubscribedAuthor[] = followedUsers.map((user) => ({
+          userId: user.id,
+          username: user.username,
+          displayName: user.username,
+          avatar: user.faceUrl || profileDefaultAvatar,
+          bio: user.bio || '',
+          spacesCount: 0, // Will be updated when we fetch their spaces
+          totalArticles: 0, // Will be calculated if needed
+          newArticlesSinceLastVisit: 0,
+          lastUpdated: new Date().toISOString(),
+          emailFrequency: 'DAILY' as const,
+          subscriptionInfo: {
+            subscriptionId: `api_${user.id}`,
+            authorUserId: user.id,
+            emailFrequency: 'DAILY' as const,
+            isActive: true,
+            subscribedAt: new Date().toISOString(),
+          } as SubscriptionInfo,
+          spaces: [],
+        }));
 
         // Fetch spaces for each author
         for (const author of authorsArray) {
           try {
-            const response = await AuthService.getMySpaces(author.userId, 1, 2);
+            const response = await AuthService.getMySpaces(author.userId, 1, 5);
             const spacesData = response?.data?.data && Array.isArray(response.data.data)
               ? response.data.data
               : response?.data && Array.isArray(response.data)
               ? response.data
               : [];
             author.spaces = spacesData;
+            author.spacesCount = spacesData.length;
           } catch {
             author.spaces = [];
+            author.spacesCount = 0;
           }
         }
 
         setSubscribedAuthors(authorsArray);
       } catch (error) {
-        console.error('Failed to fetch subscribed authors:', error);
-        showToast('Failed to get subscription list', 'error');
+        console.error('Failed to fetch followed data:', error);
+        showToast('Failed to load followed content', 'error');
+        // Set empty arrays on error - no fallback to mock data
+        setSubscribedAuthors([]);
+        setFollowedSpaces([]);
+        setFollowedArticles([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSubscribedAuthors();
-  }, [user?.id, showToast]);
+    fetchFollowedData();
+  }, [user?.id, showToast, refreshTrigger]);
 
   const handleAuthorClick = (author: SubscribedAuthor) => {
     if (author.username) {
@@ -449,36 +336,6 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
               </Card>
             ))}
 
-            {/* Sample profile cards to fill the row */}
-            {sampleProfiles.map((profile) => (
-              <Card
-                key={profile.userId}
-                className={`w-44 flex-shrink-0 cursor-pointer transition-colors ${
-                  selectedAuthorFilter === profile.displayName
-                    ? 'bg-gray-100 border-gray-400'
-                    : 'bg-white border border-gray-200'
-                }`}
-                onClick={() => setSelectedAuthorFilter(prev => prev === profile.displayName ? null : profile.displayName)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={profileDefaultAvatar}
-                      alt={`${profile.displayName}'s avatar`}
-                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-sm truncate">
-                        {profile.displayName}
-                      </h4>
-                      <span className="[font-family:'Lato',Helvetica] text-gray-500 text-xs truncate block">
-                        @{profile.username}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
 
           {/* Right scroll arrow */}
@@ -518,27 +375,51 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             </button>
           </div>
         )}
-        <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-          {(selectedAuthorFilter
-            ? sampleArticles.filter(a => a.userName === selectedAuthorFilter)
-            : sampleArticles
-          ).map((article) => (
-            <ArticleCard
-              key={article.id}
-              article={article}
-              layout="discovery"
-              actions={{
-                showTreasure: true,
-                showVisits: true,
-              }}
-            />
-          ))}
-          {selectedAuthorFilter && sampleArticles.filter(a => a.userName === selectedAuthorFilter).length === 0 && (
-            <div className="col-span-full text-center py-10">
-              <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">No content from this author yet</p>
+        {followedArticles.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="max-w-md mx-auto">
+              <h3 className="text-lg font-normal text-medium-grey mb-2 [font-family:'Lato',Helvetica]">
+                No followed articles yet
+              </h3>
+              <p className="text-medium-grey text-sm mb-6 [font-family:'Lato',Helvetica]">
+                Follow some authors and spaces to see their latest articles here
+              </p>
+              <Button
+                onClick={() => navigate('/')}
+                variant="copus"
+                size="lg"
+                className="px-6 py-3 rounded-full"
+              >
+                Discover Content
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+            {(() => {
+              const filteredArticles = selectedAuthorFilter
+                ? followedArticles.filter(a => a.userName === selectedAuthorFilter)
+                : followedArticles;
+
+              return filteredArticles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  layout="discovery"
+                  actions={{
+                    showTreasure: true,
+                    showVisits: true,
+                  }}
+                />
+              ));
+            })()}
+            {selectedAuthorFilter && followedArticles.filter(a => a.userName === selectedAuthorFilter).length === 0 && (
+              <div className="col-span-full text-center py-10">
+                <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">No content from this author yet</p>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* My Subscriptions Popup */}
@@ -628,64 +509,79 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                           authorUserId={author.userId}
                           authorName={author.displayName}
                           size="medium"
+                          onSubscriptionChange={() => {
+                            // 订阅状态改变时刷新数据
+                            setRefreshTrigger(prev => prev + 1);
+                          }}
                         />
                       </div>
                     </div>
                   ))}
 
-                  {/* Sample curator accounts */}
-                  {sampleProfiles.map((profile) => (
-                    <div
-                      key={profile.userId}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                      <img
-                        src={profileDefaultAvatar}
-                        alt={`${profile.displayName}'s avatar`}
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-sm truncate">
-                          {profile.displayName}
-                        </h4>
-                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-xs truncate block">
-                          @{profile.username}
-                        </span>
-                      </div>
-                      <button
-                        className="[font-family:'Lato',Helvetica] font-normal text-sm leading-none rounded-[50px] px-3 h-8 flex items-center justify-center gap-1.5 transition-colors flex-shrink-0"
-                        style={{ backgroundColor: '#ffffff', color: '#059669', border: '1px solid #059669' }}
-                      >
-                        Subscribed
-                      </button>
+                  {/* Show message if no followed authors */}
+                  {subscribedAuthors.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">
+                        No followed authors yet
+                      </p>
                     </div>
-                  ))}
+                  )}
                 </>
               ) : (
                 <>
-                  {/* Treasuries list */}
-                  {sampleTreasuries.map((treasury) => (
+                  {/* Real followed spaces */}
+                  {followedSpaces.map((space) => (
                     <div
-                      key={treasury.id}
+                      key={space.id || space.namespace}
                       className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => {
                         setShowSubscriptionsPopup(false);
-                        navigate(`/treasury/${treasury.namespace}`);
+                        navigate(`/treasury/${space.namespace}`);
                       }}
                     >
                       <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                        </svg>
+                        {space.coverUrl ? (
+                          <img
+                            src={space.coverUrl}
+                            alt={`${space.name} cover`}
+                            className="w-full h-full rounded-lg object-cover"
+                            onError={(e) => {
+                              const svgFallback = (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                </svg>
+                              );
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              const parent = e.target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = svgFallback;
+                              }
+                            }}
+                          />
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                          </svg>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-sm truncate">
-                          {treasury.name}
+                          {space.name || space.namespace}
                         </h4>
-                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-xs truncate block">
-                          by @{treasury.authorUsername}
-                        </span>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {space.followerCount !== undefined && (
+                            <span className="[font-family:'Lato',Helvetica]">
+                              {space.followerCount} followers
+                            </span>
+                          )}
+                          {space.articleCount !== undefined && (
+                            <span className="[font-family:'Lato',Helvetica]">
+                              {space.articleCount} articles
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <button
                         className="[font-family:'Lato',Helvetica] font-normal text-sm leading-none rounded-[50px] px-3 h-8 flex items-center justify-center gap-1.5 transition-colors flex-shrink-0"
@@ -696,6 +592,15 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                       </button>
                     </div>
                   ))}
+
+                  {/* Show message if no followed spaces */}
+                  {followedSpaces.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">
+                        No followed treasuries yet
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
             </div>

@@ -1120,9 +1120,14 @@ export class AuthService {
     coverUrl: string;
     email: string;
     faceUrl: string;
+    followerCount: number;
     id: number;
-    namespace: string;
     isEnabled: boolean;
+    isFollowed: boolean;
+    isOwner: boolean;
+    isTasteVisible: boolean;
+    loginType: number;
+    namespace: string;
     socialLinks: Array<{
       iconUrl: string;
       linkUrl: string;
@@ -1130,9 +1135,10 @@ export class AuthService {
     }>;
     statistics: {
       articleCount: number;
-      publicArticleCount: number;
       collectedArticleCount: number;
       myArticleCollectedCount: number;
+      privateArticleCount: number;
+      publicArticleCount: number;
     };
     username: string;
     walletAddress: string;
@@ -1814,8 +1820,91 @@ export class AuthService {
    * Get space info by namespace
    * @param namespace - Space namespace identifier
    */
-  static async getSpaceInfo(namespace: string): Promise<any> {
+  static async getSpaceInfo(namespace: string): Promise<{
+    articleCount: number;
+    coverUrl: string;
+    data: Array<{
+      coverUrl: string;
+      targetUrl: string;
+      title: string;
+    }>;
+    description: string;
+    faceUrl: string;
+    followerCount: number; // NEW: Number of followers for this space
+    id: number;
+    isAdmin: boolean;
+    isBind: boolean;
+    isFollowed: boolean; // NEW: Whether current user is following this space
+    name: string;
+    namespace: string;
+    seoDataByAi: string;
+    spaceType: number;
+    userInfo: {
+      bio: string;
+      coverUrl: string;
+      faceUrl: string;
+      id: number;
+      namespace: string;
+      username: string;
+    };
+    visibility: number;
+  }> {
     return apiRequest(`/client/article/space/info/${namespace}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get followed users list
+   * @returns Array of followed users
+   */
+  static async getFollowedUsers(): Promise<Array<{
+    bio: string;
+    coverUrl: string;
+    faceUrl: string;
+    id: number;
+    namespace: string;
+    username: string;
+  }>> {
+    return apiRequest('/client/follow/followedUsers', {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get followed spaces list
+   * @returns Array of followed spaces
+   */
+  static async getFollowedSpaces(): Promise<Array<{
+    articleCount: number;
+    coverUrl: string;
+    data: Array<{
+      coverUrl: string;
+      targetUrl: string;
+      title: string;
+    }>;
+    description: string;
+    faceUrl: string;
+    followerCount: number;
+    id: number;
+    isAdmin: boolean;
+    isBind: boolean;
+    isFollowed: boolean;
+    name: string;
+    namespace: string;
+    seoDataByAi: string;
+    spaceType: number;
+    userInfo: {
+      bio: string;
+      coverUrl: string;
+      faceUrl: string;
+      id: number;
+      namespace: string;
+      username: string;
+    };
+    visibility: number;
+  }>> {
+    return apiRequest('/client/follow/myFollowedSpaces', {
       method: 'GET',
     });
   }
@@ -1966,6 +2055,78 @@ export class AuthService {
    */
   static async getFollowedArticles(pageIndex: number = 1, pageSize: number = 20): Promise<any> {
     return apiRequest(`/client/article/space/pageMyFollowedArticle?pageIndex=${pageIndex}&pageSize=${pageSize}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Get followed articles list (paginated) with comprehensive data
+   * API: GET /client/follow/pageMyFollowedArticle
+   * @param pageIndex - Page number (default 1)
+   * @param pageSize - Page size (default 20)
+   * @param spaceIds - Optional space IDs to filter by
+   * @param userId - Optional user ID to filter by
+   */
+  static async getPageMyFollowedArticle(
+    pageIndex: number = 1,
+    pageSize: number = 20,
+    spaceIds?: number[],
+    userId?: number
+  ): Promise<{
+    data: Array<{
+      arChainId: string;
+      authorInfo: {
+        bio: string;
+        coverUrl: string;
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+      commentCount: number;
+      content: string;
+      coverUrl: string;
+      createAt: number;
+      id: number;
+      isLiked: boolean;
+      likeCount: number;
+      priceInfo: {
+        chainId: string;
+        currency: string;
+        price: number;
+      };
+      publishAt: number;
+      seoData: string;
+      seoDataByAi: string;
+      targetUrl: string;
+      targetUrlIsLocked: boolean;
+      title: string;
+      uuid: string;
+      viewCount: number;
+      visibility: number;
+    }>;
+    pageCount: number;
+    pageIndex: number;
+    pageSize: number;
+    totalCount: number;
+  }> {
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (pageIndex !== undefined) {
+      params.append('pageIndex', pageIndex.toString());
+    }
+    if (pageSize !== undefined) {
+      params.append('pageSize', pageSize.toString());
+    }
+    if (spaceIds && spaceIds.length > 0) {
+      spaceIds.forEach(id => params.append('spaceIds', id.toString()));
+    }
+    if (userId !== undefined) {
+      params.append('userId', userId.toString());
+    }
+
+    return apiRequest(`/client/follow/pageMyFollowedArticle?${params.toString()}`, {
       method: 'GET',
       requiresAuth: true,
     });
