@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '../ui/toast';
+import { apiRequest } from '../../services/api';
 
 interface TasteProfileModalProps {
   isOpen: boolean;
@@ -7,6 +8,7 @@ interface TasteProfileModalProps {
   namespace: string;
   username: string;
   totalWorks?: number; // Total curations + collections
+  isTasteVisible?: boolean; // Current visibility from backend
 }
 
 interface TasteProfileData {
@@ -50,14 +52,39 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
   onClose,
   namespace,
   username,
-  totalWorks = 0
+  totalWorks = 0,
+  isTasteVisible = true
 }) => {
   const { showToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState<'md' | 'csv' | null>(null);
+  const [isPublic, setIsPublic] = useState(isTasteVisible);
+  const [isToggling, setIsToggling] = useState(false);
+
+  // Sync with prop when modal opens
+  useEffect(() => {
+    if (isOpen) setIsPublic(isTasteVisible);
+  }, [isOpen, isTasteVisible]);
 
   const tasteProfileUrl = `https://copus.network/api/taste/${namespace}.json`;
   const isUnlocked = totalWorks >= 10;
+
+  const handleToggleVisibility = async () => {
+    setIsToggling(true);
+    try {
+      await apiRequest('/client/user/updateUser', {
+        method: 'POST',
+        body: JSON.stringify({ isTasteVisible: !isPublic }),
+        requiresAuth: true
+      });
+      setIsPublic(!isPublic);
+      showToast(`Taste profile is now ${!isPublic ? 'public' : 'private'}`, 'success');
+    } catch (error) {
+      showToast('Failed to update visibility', 'error');
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   const handleCopyUrl = async () => {
     try {
@@ -297,65 +324,87 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
         </button>
 
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-5">
           <h2 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px]">Your Taste Profile</h2>
-          <p className="text-sm text-gray-500">Your taste, made queryable.</p>
+          <p className="text-sm text-gray-500 mt-1">A machine-readable database of your taste, built from everything you curate and belongs to you.</p>
         </div>
 
         {/* Content */}
-        <div className="space-y-6">
-          {/* API URL */}
-          <div>
-            <label className="block [font-family:'Lato',Helvetica] font-medium text-off-black text-sm mb-2">
-              Taste API
-            </label>
+        <div className="space-y-5">
+          {/* Explainer — what this is */}
+          <div className="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-600 leading-relaxed">
+            Every piece you save builds this profile. Paste the link below into ChatGPT, Claude, or any AI, and it will understand your interests and give you personalized answers. You own this data. Export it, share it, or keep it private.
+          </div>
 
-            {/* Locked state overlay */}
-            {!isUnlocked && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <p className="text-sm font-medium text-amber-800">
-                    Curate or collect 10 works to unlock your Taste API
-                  </p>
-                </div>
+          {/* Locked state */}
+          {!isUnlocked && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p className="text-sm font-medium text-amber-800">
+                  Curate or collect 10 works to unlock your Taste API
+                </p>
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="relative">
-              {/* Blur overlay when locked */}
-              {!isUnlocked && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm rounded-lg z-10" />
-              )}
-
-              <div className={`flex items-center gap-2 ${!isUnlocked ? 'select-none' : ''}`}>
+          {/* API URL */}
+          {isUnlocked && (
+            <div>
+              <label className="block [font-family:'Lato',Helvetica] font-medium text-off-black text-sm mb-2">
+                Taste API
+              </label>
+              <div className="flex items-center gap-2">
                 <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 font-mono text-sm text-gray-600 truncate">
                   {tasteProfileUrl}
                 </div>
-                {isUnlocked && (
-                  <button
-                    onClick={handleCopyUrl}
-                    className="flex-shrink-0 p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    title="Copy URL"
-                  >
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </button>
-                )}
+                <button
+                  onClick={handleCopyUrl}
+                  className="flex-shrink-0 p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+                  title="Copy URL"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
               </div>
             </div>
+          )}
 
-            <p className="text-sm text-gray-500 mt-3">
-              Share this link with any AI to help it understand your preferences. Every work you curate or collect enriches this profile.
-            </p>
-          </div>
+          {/* Make private — matches extension curation page design */}
+          {isUnlocked && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleToggleVisibility}
+                disabled={isToggling}
+                className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center flex-shrink-0 cursor-pointer transition-all duration-200 ${!isPublic ? 'bg-[#F23A00] border-[#F23A00]' : 'border-gray-300 hover:border-gray-400'} ${isToggling ? 'opacity-50' : ''}`}
+                aria-label={isPublic ? 'Make private' : 'Make public'}
+                type="button"
+              >
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" className={`transition-opacity duration-200 ${!isPublic ? 'opacity-100' : 'opacity-0'}`}>
+                  <path d="M2 5L4.5 7.5L8 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <button
+                onClick={handleToggleVisibility}
+                disabled={isToggling}
+                className={`inline-flex items-center gap-1 cursor-pointer transition-opacity duration-200 hover:opacity-80 ${isToggling ? 'opacity-50' : ''}`}
+                type="button"
+              >
+                <svg width="14" height="14" viewBox="0 0 25 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16.9723 3C15.4989 3 14.096 3.66092 12.9955 4.86118C11.9336 3.70292 10.5466 3 9.02774 3C5.7035 3 3 6.36428 3 10.5C3 14.6357 5.7035 18 9.02774 18C10.5466 18 11.9359 17.2971 12.9955 16.1388C14.0937 17.3413 15.492 18 16.9723 18C20.2965 18 23 14.6357 23 10.5C23 6.36428 20.2965 3 16.9723 3ZM3.68213 10.5C3.68213 6.73121 6.08095 3.66313 9.02774 3.66313C11.9745 3.66313 14.3734 6.729 14.3734 10.5C14.3734 11.2206 14.2847 11.9169 14.1232 12.569C14.0937 10.9885 13.3456 9.68877 12.1519 9.39699C10.5966 9.0168 8.86858 10.4956 8.30014 12.6927C8.03183 13.7339 8.05684 14.7838 8.37062 15.6503C8.65712 16.4439 9.15507 17.0053 9.79172 17.2639C9.54161 17.3103 9.28695 17.3347 9.03001 17.3347C6.07867 17.3369 3.68213 14.2688 3.68213 10.5ZM13.4297 15.6149C14.437 14.2732 15.0555 12.4761 15.0555 10.5C15.0555 8.52387 14.437 6.72679 13.4297 5.38506C14.4097 4.27542 15.6648 3.66313 16.9723 3.66313C19.9191 3.66313 22.3179 6.729 22.3179 10.5C22.3179 11.3112 22.2065 12.0893 22.0018 12.8121C22.0473 11.1233 21.2833 9.70424 20.0305 9.3992C18.4752 9.01901 16.7472 10.4978 16.1787 12.695C15.6467 14.7529 16.3197 16.7224 17.6862 17.275C17.452 17.3148 17.2133 17.3391 16.97 17.3391C15.6603 17.3369 14.4097 16.7268 13.4297 15.6149Z" fill="#454545"/>
+                  <line x1="5.27279" y1="2" x2="22" y2="18.7272" stroke="#454545" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                <span className="[font-family:'Lato',Helvetica] font-medium text-sm text-[#454545]">Make private</span>
+              </button>
+            </div>
+          )}
 
           {/* Export Section */}
-          <div className="mt-2">
-            <div className="flex items-center justify-end gap-2.5 self-stretch w-full">
+          {isUnlocked && (
+            <div className="flex items-center justify-end gap-2.5 self-stretch w-full pt-1">
               <button
                 onClick={() => handleExport('md')}
                 disabled={isExporting}
@@ -391,7 +440,7 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
                 Export .csv
               </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

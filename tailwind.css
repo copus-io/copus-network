@@ -288,3 +288,20 @@
     overflow-x: hidden !important;
   }
 }
+
+/* Taste button breathing glow — draws attention when unlocked */
+@keyframes tasteGlow {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(242, 58, 0, 0.3);
+    border-color: #F23A00;
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(242, 58, 0, 0.6), 0 0 28px rgba(242, 58, 0, 0.2);
+    border-color: #ff6633;
+  }
+}
+
+.taste-glow {
+  animation: tasteGlow 2s ease-in-out infinite !important;
+  border-width: 1.5px !important;
+}
