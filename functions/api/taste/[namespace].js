@@ -153,6 +153,15 @@ export async function onRequest(context) {
       }), { status: 404, headers })
     }
 
+    // Check if taste profile is set to private
+    if (userInfo.isTasteVisible === false) {
+      return new Response(JSON.stringify({
+        error: 'This taste profile is private',
+        namespace: namespace,
+        message: 'The owner has set their taste profile to private.'
+      }), { status: 403, headers })
+    }
+
     // Fetch user's treasuries
     const treasuries = await fetchUserTreasuries(userInfo.id)
 

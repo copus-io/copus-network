@@ -57,6 +57,7 @@ const TreasuryHeaderSection = ({
   onTasteProfile,
   subscriberCount,
   onSubscriberCountLoaded,
+  totalWorks = 0,
 }: {
   userId?: number;
   username: string;
@@ -74,9 +75,12 @@ const TreasuryHeaderSection = ({
   onTasteProfile?: () => void;
   subscriberCount?: number;
   onSubscriberCountLoaded?: (count: number) => void;
+  totalWorks?: number;
 }): JSX.Element => {
   const { user } = useUser(); // Add this for subscribe button
   const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
+  const [tasteButtonSeen, setTasteButtonSeen] = useState(() => localStorage.getItem('copus_taste_button_seen') === '1');
+  const shouldGlow = isOwnProfile && totalWorks >= 10 && !tasteButtonSeen;
   const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
 
@@ -248,8 +252,14 @@ const TreasuryHeaderSection = ({
               <button
                 type="button"
                 aria-label="Taste Profile"
-                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border-[0.5px] border-[#F23A00] hover:opacity-80 transition-opacity duration-200"
-                onClick={onTasteProfile}
+                className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border-[0.5px] border-[#F23A00] hover:opacity-80 transition-opacity duration-200 ${shouldGlow ? 'taste-glow' : ''}`}
+                onClick={() => {
+                  if (shouldGlow) {
+                    localStorage.setItem('copus_taste_button_seen', '1');
+                    setTasteButtonSeen(true);
+                  }
+                  onTasteProfile();
+                }}
                 title="Your Taste Profile"
               >
                 <img src={tasteProfileIcon} alt="Taste Profile" className="w-5 h-5 object-cover mt-1" />
@@ -743,6 +753,7 @@ export const MainContentSection = (): JSX.Element => {
         onTasteProfile={() => setShowTasteProfileModal(true)}
         subscriberCount={subscriberCount}
         onSubscriberCountLoaded={setSubscriberCount}
+        totalWorks={(treasuryUserInfo?.statistics?.publicArticleCount || 0) + (treasuryUserInfo?.statistics?.collectedArticleCount || 0)}
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
@@ -938,6 +949,7 @@ export const MainContentSection = (): JSX.Element => {
           namespace={(treasuryUserInfo || displayUser).namespace}
           username={(treasuryUserInfo || displayUser).username}
           totalWorks={(treasuryUserInfo?.statistics?.publicArticleCount || 0) + (treasuryUserInfo?.statistics?.collectedArticleCount || 0)}
+          isTasteVisible={(treasuryUserInfo || displayUser).isTasteVisible !== false}
         />
       )}
     </main>
