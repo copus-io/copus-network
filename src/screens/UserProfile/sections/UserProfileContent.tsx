@@ -527,11 +527,24 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             onClick={handleAvatarClick}
           />
 
-          {/* Username and action buttons */}
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-bold text-gray-900">{userInfo.username}</h1>
+          {/* Username */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
 
-            {/* Subscribe Button - show for all non-own profiles, including non-logged users */}
+          {/* Namespace and bio */}
+          <p className="text-sm text-gray-400 mb-2">@{userInfo.namespace}</p>
+          <p className="text-gray-700 mb-4 max-w-md">{userInfo.bio}</p>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 mb-3">
+            <span className="text-sm text-gray-500">{userInfo.statistics?.articleCount || 0} Articles</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.collectedArticleCount || 0} Treasured</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleCollectedCount || 0} Received</span>
+          </div>
+
+          {/* Action buttons - Subscribe and Share on the same line */}
+          <div className="flex items-center gap-3">
             {!isOwnProfile && userInfo?.id && (
               <SubscribeButton
                 authorUserId={userInfo.id}
@@ -555,33 +568,6 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               />
             </button>
           </div>
-
-          {/* Namespace and bio */}
-          <p className="text-sm text-gray-400 mb-2">@{userInfo.namespace}</p>
-          <p className="text-gray-700 mb-4 max-w-md">{userInfo.bio}</p>
-
-          {/* Stats */}
-          <div className="flex items-center gap-4 mb-3">
-            <span className="text-sm text-gray-500">{userInfo.statistics?.articleCount || 0} Articles</span>
-            <span className="text-gray-300">·</span>
-            <span className="text-sm text-gray-500">{userInfo.statistics?.collectedArticleCount || 0} Treasured</span>
-            <span className="text-gray-300">·</span>
-            <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleCollectedCount || 0} Received</span>
-          </div>
-
-          {/* Subscribe button (only shown when viewing other users) */}
-          {user && user.namespace !== namespace && (
-            <button
-              className={`px-6 py-2 rounded-full transition-colors ${
-                accountExists
-                  ? 'bg-red text-white hover:bg-red/90'
-                  : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-              }`}
-              disabled={!accountExists}
-            >
-              {accountExists ? 'Subscribe' : "This account doesn't exist"}
-            </button>
-          )}
         </div>
       </section>
 

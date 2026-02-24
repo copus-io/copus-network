@@ -34,6 +34,7 @@ const SPACE_CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during m
 const SpaceInfoSection = ({
   spaceName,
   treasureCount,
+  subscriberCount,
   authorName,
   authorAvatar,
   authorNamespace,
@@ -52,9 +53,11 @@ const SpaceInfoSection = ({
   onAuthorClick,
   onEdit,
   onImportCSV,
+  onSubscriberCountLoaded,
 }: {
   spaceName: string;
   treasureCount: number;
+  subscriberCount?: number;
   authorName: string;
   authorAvatar?: string;
   authorNamespace?: string;
@@ -73,6 +76,7 @@ const SpaceInfoSection = ({
   onAuthorClick: () => void;
   onEdit?: () => void;
   onImportCSV?: () => void;
+  onSubscriberCountLoaded?: (count: number) => void;
 }): JSX.Element => {
   const canEdit = isOwner;
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -153,6 +157,12 @@ const SpaceInfoSection = ({
         {/* Treasure count and author info */}
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm text-gray-500">{treasureCount} treasures</span>
+          {!!subscriberCount && subscriberCount > 0 && (
+            <>
+              <span className="text-gray-300">·</span>
+              <span className="text-sm text-gray-500">{subscriberCount} subscribers</span>
+            </>
+          )}
           <span className="text-gray-300">·</span>
           <span className="text-sm text-gray-500">By</span>
           <button
@@ -174,7 +184,7 @@ const SpaceInfoSection = ({
         )}
 
         {/* Action buttons - always show below description */}
-        <div className="flex items-center gap-3 mt-1">
+        <div className="flex items-center gap-3 mt-1.5">
           {/* Edit button */}
           {canEdit && (
             <button
@@ -212,6 +222,7 @@ const SpaceInfoSection = ({
               size="medium"
               variant="default"
               subscriptionType="space"
+              onSubscriberCountLoaded={onSubscriberCountLoaded}
               onSubscriptionChange={(isSubscribed) => {
                 if (isSubscribed) {
                   onFollow();
@@ -285,6 +296,7 @@ export const SpaceContentSection = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [spaceInfo, setSpaceInfo] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [subscriberCount, setSubscriberCount] = useState(0);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -1083,6 +1095,7 @@ export const SpaceContentSection = (): JSX.Element => {
       <SpaceInfoSection
         spaceName={displaySpaceName || spaceInfo?.name || category || 'Space'}
         treasureCount={totalArticleCount || articles.length}
+        subscriberCount={subscriberCount}
         authorName={spaceInfo?.authorName || 'Anonymous'}
         authorAvatar={spaceInfo?.authorAvatar}
         authorNamespace={spaceInfo?.authorNamespace}
@@ -1101,6 +1114,7 @@ export const SpaceContentSection = (): JSX.Element => {
         onAuthorClick={handleAuthorClick}
         onEdit={handleEditSpace}
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
+        onSubscriberCountLoaded={setSubscriberCount}
       />
 
       {/* Articles Grid */}

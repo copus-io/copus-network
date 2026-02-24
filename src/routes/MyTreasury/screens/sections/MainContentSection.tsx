@@ -16,6 +16,7 @@ import CryptoJS from 'crypto-js';
 import { NoAccessPermission } from "../../../../components/NoAccessPermission/NoAccessPermission";
 import { TasteProfileModal } from "../../../../components/TasteProfileModal";
 import SubscribeButton from "../../../../components/SubscribeButton/SubscribeButton";
+import subscriptionService from "../../../../services/subscriptionService";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -55,6 +56,8 @@ const TreasuryHeaderSection = ({
   onCreate,
   onImportCSV,
   onTasteProfile,
+  subscriberCount,
+  onSubscriberCountLoaded,
 }: {
   userId?: number;
   username: string;
@@ -70,6 +73,8 @@ const TreasuryHeaderSection = ({
   onCreate?: () => void;
   onImportCSV?: () => void;
   onTasteProfile?: () => void;
+  subscriberCount?: number;
+  onSubscriberCountLoaded?: (count: number) => void;
 }): JSX.Element => {
   const { user } = useUser(); // Add this for subscribe button
   const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
@@ -170,27 +175,22 @@ const TreasuryHeaderSection = ({
           alt={`${username} profile`}
         />
 
-        {/* Username and Subscribe Button */}
+        {/* Username */}
         <div className="flex items-center justify-between mb-1">
           <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4]">
             {username}
           </h1>
-
-          {/* Subscribe Button - show for all non-own profiles, including non-logged users */}
-          {!isOwnProfile && userId && (
-            <SubscribeButton
-              authorUserId={userId}
-              authorName={username}
-              size="medium"
-              variant="default"
-              showSubscriberCount={false}
-            />
-          )}
         </div>
 
-        {/* Namespace */}
-        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] mb-1">
-          @{namespace}
+        {/* Namespace and subscriber count */}
+        <div className="flex items-center gap-2 [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] mb-1">
+          <span>@{namespace}</span>
+          {!!subscriberCount && subscriberCount > 0 && (
+            <>
+              <span className="text-gray-300">·</span>
+              <span>{subscriberCount} subscribers</span>
+            </>
+          )}
         </div>
 
         {/* Bio */}
@@ -230,7 +230,7 @@ const TreasuryHeaderSection = ({
         )}
 
         {/* Action buttons - Create new treasury, Edit, Import, Share - always shown below user info */}
-        <div className="flex items-center gap-3 mt-3">
+        <div className="flex items-center gap-3 mt-1.5">
             {/* Create new treasury button */}
             {onCreate && isOwnProfile && (
               <button
@@ -270,6 +270,18 @@ const TreasuryHeaderSection = ({
                   <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
+            )}
+
+            {/* Subscribe Button - show for all non-own profiles, including non-logged users */}
+            {!isOwnProfile && userId && (
+              <SubscribeButton
+                authorUserId={userId}
+                authorName={username}
+                size="medium"
+                variant="default"
+                showSubscriberCount={false}
+                onSubscriberCountLoaded={onSubscriberCountLoaded}
+              />
             )}
 
             {/* Share button */}
@@ -360,6 +372,7 @@ export const MainContentSection = (): JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
+  const [subscriberCount, setSubscriberCount] = useState(0);
 
   // Create Space Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -373,6 +386,15 @@ export const MainContentSection = (): JSX.Element => {
 
   // Taste Profile Modal state
   const [showTasteProfileModal, setShowTasteProfileModal] = useState(false);
+
+  // Fetch subscriber count for own profile
+  useEffect(() => {
+    if (user?.id && (!namespace || namespace === user?.namespace)) {
+      subscriptionService.checkSubscriptionStatus(user.id).then(status => {
+        setSubscriberCount(status.subscriberCount);
+      });
+    }
+  }, [user?.id, namespace]);
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -723,6 +745,8 @@ export const MainContentSection = (): JSX.Element => {
         onCreate={() => setShowCreateModal(true)}
         onImportCSV={() => setShowImportModal(true)}
         onTasteProfile={() => setShowTasteProfileModal(true)}
+        subscriberCount={subscriberCount}
+        onSubscriberCountLoaded={setSubscriberCount}
       />
 
       {/* Spaces Grid - auto-fill columns with min 360px, flexible max */}
