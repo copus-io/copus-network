@@ -45,6 +45,11 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
   const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<SubscribedAuthor | null>(null);
   const [selectedAuthorArticles, setSelectedAuthorArticles] = useState<ArticleData[]>([]);
   const [loadingAuthorArticles, setLoadingAuthorArticles] = useState(false);
+  const [authorCurrentPage, setAuthorCurrentPage] = useState(1);
+  const [authorHasMoreArticles, setAuthorHasMoreArticles] = useState(true);
+  const [isLoadingMoreAuthor, setIsLoadingMoreAuthor] = useState(false);
+  const authorLoadingElementRef = useRef<HTMLDivElement | null>(null);
+  const authorObserverRef = useRef<IntersectionObserver | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreArticles, setHasMoreArticles] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -311,12 +316,50 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
       setLoadingAuthorArticles(true);
       console.log('🔍 Fetching articles for author:', author.displayName, 'userId:', author.userId);
 
-      // Call API with specific author's userId to get only their articles
-      const response = await AuthService.getPageMyFollowedArticle(1, 50, undefined, author.userId);
-      console.log('✅ Author articles response:', response);
+      // Reset pagination for new author
+      setAuthorCurrentPage(1);
+      setAuthorHasMoreArticles(true);
+
+      // Load first page of author's articles
+      await loadAuthorArticles(author, 1, true);
+    } catch (error) {
+      console.error('❌ Failed to fetch author articles:', error);
+      setSelectedAuthorArticles([]);
+      setAuthorHasMoreArticles(false);
+    } finally {
+      setLoadingAuthorArticles(false);
+    }
+  };
+
+  // Load author articles with pagination
+  const loadAuthorArticles = useCallback(async (author: SubscribedAuthor, page: number, isInitial = false) => {
+    if (!user?.id || (!isInitial && isLoadingMoreAuthor) || (!isInitial && !authorHasMoreArticles)) return;
+
+    try {
+      if (isInitial) {
+        setLoadingAuthorArticles(true);
+      } else {
+        setIsLoadingMoreAuthor(true);
+      }
+
+      const pageSize = 30; // Same as general articles
+      const response = await AuthService.getPageMyFollowedArticle(page, pageSize, undefined, author.userId);
+      console.log(`✅ Author ${author.displayName} articles page ${page}:`, response);
 
       // Transform API response to ArticleData format
-      const articleData = response?.data?.data || response?.data;
+      const responseData = response?.data;
+      let articleData: any[] = [];
+      let totalCount = 0;
+      let pageCount = 0;
+
+      if (Array.isArray(response)) {
+        articleData = response;
+      } else if (responseData) {
+        articleData = Array.isArray(responseData.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []);
+        totalCount = responseData.totalCount || 0;
+        pageCount = responseData.pageCount || 0;
+      }
+
       if (Array.isArray(articleData)) {
         const transformedArticles: ArticleData[] = articleData.map((article: any) => ({
           id: article.id?.toString() || article.uuid || `article_${Date.now()}_${Math.random()}`,
@@ -347,19 +390,78 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
           paymentPrice: article.priceInfo?.price?.toString(),
           visibility: article.visibility
         }));
-        console.log('✅ Author articles transformed:', transformedArticles.length);
-        setSelectedAuthorArticles(transformedArticles);
+
+        console.log('✅ Author articles transformed:', {
+          page,
+          articlesCount: transformedArticles.length,
+          totalCount,
+          pageCount,
+          hasMore: pageCount > 0 ? page < pageCount : transformedArticles.length === pageSize
+        });
+
+        if (isInitial) {
+          setSelectedAuthorArticles(transformedArticles);
+        } else {
+          setSelectedAuthorArticles(prev => [...prev, ...transformedArticles]);
+        }
+
+        // Check if there are more pages for this author
+        const hasMore = pageCount > 0 ? page < pageCount : transformedArticles.length === pageSize;
+        setAuthorHasMoreArticles(hasMore);
+        setAuthorCurrentPage(page);
       } else {
         console.log('❌ No author articles found in response');
-        setSelectedAuthorArticles([]);
+        if (isInitial) {
+          setSelectedAuthorArticles([]);
+        }
+        setAuthorHasMoreArticles(false);
       }
     } catch (error) {
       console.error('❌ Failed to fetch author articles:', error);
-      setSelectedAuthorArticles([]);
+      if (isInitial) {
+        setSelectedAuthorArticles([]);
+      }
+      setAuthorHasMoreArticles(false);
     } finally {
       setLoadingAuthorArticles(false);
+      setIsLoadingMoreAuthor(false);
     }
-  };
+  }, [user?.id, isLoadingMoreAuthor, authorHasMoreArticles]);
+
+  // Intersection Observer for author articles infinite scroll
+  useEffect(() => {
+    if (!authorLoadingElementRef.current || !authorHasMoreArticles || !selectedAuthorFilter) return;
+
+    // Disconnect previous observer
+    if (authorObserverRef.current) {
+      authorObserverRef.current.disconnect();
+    }
+
+    // Create new observer for author articles
+    authorObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoadingMoreAuthor && authorHasMoreArticles && selectedAuthorFilter) {
+          console.log('🔄 Loading more author articles, page:', authorCurrentPage + 1);
+          loadAuthorArticles(selectedAuthorFilter, authorCurrentPage + 1);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '200px'
+      }
+    );
+
+    // Start observing
+    authorObserverRef.current.observe(authorLoadingElementRef.current);
+
+    // Cleanup
+    return () => {
+      if (authorObserverRef.current) {
+        authorObserverRef.current.disconnect();
+      }
+    };
+  }, [selectedAuthorFilter, authorCurrentPage, isLoadingMoreAuthor, authorHasMoreArticles, loadAuthorArticles]);
 
   // Handle switching to treasuries tab and fetch fresh data
   const handleTreasuriesTabClick = async () => {
@@ -542,6 +644,12 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
               onClick={() => {
                 setSelectedAuthorFilter(null);
                 setSelectedAuthorArticles([]);
+                setAuthorCurrentPage(1);
+                setAuthorHasMoreArticles(true);
+                // Disconnect author observer when clearing filter
+                if (authorObserverRef.current) {
+                  authorObserverRef.current.disconnect();
+                }
               }}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -579,19 +687,49 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-              {selectedAuthorArticles.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={article}
-                  layout="discovery"
-                  actions={{
-                    showTreasure: true,
-                    showVisits: true,
-                  }}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+                {selectedAuthorArticles.map((article) => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    layout="discovery"
+                    actions={{
+                      showTreasure: true,
+                      showVisits: true,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Infinite scroll loading indicator for author articles */}
+              {selectedAuthorFilter && authorHasMoreArticles && (
+                <div
+                  ref={authorLoadingElementRef}
+                  className="flex justify-center items-center py-8 mt-4"
+                >
+                  {isLoadingMoreAuthor ? (
+                    <div className="flex items-center gap-3 text-gray-500">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      </svg>
+                      <span>Loading more articles from {selectedAuthorFilter.displayName}...</span>
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 text-sm">
+                      Scroll to load more from {selectedAuthorFilter.displayName}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedAuthorFilter && !authorHasMoreArticles && selectedAuthorArticles.length > 0 && (
+                <div className="flex justify-center py-8 mt-4">
+                  <span className="text-gray-400 text-sm">You've seen all articles from {selectedAuthorFilter.displayName}</span>
+                </div>
+              )}
+            </>
           )
         ) : followedArticles.length === 0 ? (
           <div className="text-center py-16">
