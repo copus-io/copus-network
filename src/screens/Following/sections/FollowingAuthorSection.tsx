@@ -20,6 +20,7 @@ interface SubscribedAuthor extends AuthorInfo {
   lastUpdated: string;
   emailFrequency: 'IMMEDIATE' | 'DAILY' | 'WEEKLY';
   spaces: any[];
+  namespace?: string; // Add namespace for proper routing
 }
 
 
@@ -164,6 +165,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
               subscribedAt: new Date().toISOString(),
             } as SubscriptionInfo,
             spaces: [],
+            namespace: user.namespace, // Store namespace from API for routing
           }));
 
         console.log('✅ Transformed authors array:', authorsArray);
@@ -202,7 +204,10 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
   }, [user?.id, showToast, refreshTrigger]);
 
   const handleAuthorClick = (author: SubscribedAuthor) => {
-    if (author.username) {
+    // Use namespace for routing if available, otherwise fallback to username
+    if (author.namespace) {
+      navigate(`/u/${author.namespace}`);
+    } else if (author.username) {
       navigate(`/u/${author.username}`);
     } else {
       navigate(`/user/${author.userId}`);
@@ -344,9 +349,9 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                       >
                         {author.displayName}
                       </h4>
-                      {author.username && (
+                      {(author.namespace || author.username) && (
                         <span className="[font-family:'Lato',Helvetica] text-gray-500 text-xs truncate block">
-                          @{author.username}
+                          @{author.namespace || author.username}
                         </span>
                       )}
                     </div>
@@ -529,9 +534,9 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                         <h4 className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-sm truncate">
                           {author.displayName}
                         </h4>
-                        {author.username && (
+                        {(author.namespace || author.username) && (
                           <span className="[font-family:'Lato',Helvetica] text-gray-500 text-xs truncate block">
-                            @{author.username}
+                            @{author.namespace || author.username}
                           </span>
                         )}
                       </div>
