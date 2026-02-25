@@ -172,23 +172,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
 
         console.log('✅ Transformed authors array:', authorsArray);
 
-        // Fetch spaces for each author
-        for (const author of authorsArray) {
-          try {
-            const response = await AuthService.getMySpaces(author.userId, 1, 5);
-            const spacesData = response?.data?.data && Array.isArray(response.data.data)
-              ? response.data.data
-              : response?.data && Array.isArray(response.data)
-              ? response.data
-              : [];
-            author.spaces = spacesData;
-            author.spacesCount = spacesData.length;
-          } catch {
-            author.spaces = [];
-            author.spacesCount = 0;
-          }
-        }
-
+        // No need to fetch spaces for each author - removed unnecessary API calls
         setSubscribedAuthors(authorsArray);
       } catch (error) {
         console.error('Failed to fetch followed data:', error);
