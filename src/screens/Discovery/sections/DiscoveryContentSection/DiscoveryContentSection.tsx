@@ -114,27 +114,27 @@ export const DiscoveryContentSection = (): JSX.Element => {
     // Same welcome content for both logged-in and guest users
     return (
       <>
-        <h1 className="relative w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+        <h1 className="relative w-fit mt-[-1.00px] mb-3 [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
           Welcome to Copus!
         </h1>
         <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
           <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
             <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-              Copus is an open curation space where people share links to meaningful content they find online, along with a short reflection.
+              Copus is a space for intentional curation beyond algorithms.
             </span>
           </p>
           <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
             <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-              You can subscribe to people whose taste you trust, or use the{' '}
+              Discover what others find valuable. Save what resonates with you. Or{' '}
               <a
                 href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#2191FB] hover:underline cursor-pointer font-normal"
               >
-                browser extension
+                install the extension
               </a>{' '}
-              to collect and share as you browse :)
+              to curate as you browse.
             </span>
           </p>
         </div>
