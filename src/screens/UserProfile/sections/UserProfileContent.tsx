@@ -548,10 +548,13 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
 
           {/* Action buttons - Subscribe and Share on the same line */}
           <div className="flex items-center gap-3">
-            {!isOwnProfile && userInfo?.id && (
+            {!isOwnProfile && userInfo?.id && userInfo.hasOwnProperty('isFollowed') && (
               <SubscribeButton
                 authorUserId={userInfo.id}
                 authorName={userInfo.username}
+                authorNamespace={namespace}
+                initialIsSubscribed={userInfo.isFollowed}
+                initialSubscriberCount={userInfo.followerCount}
                 size="medium"
                 variant="default"
                 showSubscriberCount={true}

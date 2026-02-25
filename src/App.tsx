@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, startTransition } from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
@@ -11,6 +11,9 @@ import { ToastProvider } from "./components/ui/toast";
 import { GlobalImagePreview } from "./components/ui/GlobalImagePreview";
 import { AuthGuard } from "./components/guards/AuthGuard";
 import { CopusLoading } from "./components/ui/copus-loading";
+import { PerformanceMonitor } from "./components/DevTools/PerformanceMonitor";
+import { resourcePreloader } from "./utils/resourcePreloader";
+import { cssOptimizer } from "./utils/cssOptimizer";
 
 // Eagerly loaded - critical path
 import { Discovery } from "./screens/Discovery/Discovery";
@@ -54,11 +57,56 @@ const SignUp = lazy(() => import("./routes/SignUp/screens/SignUp").then(m => ({ 
 const NotFoundPage = lazy(() => import("./components/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
 const OAuthRedirect = lazy(() => import("./components/OAuthRedirect"));
 
+// Error boundary to catch Suspense errors
+class SuspenseErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    console.error('🚨 Suspense Error Caught:', error);
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('🚨 Suspense Error Details:', { error, errorInfo });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h2 className="text-xl font-bold mb-4">Something went wrong</h2>
+            <p className="text-gray-600 mb-4">
+              Error: {this.state.error?.message || 'Unknown error'}
+            </p>
+            <button
+              onClick={() => this.setState({ hasError: false, error: undefined })}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Suspense wrapper for lazy components
 const LazyRoute = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={<CopusLoading />}>
-    {children}
-  </Suspense>
+  <SuspenseErrorBoundary>
+    <Suspense fallback={<CopusLoading />}>
+      {children}
+    </Suspense>
+  </SuspenseErrorBoundary>
 );
 
 const router = createBrowserRouter([
@@ -225,8 +273,11 @@ export const App = () => {
             <NotificationProvider>
               <ImagePreviewProvider>
                 <ToastProvider>
-                  <RouterProvider router={router} />
+                  <Suspense fallback={<CopusLoading />}>
+                    <RouterProvider router={router} />
+                  </Suspense>
                   <GlobalImagePreview />
+                  <PerformanceMonitor />
                 </ToastProvider>
               </ImagePreviewProvider>
             </NotificationProvider>

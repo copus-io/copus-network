@@ -286,10 +286,20 @@ const TreasuryHeaderSection = ({
               <SubscribeButton
                 authorUserId={userId}
                 authorName={username}
+                authorNamespace={namespace}
                 size="medium"
                 variant="default"
                 showSubscriberCount={false}
+                initialSubscriberCount={subscriberCount}
                 onSubscriberCountLoaded={onSubscriberCountLoaded}
+                onSubscriptionChange={(isSubscribed) => {
+                  // Real-time UI update for subscriber count
+                  if (isSubscribed) {
+                    onSubscriberCountLoaded?.((subscriberCount || 0) + 1);
+                  } else {
+                    onSubscriberCountLoaded?.(Math.max((subscriberCount || 0) - 1, 0));
+                  }
+                }}
               />
             )}
 
@@ -502,18 +512,10 @@ export const MainContentSection = (): JSX.Element => {
               targetUserId = user.id;
             }
           } else {
-            // Viewing own treasury - fetch full user info to get complete statistics
-            try {
-              console.log('Viewing own treasury, fetching full user info by namespace:', user.namespace);
-              processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(user.namespace);
-              targetUserId = processedInfo?.id || user.id;
-              console.log('Own user full info:', processedInfo, 'userId:', targetUserId);
-            } catch (err) {
-              // Fall back to basic user info if fetch fails
-              console.warn('Failed to fetch full user info, using basic user info:', err);
-              processedInfo = user;
-              targetUserId = user.id;
-            }
+            // Viewing own treasury - use current user info directly
+            console.log('🟢 Viewing own treasury, using current user info');
+            processedInfo = user;
+            targetUserId = user.id;
           }
         } else if (namespace) {
           // Not logged in but have namespace - fetch that user's info
