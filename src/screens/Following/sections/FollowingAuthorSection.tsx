@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
@@ -7,6 +7,8 @@ import { Card, CardContent } from "../../../components/ui/card";
 import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 import { ArticleCard } from "../../../components/ArticleCard";
 import type { ArticleData } from "../../../components/ArticleCard";
+// OPTIMIZATION: Lazy load heavy components
+const CollectTreasureModal = React.lazy(() => import("../../../components/CollectTreasureModal").then(module => ({ default: module.CollectTreasureModal })));
 import { AuthService } from "../../../services/authService";
 import { SubscriptionInfo, AuthorInfo } from "../../../types/subscription";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
@@ -31,10 +33,9 @@ interface FollowingAuthorSectionProps {
 
 export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscriptionsPopup }: FollowingAuthorSectionProps): JSX.Element => {
   const { showToast } = useToast();
-  const { user } = useUser();
+  const { user, getArticleLikeState, updateArticleLikeState } = useUser();
   const navigate = useNavigate();
   const [subscribedAuthors, setSubscribedAuthors] = useState<SubscribedAuthor[]>([]);
-  const [followedSpaces, setFollowedSpaces] = useState<any[]>([]);
   const [followedArticles, setFollowedArticles] = useState<ArticleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -48,14 +49,115 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
   const [authorCurrentPage, setAuthorCurrentPage] = useState(1);
   const [authorHasMoreArticles, setAuthorHasMoreArticles] = useState(true);
   const [isLoadingMoreAuthor, setIsLoadingMoreAuthor] = useState(false);
-  const authorLoadingElementRef = useRef<HTMLDivElement | null>(null);
-  const authorObserverRef = useRef<IntersectionObserver | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreArticles, setHasMoreArticles] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadingElementRef = useRef<HTMLDivElement | null>(null);
+  const [followedSpaces, setFollowedSpaces] = useState<any[]>([]);
   const [treasuriesLoading, setTreasuriesLoading] = useState(false);
+  const [spacesCache, setSpacesCache] = useState<{data: any[], timestamp: number} | null>(null);
+
+  // Collect Treasure Modal state
+  const [collectModalOpen, setCollectModalOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
+
+  // Handle article like/treasure functionality
+  const handleLike = useCallback((uuid: string, currentLikeState: boolean, currentLikeCount: number, title?: string) => {
+    if (!user) {
+      showToast('Please log in to collect treasures', 'error');
+      return;
+    }
+
+    setSelectedArticle({
+      uuid,
+      title: title || '',
+      isLiked: currentLikeState,
+      likeCount: currentLikeCount
+    });
+    setCollectModalOpen(true);
+  }, [user, showToast]);
+
+  // Handle user click navigation
+  const handleUserClick = useCallback((userId?: number, userNamespace?: string, userName?: string) => {
+    if (!userId && !userNamespace && !userName) return;
+
+    // Use namespace for routing if available (preferred)
+    if (userNamespace) {
+      navigate(`/u/${userNamespace}`);
+    } else if (userName) {
+      navigate(`/u/${userName}`);
+    } else {
+      navigate(`/user/${userId}`);
+    }
+  }, [navigate]);
+
+  // OPTIMIZATION: Memoized skeleton component for better performance
+  const SubscriptionsSkeleton = useMemo(() => {
+    return (
+      <div className="space-y-4">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="flex space-x-4 items-center p-4">
+              <div className="rounded-full bg-gray-300 h-10 w-10"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }, []);
+
+  // Handle collect success callback
+  const handleCollectSuccess = useCallback((uuid: string, newLikeState: boolean, newLikeCount: number) => {
+    // Update both followedArticles and selectedAuthorArticles if applicable
+    setFollowedArticles(prevArticles =>
+      prevArticles.map(article =>
+        article.uuid === uuid
+          ? { ...article, isLiked: newLikeState, treasureCount: newLikeCount }
+          : article
+      )
+    );
+
+    if (selectedAuthorFilter) {
+      setSelectedAuthorArticles(prevArticles =>
+        prevArticles.map(article =>
+          article.uuid === uuid
+            ? { ...article, isLiked: newLikeState, treasureCount: newLikeCount }
+            : article
+        )
+      );
+    }
+
+    // Update user state for consistency
+    updateArticleLikeState?.(uuid, newLikeState, newLikeCount);
+  }, [selectedAuthorFilter, updateArticleLikeState]);
+
+  // Unified space name processing logic - same as ChooseTreasuriesModal
+  const getSpaceDisplayName = useCallback((space: any, spaceOwnerUsername?: string) => {
+    let spaceTypeNum = space.spaceType;
+    if (spaceTypeNum === undefined || spaceTypeNum === null) {
+      if (space.name === 'Default Collections Space') {
+        spaceTypeNum = 1;
+      } else if (space.name === 'Default Curations Space') {
+        spaceTypeNum = 2;
+      } else {
+        spaceTypeNum = 0; // Custom space
+      }
+    } else if (typeof spaceTypeNum === 'string') {
+      spaceTypeNum = parseInt(spaceTypeNum, 10);
+    }
+
+    // For default spaces, show "Username's Treasury" or "Username's Curations"
+    if (spaceTypeNum === 1) {
+      return `${spaceOwnerUsername || 'Anonymous'}'s Treasury`;
+    } else if (spaceTypeNum === 2) {
+      return `${spaceOwnerUsername || 'Anonymous'}'s Curations`;
+    } else {
+      return space.name || space.namespace || 'Untitled Treasury';
+    }
+  }, []);
 
   // Check scroll state
   const updateScrollState = useCallback(() => {
@@ -79,8 +181,10 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
     return () => clearTimeout(timer);
   }, [subscribedAuthors, loading, updateScrollState]);
 
-  // Fetch all followed data from APIs
+  // Fetch all followed data from APIs - OPTIMIZED: Parallel requests
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchFollowedData = async () => {
       if (!user?.id) {
         setLoading(false);
@@ -90,19 +194,11 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
       try {
         setLoading(true);
 
-        // Fetch followed users
-        // 🔍 SEARCH: api-followed-users-fix-needed
-        // NOTE: API should not return current user in followed users list
-        // This is a temporary client-side fix until API is corrected
-        const followedUsers = await AuthService.getFollowedUsers();
-
-        // Fetch followed spaces
-        const followedSpacesData = await AuthService.getFollowedSpaces();
-        console.log('✅ Fetched followed spaces from API:', followedSpacesData);
-        setFollowedSpaces(followedSpacesData);
-
-        // Load initial articles with pagination support
-        await loadFollowedArticles(1, true);
+        // OPTIMIZATION: Parallel API calls instead of serial
+        const [followedUsers] = await Promise.all([
+          AuthService.getFollowedUsers(),
+          loadFollowedArticles(1, true)
+        ]);
 
         // Transform followed users to SubscribedAuthor format
         // Filter out current user (defensive programming)
@@ -148,7 +244,6 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         showToast('Failed to load followed content', 'error');
         // Set empty arrays on error - no fallback to mock data
         setSubscribedAuthors([]);
-        setFollowedSpaces([]);
         setFollowedArticles([]);
       } finally {
         setLoading(false);
@@ -156,6 +251,11 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
     };
 
     fetchFollowedData();
+
+    // Cleanup function
+    return () => {
+      controller.abort();
+    };
   }, [user?.id, showToast, refreshTrigger]);
 
   // Load followed articles with pagination
@@ -170,7 +270,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
       }
 
       const pageSize = 30; // Load 30 articles per page
-      const response = await AuthService.getPageMyFollowedArticle(page, pageSize, undefined, user.id);
+      const response = await AuthService.getPageMyFollowedArticle(page, pageSize);
       console.log(`✅ Fetched followed articles page ${page}:`, response);
 
       // Transform API data to ArticleData format
@@ -241,52 +341,43 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         if (isInitial) {
           setFollowedArticles([]);
         }
+        setHasMoreArticles(false);
       }
     } catch (error) {
       console.error('❌ Failed to fetch followed articles:', error);
       if (isInitial) {
         setFollowedArticles([]);
       }
+      setHasMoreArticles(false);
     } finally {
       setLoading(false);
       setIsLoadingMore(false);
     }
   }, [user?.id, isLoadingMore, hasMoreArticles]);
 
-  // Intersection Observer for infinite scroll
+  // Scroll to load more logic - same as Discovery page
   useEffect(() => {
-    if (!loadingElementRef.current || !hasMoreArticles || selectedAuthorFilter) return;
+    const handleScroll = () => {
+      // Only trigger for general articles (not when filtering by author)
+      if (selectedAuthorFilter) return;
 
-    // Disconnect previous observer
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
+      // Check if scrolled near the bottom of the page
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early - same as Discovery
 
-    // Create new observer
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !isLoadingMore && hasMoreArticles && !selectedAuthorFilter) {
-          console.log('🔄 Loading more author articles, page:', currentPage + 1);
-          loadFollowedArticles(currentPage + 1);
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '200px'
-      }
-    );
-
-    // Start observing
-    observerRef.current.observe(loadingElementRef.current);
-
-    // Cleanup
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
+      if (scrolledToBottom && hasMoreArticles && !isLoadingMore) {
+        console.log('🔄 Loading more articles, page:', currentPage + 1);
+        loadFollowedArticles(currentPage + 1);
       }
     };
-  }, [currentPage, isLoadingMore, hasMoreArticles, selectedAuthorFilter, loadFollowedArticles]);
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMoreArticles, isLoadingMore, loadFollowedArticles, currentPage, selectedAuthorFilter]);
 
   const handleAuthorClick = (author: SubscribedAuthor) => {
     // Use namespace for routing if available, otherwise fallback to username
@@ -343,8 +434,9 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
       }
 
       const pageSize = 30; // Same as general articles
+      // Call API with userId to filter by author on server side
       const response = await AuthService.getPageMyFollowedArticle(page, pageSize, undefined, author.userId);
-      console.log(`✅ Author ${author.displayName} articles page ${page}:`, response);
+      console.log(`✅ Author articles page ${page} (server-side filtered for ${author.displayName}):`, response);
 
       // Transform API response to ArticleData format
       const responseData = response?.data;
@@ -428,54 +520,66 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
     }
   }, [user?.id, isLoadingMoreAuthor, authorHasMoreArticles]);
 
-  // Intersection Observer for author articles infinite scroll
+  // Scroll to load more logic for author articles - same as Discovery page
   useEffect(() => {
-    if (!authorLoadingElementRef.current || !authorHasMoreArticles || !selectedAuthorFilter) return;
+    const handleAuthorScroll = () => {
+      // Only trigger when filtering by author
+      if (!selectedAuthorFilter) return;
 
-    // Disconnect previous observer
-    if (authorObserverRef.current) {
-      authorObserverRef.current.disconnect();
-    }
+      // Check if scrolled near the bottom of the page
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early - same as Discovery
 
-    // Create new observer for author articles
-    authorObserverRef.current = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !isLoadingMoreAuthor && authorHasMoreArticles && selectedAuthorFilter) {
-          console.log('🔄 Loading more author articles, page:', authorCurrentPage + 1);
-          loadAuthorArticles(selectedAuthorFilter, authorCurrentPage + 1);
-        }
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '200px'
+      if (scrolledToBottom && authorHasMoreArticles && !isLoadingMoreAuthor && selectedAuthorFilter) {
+        console.log('🔄 Loading more author articles, page:', authorCurrentPage + 1);
+        loadAuthorArticles(selectedAuthorFilter, authorCurrentPage + 1);
       }
-    );
+    };
 
-    // Start observing
-    authorObserverRef.current.observe(authorLoadingElementRef.current);
-
-    // Cleanup
+    window.addEventListener('scroll', handleAuthorScroll);
     return () => {
-      if (authorObserverRef.current) {
-        authorObserverRef.current.disconnect();
-      }
+      window.removeEventListener('scroll', handleAuthorScroll);
     };
   }, [selectedAuthorFilter, authorCurrentPage, isLoadingMoreAuthor, authorHasMoreArticles, loadAuthorArticles]);
 
-  // Handle switching to treasuries tab and fetch fresh data
+  // Handle switching to treasuries tab - OPTIMIZED: With caching
   const handleTreasuriesTabClick = async () => {
     setPopupTab('treasuries');
-    if (!user?.id) return;
+
+    // Load followed spaces data when switching to treasuries tab
+    if (!user?.id || treasuriesLoading) return;
+
+    // OPTIMIZATION: Use cache if data is less than 5 minutes old
+    const now = Date.now();
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+    if (spacesCache && (now - spacesCache.timestamp) < CACHE_DURATION) {
+      console.log('✅ Using cached spaces data');
+      setFollowedSpaces(spacesCache.data);
+      return;
+    }
 
     try {
       setTreasuriesLoading(true);
-      console.log('🔍 Fetching fresh followed spaces for Treasuries tab...');
-      const freshFollowedSpaces = await AuthService.getFollowedSpaces();
-      console.log('✅ Fresh followed spaces loaded:', freshFollowedSpaces);
-      setFollowedSpaces(freshFollowedSpaces);
+      const response = await AuthService.getFollowedSpaces();
+      console.log('✅ Fetched followed spaces:', response);
+
+      // Parse response
+      let spacesArray: any[] = [];
+      if (Array.isArray(response)) {
+        spacesArray = response;
+      } else if (response?.data && Array.isArray(response.data)) {
+        spacesArray = response.data;
+      }
+
+      // OPTIMIZATION: Cache the data
+      setSpacesCache({ data: spacesArray, timestamp: now });
+      setFollowedSpaces(spacesArray);
     } catch (error) {
-      console.error('❌ Failed to fetch fresh followed spaces:', error);
+      console.error('❌ Failed to fetch followed spaces:', error);
+      showToast('Failed to load followed treasuries', 'error');
     } finally {
       setTreasuriesLoading(false);
     }
@@ -646,10 +750,6 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                 setSelectedAuthorArticles([]);
                 setAuthorCurrentPage(1);
                 setAuthorHasMoreArticles(true);
-                // Disconnect author observer when clearing filter
-                if (authorObserverRef.current) {
-                  authorObserverRef.current.disconnect();
-                }
               }}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -698,35 +798,23 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                       showTreasure: true,
                       showVisits: true,
                     }}
+                    onLike={handleLike}
+                    onUserClick={handleUserClick}
                   />
                 ))}
               </div>
 
-              {/* Infinite scroll loading indicator for author articles */}
-              {selectedAuthorFilter && authorHasMoreArticles && (
-                <div
-                  ref={authorLoadingElementRef}
-                  className="flex justify-center items-center py-8 mt-4"
-                >
-                  {isLoadingMoreAuthor ? (
-                    <div className="flex items-center gap-3 text-gray-500">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                      </svg>
-                      <span>Loading more articles from {selectedAuthorFilter.displayName}...</span>
-                    </div>
-                  ) : (
-                    <div className="text-gray-400 text-sm">
-                      Scroll to load more from {selectedAuthorFilter.displayName}
-                    </div>
-                  )}
+              {/* Loading indicator - same style as Discovery page */}
+              {isLoadingMoreAuthor && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="text-lg text-gray-600">Loading more content...</div>
                 </div>
               )}
 
-              {selectedAuthorFilter && !authorHasMoreArticles && selectedAuthorArticles.length > 0 && (
-                <div className="flex justify-center py-8 mt-4">
-                  <span className="text-gray-400 text-sm">You've seen all articles from {selectedAuthorFilter.displayName}</span>
+              {/* No more content hint - same style as Discovery page */}
+              {selectedAuthorFilter && !isLoadingMoreAuthor && !authorHasMoreArticles && selectedAuthorArticles.length > 0 && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="text-gray-500">You've reached the bottom! No more content to load.</div>
                 </div>
               )}
             </>
@@ -763,35 +851,23 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                     showTreasure: true,
                     showVisits: true,
                   }}
+                  onLike={handleLike}
+                  onUserClick={handleUserClick}
                 />
               ))}
             </div>
 
-            {/* Infinite scroll loading indicator for general articles */}
-            {!selectedAuthorFilter && hasMoreArticles && (
-              <div
-                ref={loadingElementRef}
-                className="flex justify-center items-center py-8 mt-4"
-              >
-                {isLoadingMore ? (
-                  <div className="flex items-center gap-3 text-gray-500">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                    </svg>
-                    <span>Loading more articles...</span>
-                  </div>
-                ) : (
-                  <div className="text-gray-400 text-sm">
-                    Scroll to load more articles
-                  </div>
-                )}
+            {/* Loading indicator - same style as Discovery page */}
+            {isLoadingMore && (
+              <div className="flex justify-center items-center py-8">
+                <div className="text-lg text-gray-600">Loading more content...</div>
               </div>
             )}
 
-            {!selectedAuthorFilter && !hasMoreArticles && followedArticles.length > 0 && (
-              <div className="flex justify-center py-8 mt-4">
-                <span className="text-gray-400 text-sm">You've reached the end of your followed articles</span>
+            {/* No more content hint - same style as Discovery page */}
+            {!selectedAuthorFilter && !isLoadingMore && !hasMoreArticles && followedArticles.length > 0 && (
+              <div className="flex justify-center items-center py-8">
+                <div className="text-gray-500">You've reached the bottom! No more content to load.</div>
               </div>
             )}
           </>
@@ -959,7 +1035,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-sm truncate">
-                          {space.name || space.namespace}
+                          {getSpaceDisplayName(space, space.userInfo?.username)}
                         </h4>
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                           {space.followerCount !== undefined && (
@@ -1007,6 +1083,24 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             </div>
           </div>
         </div>
+      )}
+
+      {/* Collect Treasure Modal - OPTIMIZED: Lazy loaded */}
+      {collectModalOpen && (
+        <React.Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="text-white">Loading...</div></div>}>
+          <CollectTreasureModal
+            isOpen={collectModalOpen}
+            onClose={() => {
+              setCollectModalOpen(false);
+              setSelectedArticle(null);
+            }}
+            articleUuid={selectedArticle?.uuid || ''}
+            articleTitle={selectedArticle?.title || ''}
+            initialIsLiked={selectedArticle?.isLiked || false}
+            initialLikeCount={selectedArticle?.likeCount || 0}
+            onSuccess={handleCollectSuccess}
+          />
+        </React.Suspense>
       )}
 
     </div>

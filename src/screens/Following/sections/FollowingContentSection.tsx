@@ -45,7 +45,7 @@ interface FollowedSpaceWithUsername extends FollowedSpace {
 
 export const FollowingContentSection = (): JSX.Element => {
   const { showToast } = useToast();
-  const { user, getArticleLikeState, toggleLike } = useUser();
+  const { user, getArticleLikeState, updateArticleLikeState, toggleLike } = useUser();
   const navigate = useNavigate();
   const [followedSpaces, setFollowedSpaces] = useState<FollowedSpaceWithUsername[]>([]);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
@@ -61,57 +61,6 @@ export const FollowingContentSection = (): JSX.Element => {
   const [collectModalOpen, setCollectModalOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
-  // Fetch followed spaces from API
-  useEffect(() => {
-    const fetchFollowedSpaces = async () => {
-      if (!user) {
-        setLoadingSpaces(false);
-        return;
-      }
-
-      try {
-        setLoadingSpaces(true);
-        const response = await AuthService.getFollowedSpaces();
-        console.log('Followed spaces response:', response);
-
-        // Parse the response - service already handles data extraction
-        let spacesArray: FollowedSpace[] = Array.isArray(response) ? response : [];
-        console.log('✅ Transformed spaces array:', spacesArray);
-
-        // Resolve display names for default spaces using existing data (no extra API calls)
-        const spacesWithDisplayNames = spacesArray.map(space => {
-          const isDefaultSpace =
-            space.spaceType === 1 ||
-            space.spaceType === 2 ||
-            space.name?.toLowerCase().includes('default');
-
-          if (isDefaultSpace) {
-            // Get username from the new userInfo structure
-            const username = space.userInfo?.username;
-
-            if (username) {
-              let displayName: string;
-              if (space.spaceType === 2 || space.name?.toLowerCase().includes('curation')) {
-                displayName = `${username}'s Curations`;
-              } else {
-                displayName = `${username}'s Treasury`;
-              }
-              return { ...space, resolvedUsername: displayName };
-            }
-          }
-          return space;
-        });
-
-        setFollowedSpaces(spacesWithDisplayNames);
-      } catch (err) {
-        console.error('Failed to fetch followed spaces:', err);
-      } finally {
-        setLoadingSpaces(false);
-      }
-    };
-
-    fetchFollowedSpaces();
-  }, [user]);
 
   // Load more articles function
   const loadMoreArticles = useCallback(async (page: number, isInitial = false) => {
@@ -125,7 +74,7 @@ export const FollowingContentSection = (): JSX.Element => {
       }
 
       const pageSize = 30; // Load 30 articles per page
-      const response = await AuthService.getPageMyFollowedArticle(page, pageSize, undefined, user.id);
+      const response = await AuthService.getPageMyFollowedArticle(page, pageSize);
       console.log(`Followed articles page ${page} response:`, response);
 
       // Parse the response - service handles data extraction
@@ -212,6 +161,27 @@ export const FollowingContentSection = (): JSX.Element => {
     };
   }, [currentPage, isLoadingMore, hasMoreArticles, loadMoreArticles]);
 
+  // Window scroll for infinite scroll (similar to Discovery page)
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if scrolled near the bottom of the page
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
+
+      if (scrolledToBottom && hasMoreArticles && !isLoadingMore) {
+        console.log('🔄 Window scroll loading more articles, page:', currentPage + 1);
+        loadMoreArticles(currentPage + 1);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMoreArticles, isLoadingMore, loadMoreArticles, currentPage]);
+
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
     return {
@@ -225,6 +195,7 @@ export const FollowingContentSection = (): JSX.Element => {
       userName: article.authorInfo?.username || 'Anonymous',
       userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
       userId: article.authorInfo?.id,
+      namespace: article.authorInfo?.namespace,
       userNamespace: article.authorInfo?.namespace,
       date: (article.createAt || article.publishAt) ? new Date((article.createAt || article.publishAt) * 1000).toISOString() : '',
       treasureCount: article.likeCount || 0,
@@ -272,19 +243,26 @@ export const FollowingContentSection = (): JSX.Element => {
   const handleCollectSuccess = () => {
     if (!selectedArticle) return;
 
-    // Update like state locally
+    // Update like state locally using updateArticleLikeState (same as Discovery page)
     const newLikeCount = selectedArticle.likeCount + 1;
-    toggleLike(selectedArticle.uuid, false, selectedArticle.likeCount);
+    updateArticleLikeState(selectedArticle.uuid, true, newLikeCount);
 
     // Update selectedArticle state to reflect the change
     setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
   };
 
   // Handle user click
-  const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
-    if (userNamespace) {
-      navigate(`/u/${userNamespace}`);
+  const handleUserClick = (userId: number | undefined) => {
+    // Find the corresponding user's namespace from current articles
+    const article = displayedArticles.find(a => a.userId === userId);
+
+    if (user && user.id === userId) {
+      navigate('/my-treasury');
+    } else if (article?.namespace) {
+      // Prioritize using namespace to navigate to user profile page
+      navigate(`/u/${article.namespace}`);
     } else if (userId) {
+      // Fallback to using userId
       navigate(`/user/${userId}/treasury`);
     }
   };
@@ -400,6 +378,7 @@ export const FollowingContentSection = (): JSX.Element => {
                 isLiked: articleLikeState.isLiked,
                 treasureCount: articleLikeState.likeCount
               };
+
 
               return (
                 <div key={article.uuid}>

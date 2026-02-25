@@ -2102,7 +2102,7 @@ export class AuthService {
    * @param pageIndex - Page number (default 1)
    * @param pageSize - Page size (default 20)
    * @param spaceIds - Optional space IDs to filter by
-   * @param userId - Optional user ID to filter by
+   * @param userId - Optional user ID to filter by for author-specific articles
    */
   static async getPageMyFollowedArticle(
     pageIndex: number = 1,

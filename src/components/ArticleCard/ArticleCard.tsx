@@ -91,6 +91,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
 }) => {
   const navigate = useNavigate();
 
+
   // Helper function to check if article is private using visibility system
   const isArticlePrivate = (): boolean => {
     return article.visibility === 1; // ARTICLE_VISIBILITY.PRIVATE
