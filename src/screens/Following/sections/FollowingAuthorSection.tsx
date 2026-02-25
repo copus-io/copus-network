@@ -42,7 +42,9 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [popupTab, setPopupTab] = useState<'curator' | 'treasuries'>('curator');
-  const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<string | null>(null);
+  const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<SubscribedAuthor | null>(null);
+  const [selectedAuthorArticles, setSelectedAuthorArticles] = useState<ArticleData[]>([]);
+  const [loadingAuthorArticles, setLoadingAuthorArticles] = useState(false);
   const [treasuriesLoading, setTreasuriesLoading] = useState(false);
 
   // Check scroll state
@@ -214,6 +216,73 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
     }
   };
 
+  // Handle author filter click - call API to get author's articles
+  const handleAuthorFilterClick = async (author: SubscribedAuthor) => {
+    // If clicking the same author, deselect
+    if (selectedAuthorFilter?.userId === author.userId) {
+      setSelectedAuthorFilter(null);
+      setSelectedAuthorArticles([]);
+      return;
+    }
+
+    // Select new author and fetch their articles
+    setSelectedAuthorFilter(author);
+    if (!user?.id) return;
+
+    try {
+      setLoadingAuthorArticles(true);
+      console.log('🔍 Fetching articles for author:', author.displayName, 'userId:', author.userId);
+
+      // Call API with specific author's userId to get only their articles
+      const response = await AuthService.getPageMyFollowedArticle(1, 50, undefined, author.userId);
+      console.log('✅ Author articles response:', response);
+
+      // Transform API response to ArticleData format
+      const articleData = response?.data?.data || response?.data;
+      if (Array.isArray(articleData)) {
+        const transformedArticles: ArticleData[] = articleData.map((article: any) => ({
+          id: article.id?.toString() || article.uuid || `article_${Date.now()}_${Math.random()}`,
+          uuid: article.uuid,
+          title: article.title || 'Untitled',
+          description: article.content || '',
+          coverImage: article.coverUrl || '',
+          category: 'General',
+          categoryColor: '#666666',
+          userName: article.authorInfo?.username || 'Unknown Author',
+          userAvatar: article.authorInfo?.faceUrl || '',
+          userId: article.authorInfo?.id,
+          userNamespace: article.authorInfo?.namespace,
+          date: new Date((article.publishAt || article.createAt || Date.now()) * 1000).toISOString(),
+          treasureCount: article.likeCount || 0,
+          visitCount: article.viewCount || 0,
+          commentCount: article.commentCount || 0,
+          isLiked: article.isLiked || false,
+          targetUrl: article.targetUrl,
+          website: article.targetUrl ? (() => {
+            try {
+              return new URL(article.targetUrl).hostname;
+            } catch {
+              return undefined;
+            }
+          })() : undefined,
+          isPaymentRequired: article.targetUrlIsLocked || false,
+          paymentPrice: article.priceInfo?.price?.toString(),
+          visibility: article.visibility
+        }));
+        console.log('✅ Author articles transformed:', transformedArticles.length);
+        setSelectedAuthorArticles(transformedArticles);
+      } else {
+        console.log('❌ No author articles found in response');
+        setSelectedAuthorArticles([]);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch author articles:', error);
+      setSelectedAuthorArticles([]);
+    } finally {
+      setLoadingAuthorArticles(false);
+    }
+  };
+
   // Handle switching to treasuries tab and fetch fresh data
   const handleTreasuriesTabClick = async () => {
     setPopupTab('treasuries');
@@ -326,11 +395,11 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
               <Card
                 key={author.userId}
                 className={`w-44 flex-shrink-0 cursor-pointer transition-colors ${
-                  selectedAuthorFilter === author.displayName
+                  selectedAuthorFilter?.userId === author.userId
                     ? 'bg-gray-100 border-gray-400'
                     : 'bg-white border border-gray-200'
                 }`}
-                onClick={() => setSelectedAuthorFilter(prev => prev === author.displayName ? null : author.displayName)}
+                onClick={() => handleAuthorFilterClick(author)}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
@@ -389,10 +458,13 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         {selectedAuthorFilter && (
           <div className="flex items-center gap-2 mb-4">
             <span className="[font-family:'Lato',Helvetica] text-sm text-gray-500">
-              Showing content from <span className="font-semibold text-gray-900">{selectedAuthorFilter}</span>
+              Showing content from <span className="font-semibold text-gray-900">{selectedAuthorFilter.displayName}</span>
             </span>
             <button
-              onClick={() => setSelectedAuthorFilter(null)}
+              onClick={() => {
+                setSelectedAuthorFilter(null);
+                setSelectedAuthorArticles([]);
+              }}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -402,7 +474,48 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             </button>
           </div>
         )}
-        {followedArticles.length === 0 ? (
+        {loadingAuthorArticles ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="w-full bg-white rounded-lg animate-pulse">
+                <div className="p-4">
+                  <div className="w-full aspect-video bg-gray-200 rounded-lg mb-4" />
+                  <div className="h-6 bg-gray-200 rounded mb-2 w-3/4" />
+                  <div className="h-4 bg-gray-200 rounded mb-4 w-full" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : selectedAuthorFilter ? (
+          // Show selected author's articles
+          selectedAuthorArticles.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-normal text-medium-grey mb-2 [font-family:'Lato',Helvetica]">
+                  No articles from {selectedAuthorFilter.displayName}
+                </h3>
+                <p className="text-medium-grey text-sm mb-6 [font-family:'Lato',Helvetica]">
+                  This author hasn't published any articles in your followed content yet
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+              {selectedAuthorArticles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  layout="discovery"
+                  actions={{
+                    showTreasure: true,
+                    showVisits: true,
+                  }}
+                />
+              ))}
+            </div>
+          )
+        ) : followedArticles.length === 0 ? (
           <div className="text-center py-16">
             <div className="max-w-md mx-auto">
               <h3 className="text-lg font-normal text-medium-grey mb-2 [font-family:'Lato',Helvetica]">
@@ -422,33 +535,19 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             </div>
           </div>
         ) : (
+          // Show all followed articles when no author is selected
           <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-            {(() => {
-              const filteredArticles = selectedAuthorFilter
-                ? followedArticles.filter(a => a.userName === selectedAuthorFilter)
-                : followedArticles;
-
-              console.log('🔍 Rendering articles - followedArticles.length:', followedArticles.length);
-              console.log('🔍 Filtered articles for display:', filteredArticles.length);
-              console.log('🔍 Selected author filter:', selectedAuthorFilter);
-
-              return filteredArticles.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={article}
-                  layout="discovery"
-                  actions={{
-                    showTreasure: true,
-                    showVisits: true,
-                  }}
-                />
-              ));
-            })()}
-            {selectedAuthorFilter && followedArticles.filter(a => a.userName === selectedAuthorFilter).length === 0 && (
-              <div className="col-span-full text-center py-10">
-                <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">No content from this author yet</p>
-              </div>
-            )}
+            {followedArticles.map((article) => (
+              <ArticleCard
+                key={article.id}
+                article={article}
+                layout="discovery"
+                actions={{
+                  showTreasure: true,
+                  showVisits: true,
+                }}
+              />
+            ))}
           </div>
         )}
       </section>
