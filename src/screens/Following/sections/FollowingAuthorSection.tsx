@@ -89,7 +89,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         setFollowedSpaces(followedSpacesData);
 
         // Fetch followed articles
-        const followedArticlesResponse = await AuthService.getPageMyFollowedArticle(1, 20);
+        const followedArticlesResponse = await AuthService.getPageMyFollowedArticle(1, 20, undefined, user.id);
         console.log('✅ Fetched followed articles from API:', followedArticlesResponse);
 
         // Transform API data to ArticleData format

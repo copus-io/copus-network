@@ -118,7 +118,7 @@ export const FollowingContentSection = (): JSX.Element => {
 
       try {
         setLoadingArticles(true);
-        const response = await AuthService.getPageMyFollowedArticle(1, 50);
+        const response = await AuthService.getPageMyFollowedArticle(1, 50, undefined, user.id);
         console.log('Followed articles response:', response);
 
         // Parse the response - service handles data extraction
