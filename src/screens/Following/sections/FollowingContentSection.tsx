@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
@@ -51,6 +51,11 @@ export const FollowingContentSection = (): JSX.Element => {
   const [loadingSpaces, setLoadingSpaces] = useState(true);
   const [allArticles, setAllArticles] = useState<any[]>([]); // All followed articles
   const [loadingArticles, setLoadingArticles] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreArticles, setHasMoreArticles] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingElementRef = useRef<HTMLDivElement | null>(null);
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
@@ -108,33 +113,104 @@ export const FollowingContentSection = (): JSX.Element => {
     fetchFollowedSpaces();
   }, [user]);
 
-  // Fetch all articles from followed spaces (for "All" tab)
-  useEffect(() => {
-    const fetchFollowedArticles = async () => {
-      if (!user) {
-        setLoadingArticles(false);
-        return;
+  // Load more articles function
+  const loadMoreArticles = useCallback(async (page: number, isInitial = false) => {
+    if (!user || (!isInitial && isLoadingMore) || !hasMoreArticles) return;
+
+    try {
+      if (isInitial) {
+        setLoadingArticles(true);
+      } else {
+        setIsLoadingMore(true);
       }
 
-      try {
-        setLoadingArticles(true);
-        const response = await AuthService.getPageMyFollowedArticle(1, 50, undefined, user.id);
-        console.log('Followed articles response:', response);
+      const pageSize = 30; // Load 30 articles per page
+      const response = await AuthService.getPageMyFollowedArticle(page, pageSize, undefined, user.id);
+      console.log(`Followed articles page ${page} response:`, response);
 
-        // Parse the response - service handles data extraction
-        let articlesArray: any[] = Array.isArray(response) ? response : response?.data || [];
-        console.log('✅ Transformed articles array:', articlesArray);
+      // Parse the response - service handles data extraction
+      const responseData = response?.data;
+      let articlesArray: any[] = [];
+      let totalCount = 0;
+      let pageCount = 0;
 
+      if (Array.isArray(response)) {
+        articlesArray = response;
+      } else if (responseData) {
+        articlesArray = Array.isArray(responseData.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []);
+        totalCount = responseData.totalCount || 0;
+        pageCount = responseData.pageCount || 0;
+      }
+
+      console.log('✅ Articles loaded:', {
+        page,
+        articlesCount: articlesArray.length,
+        totalCount,
+        pageCount,
+        hasMore: page < pageCount
+      });
+
+      if (isInitial) {
         setAllArticles(articlesArray);
-      } catch (err) {
-        console.error('Failed to fetch followed articles:', err);
-      } finally {
-        setLoadingArticles(false);
+      } else {
+        setAllArticles(prev => [...prev, ...articlesArray]);
+      }
+
+      // Check if there are more pages
+      const hasMore = pageCount > 0 ? page < pageCount : articlesArray.length === pageSize;
+      setHasMoreArticles(hasMore);
+      setCurrentPage(page);
+
+    } catch (err) {
+      console.error('Failed to fetch followed articles:', err);
+      if (isInitial) {
+        setAllArticles([]);
+      }
+    } finally {
+      setLoadingArticles(false);
+      setIsLoadingMore(false);
+    }
+  }, [user, isLoadingMore, hasMoreArticles]);
+
+  // Initial load
+  useEffect(() => {
+    loadMoreArticles(1, true);
+  }, [user]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!loadingElementRef.current || !hasMoreArticles) return;
+
+    // Disconnect previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Create new observer
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoadingMore && hasMoreArticles) {
+          console.log('🔄 Loading more articles, page:', currentPage + 1);
+          loadMoreArticles(currentPage + 1);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '200px' // Start loading 200px before the element is visible
+      }
+    );
+
+    // Start observing
+    observerRef.current.observe(loadingElementRef.current);
+
+    // Cleanup
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
       }
     };
-
-    fetchFollowedArticles();
-  }, [user]);
+  }, [currentPage, isLoadingMore, hasMoreArticles, loadMoreArticles]);
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
@@ -313,32 +389,62 @@ export const FollowingContentSection = (): JSX.Element => {
           </div>
         </section>
       ) : (
-        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-          {displayedArticles.map((article) => {
-            const card = transformArticleToCard(article);
-            const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+            {displayedArticles.map((article) => {
+              const card = transformArticleToCard(article);
+              const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
-            const articleData = {
-              ...card,
-              isLiked: articleLikeState.isLiked,
-              treasureCount: articleLikeState.likeCount
-            };
+              const articleData = {
+                ...card,
+                isLiked: articleLikeState.isLiked,
+                treasureCount: articleLikeState.likeCount
+              };
 
-            return (
-              <div key={article.uuid}>
-                <ArticleCard
-                  article={articleData}
-                  layout="discovery"
-                  actions={{
-                    showTreasure: true,
-                    showVisits: true
-                  }}
-                  onLike={handleLike}
-                  onUserClick={handleUserClick}
-                />
-              </div>
-            );
-          })}
+              return (
+                <div key={article.uuid}>
+                  <ArticleCard
+                    article={articleData}
+                    layout="discovery"
+                    actions={{
+                      showTreasure: true,
+                      showVisits: true
+                    }}
+                    onLike={handleLike}
+                    onUserClick={handleUserClick}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Infinite scroll loading indicator */}
+          {hasMoreArticles && (
+            <div
+              ref={loadingElementRef}
+              className="flex justify-center items-center py-8 mt-4"
+            >
+              {isLoadingMore ? (
+                <div className="flex items-center gap-3 text-gray-500">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>
+                  <span>Loading more articles...</span>
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  Scroll to load more articles
+                </div>
+              )}
+            </div>
+          )}
+
+          {!hasMoreArticles && displayedArticles.length > 0 && (
+            <div className="flex justify-center py-8 mt-4">
+              <span className="text-gray-400 text-sm">You've reached the end of your followed articles</span>
+            </div>
+          )}
         </section>
       )}
 

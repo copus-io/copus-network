@@ -45,6 +45,11 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
   const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<SubscribedAuthor | null>(null);
   const [selectedAuthorArticles, setSelectedAuthorArticles] = useState<ArticleData[]>([]);
   const [loadingAuthorArticles, setLoadingAuthorArticles] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreArticles, setHasMoreArticles] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingElementRef = useRef<HTMLDivElement | null>(null);
   const [treasuriesLoading, setTreasuriesLoading] = useState(false);
 
   // Check scroll state
@@ -91,49 +96,8 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         console.log('✅ Fetched followed spaces from API:', followedSpacesData);
         setFollowedSpaces(followedSpacesData);
 
-        // Fetch followed articles
-        const followedArticlesResponse = await AuthService.getPageMyFollowedArticle(1, 20, undefined, user.id);
-        console.log('✅ Fetched followed articles from API:', followedArticlesResponse);
-
-        // Transform API data to ArticleData format
-        // API returns: {status: 1, msg: "success", data: {data: [...], pageCount, pageIndex, pageSize, totalCount}}
-        const articleData = followedArticlesResponse?.data?.data || followedArticlesResponse?.data;
-        if (Array.isArray(articleData)) {
-          const transformedArticles: ArticleData[] = articleData.map((article: any) => ({
-            id: article.id?.toString() || article.uuid || `article_${Date.now()}_${Math.random()}`,
-            uuid: article.uuid,
-            title: article.title || 'Untitled',
-            description: article.content || '',
-            coverImage: article.coverUrl || '',
-            category: 'General', // Could be enhanced with actual category data
-            categoryColor: '#666666', // Default color
-            userName: article.authorInfo?.username || 'Unknown Author',
-            userAvatar: article.authorInfo?.faceUrl || '',
-            userId: article.authorInfo?.id,
-            userNamespace: article.authorInfo?.namespace,
-            date: new Date((article.publishAt || article.createAt || Date.now()) * 1000).toISOString(),
-            treasureCount: article.likeCount || 0, // Use real API data
-            visitCount: article.viewCount || 0,
-            commentCount: article.commentCount || 0,
-            isLiked: article.isLiked || false, // Use real API data
-            targetUrl: article.targetUrl,
-            website: article.targetUrl ? (() => {
-              try {
-                return new URL(article.targetUrl).hostname;
-              } catch {
-                return undefined;
-              }
-            })() : undefined,
-            isPaymentRequired: article.targetUrlIsLocked || false,
-            paymentPrice: article.priceInfo?.price?.toString(),
-            visibility: article.visibility
-          }));
-          console.log('✅ Transformed articles before setting state:', transformedArticles);
-          setFollowedArticles(transformedArticles);
-        } else {
-          console.log('❌ No article data found in response:', followedArticlesResponse);
-          setFollowedArticles([]);
-        }
+        // Load initial articles with pagination support
+        await loadFollowedArticles(1, true);
 
         // Transform followed users to SubscribedAuthor format
         // Filter out current user (defensive programming)
@@ -188,6 +152,136 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
 
     fetchFollowedData();
   }, [user?.id, showToast, refreshTrigger]);
+
+  // Load followed articles with pagination
+  const loadFollowedArticles = useCallback(async (page: number, isInitial = false) => {
+    if (!user?.id || (!isInitial && isLoadingMore) || (!isInitial && !hasMoreArticles)) return;
+
+    try {
+      if (isInitial) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const pageSize = 30; // Load 30 articles per page
+      const response = await AuthService.getPageMyFollowedArticle(page, pageSize, undefined, user.id);
+      console.log(`✅ Fetched followed articles page ${page}:`, response);
+
+      // Transform API data to ArticleData format
+      const responseData = response?.data;
+      let articleData: any[] = [];
+      let totalCount = 0;
+      let pageCount = 0;
+
+      if (Array.isArray(response)) {
+        articleData = response;
+      } else if (responseData) {
+        articleData = Array.isArray(responseData.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []);
+        totalCount = responseData.totalCount || 0;
+        pageCount = responseData.pageCount || 0;
+      }
+
+      if (Array.isArray(articleData)) {
+        const transformedArticles: ArticleData[] = articleData.map((article: any) => ({
+          id: article.id?.toString() || article.uuid || `article_${Date.now()}_${Math.random()}`,
+          uuid: article.uuid,
+          title: article.title || 'Untitled',
+          description: article.content || '',
+          coverImage: article.coverUrl || '',
+          category: 'General',
+          categoryColor: '#666666',
+          userName: article.authorInfo?.username || 'Unknown Author',
+          userAvatar: article.authorInfo?.faceUrl || '',
+          userId: article.authorInfo?.id,
+          userNamespace: article.authorInfo?.namespace,
+          date: new Date((article.publishAt || article.createAt || Date.now()) * 1000).toISOString(),
+          treasureCount: article.likeCount || 0,
+          visitCount: article.viewCount || 0,
+          commentCount: article.commentCount || 0,
+          isLiked: article.isLiked || false,
+          targetUrl: article.targetUrl,
+          website: article.targetUrl ? (() => {
+            try {
+              return new URL(article.targetUrl).hostname;
+            } catch {
+              return undefined;
+            }
+          })() : undefined,
+          isPaymentRequired: article.targetUrlIsLocked || false,
+          paymentPrice: article.priceInfo?.price?.toString(),
+          visibility: article.visibility
+        }));
+
+        console.log('✅ Transformed articles:', {
+          page,
+          articlesCount: transformedArticles.length,
+          totalCount,
+          pageCount,
+          hasMore: pageCount > 0 ? page < pageCount : transformedArticles.length === pageSize
+        });
+
+        if (isInitial) {
+          setFollowedArticles(transformedArticles);
+        } else {
+          setFollowedArticles(prev => [...prev, ...transformedArticles]);
+        }
+
+        // Check if there are more pages
+        const hasMore = pageCount > 0 ? page < pageCount : transformedArticles.length === pageSize;
+        setHasMoreArticles(hasMore);
+        setCurrentPage(page);
+      } else {
+        console.log('❌ No article data found in response');
+        if (isInitial) {
+          setFollowedArticles([]);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch followed articles:', error);
+      if (isInitial) {
+        setFollowedArticles([]);
+      }
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [user?.id, isLoadingMore, hasMoreArticles]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!loadingElementRef.current || !hasMoreArticles || selectedAuthorFilter) return;
+
+    // Disconnect previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Create new observer
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoadingMore && hasMoreArticles && !selectedAuthorFilter) {
+          console.log('🔄 Loading more author articles, page:', currentPage + 1);
+          loadFollowedArticles(currentPage + 1);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '200px'
+      }
+    );
+
+    // Start observing
+    observerRef.current.observe(loadingElementRef.current);
+
+    // Cleanup
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [currentPage, isLoadingMore, hasMoreArticles, selectedAuthorFilter, loadFollowedArticles]);
 
   const handleAuthorClick = (author: SubscribedAuthor) => {
     // Use namespace for routing if available, otherwise fallback to username
@@ -520,19 +614,49 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
           </div>
         ) : (
           // Show all followed articles when no author is selected
-          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-            {followedArticles.map((article) => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                layout="discovery"
-                actions={{
-                  showTreasure: true,
-                  showVisits: true,
-                }}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+              {followedArticles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  layout="discovery"
+                  actions={{
+                    showTreasure: true,
+                    showVisits: true,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Infinite scroll loading indicator for general articles */}
+            {!selectedAuthorFilter && hasMoreArticles && (
+              <div
+                ref={loadingElementRef}
+                className="flex justify-center items-center py-8 mt-4"
+              >
+                {isLoadingMore ? (
+                  <div className="flex items-center gap-3 text-gray-500">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    <span>Loading more articles...</span>
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-sm">
+                    Scroll to load more articles
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!selectedAuthorFilter && !hasMoreArticles && followedArticles.length > 0 && (
+              <div className="flex justify-center py-8 mt-4">
+                <span className="text-gray-400 text-sm">You've reached the end of your followed articles</span>
+              </div>
+            )}
+          </>
         )}
       </section>
       )}
