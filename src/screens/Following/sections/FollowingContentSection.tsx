@@ -7,22 +7,35 @@ import { AuthService } from "../../../services/authService";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 
-// Interface for followed space
+// Interface for followed space - matches updated API spec
 interface FollowedSpace {
-  id: number;
-  name: string;
-  namespace: string;
-  spaceType?: number; // 1 = Treasury, 2 = Curations (default spaces)
-  userId?: number;
-  ownerInfo?: {
+  articleCount?: number;
+  coverUrl?: string;
+  data?: Array<{
+    coverUrl?: string;
+    targetUrl?: string;
+    title?: string;
+  }>;
+  description?: string;
+  faceUrl?: string;
+  followerCount?: number;
+  id?: number;
+  isAdmin?: boolean;
+  isBind?: boolean;
+  isFollowed?: boolean;
+  name?: string;
+  namespace?: string;
+  seoDataByAi?: string;
+  spaceType?: number; // 0 = normal space, 1 = Treasury, 2 = Curations
+  userInfo?: {
+    bio?: string;
+    coverUrl?: string;
+    faceUrl?: string;
     id?: number;
-    username?: string;
     namespace?: string;
-  };
-  authorInfo?: {
-    id?: number;
     username?: string;
   };
+  visibility?: number; // 0:公开 1:登录可见 2:付费可见
 }
 
 // Interface for space with resolved username
@@ -56,15 +69,9 @@ export const FollowingContentSection = (): JSX.Element => {
         const response = await AuthService.getFollowedSpaces();
         console.log('Followed spaces response:', response);
 
-        // Parse the response - handle different response formats
-        let spacesArray: FollowedSpace[] = [];
-        if (response?.data?.data && Array.isArray(response.data.data)) {
-          spacesArray = response.data.data;
-        } else if (response?.data && Array.isArray(response.data)) {
-          spacesArray = response.data;
-        } else if (Array.isArray(response)) {
-          spacesArray = response;
-        }
+        // Parse the response - service already handles data extraction
+        let spacesArray: FollowedSpace[] = Array.isArray(response) ? response : [];
+        console.log('✅ Transformed spaces array:', spacesArray);
 
         // Resolve display names for default spaces using existing data (no extra API calls)
         const spacesWithDisplayNames = spacesArray.map(space => {
@@ -74,12 +81,8 @@ export const FollowingContentSection = (): JSX.Element => {
             space.name?.toLowerCase().includes('default');
 
           if (isDefaultSpace) {
-            // Try to get username from various possible fields in the response
-            const username = space.ownerInfo?.username
-              || space.authorInfo?.username
-              || (space as any).userInfo?.username
-              || (space as any).userName
-              || (space as any).ownerName;
+            // Get username from the new userInfo structure
+            const username = space.userInfo?.username;
 
             if (username) {
               let displayName: string;
@@ -115,18 +118,12 @@ export const FollowingContentSection = (): JSX.Element => {
 
       try {
         setLoadingArticles(true);
-        const response = await AuthService.getFollowedArticles(1, 50);
+        const response = await AuthService.getPageMyFollowedArticle(1, 50);
         console.log('Followed articles response:', response);
 
-        // Parse the response
-        let articlesArray: any[] = [];
-        if (response?.data?.data && Array.isArray(response.data.data)) {
-          articlesArray = response.data.data;
-        } else if (response?.data && Array.isArray(response.data)) {
-          articlesArray = response.data;
-        } else if (Array.isArray(response)) {
-          articlesArray = response;
-        }
+        // Parse the response - service handles data extraction
+        let articlesArray: any[] = Array.isArray(response) ? response : response?.data || [];
+        console.log('✅ Transformed articles array:', articlesArray);
 
         setAllArticles(articlesArray);
       } catch (err) {

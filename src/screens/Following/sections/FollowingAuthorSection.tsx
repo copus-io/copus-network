@@ -42,6 +42,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [popupTab, setPopupTab] = useState<'curator' | 'treasuries'>('curator');
   const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<string | null>(null);
+  const [treasuriesLoading, setTreasuriesLoading] = useState(false);
 
   // Check scroll state
   const updateScrollState = useCallback(() => {
@@ -77,8 +78,10 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         setLoading(true);
 
         // Fetch followed users
+        // 🔍 SEARCH: api-followed-users-fix-needed
+        // NOTE: API should not return current user in followed users list
+        // This is a temporary client-side fix until API is corrected
         const followedUsers = await AuthService.getFollowedUsers();
-        console.log('✅ Fetched followed users from API:', followedUsers);
 
         // Fetch followed spaces
         const followedSpacesData = await AuthService.getFollowedSpaces();
@@ -90,46 +93,80 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         console.log('✅ Fetched followed articles from API:', followedArticlesResponse);
 
         // Transform API data to ArticleData format
-        if (followedArticlesResponse?.data && Array.isArray(followedArticlesResponse.data)) {
-          const transformedArticles: ArticleData[] = followedArticlesResponse.data.map((article: any) => ({
+        // API returns: {status: 1, msg: "success", data: {data: [...], pageCount, pageIndex, pageSize, totalCount}}
+        const articleData = followedArticlesResponse?.data?.data || followedArticlesResponse?.data;
+        if (Array.isArray(articleData)) {
+          const transformedArticles: ArticleData[] = articleData.map((article: any) => ({
             id: article.id?.toString() || article.uuid || `article_${Date.now()}_${Math.random()}`,
+            uuid: article.uuid,
             title: article.title || 'Untitled',
             description: article.content || '',
             coverImage: article.coverUrl || '',
-            category: 'Technology', // Default category, could be enhanced
+            category: 'General', // Could be enhanced with actual category data
+            categoryColor: '#666666', // Default color
             userName: article.authorInfo?.username || 'Unknown Author',
             userAvatar: article.authorInfo?.faceUrl || '',
-            date: new Date(article.publishAt || article.createAt || Date.now()).toISOString(),
-            treasureCount: 0, // Not provided in API response
-            visitCount: article.viewCount?.toString() || '0',
+            userId: article.authorInfo?.id,
+            userNamespace: article.authorInfo?.namespace,
+            date: new Date((article.publishAt || article.createAt || Date.now()) * 1000).toISOString(),
+            treasureCount: article.likeCount || 0, // Use real API data
+            visitCount: article.viewCount || 0,
             commentCount: article.commentCount || 0,
+            isLiked: article.isLiked || false, // Use real API data
+            targetUrl: article.targetUrl,
+            website: article.targetUrl ? (() => {
+              try {
+                return new URL(article.targetUrl).hostname;
+              } catch {
+                return undefined;
+              }
+            })() : undefined,
+            isPaymentRequired: article.targetUrlIsLocked || false,
+            paymentPrice: article.priceInfo?.price?.toString(),
+            visibility: article.visibility
           }));
+          console.log('✅ Transformed articles before setting state:', transformedArticles);
           setFollowedArticles(transformedArticles);
         } else {
+          console.log('❌ No article data found in response:', followedArticlesResponse);
           setFollowedArticles([]);
         }
 
         // Transform followed users to SubscribedAuthor format
-        const authorsArray: SubscribedAuthor[] = followedUsers.map((user) => ({
-          userId: user.id,
-          username: user.username,
-          displayName: user.username,
-          avatar: user.faceUrl || profileDefaultAvatar,
-          bio: user.bio || '',
-          spacesCount: 0, // Will be updated when we fetch their spaces
-          totalArticles: 0, // Will be calculated if needed
-          newArticlesSinceLastVisit: 0,
-          lastUpdated: new Date().toISOString(),
-          emailFrequency: 'DAILY' as const,
-          subscriptionInfo: {
-            subscriptionId: `api_${user.id}`,
-            authorUserId: user.id,
+        // Filter out current user (defensive programming)
+        const filteredUsers = followedUsers.filter((followedUser) => {
+          // Convert both to numbers for comparison to handle string vs number type issues
+          const followedUserId = Number(followedUser?.id);
+          const currentUserId = Number(user?.id);
+
+          const hasValidData = followedUser?.id && followedUser?.username;
+          const isNotCurrentUser = followedUserId !== currentUserId;
+          return hasValidData && isNotCurrentUser;
+        });
+
+        const authorsArray: SubscribedAuthor[] = filteredUsers
+          .map((user) => ({
+            userId: user.id!,
+            username: user.username!,
+            displayName: user.username!,
+            avatar: user.faceUrl || profileDefaultAvatar,
+            bio: user.bio || '',
+            spacesCount: 0, // Will be updated when we fetch their spaces
+            totalArticles: 0, // Will be calculated if needed
+            newArticlesSinceLastVisit: 0,
+            lastUpdated: new Date().toISOString(),
             emailFrequency: 'DAILY' as const,
-            isActive: true,
-            subscribedAt: new Date().toISOString(),
-          } as SubscriptionInfo,
-          spaces: [],
-        }));
+            subscriptionInfo: {
+              subscriptionId: `api_${user.id}`,
+              authorUserId: user.id!,
+              emailFrequency: 'DAILY' as const,
+              isActive: true,
+              subscribedAt: new Date().toISOString(),
+            } as SubscriptionInfo,
+            spaces: [],
+          }));
+
+        console.log('✅ Transformed authors array:', authorsArray);
 
         // Fetch spaces for each author
         for (const author of authorsArray) {
@@ -169,6 +206,24 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
       navigate(`/u/${author.username}`);
     } else {
       navigate(`/user/${author.userId}`);
+    }
+  };
+
+  // Handle switching to treasuries tab and fetch fresh data
+  const handleTreasuriesTabClick = async () => {
+    setPopupTab('treasuries');
+    if (!user?.id) return;
+
+    try {
+      setTreasuriesLoading(true);
+      console.log('🔍 Fetching fresh followed spaces for Treasuries tab...');
+      const freshFollowedSpaces = await AuthService.getFollowedSpaces();
+      console.log('✅ Fresh followed spaces loaded:', freshFollowedSpaces);
+      setFollowedSpaces(freshFollowedSpaces);
+    } catch (error) {
+      console.error('❌ Failed to fetch fresh followed spaces:', error);
+    } finally {
+      setTreasuriesLoading(false);
     }
   };
 
@@ -259,40 +314,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             onScroll={updateScrollState}
           >
-            {/* My profile card */}
-            {user && (
-              <Card
-                className={`w-44 flex-shrink-0 cursor-pointer transition-colors ${
-                  selectedAuthorFilter === (user.username || 'Me')
-                    ? 'bg-gray-100 border-gray-400'
-                    : 'bg-white border border-gray-200'
-                }`}
-                onClick={() => setSelectedAuthorFilter(prev => prev === (user.username || 'Me') ? null : (user.username || 'Me'))}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={user.faceUrl || user.avatar || profileDefaultAvatar}
-                      alt="My avatar"
-                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = profileDefaultAvatar;
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="[font-family:'Lato',Helvetica] font-semibold text-gray-900 text-sm truncate">
-                        {user.username || 'Me'}
-                      </h4>
-                      {user.namespace && (
-                        <span className="[font-family:'Lato',Helvetica] text-gray-500 text-xs truncate block">
-                          @{user.namespace}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {/* Removed "My profile card" - users shouldn't see themselves in their following list */}
 
             {/* Subscribed author cards */}
             {subscribedAuthors.map((author) => (
@@ -401,6 +423,10 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                 ? followedArticles.filter(a => a.userName === selectedAuthorFilter)
                 : followedArticles;
 
+              console.log('🔍 Rendering articles - followedArticles.length:', followedArticles.length);
+              console.log('🔍 Filtered articles for display:', filteredArticles.length);
+              console.log('🔍 Selected author filter:', selectedAuthorFilter);
+
               return filteredArticles.map((article) => (
                 <ArticleCard
                   key={article.id}
@@ -466,7 +492,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                 Curator
               </button>
               <button
-                onClick={() => setPopupTab('treasuries')}
+                onClick={handleTreasuriesTabClick}
                 className={`text-[12px] [font-family:'Lato',Helvetica] px-3 py-1 rounded-full border transition-colors ${
                   popupTab === 'treasuries'
                     ? 'text-gray-900 border-gray-300 bg-gray-100 font-semibold'
@@ -514,8 +540,9 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                           authorUserId={author.userId}
                           authorName={author.displayName}
                           size="medium"
+                          initialIsSubscribed={true} // Since this is the followed users list
                           onSubscriptionChange={() => {
-                            // 订阅状态改变时刷新数据
+                            // Refresh data when subscription status changes
                             setRefreshTrigger(prev => prev + 1);
                           }}
                         />
@@ -534,8 +561,17 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                 </>
               ) : (
                 <>
-                  {/* Real followed spaces */}
-                  {followedSpaces.map((space) => (
+                  {/* Loading state for treasuries */}
+                  {treasuriesLoading ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">
+                        Loading treasuries...
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Real followed spaces */}
+                      {followedSpaces.map((space) => (
                     <div
                       key={space.id || space.namespace}
                       className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -545,10 +581,10 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                       }}
                     >
                       <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        {space.coverUrl ? (
+                        {(space.faceUrl || space.coverUrl) ? (
                           <img
-                            src={space.coverUrl}
-                            alt={`${space.name} cover`}
+                            src={space.faceUrl || space.coverUrl}
+                            alt={`${space.name} avatar`}
                             className="w-full h-full rounded-lg object-cover"
                             onError={(e) => {
                               const svgFallback = (
@@ -588,23 +624,33 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
                           )}
                         </div>
                       </div>
-                      <button
-                        className="[font-family:'Lato',Helvetica] font-normal text-sm leading-none rounded-[50px] px-3 h-8 flex items-center justify-center gap-1.5 transition-colors flex-shrink-0"
-                        style={{ backgroundColor: '#ffffff', color: '#059669', border: '1px solid #059669' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Subscribed
-                      </button>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <SubscribeButton
+                          spaceId={space.id}
+                          spaceName={space.name}
+                          spaceNamespace={space.namespace}
+                          size="medium"
+                          subscriptionType="space"
+                          initialIsSubscribed={true} // Since this is the followed spaces list
+                          initialSubscriberCount={space.followerCount || 0} // Use API data to prevent extra calls
+                          onSubscriptionChange={() => {
+                            // Refresh data when subscription status changes
+                            setRefreshTrigger(prev => prev + 1);
+                          }}
+                        />
+                      </div>
                     </div>
                   ))}
 
-                  {/* Show message if no followed spaces */}
-                  {followedSpaces.length === 0 && (
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">
-                        No followed treasuries yet
-                      </p>
-                    </div>
+                      {/* Show message if no followed spaces */}
+                      {followedSpaces.length === 0 && (
+                        <div className="flex-1 flex items-center justify-center">
+                          <p className="[font-family:'Lato',Helvetica] text-sm text-gray-400">
+                            No followed treasuries yet
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}

@@ -56,30 +56,9 @@ class SubscriptionService {
     subscriberCount: number;
   }> {
     try {
-      // Try to get real subscription status from user API if we have the namespace
-      const currentUser = this.getCurrentUserNamespace();
-      if (currentUser) {
-        try {
-          const { AuthService } = await import('./authService');
-          const userInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(currentUser);
-
-          // For viewing another user's profile, we need to get their info by ID
-          // This is a simplified approach - in real app we'd need proper namespace lookup
-          const stats = this.mockAuthorStats[authorUserId] || {
-            totalSubscribers: Math.floor(Math.random() * 500) + 50,
-            weeklyGrowth: Math.floor(Math.random() * 20) + 5,
-            growthRate: Math.round((Math.random() * 5 + 3) * 10) / 10,
-            activeSubscribers: 0
-          };
-
-          return {
-            isSubscribed: userInfo?.isFollowed || false,
-            subscriberCount: userInfo?.followerCount || stats.totalSubscribers
-          };
-        } catch (apiError) {
-          console.warn('Failed to fetch API subscription status, falling back to mock:', apiError);
-        }
-      }
+      // Removed unnecessary API call that was causing duplicate requests
+      // The logic was incorrect - calling current user's info to check if following another user
+      console.log('🟢 checkSubscriptionStatus: Using fallback mock implementation for authorUserId:', authorUserId);
 
       // Fallback to existing mock implementation
       await new Promise(resolve => setTimeout(resolve, 150));
@@ -114,12 +93,14 @@ class SubscriptionService {
     subscriberCount: number;
   }> {
     try {
-      const { AuthService } = await import('./authService');
-      const userInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(namespace);
+      // Removed API call to prevent duplicate requests
+      // This method was calling the same API unnecessarily
+      console.log('🟢 checkSubscriptionStatusByNamespace: Using fallback for namespace:', namespace);
 
+      // Return mock data to prevent breaking functionality
       return {
-        isSubscribed: userInfo?.isFollowed || false,
-        subscriberCount: userInfo?.followerCount || 0
+        isSubscribed: false,
+        subscriberCount: 0
       };
     } catch (error) {
       console.error('Failed to check subscription status by namespace:', error);

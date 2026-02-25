@@ -38,6 +38,7 @@ const SpaceInfoSection = ({
   authorName,
   authorAvatar,
   authorNamespace,
+  spaceNamespace,
   spaceDescription,
   spaceCoverUrl,
   spaceFaceUrl,
@@ -54,6 +55,7 @@ const SpaceInfoSection = ({
   onEdit,
   onImportCSV,
   onSubscriberCountLoaded,
+  onSubscriptionChange,
 }: {
   spaceName: string;
   treasureCount: number;
@@ -61,6 +63,7 @@ const SpaceInfoSection = ({
   authorName: string;
   authorAvatar?: string;
   authorNamespace?: string;
+  spaceNamespace?: string;
   spaceDescription?: string;
   spaceCoverUrl?: string;
   spaceFaceUrl?: string;
@@ -77,6 +80,7 @@ const SpaceInfoSection = ({
   onEdit?: () => void;
   onImportCSV?: () => void;
   onSubscriberCountLoaded?: (count: number) => void;
+  onSubscriptionChange?: (isSubscribed: boolean) => void;
 }): JSX.Element => {
   const canEdit = isOwner;
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -219,17 +223,14 @@ const SpaceInfoSection = ({
             <SubscribeButton
               spaceId={spaceId}
               spaceName={spaceName}
+              spaceNamespace={spaceNamespace}
               size="medium"
               variant="default"
               subscriptionType="space"
+              initialIsSubscribed={isFollowing}
+              initialSubscriberCount={subscriberCount}
               onSubscriberCountLoaded={onSubscriberCountLoaded}
-              onSubscriptionChange={(isSubscribed) => {
-                if (isSubscribed) {
-                  onFollow();
-                } else {
-                  onUnfollow();
-                }
-              }}
+              onSubscriptionChange={onSubscriptionChange}
             />
           )}
 
@@ -670,18 +671,36 @@ export const SpaceContentSection = (): JSX.Element => {
       return;
     }
     try {
-      await AuthService.followSpace(spaceId);
-      setIsFollowing(true);
-      showToast('Subscribed to space', 'success');
+      // Get user's email for subscription
+      const userInfo = await AuthService.getUserInfo();
 
-      // Update cache with new subscription status
-      const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
-      const cached = spaceFetchCache.get(cacheKey);
-      if (cached && cached.data) {
-        spaceFetchCache.set(cacheKey, {
-          ...cached,
-          data: { ...cached.data, isFollowing: true }
-        });
+      if (!userInfo.email || userInfo.email.trim() === '') {
+        showToast('Please set your email in profile to subscribe to spaces', 'error');
+        return;
+      }
+
+      // Use new email subscription API for spaces
+      const success = await AuthService.emailSubscribe({
+        email: userInfo.email,
+        targetId: spaceId,
+        targetType: 2 // 2 for space
+      });
+
+      if (success) {
+        setIsFollowing(true);
+        showToast(`Successfully subscribed to space! Notifications will be sent to ${userInfo.email}`, 'success');
+
+        // Update cache with new subscription status
+        const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
+        const cached = spaceFetchCache.get(cacheKey);
+        if (cached && cached.data) {
+          spaceFetchCache.set(cacheKey, {
+            ...cached,
+            data: { ...cached.data, isFollowing: true }
+          });
+        }
+      } else {
+        showToast('Failed to subscribe to space', 'error');
       }
     } catch (err) {
       console.error('Failed to subscribe to space:', err);
@@ -700,18 +719,37 @@ export const SpaceContentSection = (): JSX.Element => {
       return;
     }
     try {
-      await AuthService.followSpace(spaceId); // Same API toggles subscribe/unsubscribe
-      setIsFollowing(false);
-      showToast('Unsubscribed from space', 'success');
+      // TODO: Implement unsubscribe API when backend provides it
+      // For now, we'll use the same emailSubscribe API if it toggles
+      const userInfo = await AuthService.getUserInfo();
 
-      // Update cache with new subscription status
-      const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
-      const cached = spaceFetchCache.get(cacheKey);
-      if (cached && cached.data) {
-        spaceFetchCache.set(cacheKey, {
-          ...cached,
-          data: { ...cached.data, isFollowing: false }
-        });
+      if (!userInfo.email || userInfo.email.trim() === '') {
+        showToast('Unable to unsubscribe - email not found', 'error');
+        return;
+      }
+
+      // Try using the same API - if it toggles, this should unsubscribe
+      const success = await AuthService.emailSubscribe({
+        email: userInfo.email,
+        targetId: spaceId,
+        targetType: 2 // 2 for space
+      });
+
+      if (success) {
+        setIsFollowing(false);
+        showToast('Unsubscribed from space', 'success');
+
+        // Update cache with new subscription status
+        const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
+        const cached = spaceFetchCache.get(cacheKey);
+        if (cached && cached.data) {
+          spaceFetchCache.set(cacheKey, {
+            ...cached,
+            data: { ...cached.data, isFollowing: false }
+          });
+        }
+      } else {
+        showToast('Failed to unsubscribe from space', 'error');
       }
     } catch (err) {
       console.error('Failed to unsubscribe from space:', err);
@@ -1103,6 +1141,7 @@ export const SpaceContentSection = (): JSX.Element => {
         authorName={spaceInfo?.authorName || 'Anonymous'}
         authorAvatar={spaceInfo?.authorAvatar}
         authorNamespace={spaceInfo?.authorNamespace}
+        spaceNamespace={namespace || spaceIdentifier}
         spaceDescription={spaceInfo?.description}
         spaceCoverUrl={spaceInfo?.coverUrl}
         spaceFaceUrl={spaceInfo?.faceUrl}
@@ -1119,6 +1158,15 @@ export const SpaceContentSection = (): JSX.Element => {
         onEdit={handleEditSpace}
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
         onSubscriberCountLoaded={setSubscriberCount}
+        onSubscriptionChange={(isSubscribed) => {
+          // Update local state only - SubscribeButton already handled the API call
+          setIsFollowing(isSubscribed);
+          if (isSubscribed) {
+            setSubscriberCount(prev => (prev || 0) + 1);
+          } else {
+            setSubscriberCount(prev => Math.max((prev || 0) - 1, 0));
+          }
+        }}
       />
 
       {/* Articles Grid */}

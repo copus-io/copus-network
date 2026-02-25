@@ -8,8 +8,10 @@ import { AuthorInfo, SubscribeButtonState, EmailFrequency, SPACE_TYPES } from '.
 interface SubscribeButtonProps {
   authorUserId?: number;
   authorName?: string;
+  authorNamespace?: string; // Add namespace for real subscription status
   spaceId?: number;
   spaceName?: string;
+  spaceNamespace?: string; // Add space namespace for space subscription status
   size?: 'small' | 'medium' | 'large';
   onSubscriptionChange?: (isSubscribed: boolean) => void;
   onSubscriberCountLoaded?: (count: number) => void;
@@ -22,6 +24,9 @@ interface SubscribeButtonProps {
   spaceType?: number;
   // Subscription type
   subscriptionType?: 'author' | 'space';
+  // Initial subscription state from parent component
+  initialIsSubscribed?: boolean;
+  initialSubscriberCount?: number;
 }
 
 /**
@@ -38,8 +43,10 @@ interface SubscribeButtonProps {
 const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   authorUserId,
   authorName = 'Author',
+  authorNamespace,
   spaceId,
   spaceName = 'Space',
+  spaceNamespace,
   size = 'medium',
   onSubscriptionChange,
   onSubscriberCountLoaded,
@@ -48,14 +55,17 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   variant = 'default',
   position = 'inline',
   spaceType,
-  subscriptionType = 'author'
+  subscriptionType = 'author',
+  initialIsSubscribed,
+  initialSubscriberCount
 }) => {
   const [state, setState] = useState<SubscribeButtonState>({
-    isSubscribed: false,
-    isLoading: true,
-    subscriberCount: 0,
+    isSubscribed: initialIsSubscribed ?? false,
+    isLoading: initialIsSubscribed === undefined, // Only loading if no initial value provided
+    subscriberCount: initialSubscriberCount ?? 0,
     canSubscribe: true
   });
+
 
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showUnsubDropdown, setShowUnsubDropdown] = useState(false);
@@ -80,22 +90,51 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     if (subscriptionType === 'author') {
       loadAuthorInfo();
     }
-  }, [authorUserId, spaceId, subscriptionType]);
+  }, [authorUserId, authorNamespace, spaceId, spaceNamespace, subscriptionType]);
 
   const loadSubscriptionStatus = async () => {
+    // If we already have initial values, don't load again
+    if (initialIsSubscribed !== undefined && initialSubscriberCount !== undefined) {
+      onSubscriberCountLoaded?.(initialSubscriberCount);
+      return;
+    }
+
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      const status = await subscriptionService.checkSubscriptionStatus(authorUserId);
-      setState(prev => ({
-        ...prev,
-        isSubscribed: status.isSubscribed,
-        subscriberCount: status.subscriberCount,
-        isLoading: false
-      }));
-      onSubscriberCountLoaded?.(status.subscriberCount);
+      if (subscriptionType === 'space' && spaceNamespace) {
+        // Use space/info API to get space subscription status
+        const response = await AuthService.getSpaceInfo(spaceNamespace);
+        const spaceInfo = response.data || response; // Handle both wrapped and unwrapped response
+        setState(prev => ({
+          ...prev,
+          isSubscribed: spaceInfo.isFollowed || false,
+          subscriberCount: spaceInfo.followerCount || 0,
+          isLoading: false
+        }));
+        onSubscriberCountLoaded?.(spaceInfo.followerCount || 0);
+      } else if (subscriptionType === 'author' && authorNamespace) {
+        // Use real API to get user subscription status
+        const userInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(authorNamespace);
+        setState(prev => ({
+          ...prev,
+          isSubscribed: userInfo.isFollowed || false,
+          subscriberCount: userInfo.followerCount || 0,
+          isLoading: false
+        }));
+        onSubscriberCountLoaded?.(userInfo.followerCount || 0);
+      } else {
+        console.warn('SubscribeButton: Missing required parameters for subscription status check', {
+          subscriptionType,
+          spaceNamespace,
+          authorNamespace,
+          spaceId,
+          authorUserId
+        });
+        setState(prev => ({ ...prev, isLoading: false }));
+      }
     } catch (error) {
-      console.error('Failed to load subscription status:', error);
+      console.error('🔥 Failed to load subscription status:', error);
       setState(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -131,16 +170,32 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
       return;
     }
 
-    if (!currentUser.email) {
-      // Wallet user, needs to enter email
-      console.log('🔵 Wallet user has no email, show email modal');
-      setShowEmailModal(true);
-      return;
-    }
+    // For logged in users, check their latest email info from server
+    try {
+      setState(prev => ({ ...prev, isLoading: true }));
 
-    // Users with email, directly subscribe
-    console.log('🔵 Logged in and has email, directly subscribe');
-    await handleConfirmSubscribe();
+      // Get fresh user info from server to check email status
+      const userInfo = await AuthService.getUserInfo();
+      console.log('🔵 Fresh user info from server:', { hasEmail: !!userInfo.email });
+
+      if (!userInfo.email || userInfo.email.trim() === '') {
+        // User has no email set, show email modal
+        console.log('🔵 User has no email, show email modal');
+        setState(prev => ({ ...prev, isLoading: false }));
+        setShowEmailModal(true);
+        return;
+      }
+
+      // User has email, use direct email subscribe API
+      console.log('🔵 User has email, using email subscription API');
+      await performEmailSubscribe(userInfo.email);
+
+    } catch (error) {
+      console.error('🔥 Failed to get user info:', error);
+      setState(prev => ({ ...prev, isLoading: false }));
+      // Fall back to email modal if API fails
+      setShowEmailModal(true);
+    }
   };
 
   const handleEmailSubmit = async () => {
@@ -203,8 +258,8 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
 
       // Pass all checks, continue flow
       setShowEmailModal(false);
-      // 直接订阅，不显示推送频率确认
-      await handleConfirmSubscribe();
+      // 直接调用核心订阅函数
+      await performEmailSubscribe(email.trim());
 
     } catch (error) {
       console.error('Anti-abuse check failed:', error);
@@ -212,47 +267,58 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     }
   };
 
-  const handleConfirmSubscribe = async () => {
+  // 核心订阅/取消订阅函数 - 统一的API调用入口
+  const performEmailSubscribe = async (userEmail: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      let result;
+      // Determine target ID and type based on subscription type
+      const targetId = subscriptionType === 'space' ? spaceId : authorUserId;
+      const targetType = subscriptionType === 'space' ? 2 : 1; // 1 for user, 2 for space
 
-      if (subscriptionType === 'space' && spaceId) {
-        // Subscribe to space using new API
-        result = await subscriptionService.subscribeToSpace(
-          spaceId,
-          spaceName,
-          email || undefined
-        );
-      } else if (authorUserId) {
-        // Subscribe to author using new API
-        result = await subscriptionService.subscribeToAuthor({
-          authorUserId,
-          emailFrequency: 'DAILY', // 默认使用每日摘要
-          email: email || undefined
-        });
-      } else {
-        throw new Error('Invalid subscription target');
+      if (!targetId) {
+        throw new Error(`Invalid subscription target: ${subscriptionType}`);
       }
 
-      if (result.success) {
+      console.log('🔵 Performing email subscribe/unsubscribe:', {
+        email: userEmail.substring(0, 3) + '***',
+        targetId,
+        targetType,
+        subscriptionType
+      });
+
+      // Call the unified email subscription API - backend determines subscribe/unsubscribe
+      const success = await AuthService.emailSubscribe({
+        email: userEmail.trim(),
+        targetId,
+        targetType
+      });
+
+      if (success) {
+        // 判断当前是订阅还是取消订阅操作（根据之前的状态）
+        const wasSubscribed = state.isSubscribed;
+        const newSubscribedState = !wasSubscribed;
+
         setState(prev => ({
           ...prev,
-          isSubscribed: true,
-          subscriberCount: prev.subscriberCount + 1,
+          isSubscribed: newSubscribedState,
+          subscriberCount: newSubscribedState ? prev.subscriberCount + 1 : prev.subscriberCount - 1,
           isLoading: false
         }));
 
-        const successMessage = subscriptionType === 'space'
-          ? `🎉 Successfully followed ${spaceName}! You will receive notifications for updates.`
-          : '🎉 Successfully subscribed! You will receive email notifications for updates.';
+        const successMessage = newSubscribedState
+          ? (subscriptionType === 'space'
+              ? `🎉 Successfully followed ${spaceName}! You will receive email notifications for updates.`
+              : `🎉 Successfully subscribed to ${authorName}! You will receive email notifications for updates.`)
+          : (subscriptionType === 'space'
+              ? `Successfully unfollowed ${spaceName}`
+              : 'Successfully unsubscribed');
 
-        showToast(successMessage, 'success');
-        onSubscriptionChange?.(true);
+        showToast(successMessage, newSubscribedState ? 'success' : 'info');
+        onSubscriptionChange?.(newSubscribedState);
 
-        // Auto-follow all of the author's treasuries
-        if (authorUserId) {
+        // Auto-follow all of the author's treasuries if subscribing to an author
+        if (newSubscribedState && subscriptionType === 'author' && authorUserId) {
           try {
             const spacesResponse = await AuthService.getMySpaces(authorUserId);
             const spaces = spacesResponse?.data || spacesResponse?.records || spacesResponse || [];
@@ -272,55 +338,53 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
             console.warn('Failed to auto-follow author treasuries:', err);
           }
         }
+
       } else {
-        showToast(result.message || 'Subscription failed, please try again later', 'error');
+        showToast('Operation failed, please try again later', 'error');
         setState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
-      console.error('Subscription failed:', error);
-      showToast('Subscription failed, please try again later', 'error');
+      console.error('🔥 Email subscription operation failed:', error);
+      console.error('🔥 Error context:', {
+        subscriptionType,
+        targetId: subscriptionType === 'space' ? spaceId : authorUserId,
+        targetType: subscriptionType === 'space' ? 2 : 1,
+        userEmail: userEmail ? userEmail.substring(0, 3) + '***' : 'empty',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      // Show more specific error message if possible
+      let errorMessage = 'Operation failed, please try again later';
+      if (error instanceof Error && error.message) {
+        if (error.message.includes('401')) {
+          errorMessage = 'Please log in to continue';
+        } else if (error.message.includes('403')) {
+          errorMessage = 'Permission denied, please try again';
+        } else if (error.message.includes('400')) {
+          errorMessage = 'Invalid request, please check your input';
+        }
+      }
+
+      showToast(errorMessage, 'error');
       setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
   const handleUnsubscribe = async () => {
-    setState(prev => ({ ...prev, isLoading: true }));
-
+    // Get user email first
     try {
-      let result;
+      const userInfo = await AuthService.getUserInfo();
+      const userEmail = userInfo.email?.trim();
 
-      if (subscriptionType === 'space' && spaceId) {
-        // Unsubscribe from space using new API
-        result = await subscriptionService.unsubscribeFromSpace(spaceId, spaceName);
-      } else if (authorUserId) {
-        // Unsubscribe from author
-        result = await subscriptionService.unsubscribeFromAuthor(authorUserId);
-      } else {
-        throw new Error('Invalid unsubscription target');
+      if (!userEmail) {
+        throw new Error('Email is required for unsubscription');
       }
 
-      if (result.success) {
-        setState(prev => ({
-          ...prev,
-          isSubscribed: false,
-          subscriberCount: Math.max(0, prev.subscriberCount - 1),
-          isLoading: false
-        }));
-
-        const successMessage = subscriptionType === 'space'
-          ? `Successfully unfollowed ${spaceName}`
-          : 'Successfully unsubscribed';
-
-        showToast(successMessage, 'info');
-        onSubscriptionChange?.(false);
-      } else {
-        showToast(result.message || 'Failed to unsubscribe', 'error');
-        setState(prev => ({ ...prev, isLoading: false }));
-      }
+      // Use the unified function
+      await performEmailSubscribe(userEmail);
     } catch (error) {
-      console.error('Unsubscribe failed:', error);
+      console.error('Failed to get user email for unsubscription:', error);
       showToast('Failed to unsubscribe, please try again later', 'error');
-      setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 

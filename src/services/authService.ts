@@ -621,6 +621,7 @@ export class AuthService {
         };
       }
 
+      console.log('🔵 AuthService.getUserInfo() calling /client/user/userInfo');
       const response: ApiUserInfoResponse = await apiRequest('/client/user/userInfo', requestOptions);
 
       // Validate API response format
@@ -806,9 +807,9 @@ export class AuthService {
   }
 
   /**
-   * 批量上传评论图片
-   * @param files 图片文件数组
-   * @returns Promise<string[]> 图片URL数组
+   * Batch upload comment images
+   * @param files Array of image files
+   * @returns Promise<string[]> Array of image URLs
    */
   static async uploadCommentImages(files: File[]): Promise<string[]> {
     if (files.length === 0) {
@@ -816,7 +817,7 @@ export class AuthService {
     }
 
     try {
-      // 并行上传所有图片
+      // Upload all images in parallel
       const uploadPromises = files.map(async (file) => {
         const result = await this.uploadImage(file);
         return result.url;
@@ -1098,12 +1099,13 @@ export class AuthService {
   /**
    * Get user detail info - by namespace
    * Get user home info by namespace
-   * Public endpoint - does not require authentication
+   * Requires authentication to get complete user data
    */
   static async getUserHomeInfo(namespace: string): Promise<UserHomeResponse> {
+    console.log('🔵 AuthService.getUserHomeInfo() calling /client/userHome/userInfo with namespace:', namespace);
     const response = await apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
       method: 'GET',
-      requiresAuth: false,
+      requiresAuth: true,
     });
     // User information is in response.data
     return response.data;
@@ -1112,8 +1114,7 @@ export class AuthService {
   /**
    * Get other user's treasury information (public data) - by namespace
    * Get other user's treasury information (public data) - by namespace
-   * NOTE: We explicitly exclude the Authorization header to ensure we get
-   * the target user's data, not the logged-in user's data.
+   * Now requires authentication to access user data
    */
   static async getOtherUserTreasuryInfoByNamespace(namespace: string): Promise<{
     bio: string;
@@ -1143,25 +1144,15 @@ export class AuthService {
     username: string;
     walletAddress: string;
   }> {
-    // Make a direct fetch call without the Authorization header
-    // This ensures we get the target user's data, not the logged-in user's
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api-test.copus.network';
-    const url = `${API_BASE_URL}/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`;
-
-    const response = await fetch(url, {
+    // This API should be publicly accessible for viewing other users' profiles
+    console.log('🔵 AuthService.getOtherUserTreasuryInfoByNamespace() calling /client/userHome/userInfo with namespace:', namespace);
+    const response = await apiRequest(`/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      requiresAuth: false, // Allow unauthenticated access to public user profiles
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
     // User information is in response.data
-    return data.data;
+    return response.data;
   }
 
   /**
@@ -1859,16 +1850,20 @@ export class AuthService {
    * @returns Array of followed users
    */
   static async getFollowedUsers(): Promise<Array<{
-    bio: string;
-    coverUrl: string;
-    faceUrl: string;
-    id: number;
-    namespace: string;
-    username: string;
+    bio?: string;
+    coverUrl?: string;
+    faceUrl?: string;
+    id?: number;
+    namespace?: string;
+    username?: string;
   }>> {
-    return apiRequest('/client/follow/followedUsers', {
+    const response = await apiRequest('/client/follow/followedUsers', {
       method: 'GET',
+      requiresAuth: true, // This endpoint returns personal following list
     });
+
+    // Handle nested response structure: {status: 1, msg: "success", data: [...]}
+    return response?.data || response || [];
   }
 
   /**
@@ -1876,37 +1871,41 @@ export class AuthService {
    * @returns Array of followed spaces
    */
   static async getFollowedSpaces(): Promise<Array<{
-    articleCount: number;
-    coverUrl: string;
-    data: Array<{
-      coverUrl: string;
-      targetUrl: string;
-      title: string;
+    articleCount?: number;
+    coverUrl?: string;
+    data?: Array<{
+      coverUrl?: string;
+      targetUrl?: string;
+      title?: string;
     }>;
-    description: string;
-    faceUrl: string;
-    followerCount: number;
-    id: number;
-    isAdmin: boolean;
-    isBind: boolean;
-    isFollowed: boolean;
-    name: string;
-    namespace: string;
-    seoDataByAi: string;
-    spaceType: number;
-    userInfo: {
-      bio: string;
-      coverUrl: string;
-      faceUrl: string;
-      id: number;
-      namespace: string;
-      username: string;
+    description?: string;
+    faceUrl?: string;
+    followerCount?: number;
+    id?: number;
+    isAdmin?: boolean;
+    isBind?: boolean;
+    isFollowed?: boolean;
+    name?: string;
+    namespace?: string;
+    seoDataByAi?: string;
+    spaceType?: number;
+    userInfo?: {
+      bio?: string;
+      coverUrl?: string;
+      faceUrl?: string;
+      id?: number;
+      namespace?: string;
+      username?: string;
     };
-    visibility: number;
+    visibility?: number;
   }>> {
-    return apiRequest('/client/follow/myFollowedSpaces', {
+    const response = await apiRequest('/client/follow/myFollowedSpaces', {
       method: 'GET',
+      requiresAuth: true, // This endpoint returns personal following list
     });
+
+    // Handle nested response structure: {status: 1, msg: "success", data: [...]}
+    return response?.data || response || [];
   }
 
   /**
@@ -2036,16 +2035,53 @@ export class AuthService {
     });
   }
 
+
   /**
-   * Get list of followed spaces
-   * API: GET /client/article/space/myFollowedSpaces
+   * Email subscribe to authors/spaces
+   * @param email - User email address
+   * @param targetId - Target user/space ID
+   * @param targetType - 1 for user, 2 for space
    */
-  static async getFollowedSpaces(): Promise<any> {
-    return apiRequest(`/client/article/space/myFollowedSpaces`, {
-      method: 'GET',
-      requiresAuth: true,
-    });
+  static async emailSubscribe(params: {
+    email: string;
+    targetId: number;
+    targetType: number; // 1: user, 2: space
+  }): Promise<boolean> {
+    try {
+      console.log('🔵 EmailSubscribe API call with params:', params);
+
+      const response = await apiRequest('/client/follow/emailSubscribe', {
+        method: 'POST',
+        body: JSON.stringify(params),
+        requiresAuth: false, // Allow unauthenticated users to subscribe via email
+      });
+
+      console.log('🔵 EmailSubscribe API response:', response);
+
+      // API returns {status: 1, msg: "success", data: boolean} for success
+      // The data field indicates the final subscription state, not the operation success
+      // Any response with status === 1 means the operation was successful
+      if (response && response.status === 1) {
+        return true;
+      }
+
+      // Also check for direct boolean response (backward compatibility)
+      if (response === true) {
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('🔥 Email subscribe failed:', error);
+      console.error('🔥 Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        params,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
   }
+
 
   /**
    * Get articles from followed spaces (paginated)
