@@ -633,7 +633,7 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
             ))}
           </div>
         </section>
-      ) : subscribedAuthors.length === 0 ? (
+      ) : subscribedAuthors.length === 0 && followedArticles.length === 0 ? (
         <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <h3 className="text-lg font-normal text-medium-grey mb-4 [font-family:'Lato',Helvetica]">
