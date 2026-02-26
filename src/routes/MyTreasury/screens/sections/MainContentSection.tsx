@@ -512,10 +512,19 @@ export const MainContentSection = (): JSX.Element => {
               targetUserId = user.id;
             }
           } else {
-            // Viewing own treasury - use current user info directly
-            console.log('🟢 Viewing own treasury, using current user info');
-            processedInfo = user;
+            // Viewing own treasury - fetch full userInfo to get statistics
+            console.log('🟢 Viewing own treasury, fetching full user info');
             targetUserId = user.id;
+            try {
+              if (user.namespace) {
+                processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(user.namespace);
+              }
+            } catch (err) {
+              console.warn('Failed to fetch own user info, using context:', err);
+            }
+            if (!processedInfo) {
+              processedInfo = user;
+            }
           }
         } else if (namespace) {
           // Not logged in but have namespace - fetch that user's info
