@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { AuthService } from "../../../services/authService";
 import { removeArticleFromSpace } from "../../../services/articleService";
@@ -18,13 +18,14 @@ import { type ImportedBookmark } from "../../../utils/csvUtils";
 import { useCategory } from "../../../contexts/CategoryContext";
 import { NoAccessPermission } from "../../../components/NoAccessPermission/NoAccessPermission";
 import { SEO } from "../../../components/SEO/SEO";
+import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 interface SpaceFetchCacheEntry {
   timestamp: number;
   inProgress: boolean;
-  data?: { spaceInfo: any; articles: any[]; totalCount: number; spaceId: number | null; isFollowing: boolean };
+  data?: { spaceInfo: any; articles: any[]; totalCount: number; spaceId: number | null; isFollowing: boolean; followerCount: number };
 }
 const spaceFetchCache: Map<string, SpaceFetchCacheEntry> = new Map();
 const SPACE_CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during mount cycles
@@ -33,9 +34,11 @@ const SPACE_CACHE_TTL = 5000; // 5 seconds - prevents duplicate fetches during m
 const SpaceInfoSection = ({
   spaceName,
   treasureCount,
+  subscriberCount,
   authorName,
   authorAvatar,
   authorNamespace,
+  spaceNamespace,
   spaceDescription,
   spaceCoverUrl,
   spaceFaceUrl,
@@ -44,18 +47,23 @@ const SpaceInfoSection = ({
   isOwner,
   spaceType,
   visibility,
+  spaceId,
   onFollow,
   onUnfollow,
   onShare,
   onAuthorClick,
   onEdit,
   onImportCSV,
+  onSubscriberCountLoaded,
+  onSubscriptionChange,
 }: {
   spaceName: string;
   treasureCount: number;
+  subscriberCount?: number;
   authorName: string;
   authorAvatar?: string;
   authorNamespace?: string;
+  spaceNamespace?: string;
   spaceDescription?: string;
   spaceCoverUrl?: string;
   spaceFaceUrl?: string;
@@ -64,15 +72,17 @@ const SpaceInfoSection = ({
   isOwner: boolean;
   spaceType?: number;
   visibility?: number;
+  spaceId?: number | null;
   onFollow: () => void;
   onUnfollow: () => void;
   onShare: () => void;
   onAuthorClick: () => void;
   onEdit?: () => void;
   onImportCSV?: () => void;
+  onSubscriberCountLoaded?: (count: number) => void;
+  onSubscriptionChange?: (isSubscribed: boolean) => void;
 }): JSX.Element => {
   const canEdit = isOwner;
-  const [showUnfollowDropdown, setShowUnfollowDropdown] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const { showToast } = useToast();
 
@@ -151,6 +161,12 @@ const SpaceInfoSection = ({
         {/* Treasure count and author info */}
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm text-gray-500">{treasureCount} treasures</span>
+          {!!subscriberCount && subscriberCount > 0 && (
+            <>
+              <span className="text-gray-300">·</span>
+              <span className="text-sm text-gray-500">{subscriberCount} subscribers</span>
+            </>
+          )}
           <span className="text-gray-300">·</span>
           <span className="text-sm text-gray-500">By</span>
           <button
@@ -172,7 +188,7 @@ const SpaceInfoSection = ({
         )}
 
         {/* Action buttons - always show below description */}
-        <div className="flex items-center gap-3 mt-1">
+        <div className="flex items-center gap-3 mt-1.5">
           {/* Edit button */}
           {canEdit && (
             <button
@@ -202,58 +218,20 @@ const SpaceInfoSection = ({
             </button>
           )}
 
-          {/* Subscribe button (only for non-owners) */}
-          {!isOwner && (
-            isFollowing ? (
-              <div className="relative">
-                <button
-                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all bg-white"
-                  aria-label="Subscription options"
-                  type="button"
-                  onClick={() => setShowUnfollowDropdown(!showUnfollowDropdown)}
-                >
-                  <span className="[font-family:'Lato',Helvetica] font-medium text-sm tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
-                    Subscribed
-                  </span>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
-                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-                {showUnfollowDropdown && (
-                  <>
-                    <div className="fixed inset-0 z-20" onClick={() => setShowUnfollowDropdown(false)} />
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-gray-200 rounded-[50px] shadow-lg z-30 min-w-[120px]">
-                      <button
-                        className="w-full px-4 py-2 text-center text-red hover:bg-gray-50 rounded-[50px] [font-family:'Lato',Helvetica] font-medium text-sm"
-                        onClick={() => {
-                          setShowUnfollowDropdown(false);
-                          onUnfollow();
-                        }}
-                      >
-                        Unsubscribe
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <button
-                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-[50px] border border-solid border-green cursor-pointer hover:opacity-80 transition-all"
-                style={{ background: 'linear-gradient(0deg, rgba(43, 134, 73, 0.1) 0%, rgba(43, 134, 73, 0.1) 100%), #FFFFFF' }}
-                aria-label="Subscribe to space"
-                type="button"
-                onClick={onFollow}
-              >
-                <svg width="16" height="16" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green">
-                  <path d="M12.6967 13.0467C15.1618 13.0467 17.1671 11.0411 17.1671 8.57603C17.1671 6.11099 15.1618 4.10566 12.6967 4.10566C10.2317 4.10566 8.22603 6.11099 8.22603 8.57603C8.22603 11.0411 10.2317 13.0467 12.6967 13.0467ZM12.6967 4.80566C14.7759 4.80566 16.4671 6.49688 16.4671 8.57603C16.4671 10.6552 14.7759 12.3467 12.6967 12.3467C10.6176 12.3467 8.92603 10.6552 8.92603 8.57603C8.92603 6.49688 10.6176 4.80566 12.6967 4.80566Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
-                  <path d="M25.2021 14.8904C25.3276 14.1689 25.3935 13.432 25.3935 12.6967C25.3935 5.6957 19.6978 0 12.6967 0C5.6957 0 0 5.6957 0 12.6967C0 19.6978 5.6957 25.3935 12.6967 25.3935C13.4323 25.3935 14.1695 25.328 14.8906 25.2024C16.238 26.9034 18.3166 28 20.65 28C24.7027 28 28 24.7027 28 20.65C28 18.3165 26.9033 16.2378 25.2021 14.8904ZM12.6967 0.7C19.3119 0.7 24.6935 6.08159 24.6935 12.6967C24.6935 13.2802 24.6495 13.8647 24.5657 14.4409C23.4305 13.7224 22.09 13.3 20.65 13.3C18.8694 13.3 17.2353 13.9372 15.962 14.9946C14.9104 14.6529 13.8131 14.4754 12.6967 14.4754C8.76307 14.4754 5.13302 16.7004 3.32408 20.1724C1.68397 18.1203 0.7 15.522 0.7 12.6967C0.7 6.08159 6.08159 0.7 12.6967 0.7ZM12.6967 24.6935C9.17831 24.6935 6.00907 23.1709 3.81268 20.7502C5.45388 17.3611 8.92765 15.1754 12.6967 15.1754C13.6074 15.1754 14.5029 15.306 15.3694 15.5496C14.0911 16.8727 13.3 18.6694 13.3 20.65C13.3 22.0899 13.7223 23.4303 14.4408 24.5655C13.8649 24.6492 13.2804 24.6935 12.6967 24.6935ZM20.65 27.3C16.9832 27.3 14 24.3168 14 20.65C14 16.9832 16.9832 14 20.65 14C24.3168 14 27.3 16.9832 27.3 20.65C27.3 24.3168 24.3168 27.3 20.65 27.3Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5"/>
-                  <path d="M23.236 17.5383C22.4608 17.2009 21.4129 17.2672 20.65 18.0879C19.8871 17.2672 18.8392 17.2006 18.064 17.5383C17.1603 17.9313 16.3998 18.9441 16.7371 20.3215C17.3028 22.6293 20.3554 24.2836 20.4849 24.353C20.5365 24.3807 20.5933 24.3944 20.65 24.3944C20.7067 24.3944 20.7635 24.3807 20.8151 24.353C20.9446 24.2836 23.9976 22.6293 24.5629 20.3215C24.9002 18.9441 24.1397 17.9313 23.236 17.5383ZM23.8827 20.1547C23.4609 21.8781 21.2724 23.2747 20.65 23.6414C20.0276 23.2747 17.8394 21.8781 17.4173 20.1547C17.1767 19.1734 17.7088 18.456 18.3432 18.1802C18.5312 18.0981 18.7523 18.0465 18.9854 18.0465C19.4537 18.0465 19.9695 18.2554 20.3574 18.8467C20.4866 19.0442 20.8134 19.0442 20.9426 18.8467C21.5236 17.9611 22.3904 17.9331 22.9568 18.1802C23.5912 18.456 24.1233 19.1734 23.8827 20.1547Z" fill="currentColor" stroke="currentColor" strokeWidth="0.3"/>
-                </svg>
-                <span className="[font-family:'Lato',Helvetica] font-medium text-sm tracking-[0] leading-[22.4px] whitespace-nowrap text-green">
-                  Subscribe
-                </span>
-              </button>
-            )
+          {/* Subscribe button (only for non-owners) - using unified SubscribeButton component */}
+          {!isOwner && spaceId && (
+            <SubscribeButton
+              spaceId={spaceId}
+              spaceName={spaceName}
+              spaceNamespace={spaceNamespace}
+              size="medium"
+              variant="default"
+              subscriptionType="space"
+              initialIsSubscribed={isFollowing}
+              initialSubscriberCount={subscriberCount}
+              onSubscriberCountLoaded={onSubscriberCountLoaded}
+              onSubscriptionChange={onSubscriptionChange}
+            />
           )}
 
           {/* Share button */}
@@ -306,6 +284,7 @@ const SpaceInfoSection = ({
 // Main Space Content Section
 export const SpaceContentSection = (): JSX.Element => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { category, namespace } = useParams<{ category?: string; namespace?: string }>();
   // Support both /space/:category and /treasury/:namespace routes
   const spaceIdentifier = namespace || category;
@@ -319,6 +298,7 @@ export const SpaceContentSection = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [spaceInfo, setSpaceInfo] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [subscriberCount, setSubscriberCount] = useState(0);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -380,6 +360,7 @@ export const SpaceContentSection = (): JSX.Element => {
         setTotalArticleCount(cached.data.totalCount);
         if (cached.data.spaceId) setSpaceId(cached.data.spaceId);
         if (cached.data.isFollowing !== undefined) setIsFollowing(cached.data.isFollowing);
+        if (cached.data.followerCount !== undefined) setSubscriberCount(cached.data.followerCount);
         setLoading(false);
         return;
       }
@@ -405,6 +386,84 @@ export const SpaceContentSection = (): JSX.Element => {
         let fetchedTotalCount = 0;
 
         if (isNamespaceRoute) {
+          // Check if identifier is a numeric ID (fallback for spaces without namespace)
+          const isNumericId = /^\d+$/.test(decodedIdentifier);
+          const navigationState = location.state as { spaceData?: any } | null;
+
+          if (isNumericId && navigationState?.spaceData) {
+            // Numeric ID with space data passed via navigation state
+            const space = navigationState.spaceData;
+            const numericSpaceId = parseInt(decodedIdentifier, 10);
+
+            fetchedSpaceInfo = {
+              name: space.name || 'Treasury',
+              authorName: space.ownerInfo?.username || space.userInfo?.username || user?.username || 'Anonymous',
+              authorAvatar: space.ownerInfo?.faceUrl || space.userInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
+              authorNamespace: space.ownerInfo?.namespace || space.userInfo?.namespace || user?.namespace,
+              spaceType: space.spaceType,
+              description: space.description,
+              coverUrl: space.coverUrl,
+              faceUrl: space.faceUrl,
+              visibility: space.visibility,
+            };
+
+            fetchedSpaceId = numericSpaceId;
+            fetchedTotalCount = space.articleCount || 0;
+
+            // Fetch articles using spaceId
+            const articlesResponse = await AuthService.getSpaceArticles(numericSpaceId, 1, PAGE_SIZE);
+            if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
+              articlesArray = articlesResponse.data;
+            } else if (articlesResponse?.data?.data && Array.isArray(articlesResponse.data.data)) {
+              articlesArray = articlesResponse.data.data;
+            }
+
+            setSpaceInfo(fetchedSpaceInfo);
+            setSpaceId(numericSpaceId);
+            setTotalArticleCount(fetchedTotalCount);
+            setArticles(articlesArray);
+            setCurrentPage(1);
+            setReachedEnd(false);
+
+            spaceFetchCache.set(cacheKey, {
+              timestamp: Date.now(),
+              inProgress: false,
+              data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: fetchedTotalCount, spaceId: numericSpaceId, isFollowing: false, followerCount: 0 }
+            });
+          } else if (isNumericId) {
+            // Numeric ID without navigation state — try fetching articles directly
+            const numericSpaceId = parseInt(decodedIdentifier, 10);
+
+            fetchedSpaceInfo = {
+              name: 'Treasury',
+              authorName: user?.username || 'Anonymous',
+              authorAvatar: user?.faceUrl || profileDefaultAvatar,
+              authorNamespace: user?.namespace,
+            };
+
+            fetchedSpaceId = numericSpaceId;
+
+            const articlesResponse = await AuthService.getSpaceArticles(numericSpaceId, 1, PAGE_SIZE);
+            if (articlesResponse?.data && Array.isArray(articlesResponse.data)) {
+              articlesArray = articlesResponse.data;
+            } else if (articlesResponse?.data?.data && Array.isArray(articlesResponse.data.data)) {
+              articlesArray = articlesResponse.data.data;
+            }
+
+            setSpaceInfo(fetchedSpaceInfo);
+            setSpaceId(numericSpaceId);
+            setTotalArticleCount(articlesArray.length);
+            setArticles(articlesArray);
+            setCurrentPage(1);
+            setReachedEnd(articlesArray.length < PAGE_SIZE);
+
+            spaceFetchCache.set(cacheKey, {
+              timestamp: Date.now(),
+              inProgress: false,
+              data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: articlesArray.length, spaceId: numericSpaceId, isFollowing: false, followerCount: 0 }
+            });
+          } else {
+
           // Fetch space info by namespace using getSpaceInfo API
           const spaceInfoResponse = await AuthService.getSpaceInfo(decodedIdentifier);
 
@@ -464,6 +523,9 @@ export const SpaceContentSection = (): JSX.Element => {
           // Set follow status from space data
           const followStatus = spaceData?.isFollowed || spaceData?.followed || false;
           setIsFollowing(followStatus);
+          // Set follower count from space data
+          const followerCount = spaceData?.followerCount || 0;
+          setSubscriberCount(followerCount);
 
           // Fetch articles using spaceId from the space info
           if (fetchedSpaceId) {
@@ -489,8 +551,9 @@ export const SpaceContentSection = (): JSX.Element => {
           spaceFetchCache.set(cacheKey, {
             timestamp: Date.now(),
             inProgress: false,
-            data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: fetchedTotalCount, spaceId: fetchedSpaceId, isFollowing: followStatus }
+            data: { spaceInfo: fetchedSpaceInfo, articles: articlesArray, totalCount: fetchedTotalCount, spaceId: fetchedSpaceId, isFollowing: followStatus, followerCount: followerCount }
           });
+          }
         } else {
           // Old category-based route (for backwards compatibility)
           setSpaceInfo({
@@ -688,18 +751,36 @@ export const SpaceContentSection = (): JSX.Element => {
       return;
     }
     try {
-      await AuthService.followSpace(spaceId);
-      setIsFollowing(true);
-      showToast('Subscribed to space', 'success');
+      // Get user's email for subscription
+      const userInfo = await AuthService.getUserInfo();
 
-      // Update cache with new subscription status
-      const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
-      const cached = spaceFetchCache.get(cacheKey);
-      if (cached && cached.data) {
-        spaceFetchCache.set(cacheKey, {
-          ...cached,
-          data: { ...cached.data, isFollowing: true }
-        });
+      if (!userInfo.email || userInfo.email.trim() === '') {
+        showToast('Please set your email in profile to subscribe to spaces', 'error');
+        return;
+      }
+
+      // Use new email subscription API for spaces
+      const success = await AuthService.emailSubscribe({
+        email: userInfo.email,
+        targetId: spaceId,
+        targetType: 2 // 2 for space
+      });
+
+      if (success) {
+        setIsFollowing(true);
+        showToast(`Successfully subscribed to space! Notifications will be sent to ${userInfo.email}`, 'success');
+
+        // Update cache with new subscription status
+        const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
+        const cached = spaceFetchCache.get(cacheKey);
+        if (cached && cached.data) {
+          spaceFetchCache.set(cacheKey, {
+            ...cached,
+            data: { ...cached.data, isFollowing: true }
+          });
+        }
+      } else {
+        showToast('Failed to subscribe to space', 'error');
       }
     } catch (err) {
       console.error('Failed to subscribe to space:', err);
@@ -718,18 +799,37 @@ export const SpaceContentSection = (): JSX.Element => {
       return;
     }
     try {
-      await AuthService.followSpace(spaceId); // Same API toggles subscribe/unsubscribe
-      setIsFollowing(false);
-      showToast('Unsubscribed from space', 'success');
+      // TODO: Implement unsubscribe API when backend provides it
+      // For now, we'll use the same emailSubscribe API if it toggles
+      const userInfo = await AuthService.getUserInfo();
 
-      // Update cache with new subscription status
-      const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
-      const cached = spaceFetchCache.get(cacheKey);
-      if (cached && cached.data) {
-        spaceFetchCache.set(cacheKey, {
-          ...cached,
-          data: { ...cached.data, isFollowing: false }
-        });
+      if (!userInfo.email || userInfo.email.trim() === '') {
+        showToast('Unable to unsubscribe - email not found', 'error');
+        return;
+      }
+
+      // Try using the same API - if it toggles, this should unsubscribe
+      const success = await AuthService.emailSubscribe({
+        email: userInfo.email,
+        targetId: spaceId,
+        targetType: 2 // 2 for space
+      });
+
+      if (success) {
+        setIsFollowing(false);
+        showToast('Unsubscribed from space', 'success');
+
+        // Update cache with new subscription status
+        const cacheKey = namespace ? `namespace:${decodeURIComponent(spaceIdentifier || '')}` : `category:${decodeURIComponent(spaceIdentifier || '')}`;
+        const cached = spaceFetchCache.get(cacheKey);
+        if (cached && cached.data) {
+          spaceFetchCache.set(cacheKey, {
+            ...cached,
+            data: { ...cached.data, isFollowing: false }
+          });
+        }
+      } else {
+        showToast('Failed to unsubscribe from space', 'error');
       }
     } catch (err) {
       console.error('Failed to unsubscribe from space:', err);
@@ -1117,9 +1217,11 @@ export const SpaceContentSection = (): JSX.Element => {
       <SpaceInfoSection
         spaceName={displaySpaceName || spaceInfo?.name || category || 'Space'}
         treasureCount={totalArticleCount || articles.length}
+        subscriberCount={subscriberCount}
         authorName={spaceInfo?.authorName || 'Anonymous'}
         authorAvatar={spaceInfo?.authorAvatar}
         authorNamespace={spaceInfo?.authorNamespace}
+        spaceNamespace={namespace || spaceIdentifier}
         spaceDescription={spaceInfo?.description}
         spaceCoverUrl={spaceInfo?.coverUrl}
         spaceFaceUrl={spaceInfo?.faceUrl}
@@ -1128,12 +1230,23 @@ export const SpaceContentSection = (): JSX.Element => {
         isOwner={isOwner}
         spaceType={spaceInfo?.spaceType}
         visibility={spaceInfo?.visibility}
+        spaceId={spaceId}
         onFollow={handleFollow}
         onUnfollow={handleUnfollow}
         onShare={handleShare}
         onAuthorClick={handleAuthorClick}
         onEdit={handleEditSpace}
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
+        onSubscriberCountLoaded={setSubscriberCount}
+        onSubscriptionChange={(isSubscribed) => {
+          // Update local state only - SubscribeButton already handled the API call
+          setIsFollowing(isSubscribed);
+          if (isSubscribed) {
+            setSubscriberCount(prev => (prev || 0) + 1);
+          } else {
+            setSubscriberCount(prev => Math.max((prev || 0) - 1, 0));
+          }
+        }}
       />
 
       {/* Articles Grid */}
@@ -1143,9 +1256,14 @@ export const SpaceContentSection = (): JSX.Element => {
             <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">No treasures yet — this collection is just getting started.</h3>
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-[15px] px-5 py-2.5 bg-red text-white rounded-[50px] hover:bg-red/90 transition-colors [font-family:'Lato',Helvetica] font-normal text-lg leading-5"
+              className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
             >
-              Discover
+              <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
+                <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
+              </svg>
+              <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
+                Discover
+              </span>
             </button>
           </div>
         ) : (
@@ -1210,7 +1328,7 @@ export const SpaceContentSection = (): JSX.Element => {
                   id="edit-space-title"
                   className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
                 >
-                  Edit collection
+                  Edit treasury
                 </h2>
 
                 {/* Space Name */}
@@ -1253,7 +1371,7 @@ export const SpaceContentSection = (): JSX.Element => {
                       onChange={(e) => setEditSpaceDescription(e.target.value)}
                       placeholder="Describe your space (optional)"
                       className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
-                      rows={3}
+                      rows={2}
                       maxLength={200}
                     />
                     <span className="self-end [font-family:'Lato',Helvetica] font-normal text-gray-400 text-xs tracking-[0] leading-[16px]">

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { startTransition } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { HeaderSection } from "../../../components/shared/HeaderSection/HeaderSection";
 import { SideMenuSection } from "../../../components/shared/SideMenuSection/SideMenuSection";
@@ -23,7 +23,7 @@ export const MyTreasury = (): JSX.Element => {
   React.useEffect(() => {
     // Only redirect when accessing /my-treasury path and user is logged in with namespace
     if (location.pathname === '/my-treasury' && user?.namespace && isLoggedIn) {
-      navigate(`/u/${user.namespace}`, { replace: true });
+      startTransition(() => navigate(`/u/${user.namespace}`, { replace: true }));
     }
   }, [location.pathname, user?.namespace, navigate, isLoggedIn]);
 

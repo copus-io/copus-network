@@ -110,7 +110,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
     {
       id: "following",
       label: "Subscriptions",
-      path: userNamespace ? "/following" : "/login",
+      path: userNamespace ? "/subscription" : "/login",
     },
     {
       id: "treasury",

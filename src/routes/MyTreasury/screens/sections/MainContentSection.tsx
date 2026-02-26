@@ -15,6 +15,7 @@ import { useCategory } from "../../../../contexts/CategoryContext";
 import CryptoJS from 'crypto-js';
 import { NoAccessPermission } from "../../../../components/NoAccessPermission/NoAccessPermission";
 import { TasteProfileModal } from "../../../../components/TasteProfileModal";
+import SubscribeButton from "../../../../components/SubscribeButton/SubscribeButton";
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
 // Key: fetchKey (e.g., "user:123")
@@ -40,6 +41,7 @@ interface SocialLink {
 
 // Header Section Component
 const TreasuryHeaderSection = ({
+  userId,
   username,
   namespace,
   bio,
@@ -53,8 +55,11 @@ const TreasuryHeaderSection = ({
   onCreate,
   onImportCSV,
   onTasteProfile,
+  subscriberCount,
+  onSubscriberCountLoaded,
   totalWorks = 0,
 }: {
+  userId?: number;
   username: string;
   namespace: string;
   bio?: string;
@@ -68,8 +73,11 @@ const TreasuryHeaderSection = ({
   onCreate?: () => void;
   onImportCSV?: () => void;
   onTasteProfile?: () => void;
+  subscriberCount?: number;
+  onSubscriberCountLoaded?: (count: number) => void;
   totalWorks?: number;
 }): JSX.Element => {
+  const { user } = useUser(); // Add this for subscribe button
   const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
   const [tasteButtonSeen, setTasteButtonSeen] = useState(() => localStorage.getItem('copus_taste_button_seen') === '1');
   const shouldGlow = isOwnProfile && totalWorks >= 10 && !tasteButtonSeen;
@@ -171,13 +179,21 @@ const TreasuryHeaderSection = ({
         />
 
         {/* Username */}
-        <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1">
-          {username}
-        </h1>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4]">
+            {username}
+          </h1>
+        </div>
 
-        {/* Namespace */}
-        <div className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] mb-1">
-          @{namespace}
+        {/* Namespace and subscriber count */}
+        <div className="flex items-center gap-2 [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[1.4] mb-1">
+          <span>@{namespace}</span>
+          {!!subscriberCount && subscriberCount > 0 && (
+            <>
+              <span className="text-gray-300">·</span>
+              <span>{subscriberCount} subscribers</span>
+            </>
+          )}
         </div>
 
         {/* Bio */}
@@ -217,7 +233,7 @@ const TreasuryHeaderSection = ({
         )}
 
         {/* Action buttons - Create new treasury, Edit, Import, Share - always shown below user info */}
-        <div className="flex items-center gap-3 mt-3">
+        <div className="flex items-center gap-3 mt-1.5">
             {/* Create new treasury button */}
             {onCreate && isOwnProfile && (
               <button
@@ -263,6 +279,28 @@ const TreasuryHeaderSection = ({
                   <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
+            )}
+
+            {/* Subscribe Button - show for all non-own profiles, including non-logged users */}
+            {!isOwnProfile && userId && (
+              <SubscribeButton
+                authorUserId={userId}
+                authorName={username}
+                authorNamespace={namespace}
+                size="medium"
+                variant="default"
+                showSubscriberCount={false}
+                initialSubscriberCount={subscriberCount}
+                onSubscriberCountLoaded={onSubscriberCountLoaded}
+                onSubscriptionChange={(isSubscribed) => {
+                  // Real-time UI update for subscriber count
+                  if (isSubscribed) {
+                    onSubscriberCountLoaded?.((subscriberCount || 0) + 1);
+                  } else {
+                    onSubscriberCountLoaded?.(Math.max((subscriberCount || 0) - 1, 0));
+                  }
+                }}
+              />
             )}
 
             {/* Share button */}
@@ -353,6 +391,7 @@ export const MainContentSection = (): JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [treasuryUserInfo, setTreasuryUserInfo] = useState<any>(null);
+  const [subscriberCount, setSubscriberCount] = useState(0);
 
   // Create Space Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -366,6 +405,8 @@ export const MainContentSection = (): JSX.Element => {
 
   // Taste Profile Modal state
   const [showTasteProfileModal, setShowTasteProfileModal] = useState(false);
+
+  // Subscriber count will be fetched from API with user info
 
   // Determine if viewing other user
   const isViewingOtherUser = !!namespace && namespace !== user?.namespace;
@@ -471,18 +512,10 @@ export const MainContentSection = (): JSX.Element => {
               targetUserId = user.id;
             }
           } else {
-            // Viewing own treasury - fetch full user info to get complete statistics
-            try {
-              console.log('Viewing own treasury, fetching full user info by namespace:', user.namespace);
-              processedInfo = await AuthService.getOtherUserTreasuryInfoByNamespace(user.namespace);
-              targetUserId = processedInfo?.id || user.id;
-              console.log('Own user full info:', processedInfo, 'userId:', targetUserId);
-            } catch (err) {
-              // Fall back to basic user info if fetch fails
-              console.warn('Failed to fetch full user info, using basic user info:', err);
-              processedInfo = user;
-              targetUserId = user.id;
-            }
+            // Viewing own treasury - use current user info directly
+            console.log('🟢 Viewing own treasury, using current user info');
+            processedInfo = user;
+            targetUserId = user.id;
           }
         } else if (namespace) {
           // Not logged in but have namespace - fetch that user's info
@@ -513,6 +546,10 @@ export const MainContentSection = (): JSX.Element => {
         }
 
         setTreasuryUserInfo(processedInfo);
+        // Set follower count from API response
+        if (processedInfo?.followerCount !== undefined) {
+          setSubscriberCount(processedInfo.followerCount);
+        }
 
         if (!targetUserId) {
           console.warn('No target user ID available');
@@ -593,6 +630,9 @@ export const MainContentSection = (): JSX.Element => {
   const handleSpaceClick = (space: any) => {
     if (space.namespace) {
       navigate(`/treasury/${space.namespace}`);
+    } else if (space.id) {
+      // Fallback: navigate with space ID and pass space data via state
+      navigate(`/treasury/${space.id}`, { state: { spaceData: space } });
     }
   };
 
@@ -702,6 +742,7 @@ export const MainContentSection = (): JSX.Element => {
     <main className="flex flex-col items-start px-4 lg:px-0 pt-0 pb-[30px] relative min-h-screen">
       {/* Header Section */}
       <TreasuryHeaderSection
+        userId={displayUser?.id}
         username={displayUser?.username || 'Anonymous'}
         namespace={displayUser?.namespace || 'user'}
         bio={displayUser?.bio || ''}
@@ -715,6 +756,8 @@ export const MainContentSection = (): JSX.Element => {
         onCreate={() => setShowCreateModal(true)}
         onImportCSV={() => setShowImportModal(true)}
         onTasteProfile={() => setShowTasteProfileModal(true)}
+        subscriberCount={subscriberCount}
+        onSubscriberCountLoaded={setSubscriberCount}
         totalWorks={(treasuryUserInfo?.statistics?.publicArticleCount || 0) + (treasuryUserInfo?.statistics?.collectedArticleCount || 0)}
       />
 
@@ -818,7 +861,7 @@ export const MainContentSection = (): JSX.Element => {
           setEditingSpace(null);
         }}
         mode="full"
-        title="Edit collection"
+        title="Edit treasury"
         submitLabel="Save"
         editMode={true}
         editSpaceId={editingSpace?.id}
@@ -828,6 +871,20 @@ export const MainContentSection = (): JSX.Element => {
           coverUrl: editingSpace.coverUrl,
           faceUrl: editingSpace.faceUrl,
           visibility: editingSpace.visibility
+        } : undefined}
+        onDelete={editingSpace ? async () => {
+          if (!editingSpace?.id) return;
+          try {
+            await AuthService.deleteSpace(editingSpace.id);
+            showToast('Treasury deleted', 'success');
+            setShowEditModal(false);
+            setEditingSpace(null);
+            // Remove from local state
+            setSpaces(prevSpaces => prevSpaces.filter(s => s.id !== editingSpace.id));
+          } catch (err) {
+            console.error('Failed to delete space:', err);
+            showToast('Failed to delete treasury', 'error');
+          }
         } : undefined}
       />
 

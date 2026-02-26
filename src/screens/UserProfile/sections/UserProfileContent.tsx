@@ -8,6 +8,7 @@ import { ArticleListSkeleton } from "../../../components/ui/skeleton";
 import { useToast } from "../../../components/ui/toast";
 import { ImageUploader } from "../../../components/ImageUploader/ImageUploader";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
+import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 import defaultBanner from "../../../assets/images/default-banner.svg";
 
@@ -155,8 +156,9 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             faceUrl: userData.faceUrl || profileDefaultAvatar,
             bio: userData.bio || "This user is mysterious and left nothing~",
             articlesCount: userData.statistics.articleCount,
-            followersCount: 0, // API doesn't provide follower data yet
+            followersCount: userData.followerCount || 0, // Use new followerCount field from API
             followingCount: 0, // API doesn't provide following data yet
+            isFollowed: userData.isFollowed || false, // Add follow status from API
             // Save other data from API response
             socialLinks: userData.socialLinks,
             statistics: userData.statistics,
@@ -526,9 +528,43 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
             onClick={handleAvatarClick}
           />
 
-          {/* Username and action buttons */}
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold text-gray-900">{userInfo.username}</h1>
+          {/* Username */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{userInfo.username}</h1>
+
+          {/* Namespace and bio */}
+          <p className="text-sm text-gray-400 mb-2">@{userInfo.namespace}</p>
+          <p className="text-gray-700 mb-4 max-w-md">{userInfo.bio}</p>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 mb-3">
+            <span className="text-sm text-gray-500">{userInfo.statistics?.articleCount || 0} Articles</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.followersCount || 0} Followers</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.collectedArticleCount || 0} Treasured</span>
+            <span className="text-gray-300">·</span>
+            <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleCollectedCount || 0} Received</span>
+          </div>
+
+          {/* Action buttons - Subscribe and Share on the same line */}
+          <div className="flex items-center gap-3">
+            {!isOwnProfile && userInfo?.id && userInfo.hasOwnProperty('isFollowed') && (
+              <SubscribeButton
+                authorUserId={userInfo.id}
+                authorName={userInfo.username}
+                authorNamespace={namespace}
+                initialIsSubscribed={userInfo.isFollowed}
+                initialSubscriberCount={userInfo.followerCount}
+                size="medium"
+                variant="default"
+                showSubscriberCount={true}
+                onSubscriberCountLoaded={(count) => {
+                  // Update local follower count when subscription service provides updated count
+                  setUserInfo(prev => prev ? { ...prev, followersCount: count } : prev);
+                }}
+              />
+            )}
+
             <button
               type="button"
               aria-label="Share profile"
@@ -542,33 +578,6 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
               />
             </button>
           </div>
-
-          {/* Namespace and bio */}
-          <p className="text-sm text-gray-400 mb-2">@{userInfo.namespace}</p>
-          <p className="text-gray-700 mb-4 max-w-md">{userInfo.bio}</p>
-
-          {/* Stats */}
-          <div className="flex items-center gap-4 mb-3">
-            <span className="text-sm text-gray-500">{userInfo.statistics?.articleCount || 0} Articles</span>
-            <span className="text-gray-300">·</span>
-            <span className="text-sm text-gray-500">{userInfo.statistics?.collectedArticleCount || 0} Treasured</span>
-            <span className="text-gray-300">·</span>
-            <span className="text-sm text-gray-500">{userInfo.statistics?.myArticleCollectedCount || 0} Received</span>
-          </div>
-
-          {/* Subscribe button (only shown when viewing other users) */}
-          {user && user.namespace !== namespace && (
-            <button
-              className={`px-6 py-2 rounded-full transition-colors ${
-                accountExists
-                  ? 'bg-red text-white hover:bg-red/90'
-                  : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-              }`}
-              disabled={!accountExists}
-            >
-              {accountExists ? 'Subscribe' : "This account doesn't exist"}
-            </button>
-          )}
         </div>
       </section>
 

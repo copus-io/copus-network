@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, startTransition } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Notification } from '../../types/notification';
@@ -178,7 +178,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
               onClick={(e) => {
                 e.stopPropagation();
                 console.log('🖱️ Clicking work title, navigating to:', `/work/${metadata.targetUuid}`);
-                navigate(`/work/${metadata.targetUuid}`);
+                startTransition(() => { navigate(`/work/${metadata.targetUuid}`); });
                 onClose();
               }}
               className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
@@ -203,7 +203,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
 
     // Navigate to related page
     if (notification.actionUrl) {
-      navigate(notification.actionUrl);
+      startTransition(() => { navigate(notification.actionUrl); });
     }
 
     onClose();
@@ -308,7 +308,7 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
         <div className="px-4 py-3 border-t bg-gray-50">
           <button
             onClick={() => {
-              navigate('/notifications');
+              startTransition(() => { navigate('/notifications'); });
               onClose();
             }}
             className="w-full text-center text-sm text-blue-600 hover:text-blue-800 transition-colors"

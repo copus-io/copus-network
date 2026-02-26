@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../components/ui/toast";
@@ -7,22 +7,35 @@ import { AuthService } from "../../../services/authService";
 import { CollectTreasureModal } from "../../../components/CollectTreasureModal";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
 
-// Interface for followed space
+// Interface for followed space - matches updated API spec
 interface FollowedSpace {
-  id: number;
-  name: string;
-  namespace: string;
-  spaceType?: number; // 1 = Treasury, 2 = Curations (default spaces)
-  userId?: number;
-  ownerInfo?: {
+  articleCount?: number;
+  coverUrl?: string;
+  data?: Array<{
+    coverUrl?: string;
+    targetUrl?: string;
+    title?: string;
+  }>;
+  description?: string;
+  faceUrl?: string;
+  followerCount?: number;
+  id?: number;
+  isAdmin?: boolean;
+  isBind?: boolean;
+  isFollowed?: boolean;
+  name?: string;
+  namespace?: string;
+  seoDataByAi?: string;
+  spaceType?: number; // 0 = normal space, 1 = Treasury, 2 = Curations
+  userInfo?: {
+    bio?: string;
+    coverUrl?: string;
+    faceUrl?: string;
     id?: number;
-    username?: string;
     namespace?: string;
-  };
-  authorInfo?: {
-    id?: number;
     username?: string;
   };
+  visibility?: number; // 0:公开 1:登录可见 2:付费可见
 }
 
 // Interface for space with resolved username
@@ -32,112 +45,142 @@ interface FollowedSpaceWithUsername extends FollowedSpace {
 
 export const FollowingContentSection = (): JSX.Element => {
   const { showToast } = useToast();
-  const { user, getArticleLikeState, toggleLike } = useUser();
+  const { user, getArticleLikeState, updateArticleLikeState, toggleLike } = useUser();
   const navigate = useNavigate();
   const [followedSpaces, setFollowedSpaces] = useState<FollowedSpaceWithUsername[]>([]);
   const [loadingSpaces, setLoadingSpaces] = useState(true);
   const [allArticles, setAllArticles] = useState<any[]>([]); // All followed articles
   const [loadingArticles, setLoadingArticles] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreArticles, setHasMoreArticles] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingElementRef = useRef<HTMLDivElement | null>(null);
 
   // Collect Treasure Modal state
   const [collectModalOpen, setCollectModalOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<{ uuid: string; title: string; isLiked: boolean; likeCount: number } | null>(null);
 
-  // Fetch followed spaces from API
-  useEffect(() => {
-    const fetchFollowedSpaces = async () => {
-      if (!user) {
-        setLoadingSpaces(false);
-        return;
-      }
 
-      try {
-        setLoadingSpaces(true);
-        const response = await AuthService.getFollowedSpaces();
-        console.log('Followed spaces response:', response);
+  // Load more articles function
+  const loadMoreArticles = useCallback(async (page: number, isInitial = false) => {
+    if (!user || (!isInitial && isLoadingMore) || !hasMoreArticles) return;
 
-        // Parse the response - handle different response formats
-        let spacesArray: FollowedSpace[] = [];
-        if (response?.data?.data && Array.isArray(response.data.data)) {
-          spacesArray = response.data.data;
-        } else if (response?.data && Array.isArray(response.data)) {
-          spacesArray = response.data;
-        } else if (Array.isArray(response)) {
-          spacesArray = response;
-        }
-
-        // Resolve display names for default spaces using existing data (no extra API calls)
-        const spacesWithDisplayNames = spacesArray.map(space => {
-          const isDefaultSpace =
-            space.spaceType === 1 ||
-            space.spaceType === 2 ||
-            space.name?.toLowerCase().includes('default');
-
-          if (isDefaultSpace) {
-            // Try to get username from various possible fields in the response
-            const username = space.ownerInfo?.username
-              || space.authorInfo?.username
-              || (space as any).userInfo?.username
-              || (space as any).userName
-              || (space as any).ownerName;
-
-            if (username) {
-              let displayName: string;
-              if (space.spaceType === 2 || space.name?.toLowerCase().includes('curation')) {
-                displayName = `${username}'s Curations`;
-              } else {
-                displayName = `${username}'s Treasury`;
-              }
-              return { ...space, resolvedUsername: displayName };
-            }
-          }
-          return space;
-        });
-
-        setFollowedSpaces(spacesWithDisplayNames);
-      } catch (err) {
-        console.error('Failed to fetch followed spaces:', err);
-      } finally {
-        setLoadingSpaces(false);
-      }
-    };
-
-    fetchFollowedSpaces();
-  }, [user]);
-
-  // Fetch all articles from followed spaces (for "All" tab)
-  useEffect(() => {
-    const fetchFollowedArticles = async () => {
-      if (!user) {
-        setLoadingArticles(false);
-        return;
-      }
-
-      try {
+    try {
+      if (isInitial) {
         setLoadingArticles(true);
-        const response = await AuthService.getFollowedArticles(1, 50);
-        console.log('Followed articles response:', response);
+      } else {
+        setIsLoadingMore(true);
+      }
 
-        // Parse the response
-        let articlesArray: any[] = [];
-        if (response?.data?.data && Array.isArray(response.data.data)) {
-          articlesArray = response.data.data;
-        } else if (response?.data && Array.isArray(response.data)) {
-          articlesArray = response.data;
-        } else if (Array.isArray(response)) {
-          articlesArray = response;
-        }
+      const pageSize = 30; // Load 30 articles per page
+      const response = await AuthService.getPageMyFollowedArticle(page, pageSize);
+      console.log(`Followed articles page ${page} response:`, response);
 
+      // Parse the response - service handles data extraction
+      const responseData = response?.data;
+      let articlesArray: any[] = [];
+      let totalCount = 0;
+      let pageCount = 0;
+
+      if (Array.isArray(response)) {
+        articlesArray = response;
+      } else if (responseData) {
+        articlesArray = Array.isArray(responseData.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []);
+        totalCount = responseData.totalCount || 0;
+        pageCount = responseData.pageCount || 0;
+      }
+
+      console.log('✅ Articles loaded:', {
+        page,
+        articlesCount: articlesArray.length,
+        totalCount,
+        pageCount,
+        hasMore: page < pageCount
+      });
+
+      if (isInitial) {
         setAllArticles(articlesArray);
-      } catch (err) {
-        console.error('Failed to fetch followed articles:', err);
-      } finally {
-        setLoadingArticles(false);
+      } else {
+        setAllArticles(prev => [...prev, ...articlesArray]);
+      }
+
+      // Check if there are more pages
+      const hasMore = pageCount > 0 ? page < pageCount : articlesArray.length === pageSize;
+      setHasMoreArticles(hasMore);
+      setCurrentPage(page);
+
+    } catch (err) {
+      console.error('Failed to fetch followed articles:', err);
+      if (isInitial) {
+        setAllArticles([]);
+      }
+    } finally {
+      setLoadingArticles(false);
+      setIsLoadingMore(false);
+    }
+  }, [user, isLoadingMore, hasMoreArticles]);
+
+  // Initial load
+  useEffect(() => {
+    loadMoreArticles(1, true);
+  }, [user]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!loadingElementRef.current || !hasMoreArticles) return;
+
+    // Disconnect previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Create new observer
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoadingMore && hasMoreArticles) {
+          console.log('🔄 Loading more articles, page:', currentPage + 1);
+          loadMoreArticles(currentPage + 1);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '200px' // Start loading 200px before the element is visible
+      }
+    );
+
+    // Start observing
+    observerRef.current.observe(loadingElementRef.current);
+
+    // Cleanup
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [currentPage, isLoadingMore, hasMoreArticles, loadMoreArticles]);
+
+  // Window scroll for infinite scroll (similar to Discovery page)
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if scrolled near the bottom of the page
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrolledToBottom = scrollTop + windowHeight >= documentHeight - 1000; // Trigger 1000px early
+
+      if (scrolledToBottom && hasMoreArticles && !isLoadingMore) {
+        console.log('🔄 Window scroll loading more articles, page:', currentPage + 1);
+        loadMoreArticles(currentPage + 1);
       }
     };
 
-    fetchFollowedArticles();
-  }, [user]);
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMoreArticles, isLoadingMore, loadMoreArticles, currentPage]);
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData & { spaceId?: number } => {
@@ -152,6 +195,7 @@ export const FollowingContentSection = (): JSX.Element => {
       userName: article.authorInfo?.username || 'Anonymous',
       userAvatar: article.authorInfo?.faceUrl || profileDefaultAvatar,
       userId: article.authorInfo?.id,
+      namespace: article.authorInfo?.namespace,
       userNamespace: article.authorInfo?.namespace,
       date: (article.createAt || article.publishAt) ? new Date((article.createAt || article.publishAt) * 1000).toISOString() : '',
       treasureCount: article.likeCount || 0,
@@ -199,19 +243,26 @@ export const FollowingContentSection = (): JSX.Element => {
   const handleCollectSuccess = () => {
     if (!selectedArticle) return;
 
-    // Update like state locally
+    // Update like state locally using updateArticleLikeState (same as Discovery page)
     const newLikeCount = selectedArticle.likeCount + 1;
-    toggleLike(selectedArticle.uuid, false, selectedArticle.likeCount);
+    updateArticleLikeState(selectedArticle.uuid, true, newLikeCount);
 
     // Update selectedArticle state to reflect the change
     setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
   };
 
   // Handle user click
-  const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
-    if (userNamespace) {
-      navigate(`/u/${userNamespace}`);
+  const handleUserClick = (userId: number | undefined) => {
+    // Find the corresponding user's namespace from current articles
+    const article = displayedArticles.find(a => a.userId === userId);
+
+    if (user && user.id === userId) {
+      navigate('/my-treasury');
+    } else if (article?.namespace) {
+      // Prioritize using namespace to navigate to user profile page
+      navigate(`/u/${article.namespace}`);
     } else if (userId) {
+      // Fallback to using userId
       navigate(`/user/${userId}/treasury`);
     }
   };
@@ -305,43 +356,79 @@ export const FollowingContentSection = (): JSX.Element => {
       ) : displayedArticles.length === 0 ? (
         <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
-            <p className="text-gray-500 mb-4">Subscribe to spaces to see their articles here</p>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">No treasures yet</h3>
+            <p className="text-gray-500 mb-4">Subscribe to spaces to see their treasures here</p>
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
+              className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
             >
-              Discover Spaces
+              <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
+                <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
+              </svg>
+              <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
+                Discover
+              </span>
             </button>
           </div>
         </section>
       ) : (
-        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0 grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
-          {displayedArticles.map((article) => {
-            const card = transformArticleToCard(article);
-            const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
+        <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
+          <div className="grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 lg:gap-8">
+            {displayedArticles.map((article) => {
+              const card = transformArticleToCard(article);
+              const articleLikeState = getArticleLikeState(card.id, card.isLiked, typeof card.treasureCount === 'string' ? parseInt(card.treasureCount) || 0 : card.treasureCount);
 
-            const articleData = {
-              ...card,
-              isLiked: articleLikeState.isLiked,
-              treasureCount: articleLikeState.likeCount
-            };
+              const articleData = {
+                ...card,
+                isLiked: articleLikeState.isLiked,
+                treasureCount: articleLikeState.likeCount
+              };
 
-            return (
-              <div key={article.uuid}>
-                <ArticleCard
-                  article={articleData}
-                  layout="discovery"
-                  actions={{
-                    showTreasure: true,
-                    showVisits: true
-                  }}
-                  onLike={handleLike}
-                  onUserClick={handleUserClick}
-                />
-              </div>
-            );
-          })}
+
+              return (
+                <div key={article.uuid}>
+                  <ArticleCard
+                    article={articleData}
+                    layout="discovery"
+                    actions={{
+                      showTreasure: true,
+                      showVisits: true
+                    }}
+                    onLike={handleLike}
+                    onUserClick={handleUserClick}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Infinite scroll loading indicator */}
+          {hasMoreArticles && (
+            <div
+              ref={loadingElementRef}
+              className="flex justify-center items-center py-8 mt-4"
+            >
+              {isLoadingMore ? (
+                <div className="flex items-center gap-3 text-gray-500">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>
+                  <span>Loading more treasures...</span>
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  Scroll to load more treasures
+                </div>
+              )}
+            </div>
+          )}
+
+          {!hasMoreArticles && displayedArticles.length > 0 && (
+            <div className="flex justify-center py-8 mt-4">
+              <span className="text-gray-400 text-sm">You've reached the end of your subscribed treasures</span>
+            </div>
+          )}
         </section>
       )}
 
