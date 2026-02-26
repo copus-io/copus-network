@@ -630,6 +630,9 @@ export const MainContentSection = (): JSX.Element => {
   const handleSpaceClick = (space: any) => {
     if (space.namespace) {
       navigate(`/treasury/${space.namespace}`);
+    } else if (space.id) {
+      // Fallback: navigate with space ID and pass space data via state
+      navigate(`/treasury/${space.id}`, { state: { spaceData: space } });
     }
   };
 
@@ -858,7 +861,7 @@ export const MainContentSection = (): JSX.Element => {
           setEditingSpace(null);
         }}
         mode="full"
-        title="Edit collection"
+        title="Edit treasury"
         submitLabel="Save"
         editMode={true}
         editSpaceId={editingSpace?.id}
@@ -868,6 +871,20 @@ export const MainContentSection = (): JSX.Element => {
           coverUrl: editingSpace.coverUrl,
           faceUrl: editingSpace.faceUrl,
           visibility: editingSpace.visibility
+        } : undefined}
+        onDelete={editingSpace ? async () => {
+          if (!editingSpace?.id) return;
+          try {
+            await AuthService.deleteSpace(editingSpace.id);
+            showToast('Treasury deleted', 'success');
+            setShowEditModal(false);
+            setEditingSpace(null);
+            // Remove from local state
+            setSpaces(prevSpaces => prevSpaces.filter(s => s.id !== editingSpace.id));
+          } catch (err) {
+            console.error('Failed to delete space:', err);
+            showToast('Failed to delete treasury', 'error');
+          }
         } : undefined}
       />
 

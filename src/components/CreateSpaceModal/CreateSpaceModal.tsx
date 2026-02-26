@@ -25,6 +25,8 @@ export interface CreateSpaceModalProps {
     faceUrl?: string;
     visibility?: number;
   };
+  // Delete support
+  onDelete?: () => void;
 }
 
 export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
@@ -38,7 +40,8 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   submitLabel = 'Create',
   editMode = false,
   editSpaceId,
-  initialData
+  initialData,
+  onDelete
 }) => {
   const { showToast } = useToast();
 
@@ -170,7 +173,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
         resultSpace = response.data || response;
 
         if (resultSpace) {
-          showToast('Collection updated successfully', 'success');
+          showToast('Treasury updated successfully', 'success');
         }
       } else {
         // Create new space
@@ -198,11 +201,11 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
         handleClose();
       } else {
         console.error('No space data in response:', response);
-        showToast(editMode ? 'Failed to update collection' : 'Failed to create space', 'error');
+        showToast(editMode ? 'Failed to update treasury' : 'Failed to create space', 'error');
       }
     } catch (err) {
       console.error(editMode ? 'Failed to update space:' : 'Failed to create space:', err);
-      showToast(editMode ? 'Failed to update collection' : 'Failed to create space', 'error');
+      showToast(editMode ? 'Failed to update treasury' : 'Failed to create space', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -293,7 +296,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                       onChange={(e) => setSpaceDescription(e.target.value)}
                       placeholder="Describe your space (optional)"
                       className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
-                      rows={3}
+                      rows={2}
                       maxLength={200}
                     />
                     <span className="self-end [font-family:'Lato',Helvetica] font-normal text-gray-400 text-xs tracking-[0] leading-[16px]">
@@ -374,27 +377,52 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-end gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-            <button
-              className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-              onClick={handleClose}
-              type="button"
-            >
-              <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                Cancel
-              </span>
-            </button>
+          <div className="flex items-center justify-between relative self-stretch w-full flex-[0_0_auto]">
+            {/* Delete button on the left - only in edit mode with onDelete */}
+            {editMode && onDelete ? (
+              <button
+                className="inline-flex items-center gap-2 px-3 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-red/10 transition-colors"
+                onClick={onDelete}
+                type="button"
+                aria-label="Delete treasury"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 6H5H21" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M10 11V17" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 11V17" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="[font-family:'Lato',Helvetica] font-normal text-red text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                  Delete
+                </span>
+              </button>
+            ) : (
+              <div />
+            )}
 
-            <button
-              className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-              onClick={handleSubmit}
-              disabled={isCreating || !spaceName.trim() || isImageUploading}
-              type="button"
-            >
-              <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                {isImageUploading ? 'Uploading image...' : (isCreating ? 'Creating...' : submitLabel)}
-              </span>
-            </button>
+            {/* Cancel and Save buttons on the right */}
+            <div className="flex items-center gap-2.5">
+              <button
+                className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={handleClose}
+                type="button"
+              >
+                <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                  Cancel
+                </span>
+              </button>
+
+              <button
+                className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
+                onClick={handleSubmit}
+                disabled={isCreating || !spaceName.trim() || isImageUploading}
+                type="button"
+              >
+                <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
+                  {isImageUploading ? 'Uploading image...' : (isCreating ? 'Creating...' : submitLabel)}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

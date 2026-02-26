@@ -356,13 +356,18 @@ export const FollowingContentSection = (): JSX.Element => {
       ) : displayedArticles.length === 0 ? (
         <section className="w-full pt-0 pb-[30px] min-h-screen px-2.5 lg:pl-2.5 lg:pr-0">
           <div className="flex flex-col items-center justify-center w-full py-20 text-center">
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles yet</h3>
-            <p className="text-gray-500 mb-4">Subscribe to spaces to see their articles here</p>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">No treasures yet</h3>
+            <p className="text-gray-500 mb-4">Subscribe to spaces to see their treasures here</p>
             <button
               onClick={() => navigate('/')}
-              className="px-6 py-3 bg-red text-white rounded-full font-semibold hover:bg-red/90 transition-colors"
+              className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
             >
-              Discover Spaces
+              <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
+                <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
+              </svg>
+              <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
+                Discover
+              </span>
             </button>
           </div>
         </section>
@@ -409,11 +414,11 @@ export const FollowingContentSection = (): JSX.Element => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                   </svg>
-                  <span>Loading more articles...</span>
+                  <span>Loading more treasures...</span>
                 </div>
               ) : (
                 <div className="text-gray-400 text-sm">
-                  Scroll to load more articles
+                  Scroll to load more treasures
                 </div>
               )}
             </div>
@@ -421,7 +426,7 @@ export const FollowingContentSection = (): JSX.Element => {
 
           {!hasMoreArticles && displayedArticles.length > 0 && (
             <div className="flex justify-center py-8 mt-4">
-              <span className="text-gray-400 text-sm">You've reached the end of your followed articles</span>
+              <span className="text-gray-400 text-sm">You've reached the end of your subscribed treasures</span>
             </div>
           )}
         </section>

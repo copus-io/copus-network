@@ -308,10 +308,10 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
 
         const successMessage = newSubscribedState
           ? (subscriptionType === 'space'
-              ? `🎉 Successfully followed ${spaceName}! You will receive email notifications for updates.`
+              ? `Successfully subscribed to ${spaceName}! You will receive email notifications for updates.`
               : `🎉 Successfully subscribed to ${authorName}! You will receive email notifications for updates.`)
           : (subscriptionType === 'space'
-              ? `Successfully unfollowed ${spaceName}`
+              ? `Successfully unsubscribed from ${spaceName}`
               : 'Successfully unsubscribed');
 
         showToast(successMessage, newSubscribedState ? 'success' : 'info');
@@ -480,7 +480,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     }
 
     if (state.isSubscribed) {
-      const subscribedText = subscriptionType === 'space' ? 'Following' : 'Subscribed';
+      const subscribedText = subscriptionType === 'space' ? 'Subscribed' : 'Subscribed';
 
       return (
         <>
@@ -496,7 +496,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     }
 
     const targetName = subscriptionType === 'space' ? spaceName : authorName;
-    const subscribeText = subscriptionType === 'space' ? 'Follow' : 'Subscribe';
+    const subscribeText = subscriptionType === 'space' ? 'Subscribe' : 'Subscribe';
 
     return (
       <>
@@ -507,7 +507,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
         </svg>
         {subscribeText}
         {showSubscriberCount && size !== 'small' && state.subscriberCount > 0 && (
-          <span className="text-xs opacity-90">({state.subscriberCount} {subscriptionType === 'space' ? 'followers' : 'subscribers'})</span>
+          <span className="text-xs opacity-90">({state.subscriberCount} subscribers)</span>
         )}
       </>
     );
@@ -556,7 +556,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
           disabled={state.isLoading}
           className={`${getButtonStyles()} touch-target subscribe-button no-zoom`}
           style={getInlineStyles()}
-          title={state.isSubscribed ? 'Click to manage subscription' : `Click to ${subscriptionType === 'space' ? 'follow' : 'subscribe'}`}
+          title={state.isSubscribed ? 'Click to manage subscription' : 'Click to subscribe'}
         >
           {getButtonContent()}
         </button>
@@ -573,7 +573,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
                 }}
                 className="flex items-center justify-center px-4 h-8 rounded-[50px] transition-colors hover:bg-[rgba(224,224,224,0.25)] [font-family:'Lato',Helvetica] font-normal text-sm text-red whitespace-nowrap"
               >
-                {subscriptionType === 'space' ? 'Unfollow' : 'Unsubscribe'}
+                Unsubscribe
               </button>
             </div>
           </>
