@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import subscriptionService from '../../services/subscriptionService';
-import antiAbuseService from '../../services/antiAbuseService';
 import { AuthService } from '../../services/authService';
 import { AuthorInfo, SubscribeButtonState, EmailFrequency, SPACE_TYPES } from '../../types/subscription';
 
@@ -72,12 +71,6 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   const [email, setEmail] = useState('');
   const [authorInfo, setAuthorInfo] = useState<AuthorInfo | null>(null);
 
-  // 🍯 Honeypot fields - used to detect bots
-  const [honeypotFields, setHoneypotFields] = useState({
-    website: '',
-    phone: '',
-    company: ''
-  });
 
   // Debug: Monitor state changes
   useEffect(() => {
@@ -201,69 +194,20 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   const handleEmailSubmit = async () => {
     if (!email.trim()) return;
 
-    // 🛡️ Anti-abuse checks
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      showToast('Please enter a valid email address', 'error');
+      return;
+    }
+
+    // Continue with subscription
     try {
-      // 1. Honeypot check - if hidden fields have values, possibly a bot
-      const isBot = !antiAbuseService.checkHoneypot({
-        website: honeypotFields.website,
-        phone: honeypotFields.phone,
-        company: honeypotFields.company
-      });
-
-      if (isBot) {
-        console.log('🤖 Honeypot detected bot behavior, blocking subscription');
-        showToast('Subscription failed, please try again later', 'error');
-        return;
-      }
-
-      // 2. Email validation
-      const emailValidation = antiAbuseService.validateEmailForSubscription(email);
-      if (!emailValidation.isValid) {
-        console.log('❌ Email validation failed:', emailValidation.reason);
-        showToast(`Invalid email: ${emailValidation.reason === 'disposable_email' ? 'Temporary email not supported' : 'Invalid email format'}`, 'error');
-        return;
-      }
-
-      if (emailValidation.risk === 'high') {
-        console.log('⚠️ High-risk email, blocking subscription');
-        showToast('This email has security risks, please use another email', 'error');
-        return;
-      }
-
-      // 3. Comprehensive risk assessment
-      const userIP = antiAbuseService.getCurrentUserIP();
-      const riskAssessment = antiAbuseService.assessSubscriptionRisk({
-        email,
-        authorUserId,
-        ip: userIP,
-        userAgent: navigator.userAgent
-      });
-
-      console.log('🔍 Risk assessment result:', riskAssessment);
-
-      if (riskAssessment.action === 'block') {
-        showToast(riskAssessment.message || 'Subscription request blocked, please try again later', 'error');
-        return;
-      }
-
-      if (riskAssessment.action === 'manual_review') {
-        showToast(riskAssessment.message || 'Subscription request requires review, we will process it within 24 hours', 'info');
-        return;
-      }
-
-      if (riskAssessment.action === 'warn') {
-        // Show warning but allow continue
-        showToast(riskAssessment.message || 'System detected potential risks, please confirm your operation', 'warning');
-      }
-
-      // Pass all checks, continue flow
       setShowEmailModal(false);
-      // 直接调用核心订阅函数
       await performEmailSubscribe(email.trim());
-
     } catch (error) {
-      console.error('Anti-abuse check failed:', error);
-      showToast('System check failed, please try again later', 'error');
+      console.error('Subscription failed:', error);
+      showToast('Subscription failed, please try again later', 'error');
     }
   };
 
@@ -628,33 +572,6 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
                 You'll receive an email notification when {subscriptionType === 'space' ? spaceName : authorName} publishes new treasures.
               </p>
 
-              {/* Honeypot fields */}
-              <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }} aria-hidden="true">
-                <input
-                  type="text"
-                  name="website"
-                  value={honeypotFields.website}
-                  onChange={(e) => setHoneypotFields(prev => ({...prev, website: e.target.value}))}
-                  tabIndex={-1}
-                  autoComplete="off"
-                />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={honeypotFields.phone}
-                  onChange={(e) => setHoneypotFields(prev => ({...prev, phone: e.target.value}))}
-                  tabIndex={-1}
-                  autoComplete="off"
-                />
-                <input
-                  type="text"
-                  name="company"
-                  value={honeypotFields.company}
-                  onChange={(e) => setHoneypotFields(prev => ({...prev, company: e.target.value}))}
-                  tabIndex={-1}
-                  autoComplete="off"
-                />
-              </div>
 
               <div className="flex justify-end gap-3 mt-6">
                 <button
