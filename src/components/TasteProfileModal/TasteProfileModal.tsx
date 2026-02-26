@@ -9,6 +9,7 @@ interface TasteProfileModalProps {
   username: string;
   totalWorks?: number; // Total curations + collections
   isTasteVisible?: boolean; // Current visibility from backend
+  onVisibilityChange?: (isVisible: boolean) => void;
 }
 
 interface TasteProfileData {
@@ -53,7 +54,8 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
   namespace,
   username,
   totalWorks = 0,
-  isTasteVisible = true
+  isTasteVisible = true,
+  onVisibilityChange
 }) => {
   const { showToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
@@ -77,8 +79,10 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
         body: JSON.stringify({ isTasteVisible: !isPublic }),
         requiresAuth: true
       });
-      setIsPublic(!isPublic);
-      showToast(`Taste profile is now ${!isPublic ? 'public' : 'private'}`, 'success');
+      const newValue = !isPublic;
+      setIsPublic(newValue);
+      onVisibilityChange?.(newValue);
+      showToast(`Taste profile is now ${newValue ? 'public' : 'private'}`, 'success');
     } catch (error) {
       showToast('Failed to update visibility', 'error');
     } finally {

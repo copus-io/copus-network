@@ -978,6 +978,11 @@ export const MainContentSection = (): JSX.Element => {
           username={(treasuryUserInfo || displayUser).username}
           totalWorks={(treasuryUserInfo?.statistics?.publicArticleCount || 0) + (treasuryUserInfo?.statistics?.collectedArticleCount || 0)}
           isTasteVisible={(treasuryUserInfo || displayUser).isTasteVisible !== false}
+          onVisibilityChange={(isVisible) => {
+            if (treasuryUserInfo) {
+              setTreasuryUserInfo({ ...treasuryUserInfo, isTasteVisible: isVisible });
+            }
+          }}
         />
       )}
     </main>
