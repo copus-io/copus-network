@@ -306,7 +306,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      localStorage.setItem('copus_user', JSON.stringify(updatedUser));
+      storage.setItem('copus_user', JSON.stringify(updatedUser));
     }
   };
 
@@ -324,7 +324,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Update local user state
         const updatedUser = { ...user, namespace };
         setUser(updatedUser);
-        localStorage.setItem('copus_user', JSON.stringify(updatedUser));
+        storage.setItem('copus_user', JSON.stringify(updatedUser));
 
         return true;
       } else {
@@ -353,8 +353,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Get user detailed information
   const fetchUserInfo = useCallback(async (authToken?: string, retryOnFailure: boolean = true) => {
     try {
-      // If token is provided, use it; otherwise get from localStorage
-      const tokenToUse = authToken || localStorage.getItem('copus_token');
+      // If token is provided, use it; otherwise get from storage
+      const tokenToUse = authToken || storage.getItem('copus_token');
 
       if (!tokenToUse) {
         console.error('❌ No token available for fetchUserInfo');
@@ -367,15 +367,15 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       console.log('✅ Got user info:', userInfo.username);
 
-      // Save user to state and localStorage
+      // Save user to state and storage
       setUser(userInfo);
-      localStorage.setItem('copus_user', JSON.stringify(userInfo));
+      storage.setItem('copus_user', JSON.stringify(userInfo));
 
       // IMPORTANT: If a token was provided (like during login), save it to state too!
       if (authToken) {
-        console.log('💾 Saving token to state and localStorage');
+        console.log('💾 Saving token to state and storage');
         setToken(authToken);
-        localStorage.setItem('copus_token', authToken);
+        storage.setItem('copus_token', authToken);
       }
     } catch (error) {
       console.warn('Failed to get user info (user stays logged in):', error);

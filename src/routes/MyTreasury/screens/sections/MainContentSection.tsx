@@ -983,6 +983,9 @@ export const MainContentSection = (): JSX.Element => {
               setTreasuryUserInfo({ ...treasuryUserInfo, isTasteVisible: isVisible });
             }
           }}
+          userBio={(treasuryUserInfo || displayUser)?.bio || ''}
+          userFaceUrl={(treasuryUserInfo || displayUser)?.faceUrl || ''}
+          userCoverUrl={(treasuryUserInfo || displayUser)?.coverUrl || ''}
         />
       )}
     </main>
