@@ -10,6 +10,9 @@ interface TasteProfileModalProps {
   totalWorks?: number; // Total curations + collections
   isTasteVisible?: boolean; // Current visibility from backend
   onVisibilityChange?: (isVisible: boolean) => void;
+  userBio?: string;
+  userFaceUrl?: string;
+  userCoverUrl?: string;
 }
 
 interface TasteProfileData {
@@ -55,7 +58,10 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
   username,
   totalWorks = 0,
   isTasteVisible = true,
-  onVisibilityChange
+  onVisibilityChange,
+  userBio,
+  userFaceUrl,
+  userCoverUrl
 }) => {
   const { showToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
@@ -74,9 +80,18 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
   const handleToggleVisibility = async () => {
     setIsToggling(true);
     try {
+      // IMPORTANT: Must include existing profile fields because the backend
+      // updateUser endpoint overwrites ALL fields, not just the ones provided.
+      // Sending only isTasteVisible would wipe bio, faceUrl, coverUrl.
       await apiRequest('/client/user/updateUser', {
         method: 'POST',
-        body: JSON.stringify({ isTasteVisible: !isPublic }),
+        body: JSON.stringify({
+          isTasteVisible: !isPublic,
+          userName: username,
+          bio: userBio || '',
+          faceUrl: userFaceUrl || '',
+          coverUrl: userCoverUrl || '',
+        }),
         requiresAuth: true
       });
       const newValue = !isPublic;
