@@ -729,15 +729,15 @@ export const FollowingAuthorSection = ({ showSubscriptionsPopup, setShowSubscrip
         </section>
       )}
 
-      {/* Grey divider - only show when there are authors */}
-      {!loading && subscribedAuthors.length > 0 && (
+      {/* Grey divider - only show when there are authors or articles */}
+      {!loading && (subscribedAuthors.length > 0 || followedArticles.length > 0) && (
         <div className="w-full px-2.5 lg:pl-2.5 lg:pr-0 my-6">
           <div className="border-t border-gray-200" />
         </div>
       )}
 
-      {/* Content section - only show when there are authors */}
-      {!loading && subscribedAuthors.length > 0 && (
+      {/* Content section - show when there are authors or articles */}
+      {!loading && (subscribedAuthors.length > 0 || followedArticles.length > 0) && (
       <section className="w-full px-2.5 lg:pl-2.5 lg:pr-0">
         {selectedAuthorFilter && (
           <div className="flex items-center gap-2 mb-4">
