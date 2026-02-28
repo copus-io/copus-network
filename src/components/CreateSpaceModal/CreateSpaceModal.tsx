@@ -10,7 +10,7 @@ export interface CreateSpaceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (space: any) => void;
-  mode?: 'simple' | 'full'; // simple: only name, full: all fields
+  mode?: 'simple' | 'full' | 'compact'; // simple: only name, compact: name + description, full: all fields
   title?: string;
   nameLabel?: string;
   namePlaceholder?: string;
@@ -150,8 +150,8 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
     try {
       setIsCreating(true);
 
-      // Prepare optional fields for full mode
-      const description = mode === 'full' ? (spaceDescription.trim() || undefined) : undefined;
+      // Prepare optional fields based on mode
+      const description = (mode === 'full' || mode === 'compact') ? (spaceDescription.trim() || undefined) : undefined;
       const coverUrl = mode === 'full' ? (spaceCoverUrl.trim() || undefined) : undefined;
       const faceUrl = mode === 'full' ? (spaceFaceUrl.trim() || undefined) : undefined;
 
@@ -276,6 +276,32 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Compact mode: Description only */}
+            {mode === 'compact' && (
+              <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
+                <label
+                  htmlFor="space-description-input"
+                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
+                >
+                  Description (Optional)
+                </label>
+                <div className="flex flex-col px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+                  <textarea
+                    id="space-description-input"
+                    value={spaceDescription}
+                    onChange={(e) => setSpaceDescription(e.target.value)}
+                    placeholder="Describe your space (optional)"
+                    className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
+                    rows={2}
+                    maxLength={200}
+                  />
+                  <span className="self-end [font-family:'Lato',Helvetica] font-normal text-gray-400 text-xs tracking-[0] leading-[16px]">
+                    {spaceDescription.length}/200
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Full mode: Description, Avatar, Cover */}
             {mode === 'full' && (
