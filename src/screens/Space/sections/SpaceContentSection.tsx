@@ -726,23 +726,8 @@ export const SpaceContentSection = (): JSX.Element => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spaceIdentifier, namespace, user?.id, user?.username, user?.faceUrl, user?.namespace]);
 
-  // Load sample sub-treasury for demo (spaceId 102)
-  useEffect(() => {
-    if (spaceId === 102 && subTreasuries.length === 0) {
-      setSubTreasuries([{
-        id: 9999,
-        namespace: '',
-        name: 'AI Art Collection',
-        description: 'A curated collection of AI-generated artworks and discussions',
-        articleCount: 5,
-        spaceType: 0,
-        ownerInfo: {
-          username: spaceInfo?.authorName || 'Anonymous',
-          namespace: spaceInfo?.authorNamespace,
-        },
-      }]);
-    }
-  }, [spaceId]);
+  // Sub-treasuries are managed via local state only (no backend API yet)
+  // They are created via the "Create sub-treasury" button or organize mode
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData => {
@@ -2091,7 +2076,17 @@ export const SpaceContentSection = (): JSX.Element => {
                 }
               }
             }
-            setSubTreasuries(prev => [...prev, newSpace]);
+            // Add selected articles' covers to the new space for card preview
+            const selectedArticles = selectedUuids
+              .map(uuid => articles.find(a => a.uuid === uuid))
+              .filter(Boolean);
+            const previewData = selectedArticles.slice(0, 3).map(a => ({
+              coverUrl: a?.cover || a?.coverUrl || '',
+              title: a?.title || '',
+              targetUrl: a?.targetUrl || '',
+            }));
+            const spaceWithData = { ...newSpace, data: previewData, articleCount: bindCount };
+            setSubTreasuries(prev => [...prev, spaceWithData]);
             setSelectedArticleIds(new Set());
             showToast(`Created sub-treasury and added ${bindCount} treasures`, 'success');
           }
