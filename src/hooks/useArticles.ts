@@ -125,11 +125,15 @@ export const useArticles = (
   }, [state.loading, state.hasMore, state.page, fetchArticles]);
 
   const refresh = useCallback(() => {
+    // Clear cache so refresh actually fetches fresh data
+    cacheRef.current.clear();
     fetchArticles({}, false);
   }, [fetchArticles]);
 
   useEffect(() => {
     if (options.autoRefresh) {
+      // Always clear cache on mount to ensure fresh data when navigating back
+      cacheRef.current.clear();
       fetchArticles();
     }
   }, []); // Only execute on component first render
