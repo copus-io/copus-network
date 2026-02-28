@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useArticles } from "../../../../hooks/useArticles";
 import { Article } from "../../../../types/article";
 import { ArticleListSkeleton } from "../../../../components/ui/skeleton";
@@ -82,12 +82,19 @@ export const DiscoveryContentSection = (): JSX.Element => {
   };
 
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
+  const location = useLocation();
+  const isFirstMount = useRef(true);
 
-
-  // Note: Removed auto-refresh on focus/visibility change to prevent
-  // unwanted API calls when navigating between pages. The useArticles hook
-  // already fetches data on initial mount, and users can manually refresh
-  // by scrolling to load more or reloading the page.
+  // Re-fetch articles when navigating back to Discovery via React Router
+  // (e.g., clicking Copus logo). The useArticles hook only fetches on initial
+  // mount, so without this, stale cached data would be shown.
+  React.useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    refresh();
+  }, [location.key]);
 
   // Scroll to load more logic
   React.useEffect(() => {
