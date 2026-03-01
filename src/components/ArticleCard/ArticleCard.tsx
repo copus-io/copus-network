@@ -68,6 +68,10 @@ export interface ArticleCardProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   className?: string;
+  // Selection mode props (for organize mode)
+  isSelectable?: boolean;
+  isSelected?: boolean;
+  onSelect?: (articleId: string) => void;
 }
 
 const ArticleCardComponent: React.FC<ArticleCardProps> = ({
@@ -87,7 +91,10 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
   onUserClick,
   onMouseEnter,
   onMouseLeave,
-  className = ""
+  className = "",
+  isSelectable = false,
+  isSelected = false,
+  onSelect
 }) => {
   const navigate = useNavigate();
 
@@ -835,7 +842,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                         onClick={handleDelete}
                       >
                         <img
-                          className="w-5 h-3.5"
+                          className="w-5 h-5"
                           alt="Delete"
                           src={getIconUrl('DELETE')}
                           style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
@@ -907,13 +914,48 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
     </Card>
   );
 
+  // Selection circle overlay for organize mode
+  const selectionOverlay = isSelectable ? (
+    <div
+      className="absolute top-3 left-3 z-10 cursor-pointer"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect?.(article.id);
+      }}
+    >
+      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)] ${
+        isSelected
+          ? 'bg-red border-red'
+          : 'bg-black/30 border-white hover:bg-black/50'
+      }`}>
+        {isSelected && (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+            <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div
-      className={`w-full ${className}`}
+      className={`w-full ${className} relative`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {layout === 'preview' ? (
+      {selectionOverlay}
+      {isSelectable ? (
+        <div
+          className="cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            onSelect?.(article.id);
+          }}
+        >
+          {cardContent}
+        </div>
+      ) : layout === 'preview' ? (
         cardContent
       ) : (
         <Link to={`/work/${article.uuid || article.id}`}>
@@ -945,6 +987,9 @@ export const ArticleCard = React.memo(ArticleCardComponent, (prevProps, nextProp
     prevProps.article.isLiked === nextProps.article.isLiked &&
     prevProps.article.treasureCount === nextProps.article.treasureCount &&
     prevProps.layout === nextProps.layout &&
-    prevProps.isHovered === nextProps.isHovered
+    prevProps.isHovered === nextProps.isHovered &&
+    prevProps.isSelectable === nextProps.isSelectable &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.className === nextProps.className
   );
 });

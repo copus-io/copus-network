@@ -43,7 +43,8 @@ export enum NotificationType {
   COMMENT_REPLY = 'comment_reply',
   COMMENT_LIKE = 'comment_like',
   UNLOCK = 'unlock',
-  COLLECT = 'collect'
+  COLLECT = 'collect',
+  SUBSCRIBE = 'subscribe'
 }
 
 export interface NotificationMetadata {
@@ -154,6 +155,11 @@ export class NotificationTemplates {
         return `[${data.senderUsername}] collected [${data.articleTitle}] in ${spaceNames}`;
       },
       actionUrl: (data) => `/work/${data.articleUuid || data.articleId}`
+    },
+    [NotificationType.SUBSCRIBE]: {
+      title: '新订阅',
+      messageTemplate: (data) => `[${data.senderUsername}] subscribed to you!`,
+      actionUrl: (data) => `/user/${data.senderNamespace || data.senderUsername}`
     },
     [NotificationType.SYSTEM]: {
       title: '系统通知',
@@ -436,6 +442,8 @@ export class MessageTypeDetector {
         return NotificationType.UNLOCK;
       case 9:
         return NotificationType.COLLECT;
+      case 10:
+        return NotificationType.SUBSCRIBE;
       case 999:
         return NotificationType.SYSTEM;
       case 0:
@@ -454,6 +462,9 @@ export class MessageTypeDetector {
 
     const lowerContent = content.toLowerCase();
 
+    if (lowerContent.includes('subscribed to you') || lowerContent.includes('订阅了你')) {
+      return NotificationType.SUBSCRIBE;
+    }
     if (lowerContent.includes('comment') || lowerContent.includes('评论')) {
       return NotificationType.COMMENT;
     }

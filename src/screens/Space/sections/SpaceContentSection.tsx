@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { AuthService } from "../../../services/authService";
-import { removeArticleFromSpace } from "../../../services/articleService";
+import { removeArticleFromSpace, bindArticles } from "../../../services/articleService";
 import { Button } from "../../../components/ui/button";
 import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
@@ -13,12 +13,15 @@ import { devLog } from "../../../utils/devLogger";
 import { ErrorHandler } from "../../../utils/errorHandler";
 import { API_ENDPOINTS } from "../../../config/apiEndpoints";
 import { spaceShortcuts, eventHandlers } from "../../../utils/devShortcuts";
+import { getIconUrl } from "../../../config/icons";
 import { ImportCSVModal } from "../../../components/ImportCSVModal";
 import { type ImportedBookmark } from "../../../utils/csvUtils";
 import { useCategory } from "../../../contexts/CategoryContext";
 import { NoAccessPermission } from "../../../components/NoAccessPermission/NoAccessPermission";
 import { SEO } from "../../../components/SEO/SEO";
 import SubscribeButton from "../../../components/SubscribeButton/SubscribeButton";
+import { TreasuryCard, type SpaceData } from "../../../components/ui/TreasuryCard";
+import { CreateSpaceModal } from "../../../components/CreateSpaceModal/CreateSpaceModal";
 
 
 // Module-level cache to prevent duplicate fetches across StrictMode remounts
@@ -53,9 +56,14 @@ const SpaceInfoSection = ({
   onShare,
   onAuthorClick,
   onEdit,
+  onOrganize,
+  organizeMode,
+  onCreateSubTreasury,
   onImportCSV,
   onSubscriberCountLoaded,
   onSubscriptionChange,
+  parentSpaceName,
+  isSubTreasury,
 }: {
   spaceName: string;
   treasureCount: number;
@@ -78,9 +86,14 @@ const SpaceInfoSection = ({
   onShare: () => void;
   onAuthorClick: () => void;
   onEdit?: () => void;
+  onOrganize?: () => void;
+  organizeMode?: boolean;
+  onCreateSubTreasury?: () => void;
   onImportCSV?: () => void;
   onSubscriberCountLoaded?: (count: number) => void;
   onSubscriptionChange?: (isSubscribed: boolean) => void;
+  parentSpaceName?: string;
+  isSubTreasury?: boolean;
 }): JSX.Element => {
   const canEdit = isOwner;
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -156,7 +169,14 @@ const SpaceInfoSection = ({
         )}
 
         {/* Space name */}
-        <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1">{spaceName}</h1>
+        {isSubTreasury && parentSpaceName ? (
+          <>
+            <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{parentSpaceName}</h1>
+            <h2 className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-base tracking-[0] leading-[1.4] mb-1">{spaceName}</h2>
+          </>
+        ) : (
+          <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1">{spaceName}</h1>
+        )}
 
         {/* Treasure count and author info */}
         <div className="flex items-center gap-2 mb-1">
@@ -200,6 +220,39 @@ const SpaceInfoSection = ({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
+
+          {/* Organize button */}
+          {canEdit && onOrganize && (
+            <button
+              type="button"
+              aria-label="Organize"
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
+                organizeMode ? 'bg-red/10' : 'bg-gray-100 hover:opacity-70'
+              }`}
+              onClick={onOrganize}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                <rect x="14" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                <rect x="3" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                <rect x="14" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+              </svg>
+            </button>
+          )}
+
+          {/* Create sub-treasury button */}
+          {canEdit && onCreateSubTreasury && (
+            <button
+              type="button"
+              aria-label="Create sub-treasury"
+              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+              onClick={onCreateSubTreasury}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M5 12H19" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           )}
@@ -289,6 +342,11 @@ export const SpaceContentSection = (): JSX.Element => {
   // Support both /space/:category and /treasury/:namespace routes
   const spaceIdentifier = namespace || category;
 
+  // Detect if this is a sub-treasury page (passed via navigation state)
+  const navState = location.state as { isSubTreasury?: boolean; parentSpaceName?: string; spaceData?: any } | null;
+  const isSubTreasury = navState?.isSubTreasury || false;
+  const parentSpaceName = navState?.parentSpaceName || '';
+
   const { user, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
   const { categories } = useCategory();
@@ -334,6 +392,21 @@ export const SpaceContentSection = (): JSX.Element => {
   // Import CSV state
   const [showImportModal, setShowImportModal] = useState(false);
 
+  // Sub-treasury state
+  const [subTreasuries, setSubTreasuries] = useState<SpaceData[]>([]);
+  const [showCreateSubTreasury, setShowCreateSubTreasury] = useState(false);
+
+  // Organize mode state
+  const [organizeMode, setOrganizeMode] = useState(false);
+  const [selectedArticleIds, setSelectedArticleIds] = useState<Set<string>>(new Set());
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [showOrganizeSubTreasury, setShowOrganizeSubTreasury] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [bindableSpaces, setBindableSpaces] = useState<any[]>([]);
+  const [selectedMoveTarget, setSelectedMoveTarget] = useState<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Fetch space data
   useEffect(() => {
@@ -652,6 +725,9 @@ export const SpaceContentSection = (): JSX.Element => {
     fetchSpaceData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spaceIdentifier, namespace, user?.id, user?.username, user?.faceUrl, user?.namespace]);
+
+  // Sub-treasuries are managed via local state only (no backend API yet)
+  // They are created via the "Create sub-treasury" button or organize mode
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData => {
@@ -1152,18 +1228,32 @@ export const SpaceContentSection = (): JSX.Element => {
         article={articleData}
         layout="discovery"
         actions={{
-          showTreasure: true,
-          showVisits: true,
-          showEdit: canEditArticle,
-          showDelete: canDeleteArticle
+          showTreasure: !organizeMode,
+          showVisits: !organizeMode,
+          showEdit: !organizeMode && canEditArticle,
+          showDelete: !organizeMode && canDeleteArticle
         }}
         isHovered={hoveredCardId === card.id}
-        onLike={handleLike}
-        onUserClick={handleUserClick}
-        onEdit={canEditArticle ? handleEditArticle : undefined}
-        onDelete={canDeleteArticle ? handleDeleteArticle : undefined}
+        onLike={organizeMode ? undefined : handleLike}
+        onUserClick={organizeMode ? undefined : handleUserClick}
+        onEdit={!organizeMode && canEditArticle ? handleEditArticle : undefined}
+        onDelete={!organizeMode && canDeleteArticle ? handleDeleteArticle : undefined}
         onMouseEnter={() => setHoveredCardId(card.id)}
         onMouseLeave={() => setHoveredCardId(null)}
+        className={organizeMode ? 'border-2 border-gray-300 rounded-xl p-[2px]' : ''}
+        isSelectable={organizeMode}
+        isSelected={selectedArticleIds.has(card.id)}
+        onSelect={(articleId) => {
+          setSelectedArticleIds(prev => {
+            const next = new Set(prev);
+            if (next.has(articleId)) {
+              next.delete(articleId);
+            } else {
+              next.add(articleId);
+            }
+            return next;
+          });
+        }}
       />
     );
   };
@@ -1236,7 +1326,15 @@ export const SpaceContentSection = (): JSX.Element => {
         onShare={handleShare}
         onAuthorClick={handleAuthorClick}
         onEdit={handleEditSpace}
+        onOrganize={isOwner ? () => {
+          setOrganizeMode(prev => !prev);
+          setSelectedArticleIds(new Set());
+        } : undefined}
+        organizeMode={organizeMode}
+        onCreateSubTreasury={isOwner && !isSubTreasury ? () => setShowCreateSubTreasury(true) : undefined}
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
+        isSubTreasury={isSubTreasury}
+        parentSpaceName={parentSpaceName}
         onSubscriberCountLoaded={setSubscriberCount}
         onSubscriptionChange={(isSubscribed) => {
           // Update local state only - SubscribeButton already handled the API call
@@ -1248,6 +1346,41 @@ export const SpaceContentSection = (): JSX.Element => {
           }
         }}
       />
+
+      {/* Sub-treasury Cards (hidden on sub-treasury pages) */}
+      {!isSubTreasury && subTreasuries.length > 0 && (
+        <div className="w-full mt-4">
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {subTreasuries.map((subSpace) => (
+              <div key={subSpace.id}>
+              <TreasuryCard
+                space={subSpace}
+                onClick={() => {
+                  const parentName = displaySpaceName || spaceInfo?.name || '';
+                  if (subSpace.namespace) {
+                    navigate(`/treasury/${subSpace.namespace}`, { state: { isSubTreasury: true, parentSpaceName: parentName, spaceData: subSpace } });
+                  } else if (subSpace.id) {
+                    navigate(`/treasury/${subSpace.id}`, { state: { isSubTreasury: true, parentSpaceName: parentName, spaceData: subSpace } });
+                  }
+                }}
+              />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Create Sub-treasury Modal (hidden on sub-treasury pages) */}
+      {!isSubTreasury && <CreateSpaceModal
+        isOpen={showCreateSubTreasury}
+        onClose={() => setShowCreateSubTreasury(false)}
+        title="Create sub-treasury"
+        submitLabel="Create"
+        mode="full"
+        onSuccess={(newSpace) => {
+          setSubTreasuries(prev => [...prev, newSpace]);
+        }}
+      />}
 
       {/* Articles Grid */}
       <div className="w-full mt-2">
@@ -1269,7 +1402,53 @@ export const SpaceContentSection = (): JSX.Element => {
         ) : (
           <>
             <div className="w-full grid grid-cols-1 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-8">
-              {articles.map((article) => renderCard(article))}
+              {articles.map((article, index) => (
+                <div
+                  key={article.uuid || article.id}
+                  draggable={organizeMode}
+                  onDragStart={organizeMode ? (e) => {
+                    setDragIndex(index);
+                    e.dataTransfer.effectAllowed = 'move';
+                    // Make drag preview semi-transparent
+                    if (e.currentTarget instanceof HTMLElement) {
+                      e.currentTarget.style.opacity = '0.5';
+                    }
+                  } : undefined}
+                  onDragEnd={organizeMode ? (e) => {
+                    if (e.currentTarget instanceof HTMLElement) {
+                      e.currentTarget.style.opacity = '1';
+                    }
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  } : undefined}
+                  onDragOver={organizeMode ? (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (dragIndex !== null && dragIndex !== index) {
+                      setDragOverIndex(index);
+                    }
+                  } : undefined}
+                  onDragLeave={organizeMode ? () => {
+                    setDragOverIndex(null);
+                  } : undefined}
+                  onDrop={organizeMode ? (e) => {
+                    e.preventDefault();
+                    if (dragIndex !== null && dragIndex !== index) {
+                      setArticles(prev => {
+                        const updated = [...prev];
+                        const [dragged] = updated.splice(dragIndex, 1);
+                        updated.splice(index, 0, dragged);
+                        return updated;
+                      });
+                    }
+                    setDragIndex(null);
+                    setDragOverIndex(null);
+                  } : undefined}
+                  className={`transition-transform ${organizeMode ? 'cursor-grab active:cursor-grabbing' : ''} ${dragOverIndex === index ? 'scale-105 ring-2 ring-red/30 rounded-xl' : ''}`}
+                >
+                  {renderCard(article)}
+                </div>
+              ))}
             </div>
 
             {/* Loading indicator for infinite scroll */}
@@ -1281,6 +1460,58 @@ export const SpaceContentSection = (): JSX.Element => {
           </>
         )}
       </div>
+
+      {/* Organize Mode Floating Action Bar */}
+      {organizeMode && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white rounded-full shadow-xl border border-gray-200 px-8 py-3 flex items-center gap-8">
+          <span className="text-sm text-gray-500 font-medium">{selectedArticleIds.size > 0 ? `${selectedArticleIds.size} selected` : 'Select items'}</span>
+          {/* Move button */}
+          <button
+            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+            onClick={async () => {
+              try {
+                const userId = user?.id;
+                if (userId) {
+                  const response = await AuthService.getMySpaces(userId, 1, 100);
+                  const spaceList = response?.data?.data || response?.data || response || [];
+                  setBindableSpaces(Array.isArray(spaceList) ? spaceList.filter((s: any) => s.id !== spaceId) : []);
+                }
+              } catch { setBindableSpaces([]); }
+              setSelectedMoveTarget(null);
+              setShowMoveModal(true);
+            }}
+          >
+            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2v11z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-xs text-gray-600">Move</span>
+          </button>
+          {/* Add Sub-treasury button */}
+          <button
+            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+            onClick={() => setShowOrganizeSubTreasury(true)}
+          >
+            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M5 12H19" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-xs text-gray-600">Sub-treasury</span>
+          </button>
+          {/* Delete button */}
+          <button
+            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+            onClick={() => setShowBulkDeleteConfirm(true)}
+          >
+            <div className="w-10 h-10 rounded-full bg-red/10 flex items-center justify-center">
+              <img className="w-5 h-5" alt="Delete" src={getIconUrl('DELETE')} style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(93%) saturate(1479%) hue-rotate(6deg) brightness(97%) contrast(106%)' }} />
+            </div>
+            <span className="text-xs text-red">Delete</span>
+          </button>
+        </div>
+      )}
 
       {/* Edit Space Modal */}
       {showEditModal && (
@@ -1441,12 +1672,7 @@ export const SpaceContentSection = (): JSX.Element => {
                     type="button"
                     aria-label="Delete treasury"
                   >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 6H5H21" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M10 11V17" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M14 11V17" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <img className="w-5 h-5" alt="Delete" src={getIconUrl('DELETE')} style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(93%) saturate(1479%) hue-rotate(6deg) brightness(97%) contrast(106%)' }} />
                   <span className="[font-family:'Lato',Helvetica] font-normal text-red text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
                     Delete
                   </span>
@@ -1533,10 +1759,7 @@ export const SpaceContentSection = (): JSX.Element => {
           >
             {/* Warning icon */}
             <div className="w-12 h-12 rounded-full bg-red/10 flex items-center justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6H5H21" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <img className="w-6 h-6" alt="Delete" src={getIconUrl('DELETE')} style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(93%) saturate(1479%) hue-rotate(6deg) brightness(97%) contrast(106%)' }} />
             </div>
 
             <div className="flex flex-col items-center gap-2 text-center">
@@ -1554,9 +1777,9 @@ export const SpaceContentSection = (): JSX.Element => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3 w-full">
+            <div className="flex items-center justify-center gap-3 w-full">
               <button
-                className="flex-1 px-5 py-2.5 rounded-[15px] border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => {
                   setDeleteConfirmOpen(false);
                   setArticleToDelete(null);
@@ -1564,13 +1787,13 @@ export const SpaceContentSection = (): JSX.Element => {
                 disabled={isDeleting}
                 type="button"
               >
-                <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[22.4px]">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
                   Cancel
                 </span>
               </button>
 
               <button
-                className="flex-1 px-5 py-2.5 rounded-[15px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={confirmDeleteArticle}
                 disabled={isDeleting}
                 type="button"
@@ -1603,10 +1826,7 @@ export const SpaceContentSection = (): JSX.Element => {
             aria-modal="true"
           >
             <div className="w-12 h-12 rounded-full bg-red/10 flex items-center justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 6H5H21" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z" stroke="#F23A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <img className="w-6 h-6" alt="Delete" src={getIconUrl('DELETE')} style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(93%) saturate(1479%) hue-rotate(6deg) brightness(97%) contrast(106%)' }} />
             </div>
             <div className="flex flex-col items-center gap-2 text-center">
               <h2
@@ -1619,19 +1839,19 @@ export const SpaceContentSection = (): JSX.Element => {
                 Are you sure you want to delete this treasury? This action cannot be undone.
               </p>
             </div>
-            <div className="flex items-center gap-3 w-full">
+            <div className="flex items-center justify-center gap-3 w-full">
               <button
-                className="flex-1 px-5 py-2.5 rounded-[15px] border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => setDeleteSpaceConfirmOpen(false)}
                 disabled={isSaving}
                 type="button"
               >
-                <span className="[font-family:'Lato',Helvetica] font-medium text-off-black text-base tracking-[0] leading-[22.4px]">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
                   Cancel
                 </span>
               </button>
               <button
-                className="flex-1 px-5 py-2.5 rounded-[15px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => {
                   setDeleteSpaceConfirmOpen(false);
                   handleDeleteSpace();
@@ -1691,6 +1911,269 @@ export const SpaceContentSection = (): JSX.Element => {
             }
           }}
         />
+      )}
+
+      {/* Move to Treasury Modal */}
+      {showMoveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => { if (!isBulkProcessing) setShowMoveModal(false); }}
+          />
+          <div
+            className="flex flex-col w-[582px] max-w-[90vw] max-h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="move-modal-title"
+            aria-modal="true"
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowMoveModal(false)}
+              className="absolute top-5 right-5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-20"
+              aria-label="Close dialog"
+              type="button"
+              disabled={isBulkProcessing}
+            >
+              <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            <div className="flex flex-col items-start gap-4 relative self-stretch w-full flex-[0_0_auto] pt-5">
+              <h2
+                id="move-modal-title"
+                className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
+              >
+                Move to treasury
+              </h2>
+
+              <div className="flex-1 overflow-y-auto w-full max-h-[40vh]">
+                {bindableSpaces.length === 0 ? (
+                  <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center py-8">No other treasuries available</p>
+                ) : (
+                  <ul className="flex flex-col w-full">
+                    {bindableSpaces.map((space: any) => {
+                      const spaceImage = space.faceUrl || space.coverUrl || '';
+                      const firstLetter = (space.name || 'U').charAt(0).toUpperCase();
+                      return (
+                        <li
+                          key={space.id}
+                          className={`flex items-center px-0 py-4 w-full border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${
+                            selectedMoveTarget === space.id ? 'bg-red/5' : ''
+                          }`}
+                          onClick={() => setSelectedMoveTarget(space.id)}
+                        >
+                          <div className="inline-flex items-center gap-4 flex-[0_0_auto]">
+                            {/* Radio circle */}
+                            <div
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                selectedMoveTarget === space.id
+                                  ? 'bg-red border-red'
+                                  : 'bg-white border-gray-300 hover:border-gray-400'
+                              }`}
+                            >
+                              {selectedMoveTarget === space.id && (
+                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            {/* Profile image */}
+                            <div className="relative">
+                              {spaceImage ? (
+                                <img className="w-12 h-12 object-cover rounded-full" alt={space.name} src={spaceImage} />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                  <span className="text-lg font-medium text-gray-600">{firstLetter}</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Name */}
+                            <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
+                              {space.name || 'Untitled'}
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 w-full">
+                <button
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowMoveModal(false)}
+                  disabled={isBulkProcessing}
+                  type="button"
+                >
+                  <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
+                    Cancel
+                  </span>
+                </button>
+                <button
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!selectedMoveTarget || isBulkProcessing}
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedMoveTarget || !spaceId) return;
+                    setIsBulkProcessing(true);
+                    try {
+                      const selectedUuids = Array.from(selectedArticleIds);
+                      for (const uuid of selectedUuids) {
+                        const article = articles.find(a => a.uuid === uuid);
+                        const numericId = article?.numericId || article?.id;
+                        if (numericId) {
+                          await bindArticles({ articleId: numericId, spaceIds: [selectedMoveTarget] });
+                          await removeArticleFromSpace({ articleId: numericId, spaceId });
+                        }
+                      }
+                      setArticles(prev => prev.filter(a => !selectedArticleIds.has(a.uuid)));
+                      setTotalArticleCount(prev => Math.max(0, prev - selectedUuids.length));
+                      setSelectedArticleIds(new Set());
+                      setShowMoveModal(false);
+                      showToast(`Moved ${selectedUuids.length} treasures successfully`, 'success');
+                    } catch (err) {
+                      console.error('Failed to move articles:', err);
+                      showToast('Failed to move some articles', 'error');
+                    } finally {
+                      setIsBulkProcessing(false);
+                    }
+                  }}
+                >
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
+                    {isBulkProcessing ? 'Moving...' : 'Move'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Organize: Create Sub-treasury + bind selected articles */}
+      <CreateSpaceModal
+        isOpen={showOrganizeSubTreasury}
+        onClose={() => setShowOrganizeSubTreasury(false)}
+        title="Create sub-treasury"
+        submitLabel="Add"
+        mode="compact"
+        onSuccess={async (newSpace) => {
+          const newSpaceId = newSpace?.id || newSpace?.data?.id;
+          if (newSpaceId) {
+            // Bind selected articles to the new sub-treasury
+            const selectedUuids = Array.from(selectedArticleIds);
+            let bindCount = 0;
+            for (const uuid of selectedUuids) {
+              const article = articles.find(a => a.uuid === uuid);
+              const numericId = article?.numericId || article?.id;
+              if (numericId) {
+                try {
+                  await bindArticles({ articleId: numericId, spaceIds: [newSpaceId] });
+                  bindCount++;
+                } catch (err) {
+                  console.error('Failed to bind article to sub-treasury:', err);
+                }
+              }
+            }
+            // Add selected articles' covers to the new space for card preview
+            const selectedArticles = selectedUuids
+              .map(uuid => articles.find(a => a.uuid === uuid))
+              .filter(Boolean);
+            const previewData = selectedArticles.slice(0, 3).map(a => ({
+              coverUrl: a?.cover || a?.coverUrl || '',
+              title: a?.title || '',
+              targetUrl: a?.targetUrl || '',
+            }));
+            const spaceWithData = { ...newSpace, data: previewData, articleCount: bindCount };
+            setSubTreasuries(prev => [...prev, spaceWithData]);
+            setSelectedArticleIds(new Set());
+            showToast(`Created sub-treasury and added ${bindCount} treasures`, 'success');
+          }
+        }}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => { if (!isBulkProcessing) setShowBulkDeleteConfirm(false); }}
+          />
+          <div
+            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="bulk-delete-title"
+            aria-modal="true"
+          >
+            {/* Warning icon */}
+            <div className="w-12 h-12 rounded-full bg-red/10 flex items-center justify-center">
+              <img className="w-6 h-6" alt="Delete" src={getIconUrl('DELETE')} style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(93%) saturate(1479%) hue-rotate(6deg) brightness(97%) contrast(106%)' }} />
+            </div>
+
+            <div className="flex flex-col items-center gap-2 text-center">
+              <h2
+                id="bulk-delete-title"
+                className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
+              >
+                Remove {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'}
+              </h2>
+              <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+                Are you sure you want to remove {selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'} from the space? The {selectedArticleIds.size === 1 ? 'article' : 'articles'} will remain available elsewhere.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 w-full">
+              <button
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                disabled={isBulkProcessing}
+                type="button"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
+                  Cancel
+                </span>
+              </button>
+              <button
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isBulkProcessing}
+                type="button"
+                onClick={async () => {
+                  setIsBulkProcessing(true);
+                  try {
+                    const selectedUuids = Array.from(selectedArticleIds);
+                    const isCurationsSpace = spaceInfo?.spaceType === 2;
+                    for (const uuid of selectedUuids) {
+                      const article = articles.find(a => a.uuid === uuid);
+                      const numericId = article?.numericId || article?.id;
+                      if (numericId) {
+                        if (isCurationsSpace) {
+                          await AuthService.deleteArticle(uuid);
+                        } else {
+                          await removeArticleFromSpace({ articleId: numericId, spaceId: spaceId! });
+                        }
+                      }
+                    }
+                    setArticles(prev => prev.filter(a => !selectedArticleIds.has(a.uuid)));
+                    setTotalArticleCount(prev => Math.max(0, prev - selectedUuids.length));
+                    setSelectedArticleIds(new Set());
+                    setShowBulkDeleteConfirm(false);
+                    showToast(`Removed ${selectedUuids.length} treasures`, 'success');
+                  } catch (err) {
+                    console.error('Failed to remove articles:', err);
+                    showToast('Failed to remove some articles', 'error');
+                  } finally {
+                    setIsBulkProcessing(false);
+                  }
+                }}
+              >
+                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
+                  {isBulkProcessing ? 'Removing...' : 'Remove'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </main>
