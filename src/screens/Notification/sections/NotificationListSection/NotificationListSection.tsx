@@ -19,6 +19,14 @@ import { Comment } from "../../../../types/comment";
 import { useToast } from "../../../../components/ui/toast";
 import { Trash2, Loader2 } from "lucide-react";
 
+// 临时导入测试工具 - 开发环境下验证订阅功能
+if (process.env.NODE_ENV === 'development') {
+  import('../../../../utils/testSubscribeNotification').then(module => {
+    console.log('🔗 Subscribe notification test utility loaded');
+    (window as any).testSubscribeNotification = module.testSubscribeNotificationProcessing;
+  });
+}
+
 const notificationTabs = [
   { value: "treasury", label: "Treasury" },
   { value: "comment", label: "Comment" },
@@ -113,7 +121,7 @@ export const NotificationListSection = (): JSX.Element => {
         if (!n.isRead) {
           switch (category) {
             case 'treasury':
-              return n.type === "follow" || n.type === "follow_treasury" || n.type === "collect";
+              return n.type === "follow" || n.type === "follow_treasury" || n.type === "collect" || n.type === "subscribe";
             case 'comment':
               return n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury";
             case 'earning':
@@ -318,7 +326,7 @@ export const NotificationListSection = (): JSX.Element => {
     id: parseInt(n.id) || 1,
     type: n.type,
     category: n.type === "system" ? "System" :
-              n.type === "follow" || n.type === "follow_treasury" || n.type === "collect" ? "Treasury" :
+              n.type === "follow" || n.type === "follow_treasury" || n.type === "collect" || n.type === "subscribe" ? "Treasury" :
               n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury" ? "Comment" :
               n.type === "unlock" ? "Earning" : "Notification",
     message: n.message || n.title,
@@ -337,7 +345,7 @@ export const NotificationListSection = (): JSX.Element => {
   // Calculate unread counts per category
   const unreadCounts = {
     treasury: notificationList.filter(n =>
-      (n.type === "follow" || n.type === "follow_treasury" || n.type === "collect") && !n.isRead
+      (n.type === "follow" || n.type === "follow_treasury" || n.type === "collect" || n.type === "subscribe") && !n.isRead
     ).length,
     comment: notificationList.filter(n =>
       (n.type === "comment" || n.type === "comment_reply" || n.type === "comment_like" || n.type === "treasury") && !n.isRead
@@ -808,6 +816,19 @@ export const NotificationListSection = (): JSX.Element => {
           );
         }
 
+        // Handle subscribe: [Username] subscribed to you!
+        if (notification.type === 'subscribe') {
+          return (
+            <span
+              key={index}
+              className="font-semibold text-off-black cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => handleUserClick(notification)}
+            >
+              {linkText}
+            </span>
+          );
+        }
+
         // Handle follow: [Username] followed your space [Space Name]
         if (notification.type === 'follow') {
           const isSpaceName = !isFirstBracket;
@@ -1049,7 +1070,7 @@ export const NotificationListSection = (): JSX.Element => {
         <TabsContent value="treasury" className="mt-5">
           {isLoading ? (
             renderLoadingState()
-          ) : notificationList.filter(n => n.type === "follow" || n.type === "follow_treasury" || n.type === "collect").length === 0 ? (
+          ) : notificationList.filter(n => n.type === "follow" || n.type === "follow_treasury" || n.type === "collect" || n.type === "subscribe").length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-5">
               <div className="w-24 h-24 mb-6 flex items-center justify-center">
                 <img
@@ -1069,7 +1090,7 @@ export const NotificationListSection = (): JSX.Element => {
           ) : (
             <div className="flex flex-col gap-5 pb-[30px] notification-list">
               {notificationList
-                .filter((notification) => notification.type === "follow" || notification.type === "follow_treasury" || notification.type === "collect")
+                .filter((notification) => notification.type === "follow" || notification.type === "follow_treasury" || notification.type === "collect" || notification.type === "subscribe")
                 .map((notification, index) => {
                   const isRead = notification.isRead;
                   return (
