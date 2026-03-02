@@ -726,8 +726,29 @@ export const SpaceContentSection = (): JSX.Element => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spaceIdentifier, namespace, user?.id, user?.username, user?.faceUrl, user?.namespace]);
 
-  // Sub-treasuries are managed via local state only (no backend API yet)
-  // They are created via the "Create sub-treasury" button or organize mode
+  // Load existing sub-treasuries from user's spaces
+  useEffect(() => {
+    const loadSubTreasuries = async () => {
+      if (!user?.id || !spaceId) return;
+
+      try {
+        // Call pageMySpaces API with pid parameter to get sub-spaces
+        const response = await AuthService.getMySpaces(user.id, 1, 100, spaceId);
+        const subSpaces = response?.data?.data || response?.data || response || [];
+
+        console.log('🔍 API call pageMySpaces with pid:', spaceId);
+        console.log('🔍 Loaded sub-treasuries:', subSpaces);
+        setSubTreasuries(Array.isArray(subSpaces) ? subSpaces : []);
+      } catch (error) {
+        console.error('Failed to load sub-treasuries:', error);
+      }
+    };
+
+    loadSubTreasuries();
+  }, [user?.id, spaceId, displaySpaceName]);
+
+  // Sub-treasuries are managed via local state + basic API loading
+  // Full parent-child relationship API support is still pending
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData => {
@@ -1115,10 +1136,29 @@ export const SpaceContentSection = (): JSX.Element => {
 
     try {
       setIsSaving(true);
+
+      console.log('🗑️ Delete space - Current spaceInfo:', spaceInfo);
+      console.log('🗑️ Delete space - isSubTreasury:', isSubTreasury);
+      console.log('🗑️ Delete space - parentSpaceName:', parentSpaceName);
+      console.log('🗑️ Delete space - navState:', navState);
+
       await AuthService.deleteSpace(spaceId);
       showToast('Treasury deleted', 'success');
       setShowEditModal(false);
-      navigate('/my-treasury');
+
+      // Check if this is a sub-treasury deletion
+      // Method 1: Check spaceInfo.pid (if API returns it)
+      // Method 2: Check isSubTreasury flag from navigation state (more reliable)
+      // Simple navigation after deletion
+      if (isSubTreasury) {
+        console.log('🔄 This is a sub-treasury, navigating back to previous page');
+        // For sub-treasury deletion, simply go back to the previous page
+        navigate(-1);
+      } else {
+        console.log('🏠 This is a main space, going to my-treasury');
+        // For main spaces, go to my-treasury
+        navigate('/my-treasury');
+      }
     } catch (err) {
       console.error('Failed to delete space:', err);
       showToast('Failed to delete treasury', 'error');
@@ -2058,6 +2098,7 @@ export const SpaceContentSection = (): JSX.Element => {
         title="Create sub-treasury"
         submitLabel="Add"
         mode="compact"
+        parentSpaceId={spaceId} // Pass current space ID as parent
         onSuccess={async (newSpace) => {
           const newSpaceId = newSpace?.id || newSpace?.data?.id;
           if (newSpaceId) {

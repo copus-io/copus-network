@@ -1795,13 +1795,20 @@ export class AuthService {
    * @param targetUserId - Required target user ID
    * @param pageIndex - Optional page number (default: 1)
    * @param pageSize - Optional page size (default: 20)
+   * @param pid - Optional parent ID to get sub-spaces
    */
-  static async getMySpaces(targetUserId: number, pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+  static async getMySpaces(targetUserId: number, pageIndex: number = 1, pageSize: number = 20, pid?: number): Promise<any> {
     const params = new URLSearchParams({
       targetUserId: targetUserId.toString(),
       pageIndex: pageIndex.toString(),
       pageSize: pageSize.toString(),
     });
+
+    // Add pid parameter if provided to get sub-spaces
+    if (pid !== undefined) {
+      params.append('pid', pid.toString());
+    }
+
     return apiRequest(`/client/userHome/pageMySpaces?${params.toString()}`, {
       method: 'GET',
     });
@@ -1959,9 +1966,11 @@ export class AuthService {
    * @param description - Optional description for the space
    * @param coverUrl - Optional cover image URL for the space
    * @param faceUrl - Optional avatar/face image URL for the space
+   * @param visibility - Optional visibility setting
+   * @param pid - Optional parent space ID for creating sub-spaces
    * @returns The created space object with id, name, namespace, spaceType, userId, etc.
    */
-  static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string, visibility?: number): Promise<any> {
+  static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string, visibility?: number, pid?: number): Promise<any> {
     return apiRequest(`/client/article/space/create`, {
       method: 'POST',
       body: JSON.stringify({
@@ -1969,7 +1978,8 @@ export class AuthService {
         ...(description && { description }),
         ...(coverUrl && { coverUrl }),
         ...(faceUrl && { faceUrl }),
-        ...(visibility !== undefined && { visibility })
+        ...(visibility !== undefined && { visibility }),
+        ...(pid !== undefined && { pid })
       }),
     });
   }

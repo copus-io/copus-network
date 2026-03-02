@@ -15,6 +15,8 @@ export interface CreateSpaceModalProps {
   nameLabel?: string;
   namePlaceholder?: string;
   submitLabel?: string;
+  // Sub-space support
+  parentSpaceId?: number; // For creating sub-spaces
   // Edit mode props
   editMode?: boolean;
   editSpaceId?: number;
@@ -38,6 +40,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   nameLabel = 'Name',
   namePlaceholder = 'Enter space name',
   submitLabel = 'Create',
+  parentSpaceId,
   editMode = false,
   editSpaceId,
   initialData,
@@ -182,7 +185,8 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           description,
           coverUrl,
           faceUrl,
-          visibility
+          visibility,
+          parentSpaceId // Pass parent space ID for creating sub-spaces
         );
         console.log('Create space response:', response);
         resultSpace = response.data || response;
