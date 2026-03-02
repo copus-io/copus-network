@@ -12,6 +12,7 @@
 
 const API_BASE = 'https://api-prod.copus.network'
 const SITE_URL = 'https://copus.network'
+const TASTE_SERVICE_KEY = 'gCniCeAxOiy1hytx-rQEyKBd926yg8gchpXhND2gnrk'
 
 // Auto-detect content format from URL
 function detectFormat(url) {
@@ -190,7 +191,7 @@ async function fetchUserInfo(namespace) {
   try {
     const response = await fetch(
       `${API_BASE}/client/userHome/userInfo?namespace=${encodeURIComponent(namespace)}`,
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { 'Content-Type': 'application/json', 'X-Taste-Service-Key': TASTE_SERVICE_KEY } }
     )
 
     if (!response.ok) return null
