@@ -986,6 +986,7 @@ export const MainContentSection = (): JSX.Element => {
           userBio={(treasuryUserInfo || displayUser)?.bio || ''}
           userFaceUrl={(treasuryUserInfo || displayUser)?.faceUrl || ''}
           userCoverUrl={(treasuryUserInfo || displayUser)?.coverUrl || ''}
+          userUuid={(treasuryUserInfo || displayUser)?.uuid || ''}
         />
       )}
     </main>

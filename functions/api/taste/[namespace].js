@@ -129,6 +129,10 @@ export async function onRequest(context) {
     namespace = namespace.slice(0, -5)
   }
 
+  // Parse query params (for ?key= private access)
+  const url = new URL(request.url)
+  const accessKey = url.searchParams.get('key')
+
   // Set CORS headers for API access
   const headers = {
     'Content-Type': 'application/json',
@@ -143,7 +147,7 @@ export async function onRequest(context) {
   }
 
   try {
-    // Fetch user profile
+    // Fetch user profile by namespace
     const userInfo = await fetchUserInfo(namespace)
 
     if (!userInfo) {
@@ -154,12 +158,15 @@ export async function onRequest(context) {
     }
 
     // Check if taste profile is set to private
+    // Allow access if ?key matches the user's uuid (private link)
     if (userInfo.isTasteVisible === false) {
-      return new Response(JSON.stringify({
-        error: 'This taste profile is private',
-        namespace: namespace,
-        message: 'The owner has set their taste profile to private.'
-      }), { status: 403, headers })
+      if (!accessKey || accessKey !== userInfo.uuid) {
+        return new Response(JSON.stringify({
+          error: 'This taste profile is private',
+          namespace: namespace,
+          message: 'The owner has set their taste profile to private.'
+        }), { status: 403, headers })
+      }
     }
 
     // Fetch user's treasuries

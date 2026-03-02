@@ -13,6 +13,7 @@ interface TasteProfileModalProps {
   userBio?: string;
   userFaceUrl?: string;
   userCoverUrl?: string;
+  userUuid?: string; // User's uuid for private taste profile access
 }
 
 interface TasteProfileData {
@@ -61,7 +62,8 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
   onVisibilityChange,
   userBio,
   userFaceUrl,
-  userCoverUrl
+  userCoverUrl,
+  userUuid
 }) => {
   const { showToast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
@@ -74,7 +76,10 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
     if (isOpen) setIsPublic(isTasteVisible);
   }, [isOpen, isTasteVisible]);
 
-  const tasteProfileUrl = `https://copus.network/api/taste/${namespace}.json`;
+  const publicTasteUrl = `https://copus.network/api/taste/${namespace}.json`;
+  const privateTasteUrl = userUuid ? `https://copus.network/api/taste/${namespace}.json?key=${userUuid}` : publicTasteUrl;
+  // Show public URL when public, private URL with key when private
+  const tasteProfileUrl = isPublic ? publicTasteUrl : privateTasteUrl;
   const isUnlocked = totalWorks >= 10;
 
   const handleToggleVisibility = async () => {
@@ -116,7 +121,9 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
 
   const fetchTasteProfile = async (): Promise<TasteProfileData | null> => {
     try {
-      const response = await fetch(tasteProfileUrl);
+      // Always use private token URL for fetching (works regardless of visibility setting)
+      const fetchUrl = privateTasteUrl;
+      const response = await fetch(fetchUrl);
       if (!response.ok) throw new Error('Failed to fetch taste profile');
       return await response.json();
     } catch (error) {
