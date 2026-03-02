@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+// createPortal no longer needed - email input is inline
 import subscriptionService from '../../services/subscriptionService';
 import { AuthService } from '../../services/authService';
 import { AuthorInfo, SubscribeButtonState, EmailFrequency, SPACE_TYPES } from '../../types/subscription';
@@ -26,6 +26,8 @@ interface SubscribeButtonProps {
   // Initial subscription state from parent component
   initialIsSubscribed?: boolean;
   initialSubscriberCount?: number;
+  // Compact mode: show just button, expand to email input on click
+  compact?: boolean;
 }
 
 /**
@@ -56,7 +58,8 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   spaceType,
   subscriptionType = 'author',
   initialIsSubscribed,
-  initialSubscriberCount
+  initialSubscriberCount,
+  compact = false
 }) => {
   const [state, setState] = useState<SubscribeButtonState>({
     isSubscribed: initialIsSubscribed ?? false,
@@ -69,13 +72,26 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showUnsubDropdown, setShowUnsubDropdown] = useState(false);
   const [email, setEmail] = useState('');
+  const [subscribedEmail, setSubscribedEmail] = useState('');
+  const [expanded, setExpanded] = useState(false);
   const [authorInfo, setAuthorInfo] = useState<AuthorInfo | null>(null);
 
+  // Check if logged-in user has email
+  const [loggedInUserHasEmail, setLoggedInUserHasEmail] = useState(false);
 
-  // Debug: Monitor state changes
   useEffect(() => {
-    console.log('🔵 Modal state change:', { showEmailModal });
-  }, [showEmailModal]);
+    try {
+      const userStr = localStorage.getItem('copus_user');
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        if (userData.email && userData.email.trim()) {
+          setLoggedInUserHasEmail(true);
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
 
   // Check subscription status
   useEffect(() => {
@@ -243,6 +259,13 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
         const wasSubscribed = state.isSubscribed;
         const newSubscribedState = !wasSubscribed;
 
+        // Remember the email used for subscription (needed for non-logged-in unsubscribe)
+        if (newSubscribedState) {
+          setSubscribedEmail(userEmail);
+        } else {
+          setSubscribedEmail('');
+        }
+
         setState(prev => ({
           ...prev,
           isSubscribed: newSubscribedState,
@@ -261,8 +284,8 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
         showToast(successMessage, newSubscribedState ? 'success' : 'info');
         onSubscriptionChange?.(newSubscribedState);
 
-        // Auto-follow all of the author's treasuries if subscribing to an author
-        if (newSubscribedState && subscriptionType === 'author' && authorUserId) {
+        // Auto-follow all of the author's treasuries if subscribing to an author (logged-in only, requires auth)
+        if (newSubscribedState && subscriptionType === 'author' && authorUserId && getCurrentUser()) {
           try {
             const spacesResponse = await AuthService.getMySpaces(authorUserId);
             const spaces = spacesResponse?.data || spacesResponse?.records || spacesResponse || [];
@@ -315,21 +338,33 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   };
 
   const handleUnsubscribe = async () => {
-    // Get user email first
+    // Try to get user email from multiple sources
     try {
+      // 1. Try logged-in user API
       const userInfo = await AuthService.getUserInfo();
       const userEmail = userInfo.email?.trim();
 
-      if (!userEmail) {
-        throw new Error('Email is required for unsubscription');
+      if (userEmail) {
+        await performEmailSubscribe(userEmail);
+        return;
       }
-
-      // Use the unified function
-      await performEmailSubscribe(userEmail);
-    } catch (error) {
-      console.error('Failed to get user email for unsubscription:', error);
-      showToast('Failed to unsubscribe, please try again later', 'error');
+    } catch {
+      // Not logged in or API failed, try fallbacks
     }
+
+    // 2. Use the email they subscribed with
+    if (subscribedEmail) {
+      await performEmailSubscribe(subscribedEmail);
+      return;
+    }
+
+    // 3. Use the email still in the input field
+    if (email.trim()) {
+      await performEmailSubscribe(email.trim());
+      return;
+    }
+
+    showToast('Please enter your email to unsubscribe', 'error');
   };
 
   // 🎨 Forced high contrast style system
@@ -395,19 +430,11 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
       };
     }
 
-    return state.isSubscribed
-      ? {
+    return {
           ...baseStyles,
           backgroundColor: '#ffffff',
-          color: '#059669',
-          border: '1px solid #059669',
-          cursor: 'pointer'
-        }
-      : {
-          ...baseStyles,
-          backgroundColor: 'rgba(5, 150, 105, 0.08)',
-          color: '#059669',
-          border: '1px solid #059669',
+          color: '#2B8649',
+          border: '1px solid #2B8649',
           cursor: 'pointer'
         };
   };
@@ -433,7 +460,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
             <span className="text-xs opacity-75">({state.subscriberCount})</span>
           )}
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 1L5 5L9 1" stroke="#059669" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M1 1L5 5L9 1" stroke="#2B8649" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </>
       );
@@ -492,21 +519,29 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     return null;
   }
 
-  return (
-    <>
-      <div className="relative">
+  // Already subscribed state
+  const isLoggedIn = !!getCurrentUser();
+  if (state.isSubscribed) {
+    return (
+      <div className={`relative ${className}`}>
         <button
-          onClick={state.isSubscribed ? () => setShowUnsubDropdown(!showUnsubDropdown) : handleSubscribeClick}
+          onClick={isLoggedIn ? () => setShowUnsubDropdown(!showUnsubDropdown) : undefined}
           disabled={state.isLoading}
-          className={`${getButtonStyles()} touch-target subscribe-button no-zoom`}
-          style={getInlineStyles()}
-          title={state.isSubscribed ? 'Click to manage subscription' : 'Click to subscribe'}
+          className="flex items-center gap-1.5 px-3 h-8 rounded-[50px] border border-[#2B8649] bg-white [font-family:'Lato',Helvetica] font-normal text-sm text-[#2B8649] transition-colors hover:bg-[#2B8649]/5"
+          style={{ cursor: isLoggedIn ? 'pointer' : 'default' }}
         >
-          {getButtonContent()}
+          Subscribed
+          {showSubscriberCount && size !== 'small' && (
+            <span className="text-xs opacity-75">({state.subscriberCount})</span>
+          )}
+          {isLoggedIn && (
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L5 5L9 1" stroke="#2B8649" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
         </button>
 
-        {/* Unsubscribe dropdown */}
-        {showUnsubDropdown && (
+        {isLoggedIn && showUnsubDropdown && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setShowUnsubDropdown(false)} />
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-white rounded-[50px] shadow-[0px_4px_10px_rgba(0,0,0,0.15)] z-20">
@@ -523,78 +558,84 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
           </>
         )}
       </div>
+    );
+  }
 
-      {/* Email input modal - use Portal to ensure correct rendering */}
-      {showEmailModal && createPortal(
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowEmailModal(false);
+  // Logged-in user with email — old-style subscribe button
+  if (loggedInUserHasEmail) {
+    return (
+      <div className={`relative ${className}`}>
+        <button
+          onClick={handleSubscribeClick}
+          disabled={state.isLoading}
+          className={`${getButtonStyles()} touch-target subscribe-button no-zoom`}
+          style={getInlineStyles()}
+          title="Click to subscribe"
+        >
+          {getButtonContent()}
+        </button>
+      </div>
+    );
+  }
+
+  // Not logged in or no email — compact: just button, expands on click; default: inline email input
+  if (compact && !expanded) {
+    return (
+      <div className={`relative ${className}`}>
+        <button
+          onClick={() => setExpanded(true)}
+          disabled={state.isLoading}
+          className={`${getButtonStyles()} touch-target subscribe-button no-zoom`}
+          style={getInlineStyles()}
+          title="Click to subscribe"
+        >
+          {getButtonContent()}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative ${className}`}>
+      <div className="flex items-center rounded-[50px] border border-[#2B8649] overflow-hidden w-full">
+        <input
+          type="email"
+          name="email"
+          autoComplete="email"
+          autoFocus={compact && expanded}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (email.trim()) {
+                handleEmailSubmit();
+              } else {
+                showToast('Please enter your email address', 'warning');
+              }
+            }
+            if (e.key === 'Escape' && compact) {
+              setExpanded(false);
             }
           }}
+          placeholder="Type your email..."
+          className="[font-family:'Lato',Helvetica] flex-1 min-w-0 px-4 py-2 text-sm text-off-black bg-white border-none outline-none placeholder:text-gray-400"
+        />
+        <button
+          onClick={() => {
+            if (email.trim()) {
+              handleEmailSubmit();
+            } else {
+              showToast('Please enter your email address', 'warning');
+            }
+          }}
+          disabled={state.isLoading}
+          className="flex-shrink-0 px-5 py-2 bg-[#2B8649] [font-family:'Lato',Helvetica] font-normal text-white text-sm cursor-pointer hover:bg-[#2B8649]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         >
-          <div
-            className="bg-white rounded-xl w-full max-w-md overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <div className="flex justify-end px-5 pt-4">
-              <button
-                onClick={() => setShowEmailModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="px-5 pb-5">
-              <h3 className="[font-family:'Lato',Helvetica] font-medium text-off-black text-2xl tracking-[0] leading-[33.6px] mb-4">
-                Subscribe
-              </h3>
-
-              <p className="[font-family:'Lato',Helvetica] text-[14px] text-gray-600 mb-2 leading-relaxed">
-                Please <a href="/login" className="text-red underline hover:opacity-80 font-semibold">log in</a> or enter your email address to subscribe to <strong>{subscriptionType === 'space' ? spaceName : authorName}</strong>.
-              </p>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="[font-family:'Lato',Helvetica] w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-0 focus:border-gray-300"
-                autoFocus
-              />
-              <p className="[font-family:'Lato',Helvetica] text-xs text-gray-400 mt-2 leading-relaxed">
-                You'll receive an email notification when {subscriptionType === 'space' ? spaceName : authorName} publishes new treasures.
-              </p>
-
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => setShowEmailModal(false)}
-                  className="[font-family:'Lato',Helvetica] font-normal text-sm rounded-full px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleEmailSubmit}
-                  disabled={!email.trim()}
-                  className="[font-family:'Lato',Helvetica] font-normal text-sm rounded-full px-4 py-2 bg-red text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Subscribe
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-    </>
+          {state.isLoading ? 'Subscribing...' : 'Subscribe'}
+        </button>
+      </div>
+    </div>
   );
 };
 
