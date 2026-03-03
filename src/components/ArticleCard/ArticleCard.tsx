@@ -541,7 +541,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                         onClick={handleDelete}
                       >
                         <img
-                          className="w-5 h-5"
+                          className="w-3.5 h-3.5"
                           alt="Delete"
                           src={getIconUrl('DELETE')}
                           style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
@@ -842,7 +842,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                         onClick={handleDelete}
                       >
                         <img
-                          className="w-5 h-5"
+                          className="w-3.5 h-3.5"
                           alt="Delete"
                           src={getIconUrl('DELETE')}
                           style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}

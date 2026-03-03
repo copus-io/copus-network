@@ -1604,7 +1604,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
       {/* Sub-treasury Cards (hidden on sub-treasury pages) */}
       {!isSubTreasury && (operationLoading.loadingSubSpaces || subTreasuries.length > 0) && (
-        <div className="w-full mt-4">
+        <div className="w-full mt-4 mb-6">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
             {operationLoading.loadingSubSpaces ? (
               // Loading skeleton for sub-treasuries
@@ -1822,7 +1822,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
       {/* Organize Mode Floating Action Bar */}
       {organizeMode && (
-        <div className="organize-controls fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white rounded-full shadow-xl border border-gray-200 px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-8 max-w-[90vw]">
+        <div className="organize-controls fixed bottom-4 sm:bottom-8 z-40 bg-white rounded-full shadow-xl border border-gray-200 px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-8 max-w-[90vw] left-1/2 -translate-x-1/2 lg:left-[calc(310px+(100vw-310px-40px)/2)] lg:-translate-x-1/2">
           <span className="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">{selectedArticleIds.size > 0 ? `${selectedArticleIds.size} selected` : 'Select'}</span>
           {/* Move button */}
           <button
