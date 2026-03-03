@@ -2453,6 +2453,7 @@ export const SpaceContentSection = (): JSX.Element => {
                         // Check if we're copying to a sub-space (when we have subTreasuries data)
                         if (subTreasuries && subTreasuries.length > 0) {
                           const targetSubSpace = subTreasuries.find((sub: any) => sub.id === selectedMoveTarget);
+
                           if (targetSubSpace) {
                             // This means we're copying to a sub-space
                             const shouldNavigate = window.confirm(
