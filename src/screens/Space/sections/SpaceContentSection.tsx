@@ -1324,8 +1324,11 @@ export const SpaceContentSection = (): JSX.Element => {
       await Promise.all(removePromises);
 
       // Update local state
-      setArticles(prev => prev.filter(article => !selectedUuids.includes(article.uuid)));
-      setTotalArticleCount(prev => Math.max(0, prev - selectedUuids.length));
+      const remainingArticles = articles.filter(article => !selectedUuids.includes(article.uuid));
+      const newTotalCount = Math.max(0, totalArticleCount - selectedUuids.length);
+
+      setArticles(remainingArticles);
+      setTotalArticleCount(newTotalCount);
       setSelectedArticleIds(new Set());
 
       showToast(
@@ -1336,15 +1339,35 @@ export const SpaceContentSection = (): JSX.Element => {
       setShowMoveOutConfirm(false);
       setOrganizeMode(false); // Exit organize mode after successful move
 
-      // Navigate to parent space after successful move out
-      if (parentSpaceInfo?.namespace) {
-        console.log('📤 Navigating to parent space:', parentSpaceInfo.namespace);
-        navigate(`/treasury/${parentSpaceInfo.namespace}`, {
-          state: {
-            fromSubSpace: true,
-            movedOutCount: selectedUuids.length
+      // Check if sub-space is now empty
+      if (remainingArticles.length === 0 || newTotalCount === 0) {
+        console.log('📤 Sub-space is now empty, navigating to parent space');
+
+        // Get correct parent space namespace dynamically
+        try {
+          if (parentSpaceInfo?.id) {
+            const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
+            const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
+            const correctParentSpace = spaces.find((space: any) => space.id === parentSpaceInfo.id);
+
+            if (correctParentSpace?.namespace) {
+              console.log(`📤 Navigating to correct parent space: ${correctParentSpace.namespace}`);
+              navigate(`/treasury/${correctParentSpace.namespace}`, {
+                state: {
+                  fromSubSpace: true,
+                  movedOutCount: selectedUuids.length,
+                  subSpaceEmptied: true
+                }
+              });
+            } else {
+              console.log('📤 Could not find correct parent namespace, staying in current page');
+            }
           }
-        });
+        } catch (error) {
+          console.error('📤 Error getting correct parent namespace:', error);
+        }
+      } else {
+        console.log(`📤 Sub-space still has ${remainingArticles.length} articles, staying in current space`);
       }
     } catch (error) {
       console.error('📤 Failed to move out articles:', error);
