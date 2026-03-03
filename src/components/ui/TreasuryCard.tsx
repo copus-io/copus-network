@@ -47,6 +47,8 @@ export interface SpaceData {
   username?: string;
   data?: any[]; // Articles in the space
   articles?: any[];
+  subSpaces?: SpaceData[]; // Sub-spaces for parent spaces
+  hasSubSpaces?: boolean; // Whether this space has sub-spaces
 }
 
 // Props for TreasuryCard
@@ -94,12 +96,13 @@ export const getSpaceDisplayName = (space: SpaceData): string => {
 };
 
 /**
- * Extract hostname from URL safely
+ * Extract hostname from URL safely - unified function
  */
-const getHostname = (url: string | undefined): string => {
+const getDisplayHostname = (url: string | undefined): string => {
   if (!url) return '';
   try {
-    return new URL(url).hostname;
+    const hostname = new URL(url).hostname;
+    return hostname.replace(/^www\./, '');
   } catch {
     // Invalid URL, try to extract domain manually
     return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] || '';
@@ -112,12 +115,22 @@ const getHostname = (url: string | undefined): string => {
  * in the `data` array. To show 3 previews, the backend needs to be updated.
  */
 export const transformSpaceToItems = (space: SpaceData): TreasuryItem[] => {
+  // Check if this space has sub-spaces but no articles (organized parent space)
+  if (space.hasSubSpaces && space.subSpaces && space.subSpaces.length > 0) {
+    const articles = space.data || space.articles || [];
+
+    // If no articles but has sub-spaces, show sub-space previews
+    if (articles.length === 0) {
+      return transformSubSpacesToItems(space.subSpaces);
+    }
+  }
+
   // The API returns preview articles in the `data` field
   const articles = space.data || space.articles || [];
 
   return articles.slice(0, 3).map((article: any, index: number) => {
     // Use website field from API if available, otherwise extract from targetUrl
-    const website = article.website || getHostname(article.targetUrl);
+    const website = article.website || getDisplayHostname(article.targetUrl);
     return {
       id: article.uuid || article.id?.toString() || `item-${index}`,
       uuid: article.uuid,
@@ -130,39 +143,65 @@ export const transformSpaceToItems = (space: SpaceData): TreasuryItem[] => {
 };
 
 /**
- * Get treasure count from space data
+ * Transform sub-spaces to treasury items for parent space preview
+ * Shows sub-space names and cover images as if they were articles
  */
-export const getSpaceTreasureCount = (space: SpaceData): number => {
-  return space.articleCount || space.treasureCount || (space.data?.length) || (space.articles?.length) || 0;
+export const transformSubSpacesToItems = (subSpaces: SpaceData[]): TreasuryItem[] => {
+  return subSpaces.slice(0, 3).map((subSpace: SpaceData, index: number) => {
+    return {
+      id: subSpace.id?.toString() || `subspace-${index}`,
+      uuid: subSpace.namespace || subSpace.id?.toString(),
+      title: subSpace.name || 'Untitled Sub-Treasury',
+      url: '', // No external URL for sub-spaces
+      website: 'Sub-treasury', // Label to indicate this is a sub-space
+      coverImage: subSpace.coverUrl || subSpace.data?.[0]?.coverUrl || '', // Use sub-space cover or first article
+    };
+  });
 };
 
 /**
- * Extract hostname from URL for display
+ * Get treasure count from space data
+ * For parent spaces with sub-spaces, sum up sub-space counts
  */
-const getDisplayHostname = (url: string): string => {
-  return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+export const getSpaceTreasureCount = (space: SpaceData): number => {
+  // If this is a parent space with sub-spaces, sum up the total counts
+  if (space.hasSubSpaces && space.subSpaces && space.subSpaces.length > 0) {
+    const parentCount = space.articleCount || space.treasureCount || (space.data?.length) || (space.articles?.length) || 0;
+    const subSpacesCount = space.subSpaces.reduce((total, subSpace) => {
+      return total + (subSpace.articleCount || subSpace.treasureCount || (subSpace.data?.length) || (subSpace.articles?.length) || 0);
+    }, 0);
+    return parentCount + subSpacesCount;
+  }
+
+  return space.articleCount || space.treasureCount || (space.data?.length) || (space.articles?.length) || 0;
 };
+
 
 /**
  * TreasuryCard Component
  * A reusable card component for displaying treasury/space information
  * with consistent look, naming logic, and treasure count across the app
  */
-export const TreasuryCard = ({
+export const TreasuryCard = React.memo(({
   space,
   onClick,
   onEdit,
   emptyAction,
   secondaryAction,
 }: TreasuryCardProps): JSX.Element => {
-  const title = getSpaceDisplayName(space);
-  const treasureCount = getSpaceTreasureCount(space);
-  const items = transformSpaceToItems(space);
+  // Memoize expensive computations to avoid recalculating on every render
+  const title = React.useMemo(() => getSpaceDisplayName(space), [space]);
+  const treasureCount = React.useMemo(() => getSpaceTreasureCount(space), [space]);
+  const items = React.useMemo(() => transformSpaceToItems(space), [space]);
 
   // Check if space is private
   const isPrivateSpace = space.visibility === SPACE_VISIBILITY.PRIVATE;
 
-  if (items.length === 0) {
+  // Check if this is an organized parent space (has sub-spaces but no direct articles)
+  const isOrganizedParentSpace = space.hasSubSpaces && space.subSpaces && space.subSpaces.length > 0 &&
+    (!(space.data || space.articles) || (space.data || space.articles)?.length === 0);
+
+  if (items.length === 0 && !isOrganizedParentSpace) {
     return (
       <section
         className="relative w-full h-fit flex flex-col items-start gap-2 cursor-pointer"
@@ -318,6 +357,9 @@ export const TreasuryCard = ({
 
   const [mainItem, ...sideItems] = items;
 
+  // For organized parent spaces, add visual indicator
+  const hasSubSpacePreview = isOrganizedParentSpace && items.length > 0;
+
   return (
     <section
       className="relative w-full h-fit flex flex-col items-start gap-2 cursor-pointer"
@@ -422,6 +464,44 @@ export const TreasuryCard = ({
       </header>
     </section>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for better memo performance
+  const prevSpace = prevProps.space;
+  const nextSpace = nextProps.space;
+
+  // Compare basic properties
+  if (prevSpace.id !== nextSpace.id ||
+      prevSpace.name !== nextSpace.name ||
+      prevSpace.articleCount !== nextSpace.articleCount ||
+      prevSpace.treasureCount !== nextSpace.treasureCount ||
+      prevSpace.visibility !== nextSpace.visibility ||
+      prevSpace.hasSubSpaces !== nextSpace.hasSubSpaces) {
+    return false;
+  }
+
+  // Compare data arrays by length and first few items (avoid expensive JSON.stringify)
+  const prevData = prevSpace.data || [];
+  const nextData = nextSpace.data || [];
+  if (prevData.length !== nextData.length) return false;
+
+  // Quick check of first item's key properties (more efficient than full JSON comparison)
+  if (prevData.length > 0 && nextData.length > 0) {
+    const prevFirst = prevData[0];
+    const nextFirst = nextData[0];
+    if (prevFirst?.uuid !== nextFirst?.uuid ||
+        prevFirst?.title !== nextFirst?.title ||
+        prevFirst?.coverUrl !== nextFirst?.coverUrl) {
+      return false;
+    }
+  }
+
+  // Compare callback functions
+  return (
+    prevProps.onEdit === nextProps.onEdit &&
+    prevProps.onClick === nextProps.onClick
+  );
+});
+
+TreasuryCard.displayName = 'TreasuryCard';
 
 export default TreasuryCard;

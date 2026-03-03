@@ -1835,7 +1835,23 @@ export class AuthService {
     isFollowed: boolean; // NEW: Whether current user is following this space
     name: string;
     namespace: string;
+    parentSpace?: {
+      id: number;
+      name: string;
+      namespace: string;
+      spaceType: number;
+      userInfo: {
+        bio: string;
+        coverUrl: string;
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+    };
+    pid: number;
     seoDataByAi: string;
+    sortOrder: number;
     spaceType: number;
     userInfo: {
       bio: string;
@@ -2061,6 +2077,31 @@ export class AuthService {
     });
   }
 
+
+  /**
+   * Get user's social links
+   * @param userId - Target user ID to get social links for
+   * @returns Array of social links
+   */
+  static async getSocialLinks(userId: number): Promise<Array<{
+    id: number;
+    title: string;
+    linkUrl: string;
+    iconUrl?: string;
+  }>> {
+    try {
+      const response = await apiRequest(`/client/userHome/socialLinks/${userId}`, {
+        method: 'GET',
+        requiresAuth: false, // Allow viewing social links without auth
+      });
+
+      // Handle nested response structure: {status: 1, msg: "success", data: [...]}
+      return response?.data || response || [];
+    } catch (error) {
+      console.log('Failed to fetch social links:', error);
+      return []; // Return empty array on error
+    }
+  }
 
   /**
    * Email subscribe to authors/spaces

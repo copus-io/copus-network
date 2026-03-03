@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { AuthService } from "../../../services/authService";
-import { removeArticleFromSpace, bindArticles } from "../../../services/articleService";
+import { removeArticleFromSpace, bindArticles, moveArticlesToSpace } from "../../../services/articleService";
 import { Button } from "../../../components/ui/button";
 import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
@@ -66,6 +66,7 @@ const SpaceInfoSection = ({
   isSubTreasury,
   parentSpaceInfo,
   navigate,
+  spaceInfo,
 }: {
   spaceName: string;
   treasureCount: number;
@@ -98,6 +99,7 @@ const SpaceInfoSection = ({
   isSubTreasury?: boolean;
   parentSpaceInfo?: { name: string; namespace?: string; id?: number } | null;
   navigate?: (path: string | number) => void;
+  spaceInfo?: any;
 }): JSX.Element => {
   const canEdit = isOwner;
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -173,64 +175,65 @@ const SpaceInfoSection = ({
         )}
 
         {/* Space name */}
-        {isSubTreasury && parentSpaceName ? (
+        {(isSubTreasury && parentSpaceName) || (spaceInfo?.parentSpace) ? (
           <>
             <div className="flex items-center gap-2 mb-0">
-              <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{parentSpaceName}</h1>
+              <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">
+                {parentSpaceName || spaceInfo?.parentSpace?.name}
+              </h1>
               <button
-                onClick={async () => {
-                  console.log('🔙 Return button clicked');
-                  console.log('🔙 Current URL:', window.location.pathname);
-                  console.log('🔙 Current spaceId:', spaceId);
-                  console.log('🔙 Current spaceName:', spaceName);
-                  console.log('🔙 parentSpaceInfo:', parentSpaceInfo);
-                  console.log('🔙 parentSpaceName:', parentSpaceName);
+                onClick={async (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  console.log('🔙 Return button clicked - START');
+                  console.log('🔙 spaceInfo:', spaceInfo);
+                  console.log('🔙 API parentSpace:', spaceInfo?.parentSpace);
+                  console.log('🔙 Nav parentSpaceInfo:', parentSpaceInfo);
                   console.log('🔙 isSubTreasury:', isSubTreasury);
+                  console.log('🔙 parentSpaceName:', parentSpaceName);
 
-                  // Try to get correct parent space info if we have parent ID
-                  if (parentSpaceInfo?.id) {
-                    console.log('🔙 Looking up correct parent namespace for ID:', parentSpaceInfo.id);
+                  // Priority 1: Use API parentSpace info (most reliable)
+                  if (spaceInfo?.parentSpace?.namespace) {
+                    const targetUrl = `/treasury/${spaceInfo.parentSpace.namespace}`;
+                    console.log(`🔙 Using API parentSpace namespace: ${targetUrl}`);
+                    navigate(targetUrl);
+                    return;
+                  }
 
-                    // Try to find correct namespace by querying user's spaces
+                  // Priority 2: Use navigation state parentSpaceInfo
+                  if (parentSpaceInfo?.namespace) {
+                    const targetUrl = `/treasury/${parentSpaceInfo.namespace}`;
+                    console.log(`🔙 Using nav state namespace: ${targetUrl}`);
+                    navigate(targetUrl);
+                    return;
+                  }
+
+                  // Priority 3: Try to lookup namespace by ID
+                  const parentId = spaceInfo?.parentSpace?.id || parentSpaceInfo?.id;
+                  if (parentId) {
+                    console.log('🔙 Looking up namespace for parent ID:', parentId);
                     try {
-                      console.log('🔙 Fetching user spaces to find correct parent namespace...');
                       const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
                       const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
-                      const correctParentSpace = spaces.find((space: any) => space.id === parentSpaceInfo.id);
+                      const parentSpace = spaces.find((space: any) => space.id === parentId);
 
-                      if (correctParentSpace?.namespace) {
-                        const targetUrl = `/treasury/${correctParentSpace.namespace}`;
-                        console.log(`🔙 Found correct namespace: ${correctParentSpace.namespace} -> ${targetUrl}`);
+                      if (parentSpace?.namespace) {
+                        const targetUrl = `/treasury/${parentSpace.namespace}`;
+                        console.log(`🔙 Found namespace via lookup: ${targetUrl}`);
                         navigate(targetUrl);
-                        console.log('🔙 Navigate call completed successfully');
                         return;
-                      } else {
-                        console.log('🔙 Could not find parent space in user spaces, using provided namespace');
                       }
                     } catch (error) {
-                      console.error('🔙 Error fetching user spaces:', error);
+                      console.error('🔙 Error looking up parent namespace:', error);
                     }
-
-                    // Fallback to provided namespace
-                    if (parentSpaceInfo?.namespace) {
-                      const targetUrl = `/treasury/${parentSpaceInfo.namespace}`;
-                      console.log(`🔙 Using provided namespace: ${targetUrl}`);
-                      try {
-                        navigate(targetUrl);
-                        console.log('🔙 Navigate call completed successfully');
-                      } catch (error) {
-                        console.error('🔙 Navigate error:', error);
-                      }
-                    } else {
-                      console.log('🔙 No namespace available, trying browser back');
-                      navigate(-1);
-                    }
-                  } else {
-                    console.log('🔙 No parent info available, using browser back');
-                    navigate(-1);
                   }
+
+                  // Fallback: Browser back
+                  console.log('🔙 No reliable parent info, using browser back');
+                  navigate(-1);
                 }}
-                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center group"
+                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center group cursor-pointer"
+                style={{ pointerEvents: 'auto' }}
                 title="Back to parent space"
                 aria-label="Return to parent space"
               >
@@ -506,8 +509,6 @@ export const SpaceContentSection = (): JSX.Element => {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [loadingMoveSpaces, setLoadingMoveSpaces] = useState(false);
 
-  // Article collapse state (default collapsed when sub-treasuries exist)
-  const [showParentArticles, setShowParentArticles] = useState(false);
 
   // Fetch space data
   useEffect(() => {
@@ -686,6 +687,8 @@ export const SpaceContentSection = (): JSX.Element => {
             coverUrl: spaceData?.coverUrl, // Add space cover image
             faceUrl: spaceInfoResponse?.faceUrl || spaceData?.faceUrl, // Get faceUrl from root level or fallback to nested
             visibility: spaceData?.visibility, // Add visibility for private pill
+            pid: spaceData?.pid, // Parent ID from API
+            parentSpace: spaceData?.parentSpace, // Parent space info from API
           };
 
           // Store spaceId for later use (edit functionality)
@@ -1317,41 +1320,59 @@ export const SpaceContentSection = (): JSX.Element => {
     try {
       const selectedUuids = Array.from(selectedArticleIds);
       console.log(`📤 Moving out ${selectedUuids.length} articles from sub-space back to parent space`);
-      // Note: Articles remain in parent space automatically, only need to remove from sub-space
 
-      // Remove articles from current sub-space
-      const removePromises = selectedUuids.map(uuid => {
+      // Use dedicated Move API for Move Out
+      const parentSpaceId = parentSpaceInfo.id;
+
+      // Collect article IDs for batch move
+      const articleIds: number[] = [];
+      for (const uuid of selectedUuids) {
         const article = articles.find(a => a.uuid === uuid);
         const numericId = article?.numericId || article?.id;
-        if (!numericId) {
-          console.error(`No numeric ID found for article: ${uuid}`);
-          return Promise.resolve(false);
+        if (numericId) {
+          articleIds.push(numericId);
+        } else {
+          console.error(`📤 No numeric ID found for article: ${uuid}`);
         }
-        return removeArticleFromSpace({
-          articleId: numericId,
-          spaceId: spaceId!
-        });
-      });
-      await Promise.all(removePromises);
+      }
 
-      // Update local state
-      const remainingArticles = articles.filter(article => !selectedUuids.includes(article.uuid));
-      const newTotalCount = Math.max(0, totalArticleCount - selectedUuids.length);
+      let successCount = 0;
+      if (articleIds.length > 0 && spaceId) {
+        try {
+          // Use dedicated Move API for batch operation
+          await moveArticlesToSpace({
+            articleIds,
+            fromSpaceId: parseInt(spaceId),
+            toSpaceId: parentSpaceId
+          });
+          successCount = articleIds.length;
+          console.log(`📤 Successfully moved out ${successCount} articles using dedicated Move API`);
+        } catch (error) {
+          console.error('📤 Failed to move out articles:', error);
+        }
+      }
 
-      setArticles(remainingArticles);
-      setTotalArticleCount(newTotalCount);
+      // Update local state - only remove successfully moved articles
+      const movedUuids = selectedUuids.slice(0, successCount);
+      setArticles(prev => prev.filter(article => !movedUuids.includes(article.uuid)));
+      setTotalArticleCount(prev => Math.max(0, prev - successCount));
       setSelectedArticleIds(new Set());
 
-      showToast(
-        `Moved ${selectedUuids.length} article${selectedUuids.length !== 1 ? 's' : ''} to parent space`,
-        'success'
-      );
+      // Show appropriate feedback
+      if (successCount === selectedUuids.length && successCount > 0) {
+        showToast(`Moved ${successCount} article${successCount !== 1 ? 's' : ''} to parent space`, 'success');
+      } else if (successCount > 0) {
+        showToast(`Moved ${successCount} of ${selectedUuids.length} articles to parent space (${selectedUuids.length - successCount} failed)`, 'warning');
+      } else {
+        showToast(`Failed to move articles to parent space`, 'error');
+      }
 
       setShowMoveOutConfirm(false);
       setOrganizeMode(false); // Exit organize mode after successful move
 
-      // Check if sub-space is now empty
-      if (remainingArticles.length === 0 || newTotalCount === 0) {
+      // Check if sub-space is now empty after successful moves
+      const remainingArticleCount = articles.length - successCount;
+      if (remainingArticleCount === 0) {
         console.log('📤 Sub-space is now empty, navigating to parent space');
 
         // Get correct parent space namespace dynamically
@@ -1366,7 +1387,7 @@ export const SpaceContentSection = (): JSX.Element => {
               navigate(`/treasury/${correctParentSpace.namespace}`, {
                 state: {
                   fromSubSpace: true,
-                  movedOutCount: selectedUuids.length,
+                  movedOutCount: successCount,
                   subSpaceEmptied: true
                 }
               });
@@ -1378,14 +1399,14 @@ export const SpaceContentSection = (): JSX.Element => {
           console.error('📤 Error getting correct parent namespace:', error);
         }
       } else {
-        console.log(`📤 Sub-space still has ${remainingArticles.length} articles, staying in current space`);
+        console.log(`📤 Sub-space still has ${remainingArticleCount} articles, staying in current space`);
       }
     } catch (error) {
       console.error('📤 Failed to move out articles:', error);
       const message = ErrorHandler.handleApiError(error, {
         component: 'SpaceContentSection',
         action: 'move-out-articles',
-        endpoint: 'bindArticles/removeArticleFromSpace'
+        endpoint: 'moveArticlesToSpace'
       });
       showToast(message, 'error');
     } finally {
@@ -1604,24 +1625,17 @@ export const SpaceContentSection = (): JSX.Element => {
         onAuthorClick={handleAuthorClick}
         onEdit={handleEditSpace}
         onOrganize={isOwner ? () => {
-          setOrganizeMode(prev => {
-            const newMode = !prev;
-            // When entering organize mode and there are sub-treasuries, auto-expand articles
-            if (newMode && subTreasuries.length > 0 && !showParentArticles) {
-              setShowParentArticles(true);
-              console.log('📋 Auto-expanded articles for organize mode');
-            }
-            return newMode;
-          });
+          setOrganizeMode(prev => !prev);
           setSelectedArticleIds(new Set());
         } : undefined}
         organizeMode={organizeMode}
-        onCreateSubTreasury={isOwner && !isSubTreasury ? () => setShowCreateSubTreasury(true) : undefined}
+        onCreateSubTreasury={isOwner && !isSubTreasury && !(spaceInfo?.pid && spaceInfo.pid > 0) && !spaceInfo?.parentSpace ? () => setShowCreateSubTreasury(true) : undefined}
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
         isSubTreasury={isSubTreasury}
         parentSpaceName={parentSpaceName}
         parentSpaceInfo={parentSpaceInfo}
         navigate={navigate}
+        spaceInfo={spaceInfo}
         onSubscriberCountLoaded={setSubscriberCount}
         onSubscriptionChange={(isSubscribed) => {
           // Update local state only - SubscribeButton already handled the API call
@@ -1694,7 +1708,7 @@ export const SpaceContentSection = (): JSX.Element => {
         onClose={() => setShowCreateSubTreasury(false)}
         title="Create sub-treasury"
         submitLabel="Add"
-        mode="compact"
+        mode="full"
         parentSpaceId={isOwner ? spaceId : undefined} // Only pass parent ID if user owns this space
         onSuccess={(newSpace) => {
           console.log('✅ Sub-treasury created successfully:', newSpace);
@@ -1706,65 +1720,90 @@ export const SpaceContentSection = (): JSX.Element => {
             console.log('📋 Updated sub-treasuries after adding new one:', updated);
             return updated;
           });
+
+          // Close the modal first
+          setShowCreateSubTreasury(false);
+
+          // Navigate to the newly created sub-treasury
+          const currentSpaceName = displaySpaceName || spaceInfo?.name || '';
+          const parentInfo = {
+            name: currentSpaceName,
+            namespace: spaceInfo?.namespace,
+            id: parseInt(spaceId)
+          };
+
+          if (newSpace?.namespace) {
+            console.log('🚀 Navigating to new sub-treasury:', newSpace.namespace);
+            navigate(`/treasury/${newSpace.namespace}`, {
+              state: {
+                isSubTreasury: true,
+                parentSpaceName: currentSpaceName,
+                parentSpaceInfo: parentInfo,
+                spaceData: newSpace
+              }
+            });
+          } else if (newSpace?.id) {
+            console.log('🚀 Navigating to new sub-treasury (by ID):', newSpace.id);
+            navigate(`/treasury/${newSpace.id}`, {
+              state: {
+                isSubTreasury: true,
+                parentSpaceName: currentSpaceName,
+                parentSpaceInfo: parentInfo,
+                spaceData: newSpace
+              }
+            });
+          }
+
           showToast(`Sub-treasury "${newSpace?.name || 'New Sub-treasury'}" created successfully`, 'success');
         }}
       />}
 
-      {/* Article Collapse/Expand Control (only show when parent space has sub-treasuries and articles) */}
-      {!isSubTreasury && subTreasuries.length > 0 && articles.length > 0 && (
-        <div className="w-full mt-4 mb-2 flex items-center justify-between border-b border-gray-200 pb-3">
-          <div className="flex items-center gap-3">
-            <h3 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-lg tracking-[0] leading-[25.2px]">
-              All Treasures
-            </h3>
-            <span className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600 font-medium">
-              {articles.length} items
-            </span>
-          </div>
-          <button
-            onClick={() => setShowParentArticles(!showParentArticles)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-            title={showParentArticles ? "Hide articles" : "Show articles"}
-          >
-            <span className="text-sm text-gray-600 font-medium">
-              {showParentArticles ? 'Hide' : 'Show'}
-            </span>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className={`transform transition-transform ${showParentArticles ? 'rotate-180' : ''}`}
-            >
-              <path
-                d="M19 9L12 16L5 9"
-                stroke="#686868"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </div>
-      )}
 
-      {/* Articles Grid - conditionally shown based on collapse state */}
-      <div className={`w-full mt-2 ${!isSubTreasury && subTreasuries.length > 0 && !showParentArticles ? 'hidden' : ''}`}>
+      {/* Articles Grid */}
+      <div className="w-full mt-2">
         {articles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
-            <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">No treasures yet — this collection is just getting started.</h3>
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
-                <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
-              </svg>
-              <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
-                Discover
-              </span>
-            </button>
+            {/* Different messages based on whether this space has sub-treasuries */}
+            {!isSubTreasury && subTreasuries.length > 0 ? (
+              // Parent space with sub-treasuries - organized space
+              <>
+                <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
+                  Your treasures are organized into sub-treasuries above.
+                </h3>
+                <p className="text-gray-500 text-base mb-4 [font-family:'Lato',Helvetica] max-w-md">
+                  All articles have been sorted into categories. Add new treasures to continue organizing your collection.
+                </p>
+                <button
+                  onClick={() => navigate('/')}
+                  className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
+                    <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
+                    Discover More
+                  </span>
+                </button>
+              </>
+            ) : (
+              // Regular empty space (no sub-treasuries or sub-treasury itself)
+              <>
+                <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
+                  No treasures yet — this collection is just getting started.
+                </h3>
+                <button
+                  onClick={() => navigate('/')}
+                  className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
+                    <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
+                    Discover
+                  </span>
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <>
@@ -1855,23 +1894,31 @@ export const SpaceContentSection = (): JSX.Element => {
                   }
 
                   console.log('📁 Loading spaces with parent-child restrictions...');
+                  console.log(`📁 Debug: isSubTreasury=${isSubTreasury}, parentSpaceName="${parentSpaceName}", parentSpaceInfo:`, parentSpaceInfo);
+                  console.log(`📁 Debug: spaceInfo.pid=${spaceInfo?.pid}, spaceInfo:`, spaceInfo);
 
                   const availableSpaces = [];
 
+                  // Enhanced detection: Check if this is a sub-space from API data or navigation state
+                  const isActuallySubSpace = isSubTreasury || (spaceInfo?.pid && spaceInfo.pid > 0);
+                  const actualParentInfo = parentSpaceInfo || (spaceInfo?.pid ? { id: spaceInfo.pid } : null);
+
+                  console.log(`📁 Enhanced detection: isActuallySubSpace=${isActuallySubSpace}, actualParentInfo:`, actualParentInfo);
+
                   // Fixed move logic: Focus on core sibling spaces functionality
-                  if (isSubTreasury && parentSpaceName) {
+                  if (isActuallySubSpace && (parentSpaceName || actualParentInfo)) {
                     // Current is a sub-space - load sibling sub-spaces only
                     console.log(`📁 Current is sub-space "${spaceInfo?.name || 'Unknown'}" with parent "${parentSpaceName}"`);
                     console.log('📁 Loading sibling sub-spaces...');
 
-                    // IMPORTANT: Try parentSpaceInfo.id FIRST - this should be the primary method!
+                    // IMPORTANT: Try actualParentInfo.id FIRST - this should be the primary method!
 
-                    if (parentSpaceInfo?.id) {
-                      console.log(`📁 ✨ PRIMARY METHOD: Using parentSpaceInfo.id: ${parentSpaceInfo.id} to get siblings`);
+                    if (actualParentInfo?.id) {
+                      console.log(`📁 ✨ PRIMARY METHOD: Using actualParentInfo.id: ${actualParentInfo.id} to get siblings`);
                       try {
-                        const correctSiblingsResponse = await AuthService.getMySpaces(userId, 1, 100, parentSpaceInfo.id);
+                        const correctSiblingsResponse = await AuthService.getMySpaces(userId, 1, 100, actualParentInfo.id);
                         const correctSiblings = correctSiblingsResponse?.data?.data || correctSiblingsResponse?.data || correctSiblingsResponse || [];
-                        console.log(`📁 ✨ Found ${correctSiblings.length} spaces under parent ID ${parentSpaceInfo.id}`);
+                        console.log(`📁 ✨ Found ${correctSiblings.length} spaces under parent ID ${actualParentInfo.id}`);
                         console.log('📁 ✨ Raw siblings:', correctSiblings);
 
                         const filteredCorrectSiblings = correctSiblings.filter((s: any) => s.id !== spaceId);
@@ -1885,7 +1932,7 @@ export const SpaceContentSection = (): JSX.Element => {
                         // Continue to fallback method if PRIMARY fails
                       }
                     } else {
-                      console.log('📁 ❌ PRIMARY METHOD skipped: parentSpaceInfo.id not available');
+                      console.log('📁 ❌ PRIMARY METHOD skipped: actualParentInfo.id not available');
                     }
 
                     // Fallback method: Only use if PRIMARY method failed or parentSpaceInfo.id not available
@@ -1975,9 +2022,9 @@ export const SpaceContentSection = (): JSX.Element => {
 
                   // Show debug message if no spaces available (but still show modal for debugging)
                   if (availableSpaces.length === 0) {
-                    if (isSubTreasury) {
+                    if (isActuallySubSpace) {
                       console.log('📁 No target spaces available for move from sub-treasury');
-                      console.log(`📁 Debug info: isSubTreasury=${isSubTreasury}, parentSpaceName="${parentSpaceName}", spaceId=${spaceId}`);
+                      console.log(`📁 Debug info: isActuallySubSpace=${isActuallySubSpace}, parentSpaceName="${parentSpaceName}", spaceId=${spaceId}`);
                     } else {
                       console.log('📁 No target spaces available - create sub-spaces or other treasuries first');
                     }
@@ -2047,12 +2094,15 @@ export const SpaceContentSection = (): JSX.Element => {
         onClose={() => setShowEditModal(false)}
         title="Edit treasury"
         submitLabel="Save"
-        mode="compact"
+        mode="full"
         editMode={true}
         editSpaceId={spaceId}
         initialData={{
           name: spaceInfo?.name || '',
-          description: spaceInfo?.description || ''
+          description: spaceInfo?.description || '',
+          coverUrl: spaceInfo?.coverUrl || '',
+          faceUrl: spaceInfo?.faceUrl || '',
+          visibility: spaceInfo?.visibility || 0
         }}
         onSuccess={(updatedSpace) => {
           console.log('✅ Treasury updated successfully:', updatedSpace);
@@ -2061,7 +2111,10 @@ export const SpaceContentSection = (): JSX.Element => {
             setSpaceInfo(prev => prev ? {
               ...prev,
               name: updatedSpace.name || prev.name,
-              description: updatedSpace.description || prev.description
+              description: updatedSpace.description || prev.description,
+              coverUrl: updatedSpace.coverUrl || prev.coverUrl,
+              faceUrl: updatedSpace.faceUrl || prev.faceUrl,
+              visibility: updatedSpace.visibility !== undefined ? updatedSpace.visibility : prev.visibility
             } : null);
             setDisplaySpaceName(updatedSpace.name || '');
           }
@@ -2407,64 +2460,80 @@ export const SpaceContentSection = (): JSX.Element => {
                       const targetSpace = bindableSpaces.find(space => space.id === selectedMoveTarget);
                       const targetSpaceName = targetSpace?.name || 'sub-treasury';
 
-                      console.log('📋 Copying articles to target space (not moving)...', {
+                      console.log('🚚 Moving articles to target space (dedicated Move API)...', {
                         targetSpaceId: selectedMoveTarget,
                         targetSpaceName,
-                        articleCount: selectedUuids.length
+                        articleCount: selectedUuids.length,
+                        fromSpaceId: spaceId
                       });
 
-                      let successCount = 0;
+                      // Collect article IDs for batch move
+                      const articleIds: number[] = [];
                       for (const uuid of selectedUuids) {
                         const article = articles.find(a => a.uuid === uuid);
                         const numericId = article?.numericId || article?.id;
                         if (numericId) {
-                          try {
-                            // Only bind to target space - DO NOT remove from current space
-                            await bindArticles({ articleId: numericId, spaceIds: [selectedMoveTarget] });
-                            successCount++;
-                            console.log(`📋 Successfully copied article ${numericId} to space ${selectedMoveTarget}`);
-                          } catch (error) {
-                            console.error(`📋 Failed to copy article ${numericId}:`, error);
-                          }
+                          articleIds.push(numericId);
+                        } else {
+                          console.error(`🚚 No numeric ID found for article: ${uuid}`);
                         }
                       }
+
+                      let successCount = 0;
+                      if (articleIds.length > 0 && spaceId) {
+                        try {
+                          // Use dedicated Move API for batch operation
+                          await moveArticlesToSpace({
+                            articleIds,
+                            fromSpaceId: parseInt(spaceId),
+                            toSpaceId: selectedMoveTarget
+                          });
+                          successCount = articleIds.length;
+                          console.log(`🚚 Successfully moved ${successCount} articles using dedicated Move API`);
+                        } catch (error) {
+                          console.error('🚚 Failed to move articles:', error);
+                        }
+                      }
+
+                      // Remove moved articles from current space UI
+                      const movedUuids = selectedUuids.slice(0, successCount);
+                      setArticles(prev => prev.filter(article => !movedUuids.includes(article.uuid)));
+                      setTotalArticleCount(prev => Math.max(0, prev - successCount));
 
                       // Clear selection and close modal
                       setSelectedArticleIds(new Set());
                       setShowMoveModal(false);
+                      setOrganizeMode(false);
 
                       // Show enhanced success message with target space name
                       if (successCount === selectedUuids.length) {
-                        showToast(`Successfully copied ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}"`, 'success');
+                        showToast(`Successfully moved ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}"`, 'success');
                       } else if (successCount > 0) {
-                        showToast(`Copied ${successCount} of ${selectedUuids.length} articles to "${targetSpaceName}" (${selectedUuids.length - successCount} failed)`, 'warning');
+                        showToast(`Moved ${successCount} of ${selectedUuids.length} articles to "${targetSpaceName}" (${selectedUuids.length - successCount} failed)`, 'warning');
                       } else {
-                        showToast(`Failed to copy articles to "${targetSpaceName}"`, 'error');
+                        showToast(`Failed to move articles to "${targetSpaceName}"`, 'error');
                       }
 
-                      console.log(`📋 Copy operation completed: ${successCount}/${selectedUuids.length} successful`);
+                      console.log(`🚚 Move operation completed: ${successCount}/${selectedUuids.length} successful`);
 
-                      // Clear selection after successful copy
-                      setSelectedArticleIds(new Set());
-                      setOrganizeMode(false);
 
                       // Enhanced feedback with navigation option for sub-spaces
                       if (successCount === selectedUuids.length && successCount > 0) {
-                        // Check if we're copying to a sub-space (when we have subTreasuries data)
+                        // Check if we're moving to a sub-space (when we have subTreasuries data)
                         if (subTreasuries && subTreasuries.length > 0) {
                           const targetSubSpace = subTreasuries.find((sub: any) => sub.id === selectedMoveTarget);
 
                           if (targetSubSpace) {
-                            // This means we're copying to a sub-space
+                            // This means we're moving to a sub-space
                             const shouldNavigate = window.confirm(
-                              `Successfully copied ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}".\n\nWould you like to view the sub-space now?`
+                              `Successfully moved ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}".\n\nWould you like to view the sub-space now?`
                             );
                             if (shouldNavigate && targetSubSpace.namespace) {
-                              console.log(`📋 Navigating to sub-space: ${targetSubSpace.namespace}`);
+                              console.log(`🚚 Navigating to sub-space: ${targetSubSpace.namespace}`);
                               navigate(`/treasury/${targetSubSpace.namespace}`, {
                                 state: {
                                   fromParentSpace: true,
-                                  copiedArticlesCount: successCount
+                                  movedArticlesCount: successCount
                                 }
                               });
                             }
@@ -2472,11 +2541,11 @@ export const SpaceContentSection = (): JSX.Element => {
                         }
                       }
                     } catch (err) {
-                      console.error('Failed to copy articles:', err);
+                      console.error('Failed to move articles:', err);
                       const message = ErrorHandler.handleApiError(err, {
                         component: 'SpaceContentSection',
-                        action: 'copy-articles',
-                        endpoint: 'bindArticles'
+                        action: 'move-articles',
+                        endpoint: 'moveArticlesToSpace'
                       });
                       showToast(message, 'error');
                     } finally {
@@ -2501,7 +2570,7 @@ export const SpaceContentSection = (): JSX.Element => {
         onClose={() => setShowOrganizeSubTreasury(false)}
         title="Create sub-treasury"
         submitLabel="Add"
-        mode="compact"
+        mode="full"
         parentSpaceId={isOwner ? spaceId : undefined} // Only pass parent ID if user owns this space
         onSuccess={async (newSpace) => {
           const newSpaceId = newSpace?.id || newSpace?.data?.id;

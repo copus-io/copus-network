@@ -34,6 +34,12 @@ interface Collection {
   visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
   namespace?: string;
   firstLetter: string; // First letter of space name for avatar fallback
+  // New fields for hierarchical display
+  isParent?: boolean; // Whether this space has sub-spaces
+  isExpanded?: boolean; // Whether sub-spaces are expanded
+  children?: Collection[]; // Sub-spaces
+  parentId?: number; // Parent space ID for sub-spaces
+  level?: number; // Indentation level (0 for parent, 1 for children)
 }
 
 export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
@@ -51,8 +57,11 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // New states for hierarchical display
+  const [expandedParents, setExpandedParents] = useState<Set<number>>(new Set());
+  const [loadingSubSpaces, setLoadingSubSpaces] = useState<Set<number>>(new Set());
 
-  // Fetch user's bindable spaces
+  // Fetch user's bindable spaces with hierarchy
   useEffect(() => {
     const fetchCollections = async () => {
       if (!isOpen || !user?.id) return;
@@ -60,26 +69,31 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
       try {
         setLoading(true);
 
-        // Use the bindableSpaces API - pass articleId in edit mode to get isBind status
-        const bindableResponse = await AuthService.getBindableSpaces(articleId);
-        console.log('Bindable spaces response (Choose):', bindableResponse, 'articleId:', articleId);
+        // Step 1: Get all parent spaces using getMySpaces to build hierarchy
+        console.log('🔍 Fetching parent spaces for hierarchy...');
+        const parentSpacesResponse = await AuthService.getMySpaces(user.id, 1, 100);
+        const parentSpaces = parentSpacesResponse?.data?.data || parentSpacesResponse?.data || parentSpacesResponse || [];
+        console.log('🔍 Found parent spaces:', parentSpaces.length);
 
-        // Parse the response
-        let spacesArray: BindableSpace[] = [];
-        if (bindableResponse?.data && Array.isArray(bindableResponse.data)) {
-          spacesArray = bindableResponse.data;
-        } else if (Array.isArray(bindableResponse)) {
-          spacesArray = bindableResponse;
+        // Step 2: Also get bindable spaces to check isBind status if articleId provided
+        let bindableSpaces: BindableSpace[] = [];
+        if (articleId) {
+          const bindableResponse = await AuthService.getBindableSpaces(articleId);
+          console.log('🔍 Bindable spaces response:', bindableResponse);
+          if (bindableResponse?.data && Array.isArray(bindableResponse.data)) {
+            bindableSpaces = bindableResponse.data;
+          } else if (Array.isArray(bindableResponse)) {
+            bindableSpaces = bindableResponse;
+          }
         }
 
-        console.log('Spaces array (full):', JSON.stringify(spacesArray, null, 2));
-        console.log('User info for display name:', { username: user.username, userId: user.id });
+        console.log('🔍 User info:', { username: user.username, userId: user.id });
 
-        // Transform spaces to collection format
-        const collectionOptions: Collection[] = spacesArray.map((space) => {
-          // The bindableSpaces API doesn't return spaceType, so we need to detect it by name
-          // "Default Collections Space" = Treasury (spaceType 1)
-          // "Default Curations Space" = Curations (spaceType 2)
+        // Step 3: Create hierarchy structure with parent spaces
+        const hierarchicalCollections: Collection[] = [];
+
+        // Helper function to transform space to collection
+        const transformSpaceToCollection = (space: any, isBindable = false, level = 0): Collection => {
           let spaceTypeNum = space.spaceType;
           if (spaceTypeNum === undefined || spaceTypeNum === null) {
             if (space.name === 'Default Collections Space') {
@@ -103,8 +117,6 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             displayName = space.name || 'Untitled Treasury';
           }
 
-          console.log('Space display name for', space.name, ':', displayName, 'spaceType:', spaceTypeNum);
-
           // For default Treasury/Curations (spaceType 1 & 2), use user's profile image
           // For custom spaces, use space's faceUrl (avatar) if available, fallback to first article's cover image
           const isDefaultSpace = spaceTypeNum === 1 || spaceTypeNum === 2;
@@ -116,9 +128,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
           const spaceName = space.name || displayName;
           const firstLetter = spaceName.charAt(0).toUpperCase();
 
-          // Pre-select if: articleId provided and space.isBind is true (existing binding),
-          // OR initialSelectedIds contains this space
-          const wasOriginallyBound = !!(articleId && space.isBind);
+          // Check if this space is bound (for edit mode)
+          const bindableSpace = bindableSpaces.find(bs => bs.id === space.id);
+          const wasOriginallyBound = !!(articleId && bindableSpace?.isBind);
           const shouldBeSelected = wasOriginallyBound || initialSelectedIds.includes(space.id);
 
           return {
@@ -127,27 +139,42 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
             name: displayName,
             image: coverImage,
             isSelected: shouldBeSelected,
-            wasOriginallyBound, // Track original binding state
+            wasOriginallyBound,
             spaceType: spaceTypeNum,
-            visibility: space.visibility, // Include visibility from API
+            visibility: space.visibility,
             namespace: space.namespace,
             firstLetter,
+            level,
+            isParent: false, // Will be set later if has children
+            isExpanded: false,
+            children: [],
+            parentId: space.pid || undefined,
           };
-        });
+        };
 
-        // Sort: spaceType 1 (Treasury) first, then spaceType 2 (Curations), then by ID descending (newest first)
-        const sortedCollections = collectionOptions.sort((a, b) => {
+        // Transform parent spaces to collections
+        for (const parentSpace of parentSpaces) {
+          const parentCollection = transformSpaceToCollection(parentSpace, true, 0);
+          parentCollection.isParent = true; // Assume it might have children
+          hierarchicalCollections.push(parentCollection);
+        }
+
+        // Sort hierarchical collections: spaceType 1 (Treasury) first, then spaceType 2 (Curations), then by ID descending
+        const sortedCollections = hierarchicalCollections.sort((a, b) => {
           if (a.spaceType === 1 && b.spaceType !== 1) return -1;
           if (a.spaceType !== 1 && b.spaceType === 1) return 1;
           if (a.spaceType === 2 && b.spaceType !== 2) return -1;
           if (a.spaceType !== 2 && b.spaceType === 2) return 1;
-          // Then sort by numeric ID descending (higher ID = more recently created)
           return b.numericId - a.numericId;
         });
 
-        console.log('Sorted collections order:', sortedCollections.map(c => ({ name: c.name, spaceType: c.spaceType, id: c.numericId })));
+        console.log('🌳 Hierarchical collections created:', sortedCollections.map(c => ({
+          name: c.name,
+          spaceType: c.spaceType,
+          id: c.numericId,
+          isParent: c.isParent
+        })));
 
-        // Note: No auto-select for this modal (unlike CollectTreasureModal)
         setCollections(sortedCollections);
       } catch (err) {
         console.error('Failed to fetch bindable spaces:', err);
@@ -165,6 +192,9 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
       setSearchQuery("");
       setShowCreateNew(false);
       setIsSubmitting(false);
+      // Reset hierarchical states
+      setExpandedParents(new Set());
+      setLoadingSubSpaces(new Set());
     }
   }, [isOpen]);
 
@@ -182,6 +212,91 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
       document.documentElement.style.overflow = '';
     };
   }, [isOpen]);
+
+  // Handle parent space expansion to load sub-spaces
+  const handleToggleExpansion = async (parentId: number) => {
+    if (expandedParents.has(parentId)) {
+      // Collapse: remove from expanded set and hide children
+      setExpandedParents(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(parentId);
+        return newSet;
+      });
+
+      // Remove children from collections
+      setCollections(prev => prev.filter(c => c.parentId !== parentId));
+    } else {
+      // Expand: fetch and show sub-spaces
+      setExpandedParents(prev => new Set(prev).add(parentId));
+      setLoadingSubSpaces(prev => new Set(prev).add(parentId));
+
+      try {
+        console.log(`🔄 Fetching sub-spaces for parent ID: ${parentId}`);
+        const subSpacesResponse = await AuthService.getMySpaces(user?.id || 0, 1, 100, parentId);
+        const subSpaces = subSpacesResponse?.data?.data || subSpacesResponse?.data || subSpacesResponse || [];
+        console.log(`🔄 Found ${subSpaces.length} sub-spaces for parent ${parentId}`);
+
+        if (subSpaces.length > 0) {
+          // Transform sub-spaces and add them after parent
+          const transformSpaceToCollection = (space: any, level = 1): Collection => {
+            let spaceTypeNum = space.spaceType || 0;
+            if (typeof spaceTypeNum === 'string') {
+              spaceTypeNum = parseInt(spaceTypeNum, 10);
+            }
+
+            const displayName = space.name || 'Untitled Sub-Treasury';
+            const coverImage = space.faceUrl || space.data?.[0]?.coverUrl || '';
+            const firstLetter = displayName.charAt(0).toUpperCase();
+
+            // Check binding status
+            const wasOriginallyBound = false; // Sub-spaces typically not pre-bound
+            const shouldBeSelected = initialSelectedIds.includes(space.id);
+
+            return {
+              id: space.id.toString(),
+              numericId: space.id,
+              name: displayName,
+              image: coverImage,
+              isSelected: shouldBeSelected,
+              wasOriginallyBound,
+              spaceType: spaceTypeNum,
+              visibility: space.visibility,
+              namespace: space.namespace,
+              firstLetter,
+              level,
+              isParent: false,
+              isExpanded: false,
+              children: [],
+              parentId,
+            };
+          };
+
+          const subCollections = subSpaces.map(space => transformSpaceToCollection(space, 1));
+
+          // Insert sub-spaces after their parent
+          setCollections(prev => {
+            const newCollections = [...prev];
+            const parentIndex = newCollections.findIndex(c => c.numericId === parentId);
+
+            if (parentIndex !== -1) {
+              // Insert sub-spaces after parent
+              newCollections.splice(parentIndex + 1, 0, ...subCollections);
+            }
+
+            return newCollections;
+          });
+        }
+      } catch (error) {
+        console.error(`❌ Failed to fetch sub-spaces for parent ${parentId}:`, error);
+      } finally {
+        setLoadingSubSpaces(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(parentId);
+          return newSet;
+        });
+      }
+    }
+  };
 
   // Toggle selection for a collection
   const handleToggleSelection = (collectionId: string) => {
@@ -373,17 +488,48 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
                   {filteredCollections.map((collection) => (
                     <li
                       key={collection.id}
-                      className="flex items-center justify-between px-0 py-4 self-stretch w-full bg-white border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
-                      onClick={() => handleToggleSelection(collection.id)}
+                      className={`flex items-center justify-between px-0 py-4 self-stretch w-full bg-white border-b border-gray-200 transition-colors ${
+                        collection.level && collection.level > 0 ? 'bg-gray-50/50' : 'hover:bg-gray-50'
+                      }`}
+                      style={{
+                        paddingLeft: collection.level ? `${collection.level * 20 + 16}px` : '16px'
+                      }}
                     >
-                      <div className="inline-flex items-center gap-4 relative flex-[0_0_auto]">
+                      <div className="inline-flex items-center gap-3 relative flex-[0_0_auto]">
+                        {/* Expand/Collapse Button (only for parent spaces) */}
+                        {collection.isParent && collection.level === 0 && (
+                          <button
+                            className="w-5 h-5 flex items-center justify-center hover:bg-gray-200 rounded transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleExpansion(collection.numericId);
+                            }}
+                          >
+                            {loadingSubSpaces.has(collection.numericId) ? (
+                              <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                            ) : expandedParents.has(collection.numericId) ? (
+                              <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+
                         {/* Round Checkbox */}
                         <div
-                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${
                             collection.isSelected
                               ? 'bg-red border-red'
                               : 'bg-white border-gray-300 hover:border-gray-400'
                           }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleSelection(collection.id);
+                          }}
                         >
                           {collection.isSelected && (
                             <svg
