@@ -179,11 +179,12 @@ const SpaceInfoSection = ({
               <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{parentSpaceName}</h1>
               <button
                 onClick={() => {
+                  console.log('🔙 Return button clicked, parentSpaceInfo:', parentSpaceInfo);
                   if (parentSpaceInfo?.namespace) {
+                    console.log(`🔙 Navigating to parent space: /treasury/${parentSpaceInfo.namespace}`);
                     navigate(`/treasury/${parentSpaceInfo.namespace}`);
-                  } else if (parentSpaceInfo?.id) {
-                    navigate(`/treasury/${parentSpaceInfo.id}`);
                   } else {
+                    console.log('🔙 No parent namespace, using browser back');
                     navigate(-1); // Fallback to browser back
                   }
                 }}
