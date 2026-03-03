@@ -180,6 +180,21 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
         }
       } else {
         // Create new space
+        console.log('🏗️ Creating space with params:', {
+          name: spaceName.trim(),
+          description,
+          coverUrl,
+          faceUrl,
+          visibility,
+          parentSpaceId
+        });
+
+        if (parentSpaceId) {
+          console.log('🏗️ Creating sub-space under parent:', parentSpaceId);
+        } else {
+          console.log('🏗️ Creating top-level space');
+        }
+
         response = await AuthService.createSpace(
           spaceName.trim(),
           description,
@@ -188,10 +203,18 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
           visibility,
           parentSpaceId // Pass parent space ID for creating sub-spaces
         );
-        console.log('Create space response:', response);
+        console.log('🏗️ Create space response:', response);
         resultSpace = response.data || response;
 
         if (resultSpace) {
+          console.log('🏗️ Created space details:', {
+            id: resultSpace.id,
+            name: resultSpace.name,
+            pid: resultSpace.pid,
+            parentId: resultSpace.parentId,
+            spaceType: resultSpace.spaceType,
+            fullData: resultSpace
+          });
           showToast('Space created successfully', 'success');
         }
       }
@@ -209,7 +232,18 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
       }
     } catch (err) {
       console.error(editMode ? 'Failed to update space:' : 'Failed to create space:', err);
-      showToast(editMode ? 'Failed to update treasury' : 'Failed to create space', 'error');
+
+      // Handle specific error messages
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      let userMessage = editMode ? 'Failed to update treasury' : 'Failed to create space';
+
+      if (errorMessage.includes('you can not create space under other user\'s space')) {
+        userMessage = 'You can only create sub-treasuries in your own spaces';
+      } else if (errorMessage.includes('permission')) {
+        userMessage = 'You don\'t have permission to perform this action';
+      }
+
+      showToast(userMessage, 'error');
     } finally {
       setIsCreating(false);
     }

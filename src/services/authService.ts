@@ -1971,17 +1971,33 @@ export class AuthService {
    * @returns The created space object with id, name, namespace, spaceType, userId, etc.
    */
   static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string, visibility?: number, pid?: number): Promise<any> {
-    return apiRequest(`/client/article/space/create`, {
-      method: 'POST',
-      body: JSON.stringify({
-        name,
-        ...(description && { description }),
-        ...(coverUrl && { coverUrl }),
-        ...(faceUrl && { faceUrl }),
-        ...(visibility !== undefined && { visibility }),
-        ...(pid !== undefined && { pid })
-      }),
+    const body = {
+      name,
+      ...(description && { description }),
+      ...(coverUrl && { coverUrl }),
+      ...(faceUrl && { faceUrl }),
+      ...(visibility !== undefined && { visibility }),
+      ...(pid !== undefined && { pid })
+    };
+
+    console.log('🚀 AuthService.createSpace API call:', {
+      endpoint: '/client/article/space/create',
+      body
     });
+
+    try {
+      const response = await apiRequest(`/client/article/space/create`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+
+      console.log('🚀 AuthService.createSpace API response:', response);
+      return response;
+    } catch (error) {
+      console.error('🚀 AuthService.createSpace API error:', error);
+      console.error('🚀 Request body was:', body);
+      throw error;
+    }
   }
 
   /**
