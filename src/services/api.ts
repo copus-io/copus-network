@@ -44,6 +44,7 @@ export const apiRequest = async <T>(
     const response = await fetch(url, {
       method: 'GET',
       ...fetchOptions,
+      cache: 'no-store',
       headers: {
         ...defaultHeaders,
         ...fetchOptions.headers,

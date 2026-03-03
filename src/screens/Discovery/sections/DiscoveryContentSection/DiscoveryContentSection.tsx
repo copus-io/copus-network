@@ -94,7 +94,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
       return;
     }
     refresh();
-  }, [location.key]);
+  }, [location.key, refresh]);
 
   // Scroll to load more logic
   React.useEffect(() => {
