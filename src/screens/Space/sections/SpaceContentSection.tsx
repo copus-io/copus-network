@@ -185,7 +185,7 @@ const SpaceInfoSection = ({
                   console.log('🔙 Current spaceName:', spaceName);
                   console.log('🔙 parentSpaceInfo:', parentSpaceInfo);
                   console.log('🔙 parentSpaceName:', parentSpaceName);
-                  console.log('🔙 navState:', navState);
+                  console.log('🔙 isSubTreasury:', isSubTreasury);
 
                   if (parentSpaceInfo?.namespace) {
                     const targetUrl = `/treasury/${parentSpaceInfo.namespace}`;
