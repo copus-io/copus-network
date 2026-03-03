@@ -1238,13 +1238,35 @@ export const SpaceContentSection = (): JSX.Element => {
       console.log(`📤 Moving to parent space ID: ${parentSpaceId}`);
 
       // Bind articles to parent space (same API as Move function)
-      const bindResponse = await bindArticles(selectedUuids, [parentSpaceId]);
-      console.log('📤 Bind response:', bindResponse);
+      for (const uuid of selectedUuids) {
+        const article = articles.find(a => a.uuid === uuid);
+        const numericId = article?.numericId || article?.id;
+        if (numericId) {
+          try {
+            const bindResponse = await bindArticles({
+              articleId: numericId,
+              spaceIds: [parentSpaceId]
+            });
+            console.log(`📤 Bind response for article ${numericId}:`, bindResponse);
+          } catch (error) {
+            console.error(`📤 Failed to bind article ${numericId}:`, error);
+          }
+        }
+      }
 
       // Remove articles from current sub-space
-      const removePromises = selectedUuids.map(uuid =>
-        removeArticleFromSpace(uuid, spaceId!)
-      );
+      const removePromises = selectedUuids.map(uuid => {
+        const article = articles.find(a => a.uuid === uuid);
+        const numericId = article?.numericId || article?.id;
+        if (!numericId) {
+          console.error(`No numeric ID found for article: ${uuid}`);
+          return Promise.resolve(false);
+        }
+        return removeArticleFromSpace({
+          articleId: numericId,
+          spaceId: spaceId!
+        });
+      });
       await Promise.all(removePromises);
 
       // Update local state
