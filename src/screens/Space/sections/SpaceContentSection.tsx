@@ -1828,7 +1828,7 @@ export const SpaceContentSection = (): JSX.Element => {
           <button
             className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
             onClick={() => {
-              console.log('📁 Copy button clicked');
+              console.log('📁 Move button clicked');
 
               // Show modal immediately with loading state
               setSelectedMoveTarget(null);
@@ -2003,7 +2003,7 @@ export const SpaceContentSection = (): JSX.Element => {
             <span className="text-xs text-gray-600 hidden sm:block">Move</span>
           </button>
           {/* Move Out button - only show in sub-treasuries */}
-          {isSubTreasury && selectedArticleIds.size > 0 && (
+          {isSubTreasury && (
             <button
               className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
               onClick={() => {
@@ -2287,7 +2287,7 @@ export const SpaceContentSection = (): JSX.Element => {
             }}
           />
           <div
-            className="flex flex-col w-[582px] max-w-[90vw] max-h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            className="flex flex-col w-[582px] max-w-[90vw] h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
             role="dialog"
             aria-labelledby="move-modal-title"
             aria-modal="true"
@@ -2308,15 +2308,15 @@ export const SpaceContentSection = (): JSX.Element => {
               </svg>
             </button>
 
-            <div className="flex flex-col items-start gap-4 relative self-stretch w-full flex-[0_0_auto] pt-5">
+            <div className="flex flex-col items-start gap-4 relative self-stretch w-full flex-1 min-h-0 pt-5">
               <h2
                 id="move-modal-title"
                 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
               >
-                Move to space
+                Move to sub-treasury
               </h2>
 
-              <div className="flex-1 overflow-y-auto w-full max-h-[40vh]">
+              <div className="flex-1 overflow-y-auto w-full min-h-0">
                 {loadingMoveSpaces ? (
                   // Loading state
                   <div className="flex flex-col items-center justify-center py-8 gap-3">
@@ -2325,14 +2325,23 @@ export const SpaceContentSection = (): JSX.Element => {
                   </div>
                 ) : bindableSpaces.length === 0 ? (
                   // No spaces available
-                  <div className="flex flex-col items-center justify-center py-8 gap-3">
+                  <div className="flex flex-col items-center justify-center h-full gap-3">
                     <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
                       <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1H7a1 1 0 00-1 1v1m8 0V4" />
                       </svg>
                     </div>
-                    <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center">No spaces available for moving</p>
-                    <p className="[font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm text-center">Create sub-treasuries to enable moving articles</p>
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center">No sub-treasuries available</p>
+                    <button
+                      className="inline-flex items-center justify-center px-5 py-2 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors"
+                      type="button"
+                      onClick={() => {
+                        setShowMoveModal(false);
+                        setShowOrganizeSubTreasury(true);
+                      }}
+                    >
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-white text-sm tracking-[0] leading-[20px]">Create Sub-treasury</span>
+                    </button>
                   </div>
                 ) : (
                   <ul className="flex flex-col w-full">
@@ -2508,7 +2517,7 @@ export const SpaceContentSection = (): JSX.Element => {
                   }}
                 >
                   <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
-                    {isBulkProcessing ? 'Copying...' : 'Copy'}
+                    {isBulkProcessing ? 'Moving...' : 'Move'}
                   </span>
                 </button>
               </div>
@@ -2678,10 +2687,10 @@ export const SpaceContentSection = (): JSX.Element => {
                 id="move-out-title"
                 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
               >
-                Move {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'} to parent space?
+                Move {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'} to main treasury?
               </h2>
               <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                {selectedArticleIds.size === 1 ? 'This treasure' : 'These treasures'} will be moved to "{parentSpaceInfo?.name || 'parent space'}" and removed from the current sub-treasury.
+                {selectedArticleIds.size === 1 ? 'This treasure' : 'These treasures'} will be moved to "{parentSpaceInfo?.name || 'main treasury'}" and removed from the current sub-treasury.
               </p>
             </div>
 
@@ -2702,8 +2711,8 @@ export const SpaceContentSection = (): JSX.Element => {
                 onClick={handleMoveOut}
                 disabled={operationLoading.copyArticles}
               >
-                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
-                  {operationLoading.copyArticles ? 'Moving...' : 'Move Out'}
+                <span className="[font-family:'Lato',Helvetica] font-normal text-white text-base tracking-[0] leading-[22.4px]">
+                  {operationLoading.copyArticles ? 'Moving...' : 'Move to main treasury'}
                 </span>
               </button>
             </div>

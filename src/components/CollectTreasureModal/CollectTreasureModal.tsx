@@ -183,8 +183,12 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             const response = await AuthService.getMySpaces(user.id, 1, 100, space.numericId);
             const subSpaces = response?.data?.data || response?.data || response || [];
             if (Array.isArray(subSpaces) && subSpaces.length > 0) {
-              childrenSet.add(space.numericId);
+              const countBefore = subCollections.length;
               subSpaces.forEach((sub: any) => {
+                // Skip self-references (API may return the parent itself)
+                if (sub.id === space.numericId) return;
+                // Skip other top-level spaces that aren't actual children
+                if (topLevelSpaces.some(tl => tl.numericId === sub.id && tl.spaceType === 1)) return;
                 const subName = sub.name || 'Untitled';
                 subCollections.push({
                   id: sub.id.toString(),
@@ -200,6 +204,10 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                   parentId: space.numericId,
                 });
               });
+              // Only mark as having children if actual children were added
+              if (subCollections.length > countBefore) {
+                childrenSet.add(space.numericId);
+              }
             }
           } catch {
             // Ignore errors for individual space lookups
@@ -218,8 +226,9 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
             return sub;
           });
           // Remove sub-treasuries from top-level list and add them with parentId
+          // Never remove default Treasury (spaceType 1) from top-level
           setCollections(prev => [
-            ...prev.filter(c => !c.parentId && !subIds.has(c.numericId)),
+            ...prev.filter(c => !c.parentId && (!subIds.has(c.numericId) || c.spaceType === 1)),
             ...enrichedSubs
           ]);
         }
