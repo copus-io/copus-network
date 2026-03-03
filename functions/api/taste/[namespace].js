@@ -347,71 +347,34 @@ function getTreasuryAccessLevel(treasury) {
  */
 async function buildTasteProfile(userInfo, treasuries) {
   const profile = {
-    // ============================================================
-    // CRITICAL INSTRUCTIONS FOR AI AGENTS - READ BEFORE RESPONDING
-    // ============================================================
-    _INSTRUCTIONS: {
-      WARNING: 'DO NOT HALLUCINATE OR MAKE UP DATA. Only reference URLs, titles, and curation notes that actually appear in this JSON.',
-      RULE_1: 'When citing a curation, copy the EXACT url field from the curations array. Do not generate or guess UUIDs.',
-      RULE_2: 'If you cannot find something the user asks about, say "I could not find that in your taste profile" rather than inventing a link.',
-      HOW_TO_USE: 'Read ALL treasuries and curations to understand this person\'s taste holistically. Taste is interdisciplinary — a film recommendation should draw on patterns across ALL categories (articles read, tools used, art appreciated), not just the film treasury. The curation notes reveal WHY items resonated, which is more important than the category they sit in.',
-    },
+    // What this is
+    about: 'Taste profile on Copus — things this person found valuable across the internet, saved and annotated.',
+    // Only reference URLs that exist in this data
+    _note: 'Only cite URLs from the curations array. Do not invent links.',
 
-    // Metadata
     '@context': 'https://schema.org',
     '@type': 'Person',
-
-    // Basic info (always visible)
     name: userInfo.username,
     namespace: userInfo.namespace,
-    url: `${SITE_URL}/user/${userInfo.namespace}`,
-    shortUrl: `${SITE_URL}/u/${userInfo.namespace}`,
-
-    // Bio and avatar
+    url: `${SITE_URL}/u/${userInfo.namespace}`,
     bio: userInfo.bio || null,
     avatar: userInfo.faceUrl || null,
 
-    // Statistics with explanations
     stats: {
-      curationsCreated: userInfo.statistics?.articleCount || 0,
-      publicWorks: userInfo.statistics?.publicArticleCount || 0,
-      privateWorks: userInfo.statistics?.privateArticleCount || 0,
-      itemsCollected: userInfo.statistics?.collectedArticleCount || 0,
-      collectionsReceived: userInfo.statistics?.myArticleCollectedCount || 0
+      publicCurations: userInfo.statistics?.publicArticleCount || 0,
+      privateCurations: userInfo.statistics?.privateArticleCount || 0,
+      collected: userInfo.statistics?.collectedArticleCount || 0,
     },
 
-    // IMPORTANT: Data visibility scope
-    _dataScope: {
-      whatIsIncluded: 'Only PUBLIC curations are shown in this taste profile. Private works are counted but NOT listed.',
-      publicWorksCount: userInfo.statistics?.publicArticleCount || 0,
-      privateWorksCount: userInfo.statistics?.privateArticleCount || 0,
-      privateWorksNote: (userInfo.statistics?.privateArticleCount || 0) > 0
-        ? `This curator has ${userInfo.statistics.privateArticleCount} private work(s) not shown here. Their full taste may be broader than what's visible.`
-        : 'This curator has no private works. All their curations are visible in this profile.',
-      totalWorks: userInfo.statistics?.articleCount || 0
-    },
-
-    // Treasuries — user-curated categories with complete title index
-    // Treasury names/descriptions are manually set by the user (e.g. "Films I liked", "Good Tools")
-    // Each treasury has a 'titles' array listing ALL items in that category
+    // Treasuries: user-organized categories. Names and descriptions are set by the user.
+    // titles[] lists ALL items in each category — use this as a table of contents.
     treasuries: [],
 
-    // Recent curations with full data (curation notes, URLs, etc.)
-    // Capped at most recent 50 — check treasury titles for full catalog
+    // Most recent curations with full data (notes, URLs, original links).
+    // Curation notes explain WHY this person saved each item.
     curations: [],
 
-    // AI-friendly summary
     summary: null,
-
-    // Hints for AI agents
-    _aiHints: {
-      description: 'This is a curator taste profile on Copus — a platform where people save and annotate things they find valuable across the internet.',
-      readingOrder: '1) Read the summary for an overview. 2) Scan ALL treasury names and titles to understand the full scope of interests. 3) Read curation notes in the curations array — these reveal WHY things resonated and are the richest signal of taste.',
-      crossCategoryTaste: 'Taste is interdisciplinary. Someone who curates experimental film, digital gardens, and performance art likely values avant-garde aesthetics across ALL media. When recommending anything, synthesize patterns from the ENTIRE profile — not just the most obvious matching category.',
-      importantNote: 'NEVER invent URLs. Only reference exact URLs from the curations array.',
-    },
-
-    // Timestamp
     fetchedAt: new Date().toISOString()
   }
 
@@ -445,9 +408,8 @@ async function buildTasteProfile(userInfo, treasuries) {
   profile.curations = allCurations.slice(0, MAX_CURATIONS)
 
   if (totalUniqueCurations > MAX_CURATIONS) {
-    profile._dataScope.curationsShown = MAX_CURATIONS
-    profile._dataScope.curationsTotal = totalUniqueCurations
-    profile._dataScope.curationsNote = `Showing the ${MAX_CURATIONS} most recent curations out of ${totalUniqueCurations} total. For full data, visit the treasury URLs.`
+    profile.stats.curationsShown = MAX_CURATIONS
+    profile.stats.curationsTotal = totalUniqueCurations
   }
 
   // Strip full articles from treasuries — keep metadata + complete title index
@@ -459,7 +421,7 @@ async function buildTasteProfile(userInfo, treasuries) {
   }))
 
   // Generate AI-friendly summary
-  profile.summary = generateSummary(userInfo, profile.treasuries, profile.curations)
+  profile.summary = generateSummary(userInfo, profile.treasuries)
 
   return profile
 }
@@ -532,20 +494,9 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
 
   const baseData = {
     name: displayName,
-    // Use AI description if available, fallback to curator's description
     description: seoData.description || treasury.description || null,
-    namespace: treasury.namespace,
     url: `${SITE_URL}/treasury/${treasury.namespace}`,
     articleCount: treasury.articleCount || 0,
-    accessLevel: accessLevel,
-    // AI-generated treasury metadata
-    keywords: seoData.keywords || [],
-    tags: seoData.tags || [],
-    category: seoData.category || null,
-    keyThemes: seoData.keyThemes || [],
-    targetAudience: seoData.targetAudience || null,
-    collectionInsight: seoData.collectionInsight || null,
-    curatorCredibility: seoData.curatorCredibility || null
   }
 
   // Handle different access levels
@@ -625,76 +576,18 @@ async function fetchTreasuryArticlesTeaser(spaceId) {
  * Generate an AI-friendly summary of the user's taste
  * Includes counts of public/private/paid treasuries and top interest tags
  */
-function generateSummary(userInfo, treasuries, curations) {
-  const publicTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PUBLIC)
-  const privateTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PRIVATE)
-  const paidTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PAY_TO_ACCESS)
+function generateSummary(userInfo, treasuries) {
+  const treasuryNames = treasuries
+    .filter(t => t.articleCount > 0)
+    .map(t => t.name)
 
-  if (curations.length === 0 && privateTreasuries.length === 0 && paidTreasuries.length === 0) {
-    return `${userInfo.username} is a curator on Copus but hasn't curated any content yet.`
-  }
+  const total = userInfo.statistics?.publicArticleCount || 0
 
-  // Collect categories from curations
-  const categories = {}
-  curations.forEach(article => {
-    if (article.category) {
-      categories[article.category] = (categories[article.category] || 0) + 1
-    }
-  })
+  if (total === 0) return `${userInfo.username} hasn't curated anything yet.`
 
-  const topCategories = Object.entries(categories)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([cat]) => cat)
-
-  // Collect sample curation notes
-  const sampleNotes = curations
-    .filter(a => a.curationNote && a.curationNote.length > 20)
-    .slice(0, 3)
-    .map(a => `"${a.curationNote.slice(0, 100)}${a.curationNote.length > 100 ? '...' : ''}"`)
-
-  const publicWorksCount = userInfo.statistics?.publicArticleCount || 0
-  const privateWorksCount = userInfo.statistics?.privateArticleCount || 0
-  const totalWorks = userInfo.statistics?.articleCount || 0
-
-  let summary = `${userInfo.username} is a curator on Copus with ${totalWorks} total curations`
-
-  // Explicitly mention public vs private breakdown
-  if (privateWorksCount > 0) {
-    summary += ` (${publicWorksCount} public, ${privateWorksCount} private - private works are NOT shown in this profile)`
-  } else {
-    summary += ` (all ${publicWorksCount} are public)`
-  }
-
-  if (topCategories.length > 0) {
-    summary += ` focusing on ${topCategories.join(', ')}`
-  }
-
-  summary += '.'
-
-  // Treasury breakdown
-  const treasuryParts = []
-  if (publicTreasuries.length > 0) {
-    treasuryParts.push(`${publicTreasuries.length} public`)
-  }
-  if (paidTreasuries.length > 0) {
-    treasuryParts.push(`${paidTreasuries.length} premium (pay-to-access)`)
-  }
-  if (privateTreasuries.length > 0) {
-    treasuryParts.push(`${privateTreasuries.length} private`)
-  }
-
-  if (treasuryParts.length > 0) {
-    summary += ` They have ${treasuryParts.join(', ')} treasuries.`
-  }
-
-  if (userInfo.bio) {
-    summary += ` Bio: "${userInfo.bio}"`
-  }
-
-  if (sampleNotes.length > 0) {
-    summary += ` Sample curation notes: ${sampleNotes.join(' | ')}`
-  }
+  let summary = `${userInfo.username} — ${total} curations`
+  if (userInfo.bio) summary += `. ${userInfo.bio}`
+  if (treasuryNames.length > 0) summary += `. Categories: ${treasuryNames.join(', ')}`
 
   return summary
 }
