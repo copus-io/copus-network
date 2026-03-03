@@ -174,11 +174,14 @@ const SpaceInfoSection = ({
           </span>
         )}
 
-        {/* Space name */}
+        {/* Space name - clickable to go back to main treasury page */}
         {(isSubTreasury && parentSpaceName) || (spaceInfo?.parentSpace) ? (
           <>
             <div className="flex items-center gap-2 mb-0">
-              <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">
+              <h1
+                onClick={onAuthorClick}
+                className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:underline transition-all"
+              >
                 {parentSpaceName || spaceInfo?.parentSpace?.name}
               </h1>
               <button
@@ -250,7 +253,12 @@ const SpaceInfoSection = ({
             <h2 className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-base tracking-[0] leading-[1.4] mb-1">{spaceName}</h2>
           </>
         ) : (
-          <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1">{spaceName}</h1>
+          <h1
+            onClick={onAuthorClick}
+            className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1 cursor-pointer hover:underline transition-all"
+          >
+            {spaceName}
+          </h1>
         )}
 
         {/* Treasure count and author info */}
