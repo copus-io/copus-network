@@ -413,23 +413,29 @@ async function buildTasteProfile(userInfo, treasuries) {
     })
   )
 
-  // Build deduplicated search index from all treasuries for easy AI lookup
+  // Build deduplicated flat curations list (the main data for AI agents)
   const seenUuids = new Set()
-  profile._searchIndex = profile.treasuries.flatMap(treasury =>
+  profile.curations = profile.treasuries.flatMap(treasury =>
     (treasury.articles || []).filter(article => {
       if (seenUuids.has(article.uuid)) return false
       seenUuids.add(article.uuid)
       return true
-    }).map(article => ({
-      title: article.title,
-      uuid: article.uuid,
-      url: article.url,
-      curationNote: article.curationNote ? article.curationNote.substring(0, 100) + (article.curationNote.length > 100 ? '...' : '') : null
-    }))
+    })
   )
 
+  // Strip articles from treasuries to avoid duplication — keep metadata only
+  profile.treasuries = profile.treasuries.map(({ articles, ...meta }) => meta)
+
+  // Lightweight search index (title + uuid only) for quick AI lookup
+  profile._searchIndex = profile.curations.map(c => ({
+    title: c.title,
+    uuid: c.uuid,
+    url: c.url,
+    curationNote: c.curationNote ? c.curationNote.substring(0, 100) + (c.curationNote.length > 100 ? '...' : '') : null
+  }))
+
   // Generate AI-friendly summary
-  profile.summary = generateSummary(userInfo, profile.treasuries)
+  profile.summary = generateSummary(userInfo, profile.treasuries, profile.curations)
 
   return profile
 }
@@ -595,25 +601,21 @@ async function fetchTreasuryArticlesTeaser(spaceId) {
  * Generate an AI-friendly summary of the user's taste
  * Includes counts of public/private/paid treasuries and top interest tags
  */
-function generateSummary(userInfo, treasuries) {
+function generateSummary(userInfo, treasuries, curations) {
   const publicTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PUBLIC)
   const privateTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PRIVATE)
   const paidTreasuries = treasuries.filter(t => t.accessLevel === ACCESS_LEVEL.PAY_TO_ACCESS)
 
-  const totalArticles = publicTreasuries.reduce((sum, t) => sum + t.articles.length, 0)
-
-  if (totalArticles === 0 && privateTreasuries.length === 0 && paidTreasuries.length === 0) {
+  if (curations.length === 0 && privateTreasuries.length === 0 && paidTreasuries.length === 0) {
     return `${userInfo.username} is a curator on Copus but hasn't curated any content yet.`
   }
 
-  // Collect categories from public content
+  // Collect categories from curations
   const categories = {}
-  publicTreasuries.forEach(treasury => {
-    treasury.articles.forEach(article => {
-      if (article.category) {
-        categories[article.category] = (categories[article.category] || 0) + 1
-      }
-    })
+  curations.forEach(article => {
+    if (article.category) {
+      categories[article.category] = (categories[article.category] || 0) + 1
+    }
   })
 
   const topCategories = Object.entries(categories)
@@ -621,26 +623,8 @@ function generateSummary(userInfo, treasuries) {
     .slice(0, 3)
     .map(([cat]) => cat)
 
-  // Collect all tags from public content for interest mapping
-  const tagCounts = {}
-  publicTreasuries.forEach(treasury => {
-    treasury.articles.forEach(article => {
-      if (article.tags && Array.isArray(article.tags)) {
-        article.tags.forEach(tag => {
-          tagCounts[tag] = (tagCounts[tag] || 0) + 1
-        })
-      }
-    })
-  })
-
-  const topTags = Object.entries(tagCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([tag]) => tag)
-
-  // Collect sample curation notes from public content
-  const sampleNotes = publicTreasuries
-    .flatMap(t => t.articles)
+  // Collect sample curation notes
+  const sampleNotes = curations
     .filter(a => a.curationNote && a.curationNote.length > 20)
     .slice(0, 3)
     .map(a => `"${a.curationNote.slice(0, 100)}${a.curationNote.length > 100 ? '...' : ''}"`)
@@ -663,11 +647,6 @@ function generateSummary(userInfo, treasuries) {
   }
 
   summary += '.'
-
-  // Add top interest tags for AI agents
-  if (topTags.length > 0) {
-    summary += ` Top interest tags: ${topTags.join(', ')}.`
-  }
 
   // Treasury breakdown
   const treasuryParts = []
