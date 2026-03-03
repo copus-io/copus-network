@@ -249,15 +249,7 @@ async function fetchTreasuryArticles(spaceId, limit = 500) {
       articles = data.data
     }
 
-    // Enrich ALL articles with seoDataByAi (fetch in parallel)
-    const enrichedArticles = await Promise.all(
-      articles.map(async (article) => {
-        const seoData = await fetchArticleSeoData(article.uuid)
-        return { ...article, seoDataByAi: seoData }
-      })
-    )
-
-    return enrichedArticles
+    return articles
   } catch (error) {
     console.error('Failed to fetch treasury articles:', error)
     return []
@@ -413,12 +405,13 @@ async function buildTasteProfile(userInfo, treasuries) {
     fetchedAt: new Date().toISOString()
   }
 
-  // Process each treasury based on access level
-  for (const treasury of treasuries) {
-    const accessLevel = getTreasuryAccessLevel(treasury)
-    const treasuryData = await buildTreasuryData(treasury, userInfo, accessLevel)
-    profile.treasuries.push(treasuryData)
-  }
+  // Process all treasuries in parallel for faster response
+  profile.treasuries = await Promise.all(
+    treasuries.map(treasury => {
+      const accessLevel = getTreasuryAccessLevel(treasury)
+      return buildTreasuryData(treasury, userInfo, accessLevel)
+    })
+  )
 
   // Build flat search index from all treasuries for easy AI lookup
   // This helps prevent hallucination by giving AIs a simple list to search
@@ -556,7 +549,6 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
       return {
         ...baseData,
         articles: articles.map(article => {
-          const seo = article.seoDataByAi || {}
           return {
             title: article.title,
             uuid: article.uuid,
@@ -564,11 +556,7 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
             curationNote: article.content || null, // The curator's reason/note
             originalUrl: article.targetUrl || null,
             format: detectFormat(article.targetUrl), // Auto-detected: article, video, tool, podcast, film, book, game, etc.
-            // AI-generated metadata from seoDataByAi
-            category: seo.category || article.categoryInfo?.name || null,
-            tags: seo.tags || [],
-            keywords: seo.keywords || [],
-            keyTakeaways: seo.keyTakeaways || [],
+            category: article.categoryInfo?.name || null,
             // Engagement stats
             treasureCount: article.likeCount || 0,
             curatedAt: article.createAt ? new Date(article.createAt * 1000).toISOString() : null
@@ -585,15 +573,13 @@ async function fetchTreasuryArticlesTeaser(spaceId) {
   const articles = await fetchTreasuryArticles(spaceId, 5)
   if (!Array.isArray(articles)) return []
   return articles.map(article => {
-    const seo = article.seoDataByAi || {}
     return {
       title: article.title,
       uuid: article.uuid,
       url: `${SITE_URL}/work/${article.uuid}`,
       // No curation note for teaser - that's the valuable part
       format: detectFormat(article.targetUrl),
-      category: seo.category || article.categoryInfo?.name || null,
-      tags: seo.tags || []
+      category: article.categoryInfo?.name || null,
     }
   })
 }
