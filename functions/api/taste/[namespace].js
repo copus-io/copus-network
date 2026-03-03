@@ -176,7 +176,7 @@ export async function onRequest(context) {
     // Build taste profile with access control consideration
     const tasteProfile = await buildTasteProfile(userInfo, treasuries)
 
-    return new Response(JSON.stringify(tasteProfile, null, 2), { headers })
+    return new Response(JSON.stringify(tasteProfile), { headers })
 
   } catch (error) {
     console.error('Taste API error:', error)
@@ -413,10 +413,14 @@ async function buildTasteProfile(userInfo, treasuries) {
     })
   )
 
-  // Build flat search index from all treasuries for easy AI lookup
-  // This helps prevent hallucination by giving AIs a simple list to search
+  // Build deduplicated search index from all treasuries for easy AI lookup
+  const seenUuids = new Set()
   profile._searchIndex = profile.treasuries.flatMap(treasury =>
-    (treasury.articles || []).map(article => ({
+    (treasury.articles || []).filter(article => {
+      if (seenUuids.has(article.uuid)) return false
+      seenUuids.add(article.uuid)
+      return true
+    }).map(article => ({
       title: article.title,
       uuid: article.uuid,
       url: article.url,
@@ -541,7 +545,10 @@ async function buildTreasuryData(treasury, userInfo, accessLevel) {
 
     case ACCESS_LEVEL.PUBLIC:
     default:
-      // Full access - fetch ALL articles with curation notes and AI-generated metadata
+      // Full access - skip fetch for empty treasuries
+      if (!treasury.articleCount) {
+        return { ...baseData, articles: [] }
+      }
       const articles = treasury.id ? await fetchTreasuryArticles(treasury.id) : []
       if (!Array.isArray(articles)) {
         return { ...baseData, articles: [] }
