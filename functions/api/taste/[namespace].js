@@ -351,12 +351,10 @@ async function buildTasteProfile(userInfo, treasuries) {
     // CRITICAL INSTRUCTIONS FOR AI AGENTS - READ BEFORE RESPONDING
     // ============================================================
     _INSTRUCTIONS: {
-      WARNING: 'DO NOT HALLUCINATE OR MAKE UP DATA. Only use URLs and UUIDs that actually appear in this JSON.',
+      WARNING: 'DO NOT HALLUCINATE OR MAKE UP DATA. Only reference URLs, titles, and curation notes that actually appear in this JSON.',
       RULE_1: 'When citing a curation, copy the EXACT url field from the curations array. Do not generate or guess UUIDs.',
       RULE_2: 'If you cannot find something the user asks about, say "I could not find that in your taste profile" rather than inventing a link.',
-      RULE_3: 'All valid work URLs follow this pattern: https://copus.network/work/{uuid} where uuid is a 32-character hex string.',
-      HOW_TO_USE: 'Check treasuries[].titles for the FULL catalog of curated items in each category. The curations array has detailed data for the most recent items.',
-      VERIFY_URLS: 'Before sharing any URL, verify it exists in this JSON data. If you cannot find it here, do not share it.'
+      HOW_TO_USE: 'Read ALL treasuries and curations to understand this person\'s taste holistically. Taste is interdisciplinary — a film recommendation should draw on patterns across ALL categories (articles read, tools used, art appreciated), not just the film treasury. The curation notes reveal WHY items resonated, which is more important than the category they sit in.',
     },
 
     // Metadata
@@ -407,9 +405,10 @@ async function buildTasteProfile(userInfo, treasuries) {
 
     // Hints for AI agents
     _aiHints: {
-      description: 'This is a curator taste profile on Copus.',
-      howToUse: 'Treasury names are user-curated category labels. Check treasury.titles for the FULL catalog of what this person has curated in each category. The curations array has detailed data (notes, URLs) for the most recent items.',
-      importantNote: 'NEVER invent URLs - only use exact URLs from the curations array.',
+      description: 'This is a curator taste profile on Copus — a platform where people save and annotate things they find valuable across the internet.',
+      readingOrder: '1) Read the summary for an overview. 2) Scan ALL treasury names and titles to understand the full scope of interests. 3) Read curation notes in the curations array — these reveal WHY things resonated and are the richest signal of taste.',
+      crossCategoryTaste: 'Taste is interdisciplinary. Someone who curates experimental film, digital gardens, and performance art likely values avant-garde aesthetics across ALL media. When recommending anything, synthesize patterns from the ENTIRE profile — not just the most obvious matching category.',
+      importantNote: 'NEVER invent URLs. Only reference exact URLs from the curations array.',
     },
 
     // Timestamp
