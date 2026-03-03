@@ -177,85 +177,29 @@ const SpaceInfoSection = ({
         {/* Space name - clickable to go back to main treasury page */}
         {(isSubTreasury && parentSpaceName) || (spaceInfo?.parentSpace) ? (
           <>
-            <div className="flex items-center gap-2 mb-0">
-              <h1
-                onClick={onAuthorClick}
-                className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:underline transition-all"
-              >
-                {parentSpaceName || spaceInfo?.parentSpace?.name}
-              </h1>
-              <button
-                onClick={async (event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  console.log('🔙 Return button clicked - START');
-                  console.log('🔙 spaceInfo:', spaceInfo);
-                  console.log('🔙 API parentSpace:', spaceInfo?.parentSpace);
-                  console.log('🔙 Nav parentSpaceInfo:', parentSpaceInfo);
-                  console.log('🔙 isSubTreasury:', isSubTreasury);
-                  console.log('🔙 parentSpaceName:', parentSpaceName);
-
-                  // Priority 1: Use API parentSpace info (most reliable)
-                  if (spaceInfo?.parentSpace?.namespace) {
-                    const targetUrl = `/treasury/${spaceInfo.parentSpace.namespace}`;
-                    console.log(`🔙 Using API parentSpace namespace: ${targetUrl}`);
-                    navigate(targetUrl);
-                    return;
-                  }
-
+            <h1
+              onClick={() => {
+                // Priority 1: Use API parentSpace info (most reliable)
+                if (spaceInfo?.parentSpace?.namespace) {
+                  navigate(`/treasury/${spaceInfo.parentSpace.namespace}`);
+                } else if (parentSpaceInfo?.namespace) {
                   // Priority 2: Use navigation state parentSpaceInfo
-                  if (parentSpaceInfo?.namespace) {
-                    const targetUrl = `/treasury/${parentSpaceInfo.namespace}`;
-                    console.log(`🔙 Using nav state namespace: ${targetUrl}`);
-                    navigate(targetUrl);
-                    return;
-                  }
-
-                  // Priority 3: Try to lookup namespace by ID
-                  const parentId = spaceInfo?.parentSpace?.id || parentSpaceInfo?.id;
-                  if (parentId) {
-                    console.log('🔙 Looking up namespace for parent ID:', parentId);
-                    try {
-                      const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
-                      const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
-                      const parentSpace = spaces.find((space: any) => space.id === parentId);
-
-                      if (parentSpace?.namespace) {
-                        const targetUrl = `/treasury/${parentSpace.namespace}`;
-                        console.log(`🔙 Found namespace via lookup: ${targetUrl}`);
-                        navigate(targetUrl);
-                        return;
-                      }
-                    } catch (error) {
-                      console.error('🔙 Error looking up parent namespace:', error);
-                    }
-                  }
-
+                  navigate(`/treasury/${parentSpaceInfo.namespace}`);
+                } else {
                   // Fallback: Browser back
-                  console.log('🔙 No reliable parent info, using browser back');
                   navigate(-1);
-                }}
-                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center group cursor-pointer"
-                style={{ pointerEvents: 'auto' }}
-                title="Back to parent space"
-                aria-label="Return to parent space"
-              >
-                <svg
-                  className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors duration-200"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </button>
-            </div>
+                }
+              }}
+              className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:text-[#E54D2E] transition-colors duration-200"
+            >
+              {parentSpaceName || spaceInfo?.parentSpace?.name}
+            </h1>
             <h2 className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-base tracking-[0] leading-[1.4] mb-1">{spaceName}</h2>
           </>
         ) : (
           <h1
             onClick={onAuthorClick}
-            className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1 cursor-pointer hover:underline transition-all"
+            className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1 cursor-pointer hover:text-[#E54D2E] transition-colors duration-200"
           >
             {spaceName}
           </h1>

@@ -477,17 +477,21 @@ export const MainContentSection = (): JSX.Element => {
               targetUserId = processedInfo?.id;
               console.log('Other user info:', processedInfo, 'userId:', targetUserId);
 
-              // If we couldn't get other user's ID, fall back to logged-in user
+              // If we couldn't get other user's ID, show error instead of silently falling back
               if (!targetUserId) {
-                console.warn('Could not get other user ID, falling back to logged-in user');
-                processedInfo = user;
-                targetUserId = user.id;
+                console.warn('User not found for namespace:', namespace);
+                setError(`User "${namespace}" not found.`);
+                setLoading(false);
+                // Clear cache on error so user can retry
+                fetchCache.delete(fetchKey);
+                return;
               }
             } catch (err) {
-              console.warn('Failed to fetch other user info, falling back to logged-in user:', err);
-              // Fall back to logged-in user instead of showing error
-              processedInfo = user;
-              targetUserId = user.id;
+              console.warn('Failed to fetch other user info:', err);
+              setError(`User "${namespace}" not found.`);
+              setLoading(false);
+              fetchCache.delete(fetchKey);
+              return;
             }
           } else {
             // Viewing own treasury - fetch full userInfo to get statistics
