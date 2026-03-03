@@ -1216,43 +1216,8 @@ export const SpaceContentSection = (): JSX.Element => {
 
     try {
       const selectedUuids = Array.from(selectedArticleIds);
-      console.log(`📤 Moving out ${selectedUuids.length} articles to parent space:`, parentSpaceInfo);
-
-      // Determine parent space ID
-      let parentSpaceId;
-      if (parentSpaceInfo.id) {
-        parentSpaceId = parentSpaceInfo.id;
-      } else if (parentSpaceInfo.namespace) {
-        // We need to find the space ID by namespace - this might require API call
-        // For now, use a fallback approach
-        const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
-        const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
-        const parentSpace = spaces.find((s: any) => s.namespace === parentSpaceInfo.namespace);
-        parentSpaceId = parentSpace?.id;
-      }
-
-      if (!parentSpaceId) {
-        throw new Error('Could not determine parent space ID');
-      }
-
-      console.log(`📤 Moving to parent space ID: ${parentSpaceId}`);
-
-      // Bind articles to parent space (same API as Move function)
-      for (const uuid of selectedUuids) {
-        const article = articles.find(a => a.uuid === uuid);
-        const numericId = article?.numericId || article?.id;
-        if (numericId) {
-          try {
-            const bindResponse = await bindArticles({
-              articleId: numericId,
-              spaceIds: [parentSpaceId]
-            });
-            console.log(`📤 Bind response for article ${numericId}:`, bindResponse);
-          } catch (error) {
-            console.error(`📤 Failed to bind article ${numericId}:`, error);
-          }
-        }
-      }
+      console.log(`📤 Moving out ${selectedUuids.length} articles from sub-space back to parent space`);
+      // Note: Articles remain in parent space automatically, only need to remove from sub-space
 
       // Remove articles from current sub-space
       const removePromises = selectedUuids.map(uuid => {
