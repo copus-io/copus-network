@@ -981,6 +981,52 @@ export const SpaceContentSection = (): JSX.Element => {
     setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
   };
 
+  // Enhanced callback that handles article addition to current space
+  const handleSaveComplete = async (isCollected: boolean, collectionCount: number) => {
+    if (!selectedArticle) return;
+
+    console.log('🎯 Collection completed:', {
+      articleId: selectedArticle.uuid,
+      isCollected,
+      collectionCount,
+      currentSpaceId: spaceId,
+      spaceName
+    });
+
+    // Update like state locally
+    toggleLike(selectedArticle.uuid, false, selectedArticle.likeCount);
+    setSelectedArticle(prev => prev ? {
+      ...prev,
+      isLiked: isCollected,
+      likeCount: collectionCount
+    } : null);
+
+    // If article was collected and we're in a space, check if it was collected to current space
+    if (isCollected && spaceId) {
+      try {
+        console.log('🔍 Checking if article was collected to current space...');
+
+        // Get the article's current bindings to check if it includes current space
+        const spaceBindings = await AuthService.getSpacesByArticleId(selectedArticle.numericId || 0);
+        const currentSpaceBinding = spaceBindings?.find((binding: any) =>
+          binding.id === parseInt(spaceId) || binding.spaceId === parseInt(spaceId)
+        );
+
+        if (currentSpaceBinding) {
+          console.log('🎉 Article was collected to current space - adding to article list!');
+
+          // Add article to the beginning of the articles list
+          setArticles(prev => [selectedArticle, ...prev]);
+          setTotalArticleCount(prev => prev + 1);
+
+          showToast(`Article collected to "${spaceName}"!`, 'success');
+        }
+      } catch (error) {
+        console.error('🔍 Error checking space bindings:', error);
+      }
+    }
+  };
+
   // Handle user click
   const handleUserClick = (userId: number | undefined, userNamespace?: string) => {
     if (userNamespace) {
@@ -2003,9 +2049,11 @@ export const SpaceContentSection = (): JSX.Element => {
             setSelectedArticle(null);
           }}
           articleId={selectedArticle.uuid}
+          articleNumericId={selectedArticle.numericId}
           articleTitle={selectedArticle.title}
           isAlreadyCollected={selectedArticle.isLiked}
           onCollectSuccess={handleCollectSuccess}
+          onSaveComplete={handleSaveComplete}
         />
       )}
 
