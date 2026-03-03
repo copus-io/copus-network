@@ -178,7 +178,7 @@ const SpaceInfoSection = ({
             <div className="flex items-center gap-2 mb-0">
               <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{parentSpaceName}</h1>
               <button
-                onClick={() => {
+                onClick={async () => {
                   console.log('🔙 Return button clicked');
                   console.log('🔙 Current URL:', window.location.pathname);
                   console.log('🔙 Current spaceId:', spaceId);
@@ -187,13 +187,47 @@ const SpaceInfoSection = ({
                   console.log('🔙 parentSpaceName:', parentSpaceName);
                   console.log('🔙 isSubTreasury:', isSubTreasury);
 
-                  if (parentSpaceInfo?.namespace) {
-                    const targetUrl = `/treasury/${parentSpaceInfo.namespace}`;
-                    console.log(`🔙 Navigating to parent space: ${targetUrl}`);
-                    navigate(targetUrl);
+                  // Try to get correct parent space info if we have parent ID
+                  if (parentSpaceInfo?.id) {
+                    console.log('🔙 Looking up correct parent namespace for ID:', parentSpaceInfo.id);
+
+                    // Try to find correct namespace by querying user's spaces
+                    try {
+                      console.log('🔙 Fetching user spaces to find correct parent namespace...');
+                      const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
+                      const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
+                      const correctParentSpace = spaces.find((space: any) => space.id === parentSpaceInfo.id);
+
+                      if (correctParentSpace?.namespace) {
+                        const targetUrl = `/treasury/${correctParentSpace.namespace}`;
+                        console.log(`🔙 Found correct namespace: ${correctParentSpace.namespace} -> ${targetUrl}`);
+                        navigate(targetUrl);
+                        console.log('🔙 Navigate call completed successfully');
+                        return;
+                      } else {
+                        console.log('🔙 Could not find parent space in user spaces, using provided namespace');
+                      }
+                    } catch (error) {
+                      console.error('🔙 Error fetching user spaces:', error);
+                    }
+
+                    // Fallback to provided namespace
+                    if (parentSpaceInfo?.namespace) {
+                      const targetUrl = `/treasury/${parentSpaceInfo.namespace}`;
+                      console.log(`🔙 Using provided namespace: ${targetUrl}`);
+                      try {
+                        navigate(targetUrl);
+                        console.log('🔙 Navigate call completed successfully');
+                      } catch (error) {
+                        console.error('🔙 Navigate error:', error);
+                      }
+                    } else {
+                      console.log('🔙 No namespace available, trying browser back');
+                      navigate(-1);
+                    }
                   } else {
-                    console.log('🔙 No parent namespace, using browser back');
-                    navigate(-1); // Fallback to browser back
+                    console.log('🔙 No parent info available, using browser back');
+                    navigate(-1);
                   }
                 }}
                 className="p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center group"
