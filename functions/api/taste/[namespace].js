@@ -252,9 +252,10 @@ async function fetchUserTreasuries(userId) {
   }
 }
 
-async function fetchTreasuryArticles(spaceId, limit = 500) {
+const MAX_CURATIONS = 50 // Cap total curations for AI-friendly response size
+
+async function fetchTreasuryArticles(spaceId, limit = 100) {
   try {
-    // Fetch articles (default 500 to include everything, smaller limit for teasers)
     const response = await fetch(
       `${API_BASE}/client/article/space/pageArticles?spaceId=${spaceId}&pageIndex=1&pageSize=${limit}`,
       { headers: { 'Content-Type': 'application/json' } }
@@ -435,15 +436,32 @@ async function buildTasteProfile(userInfo, treasuries) {
     })
   )
 
-  // Build deduplicated flat curations list (the main data for AI agents)
+  // Build deduplicated flat curations list, sorted by most recent first
   const seenUuids = new Set()
-  profile.curations = profile.treasuries.flatMap(treasury =>
+  let allCurations = profile.treasuries.flatMap(treasury =>
     (treasury.articles || []).filter(article => {
       if (seenUuids.has(article.uuid)) return false
       seenUuids.add(article.uuid)
       return true
     })
   )
+
+  // Sort by curatedAt descending (most recent first)
+  allCurations.sort((a, b) => {
+    const dateA = a.curatedAt ? new Date(a.curatedAt).getTime() : 0
+    const dateB = b.curatedAt ? new Date(b.curatedAt).getTime() : 0
+    return dateB - dateA
+  })
+
+  // Cap at MAX_CURATIONS — AI agents get diminishing returns beyond ~50
+  const totalUniqueCurations = allCurations.length
+  profile.curations = allCurations.slice(0, MAX_CURATIONS)
+
+  if (totalUniqueCurations > MAX_CURATIONS) {
+    profile._dataScope.curationsShown = MAX_CURATIONS
+    profile._dataScope.curationsTotal = totalUniqueCurations
+    profile._dataScope.curationsNote = `Showing the ${MAX_CURATIONS} most recent curations out of ${totalUniqueCurations} total. For full data, visit the treasury URLs.`
+  }
 
   // Strip articles from treasuries to avoid duplication — keep metadata only
   profile.treasuries = profile.treasuries.map(({ articles, ...meta }) => meta)
