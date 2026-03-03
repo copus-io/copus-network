@@ -352,11 +352,10 @@ async function buildTasteProfile(userInfo, treasuries) {
     // ============================================================
     _INSTRUCTIONS: {
       WARNING: 'DO NOT HALLUCINATE OR MAKE UP DATA. Only use URLs and UUIDs that actually appear in this JSON.',
-      RULE_1: 'When citing a curation, copy the EXACT url field from this data. Do not generate or guess UUIDs.',
+      RULE_1: 'When citing a curation, copy the EXACT url field from the curations array. Do not generate or guess UUIDs.',
       RULE_2: 'If you cannot find something the user asks about, say "I could not find that in your taste profile" rather than inventing a link.',
       RULE_3: 'All valid work URLs follow this pattern: https://copus.network/work/{uuid} where uuid is a 32-character hex string.',
-      RULE_4: 'Use the _searchIndex below to quickly find curations by title.',
-      HOW_TO_SEARCH: 'Scan the _searchIndex array for matching titles, then use the corresponding url field.',
+      HOW_TO_USE: 'Check treasuries[].titles for the FULL catalog of curated items in each category. The curations array has detailed data for the most recent items.',
       VERIFY_URLS: 'Before sharing any URL, verify it exists in this JSON data. If you cannot find it here, do not share it.'
     },
 
@@ -394,34 +393,23 @@ async function buildTasteProfile(userInfo, treasuries) {
       totalWorks: userInfo.statistics?.articleCount || 0
     },
 
-    // FLAT SEARCH INDEX - Use this to find curations quickly
-    // Each entry has: title, uuid, url - copy the url exactly when citing
-    _searchIndex: [],  // Will be populated after processing treasuries
-
-    // Treasuries with access control
+    // Treasuries — user-curated categories with complete title index
+    // Treasury names/descriptions are manually set by the user (e.g. "Films I liked", "Good Tools")
+    // Each treasury has a 'titles' array listing ALL items in that category
     treasuries: [],
+
+    // Recent curations with full data (curation notes, URLs, etc.)
+    // Capped at most recent 50 — check treasury titles for full catalog
+    curations: [],
 
     // AI-friendly summary
     summary: null,
 
-    // Additional hints for AI agents
+    // Hints for AI agents
     _aiHints: {
-      description: 'This is a curator taste profile on Copus. Each treasury contains curated articles with curation notes.',
-      importantNote: 'Use _searchIndex above to find curations. NEVER invent URLs - only use exact URLs from this data.',
-      deeperData: {
-        treasury: 'Append ?format=json to any treasury URL for full structured data, e.g., /treasury/{namespace}?format=json',
-        article: 'Append ?format=json to any work URL for article details with AI-generated keywords and takeaways, e.g., /work/{uuid}?format=json',
-        search: 'Use /api/search?q=QUERY to search across all curated content'
-      },
-      fieldsExplained: {
-        publicWorks: 'Number of curations visible in this profile',
-        privateWorks: 'Number of curations the user has kept private (NOT shown in treasuries below)',
-        keywords: 'AI-generated keywords representing the treasury themes (empty if not yet processed)',
-        keyThemes: 'AI-identified common threads across curated items',
-        targetAudience: 'Who would benefit from this treasury',
-        collectionInsight: 'What this collection reveals about the topic',
-        curatorCredibility: 'Why this curator perspective matters'
-      }
+      description: 'This is a curator taste profile on Copus.',
+      howToUse: 'Treasury names are user-curated category labels. Check treasury.titles for the FULL catalog of what this person has curated in each category. The curations array has detailed data (notes, URLs) for the most recent items.',
+      importantNote: 'NEVER invent URLs - only use exact URLs from the curations array.',
     },
 
     // Timestamp
@@ -463,15 +451,12 @@ async function buildTasteProfile(userInfo, treasuries) {
     profile._dataScope.curationsNote = `Showing the ${MAX_CURATIONS} most recent curations out of ${totalUniqueCurations} total. For full data, visit the treasury URLs.`
   }
 
-  // Strip articles from treasuries to avoid duplication — keep metadata only
-  profile.treasuries = profile.treasuries.map(({ articles, ...meta }) => meta)
-
-  // Lightweight search index (title + uuid only) for quick AI lookup
-  profile._searchIndex = profile.curations.map(c => ({
-    title: c.title,
-    uuid: c.uuid,
-    url: c.url,
-    curationNote: c.curationNote ? c.curationNote.substring(0, 100) + (c.curationNote.length > 100 ? '...' : '') : null
+  // Strip full articles from treasuries — keep metadata + complete title index
+  // Treasury names/descriptions are user-curated category labels (e.g. "Films I liked")
+  // The title list gives AI agents full awareness of what's in each category
+  profile.treasuries = profile.treasuries.map(({ articles, ...meta }) => ({
+    ...meta,
+    titles: (articles || []).map(a => a.title)
   }))
 
   // Generate AI-friendly summary
