@@ -179,10 +179,18 @@ const SpaceInfoSection = ({
               <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{parentSpaceName}</h1>
               <button
                 onClick={() => {
-                  console.log('🔙 Return button clicked, parentSpaceInfo:', parentSpaceInfo);
+                  console.log('🔙 Return button clicked');
+                  console.log('🔙 Current URL:', window.location.pathname);
+                  console.log('🔙 Current spaceId:', spaceId);
+                  console.log('🔙 Current spaceName:', spaceName);
+                  console.log('🔙 parentSpaceInfo:', parentSpaceInfo);
+                  console.log('🔙 parentSpaceName:', parentSpaceName);
+                  console.log('🔙 navState:', navState);
+
                   if (parentSpaceInfo?.namespace) {
-                    console.log(`🔙 Navigating to parent space: /treasury/${parentSpaceInfo.namespace}`);
-                    navigate(`/treasury/${parentSpaceInfo.namespace}`);
+                    const targetUrl = `/treasury/${parentSpaceInfo.namespace}`;
+                    console.log(`🔙 Navigating to parent space: ${targetUrl}`);
+                    navigate(targetUrl);
                   } else {
                     console.log('🔙 No parent namespace, using browser back');
                     navigate(-1); // Fallback to browser back
