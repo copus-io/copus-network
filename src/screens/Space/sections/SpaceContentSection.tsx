@@ -1246,6 +1246,17 @@ export const SpaceContentSection = (): JSX.Element => {
 
       setShowMoveOutConfirm(false);
       setOrganizeMode(false); // Exit organize mode after successful move
+
+      // Navigate to parent space after successful move out
+      if (parentSpaceInfo?.namespace) {
+        console.log('📤 Navigating to parent space:', parentSpaceInfo.namespace);
+        navigate(`/treasury/${parentSpaceInfo.namespace}`, {
+          state: {
+            fromSubSpace: true,
+            movedOutCount: selectedUuids.length
+          }
+        });
+      }
     } catch (error) {
       console.error('📤 Failed to move out articles:', error);
       const message = ErrorHandler.handleApiError(error, {
