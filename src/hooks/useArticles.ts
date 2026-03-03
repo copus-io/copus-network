@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { getPageArticles } from '../services/articleService';
 import { Article, PageArticleParams } from '../types/article';
 
@@ -24,13 +24,18 @@ export const useArticles = (
     total: 0,
   });
 
-  // Request debouncing and caching
+  // Stabilize initialParams to prevent unnecessary callback recreation
+  const stableParams = useMemo(
+    () => initialParams,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(initialParams)]
+  );
+
+  // Request debouncing
   const requestTimeoutRef = useRef<NodeJS.Timeout>();
-  const lastRequestRef = useRef<string>('');
-  const cacheRef = useRef<Map<string, { data: Article[]; timestamp: number }>>(new Map());
 
   const fetchArticles = useCallback(async (params: PageArticleParams = {}, append = false) => {
-    console.log('🔄 fetchArticles called:', { params, append, initialParams });
+    console.log('🔄 fetchArticles called:', { params, append, initialParams: stableParams });
 
     // Clear any pending requests
     if (requestTimeoutRef.current) {
@@ -39,28 +44,10 @@ export const useArticles = (
 
     const finalParams = {
       pageSize: 15, // Increased from 10 to 15 for better balance of performance and content
-      ...initialParams,
+      ...stableParams,
       ...params,
       page: append ? (params.page || 1) : 1, // Use provided page number in append mode, otherwise start from page 1
     };
-
-    const requestKey = JSON.stringify(finalParams);
-
-    // Check cache first (5 minutes cache)
-    const cached = cacheRef.current.get(requestKey);
-    const now = Date.now();
-    if (cached && (now - cached.timestamp < 5 * 60 * 1000) && !append) {
-      console.log('📦 Using cached data for:', finalParams);
-      setState(prev => ({
-        ...prev,
-        articles: cached.data,
-        loading: false,
-        hasMore: cached.data.length >= finalParams.pageSize,
-        page: finalParams.page || 1,
-        total: cached.data.length,
-      }));
-      return;
-    }
 
     setState(prev => ({ ...prev, loading: true, error: null }));
 
@@ -69,14 +56,6 @@ export const useArticles = (
       try {
         console.log('📡 About to call getPageArticles with:', finalParams);
         const response = await getPageArticles(finalParams);
-
-        // Cache the result for non-append requests
-        if (!append) {
-          cacheRef.current.set(requestKey, {
-            data: response.articles,
-            timestamp: now
-          });
-        }
 
         setState(prev => {
           let mergedArticles;
@@ -116,7 +95,7 @@ export const useArticles = (
         }));
       }
     }, 200); // 200ms debounce
-  }, [initialParams]); // Add initialParams dependency
+  }, [stableParams]);
 
   const loadMore = useCallback(() => {
     if (!state.loading && state.hasMore) {
@@ -125,15 +104,11 @@ export const useArticles = (
   }, [state.loading, state.hasMore, state.page, fetchArticles]);
 
   const refresh = useCallback(() => {
-    // Clear cache so refresh actually fetches fresh data
-    cacheRef.current.clear();
     fetchArticles({}, false);
   }, [fetchArticles]);
 
   useEffect(() => {
     if (options.autoRefresh) {
-      // Always clear cache on mount to ensure fresh data when navigating back
-      cacheRef.current.clear();
       fetchArticles();
     }
   }, []); // Only execute on component first render
