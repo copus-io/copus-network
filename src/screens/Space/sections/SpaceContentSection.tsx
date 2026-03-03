@@ -983,7 +983,18 @@ export const SpaceContentSection = (): JSX.Element => {
 
   // Enhanced callback that handles article addition to current space
   const handleSaveComplete = async (isCollected: boolean, collectionCount: number) => {
-    if (!selectedArticle) return;
+    console.log('🎯 handleSaveComplete called with:', {
+      isCollected,
+      collectionCount,
+      selectedArticle: selectedArticle?.uuid,
+      currentSpaceId: spaceId,
+      spaceName
+    });
+
+    if (!selectedArticle) {
+      console.log('🎯 No selectedArticle, exiting handleSaveComplete');
+      return;
+    }
 
     console.log('🎯 Collection completed:', {
       articleId: selectedArticle.uuid,
@@ -2432,6 +2443,33 @@ export const SpaceContentSection = (): JSX.Element => {
                       }
 
                       console.log(`📋 Copy operation completed: ${successCount}/${selectedUuids.length} successful`);
+
+                      // Clear selection after successful copy
+                      setSelectedArticleIds(new Set());
+                      setOrganizeMode(false);
+
+                      // Enhanced feedback with navigation option for sub-spaces
+                      if (successCount === selectedUuids.length && successCount > 0) {
+                        // Check if we're copying to a sub-space (when we have subTreasuries data)
+                        if (subTreasuries && subTreasuries.length > 0) {
+                          const targetSubSpace = subTreasuries.find((sub: any) => sub.id === selectedMoveTarget);
+                          if (targetSubSpace) {
+                            // This means we're copying to a sub-space
+                            const shouldNavigate = window.confirm(
+                              `Successfully copied ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}".\n\nWould you like to view the sub-space now?`
+                            );
+                            if (shouldNavigate && targetSubSpace.namespace) {
+                              console.log(`📋 Navigating to sub-space: ${targetSubSpace.namespace}`);
+                              navigate(`/treasury/${targetSubSpace.namespace}`, {
+                                state: {
+                                  fromParentSpace: true,
+                                  copiedArticlesCount: successCount
+                                }
+                              });
+                            }
+                          }
+                        }
+                      }
                     } catch (err) {
                       console.error('Failed to copy articles:', err);
                       const message = ErrorHandler.handleApiError(err, {
