@@ -64,6 +64,8 @@ const SpaceInfoSection = ({
   onSubscriptionChange,
   parentSpaceName,
   isSubTreasury,
+  parentSpaceInfo,
+  navigate,
 }: {
   spaceName: string;
   treasureCount: number;
@@ -94,6 +96,8 @@ const SpaceInfoSection = ({
   onSubscriptionChange?: (isSubscribed: boolean) => void;
   parentSpaceName?: string;
   isSubTreasury?: boolean;
+  parentSpaceInfo?: { name: string; namespace?: string; id?: number } | null;
+  navigate?: (path: string | number) => void;
 }): JSX.Element => {
   const canEdit = isOwner;
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -171,7 +175,32 @@ const SpaceInfoSection = ({
         {/* Space name */}
         {isSubTreasury && parentSpaceName ? (
           <>
-            <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{parentSpaceName}</h1>
+            <div className="flex items-center gap-2 mb-0">
+              <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{parentSpaceName}</h1>
+              <button
+                onClick={() => {
+                  if (parentSpaceInfo?.namespace) {
+                    navigate(`/treasury/${parentSpaceInfo.namespace}`);
+                  } else if (parentSpaceInfo?.id) {
+                    navigate(`/treasury/${parentSpaceInfo.id}`);
+                  } else {
+                    navigate(-1); // Fallback to browser back
+                  }
+                }}
+                className="p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center group"
+                title="Back to parent space"
+                aria-label="Return to parent space"
+              >
+                <svg
+                  className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors duration-200"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+            </div>
             <h2 className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-base tracking-[0] leading-[1.4] mb-1">{spaceName}</h2>
           </>
         ) : (
@@ -348,9 +377,15 @@ export const SpaceContentSection = (): JSX.Element => {
   const spaceIdentifier = namespace || category;
 
   // Detect if this is a sub-treasury page (passed via navigation state)
-  const navState = location.state as { isSubTreasury?: boolean; parentSpaceName?: string; spaceData?: any } | null;
+  const navState = location.state as {
+    isSubTreasury?: boolean;
+    parentSpaceName?: string;
+    parentSpaceInfo?: { name: string; namespace?: string; id?: number };
+    spaceData?: any;
+  } | null;
   const isSubTreasury = navState?.isSubTreasury || false;
   const parentSpaceName = navState?.parentSpaceName || '';
+  const parentSpaceInfo = navState?.parentSpaceInfo || null;
 
   const { user, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
@@ -420,11 +455,13 @@ export const SpaceContentSection = (): JSX.Element => {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [showOrganizeSubTreasury, setShowOrganizeSubTreasury] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showMoveOutConfirm, setShowMoveOutConfirm] = useState(false);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [bindableSpaces, setBindableSpaces] = useState<any[]>([]);
   const [selectedMoveTarget, setSelectedMoveTarget] = useState<number | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [loadingMoveSpaces, setLoadingMoveSpaces] = useState(false);
 
   // Article collapse state (default collapsed when sub-treasuries exist)
   const [showParentArticles, setShowParentArticles] = useState(false);
@@ -1161,6 +1198,80 @@ export const SpaceContentSection = (): JSX.Element => {
     }
   };
 
+  // Handle move out to parent space
+  const handleMoveOut = async () => {
+    if (!parentSpaceInfo?.id && !parentSpaceInfo?.namespace) {
+      showToast('Parent space information not available', 'error');
+      setShowMoveOutConfirm(false);
+      return;
+    }
+
+    if (selectedArticleIds.size === 0) {
+      showToast('Please select articles to move out', 'error');
+      setShowMoveOutConfirm(false);
+      return;
+    }
+
+    setOperationLoading(prev => ({ ...prev, copyArticles: true }));
+
+    try {
+      const selectedUuids = Array.from(selectedArticleIds);
+      console.log(`📤 Moving out ${selectedUuids.length} articles to parent space:`, parentSpaceInfo);
+
+      // Determine parent space ID
+      let parentSpaceId;
+      if (parentSpaceInfo.id) {
+        parentSpaceId = parentSpaceInfo.id;
+      } else if (parentSpaceInfo.namespace) {
+        // We need to find the space ID by namespace - this might require API call
+        // For now, use a fallback approach
+        const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
+        const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
+        const parentSpace = spaces.find((s: any) => s.namespace === parentSpaceInfo.namespace);
+        parentSpaceId = parentSpace?.id;
+      }
+
+      if (!parentSpaceId) {
+        throw new Error('Could not determine parent space ID');
+      }
+
+      console.log(`📤 Moving to parent space ID: ${parentSpaceId}`);
+
+      // Bind articles to parent space (same API as Move function)
+      const bindResponse = await bindArticles(selectedUuids, [parentSpaceId]);
+      console.log('📤 Bind response:', bindResponse);
+
+      // Remove articles from current sub-space
+      const removePromises = selectedUuids.map(uuid =>
+        removeArticleFromSpace(uuid, spaceId!)
+      );
+      await Promise.all(removePromises);
+
+      // Update local state
+      setArticles(prev => prev.filter(article => !selectedUuids.includes(article.uuid)));
+      setTotalArticleCount(prev => Math.max(0, prev - selectedUuids.length));
+      setSelectedArticleIds(new Set());
+
+      showToast(
+        `Moved ${selectedUuids.length} article${selectedUuids.length !== 1 ? 's' : ''} to parent space`,
+        'success'
+      );
+
+      setShowMoveOutConfirm(false);
+      setOrganizeMode(false); // Exit organize mode after successful move
+    } catch (error) {
+      console.error('📤 Failed to move out articles:', error);
+      const message = ErrorHandler.handleApiError(error, {
+        component: 'SpaceContentSection',
+        action: 'move-out-articles',
+        endpoint: 'bindArticles/removeArticleFromSpace'
+      });
+      showToast(message, 'error');
+    } finally {
+      setOperationLoading(prev => ({ ...prev, copyArticles: false }));
+    }
+  };
+
   // Check if current user is the owner of this space
   const isOwner = !!user && spaceInfo?.authorNamespace === user?.namespace;
 
@@ -1388,6 +1499,8 @@ export const SpaceContentSection = (): JSX.Element => {
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
         isSubTreasury={isSubTreasury}
         parentSpaceName={parentSpaceName}
+        parentSpaceInfo={parentSpaceInfo}
+        navigate={navigate}
         onSubscriberCountLoaded={setSubscriberCount}
         onSubscriptionChange={(isSubscribed) => {
           // Update local state only - SubscribeButton already handled the API call
@@ -1421,10 +1534,29 @@ export const SpaceContentSection = (): JSX.Element => {
                   space={subSpace}
                   onClick={() => {
                     const parentName = displaySpaceName || spaceInfo?.name || '';
+                    const parentInfo = {
+                      name: parentName,
+                      namespace: spaceInfo?.authorNamespace || namespace,
+                      id: spaceId
+                    };
                     if (subSpace.namespace) {
-                      navigate(`/treasury/${subSpace.namespace}`, { state: { isSubTreasury: true, parentSpaceName: parentName, spaceData: subSpace } });
+                      navigate(`/treasury/${subSpace.namespace}`, {
+                        state: {
+                          isSubTreasury: true,
+                          parentSpaceName: parentName,
+                          parentSpaceInfo: parentInfo,
+                          spaceData: subSpace
+                        }
+                      });
                     } else if (subSpace.id) {
-                      navigate(`/treasury/${subSpace.id}`, { state: { isSubTreasury: true, parentSpaceName: parentName, spaceData: subSpace } });
+                      navigate(`/treasury/${subSpace.id}`, {
+                        state: {
+                          isSubTreasury: true,
+                          parentSpaceName: parentName,
+                          parentSpaceInfo: parentInfo,
+                          spaceData: subSpace
+                        }
+                      });
                     }
                   }}
                 />
@@ -1585,8 +1717,10 @@ export const SpaceContentSection = (): JSX.Element => {
             onClick={() => {
               console.log('📁 Copy button clicked');
 
-              // Show modal immediately
+              // Show modal immediately with loading state
               setSelectedMoveTarget(null);
+              setLoadingMoveSpaces(true);
+              setBindableSpaces([]); // Clear previous data
               setShowMoveModal(true);
 
               // Load only sub-spaces within current parent space
@@ -1603,48 +1737,99 @@ export const SpaceContentSection = (): JSX.Element => {
 
                   const availableSpaces = [];
 
-                  // Determine current space level and load appropriate spaces
+                  // Fixed move logic: Focus on core sibling spaces functionality
                   if (isSubTreasury && parentSpaceName) {
-                    // Current is a sub-space - need to find siblings via parent space
-                    console.log('📁 Current is sub-space, loading sibling sub-spaces...');
+                    // Current is a sub-space - load sibling sub-spaces only
+                    console.log(`📁 Current is sub-space "${spaceInfo?.name || 'Unknown'}" with parent "${parentSpaceName}"`);
+                    console.log('📁 Loading sibling sub-spaces...');
 
-                    try {
-                      // Get all top-level spaces first to find parent
-                      const topLevelResponse = await AuthService.getMySpaces(userId, 1, 100);
-                      const topLevelSpaces = topLevelResponse?.data?.data || topLevelResponse?.data || topLevelResponse || [];
+                    // IMPORTANT: Try parentSpaceInfo.id FIRST - this should be the primary method!
 
-                      // Find parent space by name (could be improved with actual parent ID)
-                      const parentSpace = topLevelSpaces.find((s: any) => s.name === parentSpaceName);
+                    if (parentSpaceInfo?.id) {
+                      console.log(`📁 ✨ PRIMARY METHOD: Using parentSpaceInfo.id: ${parentSpaceInfo.id} to get siblings`);
+                      try {
+                        const correctSiblingsResponse = await AuthService.getMySpaces(userId, 1, 100, parentSpaceInfo.id);
+                        const correctSiblings = correctSiblingsResponse?.data?.data || correctSiblingsResponse?.data || correctSiblingsResponse || [];
+                        console.log(`📁 ✨ Found ${correctSiblings.length} spaces under parent ID ${parentSpaceInfo.id}`);
+                        console.log('📁 ✨ Raw siblings:', correctSiblings);
 
-                      if (parentSpace) {
-                        console.log(`📁 Found parent space: ${parentSpace.name} (${parentSpace.id})`);
-
-                        // Get siblings from parent space
-                        const siblingsResponse = await AuthService.getMySpaces(userId, 1, 100, parentSpace.id);
-                        const allSiblings = siblingsResponse?.data?.data || siblingsResponse?.data || siblingsResponse || [];
-
-                        // Filter out current space from siblings
-                        const siblings = allSiblings.filter((s: any) => s.id !== spaceId);
-                        availableSpaces.push(...siblings);
-                        console.log(`📁 Found ${siblings.length} sibling sub-spaces`);
-                      } else {
-                        console.log('📁 Could not find parent space, using cached data');
-
-                        // Fallback: use cached sub-treasuries if available
-                        if (subTreasuries && subTreasuries.length > 0) {
-                          const siblings = subTreasuries.filter((s: any) => s.id !== spaceId);
-                          availableSpaces.push(...siblings);
-                          console.log(`📁 Using cached siblings: ${siblings.length} sub-spaces`);
-                        }
+                        const filteredCorrectSiblings = correctSiblings.filter((s: any) => s.id !== spaceId);
+                        availableSpaces.push(...filteredCorrectSiblings);
+                        console.log(`📁 ✨ SUCCESS: Added ${filteredCorrectSiblings.length} correct siblings`);
+                        filteredCorrectSiblings.forEach((s: any) => {
+                          console.log(`📁 ✨ - "${s.name}" (ID: ${s.id})`);
+                        });
+                      } catch (correctError) {
+                        console.log('📁 ❗ PRIMARY METHOD failed:', correctError);
+                        // Continue to fallback method if PRIMARY fails
                       }
-                    } catch (error) {
-                      console.log('📁 Failed to load siblings via API, using cached data:', error);
+                    } else {
+                      console.log('📁 ❌ PRIMARY METHOD skipped: parentSpaceInfo.id not available');
+                    }
 
-                      // Fallback: use cached sub-treasuries
-                      if (subTreasuries && subTreasuries.length > 0) {
-                        const siblings = subTreasuries.filter((s: any) => s.id !== spaceId);
-                        availableSpaces.push(...siblings);
-                        console.log(`📁 Using cached siblings: ${siblings.length} sub-spaces`);
+                    // Fallback method: Only use if PRIMARY method failed or parentSpaceInfo.id not available
+                    if (availableSpaces.length === 0) {
+                      console.log('📁 🔄 PRIMARY METHOD did not return results, using fallback method...');
+
+                      try {
+                        // Get all top-level spaces to find parent
+                        const topLevelResponse = await AuthService.getMySpaces(userId, 1, 100);
+                        const topLevelSpaces = topLevelResponse?.data?.data || topLevelResponse?.data || topLevelResponse || [];
+                        console.log(`📁 Found ${topLevelSpaces.length} top-level spaces`);
+
+                        // Find parent space by name (try exact match first, then contains)
+                        let parentSpace = topLevelSpaces.find((s: any) => s.name === parentSpaceName);
+
+                        // If exact match fails, try partial match
+                        if (!parentSpace) {
+                          parentSpace = topLevelSpaces.find((s: any) =>
+                            s.name && parentSpaceName && (
+                              s.name.includes(parentSpaceName) ||
+                              parentSpaceName.includes(s.name) ||
+                              s.name.replace(/'/g, "'").includes(parentSpaceName) ||
+                              parentSpaceName.replace(/'/g, "'").includes(s.name)
+                            )
+                          );
+                          if (parentSpace) {
+                            console.log(`📁 Found parent space via partial match: "${parentSpace.name}" for search "${parentSpaceName}"`);
+                          }
+                        }
+
+                        if (parentSpace) {
+                          console.log(`📁 Found parent space: "${parentSpace.name}" (ID: ${parentSpace.id})`);
+
+                          // Get all sub-spaces under this parent
+                          const siblingsResponse = await AuthService.getMySpaces(userId, 1, 100, parentSpace.id);
+                          const allSiblings = siblingsResponse?.data?.data || siblingsResponse?.data || siblingsResponse || [];
+                          console.log(`📁 Raw siblings response:`, allSiblings);
+
+                          // Filter out current space from siblings
+                          const siblings = allSiblings.filter((s: any) => {
+                            const isDifferent = s.id !== spaceId;
+                            console.log(`📁 Checking sibling: "${s.name}" (ID: ${s.id}) - isDifferent: ${isDifferent}`);
+                            return isDifferent;
+                          });
+
+                          availableSpaces.push(...siblings);
+                          console.log(`📁 Final available siblings: ${siblings.length}`);
+                          siblings.forEach((s: any) => {
+                            console.log(`📁 - "${s.name}" (ID: ${s.id})`);
+                          });
+                        } else {
+                          console.log(`📁 Could not find parent space with name: "${parentSpaceName}"`);
+                          console.log('📁 Available top-level spaces:');
+                          topLevelSpaces.forEach((s: any) => {
+                            console.log(`📁 - "${s.name}" (ID: ${s.id})`);
+                          });
+
+                          // Final fallback: If parent not found, show all user spaces as options
+                          console.log(`📁 Fallback: Since parent space not found, showing all other user spaces as move options`);
+                          const otherSpaces = topLevelSpaces.filter((s: any) => s.id !== spaceId);
+                          availableSpaces.push(...otherSpaces);
+                          console.log(`📁 Fallback: Added ${otherSpaces.length} other spaces as move targets`);
+                        }
+                      } catch (error) {
+                        console.error('📁 Failed to load sibling spaces:', error);
                       }
                     }
                   } else {
@@ -1659,21 +1844,29 @@ export const SpaceContentSection = (): JSX.Element => {
                     }
                   }
 
-                  console.log(`📁 Total available spaces for move: ${availableSpaces.length} (restricted)`);
+                  console.log(`📁 Total available spaces for move: ${availableSpaces.length} (enhanced)`);
+                  console.log('📁 Final bindableSpaces data:');
+                  availableSpaces.forEach((s: any, index: number) => {
+                    console.log(`📁 [${index}] Name: "${s.name}" | ID: ${s.id} | Type: ${s.spaceType || 'undefined'} | DisplayName: ${s.displayName || 'none'}`);
+                  });
                   setBindableSpaces(availableSpaces);
+                  setLoadingMoveSpaces(false); // Loading completed
 
-                  // Show helpful message if no spaces available
+                  // Show debug message if no spaces available (but still show modal for debugging)
                   if (availableSpaces.length === 0) {
                     if (isSubTreasury) {
-                      console.log('📁 No sibling sub-spaces available for move');
+                      console.log('📁 No target spaces available for move from sub-treasury');
+                      console.log(`📁 Debug info: isSubTreasury=${isSubTreasury}, parentSpaceName="${parentSpaceName}", spaceId=${spaceId}`);
                     } else {
-                      console.log('📁 No sub-spaces available - create sub-spaces first to enable move');
+                      console.log('📁 No target spaces available - create sub-spaces or other treasuries first');
                     }
+                    // Don't close modal immediately - let user see debug info
                   }
 
                 } catch (error) {
                   console.error('📁 Failed to load restricted spaces:', error);
                   setBindableSpaces([]);
+                  setLoadingMoveSpaces(false); // Loading failed, stop loading state
                 }
               };
 
@@ -1688,6 +1881,28 @@ export const SpaceContentSection = (): JSX.Element => {
             </div>
             <span className="text-xs text-gray-600 hidden sm:block">Move</span>
           </button>
+          {/* Move Out button - only show in sub-treasuries */}
+          {isSubTreasury && selectedArticleIds.size > 0 && (
+            <button
+              className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+              onClick={() => {
+                if (selectedArticleIds.size === 0) {
+                  showToast('Please select articles to move out', 'error');
+                  return;
+                }
+                setShowMoveOutConfirm(true);
+              }}
+              disabled={operationLoading.copyArticles}
+              title="Move selected articles to parent space"
+            >
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 17L17 7M17 7H8M17 7V16" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span className="text-xs text-blue-600 hidden sm:block">Move Out</span>
+            </button>
+          )}
           {/* Add Sub-treasury button - only show on parent spaces, not in sub-treasuries */}
           {!isSubTreasury && (
             <button
@@ -1935,7 +2150,12 @@ export const SpaceContentSection = (): JSX.Element => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => { if (!isBulkProcessing) setShowMoveModal(false); }}
+            onClick={() => {
+              if (!isBulkProcessing && !loadingMoveSpaces) {
+                setShowMoveModal(false);
+                setLoadingMoveSpaces(false);
+              }
+            }}
           />
           <div
             className="flex flex-col w-[582px] max-w-[90vw] max-h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
@@ -1945,11 +2165,14 @@ export const SpaceContentSection = (): JSX.Element => {
           >
             {/* Close button */}
             <button
-              onClick={() => setShowMoveModal(false)}
+              onClick={() => {
+                setShowMoveModal(false);
+                setLoadingMoveSpaces(false);
+              }}
               className="absolute top-5 right-5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-20"
               aria-label="Close dialog"
               type="button"
-              disabled={isBulkProcessing}
+              disabled={isBulkProcessing || loadingMoveSpaces}
             >
               <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1961,12 +2184,27 @@ export const SpaceContentSection = (): JSX.Element => {
                 id="move-modal-title"
                 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
               >
-                Copy to sub-treasury
+                Move to space
               </h2>
 
               <div className="flex-1 overflow-y-auto w-full max-h-[40vh]">
-                {bindableSpaces.length === 0 ? (
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center py-8">No sub-treasuries available for copying</p>
+                {loadingMoveSpaces ? (
+                  // Loading state
+                  <div className="flex flex-col items-center justify-center py-8 gap-3">
+                    <div className="w-8 h-8 border-2 border-red border-t-transparent rounded-full animate-spin"></div>
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center">Loading available spaces...</p>
+                  </div>
+                ) : bindableSpaces.length === 0 ? (
+                  // No spaces available
+                  <div className="flex flex-col items-center justify-center py-8 gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1H7a1 1 0 00-1 1v1m8 0V4" />
+                      </svg>
+                    </div>
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center">No spaces available for moving</p>
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm text-center">Create sub-treasuries to enable moving articles</p>
+                  </div>
                 ) : (
                   <ul className="flex flex-col w-full">
                     {bindableSpaces.map((space: any) => {
@@ -2020,8 +2258,11 @@ export const SpaceContentSection = (): JSX.Element => {
               <div className="flex items-center justify-end gap-3 w-full">
                 <button
                   className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={() => setShowMoveModal(false)}
-                  disabled={isBulkProcessing}
+                  onClick={() => {
+                    setShowMoveModal(false);
+                    setLoadingMoveSpaces(false);
+                  }}
+                  disabled={isBulkProcessing || loadingMoveSpaces}
                   type="button"
                 >
                   <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
@@ -2030,7 +2271,7 @@ export const SpaceContentSection = (): JSX.Element => {
                 </button>
                 <button
                   className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={!selectedMoveTarget || isBulkProcessing}
+                  disabled={!selectedMoveTarget || isBulkProcessing || loadingMoveSpaces}
                   type="button"
                   onClick={async () => {
                     if (!selectedMoveTarget || !spaceId) return;
@@ -2232,6 +2473,64 @@ export const SpaceContentSection = (): JSX.Element => {
               >
                 <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
                   {isBulkProcessing ? 'Removing...' : 'Remove'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move Out Confirmation Modal */}
+      {showMoveOutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => { if (!operationLoading.copyArticles) setShowMoveOutConfirm(false); }}
+          />
+          <div
+            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="move-out-title"
+            aria-modal="true"
+          >
+            {/* Move out icon */}
+            <div className="w-12 h-12 rounded-full bg-red/10 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 17L17 7M17 7H8M17 7V16" stroke="#f23a00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 text-center">
+              <h2
+                id="move-out-title"
+                className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
+              >
+                Move {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'} to parent space?
+              </h2>
+              <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+                {selectedArticleIds.size === 1 ? 'This treasure' : 'These treasures'} will be moved to "{parentSpaceInfo?.name || 'parent space'}" and removed from the current sub-treasury.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 w-full">
+              <button
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowMoveOutConfirm(false)}
+                disabled={operationLoading.copyArticles}
+                type="button"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
+                  Cancel
+                </span>
+              </button>
+              <button
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                onClick={handleMoveOut}
+                disabled={operationLoading.copyArticles}
+              >
+                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
+                  {operationLoading.copyArticles ? 'Moving...' : 'Move Out'}
                 </span>
               </button>
             </div>
