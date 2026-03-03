@@ -190,7 +190,7 @@ const SpaceInfoSection = ({
                   navigate(-1);
                 }
               }}
-              className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:text-[#E54D2E] transition-colors duration-200"
+              className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:text-gray-400 transition-colors duration-200"
             >
               {parentSpaceName || spaceInfo?.parentSpace?.name}
             </h1>
@@ -198,8 +198,7 @@ const SpaceInfoSection = ({
           </>
         ) : (
           <h1
-            onClick={onAuthorClick}
-            className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1 cursor-pointer hover:text-[#E54D2E] transition-colors duration-200"
+            className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1"
           >
             {spaceName}
           </h1>
@@ -258,10 +257,12 @@ const SpaceInfoSection = ({
               type="button"
               aria-label="Organize"
               title="Organize"
+              disabled={treasureCount === 0}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
+                treasureCount === 0 ? 'bg-gray-50 opacity-40 cursor-not-allowed' :
                 organizeMode ? 'bg-red/10' : 'bg-gray-100 hover:opacity-70'
               }`}
-              onClick={onOrganize}
+              onClick={treasureCount === 0 ? undefined : onOrganize}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="3" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
