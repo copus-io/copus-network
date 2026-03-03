@@ -22,6 +22,7 @@ import { TreasuryCard, SpaceData } from "../../components/ui/TreasuryCard";
 import { CommentSection } from "../../components/CommentSection";
 import { ArticleDetailResponse, X402PaymentInfo } from "../../types/article";
 import profileDefaultAvatar from "../../assets/images/profile-default.svg";
+import SubscribeButton from "../../components/SubscribeButton/SubscribeButton";
 import commentIcon from "../../assets/images/comment.svg";
 import { PayConfirmModal } from "../../components/PayConfirmModal/PayConfirmModal";
 import {
@@ -2170,31 +2171,36 @@ export const Content = (): JSX.Element => {
                   </div>
                 </div>
 
-                <UserCard
-                  userId={content.userId}
-                  userName={content.userName}
-                  userNamespace={content.userNamespace}
-                  userAvatar={content.userAvatar}
-                  userBio={content.userBio}
-                  userSpaces={userSpaces}
-                  onUserClick={handleUserClick}
-                  onSpaceClick={handleSpaceClick}
-                >
                   <cite
                     className="inline-flex items-center gap-3 relative flex-[0_0_auto] not-italic cursor-pointer hover:opacity-80 transition-opacity duration-200"
                     onClick={handleUserClick}
                     title={`View ${content.userName}'s profile`}
                   >
                     <img
-                      className="w-10 h-10 object-cover relative aspect-[1] rounded-full"
+                      className="w-12 h-12 object-cover relative aspect-[1] rounded-full"
                       alt="Profile image"
                       src={content.userAvatar}
                     />
 
                     <div className="flex flex-col items-start gap-0.5">
-                      <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
-                        {content.userName}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="relative w-fit [font-family:'Lato',Helvetica] text-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap hover:text-blue-600 transition-colors duration-200" style={{ fontWeight: 450 }}>
+                          {content.userName}
+                        </span>
+                        {/* Subscribe button beside username - only for non-authors */}
+                        {content.userId && user?.id !== content.userId && (
+                          <span onClick={(e) => e.stopPropagation()}>
+                            <SubscribeButton
+                              authorUserId={content.userId}
+                              authorName={content.userName}
+                              authorNamespace={content.userNamespace}
+                              subscriptionType="author"
+                              size="small"
+                              compact
+                            />
+                          </span>
+                        )}
+                      </div>
                       {content.userBio && content.userBio.trim() && (
                         <span className="[font-family:'Lato',Helvetica] text-gray-500 text-sm leading-relaxed">
                           {content.userBio}
@@ -2202,7 +2208,6 @@ export const Content = (): JSX.Element => {
                       )}
                     </div>
                   </cite>
-                </UserCard>
               </blockquote>
             </div>
 
