@@ -121,6 +121,8 @@ const ACCESS_LEVEL_MAP = {
   null: ACCESS_LEVEL.PUBLIC
 }
 
+const CACHE_TTL = 300 // 5 minutes
+
 export async function onRequest(context) {
   const { request, params } = context
   let namespace = params.namespace
@@ -139,12 +141,27 @@ export async function onRequest(context) {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
+    'Cache-Control': `public, max-age=${CACHE_TTL}`
   }
 
   // Handle OPTIONS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers })
+  }
+
+  // Build a canonical cache key (ignoring _t cache-busting param)
+  const cacheKey = new URL(request.url)
+  cacheKey.searchParams.delete('_t')
+  const cache = caches.default
+
+  // Try edge cache first
+  const cached = await cache.match(cacheKey.toString())
+  if (cached) {
+    // Clone and update CORS headers (cache may strip them)
+    const response = new Response(cached.body, cached)
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('X-Cache', 'HIT')
+    return response
   }
 
   try {
@@ -176,7 +193,12 @@ export async function onRequest(context) {
     // Build taste profile with access control consideration
     const tasteProfile = await buildTasteProfile(userInfo, treasuries)
 
-    return new Response(JSON.stringify(tasteProfile), { headers })
+    const response = new Response(JSON.stringify(tasteProfile), { headers })
+
+    // Store in edge cache (non-blocking)
+    context.waitUntil(cache.put(cacheKey.toString(), response.clone()))
+
+    return response
 
   } catch (error) {
     console.error('Taste API error:', error)
