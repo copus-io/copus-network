@@ -1417,9 +1417,10 @@ export const SpaceContentSection = (): JSX.Element => {
   // Check if current user is the owner of this space
   const isOwner = !!user && spaceInfo?.authorNamespace === user?.namespace;
 
-  // Check if this is a curations space
+  // Check if this is a curations space or a sub-space of curations space
   // spaceType 2 = Curations, or fallback to category name check for old routes
   const isCurationsSpace = spaceInfo?.spaceType === 2 ||
+    spaceInfo?.parentSpace?.spaceType === 2 ||
     (category ? decodeURIComponent(category).endsWith("'s curations") : false);
 
   // Track hovered card ID
@@ -2630,10 +2631,13 @@ export const SpaceContentSection = (): JSX.Element => {
                 id="bulk-delete-title"
                 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
               >
-                Remove {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'}
+                {isCurationsSpace ? 'Delete' : 'Remove'} {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'}
               </h2>
               <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                Are you sure you want to remove {selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'} from the space? The {selectedArticleIds.size === 1 ? 'article' : 'articles'} will remain available elsewhere.
+                {isCurationsSpace
+                  ? `Are you sure you want to permanently delete ${selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'}? This action cannot be undone.`
+                  : `Are you sure you want to remove ${selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'} from the space? The ${selectedArticleIds.size === 1 ? 'article' : 'articles'} will remain available elsewhere.`
+                }
               </p>
             </div>
 
@@ -2657,7 +2661,7 @@ export const SpaceContentSection = (): JSX.Element => {
                   setIsBulkProcessing(true);
                   try {
                     const selectedUuids = Array.from(selectedArticleIds);
-                    const isCurationsSpace = spaceInfo?.spaceType === 2;
+                    const isCurationsSpace = spaceInfo?.spaceType === 2 || spaceInfo?.parentSpace?.spaceType === 2;
                     console.log('🗑️ Selected UUIDs:', selectedUuids);
                     console.log('🗑️ Is Curations Space:', isCurationsSpace);
                     console.log('🗑️ Space ID:', spaceId);
