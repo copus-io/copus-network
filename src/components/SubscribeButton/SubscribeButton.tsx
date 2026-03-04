@@ -619,7 +619,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
             }
           }}
           placeholder="Type your email..."
-          className="[font-family:'Lato',Helvetica] flex-1 min-w-0 px-4 py-2 text-sm text-off-black bg-white border-none outline-none placeholder:text-gray-400"
+          className="[font-family:'Lato',Helvetica] flex-1 min-w-0 w-[150px] px-3 py-2 text-sm text-off-black bg-white border-none outline-none placeholder:text-gray-400"
         />
         <button
           onClick={() => {
@@ -630,7 +630,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
             }
           }}
           disabled={state.isLoading}
-          className="flex-shrink-0 px-5 py-2 bg-[#2B8649] [font-family:'Lato',Helvetica] font-normal text-white text-sm cursor-pointer hover:bg-[#2B8649]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          className="flex-shrink-0 px-3 py-2 bg-[#2B8649] [font-family:'Lato',Helvetica] font-normal text-white text-sm cursor-pointer hover:bg-[#2B8649]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         >
           {state.isLoading ? 'Subscribing...' : 'Subscribe'}
         </button>

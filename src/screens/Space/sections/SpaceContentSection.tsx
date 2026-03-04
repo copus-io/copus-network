@@ -2657,11 +2657,11 @@ export const SpaceContentSection = (): JSX.Element => {
       {showMoveOutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/50 hidden sm:block"
             onClick={() => { if (!operationLoading.copyArticles) setShowMoveOutConfirm(false); }}
           />
           <div
-            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            className="flex flex-col w-full h-full sm:w-[400px] sm:h-auto sm:max-w-[90vw] items-center justify-center gap-5 p-5 sm:p-[30px] relative bg-white sm:rounded-[15px] z-10"
             role="dialog"
             aria-labelledby="move-out-title"
             aria-modal="true"
@@ -2687,22 +2687,22 @@ export const SpaceContentSection = (): JSX.Element => {
 
             <div className="flex items-center justify-center gap-3 w-full">
               <button
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => setShowMoveOutConfirm(false)}
                 disabled={operationLoading.copyArticles}
                 type="button"
               >
-                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-sm sm:text-base tracking-[0] leading-[22.4px]">
                   Cancel
                 </span>
               </button>
               <button
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 type="button"
                 onClick={handleMoveOut}
                 disabled={operationLoading.copyArticles}
               >
-                <span className="[font-family:'Lato',Helvetica] font-normal text-white text-base tracking-[0] leading-[22.4px]">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-white text-sm sm:text-base tracking-[0] leading-[22.4px]">
                   {operationLoading.copyArticles ? 'Moving...' : 'Move to main treasury'}
                 </span>
               </button>

@@ -255,13 +255,13 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/50 hidden sm:block"
         onClick={handleClose}
       />
 
-      {/* Modal */}
+      {/* Modal - full screen on mobile */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+        className="flex flex-col w-full h-full sm:w-[582px] sm:h-auto sm:max-w-[90vw] sm:max-h-[90vh] items-center gap-5 p-5 sm:p-[30px] relative bg-white sm:rounded-[15px] z-10 overflow-y-auto"
         role="dialog"
         aria-labelledby="create-space-title"
         aria-modal="true"
