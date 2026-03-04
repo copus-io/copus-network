@@ -239,70 +239,78 @@ const SpaceInfoSection = ({
         <div className="flex items-center gap-3 mt-1.5">
           {/* Edit button */}
           {canEdit && (
-            <button
-              type="button"
-              aria-label="Edit space"
-              title="Edit"
-              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
-              onClick={onEdit}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <div className="relative group">
+              <button
+                type="button"
+                aria-label="Edit space"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+                onClick={onEdit}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Edit</span>
+            </div>
           )}
 
           {/* Organize button */}
           {canEdit && onOrganize && (
-            <button
-              type="button"
-              aria-label="Organize"
-              title="Organize"
-              disabled={directArticleCount === 0}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
-                directArticleCount === 0 ? 'bg-gray-50 opacity-40 cursor-not-allowed' :
-                organizeMode ? 'bg-red/10' : 'bg-gray-100 hover:opacity-70'
-              }`}
-              onClick={directArticleCount === 0 ? undefined : onOrganize}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="3" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
-                <rect x="14" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
-                <rect x="3" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
-                <rect x="14" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
-              </svg>
-            </button>
+            <div className="relative group">
+              <button
+                type="button"
+                aria-label="Organize"
+                disabled={directArticleCount === 0}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
+                  directArticleCount === 0 ? 'bg-gray-50 opacity-40 cursor-not-allowed' :
+                  organizeMode ? 'bg-red/10' : 'bg-gray-100 hover:opacity-70'
+                }`}
+                onClick={directArticleCount === 0 ? undefined : onOrganize}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                </svg>
+              </button>
+              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Organize</span>
+            </div>
           )}
 
           {/* Create sub-treasury button */}
           {canEdit && onCreateSubTreasury && (
-            <button
-              type="button"
-              aria-label="Create sub-treasury"
-              title="Create Sub-treasury"
-              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
-              onClick={onCreateSubTreasury}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19M5 12H19" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <div className="relative group">
+              <button
+                type="button"
+                aria-label="Create sub-treasury"
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+                onClick={onCreateSubTreasury}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M5 12H19" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Create Sub-treasury</span>
+            </div>
           )}
 
           {/* Import button - hidden on mobile */}
           {canEdit && onImportCSV && (
-            <button
-              type="button"
-              aria-label="Import bookmarks"
-              title="Import Bookmarks"
-              className="hidden sm:flex w-8 h-8 rounded-full bg-gray-100 items-center justify-center hover:opacity-70 transition-opacity"
-              onClick={onImportCSV}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <div className="relative group hidden sm:block">
+              <button
+                type="button"
+                aria-label="Import bookmarks"
+                className="flex w-8 h-8 rounded-full bg-gray-100 items-center justify-center hover:opacity-70 transition-opacity"
+                onClick={onImportCSV}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Import</span>
+            </div>
           )}
 
           {/* Subscribe button (only for non-owners and not sub-spaces) - using unified SubscribeButton component */}
@@ -322,11 +330,10 @@ const SpaceInfoSection = ({
           )}
 
           {/* Share button */}
-          <div className="relative">
+          <div className="relative group">
             <button
               type="button"
               aria-label="Share space"
-              title="Share"
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
               onClick={() => setShowShareDropdown(!showShareDropdown)}
             >
@@ -336,6 +343,7 @@ const SpaceInfoSection = ({
                 className="w-4 h-4"
               />
             </button>
+            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Share</span>
             {showShareDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowShareDropdown(false)} />
@@ -2363,7 +2371,7 @@ export const SpaceContentSection = (): JSX.Element => {
                 ) : (
                   <ul className="flex flex-col w-full">
                     {bindableSpaces.map((space: any) => {
-                      const spaceImage = space.faceUrl || space.coverUrl || '';
+                      const spaceImage = space.faceUrl || space.coverUrl || space.data?.[0]?.coverUrl || '';
                       const firstLetter = (space.name || 'U').charAt(0).toUpperCase();
                       return (
                         <li
