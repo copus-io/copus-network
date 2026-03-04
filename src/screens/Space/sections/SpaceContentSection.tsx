@@ -1601,7 +1601,7 @@ export const SpaceContentSection = (): JSX.Element => {
         spaceDescription={spaceInfo?.description}
         spaceCoverUrl={spaceInfo?.coverUrl}
         spaceFaceUrl={spaceInfo?.faceUrl}
-        firstArticleCover={articles[0]?.cover || articles[0]?.coverUrl}
+        firstArticleCover={articles[0]?.cover || articles[0]?.coverUrl || subTreasuries.find(sub => sub.data?.[0]?.coverUrl)?.data?.[0]?.coverUrl}
         isFollowing={isFollowing}
         isOwner={isOwner}
         spaceType={spaceInfo?.spaceType}
@@ -1752,32 +1752,8 @@ export const SpaceContentSection = (): JSX.Element => {
 
       {/* Articles Grid */}
       <div className="w-full mt-2">
-        {articles.length === 0 ? (
+        {articles.length === 0 && (!subTreasuries.length || isSubTreasury) ? (
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
-            {/* Different messages based on whether this space has sub-treasuries */}
-            {!isSubTreasury && subTreasuries.length > 0 ? (
-              // Parent space with sub-treasuries - organized space
-              <>
-                <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
-                  Your treasures are organized into sub-treasuries above.
-                </h3>
-                <p className="text-gray-500 text-base mb-4 [font-family:'Lato',Helvetica] max-w-md">
-                  All articles have been sorted into categories. Add new treasures to continue organizing your collection.
-                </p>
-                <button
-                  onClick={() => navigate('/')}
-                  className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
-                    <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
-                  </svg>
-                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
-                    Discover More
-                  </span>
-                </button>
-              </>
-            ) : (
-              // Regular empty space (no sub-treasuries or sub-treasury itself)
               <>
                 <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
                   No treasures yet — this collection is just getting started.
@@ -1794,7 +1770,6 @@ export const SpaceContentSection = (): JSX.Element => {
                   </span>
                 </button>
               </>
-            )}
           </div>
         ) : (
           <>
@@ -2515,31 +2490,6 @@ export const SpaceContentSection = (): JSX.Element => {
                       }
 
                       console.log(`🚚 Move operation completed: ${successCount}/${selectedUuids.length} successful`);
-
-
-                      // Enhanced feedback with navigation option for sub-spaces
-                      if (successCount === selectedUuids.length && successCount > 0) {
-                        // Check if we're moving to a sub-space (when we have subTreasuries data)
-                        if (subTreasuries && subTreasuries.length > 0) {
-                          const targetSubSpace = subTreasuries.find((sub: any) => sub.id === selectedMoveTarget);
-
-                          if (targetSubSpace) {
-                            // This means we're moving to a sub-space
-                            const shouldNavigate = window.confirm(
-                              `Successfully moved ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}".\n\nWould you like to view the sub-space now?`
-                            );
-                            if (shouldNavigate && targetSubSpace.namespace) {
-                              console.log(`🚚 Navigating to sub-space: ${targetSubSpace.namespace}`);
-                              navigate(`/treasury/${targetSubSpace.namespace}`, {
-                                state: {
-                                  fromParentSpace: true,
-                                  movedArticlesCount: successCount
-                                }
-                              });
-                            }
-                          }
-                        }
-                      }
                     } catch (err) {
                       console.error('Failed to move articles:', err);
                       const message = ErrorHandler.handleApiError(err, {
