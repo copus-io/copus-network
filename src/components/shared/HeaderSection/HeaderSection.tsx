@@ -396,7 +396,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   <button
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`text-[11px] [font-family:'Lato',Helvetica] px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${
+                    className={`text-[11px] [font-family:'Lato',Helvetica] px-2 py-0.5 rounded-full border transition-colors whitespace-nowrap ${
                       activeTab === tab.key
                         ? 'text-red border-red bg-[#F23A001A] font-bold'
                         : 'text-gray-500 border-gray-300 font-medium'

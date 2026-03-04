@@ -537,7 +537,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-0 h-auto hover:bg-gray-100 transition-colors"
+                        className="p-0 h-auto hover:bg-gray-100 transition-colors opacity-40 hover:opacity-70"
                         onClick={handleDelete}
                       >
                         <img
@@ -838,7 +838,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-0 h-auto hover:bg-gray-100 transition-colors"
+                        className="p-0 h-auto hover:bg-gray-100 transition-colors opacity-40 hover:opacity-70"
                         onClick={handleDelete}
                       >
                         <img
