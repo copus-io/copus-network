@@ -448,6 +448,18 @@ export const SpaceContentSection = (): JSX.Element => {
     loadingSubSpaces: false,
   });
 
+  // Track whether we should show sub-spaces section at all
+  const [hasCheckedSubSpaces, setHasCheckedSubSpaces] = useState(false);
+  // Track the number of skeleton items to show based on previous load or estimate
+  const [skeletonCount, setSkeletonCount] = useState(() => {
+    // Try to get a reasonable estimate from localStorage or default to 2
+    if (typeof window !== 'undefined' && spaceId) {
+      const stored = localStorage.getItem(`subspace_count_${spaceId}`);
+      return stored ? Math.min(parseInt(stored, 10), 6) : 2;
+    }
+    return 2;
+  });
+
   // Organize mode state
   const [organizeMode, setOrganizeMode] = useState(false);
   const [selectedArticleIds, setSelectedArticleIds] = useState<Set<string>>(new Set());
@@ -788,6 +800,8 @@ export const SpaceContentSection = (): JSX.Element => {
     const loadSubTreasuries = async () => {
       if (!user?.id || !spaceId) return;
 
+      // Reset check status when space changes
+      setHasCheckedSubSpaces(false);
       setOperationLoading(prev => ({ ...prev, loadingSubSpaces: true }));
 
       try {
@@ -800,10 +814,30 @@ export const SpaceContentSection = (): JSX.Element => {
         console.log('🔍 Extracted sub-treasuries:', subSpaces);
         console.log('🔍 Sub-treasuries count:', Array.isArray(subSpaces) ? subSpaces.length : 'not array');
 
-        setSubTreasuries(Array.isArray(subSpaces) ? subSpaces : []);
+        const finalSubSpaces = Array.isArray(subSpaces) ? subSpaces : [];
+        setSubTreasuries(finalSubSpaces);
+        setHasCheckedSubSpaces(true);
+
+        // Update skeleton count for next time based on actual result
+        if (finalSubSpaces.length > 0) {
+          // Store the actual count for future loads, capped at reasonable maximum
+          const newSkeletonCount = Math.min(finalSubSpaces.length, 6);
+          setSkeletonCount(newSkeletonCount);
+
+          // Persist to localStorage for better UX on next visit
+          if (typeof window !== 'undefined' && spaceId) {
+            localStorage.setItem(`subspace_count_${spaceId}`, newSkeletonCount.toString());
+          }
+        } else {
+          // No sub-spaces found, clear the localStorage for this space
+          if (typeof window !== 'undefined' && spaceId) {
+            localStorage.removeItem(`subspace_count_${spaceId}`);
+          }
+        }
       } catch (error) {
         console.error('🔍 Failed to load sub-treasuries:', error);
         setSubTreasuries([]); // Reset to empty array on error
+        setHasCheckedSubSpaces(true);
       } finally {
         setOperationLoading(prev => ({ ...prev, loadingSubSpaces: false }));
       }
@@ -1604,12 +1638,15 @@ export const SpaceContentSection = (): JSX.Element => {
       </div>
 
       {/* Sub-treasury Cards (hidden on sub-treasury pages) */}
-      {!isSubTreasury && (operationLoading.loadingSubSpaces || subTreasuries.length > 0) && (
+      {!isSubTreasury && (
+        (operationLoading.loadingSubSpaces && !hasCheckedSubSpaces) ||
+        subTreasuries.length > 0
+      ) && (
         <div className="w-full mt-4 mb-6">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-            {operationLoading.loadingSubSpaces ? (
-              // Loading skeleton for sub-treasuries
-              Array.from({ length: 3 }).map((_, index) => (
+            {operationLoading.loadingSubSpaces && !hasCheckedSubSpaces ? (
+              // Loading skeleton for sub-treasuries - show dynamic number based on expected count
+              Array.from({ length: skeletonCount }).map((_, index) => (
                 <div key={`skeleton-${index}`} className="animate-pulse">
                   <div className="bg-gray-200 rounded-2xl h-48 w-full mb-3"></div>
                   <div className="h-4 bg-gray-200 rounded mb-2"></div>
