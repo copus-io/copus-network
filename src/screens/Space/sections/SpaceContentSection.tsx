@@ -58,6 +58,7 @@ const SpaceInfoSection = ({
   onEdit,
   onOrganize,
   organizeMode,
+  directArticleCount = 0,
   onCreateSubTreasury,
   onImportCSV,
   onSubscriberCountLoaded,
@@ -91,6 +92,7 @@ const SpaceInfoSection = ({
   onEdit?: () => void;
   onOrganize?: () => void;
   organizeMode?: boolean;
+  directArticleCount?: number;
   onCreateSubTreasury?: () => void;
   onImportCSV?: () => void;
   onSubscriberCountLoaded?: (count: number) => void;
@@ -257,12 +259,12 @@ const SpaceInfoSection = ({
               type="button"
               aria-label="Organize"
               title="Organize"
-              disabled={treasureCount === 0}
+              disabled={directArticleCount === 0}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
-                treasureCount === 0 ? 'bg-gray-50 opacity-40 cursor-not-allowed' :
+                directArticleCount === 0 ? 'bg-gray-50 opacity-40 cursor-not-allowed' :
                 organizeMode ? 'bg-red/10' : 'bg-gray-100 hover:opacity-70'
               }`}
-              onClick={treasureCount === 0 ? undefined : onOrganize}
+              onClick={directArticleCount === 0 ? undefined : onOrganize}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="3" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
@@ -1617,6 +1619,7 @@ export const SpaceContentSection = (): JSX.Element => {
           setSelectedArticleIds(new Set());
         } : undefined}
         organizeMode={organizeMode}
+        directArticleCount={articles.length}
         onCreateSubTreasury={isOwner && !isSubTreasury && !(spaceInfo?.pid && spaceInfo.pid > 0) && !spaceInfo?.parentSpace ? () => setShowCreateSubTreasury(true) : undefined}
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
         isSubTreasury={isSubTreasury}
@@ -2029,12 +2032,12 @@ export const SpaceContentSection = (): JSX.Element => {
               disabled={operationLoading.copyArticles}
               title="Move selected articles to parent space"
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 flex items-center justify-center">
                 <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 17L17 7M17 7H8M17 7V16" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M7 17L17 7M17 7H8M17 7V16" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span className="text-xs text-blue-600 hidden sm:block">Move Out</span>
+              <span className="text-xs text-gray-600 hidden sm:block">Move Out</span>
             </button>
           )}
           {/* Add Sub-treasury button - only show on parent spaces, not in sub-treasuries */}

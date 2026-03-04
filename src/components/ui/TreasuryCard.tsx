@@ -367,13 +367,13 @@ export const TreasuryCard = React.memo(({
     >
       <div className="flex items-center relative self-stretch w-full rounded-[15px] shadow-[1px_1px_10px_#c5c5c5] hover:shadow-[2px_2px_15px_#b5b5b5] transition-shadow overflow-hidden bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]" style={{ aspectRatio: '16 / 9' }}>
         {/* Main item on the left - takes ~65% width */}
-        <article className="flex flex-col items-start justify-center gap-[5px] px-[15px] py-[15px] relative self-stretch w-[65%] flex-shrink-0 rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
+        <article className="flex flex-col items-start justify-center gap-[3px] px-[8px] py-[8px] relative self-stretch w-[65%] flex-shrink-0 rounded-[15px_0px_0px_15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.25)_0%,rgba(224,224,224,0.25)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
           <div
             className="flex flex-col w-full flex-1 items-end justify-end p-2.5 relative bg-cover bg-center rounded-lg"
             style={{ backgroundImage: `url(${mainItem.coverImage})` }}
           >
-            <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-              <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] relative flex-[0_0_auto] bg-[#ffffffcc] rounded-[15px] overflow-hidden">
+            <div className="flex flex-col items-end gap-1.5 self-stretch w-full relative flex-[0_0_auto]">
+              <span className="inline-flex items-start gap-[3px] px-1.5 py-[3px] relative flex-[0_0_auto] bg-[#ffffffcc] rounded-[10px] overflow-hidden">
                 <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
                   {getDisplayHostname(mainItem.url)}
                 </span>
@@ -394,7 +394,7 @@ export const TreasuryCard = React.memo(({
             {sideItems.map((item, index) => (
               <article
                 key={item.id}
-                className={`${sideItems.length === 1 ? 'h-1/2' : 'flex-1'} pl-0 pr-[15px] ${index === 0 ? "pt-[15px]" : "pb-[15px]"} ${
+                className={`${sideItems.length === 1 ? 'h-1/2' : 'flex-1'} pl-0 pr-[8px] ${index === 0 ? "pt-[8px]" : "pb-[8px]"} ${
                   index === 0
                     ? "rounded-[0px_15px_0px_0px]"
                     : "rounded-[0px_0px_15px_0px]"
@@ -404,8 +404,8 @@ export const TreasuryCard = React.memo(({
                   className="flex-1 p-[5px] self-stretch w-full flex flex-col items-end justify-end relative bg-cover bg-center rounded-lg"
                   style={{ backgroundImage: `url(${item.coverImage})` }}
                 >
-                  <div className="flex flex-col items-end gap-2.5 self-stretch w-full relative flex-[0_0_auto]">
-                    <span className="inline-flex items-start gap-[5px] px-2.5 py-[5px] bg-[#ffffffcc] rounded-[15px] overflow-hidden relative flex-[0_0_auto]">
+                  <div className="flex flex-col items-end gap-1.5 self-stretch w-full relative flex-[0_0_auto]">
+                    <span className="inline-flex items-start gap-[3px] px-1.5 py-[3px] bg-[#ffffffcc] rounded-[10px] overflow-hidden relative flex-[0_0_auto]">
                       <span className="relative flex items-center justify-center w-fit mt-[-1.00px] [font-family:'Lato',Helvetica] font-bold text-blue text-[10px] text-right tracking-[0] leading-[13.0px] whitespace-nowrap">
                         {getDisplayHostname(item.url)}
                       </span>

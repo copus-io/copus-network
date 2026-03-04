@@ -401,13 +401,13 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/50 hidden sm:block"
         onClick={handleCancel}
       />
 
-      {/* Modal */}
+      {/* Modal - full screen on mobile */}
       <div
-        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 pb-4 max-h-[80vh]`}
+        className={`flex flex-col w-full h-full sm:w-[582px] sm:h-auto sm:max-w-[90vw] sm:max-h-[80vh] items-center gap-5 pt-[30px] px-[30px] max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white sm:rounded-[15px] z-10 pb-4`}
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"

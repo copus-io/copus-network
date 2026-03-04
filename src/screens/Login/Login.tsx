@@ -99,7 +99,7 @@ const LoginForm: React.FC<{
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         onKeyDown={onKeyPress}
-        className="flex items-center gap-[213px] p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
+        className="flex items-center gap-[213px] p-3 sm:p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-sm sm:text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
       />
 
       <div className="relative self-stretch w-full">
@@ -109,7 +109,7 @@ const LoginForm: React.FC<{
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={onKeyPress}
-          className="flex items-center gap-64 p-[15px] pr-12 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
+          className="flex items-center gap-64 p-3 sm:p-[15px] pr-12 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-sm sm:text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
         />
         <Button
           type="button"
@@ -270,7 +270,7 @@ const RegistrationForm: React.FC<{
           placeholder="Enter verification code"
           value={verificationCode}
           onChange={(e) => setVerificationCode(e.target.value)}
-          className="flex items-center p-[15px] relative flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+          className="flex items-center p-3 sm:p-[15px] relative flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey text-sm sm:text-base h-auto"
         />
         <Button
           className={`px-[15px] h-auto min-h-[50px] text-white rounded-[15px] border-0 whitespace-nowrap flex items-center justify-center transition-all ${
@@ -1405,7 +1405,7 @@ export const Login = (): JSX.Element => {
                       value="login"
                       className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-2.5 px-3 sm:px-[15px] bg-transparent"
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm sm:text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
                         Log in
                       </span>
                     </TabsTrigger>
@@ -1413,7 +1413,7 @@ export const Login = (): JSX.Element => {
                       value="signup"
                       className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-2.5 px-3 sm:px-[15px] bg-transparent"
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm sm:text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
                         Sign up
                       </span>
                     </TabsTrigger>
