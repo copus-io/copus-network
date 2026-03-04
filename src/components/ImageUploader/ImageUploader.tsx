@@ -180,7 +180,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
           <div className="inline-flex items-center gap-[15px] relative flex-[0_0_auto]">
             {/* Avatar preview */}
-            <div className="relative w-[45px] h-[45px] rounded-[100px] overflow-hidden border-2 border-gray-200">
+            <div className="relative w-[35px] h-[35px] rounded-[100px] overflow-hidden border-2 border-gray-200">
               <img
                 src={currentImage || profileDefaultAvatar}
                 alt="Profile"
@@ -191,14 +191,14 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             {/* Upload button - matching curate page style */}
             <button
               type="button"
-              className="flex items-center justify-center px-4 py-2 bg-white rounded-[15px] border border-solid border-medium-grey hover:border-red hover:shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-3 py-1.5 bg-white rounded-[15px] border border-solid border-medium-grey hover:border-red hover:shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleButtonClick}
               disabled={isUploading}
             >
-              <svg className="w-5 h-5 text-medium-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-medium-grey" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              <span className="ml-2 [font-family:'Lato',Helvetica] font-normal text-dark-grey text-base">
+              <span className="ml-1.5 [font-family:'Lato',Helvetica] font-normal text-dark-grey text-sm">
                 {isUploading ? 'Uploading...' : 'Upload'}
               </span>
             </button>
@@ -208,7 +208,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               <button
                 type="button"
                 onClick={handleRemoveImage}
-                className="text-red hover:text-red/80 text-[16px] [font-family:'Lato',Helvetica] font-normal"
+                className="text-red hover:text-red/80 text-sm [font-family:'Lato',Helvetica] font-normal"
               >
                 Delete
               </button>
@@ -246,11 +246,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   return (
     <>
       <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-        <div className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+        <div className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-sm tracking-[0] leading-[22.4px]">
           Cover image (Optional)
         </div>
 
-        <div className="flex flex-col h-[87px] items-center px-0 py-2.5 relative self-stretch w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent overflow-hidden">
+        <div className="flex flex-col h-[70px] items-center px-0 py-2 relative self-stretch w-full rounded-lg bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] bg-light-grey-transparent overflow-hidden">
           {/* Current banner image - 优先显示本地预览，再显示远程图片 */}
           {(localPreviewUrl || currentImage) && (
             <div

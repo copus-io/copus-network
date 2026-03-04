@@ -1703,7 +1703,8 @@ export const SpaceContentSection = (): JSX.Element => {
         title="Create sub-treasury"
         submitLabel="Add"
         mode="full"
-        parentSpaceId={isOwner ? spaceId : undefined} // Only pass parent ID if user owns this space
+        parentSpaceId={isOwner ? spaceId : undefined}
+        parentVisibility={spaceInfo?.visibility}
         onSuccess={(newSpace) => {
           console.log('✅ Sub-treasury created successfully:', newSpace);
           console.log('📋 Current spaceId (parent):', spaceId);
@@ -2524,7 +2525,8 @@ export const SpaceContentSection = (): JSX.Element => {
         title="Create sub-treasury"
         submitLabel="Add"
         mode="full"
-        parentSpaceId={isOwner ? spaceId : undefined} // Only pass parent ID if user owns this space
+        parentSpaceId={isOwner ? spaceId : undefined}
+        parentVisibility={spaceInfo?.visibility}
         onSuccess={async (newSpace) => {
           const newSpaceId = newSpace?.id || newSpace?.data?.id;
           if (newSpaceId) {
