@@ -1795,13 +1795,20 @@ export class AuthService {
    * @param targetUserId - Required target user ID
    * @param pageIndex - Optional page number (default: 1)
    * @param pageSize - Optional page size (default: 20)
+   * @param pid - Optional parent ID to get sub-spaces
    */
-  static async getMySpaces(targetUserId: number, pageIndex: number = 1, pageSize: number = 20): Promise<any> {
+  static async getMySpaces(targetUserId: number, pageIndex: number = 1, pageSize: number = 20, pid?: number): Promise<any> {
     const params = new URLSearchParams({
       targetUserId: targetUserId.toString(),
       pageIndex: pageIndex.toString(),
       pageSize: pageSize.toString(),
     });
+
+    // Add pid parameter if provided to get sub-spaces
+    if (pid !== undefined) {
+      params.append('pid', pid.toString());
+    }
+
     return apiRequest(`/client/userHome/pageMySpaces?${params.toString()}`, {
       method: 'GET',
     });
@@ -1828,7 +1835,23 @@ export class AuthService {
     isFollowed: boolean; // NEW: Whether current user is following this space
     name: string;
     namespace: string;
+    parentSpace?: {
+      id: number;
+      name: string;
+      namespace: string;
+      spaceType: number;
+      userInfo: {
+        bio: string;
+        coverUrl: string;
+        faceUrl: string;
+        id: number;
+        namespace: string;
+        username: string;
+      };
+    };
+    pid: number;
     seoDataByAi: string;
+    sortOrder: number;
     spaceType: number;
     userInfo: {
       bio: string;
@@ -1959,19 +1982,38 @@ export class AuthService {
    * @param description - Optional description for the space
    * @param coverUrl - Optional cover image URL for the space
    * @param faceUrl - Optional avatar/face image URL for the space
+   * @param visibility - Optional visibility setting
+   * @param pid - Optional parent space ID for creating sub-spaces
    * @returns The created space object with id, name, namespace, spaceType, userId, etc.
    */
-  static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string, visibility?: number): Promise<any> {
-    return apiRequest(`/client/article/space/create`, {
-      method: 'POST',
-      body: JSON.stringify({
-        name,
-        ...(description && { description }),
-        ...(coverUrl && { coverUrl }),
-        ...(faceUrl && { faceUrl }),
-        ...(visibility !== undefined && { visibility })
-      }),
+  static async createSpace(name: string, description?: string, coverUrl?: string, faceUrl?: string, visibility?: number, pid?: number): Promise<any> {
+    const body = {
+      name,
+      ...(description && { description }),
+      ...(coverUrl && { coverUrl }),
+      ...(faceUrl && { faceUrl }),
+      ...(visibility !== undefined && { visibility }),
+      ...(pid !== undefined && { pid })
+    };
+
+    console.log('🚀 AuthService.createSpace API call:', {
+      endpoint: '/client/article/space/create',
+      body
     });
+
+    try {
+      const response = await apiRequest(`/client/article/space/create`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+
+      console.log('🚀 AuthService.createSpace API response:', response);
+      return response;
+    } catch (error) {
+      console.error('🚀 AuthService.createSpace API error:', error);
+      console.error('🚀 Request body was:', body);
+      throw error;
+    }
   }
 
   /**
@@ -2035,6 +2077,31 @@ export class AuthService {
     });
   }
 
+
+  /**
+   * Get user's social links
+   * @param userId - Target user ID to get social links for
+   * @returns Array of social links
+   */
+  static async getSocialLinks(userId: number): Promise<Array<{
+    id: number;
+    title: string;
+    linkUrl: string;
+    iconUrl?: string;
+  }>> {
+    try {
+      const response = await apiRequest(`/client/userHome/socialLinks/${userId}`, {
+        method: 'GET',
+        requiresAuth: false, // Allow viewing social links without auth
+      });
+
+      // Handle nested response structure: {status: 1, msg: "success", data: [...]}
+      return response?.data || response || [];
+    } catch (error) {
+      console.log('Failed to fetch social links:', error);
+      return []; // Return empty array on error
+    }
+  }
 
   /**
    * Email subscribe to authors/spaces

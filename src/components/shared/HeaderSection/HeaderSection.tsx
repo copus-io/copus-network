@@ -346,14 +346,14 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
       {isSearchOpen && (
         <div className="lg:hidden fixed inset-0 z-50 bg-white flex flex-col mobile-search-overlay">
           {/* Search Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-2 px-3 py-3 border-b border-gray-100 w-full max-w-full overflow-hidden">
             <button
               onClick={handleCloseSearch}
               className="text-gray-500 flex-shrink-0"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
-            <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+            <div className="flex-1 min-w-0 flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
               <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
                 type="text"
@@ -396,7 +396,7 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
                   <button
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
-                    className={`text-[14px] [font-family:'Lato',Helvetica] px-4 py-2 rounded-full border transition-colors whitespace-nowrap ${
+                    className={`text-[11px] [font-family:'Lato',Helvetica] px-2 py-0.5 rounded-full border transition-colors whitespace-nowrap ${
                       activeTab === tab.key
                         ? 'text-red border-red bg-[#F23A001A] font-bold'
                         : 'text-gray-500 border-gray-300 font-medium'

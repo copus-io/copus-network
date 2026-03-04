@@ -363,29 +363,7 @@ export const MainContentSection = (): JSX.Element => {
   // Determine if viewing other user early
   const isViewingOtherUserCheck = !!namespace && namespace !== user?.namespace;
 
-  // Fetch social links when viewing own treasury (since we don't fetch them globally anymore)
-  useEffect(() => {
-    if (user && !isViewingOtherUserCheck) {
-      // Check cache to prevent duplicate fetches
-      const now = Date.now();
-      const isSameUser = socialLinksFetchCache.userId === user.id;
-      const isCacheValid = (now - socialLinksFetchCache.timestamp) < SOCIAL_LINKS_CACHE_TTL;
-
-      if (isSameUser && (isCacheValid || socialLinksFetchCache.inProgress)) {
-        console.log('Skipping duplicate social links fetch for user:', user.id);
-        return;
-      }
-
-      // Mark as in progress
-      socialLinksFetchCache = { timestamp: now, inProgress: true, userId: user.id };
-
-      fetchSocialLinks().finally(() => {
-        // Mark as complete
-        socialLinksFetchCache = { ...socialLinksFetchCache, inProgress: false };
-      });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, namespace]);
+  // Social links are now fetched in parallel with spaces data for better performance
 
   const [spaces, setSpaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -499,17 +477,21 @@ export const MainContentSection = (): JSX.Element => {
               targetUserId = processedInfo?.id;
               console.log('Other user info:', processedInfo, 'userId:', targetUserId);
 
-              // If we couldn't get other user's ID, fall back to logged-in user
+              // If we couldn't get other user's ID, show error instead of silently falling back
               if (!targetUserId) {
-                console.warn('Could not get other user ID, falling back to logged-in user');
-                processedInfo = user;
-                targetUserId = user.id;
+                console.warn('User not found for namespace:', namespace);
+                setError(`User "${namespace}" not found.`);
+                setLoading(false);
+                // Clear cache on error so user can retry
+                fetchCache.delete(fetchKey);
+                return;
               }
             } catch (err) {
-              console.warn('Failed to fetch other user info, falling back to logged-in user:', err);
-              // Fall back to logged-in user instead of showing error
-              processedInfo = user;
-              targetUserId = user.id;
+              console.warn('Failed to fetch other user info:', err);
+              setError(`User "${namespace}" not found.`);
+              setLoading(false);
+              fetchCache.delete(fetchKey);
+              return;
             }
           } else {
             // Viewing own treasury - fetch full userInfo to get statistics
@@ -567,40 +549,43 @@ export const MainContentSection = (): JSX.Element => {
           return;
         }
 
-        // Fetch spaces using pageMySpaces API (paginated)
-        // This API may not exist on production yet, so we handle 404 gracefully
-        console.log('Fetching spaces for targetUserId:', targetUserId);
+        // Parallel API requests for better performance
         try {
-          const spacesResponse = await AuthService.getMySpaces(targetUserId);
-          console.log('Spaces API response:', spacesResponse);
+          const [spacesResponse, socialLinksResponse] = await Promise.allSettled([
+            AuthService.getMySpaces(targetUserId),
+            AuthService.getSocialLinks(targetUserId)
+          ]);
 
-          // Handle paginated response - data array is at response.data.data
+          // Handle spaces response
           let spacesArray: any[] = [];
-          if (spacesResponse?.data?.data && Array.isArray(spacesResponse.data.data)) {
-            spacesArray = spacesResponse.data.data;
-          } else if (spacesResponse?.data && Array.isArray(spacesResponse.data)) {
-            spacesArray = spacesResponse.data;
-          } else if (Array.isArray(spacesResponse)) {
-            spacesArray = spacesResponse;
+          if (spacesResponse.status === 'fulfilled') {
+            const spacesData = spacesResponse.value;
+
+            if (spacesData?.data?.data && Array.isArray(spacesData.data.data)) {
+              spacesArray = spacesData.data.data;
+            } else if (spacesData?.data && Array.isArray(spacesData.data)) {
+              spacesArray = spacesData.data;
+            } else if (Array.isArray(spacesData)) {
+              spacesArray = spacesData;
+            }
           }
 
-          console.log('Spaces array length:', spacesArray.length);
+          const enhancedSpaces = spacesArray.map(space => ({
+            ...space,
+            subSpaces: [],
+            hasSubSpaces: false
+          }));
 
-          // Use spaces directly from pageMySpaces API
-          // The API may include article previews in the response (check for data/articles fields)
-          // If not, TreasuryCard will display based on articleCount
-          setSpaces(spacesArray);
+          setSpaces(enhancedSpaces);
 
-          // Store in cache for reuse during redirects
+          // Store result in cache
           fetchCache.set(fetchKey, {
             timestamp: Date.now(),
             inProgress: false,
-            data: { userInfo: processedInfo, spaces: spacesArray }
+            data: { userInfo: processedInfo, spaces: enhancedSpaces }
           });
-        } catch (spacesErr: any) {
-          // If pageMySpaces API returns 404, it means the API doesn't exist yet
-          // Show empty state instead of error
-          console.warn('pageMySpaces API not available, showing empty state:', spacesErr.message);
+        } catch (error) {
+          console.error('Data fetch failed:', error);
           setSpaces([]);
 
           // Store empty result in cache

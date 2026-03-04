@@ -32,6 +32,7 @@ interface Collection {
   visibility?: number; // New visibility system (0: public, 1: private, 2: unlisted)
   namespace?: string;
   firstLetter: string; // First letter of space name for avatar fallback
+  parentId?: number; // Parent space ID for sub-treasuries
 }
 
 export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
@@ -54,6 +55,8 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedArticleId, setResolvedArticleId] = useState<number | null>(null);
   const [curationsSpaceId, setCurationsSpaceId] = useState<number | null>(null); // Store Curations space ID to always include in save
+  const [expandedSpaces, setExpandedSpaces] = useState<Set<number>>(new Set());
+  const [spacesWithChildren, setSpacesWithChildren] = useState<Set<number>>(new Set());
 
   // Fetch user's bindable spaces using the bindableSpaces API
   useEffect(() => {
@@ -169,6 +172,66 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         });
 
         setCollections(collectionsWithDefault);
+
+        // Fetch sub-treasuries for each top-level space to detect which have children
+        const topLevelSpaces = collectionsWithDefault.filter(c => c.spaceType !== 2);
+        const childrenSet = new Set<number>();
+        const subCollections: Collection[] = [];
+
+        await Promise.all(topLevelSpaces.map(async (space) => {
+          try {
+            const response = await AuthService.getMySpaces(user.id, 1, 100, space.numericId);
+            const subSpaces = response?.data?.data || response?.data || response || [];
+            if (Array.isArray(subSpaces) && subSpaces.length > 0) {
+              const countBefore = subCollections.length;
+              subSpaces.forEach((sub: any) => {
+                // Skip self-references (API may return the parent itself)
+                if (sub.id === space.numericId) return;
+                // Skip other top-level spaces that aren't actual children
+                if (topLevelSpaces.some(tl => tl.numericId === sub.id && tl.spaceType === 1)) return;
+                const subName = sub.name || 'Untitled';
+                subCollections.push({
+                  id: sub.id.toString(),
+                  numericId: sub.id,
+                  name: subName,
+                  image: sub.faceUrl || '',
+                  isSelected: false, // Sub-treasuries start unselected (not in bindable list)
+                  wasOriginallyBound: false,
+                  spaceType: sub.spaceType,
+                  visibility: sub.visibility,
+                  namespace: sub.namespace,
+                  firstLetter: subName.charAt(0).toUpperCase(),
+                  parentId: space.numericId,
+                });
+              });
+              // Only mark as having children if actual children were added
+              if (subCollections.length > countBefore) {
+                childrenSet.add(space.numericId);
+              }
+            }
+          } catch {
+            // Ignore errors for individual space lookups
+          }
+        }));
+
+        setSpacesWithChildren(childrenSet);
+        if (subCollections.length > 0) {
+          // Check binding status for sub-collections from the original bindable list
+          const subIds = new Set(subCollections.map(s => s.numericId));
+          const enrichedSubs = subCollections.map(sub => {
+            const bindable = spacesArray.find(s => s.id === sub.numericId);
+            if (bindable) {
+              return { ...sub, isSelected: bindable.isBind, wasOriginallyBound: bindable.isBind };
+            }
+            return sub;
+          });
+          // Remove sub-treasuries from top-level list and add them with parentId
+          // Never remove default Treasury (spaceType 1) from top-level
+          setCollections(prev => [
+            ...prev.filter(c => !c.parentId && (!subIds.has(c.numericId) || c.spaceType === 1)),
+            ...enrichedSubs
+          ]);
+        }
       } catch (err) {
         logger.error('Failed to fetch bindable spaces:', err);
       } finally {
@@ -185,6 +248,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
       setSearchQuery("");
       setShowCreateNew(false);
       setIsSubmitting(false);
+      setExpandedSpaces(new Set());
     }
   }, [isOpen]);
 
@@ -289,10 +353,43 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
     setShowCreateNew(false);
   };
 
-  // Filter collections by search query
-  const filteredCollections = collections.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter collections by search query and build display list with parent-child ordering
+  const filteredCollections = (() => {
+    const query = searchQuery.toLowerCase();
+    const isSearching = query.length > 0;
+    const topLevel = collections.filter(c => !c.parentId && (!isSearching || c.name.toLowerCase().includes(query)));
+    const result: Collection[] = [];
+    topLevel.forEach(c => {
+      result.push(c);
+      // Add children right after parent if expanded, or if searching and child matches
+      const children = collections.filter(child =>
+        child.parentId === c.numericId &&
+        (expandedSpaces.has(c.numericId) || (isSearching && child.name.toLowerCase().includes(query)))
+      );
+      result.push(...children);
+    });
+    // Also include orphan children that match search but parent doesn't
+    if (isSearching) {
+      const childrenInResult = new Set(result.filter(c => c.parentId).map(c => c.id));
+      const orphanChildren = collections.filter(c =>
+        c.parentId && !childrenInResult.has(c.id) && c.name.toLowerCase().includes(query)
+      );
+      result.push(...orphanChildren);
+    }
+    return result;
+  })();
+
+  const toggleExpand = (spaceId: number) => {
+    setExpandedSpaces(prev => {
+      const next = new Set(prev);
+      if (next.has(spaceId)) {
+        next.delete(spaceId);
+      } else {
+        next.add(spaceId);
+      }
+      return next;
+    });
+  };
 
   // Check if there are any changes from original state
   const hasChanges = collections.some(c => c.isSelected !== c.wasOriginallyBound);
@@ -304,13 +401,13 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/50 hidden sm:block"
         onClick={handleCancel}
       />
 
-      {/* Modal */}
+      {/* Modal - full screen on mobile */}
       <div
-        className={`flex flex-col w-[582px] max-w-[90vw] items-center gap-5 pt-[30px] px-[30px] max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white rounded-[15px] z-10 pb-4 max-h-[80vh]`}
+        className={`flex flex-col w-full h-full sm:w-[582px] sm:h-auto sm:max-w-[90vw] sm:max-h-[80vh] items-center gap-5 pt-[30px] px-[30px] max-[440px]:pt-[15px] max-[440px]:px-[15px] relative bg-white sm:rounded-[15px] z-10 pb-4`}
         role="dialog"
         aria-labelledby="collect-dialog-title"
         aria-modal="true"
@@ -328,7 +425,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         </button>
 
         {/* Collection List View */}
-        <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-5">
+        <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-8 sm:pt-5">
             <div className="flex flex-col items-start justify-center gap-5 relative self-stretch w-full flex-[0_0_auto]">
               {/* Title and New Treasury on same line */}
               <div className="flex items-center justify-between w-full">
@@ -376,9 +473,9 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               </div>
             </div>
 
-            {/* Collections List - scrollbar hidden until hover, fixed height */}
+            {/* Collections List - scrollbar hidden until hover, flexible height on mobile, fixed on desktop */}
             <div
-              className="flex flex-col items-start gap-0 relative self-stretch w-full h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 sm:flex-none sm:h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
               onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
@@ -395,10 +492,15 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                 </div>
               ) : (
                 <ul className="flex flex-col items-center justify-center self-stretch w-full relative flex-[0_0_auto]">
-                  {filteredCollections.map((collection) => (
+                  {filteredCollections.map((collection) => {
+                    const isChild = !!collection.parentId;
+                    const hasChildren = spacesWithChildren.has(collection.numericId);
+                    const isExpanded = expandedSpaces.has(collection.numericId);
+
+                    return (
                     <li
                       key={collection.id}
-                      className="flex items-center justify-between px-0 py-4 self-stretch w-full bg-white border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className={`flex items-center justify-between py-4 self-stretch w-full bg-white border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${isChild ? 'pl-8' : 'px-0'}`}
                       onClick={() => handleToggleSelection(collection.id)}
                     >
                       <div className="inline-flex items-center gap-4 relative flex-[0_0_auto]">
@@ -446,14 +548,37 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                           {collection.name}
                         </span>
                       </div>
+
+                      {/* Expand arrow for spaces with sub-treasuries */}
+                      {hasChildren && (
+                        <button
+                          type="button"
+                          className="p-1.5 rounded-full hover:bg-gray-200 transition-colors mr-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpand(collection.numericId);
+                          }}
+                          aria-label={isExpanded ? 'Collapse sub-treasuries' : 'Expand sub-treasuries'}
+                        >
+                          <svg
+                            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      )}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </div>
 
-            {/* Save and Cancel Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ml-[-30px] mr-[-30px] pl-[30px] pr-[30px] w-[calc(100%+60px)] max-[440px]:ml-[-15px] max-[440px]:mr-[-15px] max-[440px]:pl-[15px] max-[440px]:pr-[15px] max-[440px]:w-[calc(100%+30px)]">
+            {/* Save and Cancel Buttons - pinned to bottom on mobile */}
+            <div className="flex items-center justify-end gap-3 pt-4 pb-4 sm:pb-0 mt-auto sm:mt-0 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ml-[-30px] mr-[-30px] pl-[30px] pr-[30px] w-[calc(100%+60px)] max-[440px]:ml-[-15px] max-[440px]:mr-[-15px] max-[440px]:pl-[15px] max-[440px]:pr-[15px] max-[440px]:w-[calc(100%+30px)]">
               <button
                 className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={handleCancel}

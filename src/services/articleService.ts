@@ -473,3 +473,28 @@ export const removeArticleFromSpace = async (removeData: RemoveArticleFromSpaceR
     throw new Error(`Failed to remove article from space: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
+
+// Move articles between spaces
+export const moveArticlesToSpace = async (moveData: {
+  articleIds: number[];
+  fromSpaceId: number;
+  toSpaceId: number;
+}): Promise<boolean> => {
+  const endpoint = '/client/article/space/moveArticlesToSpace';
+
+  try {
+    const response = await apiRequest<{ status: number; msg: string; data: any }>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(moveData),
+    });
+
+    if (response.status !== 1) {
+      throw new Error(response.msg || 'Failed to move articles to space');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Failed to move articles to space:', error);
+    throw new Error(`Failed to move articles to space: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};

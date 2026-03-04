@@ -15,6 +15,8 @@ export interface CreateSpaceModalProps {
   nameLabel?: string;
   namePlaceholder?: string;
   submitLabel?: string;
+  // Sub-space support
+  parentSpaceId?: number; // For creating sub-spaces
   // Edit mode props
   editMode?: boolean;
   editSpaceId?: number;
@@ -38,6 +40,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
   nameLabel = 'Name',
   namePlaceholder = 'Enter space name',
   submitLabel = 'Create',
+  parentSpaceId,
   editMode = false,
   editSpaceId,
   initialData,
@@ -177,17 +180,41 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
         }
       } else {
         // Create new space
+        console.log('🏗️ Creating space with params:', {
+          name: spaceName.trim(),
+          description,
+          coverUrl,
+          faceUrl,
+          visibility,
+          parentSpaceId
+        });
+
+        if (parentSpaceId) {
+          console.log('🏗️ Creating sub-space under parent:', parentSpaceId);
+        } else {
+          console.log('🏗️ Creating top-level space');
+        }
+
         response = await AuthService.createSpace(
           spaceName.trim(),
           description,
           coverUrl,
           faceUrl,
-          visibility
+          visibility,
+          parentSpaceId // Pass parent space ID for creating sub-spaces
         );
-        console.log('Create space response:', response);
+        console.log('🏗️ Create space response:', response);
         resultSpace = response.data || response;
 
         if (resultSpace) {
+          console.log('🏗️ Created space details:', {
+            id: resultSpace.id,
+            name: resultSpace.name,
+            pid: resultSpace.pid,
+            parentId: resultSpace.parentId,
+            spaceType: resultSpace.spaceType,
+            fullData: resultSpace
+          });
           showToast('Space created successfully', 'success');
         }
       }
@@ -205,7 +232,18 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
       }
     } catch (err) {
       console.error(editMode ? 'Failed to update space:' : 'Failed to create space:', err);
-      showToast(editMode ? 'Failed to update treasury' : 'Failed to create space', 'error');
+
+      // Handle specific error messages
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      let userMessage = editMode ? 'Failed to update treasury' : 'Failed to create space';
+
+      if (errorMessage.includes('you can not create space under other user\'s space')) {
+        userMessage = 'You can only create sub-treasuries in your own spaces';
+      } else if (errorMessage.includes('permission')) {
+        userMessage = 'You don\'t have permission to perform this action';
+      }
+
+      showToast(userMessage, 'error');
     } finally {
       setIsCreating(false);
     }
@@ -217,13 +255,13 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/50 hidden sm:block"
         onClick={handleClose}
       />
 
-      {/* Modal */}
+      {/* Modal - full screen on mobile */}
       <div
-        className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+        className="flex flex-col w-full h-full sm:w-[582px] sm:h-auto sm:max-w-[90vw] sm:max-h-[90vh] items-center gap-5 p-5 sm:p-[30px] relative bg-white sm:rounded-[15px] z-10 overflow-y-auto"
         role="dialog"
         aria-labelledby="create-space-title"
         aria-modal="true"

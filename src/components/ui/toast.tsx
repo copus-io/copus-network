@@ -113,8 +113,8 @@ const ToastItem: React.FC<{
     <div
       className={`px-6 py-3 ${styles.bg} border ${styles.border} rounded-full shadow-sm transform transition-all duration-300 animate-in slide-in-from-top-2 fade-in-0`}
     >
-      <div className="flex items-center gap-3">
-        <p className={`${styles.text} text-sm font-medium whitespace-nowrap`}>
+      <div className="flex items-center justify-center gap-3">
+        <p className={`${styles.text} text-sm font-medium whitespace-nowrap text-center`}>
           {toast.message}
         </p>
         {toast.action && (

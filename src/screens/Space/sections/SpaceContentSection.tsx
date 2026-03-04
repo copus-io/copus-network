@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useUser } from "../../../contexts/UserContext";
 import { AuthService } from "../../../services/authService";
-import { removeArticleFromSpace, bindArticles } from "../../../services/articleService";
+import { removeArticleFromSpace, bindArticles, moveArticlesToSpace } from "../../../services/articleService";
 import { Button } from "../../../components/ui/button";
 import { useToast } from "../../../components/ui/toast";
 import profileDefaultAvatar from "../../../assets/images/profile-default.svg";
@@ -58,12 +58,16 @@ const SpaceInfoSection = ({
   onEdit,
   onOrganize,
   organizeMode,
+  directArticleCount = 0,
   onCreateSubTreasury,
   onImportCSV,
   onSubscriberCountLoaded,
   onSubscriptionChange,
   parentSpaceName,
   isSubTreasury,
+  parentSpaceInfo,
+  navigate,
+  spaceInfo,
 }: {
   spaceName: string;
   treasureCount: number;
@@ -88,12 +92,16 @@ const SpaceInfoSection = ({
   onEdit?: () => void;
   onOrganize?: () => void;
   organizeMode?: boolean;
+  directArticleCount?: number;
   onCreateSubTreasury?: () => void;
   onImportCSV?: () => void;
   onSubscriberCountLoaded?: (count: number) => void;
   onSubscriptionChange?: (isSubscribed: boolean) => void;
   parentSpaceName?: string;
   isSubTreasury?: boolean;
+  parentSpaceInfo?: { name: string; namespace?: string; id?: number } | null;
+  navigate?: (path: string | number) => void;
+  spaceInfo?: any;
 }): JSX.Element => {
   const canEdit = isOwner;
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -168,14 +176,34 @@ const SpaceInfoSection = ({
           </span>
         )}
 
-        {/* Space name */}
-        {isSubTreasury && parentSpaceName ? (
+        {/* Space name - clickable to go back to main treasury page */}
+        {(isSubTreasury && parentSpaceName) || (spaceInfo?.parentSpace) ? (
           <>
-            <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{parentSpaceName}</h1>
+            <h1
+              onClick={() => {
+                // Priority 1: Use API parentSpace info (most reliable)
+                if (spaceInfo?.parentSpace?.namespace) {
+                  navigate(`/treasury/${spaceInfo.parentSpace.namespace}`);
+                } else if (parentSpaceInfo?.namespace) {
+                  // Priority 2: Use navigation state parentSpaceInfo
+                  navigate(`/treasury/${parentSpaceInfo.namespace}`);
+                } else {
+                  // Fallback: Browser back
+                  navigate(-1);
+                }
+              }}
+              className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:text-gray-400 transition-colors duration-200"
+            >
+              {parentSpaceName || spaceInfo?.parentSpace?.name}
+            </h1>
             <h2 className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-base tracking-[0] leading-[1.4] mb-1">{spaceName}</h2>
           </>
         ) : (
-          <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1">{spaceName}</h1>
+          <h1
+            className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1"
+          >
+            {spaceName}
+          </h1>
         )}
 
         {/* Treasure count and author info */}
@@ -214,6 +242,7 @@ const SpaceInfoSection = ({
             <button
               type="button"
               aria-label="Edit space"
+              title="Edit"
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
               onClick={onEdit}
             >
@@ -229,10 +258,13 @@ const SpaceInfoSection = ({
             <button
               type="button"
               aria-label="Organize"
+              title="Organize"
+              disabled={directArticleCount === 0}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
+                directArticleCount === 0 ? 'bg-gray-50 opacity-40 cursor-not-allowed' :
                 organizeMode ? 'bg-red/10' : 'bg-gray-100 hover:opacity-70'
               }`}
-              onClick={onOrganize}
+              onClick={directArticleCount === 0 ? undefined : onOrganize}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="3" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
@@ -248,6 +280,7 @@ const SpaceInfoSection = ({
             <button
               type="button"
               aria-label="Create sub-treasury"
+              title="Create Sub-treasury"
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
               onClick={onCreateSubTreasury}
             >
@@ -257,12 +290,13 @@ const SpaceInfoSection = ({
             </button>
           )}
 
-          {/* Import button */}
+          {/* Import button - hidden on mobile */}
           {canEdit && onImportCSV && (
             <button
               type="button"
               aria-label="Import bookmarks"
-              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+              title="Import Bookmarks"
+              className="hidden sm:flex w-8 h-8 rounded-full bg-gray-100 items-center justify-center hover:opacity-70 transition-opacity"
               onClick={onImportCSV}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -271,8 +305,8 @@ const SpaceInfoSection = ({
             </button>
           )}
 
-          {/* Subscribe button (only for non-owners) - using unified SubscribeButton component */}
-          {!isOwner && spaceId && (
+          {/* Subscribe button (only for non-owners and not sub-spaces) - using unified SubscribeButton component */}
+          {!isOwner && spaceId && !isSubTreasury && (
             <SubscribeButton
               spaceId={spaceId}
               spaceName={spaceName}
@@ -292,6 +326,7 @@ const SpaceInfoSection = ({
             <button
               type="button"
               aria-label="Share space"
+              title="Share"
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
               onClick={() => setShowShareDropdown(!showShareDropdown)}
             >
@@ -343,9 +378,15 @@ export const SpaceContentSection = (): JSX.Element => {
   const spaceIdentifier = namespace || category;
 
   // Detect if this is a sub-treasury page (passed via navigation state)
-  const navState = location.state as { isSubTreasury?: boolean; parentSpaceName?: string; spaceData?: any } | null;
+  const navState = location.state as {
+    isSubTreasury?: boolean;
+    parentSpaceName?: string;
+    parentSpaceInfo?: { name: string; namespace?: string; id?: number };
+    spaceData?: any;
+  } | null;
   const isSubTreasury = navState?.isSubTreasury || false;
   const parentSpaceName = navState?.parentSpaceName || '';
+  const parentSpaceInfo = navState?.parentSpaceInfo || null;
 
   const { user, getArticleLikeState, toggleLike } = useUser();
   const { showToast } = useToast();
@@ -368,10 +409,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
   // Edit space modal state
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editSpaceName, setEditSpaceName] = useState("");
-  const [editSpaceDescription, setEditSpaceDescription] = useState("");
-  const [editSpaceCoverUrl, setEditSpaceCoverUrl] = useState("");
-  const [editSpaceFaceUrl, setEditSpaceFaceUrl] = useState(""); // Add face URL state
   const [displaySpaceName, setDisplaySpaceName] = useState("");
   const [spaceId, setSpaceId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -396,17 +433,49 @@ export const SpaceContentSection = (): JSX.Element => {
   const [subTreasuries, setSubTreasuries] = useState<SpaceData[]>([]);
   const [showCreateSubTreasury, setShowCreateSubTreasury] = useState(false);
 
+  // Loading states for operations
+  const [operationLoading, setOperationLoading] = useState<{
+    createSubSpace: boolean;
+    editSpace: boolean;
+    deleteSpace: boolean;
+    copyArticles: boolean;
+    deleteArticle: boolean;
+    loadingSubSpaces: boolean;
+  }>({
+    createSubSpace: false,
+    editSpace: false,
+    deleteSpace: false,
+    copyArticles: false,
+    deleteArticle: false,
+    loadingSubSpaces: false,
+  });
+
+  // Track whether we should show sub-spaces section at all
+  const [hasCheckedSubSpaces, setHasCheckedSubSpaces] = useState(false);
+  // Track the number of skeleton items to show based on previous load or estimate
+  const [skeletonCount, setSkeletonCount] = useState(() => {
+    // Try to get a reasonable estimate from localStorage or default to 2
+    if (typeof window !== 'undefined' && spaceId) {
+      const stored = localStorage.getItem(`subspace_count_${spaceId}`);
+      return stored ? Math.min(parseInt(stored, 10), 6) : 2;
+    }
+    return 2;
+  });
+
   // Organize mode state
   const [organizeMode, setOrganizeMode] = useState(false);
   const [selectedArticleIds, setSelectedArticleIds] = useState<Set<string>>(new Set());
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [showOrganizeSubTreasury, setShowOrganizeSubTreasury] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [showMoveOutConfirm, setShowMoveOutConfirm] = useState(false);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [bindableSpaces, setBindableSpaces] = useState<any[]>([]);
   const [selectedMoveTarget, setSelectedMoveTarget] = useState<number | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [loadingMoveSpaces, setLoadingMoveSpaces] = useState(false);
+
 
   // Fetch space data
   useEffect(() => {
@@ -585,6 +654,8 @@ export const SpaceContentSection = (): JSX.Element => {
             coverUrl: spaceData?.coverUrl, // Add space cover image
             faceUrl: spaceInfoResponse?.faceUrl || spaceData?.faceUrl, // Get faceUrl from root level or fallback to nested
             visibility: spaceData?.visibility, // Add visibility for private pill
+            pid: spaceData?.pid, // Parent ID from API
+            parentSpace: spaceData?.parentSpace, // Parent space info from API
           };
 
           // Store spaceId for later use (edit functionality)
@@ -726,8 +797,103 @@ export const SpaceContentSection = (): JSX.Element => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spaceIdentifier, namespace, user?.id, user?.username, user?.faceUrl, user?.namespace]);
 
-  // Sub-treasuries are managed via local state only (no backend API yet)
-  // They are created via the "Create sub-treasury" button or organize mode
+  // Load existing sub-treasuries from user's spaces
+  useEffect(() => {
+    const loadSubTreasuries = async () => {
+      if (!user?.id || !spaceId) return;
+
+      // Reset check status when space changes
+      setHasCheckedSubSpaces(false);
+      setOperationLoading(prev => ({ ...prev, loadingSubSpaces: true }));
+
+      try {
+        console.log('🔍 Loading sub-treasuries for space:', spaceId, 'user:', user.id);
+        // Call pageMySpaces API with pid parameter to get sub-spaces
+        const response = await AuthService.getMySpaces(user.id, 1, 100, spaceId);
+        console.log('🔍 Raw API response:', response);
+
+        const subSpaces = response?.data?.data || response?.data || response || [];
+        console.log('🔍 Extracted sub-treasuries:', subSpaces);
+        console.log('🔍 Sub-treasuries count:', Array.isArray(subSpaces) ? subSpaces.length : 'not array');
+
+        const finalSubSpaces = Array.isArray(subSpaces) ? subSpaces : [];
+        setSubTreasuries(finalSubSpaces);
+        setHasCheckedSubSpaces(true);
+
+        // Update skeleton count for next time based on actual result
+        if (finalSubSpaces.length > 0) {
+          // Store the actual count for future loads, capped at reasonable maximum
+          const newSkeletonCount = Math.min(finalSubSpaces.length, 6);
+          setSkeletonCount(newSkeletonCount);
+
+          // Persist to localStorage for better UX on next visit
+          if (typeof window !== 'undefined' && spaceId) {
+            localStorage.setItem(`subspace_count_${spaceId}`, newSkeletonCount.toString());
+          }
+        } else {
+          // No sub-spaces found, clear the localStorage for this space
+          if (typeof window !== 'undefined' && spaceId) {
+            localStorage.removeItem(`subspace_count_${spaceId}`);
+          }
+        }
+      } catch (error) {
+        console.error('🔍 Failed to load sub-treasuries:', error);
+        setSubTreasuries([]); // Reset to empty array on error
+        setHasCheckedSubSpaces(true);
+      } finally {
+        setOperationLoading(prev => ({ ...prev, loadingSubSpaces: false }));
+      }
+    };
+
+    loadSubTreasuries();
+  }, [user?.id, spaceId, displaySpaceName]);
+
+  // Click outside to exit organize mode
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only handle clicks when organize mode is active
+      if (!organizeMode) return;
+
+      // Get the clicked element
+      const target = event.target as Element;
+
+      // Don't exit if clicking on organize controls, modals, article cards, or interactive elements
+      if (
+        target.closest('.organize-controls') || // Organize action buttons
+        target.closest('[role="dialog"]') ||    // Modals
+        target.closest('.article-card') ||      // Article cards (for selection)
+        target.closest('.space-info-section') || // Space header area
+        target.closest('button') ||             // Any button
+        target.closest('.dropdown') ||          // Dropdowns
+        target.closest('input') ||              // Form inputs
+        target.closest('textarea') ||           // Form textareas
+        target.closest('select')                // Form selects
+      ) {
+        return;
+      }
+
+      console.log('📋 Clicked outside organize area - exiting organize mode');
+      setOrganizeMode(false);
+      setSelectedArticleIds(new Set());
+    };
+
+    // Add event listener when organize mode is active
+    if (organizeMode) {
+      document.addEventListener('mousedown', handleClickOutside);
+      console.log('📋 Added click-outside listener for organize mode');
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (organizeMode) {
+        console.log('📋 Removed click-outside listener for organize mode');
+      }
+    };
+  }, [organizeMode]);
+
+  // Sub-treasuries are managed via local state + basic API loading
+  // Full parent-child relationship API support is still pending
 
   // Transform article to card format
   const transformArticleToCard = (article: any): ArticleData => {
@@ -805,6 +971,63 @@ export const SpaceContentSection = (): JSX.Element => {
 
     // Update selectedArticle state to reflect the change
     setSelectedArticle(prev => prev ? { ...prev, isLiked: true, likeCount: newLikeCount } : null);
+  };
+
+  // Enhanced callback that handles article addition to current space
+  const handleSaveComplete = async (isCollected: boolean, collectionCount: number) => {
+    console.log('🎯 handleSaveComplete called with:', {
+      isCollected,
+      collectionCount,
+      selectedArticle: selectedArticle?.uuid,
+      currentSpaceId: spaceId,
+      spaceName
+    });
+
+    if (!selectedArticle) {
+      console.log('🎯 No selectedArticle, exiting handleSaveComplete');
+      return;
+    }
+
+    console.log('🎯 Collection completed:', {
+      articleId: selectedArticle.uuid,
+      isCollected,
+      collectionCount,
+      currentSpaceId: spaceId,
+      spaceName
+    });
+
+    // Update like state locally
+    toggleLike(selectedArticle.uuid, false, selectedArticle.likeCount);
+    setSelectedArticle(prev => prev ? {
+      ...prev,
+      isLiked: isCollected,
+      likeCount: collectionCount
+    } : null);
+
+    // If article was collected and we're in a space, check if it was collected to current space
+    if (isCollected && spaceId) {
+      try {
+        console.log('🔍 Checking if article was collected to current space...');
+
+        // Get the article's current bindings to check if it includes current space
+        const spaceBindings = await AuthService.getSpacesByArticleId(selectedArticle.numericId || 0);
+        const currentSpaceBinding = spaceBindings?.find((binding: any) =>
+          binding.id === parseInt(spaceId) || binding.spaceId === parseInt(spaceId)
+        );
+
+        if (currentSpaceBinding) {
+          console.log('🎉 Article was collected to current space - adding to article list!');
+
+          // Add article to the beginning of the articles list
+          setArticles(prev => [selectedArticle, ...prev]);
+          setTotalArticleCount(prev => prev + 1);
+
+          showToast(`Article collected to "${spaceName}"!`, 'success');
+        }
+      } catch (error) {
+        console.error('🔍 Error checking space bindings:', error);
+      }
+    }
   };
 
   // Handle user click
@@ -1002,18 +1225,7 @@ export const SpaceContentSection = (): JSX.Element => {
   const spaceHandlers = eventHandlers.createSpaceEditHandler(spaceInfo, 'SpaceContentSection');
 
   const handleEditSpace = () => {
-    const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
-    const currentDescription = spaceInfo?.description || '';
-    const currentCoverUrl = spaceInfo?.coverUrl || '';
-    const currentFaceUrl = spaceInfo?.faceUrl || '';
-
-    setEditSpaceName(currentName);
-    setEditSpaceDescription(currentDescription);
-    setEditSpaceCoverUrl(currentCoverUrl);
-    setEditSpaceFaceUrl(currentFaceUrl);
-
     setShowEditModal(true);
-    setIsImageUploading(false);
 
     // 🔍 SEARCH: dev-log-space-edit-modal
     devLog.userAction('open-space-edit-modal', {
@@ -1026,85 +1238,6 @@ export const SpaceContentSection = (): JSX.Element => {
     });
   };
 
-  // 🔍 SEARCH: space-save-function-with-restrictions
-  // Handle save space details - with name editing restrictions for default spaces
-  const handleSaveSpaceName = async () => {
-    // Only validate space name if name editing is allowed
-    if (canEditSpaceName && !editSpaceName.trim()) {
-      showToast('Please enter a space name', 'error');
-      devLog.userAction('save-space-validation-failed', { reason: 'empty-name' }, {
-        component: 'SpaceContentSection',
-        action: 'validation-error'
-      });
-      return;
-    }
-
-    if (!spaceId) {
-      showToast('Space ID not available', 'error');
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-
-      // Prepare optional fields
-      const description = editSpaceDescription.trim() || undefined;
-      const coverUrl = editSpaceCoverUrl.trim() || undefined;
-      const faceUrl = editSpaceFaceUrl.trim() || undefined;
-
-      // 🔍 SEARCH: space-name-handling-for-restricted-spaces
-      // Use current displayed name if name editing is not allowed
-      const nameToUse = canEditSpaceName ? editSpaceName.trim() : (displaySpaceName || spaceInfo?.name || '');
-
-      devLog.apiCall(API_ENDPOINTS.SPACE.UPDATE, {
-        spaceId,
-        name: nameToUse,
-        description,
-        coverUrl,
-        faceUrl,
-        canEditName: canEditSpaceName
-      }, {
-        component: 'SpaceContentSection',
-        action: 'update-space-with-restrictions'
-      });
-
-      // Call API to update space with all fields including faceUrl
-      await AuthService.updateSpace(spaceId, nameToUse, description, coverUrl, faceUrl);
-
-      // 立即更新本地状态，避免等待页面刷新
-      setSpaceInfo(prev => prev ? {
-        ...prev,
-        name: nameToUse,
-        description: description,
-        coverUrl: coverUrl,
-        faceUrl: faceUrl
-      } : null);
-
-      // Only update display name if name editing was allowed
-      if (canEditSpaceName) {
-        setDisplaySpaceName(nameToUse);
-      }
-
-      showToast('Space updated successfully', 'success');
-      setShowEditModal(false);
-
-      // Reset form fields
-      setEditSpaceName("");
-      setEditSpaceDescription("");
-      setEditSpaceCoverUrl("");
-      setEditSpaceFaceUrl("");
-    } catch (err) {
-      const errorMessage = ErrorHandler.handleApiError(err, {
-        component: 'SpaceContentSection',
-        action: 'update-space',
-        endpoint: API_ENDPOINTS.SPACE.UPDATE,
-        additionalData: { spaceId, canEditName: canEditSpaceName }
-      }, 'Failed to update space');
-      showToast(errorMessage, 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   // Handle delete space
   const handleDeleteSpace = async () => {
@@ -1113,26 +1246,170 @@ export const SpaceContentSection = (): JSX.Element => {
       return;
     }
 
+    setOperationLoading(prev => ({ ...prev, deleteSpace: true }));
+
     try {
-      setIsSaving(true);
+      console.log('🗑️ Delete space - Current spaceInfo:', spaceInfo);
+      console.log('🗑️ Delete space - isSubTreasury:', isSubTreasury);
+      console.log('🗑️ Delete space - parentSpaceName:', parentSpaceName);
+      console.log('🗑️ Delete space - navState:', navState);
+
       await AuthService.deleteSpace(spaceId);
-      showToast('Treasury deleted', 'success');
-      setShowEditModal(false);
-      navigate('/my-treasury');
+
+      if (isSubTreasury) {
+        showToast(`Sub-treasury "${spaceInfo?.name || 'Treasury'}" deleted successfully`, 'success');
+      } else {
+        showToast(`Treasury "${spaceInfo?.name || 'Treasury'}" deleted successfully`, 'success');
+      }
+
+      setDeleteSpaceConfirmOpen(false);
+
+      // Check if this is a sub-treasury deletion
+      // Method 1: Check spaceInfo.pid (if API returns it)
+      // Method 2: Check isSubTreasury flag from navigation state (more reliable)
+      // Simple navigation after deletion
+      if (isSubTreasury) {
+        console.log('🔄 This is a sub-treasury, navigating back to previous page');
+        // For sub-treasury deletion, simply go back to the previous page
+        navigate(-1);
+      } else {
+        console.log('🏠 This is a main space, going to my-treasury');
+        // For main spaces, go to my-treasury
+        navigate('/my-treasury');
+      }
     } catch (err) {
       console.error('Failed to delete space:', err);
-      showToast('Failed to delete treasury', 'error');
+      const message = ErrorHandler.handleApiError(err, {
+        component: 'SpaceContentSection',
+        action: 'delete-space',
+        endpoint: API_ENDPOINTS.SPACE.DELETE
+      });
+      showToast(message, 'error');
     } finally {
-      setIsSaving(false);
+      setOperationLoading(prev => ({ ...prev, deleteSpace: false }));
+    }
+  };
+
+  // Handle move out to parent space
+  const handleMoveOut = async () => {
+    if (!parentSpaceInfo?.id && !parentSpaceInfo?.namespace) {
+      showToast('Parent space information not available', 'error');
+      setShowMoveOutConfirm(false);
+      return;
+    }
+
+    if (selectedArticleIds.size === 0) {
+      showToast('Please select articles to move out', 'error');
+      setShowMoveOutConfirm(false);
+      return;
+    }
+
+    setOperationLoading(prev => ({ ...prev, copyArticles: true }));
+
+    try {
+      const selectedUuids = Array.from(selectedArticleIds);
+      console.log(`📤 Moving out ${selectedUuids.length} articles from sub-space back to parent space`);
+
+      // Use dedicated Move API for Move Out
+      const parentSpaceId = parentSpaceInfo.id;
+
+      // Collect article IDs for batch move
+      const articleIds: number[] = [];
+      for (const uuid of selectedUuids) {
+        const article = articles.find(a => a.uuid === uuid);
+        const numericId = article?.numericId || article?.id;
+        if (numericId) {
+          articleIds.push(numericId);
+        } else {
+          console.error(`📤 No numeric ID found for article: ${uuid}`);
+        }
+      }
+
+      let successCount = 0;
+      if (articleIds.length > 0 && spaceId) {
+        try {
+          // Use dedicated Move API for batch operation
+          await moveArticlesToSpace({
+            articleIds,
+            fromSpaceId: parseInt(spaceId),
+            toSpaceId: parentSpaceId
+          });
+          successCount = articleIds.length;
+          console.log(`📤 Successfully moved out ${successCount} articles using dedicated Move API`);
+        } catch (error) {
+          console.error('📤 Failed to move out articles:', error);
+        }
+      }
+
+      // Update local state - only remove successfully moved articles
+      const movedUuids = selectedUuids.slice(0, successCount);
+      setArticles(prev => prev.filter(article => !movedUuids.includes(article.uuid)));
+      setTotalArticleCount(prev => Math.max(0, prev - successCount));
+      setSelectedArticleIds(new Set());
+
+      // Show appropriate feedback
+      if (successCount === selectedUuids.length && successCount > 0) {
+        showToast(`Moved ${successCount} article${successCount !== 1 ? 's' : ''} to parent space`, 'success');
+      } else if (successCount > 0) {
+        showToast(`Moved ${successCount} of ${selectedUuids.length} articles to parent space (${selectedUuids.length - successCount} failed)`, 'warning');
+      } else {
+        showToast(`Failed to move articles to parent space`, 'error');
+      }
+
+      setShowMoveOutConfirm(false);
+      setOrganizeMode(false); // Exit organize mode after successful move
+
+      // Check if sub-space is now empty after successful moves
+      const remainingArticleCount = articles.length - successCount;
+      if (remainingArticleCount === 0) {
+        console.log('📤 Sub-space is now empty, navigating to parent space');
+
+        // Get correct parent space namespace dynamically
+        try {
+          if (parentSpaceInfo?.id) {
+            const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
+            const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
+            const correctParentSpace = spaces.find((space: any) => space.id === parentSpaceInfo.id);
+
+            if (correctParentSpace?.namespace) {
+              console.log(`📤 Navigating to correct parent space: ${correctParentSpace.namespace}`);
+              navigate(`/treasury/${correctParentSpace.namespace}`, {
+                state: {
+                  fromSubSpace: true,
+                  movedOutCount: successCount,
+                  subSpaceEmptied: true
+                }
+              });
+            } else {
+              console.log('📤 Could not find correct parent namespace, staying in current page');
+            }
+          }
+        } catch (error) {
+          console.error('📤 Error getting correct parent namespace:', error);
+        }
+      } else {
+        console.log(`📤 Sub-space still has ${remainingArticleCount} articles, staying in current space`);
+      }
+    } catch (error) {
+      console.error('📤 Failed to move out articles:', error);
+      const message = ErrorHandler.handleApiError(error, {
+        component: 'SpaceContentSection',
+        action: 'move-out-articles',
+        endpoint: 'moveArticlesToSpace'
+      });
+      showToast(message, 'error');
+    } finally {
+      setOperationLoading(prev => ({ ...prev, copyArticles: false }));
     }
   };
 
   // Check if current user is the owner of this space
   const isOwner = !!user && spaceInfo?.authorNamespace === user?.namespace;
 
-  // Check if this is a curations space
+  // Check if this is a curations space or a sub-space of curations space
   // spaceType 2 = Curations, or fallback to category name check for old routes
   const isCurationsSpace = spaceInfo?.spaceType === 2 ||
+    spaceInfo?.parentSpace?.spaceType === 2 ||
     (category ? decodeURIComponent(category).endsWith("'s curations") : false);
 
   // Track hovered card ID
@@ -1153,22 +1430,23 @@ export const SpaceContentSection = (): JSX.Element => {
   const confirmDeleteArticle = async () => {
     if (!articleToDelete) return;
 
+    setOperationLoading(prev => ({ ...prev, deleteArticle: true }));
+
     try {
-      setIsDeleting(true);
+      // Find the article to get its details for better feedback
+      const article = articles.find(a => a.uuid === articleToDelete);
+      const articleTitle = article?.title || 'Article';
 
       if (isCurationsSpace) {
         // In Curations space: Delete the article permanently
         await AuthService.deleteArticle(articleToDelete);
-        showToast('Article deleted successfully', 'success');
+        showToast(`Article "${articleTitle}" deleted permanently`, 'success');
       } else {
         // In other spaces: Remove from space using unbind API
         if (!spaceId) {
           showToast('Space ID not available', 'error');
           return;
         }
-
-        // Find the article to get its numeric ID
-        const article = articles.find(a => a.uuid === articleToDelete);
 
         if (!article) {
           showToast('Article not found', 'error');
@@ -1179,7 +1457,7 @@ export const SpaceContentSection = (): JSX.Element => {
         const articleNumericId = article.numericId || article.id;
 
         if (!articleNumericId) {
-          showToast('Article numeric ID not available', 'error');
+          showToast('Article ID not available', 'error');
           return;
         }
 
@@ -1188,7 +1466,11 @@ export const SpaceContentSection = (): JSX.Element => {
           spaceId: spaceId
         });
 
-        showToast('Article removed from space', 'success');
+        if (isSubTreasury) {
+          showToast(`Article "${articleTitle}" removed from sub-treasury`, 'success');
+        } else {
+          showToast(`Article "${articleTitle}" removed from treasury`, 'success');
+        }
       }
 
       // Remove the article from local state
@@ -1198,9 +1480,14 @@ export const SpaceContentSection = (): JSX.Element => {
       setArticleToDelete(null);
     } catch (err) {
       console.error('Failed to delete article:', err);
-      showToast('Failed to delete article', 'error');
+      const message = ErrorHandler.handleApiError(err, {
+        component: 'SpaceContentSection',
+        action: 'delete-article',
+        endpoint: isCurationsSpace ? API_ENDPOINTS.ARTICLE.DELETE : 'removeArticleFromSpace'
+      });
+      showToast(message, 'error');
     } finally {
-      setIsDeleting(false);
+      setOperationLoading(prev => ({ ...prev, deleteArticle: false }));
     }
   };
 
@@ -1304,7 +1591,8 @@ export const SpaceContentSection = (): JSX.Element => {
     <main className="flex flex-col items-start gap-2 px-4 lg:px-2.5 pt-0 pb-[30px] relative min-h-screen">
       <SEO title={displaySpaceName || spaceInfo?.name || category || 'Treasury'} />
       {/* Space Info Section */}
-      <SpaceInfoSection
+      <div className="space-info-section w-full">
+        <SpaceInfoSection
         spaceName={displaySpaceName || spaceInfo?.name || category || 'Space'}
         treasureCount={totalArticleCount || articles.length}
         subscriberCount={subscriberCount}
@@ -1315,7 +1603,7 @@ export const SpaceContentSection = (): JSX.Element => {
         spaceDescription={spaceInfo?.description}
         spaceCoverUrl={spaceInfo?.coverUrl}
         spaceFaceUrl={spaceInfo?.faceUrl}
-        firstArticleCover={articles[0]?.cover || articles[0]?.coverUrl}
+        firstArticleCover={articles[0]?.cover || articles[0]?.coverUrl || subTreasuries.find(sub => sub.data?.[0]?.coverUrl)?.data?.[0]?.coverUrl}
         isFollowing={isFollowing}
         isOwner={isOwner}
         spaceType={spaceInfo?.spaceType}
@@ -1331,10 +1619,14 @@ export const SpaceContentSection = (): JSX.Element => {
           setSelectedArticleIds(new Set());
         } : undefined}
         organizeMode={organizeMode}
-        onCreateSubTreasury={isOwner && !isSubTreasury ? () => setShowCreateSubTreasury(true) : undefined}
+        directArticleCount={articles.length}
+        onCreateSubTreasury={isOwner && !isSubTreasury && !(spaceInfo?.pid && spaceInfo.pid > 0) && !spaceInfo?.parentSpace ? () => setShowCreateSubTreasury(true) : undefined}
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
         isSubTreasury={isSubTreasury}
         parentSpaceName={parentSpaceName}
+        parentSpaceInfo={parentSpaceInfo}
+        navigate={navigate}
+        spaceInfo={spaceInfo}
         onSubscriberCountLoaded={setSubscriberCount}
         onSubscriptionChange={(isSubscribed) => {
           // Update local state only - SubscribeButton already handled the API call
@@ -1346,26 +1638,60 @@ export const SpaceContentSection = (): JSX.Element => {
           }
         }}
       />
+      </div>
 
       {/* Sub-treasury Cards (hidden on sub-treasury pages) */}
-      {!isSubTreasury && subTreasuries.length > 0 && (
-        <div className="w-full mt-4">
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {subTreasuries.map((subSpace) => (
-              <div key={subSpace.id}>
-              <TreasuryCard
-                space={subSpace}
-                onClick={() => {
-                  const parentName = displaySpaceName || spaceInfo?.name || '';
-                  if (subSpace.namespace) {
-                    navigate(`/treasury/${subSpace.namespace}`, { state: { isSubTreasury: true, parentSpaceName: parentName, spaceData: subSpace } });
-                  } else if (subSpace.id) {
-                    navigate(`/treasury/${subSpace.id}`, { state: { isSubTreasury: true, parentSpaceName: parentName, spaceData: subSpace } });
-                  }
-                }}
-              />
-              </div>
-            ))}
+      {!isSubTreasury && (
+        (operationLoading.loadingSubSpaces && !hasCheckedSubSpaces) ||
+        subTreasuries.length > 0
+      ) && (
+        <div className="w-full mt-4 mb-6">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+            {operationLoading.loadingSubSpaces && !hasCheckedSubSpaces ? (
+              // Loading skeleton for sub-treasuries - show dynamic number based on expected count
+              Array.from({ length: skeletonCount }).map((_, index) => (
+                <div key={`skeleton-${index}`} className="animate-pulse">
+                  <div className="bg-gray-200 rounded-2xl h-48 w-full mb-3"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                </div>
+              ))
+            ) : (
+              subTreasuries.map((subSpace) => (
+                <div key={subSpace.id}>
+                <TreasuryCard
+                  space={subSpace}
+                  onClick={() => {
+                    const parentName = displaySpaceName || spaceInfo?.name || '';
+                    const parentInfo = {
+                      name: parentName,
+                      namespace: spaceInfo?.authorNamespace || namespace,
+                      id: spaceId
+                    };
+                    if (subSpace.namespace) {
+                      navigate(`/treasury/${subSpace.namespace}`, {
+                        state: {
+                          isSubTreasury: true,
+                          parentSpaceName: parentName,
+                          parentSpaceInfo: parentInfo,
+                          spaceData: subSpace
+                        }
+                      });
+                    } else if (subSpace.id) {
+                      navigate(`/treasury/${subSpace.id}`, {
+                        state: {
+                          isSubTreasury: true,
+                          parentSpaceName: parentName,
+                          parentSpaceInfo: parentInfo,
+                          spaceData: subSpace
+                        }
+                      });
+                    }
+                  }}
+                />
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -1375,29 +1701,78 @@ export const SpaceContentSection = (): JSX.Element => {
         isOpen={showCreateSubTreasury}
         onClose={() => setShowCreateSubTreasury(false)}
         title="Create sub-treasury"
-        submitLabel="Create"
+        submitLabel="Add"
         mode="full"
+        parentSpaceId={isOwner ? spaceId : undefined} // Only pass parent ID if user owns this space
         onSuccess={(newSpace) => {
-          setSubTreasuries(prev => [...prev, newSpace]);
+          console.log('✅ Sub-treasury created successfully:', newSpace);
+          console.log('📋 Current spaceId (parent):', spaceId);
+          console.log('📋 User is owner:', isOwner);
+          setSubTreasuries(prev => {
+            console.log('📋 Current sub-treasuries before update:', prev);
+            const updated = [...prev, newSpace];
+            console.log('📋 Updated sub-treasuries after adding new one:', updated);
+            return updated;
+          });
+
+          // Close the modal first
+          setShowCreateSubTreasury(false);
+
+          // Navigate to the newly created sub-treasury
+          const currentSpaceName = displaySpaceName || spaceInfo?.name || '';
+          const parentInfo = {
+            name: currentSpaceName,
+            namespace: spaceInfo?.namespace,
+            id: parseInt(spaceId)
+          };
+
+          if (newSpace?.namespace) {
+            console.log('🚀 Navigating to new sub-treasury:', newSpace.namespace);
+            navigate(`/treasury/${newSpace.namespace}`, {
+              state: {
+                isSubTreasury: true,
+                parentSpaceName: currentSpaceName,
+                parentSpaceInfo: parentInfo,
+                spaceData: newSpace
+              }
+            });
+          } else if (newSpace?.id) {
+            console.log('🚀 Navigating to new sub-treasury (by ID):', newSpace.id);
+            navigate(`/treasury/${newSpace.id}`, {
+              state: {
+                isSubTreasury: true,
+                parentSpaceName: currentSpaceName,
+                parentSpaceInfo: parentInfo,
+                spaceData: newSpace
+              }
+            });
+          }
+
+          showToast(`Sub-treasury "${newSpace?.name || 'New Sub-treasury'}" created successfully`, 'success');
         }}
       />}
 
+
       {/* Articles Grid */}
       <div className="w-full mt-2">
-        {articles.length === 0 ? (
+        {articles.length === 0 && (!subTreasuries.length || isSubTreasury) ? (
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
-            <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">No treasures yet — this collection is just getting started.</h3>
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
-                <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
-              </svg>
-              <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
-                Discover
-              </span>
-            </button>
+              <>
+                <h3 className="text-sm sm:text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
+                  No treasures yet — this collection is just getting started.
+                </h3>
+                <button
+                  onClick={() => navigate('/')}
+                  className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
+                    <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
+                    Discover
+                  </span>
+                </button>
+              </>
           </div>
         ) : (
           <>
@@ -1444,7 +1819,7 @@ export const SpaceContentSection = (): JSX.Element => {
                     setDragIndex(null);
                     setDragOverIndex(null);
                   } : undefined}
-                  className={`transition-transform ${organizeMode ? 'cursor-grab active:cursor-grabbing' : ''} ${dragOverIndex === index ? 'scale-105 ring-2 ring-red/30 rounded-xl' : ''}`}
+                  className={`article-card transition-transform ${organizeMode ? 'cursor-grab active:cursor-grabbing' : ''} ${dragOverIndex === index ? 'scale-105 ring-2 ring-red/30 rounded-xl' : ''}`}
                 >
                   {renderCard(article)}
                 </div>
@@ -1463,263 +1838,263 @@ export const SpaceContentSection = (): JSX.Element => {
 
       {/* Organize Mode Floating Action Bar */}
       {organizeMode && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white rounded-full shadow-xl border border-gray-200 px-8 py-3 flex items-center gap-8">
-          <span className="text-sm text-gray-500 font-medium">{selectedArticleIds.size > 0 ? `${selectedArticleIds.size} selected` : 'Select items'}</span>
+        <div className="organize-controls fixed bottom-4 sm:bottom-8 z-40 bg-white rounded-full shadow-xl border border-gray-200 px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-8 max-w-[90vw] left-1/2 -translate-x-1/2 lg:left-[calc(310px+(100vw-310px-40px)/2)] lg:-translate-x-1/2">
+          <span className="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">{selectedArticleIds.size > 0 ? `${selectedArticleIds.size} selected` : 'Select'}</span>
           {/* Move button */}
           <button
             className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
-            onClick={async () => {
-              try {
-                const userId = user?.id;
-                if (userId) {
-                  const response = await AuthService.getMySpaces(userId, 1, 100);
-                  const spaceList = response?.data?.data || response?.data || response || [];
-                  setBindableSpaces(Array.isArray(spaceList) ? spaceList.filter((s: any) => s.id !== spaceId) : []);
-                }
-              } catch { setBindableSpaces([]); }
+            onClick={() => {
+              console.log('📁 Move button clicked');
+
+              // Show modal immediately with loading state
               setSelectedMoveTarget(null);
+              setLoadingMoveSpaces(true);
+              setBindableSpaces([]); // Clear previous data
               setShowMoveModal(true);
+
+              // Load only sub-spaces within current parent space
+              const loadRestrictedSpaces = async () => {
+                try {
+                  const userId = user?.id;
+                  if (!userId) {
+                    console.error('📁 No user ID available');
+                    setBindableSpaces([]);
+                    return;
+                  }
+
+                  console.log('📁 Loading spaces with parent-child restrictions...');
+                  console.log(`📁 Debug: isSubTreasury=${isSubTreasury}, parentSpaceName="${parentSpaceName}", parentSpaceInfo:`, parentSpaceInfo);
+                  console.log(`📁 Debug: spaceInfo.pid=${spaceInfo?.pid}, spaceInfo:`, spaceInfo);
+
+                  const availableSpaces = [];
+
+                  // Enhanced detection: Check if this is a sub-space from API data or navigation state
+                  const isActuallySubSpace = isSubTreasury || (spaceInfo?.pid && spaceInfo.pid > 0);
+                  const actualParentInfo = parentSpaceInfo || (spaceInfo?.pid ? { id: spaceInfo.pid } : null);
+
+                  console.log(`📁 Enhanced detection: isActuallySubSpace=${isActuallySubSpace}, actualParentInfo:`, actualParentInfo);
+
+                  // Fixed move logic: Focus on core sibling spaces functionality
+                  if (isActuallySubSpace && (parentSpaceName || actualParentInfo)) {
+                    // Current is a sub-space - load sibling sub-spaces only
+                    console.log(`📁 Current is sub-space "${spaceInfo?.name || 'Unknown'}" with parent "${parentSpaceName}"`);
+                    console.log('📁 Loading sibling sub-spaces...');
+
+                    // IMPORTANT: Try actualParentInfo.id FIRST - this should be the primary method!
+
+                    if (actualParentInfo?.id) {
+                      console.log(`📁 ✨ PRIMARY METHOD: Using actualParentInfo.id: ${actualParentInfo.id} to get siblings`);
+                      try {
+                        const correctSiblingsResponse = await AuthService.getMySpaces(userId, 1, 100, actualParentInfo.id);
+                        const correctSiblings = correctSiblingsResponse?.data?.data || correctSiblingsResponse?.data || correctSiblingsResponse || [];
+                        console.log(`📁 ✨ Found ${correctSiblings.length} spaces under parent ID ${actualParentInfo.id}`);
+                        console.log('📁 ✨ Raw siblings:', correctSiblings);
+
+                        const filteredCorrectSiblings = correctSiblings.filter((s: any) => s.id !== spaceId);
+                        availableSpaces.push(...filteredCorrectSiblings);
+                        console.log(`📁 ✨ SUCCESS: Added ${filteredCorrectSiblings.length} correct siblings`);
+                        filteredCorrectSiblings.forEach((s: any) => {
+                          console.log(`📁 ✨ - "${s.name}" (ID: ${s.id})`);
+                        });
+                      } catch (correctError) {
+                        console.log('📁 ❗ PRIMARY METHOD failed:', correctError);
+                        // Continue to fallback method if PRIMARY fails
+                      }
+                    } else {
+                      console.log('📁 ❌ PRIMARY METHOD skipped: actualParentInfo.id not available');
+                    }
+
+                    // Fallback method: Only use if PRIMARY method failed or parentSpaceInfo.id not available
+                    if (availableSpaces.length === 0) {
+                      console.log('📁 🔄 PRIMARY METHOD did not return results, using fallback method...');
+
+                      try {
+                        // Get all top-level spaces to find parent
+                        const topLevelResponse = await AuthService.getMySpaces(userId, 1, 100);
+                        const topLevelSpaces = topLevelResponse?.data?.data || topLevelResponse?.data || topLevelResponse || [];
+                        console.log(`📁 Found ${topLevelSpaces.length} top-level spaces`);
+
+                        // Find parent space by name (try exact match first, then contains)
+                        let parentSpace = topLevelSpaces.find((s: any) => s.name === parentSpaceName);
+
+                        // If exact match fails, try partial match
+                        if (!parentSpace) {
+                          parentSpace = topLevelSpaces.find((s: any) =>
+                            s.name && parentSpaceName && (
+                              s.name.includes(parentSpaceName) ||
+                              parentSpaceName.includes(s.name) ||
+                              s.name.replace(/'/g, "'").includes(parentSpaceName) ||
+                              parentSpaceName.replace(/'/g, "'").includes(s.name)
+                            )
+                          );
+                          if (parentSpace) {
+                            console.log(`📁 Found parent space via partial match: "${parentSpace.name}" for search "${parentSpaceName}"`);
+                          }
+                        }
+
+                        if (parentSpace) {
+                          console.log(`📁 Found parent space: "${parentSpace.name}" (ID: ${parentSpace.id})`);
+
+                          // Get all sub-spaces under this parent
+                          const siblingsResponse = await AuthService.getMySpaces(userId, 1, 100, parentSpace.id);
+                          const allSiblings = siblingsResponse?.data?.data || siblingsResponse?.data || siblingsResponse || [];
+                          console.log(`📁 Raw siblings response:`, allSiblings);
+
+                          // Filter out current space from siblings
+                          const siblings = allSiblings.filter((s: any) => {
+                            const isDifferent = s.id !== spaceId;
+                            console.log(`📁 Checking sibling: "${s.name}" (ID: ${s.id}) - isDifferent: ${isDifferent}`);
+                            return isDifferent;
+                          });
+
+                          availableSpaces.push(...siblings);
+                          console.log(`📁 Final available siblings: ${siblings.length}`);
+                          siblings.forEach((s: any) => {
+                            console.log(`📁 - "${s.name}" (ID: ${s.id})`);
+                          });
+                        } else {
+                          console.log(`📁 Could not find parent space with name: "${parentSpaceName}"`);
+                          console.log('📁 Available top-level spaces:');
+                          topLevelSpaces.forEach((s: any) => {
+                            console.log(`📁 - "${s.name}" (ID: ${s.id})`);
+                          });
+
+                          // Final fallback: If parent not found, show all user spaces as options
+                          console.log(`📁 Fallback: Since parent space not found, showing all other user spaces as move options`);
+                          const otherSpaces = topLevelSpaces.filter((s: any) => s.id !== spaceId);
+                          availableSpaces.push(...otherSpaces);
+                          console.log(`📁 Fallback: Added ${otherSpaces.length} other spaces as move targets`);
+                        }
+                      } catch (error) {
+                        console.error('📁 Failed to load sibling spaces:', error);
+                      }
+                    }
+                  } else {
+                    // Current is a parent space - show its sub-spaces only
+                    console.log('📁 Current is parent space, loading sub-spaces...');
+
+                    if (subTreasuries && subTreasuries.length > 0) {
+                      availableSpaces.push(...subTreasuries);
+                      console.log(`📁 Found ${subTreasuries.length} sub-spaces`);
+                    } else {
+                      console.log('📁 No sub-spaces available in current parent space');
+                    }
+                  }
+
+                  console.log(`📁 Total available spaces for move: ${availableSpaces.length} (enhanced)`);
+                  console.log('📁 Final bindableSpaces data:');
+                  availableSpaces.forEach((s: any, index: number) => {
+                    console.log(`📁 [${index}] Name: "${s.name}" | ID: ${s.id} | Type: ${s.spaceType || 'undefined'} | DisplayName: ${s.displayName || 'none'}`);
+                  });
+                  setBindableSpaces(availableSpaces);
+                  setLoadingMoveSpaces(false); // Loading completed
+
+                  // Show debug message if no spaces available (but still show modal for debugging)
+                  if (availableSpaces.length === 0) {
+                    if (isActuallySubSpace) {
+                      console.log('📁 No target spaces available for move from sub-treasury');
+                      console.log(`📁 Debug info: isActuallySubSpace=${isActuallySubSpace}, parentSpaceName="${parentSpaceName}", spaceId=${spaceId}`);
+                    } else {
+                      console.log('📁 No target spaces available - create sub-spaces or other treasuries first');
+                    }
+                    // Don't close modal immediately - let user see debug info
+                  }
+
+                } catch (error) {
+                  console.error('📁 Failed to load restricted spaces:', error);
+                  setBindableSpaces([]);
+                  setLoadingMoveSpaces(false); // Loading failed, stop loading state
+                }
+              };
+
+              // Run restricted loading
+              loadRestrictedSpaces();
             }}
           >
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2v11z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="text-xs text-gray-600">Move</span>
+            <span className="text-xs text-gray-600 hidden sm:block">Move</span>
           </button>
-          {/* Add Sub-treasury button */}
-          <button
-            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
-            onClick={() => setShowOrganizeSubTreasury(true)}
-          >
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19M5 12H19" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span className="text-xs text-gray-600">Sub-treasury</span>
-          </button>
-          {/* Delete button */}
-          <button
-            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
-            onClick={() => setShowBulkDeleteConfirm(true)}
-          >
-            <div className="w-10 h-10 rounded-full bg-red/10 flex items-center justify-center">
-              <img className="w-5 h-5" alt="Delete" src={getIconUrl('DELETE')} style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(93%) saturate(1479%) hue-rotate(6deg) brightness(97%) contrast(106%)' }} />
-            </div>
-            <span className="text-xs text-red">Delete</span>
-          </button>
+          {/* Move Out button - only show in sub-treasuries */}
+          {isSubTreasury && (
+            <button
+              className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+              onClick={() => {
+                if (selectedArticleIds.size === 0) {
+                  showToast('Please select articles to move out', 'error');
+                  return;
+                }
+                setShowMoveOutConfirm(true);
+              }}
+              disabled={operationLoading.copyArticles}
+              title="Move selected articles to parent space"
+            >
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 17L17 7M17 7H8M17 7V16" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 hidden sm:block">Move Out</span>
+            </button>
+          )}
+          {/* Add Sub-treasury button - only show on parent spaces, not in sub-treasuries */}
+          {!isSubTreasury && (
+            <button
+              className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+              onClick={() => setShowOrganizeSubTreasury(true)}
+            >
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M5 12H19" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600 hidden sm:block">Sub-treasury</span>
+            </button>
+          )}
         </div>
       )}
 
       {/* Edit Space Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => {
-              setShowEditModal(false);
-              setEditSpaceName("");
-              setEditSpaceDescription("");
-              setEditSpaceCoverUrl("");
-              setEditSpaceFaceUrl("");
-            }}
-          />
-
-          {/* Modal */}
-          <div
-            className="flex flex-col w-[582px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
-            role="dialog"
-            aria-labelledby="edit-space-title"
-            aria-modal="true"
-          >
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setShowEditModal(false);
-                setEditSpaceName("");
-                setEditSpaceDescription("");
-                setEditSpaceCoverUrl("");
-                setEditSpaceFaceUrl("");
-              }}
-              className="absolute top-5 right-5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-20"
-              aria-label="Close dialog"
-              type="button"
-            >
-              <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-
-            <div className="flex flex-col items-start gap-[30px] relative self-stretch w-full flex-[0_0_auto] pt-5">
-              <div className="flex flex-col items-start gap-5 relative self-stretch w-full flex-[0_0_auto]">
-                <h2
-                  id="edit-space-title"
-                  className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
-                >
-                  Edit treasury
-                </h2>
-
-                {/* Space Name */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="edit-space-name-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Name
-                  </label>
-
-                  <div className="flex h-12 items-center px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                    <input
-                      id="edit-space-name-input"
-                      type="text"
-                      value={editSpaceName}
-                      onChange={canEditSpaceName ? (e) => setEditSpaceName(e.target.value) : undefined}
-                      placeholder={canEditSpaceName ? "Enter space name" : "Space name cannot be edited (default space)"}
-                      disabled={!canEditSpaceName}
-                      className={`flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-base tracking-[0] leading-[23px] outline-none ${!canEditSpaceName ? 'text-gray-500 cursor-not-allowed' : 'text-medium-dark-grey placeholder:text-medium-dark-grey'}`}
-                      aria-required={canEditSpaceName}
-                      autoFocus={canEditSpaceName}
-                    />
-                  </div>
-                </div>
-
-                {/* Space Description */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full flex-[0_0_auto]">
-                  <label
-                    htmlFor="edit-space-description-input"
-                    className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap"
-                  >
-                    Description (Optional)
-                  </label>
-
-                  <div className="flex flex-col px-5 py-2.5 relative self-stretch w-full flex-[0_0_auto] rounded-[15px] bg-[linear-gradient(0deg,rgba(224,224,224,0.4)_0%,rgba(224,224,224,0.4)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)]">
-                    <textarea
-                      id="edit-space-description-input"
-                      value={editSpaceDescription}
-                      onChange={(e) => setEditSpaceDescription(e.target.value)}
-                      placeholder="Describe your space (optional)"
-                      className="flex-1 border-none bg-transparent [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[23px] outline-none placeholder:text-medium-dark-grey resize-none"
-                      rows={2}
-                      maxLength={200}
-                    />
-                    <span className="self-end [font-family:'Lato',Helvetica] font-normal text-gray-400 text-xs tracking-[0] leading-[16px]">
-                      {editSpaceDescription.length}/200
-                    </span>
-                  </div>
-                </div>
-
-                {/* Profile Upload */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full">
-                  <label className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    Profile (Optional)
-                  </label>
-                  <ImageUploader
-                    type="avatar"
-                    currentImage={editSpaceFaceUrl || spaceInfo?.faceUrl}
-                    key={`avatar-uploader-${showEditModal}-${editSpaceFaceUrl || spaceInfo?.faceUrl}`}
-                    onUploadStatusChange={(uploading) => setIsImageUploading(uploading)}
-                    onImageUploaded={(url) => setEditSpaceFaceUrl(url)}
-                    onError={(error) => showToast(error, 'error')}
-                  />
-                </div>
-
-                {/* Cover Image Upload */}
-                <div className="flex flex-col items-start gap-2.5 relative self-stretch w-full">
-                  <ImageUploader
-                    type="banner"
-                    currentImage={editSpaceCoverUrl || spaceInfo?.coverUrl}
-                    key={`image-uploader-${showEditModal}-${editSpaceCoverUrl || spaceInfo?.coverUrl}`}
-                    onUploadStatusChange={(uploading) => setIsImageUploading(uploading)}
-                    onImageUploaded={async (url) => {
-                      setEditSpaceCoverUrl(url);
-
-                      // 当图片被删除时（url为空），自动保存删除操作
-                      if (!url && (editSpaceCoverUrl || spaceInfo?.coverUrl)) {
-                        if (!spaceId) {
-                          showToast('Space ID not available', 'error');
-                          return;
-                        }
-
-                        try {
-                          const currentName = displaySpaceName || spaceInfo?.name || decodeURIComponent(category || '');
-                          const currentDescription = spaceInfo?.description || '';
-
-                          await AuthService.updateSpace(spaceId, currentName, currentDescription, '');
-                          showToast('Cover image removed successfully', 'success');
-                          setSpaceInfo(prev => prev ? { ...prev, coverUrl: '' } : null);
-                        } catch (error) {
-                          showToast('Failed to remove cover image', 'error');
-                          setEditSpaceCoverUrl(spaceInfo?.coverUrl || '');
-                        }
-                      }
-                    }}
-                    onError={(error) => showToast(error, 'error')}
-                  />
-                </div>
-
-              </div>
-
-              <div className="flex items-center justify-between relative self-stretch w-full flex-[0_0_auto]">
-                {/* 🔍 SEARCH: space-delete-button-conditional */}
-                {/* Delete button on the left - only show for custom spaces (spaceType === 0 or undefined) */}
-                {canDeleteSpace && (
-                  <button
-                    className="inline-flex items-center gap-2 px-3 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-red/10 transition-colors"
-                    onClick={() => setDeleteSpaceConfirmOpen(true)}
-                    type="button"
-                    aria-label="Delete treasury"
-                  >
-                  <img className="w-5 h-5" alt="Delete" src={getIconUrl('DELETE')} style={{ filter: 'brightness(0) saturate(100%) invert(28%) sepia(93%) saturate(1479%) hue-rotate(6deg) brightness(97%) contrast(106%)' }} />
-                  <span className="[font-family:'Lato',Helvetica] font-normal text-red text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                    Delete
-                  </span>
-                  </button>
-                )}
-
-                {/* Show message when delete is not allowed */}
-                {!canDeleteSpace && (
-                  <div className="text-xs text-gray-500 px-3 py-2">
-                    Delete unavailable (default space)
-                  </div>
-                )}
-
-                {/* Cancel and Save buttons on the right */}
-                <div className="flex items-center gap-2.5">
-                  <button
-                    className="inline-flex items-center justify-center gap-[30px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => {
-                      setShowEditModal(false);
-                      setEditSpaceName("");
-                      setEditSpaceDescription("");
-                      setEditSpaceCoverUrl("");
-                      setEditSpaceFaceUrl("");
-                    }}
-                    type="button"
-                  >
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      Cancel
-                    </span>
-                  </button>
-
-                  <button
-                    className="inline-flex items-center justify-center gap-[15px] px-5 py-2.5 relative flex-[0_0_auto] rounded-[100px] bg-red cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red/90 transition-colors"
-                    onClick={handleSaveSpaceName}
-                    disabled={isSaving || isImageUploading || (canEditSpaceName && !editSpaceName.trim())}
-                    type="button"
-                  >
-                    <span className="relative w-fit [font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px] whitespace-nowrap">
-                      {isSaving ? 'Saving...' : isImageUploading ? 'Uploading image...' : 'Save'}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CreateSpaceModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit treasury"
+        submitLabel="Save"
+        mode="full"
+        editMode={true}
+        editSpaceId={spaceId}
+        initialData={{
+          name: spaceInfo?.name || '',
+          description: spaceInfo?.description || '',
+          coverUrl: spaceInfo?.coverUrl || '',
+          faceUrl: spaceInfo?.faceUrl || '',
+          visibility: spaceInfo?.visibility || 0
+        }}
+        onSuccess={(updatedSpace) => {
+          console.log('✅ Treasury updated successfully:', updatedSpace);
+          // Update local space info
+          if (updatedSpace) {
+            setSpaceInfo(prev => prev ? {
+              ...prev,
+              name: updatedSpace.name || prev.name,
+              description: updatedSpace.description || prev.description,
+              coverUrl: updatedSpace.coverUrl || prev.coverUrl,
+              faceUrl: updatedSpace.faceUrl || prev.faceUrl,
+              visibility: updatedSpace.visibility !== undefined ? updatedSpace.visibility : prev.visibility
+            } : null);
+            setDisplaySpaceName(updatedSpace.name || '');
+          }
+          // Refresh page to show updated data
+          window.location.reload();
+        }}
+        onDelete={canDeleteSpace ? () => {
+          setShowEditModal(false);
+          setDeleteSpaceConfirmOpen(true);
+        } : undefined}
+      />
 
       {/* Collect Treasure Modal */}
       {selectedArticle && (
@@ -1730,9 +2105,11 @@ export const SpaceContentSection = (): JSX.Element => {
             setSelectedArticle(null);
           }}
           articleId={selectedArticle.uuid}
+          articleNumericId={selectedArticle.numericId}
           articleTitle={selectedArticle.title}
           isAlreadyCollected={selectedArticle.isLiked}
           onCollectSuccess={handleCollectSuccess}
+          onSaveComplete={handleSaveComplete}
         />
       )}
 
@@ -1795,11 +2172,11 @@ export const SpaceContentSection = (): JSX.Element => {
               <button
                 className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={confirmDeleteArticle}
-                disabled={isDeleting}
+                disabled={operationLoading.deleteArticle}
                 type="button"
               >
                 <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
-                  {isDeleting
+                  {operationLoading.deleteArticle
                     ? (isCurationsSpace ? 'Deleting...' : 'Removing...')
                     : (isCurationsSpace ? 'Delete' : 'Remove')
                   }
@@ -1816,7 +2193,7 @@ export const SpaceContentSection = (): JSX.Element => {
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => {
-              if (!isSaving) setDeleteSpaceConfirmOpen(false);
+              if (!operationLoading.deleteSpace) setDeleteSpaceConfirmOpen(false);
             }}
           />
           <div
@@ -1856,11 +2233,11 @@ export const SpaceContentSection = (): JSX.Element => {
                   setDeleteSpaceConfirmOpen(false);
                   handleDeleteSpace();
                 }}
-                disabled={isSaving}
+                disabled={operationLoading.deleteSpace}
                 type="button"
               >
                 <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
-                  {isSaving ? 'Deleting...' : 'Delete'}
+                  {operationLoading.deleteSpace ? 'Deleting...' : 'Delete'}
                 </span>
               </button>
             </div>
@@ -1918,38 +2295,70 @@ export const SpaceContentSection = (): JSX.Element => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => { if (!isBulkProcessing) setShowMoveModal(false); }}
+            onClick={() => {
+              if (!isBulkProcessing && !loadingMoveSpaces) {
+                setShowMoveModal(false);
+                setLoadingMoveSpaces(false);
+              }
+            }}
           />
           <div
-            className="flex flex-col w-[582px] max-w-[90vw] max-h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            className="flex flex-col w-[582px] max-w-[90vw] h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
             role="dialog"
             aria-labelledby="move-modal-title"
             aria-modal="true"
           >
             {/* Close button */}
             <button
-              onClick={() => setShowMoveModal(false)}
+              onClick={() => {
+                setShowMoveModal(false);
+                setLoadingMoveSpaces(false);
+              }}
               className="absolute top-5 right-5 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer z-20"
               aria-label="Close dialog"
               type="button"
-              disabled={isBulkProcessing}
+              disabled={isBulkProcessing || loadingMoveSpaces}
             >
               <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M1 1L13 13M1 13L13 1" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
 
-            <div className="flex flex-col items-start gap-4 relative self-stretch w-full flex-[0_0_auto] pt-5">
+            <div className="flex flex-col items-start gap-4 relative self-stretch w-full flex-1 min-h-0 pt-5">
               <h2
                 id="move-modal-title"
                 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
               >
-                Move to treasury
+                Move to sub-treasury
               </h2>
 
-              <div className="flex-1 overflow-y-auto w-full max-h-[40vh]">
-                {bindableSpaces.length === 0 ? (
-                  <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center py-8">No other treasuries available</p>
+              <div className="flex-1 overflow-y-auto w-full min-h-0">
+                {loadingMoveSpaces ? (
+                  // Loading state
+                  <div className="flex flex-col items-center justify-center py-8 gap-3">
+                    <div className="w-8 h-8 border-2 border-red border-t-transparent rounded-full animate-spin"></div>
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center">Loading available spaces...</p>
+                  </div>
+                ) : bindableSpaces.length === 0 ? (
+                  // No spaces available
+                  <div className="flex flex-col items-center justify-center h-full gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1H7a1 1 0 00-1 1v1m8 0V4" />
+                      </svg>
+                    </div>
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center">No sub-treasuries available</p>
+                    <button
+                      className="inline-flex items-center justify-center px-5 py-2 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors"
+                      type="button"
+                      onClick={() => {
+                        setShowMoveModal(false);
+                        setShowOrganizeSubTreasury(true);
+                      }}
+                    >
+                      <span className="[font-family:'Lato',Helvetica] font-normal text-white text-sm tracking-[0] leading-[20px]">Create Sub-treasury</span>
+                    </button>
+                  </div>
                 ) : (
                   <ul className="flex flex-col w-full">
                     {bindableSpaces.map((space: any) => {
@@ -2003,8 +2412,11 @@ export const SpaceContentSection = (): JSX.Element => {
               <div className="flex items-center justify-end gap-3 w-full">
                 <button
                   className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  onClick={() => setShowMoveModal(false)}
-                  disabled={isBulkProcessing}
+                  onClick={() => {
+                    setShowMoveModal(false);
+                    setLoadingMoveSpaces(false);
+                  }}
+                  disabled={isBulkProcessing || loadingMoveSpaces}
                   type="button"
                 >
                   <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
@@ -2013,30 +2425,84 @@ export const SpaceContentSection = (): JSX.Element => {
                 </button>
                 <button
                   className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={!selectedMoveTarget || isBulkProcessing}
+                  disabled={!selectedMoveTarget || isBulkProcessing || loadingMoveSpaces}
                   type="button"
                   onClick={async () => {
                     if (!selectedMoveTarget || !spaceId) return;
+
+                    setOperationLoading(prev => ({ ...prev, copyArticles: true }));
                     setIsBulkProcessing(true);
+
                     try {
                       const selectedUuids = Array.from(selectedArticleIds);
+                      const targetSpace = bindableSpaces.find(space => space.id === selectedMoveTarget);
+                      const targetSpaceName = targetSpace?.name || 'sub-treasury';
+
+                      console.log('🚚 Moving articles to target space (dedicated Move API)...', {
+                        targetSpaceId: selectedMoveTarget,
+                        targetSpaceName,
+                        articleCount: selectedUuids.length,
+                        fromSpaceId: spaceId
+                      });
+
+                      // Collect article IDs for batch move
+                      const articleIds: number[] = [];
                       for (const uuid of selectedUuids) {
                         const article = articles.find(a => a.uuid === uuid);
                         const numericId = article?.numericId || article?.id;
                         if (numericId) {
-                          await bindArticles({ articleId: numericId, spaceIds: [selectedMoveTarget] });
-                          await removeArticleFromSpace({ articleId: numericId, spaceId });
+                          articleIds.push(numericId);
+                        } else {
+                          console.error(`🚚 No numeric ID found for article: ${uuid}`);
                         }
                       }
-                      setArticles(prev => prev.filter(a => !selectedArticleIds.has(a.uuid)));
-                      setTotalArticleCount(prev => Math.max(0, prev - selectedUuids.length));
+
+                      let successCount = 0;
+                      if (articleIds.length > 0 && spaceId) {
+                        try {
+                          // Use dedicated Move API for batch operation
+                          await moveArticlesToSpace({
+                            articleIds,
+                            fromSpaceId: parseInt(spaceId),
+                            toSpaceId: selectedMoveTarget
+                          });
+                          successCount = articleIds.length;
+                          console.log(`🚚 Successfully moved ${successCount} articles using dedicated Move API`);
+                        } catch (error) {
+                          console.error('🚚 Failed to move articles:', error);
+                        }
+                      }
+
+                      // Remove moved articles from current space UI
+                      const movedUuids = selectedUuids.slice(0, successCount);
+                      setArticles(prev => prev.filter(article => !movedUuids.includes(article.uuid)));
+                      setTotalArticleCount(prev => Math.max(0, prev - successCount));
+
+                      // Clear selection and close modal
                       setSelectedArticleIds(new Set());
                       setShowMoveModal(false);
-                      showToast(`Moved ${selectedUuids.length} treasures successfully`, 'success');
+                      setOrganizeMode(false);
+
+                      // Show enhanced success message with target space name
+                      if (successCount === selectedUuids.length) {
+                        showToast(`Successfully moved ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}"`, 'success');
+                      } else if (successCount > 0) {
+                        showToast(`Moved ${successCount} of ${selectedUuids.length} articles to "${targetSpaceName}" (${selectedUuids.length - successCount} failed)`, 'warning');
+                      } else {
+                        showToast(`Failed to move articles to "${targetSpaceName}"`, 'error');
+                      }
+
+                      console.log(`🚚 Move operation completed: ${successCount}/${selectedUuids.length} successful`);
                     } catch (err) {
                       console.error('Failed to move articles:', err);
-                      showToast('Failed to move some articles', 'error');
+                      const message = ErrorHandler.handleApiError(err, {
+                        component: 'SpaceContentSection',
+                        action: 'move-articles',
+                        endpoint: 'moveArticlesToSpace'
+                      });
+                      showToast(message, 'error');
                     } finally {
+                      setOperationLoading(prev => ({ ...prev, copyArticles: false }));
                       setIsBulkProcessing(false);
                     }
                   }}
@@ -2057,7 +2523,8 @@ export const SpaceContentSection = (): JSX.Element => {
         onClose={() => setShowOrganizeSubTreasury(false)}
         title="Create sub-treasury"
         submitLabel="Add"
-        mode="compact"
+        mode="full"
+        parentSpaceId={isOwner ? spaceId : undefined} // Only pass parent ID if user owns this space
         onSuccess={async (newSpace) => {
           const newSpaceId = newSpace?.id || newSpace?.data?.id;
           if (newSpaceId) {
@@ -2088,7 +2555,7 @@ export const SpaceContentSection = (): JSX.Element => {
             const spaceWithData = { ...newSpace, data: previewData, articleCount: bindCount };
             setSubTreasuries(prev => [...prev, spaceWithData]);
             setSelectedArticleIds(new Set());
-            showToast(`Created sub-treasury and added ${bindCount} treasures`, 'success');
+            showToast(`Created sub-treasury "${newSpace?.name || 'New Sub-treasury'}" and copied ${bindCount} article${bindCount !== 1 ? 's' : ''}`, 'success');
           }
         }}
       />
@@ -2116,10 +2583,13 @@ export const SpaceContentSection = (): JSX.Element => {
                 id="bulk-delete-title"
                 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
               >
-                Remove {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'}
+                {isCurationsSpace ? 'Delete' : 'Remove'} {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'}
               </h2>
               <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                Are you sure you want to remove {selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'} from the space? The {selectedArticleIds.size === 1 ? 'article' : 'articles'} will remain available elsewhere.
+                {isCurationsSpace
+                  ? `Are you sure you want to permanently delete ${selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'}? This action cannot be undone.`
+                  : `Are you sure you want to remove ${selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'} from the space? The ${selectedArticleIds.size === 1 ? 'article' : 'articles'} will remain available elsewhere.`
+                }
               </p>
             </div>
 
@@ -2139,19 +2609,29 @@ export const SpaceContentSection = (): JSX.Element => {
                 disabled={isBulkProcessing}
                 type="button"
                 onClick={async () => {
+                  console.log('🗑️ Starting bulk delete process...');
                   setIsBulkProcessing(true);
                   try {
                     const selectedUuids = Array.from(selectedArticleIds);
-                    const isCurationsSpace = spaceInfo?.spaceType === 2;
+                    const isCurationsSpace = spaceInfo?.spaceType === 2 || spaceInfo?.parentSpace?.spaceType === 2;
+                    console.log('🗑️ Selected UUIDs:', selectedUuids);
+                    console.log('🗑️ Is Curations Space:', isCurationsSpace);
+                    console.log('🗑️ Space ID:', spaceId);
                     for (const uuid of selectedUuids) {
                       const article = articles.find(a => a.uuid === uuid);
                       const numericId = article?.numericId || article?.id;
                       if (numericId) {
+                        console.log(`🗑️ Processing article: ${uuid} (numericId: ${numericId})`);
                         if (isCurationsSpace) {
+                          console.log('🗑️ Deleting article permanently...');
                           await AuthService.deleteArticle(uuid);
                         } else {
+                          console.log('🗑️ Removing article from space...');
                           await removeArticleFromSpace({ articleId: numericId, spaceId: spaceId! });
                         }
+                        console.log(`✅ Successfully processed article: ${uuid}`);
+                      } else {
+                        console.error(`❌ No numeric ID found for article: ${uuid}`);
                       }
                     }
                     setArticles(prev => prev.filter(a => !selectedArticleIds.has(a.uuid)));
@@ -2169,6 +2649,64 @@ export const SpaceContentSection = (): JSX.Element => {
               >
                 <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
                   {isBulkProcessing ? 'Removing...' : 'Remove'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move Out Confirmation Modal */}
+      {showMoveOutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 hidden sm:block"
+            onClick={() => { if (!operationLoading.copyArticles) setShowMoveOutConfirm(false); }}
+          />
+          <div
+            className="flex flex-col w-full h-full sm:w-[400px] sm:h-auto sm:max-w-[90vw] items-center justify-center gap-5 p-5 sm:p-[30px] relative bg-white sm:rounded-[15px] z-10"
+            role="dialog"
+            aria-labelledby="move-out-title"
+            aria-modal="true"
+          >
+            {/* Move out icon */}
+            <div className="w-12 h-12 rounded-full bg-red/10 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 17L17 7M17 7H8M17 7V16" stroke="#f23a00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 text-center">
+              <h2
+                id="move-out-title"
+                className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
+              >
+                Move {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'} to main treasury?
+              </h2>
+              <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
+                {selectedArticleIds.size === 1 ? 'This treasure' : 'These treasures'} will be moved to "{parentSpaceInfo?.name || 'main treasury'}" and removed from the current sub-treasury.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 w-full">
+              <button
+                className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowMoveOutConfirm(false)}
+                disabled={operationLoading.copyArticles}
+                type="button"
+              >
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-sm sm:text-base tracking-[0] leading-[22.4px]">
+                  Cancel
+                </span>
+              </button>
+              <button
+                className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                type="button"
+                onClick={handleMoveOut}
+                disabled={operationLoading.copyArticles}
+              >
+                <span className="[font-family:'Lato',Helvetica] font-normal text-white text-sm sm:text-base tracking-[0] leading-[22.4px]">
+                  {operationLoading.copyArticles ? 'Moving...' : 'Move to main treasury'}
                 </span>
               </button>
             </div>

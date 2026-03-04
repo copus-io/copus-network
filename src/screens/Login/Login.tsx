@@ -99,7 +99,7 @@ const LoginForm: React.FC<{
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         onKeyDown={onKeyPress}
-        className="flex items-center gap-[213px] p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
+        className="flex items-center gap-[213px] p-3 sm:p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-sm sm:text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
       />
 
       <div className="relative self-stretch w-full">
@@ -109,7 +109,7 @@ const LoginForm: React.FC<{
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={onKeyPress}
-          className="flex items-center gap-64 p-[15px] pr-12 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
+          className="flex items-center gap-64 p-3 sm:p-[15px] pr-12 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-sm sm:text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
         />
         <Button
           type="button"
@@ -270,7 +270,7 @@ const RegistrationForm: React.FC<{
           placeholder="Enter verification code"
           value={verificationCode}
           onChange={(e) => setVerificationCode(e.target.value)}
-          className="flex items-center p-[15px] relative flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+          className="flex items-center p-3 sm:p-[15px] relative flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey text-sm sm:text-base h-auto"
         />
         <Button
           className={`px-[15px] h-auto min-h-[50px] text-white rounded-[15px] border-0 whitespace-nowrap flex items-center justify-center transition-all ${
@@ -1389,11 +1389,11 @@ export const Login = (): JSX.Element => {
           <Card className="w-full max-w-[480px] bg-white rounded-lg border-0 shadow-none relative z-10">
             <CardContent className="flex flex-col items-center justify-center gap-8 sm:gap-[50px] px-6 sm:px-[50px] py-8 sm:py-[60px]">
               <div className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto]">
-                <h1 className="relative self-stretch mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
+                <h1 className="relative self-stretch mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-xl sm:text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
                   Join Copus
                 </h1>
 
-                <p className="relative self-stretch font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-[length:var(--h-4-font-size)] text-center tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] [font-style:var(--h-4-font-style)]">
+                <p className="relative self-stretch font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-sm sm:text-[length:var(--h-4-font-size)] text-center tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] [font-style:var(--h-4-font-style)]">
                   Discover and share internet gems
                 </p>
               </div>
@@ -1405,7 +1405,7 @@ export const Login = (): JSX.Element => {
                       value="login"
                       className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-2.5 px-3 sm:px-[15px] bg-transparent"
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm sm:text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
                         Log in
                       </span>
                     </TabsTrigger>
@@ -1413,7 +1413,7 @@ export const Login = (): JSX.Element => {
                       value="signup"
                       className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-2.5 px-3 sm:px-[15px] bg-transparent"
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm sm:text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
                         Sign up
                       </span>
                     </TabsTrigger>
@@ -1440,7 +1440,7 @@ export const Login = (): JSX.Element => {
                       onClick={handleLogin}
                       disabled={isLoginLoading || !loginEmail || !loginPassword}
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-red text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-red text-sm sm:text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
                         {isLoginLoading ? (
                           <span className="flex items-center space-x-2">
                             <GemSpinner size="sm" />
@@ -1483,7 +1483,7 @@ export const Login = (): JSX.Element => {
                       onClick={handleRegister}
                       disabled={isRegisterLoading || !username || !email || !password || !confirmPassword || !verificationCode || !agreeToTerms || emailStatus !== 'available'}
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-red text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-red text-sm sm:text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
                         {isRegisterLoading ? (
                           <span className="flex items-center space-x-2">
                             <GemSpinner size="sm" />
@@ -1502,7 +1502,7 @@ export const Login = (): JSX.Element => {
                 <div className="gap-3 sm:gap-[15px] pt-4 sm:pt-5 pb-2.5 px-0 self-stretch w-full flex-[0_0_auto] rounded-[25px] overflow-hidden flex items-center justify-center relative">
                   <Separator className="flex-1 bg-medium-dark-grey" />
 
-                  <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-medium-dark-grey text-[length:var(--p-font-size)] text-center tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] px-4">
+                  <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-medium-dark-grey text-xs sm:text-[length:var(--p-font-size)] text-center tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] px-4">
                     Or sign in with
                   </div>
 
