@@ -544,7 +544,13 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
                             </div>
                           )}
                         </div>
-                        <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
+                        <span className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap flex items-center gap-1.5">
+                          {collection.visibility === 1 && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+                              <rect x="3" y="11" width="18" height="11" rx="2" stroke="#686868" strokeWidth="2"/>
+                              <path d="M7 11V7a5 5 0 0110 0v4" stroke="#686868" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                          )}
                           {collection.name}
                         </span>
                       </div>
