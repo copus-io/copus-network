@@ -1155,7 +1155,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               className="inline-flex items-center justify-start gap-2.5 cursor-pointer hover:opacity-80 focus:outline-none"
               onClick={handleDeleteAccount}
             >
-              <span className="[font-family:'Lato',Helvetica] font-normal text-red text-lg tracking-[0] leading-[23px]">
+              <span className="[font-family:'Lato',Helvetica] font-normal text-red text-sm sm:text-lg tracking-[0] leading-[23px]">
                 Delete account
               </span>
             </button>
@@ -1164,7 +1164,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
               className="inline-flex items-center justify-start gap-2.5 cursor-pointer hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red"
               onClick={handleLogout}
             >
-              <span className="[font-family:'Lato',Helvetica] font-normal text-red text-lg tracking-[0] leading-[23px]">
+              <span className="[font-family:'Lato',Helvetica] font-normal text-red text-sm sm:text-lg tracking-[0] leading-[23px]">
                 Log out
               </span>
             </button>

@@ -596,7 +596,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative hidden sm:block ${className}`}>
       <div className="flex items-center rounded-[50px] border border-[#2B8649] overflow-hidden w-full">
         <input
           type="email"

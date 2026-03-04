@@ -425,7 +425,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
         </button>
 
         {/* Collection List View */}
-        <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-5">
+        <div className="flex flex-col items-start relative self-stretch w-full flex-1 min-h-0 pt-8 sm:pt-5">
             <div className="flex flex-col items-start justify-center gap-5 relative self-stretch w-full flex-[0_0_auto]">
               {/* Title and New Treasury on same line */}
               <div className="flex items-center justify-between w-full">
@@ -473,9 +473,9 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               </div>
             </div>
 
-            {/* Collections List - scrollbar hidden until hover, fixed height */}
+            {/* Collections List - scrollbar hidden until hover, flexible height on mobile, fixed on desktop */}
             <div
-              className="flex flex-col items-start gap-0 relative self-stretch w-full h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="flex flex-col items-start gap-0 relative self-stretch w-full flex-1 sm:flex-none sm:h-[280px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ scrollbarWidth: 'thin', scrollbarColor: 'transparent transparent' }}
               onMouseEnter={(e) => { e.currentTarget.style.scrollbarColor = '#d1d5db transparent'; }}
               onMouseLeave={(e) => { e.currentTarget.style.scrollbarColor = 'transparent transparent'; }}
@@ -577,8 +577,8 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
               )}
             </div>
 
-            {/* Save and Cancel Buttons */}
-            <div className="flex items-center justify-end gap-3 pt-4 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ml-[-30px] mr-[-30px] pl-[30px] pr-[30px] w-[calc(100%+60px)] max-[440px]:ml-[-15px] max-[440px]:mr-[-15px] max-[440px]:pl-[15px] max-[440px]:pr-[15px] max-[440px]:w-[calc(100%+30px)]">
+            {/* Save and Cancel Buttons - pinned to bottom on mobile */}
+            <div className="flex items-center justify-end gap-3 pt-4 pb-4 sm:pb-0 mt-auto sm:mt-0 relative z-10 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ml-[-30px] mr-[-30px] pl-[30px] pr-[30px] w-[calc(100%+60px)] max-[440px]:ml-[-15px] max-[440px]:mr-[-15px] max-[440px]:pl-[15px] max-[440px]:pr-[15px] max-[440px]:w-[calc(100%+30px)]">
               <button
                 className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors"
                 onClick={handleCancel}

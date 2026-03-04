@@ -1440,7 +1440,7 @@ export const Login = (): JSX.Element => {
                       onClick={handleLogin}
                       disabled={isLoginLoading || !loginEmail || !loginPassword}
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-red text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-red text-sm sm:text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
                         {isLoginLoading ? (
                           <span className="flex items-center space-x-2">
                             <GemSpinner size="sm" />
@@ -1483,7 +1483,7 @@ export const Login = (): JSX.Element => {
                       onClick={handleRegister}
                       disabled={isRegisterLoading || !username || !email || !password || !confirmPassword || !verificationCode || !agreeToTerms || emailStatus !== 'available'}
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-red text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-red text-sm sm:text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
                         {isRegisterLoading ? (
                           <span className="flex items-center space-x-2">
                             <GemSpinner size="sm" />
@@ -1502,7 +1502,7 @@ export const Login = (): JSX.Element => {
                 <div className="gap-3 sm:gap-[15px] pt-4 sm:pt-5 pb-2.5 px-0 self-stretch w-full flex-[0_0_auto] rounded-[25px] overflow-hidden flex items-center justify-center relative">
                   <Separator className="flex-1 bg-medium-dark-grey" />
 
-                  <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-medium-dark-grey text-[length:var(--p-font-size)] text-center tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] px-4">
+                  <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-medium-dark-grey text-xs sm:text-[length:var(--p-font-size)] text-center tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] px-4">
                     Or sign in with
                   </div>
 
