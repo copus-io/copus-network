@@ -290,13 +290,13 @@ const SpaceInfoSection = ({
             </button>
           )}
 
-          {/* Import button */}
+          {/* Import button - hidden on mobile */}
           {canEdit && onImportCSV && (
             <button
               type="button"
               aria-label="Import bookmarks"
               title="Import Bookmarks"
-              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+              className="hidden sm:flex w-8 h-8 rounded-full bg-gray-100 items-center justify-center hover:opacity-70 transition-opacity"
               onClick={onImportCSV}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
