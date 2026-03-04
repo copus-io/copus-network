@@ -252,7 +252,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Don't remove the remember me preference
             if (key !== 'copus_remember_me_preference' &&
                 key !== 'copus_remembered_email' &&
-                key !== 'copus_remember_me_option') {
+                key !== 'copus_remember_me_option' &&
+                !key.startsWith('copus_welcome_dismissed')) {
               storageType.removeItem(key);
             }
           }
