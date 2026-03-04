@@ -1758,7 +1758,7 @@ export const SpaceContentSection = (): JSX.Element => {
         {articles.length === 0 && (!subTreasuries.length || isSubTreasury) ? (
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
               <>
-                <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
+                <h3 className="text-sm sm:text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
                   No treasures yet — this collection is just getting started.
                 </h3>
                 <button
