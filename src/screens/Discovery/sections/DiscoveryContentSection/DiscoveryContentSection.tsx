@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useNavigationType } from "react-router-dom";
 import { useArticles } from "../../../../hooks/useArticles";
 import { Article } from "../../../../types/article";
 import { ArticleListSkeleton } from "../../../../components/ui/skeleton";
@@ -11,6 +11,9 @@ import { getCategoryStyle, getCategoryInlineStyle, formatDate, formatCount } fro
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
 import { canUserViewArticle } from "../../../../types/article";
 import { decodeHtmlEntities } from "../../../../utils/htmlUtils";
+
+// Module-level cache for discovery state — survives component unmount/remount
+let discoveryCache: { articles: any[]; hasMore: boolean; page: number; total: number; scrollY: number } | null = null;
 
 export const DiscoveryContentSection = (): JSX.Element => {
   const { showToast } = useToast();
@@ -81,20 +84,68 @@ export const DiscoveryContentSection = (): JSX.Element => {
     setShowWelcomeGuide(false);
   };
 
-  const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
   const location = useLocation();
+  const navigationType = useNavigationType();
   const isFirstMount = useRef(true);
 
-  // Re-fetch articles when navigating back to Discovery via React Router
-  // (e.g., clicking Copus logo). The useArticles hook only fetches on initial
-  // mount, so without this, stale cached data would be shown.
+  // On POP (back button), restore cached state instead of re-fetching
+  const isBackNavigation = navigationType === 'POP' && discoveryCache && !isFirstMount.current;
+  const restoredState = (navigationType === 'POP' && discoveryCache) ? {
+    articles: discoveryCache.articles,
+    loading: false,
+    error: null,
+    hasMore: discoveryCache.hasMore,
+    page: discoveryCache.page,
+    total: discoveryCache.total,
+  } : undefined;
+
+  const { articles, loading, error, refresh, loadMore, hasMore, page, total } = useArticles(
+    {},
+    {
+      autoRefresh: !restoredState,
+      initialState: restoredState,
+    }
+  );
+
+  // Restore scroll position after cached articles render
+  const scrollRestored = useRef(false);
+  React.useEffect(() => {
+    if (restoredState && discoveryCache && !scrollRestored.current) {
+      scrollRestored.current = true;
+      // Wait for articles to render before restoring scroll
+      requestAnimationFrame(() => {
+        window.scrollTo(0, discoveryCache!.scrollY);
+      });
+    }
+  }, [restoredState]);
+
+  // Save state to cache on unmount for back-navigation restoration
+  React.useEffect(() => {
+    return () => {
+      if (articles.length > 0) {
+        discoveryCache = {
+          articles,
+          hasMore,
+          page,
+          total,
+          scrollY: window.scrollY,
+        };
+      }
+    };
+  });
+
+  // Re-fetch articles when navigating TO Discovery via push navigation
+  // (e.g., clicking Copus logo). Skip on POP to preserve cached state.
   React.useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false;
       return;
     }
+    if (navigationType === 'POP') {
+      return;
+    }
     refresh();
-  }, [location.key, refresh]);
+  }, [location.key, refresh, navigationType]);
 
   // Scroll to load more logic
   React.useEffect(() => {
@@ -268,7 +319,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Handle comment navigation
   const handleComment = (articleId: string, articleUuid?: string) => {
-    window.open(`/work/${articleUuid || articleId}?comments=open`, '_blank', 'noopener,noreferrer');
+    navigate(`/work/${articleUuid || articleId}?comments=open`);
   };
 
   const renderPostCard = (post: Article, index: number) => {

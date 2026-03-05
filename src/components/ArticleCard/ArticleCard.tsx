@@ -146,8 +146,8 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
     if (onComment) {
       onComment(article.uuid || article.id, article.uuid);
     } else {
-      // Fallback: open the article with comment parameter in new tab
-      window.open(`/work/${article.uuid || article.id}?comments=open`, '_blank', 'noopener,noreferrer');
+      // Fallback: navigate directly to the article with comment parameter
+      startTransition(() => { navigate(`/work/${article.uuid || article.id}?comments=open`); });
     }
   }, [onComment, article.uuid, article.id, navigate]);
 
@@ -958,7 +958,7 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
       ) : layout === 'preview' ? (
         cardContent
       ) : (
-        <Link to={`/work/${article.uuid || article.id}`} target="_blank" rel="noopener noreferrer">
+        <Link to={`/work/${article.uuid || article.id}`}>
           {cardContent}
         </Link>
       )}

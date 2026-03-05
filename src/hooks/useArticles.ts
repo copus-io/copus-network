@@ -11,18 +11,27 @@ interface UseArticlesState {
   total: number;
 }
 
+interface UseArticlesOptions {
+  autoRefresh?: boolean;
+  initialState?: UseArticlesState;
+}
+
 export const useArticles = (
   initialParams: PageArticleParams = {},
-  options: { autoRefresh?: boolean } = { autoRefresh: true }
+  options: UseArticlesOptions = { autoRefresh: true }
 ) => {
-  const [state, setState] = useState<UseArticlesState>({
+  const defaultState: UseArticlesState = {
     articles: [],
-    loading: options.autoRefresh !== false, // Start as loading when autoRefresh is enabled to prevent loadMore from racing the initial fetch
+    loading: options.autoRefresh !== false,
     error: null,
     hasMore: true,
     page: 1,
     total: 0,
-  });
+  };
+
+  const [state, setState] = useState<UseArticlesState>(
+    options.initialState || defaultState
+  );
 
   // Stabilize initialParams to prevent unnecessary callback recreation
   const stableParams = useMemo(
