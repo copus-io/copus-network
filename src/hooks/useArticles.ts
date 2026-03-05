@@ -33,6 +33,9 @@ export const useArticles = (
 
   // Request debouncing
   const requestTimeoutRef = useRef<NodeJS.Timeout>();
+  // Ref to track loading state synchronously — avoids stale closure issues
+  // where scroll handlers capture outdated `state.loading` values
+  const loadingRef = useRef(false);
 
   const fetchArticles = useCallback(async (params: PageArticleParams = {}, append = false) => {
     console.log('🔄 fetchArticles called:', { params, append, initialParams: stableParams });
@@ -49,6 +52,7 @@ export const useArticles = (
       page: append ? (params.page || 1) : 1, // Use provided page number in append mode, otherwise start from page 1
     };
 
+    loadingRef.current = true;
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     // Debounce the request by 200ms
@@ -57,6 +61,7 @@ export const useArticles = (
         console.log('📡 About to call getPageArticles with:', finalParams);
         const response = await getPageArticles(finalParams);
 
+        loadingRef.current = false;
         setState(prev => {
           let mergedArticles;
           if (append) {
@@ -78,6 +83,7 @@ export const useArticles = (
           };
         });
       } catch (error) {
+        loadingRef.current = false;
         let errorMessage = 'Failed to fetch articles';
 
         if (error instanceof Error) {
@@ -98,10 +104,10 @@ export const useArticles = (
   }, [stableParams]);
 
   const loadMore = useCallback(() => {
-    if (!state.loading && state.hasMore) {
+    if (!loadingRef.current && state.hasMore) {
       fetchArticles({ page: state.page + 1 }, true);
     }
-  }, [state.loading, state.hasMore, state.page, fetchArticles]);
+  }, [state.hasMore, state.page, fetchArticles]);
 
   const refresh = useCallback(() => {
     fetchArticles({}, false);
