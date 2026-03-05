@@ -7,9 +7,7 @@ import { useToast } from "../../../../components/ui/toast";
 import { useUser } from "../../../../contexts/UserContext";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../../components/CollectTreasureModal";
-import { getCategoryStyle, getCategoryInlineStyle, formatDate, formatCount } from "../../../../utils/categoryStyles";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
-import { canUserViewArticle } from "../../../../types/article";
 import { decodeHtmlEntities } from "../../../../utils/htmlUtils";
 
 // Module-level cache for discovery state — survives component unmount/remount
@@ -17,7 +15,7 @@ let discoveryCache: { articles: any[]; hasMore: boolean; page: number; total: nu
 
 export const DiscoveryContentSection = (): JSX.Element => {
   const { showToast } = useToast();
-  const { user, getArticleLikeState, updateArticleLikeState, toggleLike, syncArticleStates } = useUser();
+  const { user, getArticleLikeState, updateArticleLikeState, syncArticleStates } = useUser();
   const [localArticles, setLocalArticles] = React.useState<Article[]>([]);
   const navigate = useNavigate();
 
@@ -89,7 +87,6 @@ export const DiscoveryContentSection = (): JSX.Element => {
   const isFirstMount = useRef(true);
 
   // On POP (back button), restore cached state instead of re-fetching
-  const isBackNavigation = navigationType === 'POP' && discoveryCache && !isFirstMount.current;
   const restoredState = (navigationType === 'POP' && discoveryCache) ? {
     articles: discoveryCache.articles,
     loading: false,
@@ -373,9 +370,6 @@ export const DiscoveryContentSection = (): JSX.Element => {
       articleData.isLiked = false;
       articleData.treasureCount = post.treasureCount;
     }
-
-    // Check if this is the current user's own article
-    const isOwnArticle = user && user.id === post.userId;
 
     return (
       <div key={post.id}>

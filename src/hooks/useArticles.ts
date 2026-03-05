@@ -47,8 +47,6 @@ export const useArticles = (
   const loadingRef = useRef(false);
 
   const fetchArticles = useCallback(async (params: PageArticleParams = {}, append = false) => {
-    console.log('🔄 fetchArticles called:', { params, append, initialParams: stableParams });
-
     // Clear any pending requests
     if (requestTimeoutRef.current) {
       clearTimeout(requestTimeoutRef.current);
@@ -67,7 +65,6 @@ export const useArticles = (
     // Debounce the request by 200ms
     requestTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log('📡 About to call getPageArticles with:', finalParams);
         const response = await getPageArticles(finalParams);
 
         loadingRef.current = false;
