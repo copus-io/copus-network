@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useNavigationType } from "react-router-dom";
 import { useArticles } from "../../../../hooks/useArticles";
 import { Article } from "../../../../types/article";
 import { ArticleListSkeleton } from "../../../../components/ui/skeleton";
@@ -83,18 +83,22 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   const { articles, loading, error, refresh, loadMore, hasMore } = useArticles();
   const location = useLocation();
+  const navigationType = useNavigationType();
   const isFirstMount = useRef(true);
 
-  // Re-fetch articles when navigating back to Discovery via React Router
-  // (e.g., clicking Copus logo). The useArticles hook only fetches on initial
-  // mount, so without this, stale cached data would be shown.
+  // Re-fetch articles when navigating TO Discovery via push navigation
+  // (e.g., clicking Copus logo). Skip refresh on POP (back/forward button)
+  // to preserve scroll position and existing article list.
   React.useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false;
       return;
     }
+    if (navigationType === 'POP') {
+      return;
+    }
     refresh();
-  }, [location.key, refresh]);
+  }, [location.key, refresh, navigationType]);
 
   // Scroll to load more logic
   React.useEffect(() => {
