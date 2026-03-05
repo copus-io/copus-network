@@ -121,6 +121,13 @@ export const DiscoveryContentSection = (): JSX.Element => {
     }
   }, [restoredState]);
 
+  // Disable browser's automatic scroll restoration — we handle it ourselves
+  React.useEffect(() => {
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+  }, []);
+
   // Track scroll position continuously so it's always up-to-date
   // (can't rely on capturing it during unmount since DOM changes may reset scrollY)
   const scrollYRef = useRef(0);
