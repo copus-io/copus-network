@@ -107,26 +107,32 @@ export const DiscoveryContentSection = (): JSX.Element => {
     }
   );
 
-  // Restore scroll position after cached articles render
-  const scrollRestored = useRef(false);
-  React.useEffect(() => {
-    if (restoredState && discoveryCache && !scrollRestored.current) {
-      scrollRestored.current = true;
-      // Use double rAF to ensure DOM has painted before scrolling
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo(0, discoveryCache!.scrollY);
-        });
-      });
-    }
-  }, [restoredState]);
-
   // Disable browser's automatic scroll restoration — we handle it ourselves
   React.useEffect(() => {
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
     }
   }, []);
+
+  // Restore scroll position after cached articles render
+  const scrollRestored = useRef(false);
+  React.useEffect(() => {
+    if (restoredState && discoveryCache && !scrollRestored.current) {
+      scrollRestored.current = true;
+      const targetY = discoveryCache!.scrollY;
+      // Retry scrollTo until the DOM is tall enough or max attempts reached
+      let attempts = 0;
+      const tryScroll = () => {
+        window.scrollTo(0, targetY);
+        attempts++;
+        if (Math.abs(window.scrollY - targetY) > 10 && attempts < 10) {
+          setTimeout(tryScroll, 50);
+        }
+      };
+      // Start after a small delay to let React paint
+      setTimeout(tryScroll, 50);
+    }
+  }, [restoredState]);
 
   // Track scroll position continuously so it's always up-to-date
   // (can't rely on capturing it during unmount since DOM changes may reset scrollY)
