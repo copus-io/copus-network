@@ -17,7 +17,7 @@ export const useArticles = (
 ) => {
   const [state, setState] = useState<UseArticlesState>({
     articles: [],
-    loading: false,
+    loading: options.autoRefresh !== false, // Start as loading when autoRefresh is enabled to prevent loadMore from racing the initial fetch
     error: null,
     hasMore: true,
     page: 1,
