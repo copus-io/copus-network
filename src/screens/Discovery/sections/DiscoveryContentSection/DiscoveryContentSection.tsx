@@ -112,12 +112,23 @@ export const DiscoveryContentSection = (): JSX.Element => {
   React.useEffect(() => {
     if (restoredState && discoveryCache && !scrollRestored.current) {
       scrollRestored.current = true;
-      // Wait for articles to render before restoring scroll
+      // Use double rAF to ensure DOM has painted before scrolling
       requestAnimationFrame(() => {
-        window.scrollTo(0, discoveryCache!.scrollY);
+        requestAnimationFrame(() => {
+          window.scrollTo(0, discoveryCache!.scrollY);
+        });
       });
     }
   }, [restoredState]);
+
+  // Track scroll position continuously so it's always up-to-date
+  // (can't rely on capturing it during unmount since DOM changes may reset scrollY)
+  const scrollYRef = useRef(0);
+  React.useEffect(() => {
+    const trackScroll = () => { scrollYRef.current = window.scrollY; };
+    window.addEventListener('scroll', trackScroll, { passive: true });
+    return () => window.removeEventListener('scroll', trackScroll);
+  }, []);
 
   // Save state to cache on unmount for back-navigation restoration
   React.useEffect(() => {
@@ -128,7 +139,7 @@ export const DiscoveryContentSection = (): JSX.Element => {
           hasMore,
           page,
           total,
-          scrollY: window.scrollY,
+          scrollY: scrollYRef.current,
         };
       }
     };
