@@ -168,6 +168,9 @@ export const DiscoveryContentSection = (): JSX.Element => {
     if (navigationType === 'POP') {
       return;
     }
+    // PUSH navigation: scroll to top, clear cache, and re-fetch
+    window.scrollTo(0, 0);
+    discoveryCache = null;
     refresh();
   }, [location.key, refresh, navigationType]);
 
