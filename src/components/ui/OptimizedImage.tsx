@@ -6,8 +6,8 @@ interface OptimizedImageProps {
   className?: string;
   aspectRatio?: string;
   placeholder?: string;
-  priority?: boolean; // 是否优先加载（首屏内容）
-  sizes?: string; // 响应式尺寸
+  priority?: boolean;
+  sizes?: string;
 }
 
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({
@@ -17,16 +17,15 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   aspectRatio = "16 / 9",
   placeholder = "#f5f5f5",
   priority = false,
-  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const [inView, setInView] = useState(priority); // 优先图片立即开始加载
-  const imgRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(priority);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
-    if (priority || !imgRef.current) return;
+    if (priority || !containerRef.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -35,40 +34,33 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           observer.disconnect();
         }
       },
-      {
-        rootMargin: '50px', // 提前50px开始加载
-        threshold: 0.1
-      }
+      { rootMargin: '50px', threshold: 0.1 }
     );
 
-    observer.observe(imgRef.current);
+    observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, [priority]);
 
-  // Generate srcSet for CDN images only
-  const isCdnImage = src.includes('unsplash.com') || src.includes('cloudinary') || src.includes('imgix');
-  const cdnSrcSet = isCdnImage ? [
-    `${src}&w=400 400w`,
-    `${src}&w=800 800w`,
-    `${src}&w=1200 1200w`
-  ].join(', ') : undefined;
+  // Preload image and detect load/error via hidden Image object
+  useEffect(() => {
+    if (!inView || !src) return;
 
-  const handleLoad = () => {
-    setLoaded(true);
-  };
+    const img = new Image();
+    img.referrerPolicy = 'no-referrer';
+    img.onload = () => { setLoaded(true); };
+    img.onerror = () => { setError(true); setLoaded(true); };
+    img.src = src;
 
-  const handleError = () => {
-    setError(true);
-    setLoaded(true);
-  };
+    return () => { img.onload = null; img.onerror = null; };
+  }, [inView, src]);
 
   return (
     <div
-      ref={imgRef}
+      ref={containerRef}
       className={`relative overflow-hidden rounded-lg ${className}`}
       style={{ aspectRatio }}
     >
-      {/* 占位符背景 */}
+      {/* Placeholder background */}
       <div
         className="absolute inset-0 flex items-center justify-center"
         style={{ backgroundColor: placeholder }}
@@ -92,20 +84,13 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         )}
       </div>
 
-      {/* 实际图片 */}
-      {inView && !error && (
-        <img
-          src={src}
-          {...(cdnSrcSet ? { srcSet: cdnSrcSet, sizes } : {})}
-          alt={alt}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-            loaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          onLoad={handleLoad}
-          onError={handleError}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-          referrerPolicy="no-referrer"
+      {/* Actual image rendered as background-image (avoids cross-origin img issues) */}
+      {inView && loaded && !error && (
+        <div
+          className="absolute inset-0 bg-cover bg-center transition-opacity duration-300 opacity-100"
+          style={{ backgroundImage: `url(${src})` }}
+          role="img"
+          aria-label={alt}
         />
       )}
     </div>
