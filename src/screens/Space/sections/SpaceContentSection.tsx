@@ -547,6 +547,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
             fetchedSpaceInfo = {
               name: space.name || 'Treasury',
+              authorId: space.ownerInfo?.id || space.userInfo?.id || user?.id,
               authorName: space.ownerInfo?.username || space.userInfo?.username || user?.username || 'Anonymous',
               authorAvatar: space.ownerInfo?.faceUrl || space.userInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
               authorNamespace: space.ownerInfo?.namespace || space.userInfo?.namespace || user?.namespace,
@@ -586,6 +587,7 @@ export const SpaceContentSection = (): JSX.Element => {
 
             fetchedSpaceInfo = {
               name: 'Treasury',
+              authorId: user?.id,
               authorName: user?.username || 'Anonymous',
               authorAvatar: user?.faceUrl || profileDefaultAvatar,
               authorNamespace: user?.namespace,
@@ -654,6 +656,7 @@ export const SpaceContentSection = (): JSX.Element => {
           // Note: Do NOT fall back to logged-in user's avatar/namespace - always show the space creator's info
           fetchedSpaceInfo = {
             name: displayName,
+            authorId: spaceData?.userInfo?.id || spaceData?.ownerInfo?.id || spaceData?.userId,
             authorName: authorUsername,
             authorAvatar: spaceData?.userInfo?.faceUrl || profileDefaultAvatar,
             authorNamespace: spaceData?.userInfo?.namespace,
@@ -808,16 +811,17 @@ export const SpaceContentSection = (): JSX.Element => {
   // Load existing sub-treasuries from user's spaces
   useEffect(() => {
     const loadSubTreasuries = async () => {
-      if (!user?.id || !spaceId) return;
+      const ownerId = spaceInfo?.authorId;
+      if (!ownerId || !spaceId) return;
 
       // Reset check status when space changes
       setHasCheckedSubSpaces(false);
       setOperationLoading(prev => ({ ...prev, loadingSubSpaces: true }));
 
       try {
-        console.log('🔍 Loading sub-treasuries for space:', spaceId, 'user:', user.id);
-        // Call pageMySpaces API with pid parameter to get sub-spaces
-        const response = await AuthService.getMySpaces(user.id, 1, 100, spaceId);
+        console.log('🔍 Loading sub-treasuries for space:', spaceId, 'owner:', ownerId);
+        // Call pageMySpaces API with pid parameter to get sub-spaces - use space owner's ID, not current user
+        const response = await AuthService.getMySpaces(ownerId, 1, 100, spaceId);
         console.log('🔍 Raw API response:', response);
 
         const subSpaces = response?.data?.data || response?.data || response || [];
@@ -854,7 +858,7 @@ export const SpaceContentSection = (): JSX.Element => {
     };
 
     loadSubTreasuries();
-  }, [user?.id, spaceId, displaySpaceName]);
+  }, [spaceInfo?.authorId, spaceId, displaySpaceName]);
 
   // Click outside to exit organize mode
   useEffect(() => {
@@ -1375,7 +1379,7 @@ export const SpaceContentSection = (): JSX.Element => {
         // Get correct parent space namespace dynamically
         try {
           if (parentSpaceInfo?.id) {
-            const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
+            const userSpaces = await AuthService.getMySpaces(spaceInfo?.authorId || user?.id || 0, 1, 100);
             const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
             const correctParentSpace = spaces.find((space: any) => space.id === parentSpaceInfo.id);
 
@@ -1864,9 +1868,9 @@ export const SpaceContentSection = (): JSX.Element => {
               // Load only sub-spaces within current parent space
               const loadRestrictedSpaces = async () => {
                 try {
-                  const userId = user?.id;
+                  const userId = spaceInfo?.authorId || user?.id;
                   if (!userId) {
-                    console.error('📁 No user ID available');
+                    console.error('📁 No user/owner ID available');
                     setBindableSpaces([]);
                     return;
                   }
