@@ -31,6 +31,12 @@ const transformBackendArticle = (backendArticle: BackendArticle): Article => {
     try {
       new URL(coverUrl);
 
+      // Upgrade http:// to https:// to avoid mixed-content blocking
+      // Browsers block http images on https pages (active mixed content for <img>)
+      if (coverUrl.startsWith('http://')) {
+        coverUrl = coverUrl.replace('http://', 'https://');
+      }
+
       // Fix malformed extensions like '.svg+xml' -> '.svg'
       // This can happen when MIME type 'image/svg+xml' is incorrectly used as extension
       if (coverUrl.endsWith('+xml')) {

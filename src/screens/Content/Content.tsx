@@ -72,10 +72,15 @@ const getValidDetailImageUrl = (imageUrl: string | undefined): string => {
     imageUrl = imageUrl.replace(/\+xml$/, '');
   }
 
-  // Check if it's a valid HTTP/HTTPS URL
+  // Upgrade http:// to https:// to avoid mixed-content blocking
+  if (imageUrl.startsWith('http://')) {
+    imageUrl = imageUrl.replace('http://', 'https://');
+  }
+
+  // Check if it's a valid HTTPS URL
   try {
     const url = new URL(imageUrl);
-    if (url.protocol === 'http:' || url.protocol === 'https:') {
+    if (url.protocol === 'https:') {
       return imageUrl;
     } else {
       return ''; // No placeholder - return empty
