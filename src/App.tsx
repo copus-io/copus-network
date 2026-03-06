@@ -56,6 +56,7 @@ const Published = lazy(() => import("./routes/Published/screens/Published").then
 const SignUp = lazy(() => import("./routes/SignUp/screens/SignUp").then(m => ({ default: m.SignUp })));
 const NotFoundPage = lazy(() => import("./components/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
 const TermsPage = lazy(() => import("./components/pages/TermsPage").then(m => ({ default: m.TermsPage })));
+const AboutPage = lazy(() => import("./components/pages/AboutPage").then(m => ({ default: m.AboutPage })));
 const OAuthRedirect = lazy(() => import("./components/OAuthRedirect"));
 
 // Error boundary to catch Suspense errors
@@ -256,6 +257,10 @@ const router = createBrowserRouter([
   {
     path: "/taste-test",
     element: <TasteTest />,
+  },
+  {
+    path: "/about",
+    element: <LazyRoute><AboutPage /></LazyRoute>,
   },
   {
     path: "/terms",

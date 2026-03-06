@@ -70,7 +70,7 @@ const getMenuItems = (userNamespace?: string) => [
 ];
 
 const footerLinks = [
-  { label: "About", href: "https://www.copus.io/work/daeb797b047e45fba5e6690a618de52f", isExternal: true },
+  { label: "About", href: "/about" },
   { label: "Contact us", href: "#", isContact: true },
   { label: "Terms & Privacy", href: "/terms" }
 ];
