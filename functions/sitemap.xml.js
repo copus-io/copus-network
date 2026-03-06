@@ -57,18 +57,15 @@ export async function onRequest(context) {
   const urls = []
   const today = new Date().toISOString().split('T')[0]
 
-  // Add homepage and navigation pages
+  // Add homepage and public navigation pages
+  // Only include routes that exist in App.tsx and are publicly accessible
   const staticPages = [
     { path: '/', changefreq: 'daily', priority: '1.0' },
     { path: '/home', changefreq: 'daily', priority: '0.9' },
     { path: '/copus', changefreq: 'daily', priority: '0.9' },
-    { path: '/discovery', changefreq: 'hourly', priority: '0.9' },
     { path: '/explore/new', changefreq: 'daily', priority: '0.8' },
-    { path: '/following', changefreq: 'daily', priority: '0.8' },
-    { path: '/treasury', changefreq: 'weekly', priority: '0.8' },
-    { path: '/curate', changefreq: 'weekly', priority: '0.8' },
-    { path: '/earning', changefreq: 'weekly', priority: '0.7' },
-    { path: '/my-treasury', changefreq: 'weekly', priority: '0.7' },
+    { path: '/about', changefreq: 'monthly', priority: '0.6' },
+    { path: '/terms', changefreq: 'monthly', priority: '0.5' },
     { path: '/published', changefreq: 'weekly', priority: '0.6' },
     { path: '/login', changefreq: 'monthly', priority: '0.5' },
     { path: '/signup', changefreq: 'monthly', priority: '0.5' }

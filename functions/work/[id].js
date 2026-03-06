@@ -91,7 +91,7 @@ function buildJsonResponse(article, seoData) {
     url: articleUrl,
     description: seoData.description || article.content || null,
     keywords: seoData.keywords || [],
-    image: article.coverUrl || DEFAULT_IMAGE,
+    image: (article.coverUrl || DEFAULT_IMAGE).replace(/^http:\/\//, 'https://'),
     originalSource: article.targetUrl || null,
     curationNote: article.content || null,
     category: seoData.category || article.category || null,
@@ -195,7 +195,8 @@ class HeadInjector {
     // Use AI-generated description, then content (curator's note), then empty
     const description = escapeHtml(seoData.description || article.content || '')
     const keywords = seoData.keywords ? (Array.isArray(seoData.keywords) ? seoData.keywords : seoData.keywords.split(',')).map(k => escapeHtml(k.trim())).join(', ') : ''
-    const image = article.coverUrl || DEFAULT_IMAGE
+    const rawImage = article.coverUrl || DEFAULT_IMAGE
+    const image = rawImage.replace(/^http:\/\//, 'https://')
     const articleUrl = `${SITE_URL}/work/${article.uuid || article.id}`
     const authorName = escapeHtml(article.authorInfo?.username || article.userName || '')
 
@@ -258,7 +259,7 @@ class BodyInjector {
       "headline": article.title,
       "description": seoData.description || article.content || "",
       "url": articleUrl,
-      "image": article.coverUrl || DEFAULT_IMAGE,
+      "image": (article.coverUrl || DEFAULT_IMAGE).replace(/^http:\/\//, 'https://'),
       "datePublished": article.createAt || article.createdAt,
       "dateModified": article.publishAt || article.updatedAt || article.createAt,
       "keywords": keywordsArray.join(", "),

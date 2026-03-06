@@ -25,6 +25,7 @@ export const TermsPage: React.FC = () => {
       <SEO
         title={isPrivacyRoute ? 'Privacy Policy' : 'Terms of Service'}
         description="Copus Terms of Service and Privacy Policy. Learn about how we handle your data and the rules governing your use of our platform."
+        url="https://copus.network/terms"
       />
       <HeaderSection />
 
