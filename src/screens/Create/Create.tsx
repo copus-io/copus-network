@@ -761,7 +761,11 @@ export const Create = (): JSX.Element => {
 
     try {
       // Priority: existing cover URL > auto-fetched URL (if not dismissed)
+      // Upgrade http:// to https:// to avoid mixed-content blocking on discovery cards
       let finalCoverUrl = coverImageUrl || (!autoFetchDismissed ? autoFetchedCoverUrl : '');
+      if (finalCoverUrl.startsWith('http://')) {
+        finalCoverUrl = finalCoverUrl.replace('http://', 'https://');
+      }
 
       // If new image uploaded, upload to S3
       if (formData.coverImage) {
