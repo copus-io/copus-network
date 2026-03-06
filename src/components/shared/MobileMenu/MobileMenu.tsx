@@ -370,7 +370,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                 <div className="flex flex-col items-start [font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px]">
                   <a href="#" className="hover:text-dark-grey transition-colors">• About</a>
                   <button onClick={handleContactClick} className="hover:text-dark-grey transition-colors cursor-pointer text-left">• Contact us</button>
-                  <a href="https://www.copus.io/work/565b548277674c3bae3ccc016c7f58a2" target="_blank" rel="noopener noreferrer" className="hover:text-dark-grey transition-colors">• Terms & Privacy</a>
+                  <a href="/terms" className="hover:text-dark-grey transition-colors">• Terms & Privacy</a>
                 </div>
               </nav>
 

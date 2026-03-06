@@ -55,6 +55,7 @@ const DeleteAccount = lazy(() => import("./routes/DeleteAccount/screens/DeleteAc
 const Published = lazy(() => import("./routes/Published/screens/Published").then(m => ({ default: m.Published })));
 const SignUp = lazy(() => import("./routes/SignUp/screens/SignUp").then(m => ({ default: m.SignUp })));
 const NotFoundPage = lazy(() => import("./components/pages/NotFoundPage").then(m => ({ default: m.NotFoundPage })));
+const TermsPage = lazy(() => import("./components/pages/TermsPage").then(m => ({ default: m.TermsPage })));
 const OAuthRedirect = lazy(() => import("./components/OAuthRedirect"));
 
 // Error boundary to catch Suspense errors
@@ -255,6 +256,14 @@ const router = createBrowserRouter([
   {
     path: "/taste-test",
     element: <TasteTest />,
+  },
+  {
+    path: "/terms",
+    element: <LazyRoute><TermsPage /></LazyRoute>,
+  },
+  {
+    path: "/privacy",
+    element: <LazyRoute><TermsPage /></LazyRoute>,
   },
   // 404 catch-all route - must be last
   {
