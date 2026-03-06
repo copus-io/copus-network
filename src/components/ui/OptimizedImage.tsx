@@ -45,19 +45,13 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     return () => observer.disconnect();
   }, [priority]);
 
-  // 生成不同尺寸的图片URL（如果使用CDN的话）
-  const generateSrcSet = (baseUrl: string): string => {
-    if (!baseUrl.includes('unsplash.com') && !baseUrl.includes('cloudinary') && !baseUrl.includes('imgix')) {
-      return baseUrl; // 非CDN图片直接返回
-    }
-
-    // 为Unsplash等CDN生成多尺寸
-    return [
-      `${baseUrl}&w=400 400w`,
-      `${baseUrl}&w=800 800w`,
-      `${baseUrl}&w=1200 1200w`
-    ].join(', ');
-  };
+  // Generate srcSet for CDN images only
+  const isCdnImage = src.includes('unsplash.com') || src.includes('cloudinary') || src.includes('imgix');
+  const cdnSrcSet = isCdnImage ? [
+    `${src}&w=400 400w`,
+    `${src}&w=800 800w`,
+    `${src}&w=1200 1200w`
+  ].join(', ') : undefined;
 
   const handleLoad = () => {
     setLoaded(true);
@@ -102,8 +96,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       {inView && !error && (
         <img
           src={src}
-          srcSet={generateSrcSet(src)}
-          sizes={sizes}
+          {...(cdnSrcSet ? { srcSet: cdnSrcSet, sizes } : {})}
           alt={alt}
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
             loaded ? 'opacity-100' : 'opacity-0'
@@ -112,6 +105,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           onError={handleError}
           loading={priority ? 'eager' : 'lazy'}
           decoding="async"
+          referrerPolicy="no-referrer"
         />
       )}
     </div>
