@@ -126,8 +126,7 @@ export const AboutPage: React.FC = () => {
           </p>
 
           <p className="text-gray-700 leading-relaxed">
-            Or{' '}
-            <a href="/" className="text-red hover:underline font-medium">start sharing content today</a>!
+            Or start sharing content today!
           </p>
 
           <p className="text-sm text-gray-500 mt-8">
