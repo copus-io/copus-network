@@ -144,7 +144,7 @@ const LoginForm: React.FC<{
 
           <label
             htmlFor="remember"
-            className="relative w-fit mt-[-1.00px] font-['Lato',_Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-[20px] whitespace-nowrap cursor-pointer"
+            className="relative w-fit mt-[-1.00px] font-['Lato',_Helvetica] font-normal text-[#999] text-sm tracking-[0] leading-[20px] whitespace-nowrap cursor-pointer"
           >
             Remember me
           </label>
@@ -155,7 +155,7 @@ const LoginForm: React.FC<{
           className="h-auto p-0 hover:bg-transparent ml-4"
           onClick={onForgotPassword}
         >
-          <div className="relative w-fit mt-[-1.00px] font-['Lato',_Helvetica] font-normal text-dark-grey text-sm tracking-[0] leading-[20px] whitespace-nowrap">
+          <div className="relative w-fit mt-[-1.00px] font-['Lato',_Helvetica] font-normal text-[#999] text-sm tracking-[0] leading-[20px] whitespace-nowrap">
             Forgot password?
           </div>
         </Button>
