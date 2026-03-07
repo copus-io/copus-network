@@ -18,12 +18,10 @@ import { cssOptimizer } from "./utils/cssOptimizer";
 // Eagerly loaded - critical path
 import { Discovery } from "./screens/Discovery/Discovery";
 
-// Withdrawal and Login - eagerly loaded for better UX
-import { Withdrawal } from "./screens/Withdrawal/Withdrawal";
-import { Login } from "./screens/Login/Login";
-
-// Content - eagerly loaded to prevent dynamic import errors
-import { Content } from "./screens/Content/Content";
+// Lazy loaded - previously eager, now deferred for faster initial paint
+const Login = lazy(() => import("./screens/Login/Login").then(m => ({ default: m.Login })));
+const Content = lazy(() => import("./screens/Content/Content").then(m => ({ default: m.Content })));
+const Withdrawal = lazy(() => import("./screens/Withdrawal/Withdrawal").then(m => ({ default: m.Withdrawal })));
 
 // Test components for development
 import { TestNoAccess } from "./screens/Test/TestNoAccess";

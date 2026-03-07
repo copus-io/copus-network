@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface OptimizedImageProps {
   src: string;
@@ -16,24 +16,33 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   className = "",
   aspectRatio = "16 / 9",
   placeholder = "#f5f5f5",
+  priority = false,
 }) => {
+  const [hasError, setHasError] = useState(false);
+
   return (
     <div
       className={`relative overflow-hidden rounded-lg ${className}`}
-      style={{ aspectRatio }}
+      style={{ aspectRatio, backgroundColor: placeholder }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: src ? `url(${src})` : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundColor: placeholder,
-        }}
-        role="img"
-        aria-label={alt}
-      />
+      {src && !hasError ? (
+        <img
+          src={src}
+          alt={alt}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          onError={() => setHasError(true)}
+          className="absolute inset-0 w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: placeholder }}
+          role="img"
+          aria-label={alt}
+        />
+      )}
     </div>
   );
 };

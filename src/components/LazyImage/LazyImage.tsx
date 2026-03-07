@@ -61,7 +61,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
           });
         },
         {
-          rootMargin: '50px' // Start loading 50px before visible
+          rootMargin: '300px' // Start loading 300px before visible
         }
       );
 

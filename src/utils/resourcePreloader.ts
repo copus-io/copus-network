@@ -114,8 +114,8 @@ class ResourcePreloader {
    */
   preloadFonts(): void {
     const fonts = [
-      // Add any custom fonts here
-      // 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2'
+      'https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjx4wXg.woff2',
+      'https://fonts.gstatic.com/s/lato/v24/S6u9w4BMUTPHh6UVSwiPGQ.woff2',
     ];
 
     fonts.forEach(fontUrl => {
@@ -235,16 +235,15 @@ class ResourcePreloader {
   private preloadLikelyRoutes(): void {
     const currentPath = window.location.pathname;
 
-    // Wait a bit for the current page to load
-    setTimeout(() => {
+    // Preload after idle — don't block initial paint
+    const schedulePreload = window.requestIdleCallback || ((cb: () => void) => setTimeout(cb, 100));
+    schedulePreload(() => {
       if (currentPath === '/' || currentPath === '/copus') {
-        // On homepage, users likely to visit content pages
         this.preloadRoute('/content', () => import('../screens/Content/Content'));
       } else if (currentPath.startsWith('/work/')) {
-        // On content pages, users might go back to discovery or view profile
         this.preloadRoute('/user', () => import('../screens/UserProfile/UserProfile'));
       }
-    }, 2000);
+    });
   }
 }
 
@@ -253,8 +252,5 @@ export const resourcePreloader = new ResourcePreloader();
 
 // Auto-initialize when module is imported
 if (typeof window !== 'undefined') {
-  // Wait a bit for the app to initialize
-  setTimeout(() => {
-    resourcePreloader.init();
-  }, 1000);
+  resourcePreloader.init();
 }

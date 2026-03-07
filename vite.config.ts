@@ -54,6 +54,9 @@ export default defineConfig(({ mode }) => ({
           }
 
           // Stable chunk names for critical screens
+          if (id.includes('/screens/Login/')) {
+            return 'login';
+          }
           if (id.includes('/screens/Notification/')) {
             return 'notification';
           }

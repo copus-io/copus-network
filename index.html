@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N340HSQBFW"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-N340HSQBFW');
-    </script>
-
     <meta charset="utf-8" />
     <title data-rh="true">Copus – Open-Web Curation & Creator Rewards</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -145,10 +136,12 @@
     <link rel="dns-prefetch" href="https://api-prod.copus.network" />
     <link rel="dns-prefetch" href="https://api-test.copus.network" />
 
-    <!-- Preload critical fonts -->
+    <!-- Fonts: preconnect + non-blocking load -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;500;600;700&family=Maven+Pro:wght@600&display=swap" rel="stylesheet" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Maven+Pro:wght@600&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Maven+Pro:wght@600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Maven+Pro:wght@600&display=swap" rel="stylesheet" /></noscript>
 
     <!-- Preload critical assets -->
     <link rel="preload" href="/logo.png" as="image" type="image/png" />
@@ -199,5 +192,21 @@
 
     <div id="app"></div>
     <script type="module" src="./src/index.tsx"></script>
+
+    <!-- Google Analytics - deferred to not block rendering -->
+    <script>
+      window.addEventListener('load', function() {
+        var s = document.createElement('script');
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-N340HSQBFW';
+        s.async = true;
+        document.head.appendChild(s);
+        s.onload = function() {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-N340HSQBFW');
+        };
+      });
+    </script>
   </body>
 </html>
