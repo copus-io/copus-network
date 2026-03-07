@@ -1420,6 +1420,35 @@ export const Login = (): JSX.Element => {
                   </TabsList>
 
                   <TabsContent value="login" className="mt-6 sm:mt-[30px]">
+                    {/* Social login providers */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-[10px_30px] relative self-stretch w-full mb-4 sm:mb-6">
+                      {socialProviders.map((provider, index) => (
+                        <Button
+                          key={`social-login-${index}`}
+                          variant="ghost"
+                          className="flex flex-col items-center justify-center w-16 sm:w-[70px] h-12 sm:h-[60px] gap-1 sm:gap-[8px] p-1 sm:p-2 hover:bg-transparent transition-all duration-200 hover:scale-105"
+                          onClick={() => handleSocialLogin(provider.name)}
+                          disabled={isLoginLoading}
+                        >
+                          <div className="flex items-center justify-center w-6 sm:w-[30px] h-6 sm:h-[30px] flex-shrink-0">
+                            <img
+                              className={`w-6 sm:w-[30px] h-6 sm:h-[30px] object-contain ${provider.name === 'Coinbase' ? 'rounded-md' : ''}`}
+                              alt={`${provider.name} icon`}
+                              src={provider.icon}
+                            />
+                          </div>
+                          <span className="font-['Lato',_Helvetica] font-normal text-off-black text-xs sm:text-sm text-center leading-[16px] whitespace-nowrap">
+                            {provider.name}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3 sm:gap-[15px] mb-4 sm:mb-6">
+                      <Separator className="flex-1 bg-medium-dark-grey" />
+                      <span className="text-medium-dark-grey text-xs sm:text-sm whitespace-nowrap px-2">or continue with email</span>
+                      <Separator className="flex-1 bg-medium-dark-grey" />
+                    </div>
+
                     <LoginForm
                       email={loginEmail}
                       setEmail={setLoginEmail}
@@ -1454,6 +1483,35 @@ export const Login = (): JSX.Element => {
                   </TabsContent>
 
                   <TabsContent value="signup" className="mt-6 sm:mt-[30px]">
+                    {/* Social signup providers */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-[10px_30px] relative self-stretch w-full mb-4 sm:mb-6">
+                      {socialProviders.map((provider, index) => (
+                        <Button
+                          key={`social-signup-${index}`}
+                          variant="ghost"
+                          className="flex flex-col items-center justify-center w-16 sm:w-[70px] h-12 sm:h-[60px] gap-1 sm:gap-[8px] p-1 sm:p-2 hover:bg-transparent transition-all duration-200 hover:scale-105"
+                          onClick={() => handleSocialLogin(provider.name)}
+                          disabled={isLoginLoading}
+                        >
+                          <div className="flex items-center justify-center w-6 sm:w-[30px] h-6 sm:h-[30px] flex-shrink-0">
+                            <img
+                              className={`w-6 sm:w-[30px] h-6 sm:h-[30px] object-contain ${provider.name === 'Coinbase' ? 'rounded-md' : ''}`}
+                              alt={`${provider.name} icon`}
+                              src={provider.icon}
+                            />
+                          </div>
+                          <span className="font-['Lato',_Helvetica] font-normal text-off-black text-xs sm:text-sm text-center leading-[16px] whitespace-nowrap">
+                            {provider.name}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3 sm:gap-[15px] mb-4 sm:mb-6">
+                      <Separator className="flex-1 bg-medium-dark-grey" />
+                      <span className="text-medium-dark-grey text-xs sm:text-sm whitespace-nowrap px-2">or continue with email</span>
+                      <Separator className="flex-1 bg-medium-dark-grey" />
+                    </div>
+
                     <RegistrationForm
                       username={username}
                       setUsername={setUsername}
@@ -1498,44 +1556,6 @@ export const Login = (): JSX.Element => {
                 </Tabs>
               </div>
 
-              <div className="flex flex-col items-start gap-4 sm:gap-5 self-stretch w-full relative flex-[0_0_auto]">
-                <div className="gap-3 sm:gap-[15px] pt-4 sm:pt-5 pb-2.5 px-0 self-stretch w-full flex-[0_0_auto] rounded-[25px] overflow-hidden flex items-center justify-center relative">
-                  <Separator className="flex-1 bg-medium-dark-grey" />
-
-                  <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-medium-dark-grey text-xs sm:text-[length:var(--p-font-size)] text-center tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] px-4">
-                    Or sign in with
-                  </div>
-
-                  <Separator className="flex-1 bg-medium-dark-grey" />
-                </div>
-
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-[10px_30px] relative self-stretch w-full flex-[0_0_auto]">
-                  {socialProviders.map((provider, index) => (
-                    <Button
-                      key={`social-${index}`}
-                      variant="ghost"
-                      className="flex flex-col items-center justify-center w-16 sm:w-[70px] h-12 sm:h-[60px] gap-1 sm:gap-[8px] p-1 sm:p-2 hover:bg-transparent transition-all duration-200 hover:scale-105"
-                      onClick={() => handleSocialLogin(provider.name)}
-                      disabled={isLoginLoading}
-                    >
-                      <div className="flex items-center justify-center w-6 sm:w-[30px] h-6 sm:h-[30px] flex-shrink-0">
-                        <img
-                          className={`w-6 sm:w-[30px] h-6 sm:h-[30px] object-contain ${
-                            provider.name === 'Coinbase' ? 'rounded-md' : ''
-                          }`}
-                          alt={`${provider.name} icon`}
-                          src={provider.icon}
-                        />
-                      </div>
-
-                      <span className="font-['Lato',_Helvetica] font-normal text-off-black text-xs sm:text-sm text-center leading-[16px] whitespace-nowrap">
-                        {provider.name}
-                      </span>
-                    </Button>
-                  ))}
-                </div>
-
-              </div>
             </CardContent>
           </Card>
 
