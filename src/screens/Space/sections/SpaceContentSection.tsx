@@ -58,7 +58,7 @@ const SpaceInfoSection = ({
   onEdit,
   onOrganize,
   organizeMode,
-  directArticleCount = 0,
+  organizeDisabled,
   onCreateSubTreasury,
   onImportCSV,
   onSubscriberCountLoaded,
@@ -92,7 +92,7 @@ const SpaceInfoSection = ({
   onEdit?: () => void;
   onOrganize?: () => void;
   organizeMode?: boolean;
-  directArticleCount?: number;
+  organizeDisabled?: boolean;
   onCreateSubTreasury?: () => void;
   onImportCSV?: () => void;
   onSubscriberCountLoaded?: (count: number) => void;
@@ -176,23 +176,44 @@ const SpaceInfoSection = ({
           </span>
         )}
 
-        {/* Space name - clickable to go back to main treasury page */}
+        {/* Space name */}
         {(isSubTreasury && parentSpaceName) || (spaceInfo?.parentSpace) ? (
           <>
             <h1
-              onClick={() => {
+              className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:text-blue-600 transition-colors duration-200"
+              onClick={async () => {
                 // Priority 1: Use API parentSpace info (most reliable)
                 if (spaceInfo?.parentSpace?.namespace) {
                   navigate(`/treasury/${spaceInfo.parentSpace.namespace}`);
-                } else if (parentSpaceInfo?.namespace) {
-                  // Priority 2: Use navigation state parentSpaceInfo
-                  navigate(`/treasury/${parentSpaceInfo.namespace}`);
-                } else {
-                  // Fallback: Browser back
-                  navigate(-1);
+                  return;
                 }
+
+                // Priority 2: Use navigation state parentSpaceInfo
+                if (parentSpaceInfo?.namespace) {
+                  navigate(`/treasury/${parentSpaceInfo.namespace}`);
+                  return;
+                }
+
+                // Priority 3: Try to lookup namespace by ID
+                const parentId = spaceInfo?.parentSpace?.id || parentSpaceInfo?.id;
+                if (parentId) {
+                  try {
+                    const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
+                    const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
+                    const parentSpace = spaces.find((space: any) => space.id === parentId);
+                    if (parentSpace?.namespace) {
+                      navigate(`/treasury/${parentSpace.namespace}`);
+                      return;
+                    }
+                  } catch (error) {
+                    console.error('Error looking up parent namespace:', error);
+                  }
+                }
+
+                // Fallback: Browser back
+                navigate(-1);
               }}
-              className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:text-gray-400 transition-colors duration-200"
+              title="Go to parent treasury"
             >
               {parentSpaceName || spaceInfo?.parentSpace?.name}
             </h1>
@@ -200,10 +221,9 @@ const SpaceInfoSection = ({
           </>
         ) : (
           <h1
-            className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1"
-          >
-            {spaceName}
-          </h1>
+            className={`[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-1 ${canEdit && onEdit ? 'cursor-pointer hover:text-gray-500 transition-colors duration-200' : ''}`}
+            onClick={canEdit && onEdit ? onEdit : undefined}
+          >{spaceName}</h1>
         )}
 
         {/* Treasure count and author info */}
@@ -239,78 +259,70 @@ const SpaceInfoSection = ({
         <div className="flex items-center gap-3 mt-1.5">
           {/* Edit button */}
           {canEdit && (
-            <div className="relative group">
-              <button
-                type="button"
-                aria-label="Edit space"
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
-                onClick={onEdit}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Edit</span>
-            </div>
+            <button
+              type="button"
+              aria-label="Edit space"
+              title="Edit"
+              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+              onClick={onEdit}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           )}
 
           {/* Organize button */}
           {canEdit && onOrganize && (
-            <div className="relative group">
-              <button
-                type="button"
-                aria-label="Organize"
-                disabled={directArticleCount === 0}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
-                  directArticleCount === 0 ? 'bg-gray-50 opacity-40 cursor-not-allowed' :
-                  organizeMode ? 'bg-red/10' : 'bg-gray-100 hover:opacity-70'
-                }`}
-                onClick={directArticleCount === 0 ? undefined : onOrganize}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
-                  <rect x="14" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
-                  <rect x="3" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
-                  <rect x="14" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
-                </svg>
-              </button>
-              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Organize</span>
-            </div>
+            <button
+              type="button"
+              aria-label="Organize"
+              title={organizeDisabled ? "No articles to organize" : "Organize"}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-opacity ${
+                organizeDisabled ? 'bg-gray-100 opacity-30 cursor-not-allowed' :
+                organizeMode ? 'bg-red/10' : 'bg-gray-100 hover:opacity-70'
+              }`}
+              onClick={organizeDisabled ? undefined : onOrganize}
+              disabled={organizeDisabled}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                <rect x="14" y="3" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                <rect x="3" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+                <rect x="14" y="14" width="7" height="7" rx="1.5" stroke={organizeMode ? '#f23a00' : '#686868'} strokeWidth="2"/>
+              </svg>
+            </button>
           )}
 
           {/* Create sub-treasury button */}
           {canEdit && onCreateSubTreasury && (
-            <div className="relative group">
-              <button
-                type="button"
-                aria-label="Create sub-treasury"
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
-                onClick={onCreateSubTreasury}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5V19M5 12H19" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Create Sub-treasury</span>
-            </div>
+            <button
+              type="button"
+              aria-label="Create sub-treasury"
+              title="Create Sub-treasury"
+              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+              onClick={onCreateSubTreasury}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5V19M5 12H19" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           )}
 
-          {/* Import button - hidden on mobile */}
+          {/* Import button */}
           {canEdit && onImportCSV && (
-            <div className="relative group hidden sm:block">
-              <button
-                type="button"
-                aria-label="Import bookmarks"
-                className="flex w-8 h-8 rounded-full bg-gray-100 items-center justify-center hover:opacity-70 transition-opacity"
-                onClick={onImportCSV}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
-              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Import</span>
-            </div>
+            <button
+              type="button"
+              aria-label="Import bookmarks"
+              title="Import Bookmarks"
+              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
+              onClick={onImportCSV}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           )}
 
           {/* Subscribe button (only for non-owners and not sub-spaces) - using unified SubscribeButton component */}
@@ -330,10 +342,11 @@ const SpaceInfoSection = ({
           )}
 
           {/* Share button */}
-          <div className="relative group">
+          <div className="relative">
             <button
               type="button"
               aria-label="Share space"
+              title="Share"
               className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:opacity-70 transition-opacity"
               onClick={() => setShowShareDropdown(!showShareDropdown)}
             >
@@ -343,7 +356,6 @@ const SpaceInfoSection = ({
                 className="w-4 h-4"
               />
             </button>
-            <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2.5 py-1 bg-[#E0E0E0] text-[#454545] text-xs rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Share</span>
             {showShareDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowShareDropdown(false)} />
@@ -458,18 +470,6 @@ export const SpaceContentSection = (): JSX.Element => {
     loadingSubSpaces: false,
   });
 
-  // Track whether we should show sub-spaces section at all
-  const [hasCheckedSubSpaces, setHasCheckedSubSpaces] = useState(false);
-  // Track the number of skeleton items to show based on previous load or estimate
-  const [skeletonCount, setSkeletonCount] = useState(() => {
-    // Try to get a reasonable estimate from localStorage or default to 2
-    if (typeof window !== 'undefined' && spaceId) {
-      const stored = localStorage.getItem(`subspace_count_${spaceId}`);
-      return stored ? Math.min(parseInt(stored, 10), 6) : 2;
-    }
-    return 2;
-  });
-
   // Organize mode state
   const [organizeMode, setOrganizeMode] = useState(false);
   const [selectedArticleIds, setSelectedArticleIds] = useState<Set<string>>(new Set());
@@ -547,7 +547,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
             fetchedSpaceInfo = {
               name: space.name || 'Treasury',
-              authorId: space.ownerInfo?.id || space.userInfo?.id || user?.id,
               authorName: space.ownerInfo?.username || space.userInfo?.username || user?.username || 'Anonymous',
               authorAvatar: space.ownerInfo?.faceUrl || space.userInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
               authorNamespace: space.ownerInfo?.namespace || space.userInfo?.namespace || user?.namespace,
@@ -587,7 +586,6 @@ export const SpaceContentSection = (): JSX.Element => {
 
             fetchedSpaceInfo = {
               name: 'Treasury',
-              authorId: user?.id,
               authorName: user?.username || 'Anonymous',
               authorAvatar: user?.faceUrl || profileDefaultAvatar,
               authorNamespace: user?.namespace,
@@ -656,7 +654,6 @@ export const SpaceContentSection = (): JSX.Element => {
           // Note: Do NOT fall back to logged-in user's avatar/namespace - always show the space creator's info
           fetchedSpaceInfo = {
             name: displayName,
-            authorId: spaceData?.userInfo?.id || spaceData?.ownerInfo?.id || spaceData?.userId,
             authorName: authorUsername,
             authorAvatar: spaceData?.userInfo?.faceUrl || profileDefaultAvatar,
             authorNamespace: spaceData?.userInfo?.namespace,
@@ -811,54 +808,31 @@ export const SpaceContentSection = (): JSX.Element => {
   // Load existing sub-treasuries from user's spaces
   useEffect(() => {
     const loadSubTreasuries = async () => {
-      const ownerId = spaceInfo?.authorId;
-      if (!ownerId || !spaceId) return;
+      if (!user?.id || !spaceId) return;
 
-      // Reset check status when space changes
-      setHasCheckedSubSpaces(false);
       setOperationLoading(prev => ({ ...prev, loadingSubSpaces: true }));
 
       try {
-        console.log('🔍 Loading sub-treasuries for space:', spaceId, 'owner:', ownerId);
-        // Call pageMySpaces API with pid parameter to get sub-spaces - use space owner's ID, not current user
-        const response = await AuthService.getMySpaces(ownerId, 1, 100, spaceId);
+        console.log('🔍 Loading sub-treasuries for space:', spaceId, 'user:', user.id);
+        // Call pageMySpaces API with pid parameter to get sub-spaces
+        const response = await AuthService.getMySpaces(user.id, 1, 100, spaceId);
         console.log('🔍 Raw API response:', response);
 
         const subSpaces = response?.data?.data || response?.data || response || [];
         console.log('🔍 Extracted sub-treasuries:', subSpaces);
         console.log('🔍 Sub-treasuries count:', Array.isArray(subSpaces) ? subSpaces.length : 'not array');
 
-        const finalSubSpaces = Array.isArray(subSpaces) ? subSpaces : [];
-        setSubTreasuries(finalSubSpaces);
-        setHasCheckedSubSpaces(true);
-
-        // Update skeleton count for next time based on actual result
-        if (finalSubSpaces.length > 0) {
-          // Store the actual count for future loads, capped at reasonable maximum
-          const newSkeletonCount = Math.min(finalSubSpaces.length, 6);
-          setSkeletonCount(newSkeletonCount);
-
-          // Persist to localStorage for better UX on next visit
-          if (typeof window !== 'undefined' && spaceId) {
-            localStorage.setItem(`subspace_count_${spaceId}`, newSkeletonCount.toString());
-          }
-        } else {
-          // No sub-spaces found, clear the localStorage for this space
-          if (typeof window !== 'undefined' && spaceId) {
-            localStorage.removeItem(`subspace_count_${spaceId}`);
-          }
-        }
+        setSubTreasuries(Array.isArray(subSpaces) ? subSpaces : []);
       } catch (error) {
         console.error('🔍 Failed to load sub-treasuries:', error);
         setSubTreasuries([]); // Reset to empty array on error
-        setHasCheckedSubSpaces(true);
       } finally {
         setOperationLoading(prev => ({ ...prev, loadingSubSpaces: false }));
       }
     };
 
     loadSubTreasuries();
-  }, [spaceInfo?.authorId, spaceId, displaySpaceName]);
+  }, [user?.id, spaceId, displaySpaceName]);
 
   // Click outside to exit organize mode
   useEffect(() => {
@@ -1379,7 +1353,7 @@ export const SpaceContentSection = (): JSX.Element => {
         // Get correct parent space namespace dynamically
         try {
           if (parentSpaceInfo?.id) {
-            const userSpaces = await AuthService.getMySpaces(spaceInfo?.authorId || user?.id || 0, 1, 100);
+            const userSpaces = await AuthService.getMySpaces(user?.id || 0, 1, 100);
             const spaces = userSpaces?.data?.data || userSpaces?.data || userSpaces || [];
             const correctParentSpace = spaces.find((space: any) => space.id === parentSpaceInfo.id);
 
@@ -1418,10 +1392,9 @@ export const SpaceContentSection = (): JSX.Element => {
   // Check if current user is the owner of this space
   const isOwner = !!user && spaceInfo?.authorNamespace === user?.namespace;
 
-  // Check if this is a curations space or a sub-space of curations space
+  // Check if this is a curations space
   // spaceType 2 = Curations, or fallback to category name check for old routes
   const isCurationsSpace = spaceInfo?.spaceType === 2 ||
-    spaceInfo?.parentSpace?.spaceType === 2 ||
     (category ? decodeURIComponent(category).endsWith("'s curations") : false);
 
   // Track hovered card ID
@@ -1615,7 +1588,7 @@ export const SpaceContentSection = (): JSX.Element => {
         spaceDescription={spaceInfo?.description}
         spaceCoverUrl={spaceInfo?.coverUrl}
         spaceFaceUrl={spaceInfo?.faceUrl}
-        firstArticleCover={articles[0]?.cover || articles[0]?.coverUrl || subTreasuries.find(sub => sub.data?.[0]?.coverUrl)?.data?.[0]?.coverUrl}
+        firstArticleCover={articles[0]?.cover || articles[0]?.coverUrl}
         isFollowing={isFollowing}
         isOwner={isOwner}
         spaceType={spaceInfo?.spaceType}
@@ -1631,7 +1604,7 @@ export const SpaceContentSection = (): JSX.Element => {
           setSelectedArticleIds(new Set());
         } : undefined}
         organizeMode={organizeMode}
-        directArticleCount={articles.length}
+        organizeDisabled={articles.length === 0}
         onCreateSubTreasury={isOwner && !isSubTreasury && !(spaceInfo?.pid && spaceInfo.pid > 0) && !spaceInfo?.parentSpace ? () => setShowCreateSubTreasury(true) : undefined}
         onImportCSV={isOwner ? () => setShowImportModal(true) : undefined}
         isSubTreasury={isSubTreasury}
@@ -1653,15 +1626,12 @@ export const SpaceContentSection = (): JSX.Element => {
       </div>
 
       {/* Sub-treasury Cards (hidden on sub-treasury pages) */}
-      {!isSubTreasury && (
-        (operationLoading.loadingSubSpaces && !hasCheckedSubSpaces) ||
-        subTreasuries.length > 0
-      ) && (
-        <div className="w-full mt-4 mb-6">
+      {!isSubTreasury && (operationLoading.loadingSubSpaces || subTreasuries.length > 0) && (
+        <div className="w-full mt-4 mb-8">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-            {operationLoading.loadingSubSpaces && !hasCheckedSubSpaces ? (
-              // Loading skeleton for sub-treasuries - show dynamic number based on expected count
-              Array.from({ length: skeletonCount }).map((_, index) => (
+            {operationLoading.loadingSubSpaces ? (
+              // Loading skeleton for sub-treasuries
+              Array.from({ length: 3 }).map((_, index) => (
                 <div key={`skeleton-${index}`} className="animate-pulse">
                   <div className="bg-gray-200 rounded-2xl h-48 w-full mb-3"></div>
                   <div className="h-4 bg-gray-200 rounded mb-2"></div>
@@ -1715,8 +1685,7 @@ export const SpaceContentSection = (): JSX.Element => {
         title="Create sub-treasury"
         submitLabel="Add"
         mode="full"
-        parentSpaceId={isOwner ? spaceId : undefined}
-        parentVisibility={spaceInfo?.visibility}
+        parentSpaceId={isOwner ? spaceId : undefined} // Only pass parent ID if user owns this space
         onSuccess={(newSpace) => {
           console.log('✅ Sub-treasury created successfully:', newSpace);
           console.log('📋 Current spaceId (parent):', spaceId);
@@ -1768,10 +1737,34 @@ export const SpaceContentSection = (): JSX.Element => {
 
       {/* Articles Grid */}
       <div className="w-full mt-2">
-        {articles.length === 0 && (!subTreasuries.length || isSubTreasury) ? (
+        {articles.length === 0 ? (
           <div className="flex flex-col items-center justify-center w-full h-64 text-center">
+            {/* Different messages based on whether this space has sub-treasuries */}
+            {!isSubTreasury && subTreasuries.length > 0 ? (
+              // Parent space with sub-treasuries - organized space
               <>
-                <h3 className="text-sm sm:text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
+                <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
+                  Your treasures are organized into sub-treasuries above.
+                </h3>
+                <p className="text-gray-500 text-base mb-4 [font-family:'Lato',Helvetica] max-w-md">
+                  All articles have been sorted into categories. Add new treasures to continue organizing your collection.
+                </p>
+                <button
+                  onClick={() => navigate('/')}
+                  className="flex items-center gap-[15px] px-5 h-[35px] bg-white text-red border border-red rounded-[50px] hover:bg-[#F23A001A] transition-all duration-300 cursor-pointer"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 30 24" fill="currentColor">
+                    <path d="M20.9584 0.5C18.7483 0.5 16.6439 1.51341 14.9932 3.35382C13.4004 1.57781 11.3199 0.5 9.04161 0.5C4.05525 0.5 0 5.65856 0 12C0 18.3414 4.05525 23.5 9.04161 23.5C11.3199 23.5 13.4038 22.4222 14.9932 20.6462C16.6405 22.49 18.7381 23.5 20.9584 23.5C25.9447 23.5 30 18.3414 30 12C30 5.65856 25.9447 0.5 20.9584 0.5ZM1.02319 12C1.02319 6.22119 4.62142 1.5168 9.04161 1.5168C13.4618 1.5168 17.06 6.2178 17.06 12C17.06 13.1049 16.927 14.1726 16.6849 15.1724C16.6405 12.749 15.5184 10.7561 13.7278 10.3087C11.395 9.72576 8.80286 11.9932 7.9502 15.3622C7.54775 16.9586 7.58527 18.5685 8.05593 19.8971C8.48567 21.1139 9.2326 21.9748 10.1876 22.3714C9.81241 22.4425 9.43042 22.4798 9.04502 22.4798C4.61801 22.4832 1.02319 17.7788 1.02319 12ZM15.6446 19.8429C17.1555 17.7856 18.0832 15.0301 18.0832 12C18.0832 8.96994 17.1555 6.21441 15.6446 4.15709C17.1146 2.45564 18.9973 1.5168 20.9584 1.5168C25.3786 1.5168 28.9768 6.2178 28.9768 12C28.9768 13.2439 28.8097 14.4369 28.5027 15.5452C28.5709 12.9558 27.425 10.7798 25.5457 10.3121C23.2128 9.72915 20.6207 11.9966 19.7681 15.3656C18.97 18.5211 19.9795 21.541 22.0293 22.3883C21.678 22.4493 21.3199 22.4866 20.955 22.4866C18.9904 22.4832 17.1146 21.5477 15.6446 19.8429Z"/>
+                  </svg>
+                  <span className="[font-family:'Lato',Helvetica] font-bold text-[16px] leading-5">
+                    Discover More
+                  </span>
+                </button>
+              </>
+            ) : (
+              // Regular empty space (no sub-treasuries or sub-treasury itself)
+              <>
+                <h3 className="text-[24px] font-[450] text-gray-600 mb-4 [font-family:'Lato',Helvetica]">
                   No treasures yet — this collection is just getting started.
                 </h3>
                 <button
@@ -1786,6 +1779,7 @@ export const SpaceContentSection = (): JSX.Element => {
                   </span>
                 </button>
               </>
+            )}
           </div>
         ) : (
           <>
@@ -1851,13 +1845,15 @@ export const SpaceContentSection = (): JSX.Element => {
 
       {/* Organize Mode Floating Action Bar */}
       {organizeMode && (
-        <div className="organize-controls fixed bottom-4 sm:bottom-8 z-40 bg-white rounded-full shadow-xl border border-gray-200 px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-8 max-w-[90vw] left-1/2 -translate-x-1/2 lg:left-[calc(310px+(100vw-310px-40px)/2)] lg:-translate-x-1/2">
+        <div className="organize-controls fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white rounded-full shadow-xl border border-gray-200 px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-8 max-w-[90vw]">
           <span className="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">{selectedArticleIds.size > 0 ? `${selectedArticleIds.size} selected` : 'Select'}</span>
           {/* Move button */}
           <button
-            className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
+            className={`flex flex-col items-center gap-1 transition-opacity ${articles.length === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-70'}`}
+            disabled={articles.length === 0}
             onClick={() => {
-              console.log('📁 Move button clicked');
+              if (articles.length === 0) return;
+              console.log('📁 Copy button clicked');
 
               // Show modal immediately with loading state
               setSelectedMoveTarget(null);
@@ -1868,9 +1864,9 @@ export const SpaceContentSection = (): JSX.Element => {
               // Load only sub-spaces within current parent space
               const loadRestrictedSpaces = async () => {
                 try {
-                  const userId = spaceInfo?.authorId || user?.id;
+                  const userId = user?.id;
                   if (!userId) {
-                    console.error('📁 No user/owner ID available');
+                    console.error('📁 No user ID available');
                     setBindableSpaces([]);
                     return;
                   }
@@ -2032,7 +2028,7 @@ export const SpaceContentSection = (): JSX.Element => {
             <span className="text-xs text-gray-600 hidden sm:block">Move</span>
           </button>
           {/* Move Out button - only show in sub-treasuries */}
-          {isSubTreasury && (
+          {isSubTreasury && selectedArticleIds.size > 0 && (
             <button
               className="flex flex-col items-center gap-1 hover:opacity-70 transition-opacity"
               onClick={() => {
@@ -2045,12 +2041,12 @@ export const SpaceContentSection = (): JSX.Element => {
               disabled={operationLoading.copyArticles}
               title="Move selected articles to parent space"
             >
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-100 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
                 <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 17L17 7M17 7H8M17 7V16" stroke="#686868" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M7 17L17 7M17 7H8M17 7V16" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span className="text-xs text-gray-600 hidden sm:block">Move Out</span>
+              <span className="text-xs text-blue-600 hidden sm:block">Move Out</span>
             </button>
           )}
           {/* Add Sub-treasury button - only show on parent spaces, not in sub-treasuries */}
@@ -2316,7 +2312,7 @@ export const SpaceContentSection = (): JSX.Element => {
             }}
           />
           <div
-            className="flex flex-col w-[582px] max-w-[90vw] h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            className="flex flex-col w-[582px] max-w-[90vw] max-h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
             role="dialog"
             aria-labelledby="move-modal-title"
             aria-modal="true"
@@ -2337,15 +2333,15 @@ export const SpaceContentSection = (): JSX.Element => {
               </svg>
             </button>
 
-            <div className="flex flex-col items-start gap-4 relative self-stretch w-full flex-1 min-h-0 pt-5">
+            <div className="flex flex-col items-start gap-4 relative self-stretch w-full flex-[0_0_auto] pt-5">
               <h2
                 id="move-modal-title"
                 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
               >
-                Move to sub-treasury
+                Move to space
               </h2>
 
-              <div className="flex-1 overflow-y-auto w-full min-h-0">
+              <div className="flex-1 overflow-y-auto w-full max-h-[40vh]">
                 {loadingMoveSpaces ? (
                   // Loading state
                   <div className="flex flex-col items-center justify-center py-8 gap-3">
@@ -2354,28 +2350,19 @@ export const SpaceContentSection = (): JSX.Element => {
                   </div>
                 ) : bindableSpaces.length === 0 ? (
                   // No spaces available
-                  <div className="flex flex-col items-center justify-center h-full gap-3">
+                  <div className="flex flex-col items-center justify-center py-8 gap-3">
                     <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
                       <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1H7a1 1 0 00-1 1v1m8 0V4" />
                       </svg>
                     </div>
-                    <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center">No sub-treasuries available</p>
-                    <button
-                      className="inline-flex items-center justify-center px-5 py-2 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors"
-                      type="button"
-                      onClick={() => {
-                        setShowMoveModal(false);
-                        setShowOrganizeSubTreasury(true);
-                      }}
-                    >
-                      <span className="[font-family:'Lato',Helvetica] font-normal text-white text-sm tracking-[0] leading-[20px]">Create Sub-treasury</span>
-                    </button>
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base text-center">No spaces available for moving</p>
+                    <p className="[font-family:'Lato',Helvetica] font-normal text-gray-400 text-sm text-center">Create sub-treasuries to enable moving articles</p>
                   </div>
                 ) : (
                   <ul className="flex flex-col w-full">
                     {bindableSpaces.map((space: any) => {
-                      const spaceImage = space.faceUrl || space.coverUrl || space.data?.[0]?.coverUrl || '';
+                      const spaceImage = space.faceUrl || space.coverUrl || '';
                       const firstLetter = (space.name || 'U').charAt(0).toUpperCase();
                       return (
                         <li
@@ -2506,6 +2493,31 @@ export const SpaceContentSection = (): JSX.Element => {
                       }
 
                       console.log(`🚚 Move operation completed: ${successCount}/${selectedUuids.length} successful`);
+
+
+                      // Enhanced feedback with navigation option for sub-spaces
+                      if (successCount === selectedUuids.length && successCount > 0) {
+                        // Check if we're moving to a sub-space (when we have subTreasuries data)
+                        if (subTreasuries && subTreasuries.length > 0) {
+                          const targetSubSpace = subTreasuries.find((sub: any) => sub.id === selectedMoveTarget);
+
+                          if (targetSubSpace) {
+                            // This means we're moving to a sub-space
+                            const shouldNavigate = window.confirm(
+                              `Successfully moved ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}".\n\nWould you like to view the sub-space now?`
+                            );
+                            if (shouldNavigate && targetSubSpace.namespace) {
+                              console.log(`🚚 Navigating to sub-space: ${targetSubSpace.namespace}`);
+                              navigate(`/treasury/${targetSubSpace.namespace}`, {
+                                state: {
+                                  fromParentSpace: true,
+                                  movedArticlesCount: successCount
+                                }
+                              });
+                            }
+                          }
+                        }
+                      }
                     } catch (err) {
                       console.error('Failed to move articles:', err);
                       const message = ErrorHandler.handleApiError(err, {
@@ -2521,7 +2533,7 @@ export const SpaceContentSection = (): JSX.Element => {
                   }}
                 >
                   <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
-                    {isBulkProcessing ? 'Moving...' : 'Move'}
+                    {isBulkProcessing ? 'Copying...' : 'Copy'}
                   </span>
                 </button>
               </div>
@@ -2537,8 +2549,7 @@ export const SpaceContentSection = (): JSX.Element => {
         title="Create sub-treasury"
         submitLabel="Add"
         mode="full"
-        parentSpaceId={isOwner ? spaceId : undefined}
-        parentVisibility={spaceInfo?.visibility}
+        parentSpaceId={isOwner ? spaceId : undefined} // Only pass parent ID if user owns this space
         onSuccess={async (newSpace) => {
           const newSpaceId = newSpace?.id || newSpace?.data?.id;
           if (newSpaceId) {
@@ -2597,13 +2608,10 @@ export const SpaceContentSection = (): JSX.Element => {
                 id="bulk-delete-title"
                 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
               >
-                {isCurationsSpace ? 'Delete' : 'Remove'} {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'}
+                Remove {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'}
               </h2>
               <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                {isCurationsSpace
-                  ? `Are you sure you want to permanently delete ${selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'}? This action cannot be undone.`
-                  : `Are you sure you want to remove ${selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'} from the space? The ${selectedArticleIds.size === 1 ? 'article' : 'articles'} will remain available elsewhere.`
-                }
+                Are you sure you want to remove {selectedArticleIds.size === 1 ? 'this treasure' : 'these treasures'} from the space? The {selectedArticleIds.size === 1 ? 'article' : 'articles'} will remain available elsewhere.
               </p>
             </div>
 
@@ -2627,7 +2635,7 @@ export const SpaceContentSection = (): JSX.Element => {
                   setIsBulkProcessing(true);
                   try {
                     const selectedUuids = Array.from(selectedArticleIds);
-                    const isCurationsSpace = spaceInfo?.spaceType === 2 || spaceInfo?.parentSpace?.spaceType === 2;
+                    const isCurationsSpace = spaceInfo?.spaceType === 2;
                     console.log('🗑️ Selected UUIDs:', selectedUuids);
                     console.log('🗑️ Is Curations Space:', isCurationsSpace);
                     console.log('🗑️ Space ID:', spaceId);
@@ -2674,11 +2682,11 @@ export const SpaceContentSection = (): JSX.Element => {
       {showMoveOutConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/50 hidden sm:block"
+            className="absolute inset-0 bg-black/50"
             onClick={() => { if (!operationLoading.copyArticles) setShowMoveOutConfirm(false); }}
           />
           <div
-            className="flex flex-col w-full h-full sm:w-[400px] sm:h-auto sm:max-w-[90vw] items-center justify-center gap-5 p-5 sm:p-[30px] relative bg-white sm:rounded-[15px] z-10"
+            className="flex flex-col w-[400px] max-w-[90vw] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
             role="dialog"
             aria-labelledby="move-out-title"
             aria-modal="true"
@@ -2695,32 +2703,32 @@ export const SpaceContentSection = (): JSX.Element => {
                 id="move-out-title"
                 className="[font-family:'Lato',Helvetica] font-semibold text-off-black text-xl tracking-[0] leading-[28px]"
               >
-                Move {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'} to main treasury?
+                Move {selectedArticleIds.size} {selectedArticleIds.size === 1 ? 'treasure' : 'treasures'} to parent space?
               </h2>
               <p className="[font-family:'Lato',Helvetica] font-normal text-medium-dark-grey text-base tracking-[0] leading-[22.4px]">
-                {selectedArticleIds.size === 1 ? 'This treasure' : 'These treasures'} will be moved to "{parentSpaceInfo?.name || 'main treasury'}" and removed from the current sub-treasury.
+                {selectedArticleIds.size === 1 ? 'This treasure' : 'These treasures'} will be moved to "{parentSpaceInfo?.name || 'parent space'}" and removed from the current sub-treasury.
               </p>
             </div>
 
             <div className="flex items-center justify-center gap-3 w-full">
               <button
-                className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[15px] cursor-pointer hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => setShowMoveOutConfirm(false)}
                 disabled={operationLoading.copyArticles}
                 type="button"
               >
-                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-sm sm:text-base tracking-[0] leading-[22.4px]">
+                <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-base tracking-[0] leading-[22.4px]">
                   Cancel
                 </span>
               </button>
               <button
-                className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-[100px] bg-red cursor-pointer hover:bg-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 type="button"
                 onClick={handleMoveOut}
                 disabled={operationLoading.copyArticles}
               >
-                <span className="[font-family:'Lato',Helvetica] font-normal text-white text-sm sm:text-base tracking-[0] leading-[22.4px]">
-                  {operationLoading.copyArticles ? 'Moving...' : 'Move to main treasury'}
+                <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
+                  {operationLoading.copyArticles ? 'Moving...' : 'Move Out'}
                 </span>
               </button>
             </div>

@@ -537,11 +537,11 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-0 h-auto hover:bg-gray-100 transition-colors opacity-40 hover:opacity-70"
+                        className="p-0 h-auto hover:bg-gray-100 transition-colors"
                         onClick={handleDelete}
                       >
                         <img
-                          className="w-3.5 h-3.5"
+                          className="w-4 h-4"
                           alt="Delete"
                           src={getIconUrl('DELETE')}
                           style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
@@ -838,11 +838,11 @@ const ArticleCardComponent: React.FC<ArticleCardProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="p-0 h-auto hover:bg-gray-100 transition-colors opacity-40 hover:opacity-70"
+                        className="p-0 h-auto hover:bg-gray-100 transition-colors"
                         onClick={handleDelete}
                       >
                         <img
-                          className="w-3.5 h-3.5"
+                          className="w-4 h-4"
                           alt="Delete"
                           src={getIconUrl('DELETE')}
                           style={{ filter: getIconStyle('ICON_FILTER_DARK_GREY') }}
