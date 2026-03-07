@@ -193,32 +193,64 @@ export const DiscoveryContentSection = (): JSX.Element => {
 
   // Render different guide content based on user login status
   const renderGuideContent = () => {
-    // Same welcome content for both logged-in and guest users
+    if (user) {
+      // Version B: Logged-in user
+      return (
+        <>
+          <h1 className="relative w-fit mt-[-1.00px] mb-3 [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
+            You're in!
+          </h1>
+          <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
+            <p className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+              Here's how to get started:
+            </p>
+            <ol className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[28px] list-decimal list-inside flex flex-col gap-1">
+              <li>Scroll through and save what resonates with you</li>
+              <li>Follow curators whose taste you trust</li>
+              <li>
+                <a
+                  href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#2191FB] hover:underline cursor-pointer"
+                >
+                  Install the extension
+                </a>{' '}
+                to curate as you browse
+              </li>
+            </ol>
+          </div>
+        </>
+      );
+    }
+
+    // Version A: Logged-out visitor
     return (
       <>
         <h1 className="relative w-fit mt-[-1.00px] mb-3 [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
           Welcome to Copus!
         </h1>
         <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
-          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-              Copus is a space for intentional curation beyond algorithms.
-            </span>
+          <p className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+            A space for intentional curation beyond algorithms.
           </p>
-          <p className="text-dark-grey text-base leading-[24px] relative self-stretch [font-family:'Lato',Helvetica] font-normal tracking-[0]">
-            <span className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-              Discover what others find valuable. Save what resonates with you. Or{' '}
-              <a
-                href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#2191FB] hover:underline cursor-pointer font-normal"
-              >
-                install the extension
-              </a>{' '}
-              to curate as you browse.
-            </span>
+          <p className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
+            Real people find and share what's valuable on the web. Follow curators whose taste you trust. Build your own treasury of things worth remembering.
           </p>
+          <div className="flex items-center gap-3 mt-1">
+            <button
+              onClick={() => navigate('/login')}
+              className="px-5 py-2 rounded-full bg-[#f23a00] hover:bg-[#d93300] text-white font-['Lato',Helvetica] font-semibold text-sm transition-colors"
+            >
+              Get started
+            </button>
+            <button
+              onClick={handleCloseWelcomeGuide}
+              className="px-4 py-2 rounded-full text-[#888] hover:text-[#454545] font-['Lato',Helvetica] text-sm transition-colors"
+            >
+              Browse first
+            </button>
+          </div>
         </div>
       </>
     );
