@@ -99,7 +99,7 @@ const LoginForm: React.FC<{
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         onKeyDown={onKeyPress}
-        className="flex items-center gap-[213px] p-3 sm:p-[15px] relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-sm sm:text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
+        className="flex items-center gap-[213px] px-3 py-2 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[10px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-base tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
       />
 
       <div className="relative self-stretch w-full">
@@ -109,7 +109,7 @@ const LoginForm: React.FC<{
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={onKeyPress}
-          className="flex items-center gap-64 p-3 sm:p-[15px] pr-12 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[15px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-sm sm:text-[length:var(--p-l-font-size)] tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
+          className="flex items-center gap-64 px-3 py-2 pr-12 relative self-stretch w-full flex-[0_0_auto] bg-white rounded-[10px] border border-solid border-[#a8a8a8] font-p-l font-[number:var(--p-l-font-weight)] text-medium-dark-grey text-base tracking-[var(--p-l-letter-spacing)] leading-[var(--p-l-line-height)] [font-style:var(--p-l-font-style)] h-auto"
         />
         <Button
           type="button"
@@ -144,7 +144,7 @@ const LoginForm: React.FC<{
 
           <label
             htmlFor="remember"
-            className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] cursor-pointer"
+            className="relative w-fit mt-[-1.00px] font-['Lato',_Helvetica] font-normal text-[#999] text-sm tracking-[0] leading-[20px] whitespace-nowrap cursor-pointer"
           >
             Remember me
           </label>
@@ -152,10 +152,10 @@ const LoginForm: React.FC<{
 
         <Button
           variant="ghost"
-          className="h-auto p-0 hover:bg-transparent"
+          className="h-auto p-0 hover:bg-transparent ml-4"
           onClick={onForgotPassword}
         >
-          <div className="relative w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-off-black text-[length:var(--p-font-size)] tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)]">
+          <div className="relative w-fit mt-[-1.00px] font-['Lato',_Helvetica] font-normal text-[#999] text-sm tracking-[0] leading-[20px] whitespace-nowrap">
             Forgot password?
           </div>
         </Button>
@@ -217,7 +217,7 @@ const RegistrationForm: React.FC<{
         placeholder="User name"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="flex items-center p-3 sm:p-[15px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+        className="flex items-center px-3 py-2 relative self-stretch w-full bg-white rounded-[10px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
       />
 
       {/* Email */}
@@ -227,7 +227,7 @@ const RegistrationForm: React.FC<{
           placeholder="Email"
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
-          className={`flex items-center p-3 sm:p-[15px] pr-[40px] relative self-stretch w-full bg-white rounded-[15px] border border-solid text-medium-dark-grey h-auto ${
+          className={`flex items-center px-3 py-2 pr-[40px] relative self-stretch w-full bg-white rounded-[10px] border border-solid text-medium-dark-grey h-auto ${
             emailStatus === 'taken'
               ? 'border-red-500'
               : emailStatus === 'available'
@@ -270,10 +270,10 @@ const RegistrationForm: React.FC<{
           placeholder="Enter verification code"
           value={verificationCode}
           onChange={(e) => setVerificationCode(e.target.value)}
-          className="flex items-center p-3 sm:p-[15px] relative flex-1 bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey text-sm sm:text-base h-auto"
+          className="flex items-center px-3 py-2 relative flex-1 bg-white rounded-[10px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
         />
         <Button
-          className={`px-[15px] h-auto min-h-[50px] text-white rounded-[15px] border-0 whitespace-nowrap flex items-center justify-center transition-all ${
+          className={`px-3 h-auto min-h-[38px] text-white rounded-[10px] border-0 whitespace-nowrap flex items-center justify-center transition-all ${
             countdown > 0 || isSending || emailStatus === 'taken' || emailStatus === 'checking' || !email.includes('@')
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-red hover:bg-red/90'
@@ -312,7 +312,7 @@ const RegistrationForm: React.FC<{
           placeholder="Enter password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="flex items-center p-3 sm:p-[15px] pr-[45px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+          className="flex items-center px-3 py-2 pr-[45px] relative self-stretch w-full bg-white rounded-[10px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
         />
         <Button
           type="button"
@@ -343,7 +343,7 @@ const RegistrationForm: React.FC<{
           placeholder="Confirm password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="flex items-center p-3 sm:p-[15px] pr-[45px] relative self-stretch w-full bg-white rounded-[15px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
+          className="flex items-center px-3 py-2 pr-[45px] relative self-stretch w-full bg-white rounded-[10px] border border-solid border-[#a8a8a8] text-medium-dark-grey h-auto"
         />
         <Button
           type="button"
@@ -405,6 +405,9 @@ export const Login = (): JSX.Element => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState("login");
+  const savedGoogleEmail = localStorage.getItem('copus_google_email');
+  const savedGoogleName = localStorage.getItem('copus_google_name');
+  const savedGoogleAvatar = localStorage.getItem('copus_google_avatar');
 
   // Registration form state
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -490,6 +493,22 @@ export const Login = (): JSX.Element => {
 
             // Fetch user info first to establish session
             await fetchUserInfo(response.token);
+
+            // Store Google user info for personalized login button on next visit
+            try {
+              const savedUser = JSON.parse(localStorage.getItem('copus_user') || '{}');
+              if (savedUser.email) {
+                localStorage.setItem('copus_google_email', savedUser.email);
+              }
+              if (savedUser.username) {
+                localStorage.setItem('copus_google_name', savedUser.username);
+              }
+              if (savedUser.faceUrl) {
+                localStorage.setItem('copus_google_avatar', savedUser.faceUrl);
+              }
+            } catch (e) {
+              // Non-critical, ignore
+            }
 
             showToast('Google login successful! Welcome back 🎉', 'success');
 
@@ -1384,18 +1403,99 @@ export const Login = (): JSX.Element => {
     <div className="w-full min-h-screen bg-[linear-gradient(0deg,rgba(224,224,224,0.15)_0%,rgba(224,224,224,0.15)_100%),linear-gradient(0deg,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_100%)] overflow-x-hidden">
       <SEO title="Log In" />
       <HeaderSection hideCreateButton={true} showDiscoverNow={true} hideLoginButton={true} />
-      <div className="flex w-full min-h-screen relative flex-col items-center pt-[70px] lg:pt-[120px]">
-        <main className="flex items-center justify-center gap-2.5 relative flex-1 grow py-4 sm:py-10 px-4 sm:px-0">
-          <Card className="w-full max-w-[480px] bg-white rounded-lg border-0 shadow-none relative z-10">
-            <CardContent className="flex flex-col items-center justify-center gap-8 sm:gap-[50px] px-6 sm:px-[50px] py-8 sm:py-[60px]">
-              <div className="flex flex-col items-start gap-[15px] relative self-stretch w-full flex-[0_0_auto]">
-                <h1 className="relative self-stretch mt-[-1.00px] font-h-3 font-[number:var(--h-3-font-weight)] text-off-black text-xl sm:text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
+      <div className="flex w-full min-h-screen relative flex-col items-center pt-[20px] lg:pt-[40px]">
+        <main className="flex items-center justify-center gap-2.5 relative flex-1 grow py-2 sm:py-6 px-2 sm:px-0">
+          <Card className="w-full max-w-[900px] bg-white rounded-lg border-0 shadow-none relative z-10">
+            <CardContent className="flex flex-col items-center justify-center gap-5 sm:gap-8 px-5 sm:px-[80px] py-5 sm:py-8">
+              <div className="flex flex-col items-start gap-2 relative self-stretch w-full flex-[0_0_auto]">
+                <h1 className="relative self-stretch mt-[-1.00px] font-h-3 !font-normal text-off-black text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
                   Join Copus
                 </h1>
 
-                <p className="relative self-stretch font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-sm sm:text-[length:var(--h-4-font-size)] text-center tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] [font-style:var(--h-4-font-style)]">
+                <p className="relative self-stretch font-h-4 font-[number:var(--h-4-font-weight)] text-dark-grey text-sm text-center tracking-[var(--h-4-letter-spacing)] leading-[var(--h-4-line-height)] [font-style:var(--h-4-font-style)]">
                   Discover and share internet gems
                 </p>
+              </div>
+
+              {/* Social login providers */}
+              <div className="flex flex-col items-center gap-3 w-full">
+                {/* Google sign-in button */}
+                <button
+                  onClick={() => handleSocialLogin('Google')}
+                  disabled={isLoginLoading}
+                  className="flex items-center w-[212px] h-10 rounded-full border border-[#dadce0] bg-white hover:bg-gray-50 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed px-3"
+                >
+                  {savedGoogleEmail ? (
+                    <>
+                      {/* Avatar */}
+                      {savedGoogleAvatar ? (
+                        <img src={savedGoogleAvatar} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-[#a52714] flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-sm font-medium">{(savedGoogleName || savedGoogleEmail)[0].toUpperCase()}</span>
+                        </div>
+                      )}
+                      {/* Name + email */}
+                      <div className="flex flex-col items-start ml-3 min-w-0 flex-1">
+                        <span className="font-['Lato',_Helvetica] font-medium text-[#3c4043] text-sm leading-tight">
+                          Continue as {savedGoogleName || savedGoogleEmail.split('@')[0]}
+                        </span>
+                        <span className="font-['Lato',_Helvetica] text-[#5f6368] text-xs leading-tight">
+                          {savedGoogleEmail} ▾
+                        </span>
+                      </div>
+                      {/* Google G icon */}
+                      <svg width="20" height="20" viewBox="0 0 48 48" className="flex-shrink-0 ml-2">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <svg width="18" height="18" viewBox="0 0 48 48" className="ml-1">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                      </svg>
+                      <span className="font-['Lato',_Helvetica] font-medium text-[#3c4043] text-sm flex-1 text-center">
+                        Sign in with Google
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                {/* Other providers - icon-only row */}
+                <div className="flex items-center justify-center gap-3 w-full">
+                {socialProviders.filter(p => p.name !== 'Google').map((provider, index) => (
+                  <Button
+                    key={`social-${index}`}
+                    variant="ghost"
+                    className="flex items-center justify-center w-11 h-11 p-0 rounded-full border border-[#dadce0] hover:bg-gray-50 transition-all duration-200"
+                    onClick={() => handleSocialLogin(provider.name)}
+                    disabled={isLoginLoading}
+                  >
+                    <img
+                      className={`w-5 h-5 object-contain ${
+                        provider.name === 'Coinbase' ? 'rounded-sm' : ''
+                      }`}
+                      alt={`${provider.name}`}
+                      src={provider.icon}
+                    />
+                  </Button>
+                ))}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 w-full">
+                <Separator className="flex-1 bg-medium-dark-grey" />
+                <span className="text-medium-dark-grey text-xs sm:text-sm whitespace-nowrap px-1">
+                  Or continue with email
+                </span>
+                <Separator className="flex-1 bg-medium-dark-grey" />
               </div>
 
               <div className="flex flex-col items-center justify-center gap-6 sm:gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
@@ -1403,17 +1503,17 @@ export const Login = (): JSX.Element => {
                   <TabsList className="grid w-full grid-cols-2 bg-transparent h-auto p-0">
                     <TabsTrigger
                       value="login"
-                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-2.5 px-3 sm:px-[15px] bg-transparent"
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-1 px-3 sm:px-[15px] bg-transparent"
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm sm:text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm text-center tracking-[0] leading-[20px] whitespace-nowrap">
                         Log in
                       </span>
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-2.5 px-3 sm:px-[15px] bg-transparent"
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-1 px-3 sm:px-[15px] bg-transparent"
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm sm:text-lg text-center tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm text-center tracking-[0] leading-[20px] whitespace-nowrap">
                         Sign up
                       </span>
                     </TabsTrigger>
@@ -1440,7 +1540,7 @@ export const Login = (): JSX.Element => {
                       onClick={handleLogin}
                       disabled={isLoginLoading || !loginEmail || !loginPassword}
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-red text-sm sm:text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-red text-base tracking-[0] leading-[22px] whitespace-nowrap">
                         {isLoginLoading ? (
                           <span className="flex items-center space-x-2">
                             <GemSpinner size="sm" />
@@ -1483,7 +1583,7 @@ export const Login = (): JSX.Element => {
                       onClick={handleRegister}
                       disabled={isRegisterLoading || !username || !email || !password || !confirmPassword || !verificationCode || !agreeToTerms || emailStatus !== 'available'}
                     >
-                      <span className="font-['Lato',_Helvetica] font-bold text-red text-sm sm:text-lg tracking-[0] leading-[25.2px] whitespace-nowrap">
+                      <span className="font-['Lato',_Helvetica] font-bold text-red text-base tracking-[0] leading-[22px] whitespace-nowrap">
                         {isRegisterLoading ? (
                           <span className="flex items-center space-x-2">
                             <GemSpinner size="sm" />
@@ -1496,45 +1596,6 @@ export const Login = (): JSX.Element => {
                     </Button>
                   </TabsContent>
                 </Tabs>
-              </div>
-
-              <div className="flex flex-col items-start gap-4 sm:gap-5 self-stretch w-full relative flex-[0_0_auto]">
-                <div className="gap-3 sm:gap-[15px] pt-4 sm:pt-5 pb-2.5 px-0 self-stretch w-full flex-[0_0_auto] rounded-[25px] overflow-hidden flex items-center justify-center relative">
-                  <Separator className="flex-1 bg-medium-dark-grey" />
-
-                  <div className="relative flex items-center justify-center w-fit mt-[-1.00px] font-p font-[number:var(--p-font-weight)] text-medium-dark-grey text-xs sm:text-[length:var(--p-font-size)] text-center tracking-[var(--p-letter-spacing)] leading-[var(--p-line-height)] whitespace-nowrap [font-style:var(--p-font-style)] px-4">
-                    Or sign in with
-                  </div>
-
-                  <Separator className="flex-1 bg-medium-dark-grey" />
-                </div>
-
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-[10px_30px] relative self-stretch w-full flex-[0_0_auto]">
-                  {socialProviders.map((provider, index) => (
-                    <Button
-                      key={`social-${index}`}
-                      variant="ghost"
-                      className="flex flex-col items-center justify-center w-16 sm:w-[70px] h-12 sm:h-[60px] gap-1 sm:gap-[8px] p-1 sm:p-2 hover:bg-transparent transition-all duration-200 hover:scale-105"
-                      onClick={() => handleSocialLogin(provider.name)}
-                      disabled={isLoginLoading}
-                    >
-                      <div className="flex items-center justify-center w-6 sm:w-[30px] h-6 sm:h-[30px] flex-shrink-0">
-                        <img
-                          className={`w-6 sm:w-[30px] h-6 sm:h-[30px] object-contain ${
-                            provider.name === 'Coinbase' ? 'rounded-md' : ''
-                          }`}
-                          alt={`${provider.name} icon`}
-                          src={provider.icon}
-                        />
-                      </div>
-
-                      <span className="font-['Lato',_Helvetica] font-normal text-off-black text-xs sm:text-sm text-center leading-[16px] whitespace-nowrap">
-                        {provider.name}
-                      </span>
-                    </Button>
-                  ))}
-                </div>
-
               </div>
             </CardContent>
           </Card>
