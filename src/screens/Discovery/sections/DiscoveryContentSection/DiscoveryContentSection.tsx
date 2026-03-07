@@ -198,11 +198,11 @@ export const DiscoveryContentSection = (): JSX.Element => {
       return (
         <>
           <h1 className="relative w-fit mt-[-1.00px] mb-3 [font-family:'Lato',Helvetica] font-semibold text-dark-grey text-2xl tracking-[0] leading-9 whitespace-nowrap">
-            Welcome to Copus!
+            You're in!
           </h1>
           <div className="w-full max-w-[736px] flex flex-col items-start gap-3">
             <p className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[24px]">
-              You're in! Here's how to get started:
+              Here's how to get started:
             </p>
             <ol className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[28px] list-decimal list-inside flex flex-col gap-1">
               <li>Scroll through and save what resonates with you</li>
