@@ -1500,10 +1500,10 @@ export const Login = (): JSX.Element => {
 
               <div className="flex flex-col items-center justify-center gap-6 sm:gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-transparent h-auto p-0">
+                  <TabsList className="flex w-full justify-center gap-8 bg-transparent h-auto p-0">
                     <TabsTrigger
                       value="login"
-                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-1 px-3 sm:px-[15px] bg-transparent"
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-1 px-0 bg-transparent w-auto"
                     >
                       <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm text-center tracking-[0] leading-[20px] whitespace-nowrap">
                         Log in
@@ -1511,7 +1511,7 @@ export const Login = (): JSX.Element => {
                     </TabsTrigger>
                     <TabsTrigger
                       value="signup"
-                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-1 px-3 sm:px-[15px] bg-transparent"
+                      className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-[#454545] data-[state=inactive]:border-b-0 rounded-none pb-1 px-0 bg-transparent w-auto"
                     >
                       <span className="font-['Lato',_Helvetica] font-bold text-dark-grey text-sm text-center tracking-[0] leading-[20px] whitespace-nowrap">
                         Sign up
@@ -1519,7 +1519,7 @@ export const Login = (): JSX.Element => {
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="login" className="mt-6 sm:mt-[30px]">
+                  <TabsContent value="login" className="mt-3 sm:mt-5">
                     <LoginForm
                       email={loginEmail}
                       setEmail={setLoginEmail}
@@ -1553,7 +1553,7 @@ export const Login = (): JSX.Element => {
                     </Button>
                   </TabsContent>
 
-                  <TabsContent value="signup" className="mt-6 sm:mt-[30px]">
+                  <TabsContent value="signup" className="mt-3 sm:mt-5">
                     <RegistrationForm
                       username={username}
                       setUsername={setUsername}
