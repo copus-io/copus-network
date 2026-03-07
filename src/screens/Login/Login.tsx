@@ -1405,8 +1405,8 @@ export const Login = (): JSX.Element => {
       <HeaderSection hideCreateButton={true} showDiscoverNow={true} hideLoginButton={true} />
       <div className="flex w-full min-h-screen relative flex-col items-center pt-[20px] lg:pt-[40px]">
         <main className="flex items-center justify-center gap-2.5 relative flex-1 grow py-2 sm:py-6 px-2 sm:px-0">
-          <Card className="w-full max-w-[780px] bg-white rounded-lg border-0 shadow-none relative z-10">
-            <CardContent className="flex flex-col items-center justify-center gap-5 sm:gap-8 px-5 sm:px-[50px] py-5 sm:py-8">
+          <Card className="w-full max-w-[900px] bg-white rounded-lg border-0 shadow-none relative z-10">
+            <CardContent className="flex flex-col items-center justify-center gap-5 sm:gap-8 px-5 sm:px-[80px] py-5 sm:py-8">
               <div className="flex flex-col items-start gap-2 relative self-stretch w-full flex-[0_0_auto]">
                 <h1 className="relative self-stretch mt-[-1.00px] font-h-3 !font-normal text-off-black text-[length:var(--h-3-font-size)] text-center tracking-[var(--h-3-letter-spacing)] leading-[var(--h-3-line-height)] [font-style:var(--h-3-font-style)]">
                   Join Copus
