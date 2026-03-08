@@ -80,6 +80,26 @@ export async function onRequest(context) {
     })
   }
 
+  // Add content marketing pages
+  const contentPages = [
+    'copus-vs-arena',
+    'copus-vs-raindrop',
+    'copus-vs-pocket',
+    'best-content-curation-tools-2026',
+    'what-is-content-curation',
+    'web3-content-curation-platform',
+    'arena-alternatives',
+    'curation-tools-for-researchers'
+  ]
+  for (const slug of contentPages) {
+    urls.push({
+      loc: `${config.siteUrl}/pages/${slug}`,
+      lastmod: today,
+      changefreq: 'monthly',
+      priority: '0.7'
+    })
+  }
+
   // Add all articles
   for (const article of allArticles) {
     if (!article.uuid) continue
