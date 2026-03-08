@@ -369,6 +369,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
               >
                 <div className="flex flex-col items-start [font-family:'Lato',Helvetica] font-normal text-[#686868] text-sm tracking-[0] leading-[20px]">
                   <a href="/about" className="hover:text-dark-grey transition-colors">• About</a>
+                  <a href="/pages" className="hover:text-dark-grey transition-colors">• Resources</a>
                   <button onClick={handleContactClick} className="hover:text-dark-grey transition-colors cursor-pointer text-left">• Contact us</button>
                   <a href="/terms" className="hover:text-dark-grey transition-colors">• Terms & Privacy</a>
                 </div>

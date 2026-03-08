@@ -1,7 +1,7 @@
 // SEO/AEO Content Page Worker
 // Renders marketing landing pages from _content.js definitions
 
-import { PAGES } from './_content.js'
+import { PAGES, CONTENT_SLUGS } from './_content.js'
 
 function getConfig(hostname) {
   const isTest = hostname.includes('test.')
@@ -119,7 +119,8 @@ function buildJsonLd(page, slug, config, stats) {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: config.siteUrl },
-      { '@type': 'ListItem', position: 2, name: page.hero.badge, item: pageUrl }
+      { '@type': 'ListItem', position: 2, name: 'Resources', item: `${config.siteUrl}/pages` },
+      { '@type': 'ListItem', position: 3, name: page.hero.badge, item: pageUrl }
     ]
   })
 
@@ -419,11 +420,55 @@ function renderCta(cta) {
     </section>`
 }
 
+function getRelatedPages(currentSlug) {
+  const current = PAGES[currentSlug]
+  if (!current) return []
+
+  const related = []
+  for (const slug of CONTENT_SLUGS) {
+    if (slug === currentSlug) continue
+    const page = PAGES[slug]
+    if (!page || page.retired) continue
+    // Same type = most related
+    if (page.type === current.type) {
+      related.push({ slug, page, score: 2 })
+    } else {
+      related.push({ slug, page, score: 1 })
+    }
+  }
+  // Sort by score desc, take top 3
+  related.sort((a, b) => b.score - a.score)
+  return related.slice(0, 3)
+}
+
+function renderRelated(currentSlug, config) {
+  const related = getRelatedPages(currentSlug)
+  if (related.length === 0) return ''
+
+  const cards = related.map(({ slug, page }) => {
+    const typeLabel = { comparison: 'Comparison', listicle: 'Listicle', alternatives: 'Alternatives', concept: 'Guide' }[page.type] || 'Guide'
+    return `
+      <a href="${config.siteUrl}/pages/${esc(slug)}" class="related-card">
+        <span class="related-badge">${esc(typeLabel)}</span>
+        <h4>${esc(page.title)}</h4>
+      </a>`
+  }).join('')
+
+  return `
+    <section class="related-section">
+      <h3>Related Resources</h3>
+      <div class="related-grid">${cards}</div>
+      <p class="related-hub"><a href="${config.siteUrl}/pages">View all resources &rarr;</a></p>
+    </section>`
+}
+
 function renderShell(page, config, slug, body, stats) {
   const pageUrl = `${config.siteUrl}/pages/${slug}`
   const jsonLdScripts = buildJsonLd(page, slug, config, stats)
     .map(schema => `<script type="application/ld+json">${JSON.stringify(schema)}</script>`)
     .join('\n  ')
+
+  const relatedHtml = renderRelated(slug, config)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -657,6 +702,35 @@ function renderShell(page, config, slug, body, stats) {
     }
     .cta-button:hover { background: #d63200; text-decoration: none; }
 
+    /* Related pages */
+    .related-section { margin: 40px 0; padding-top: 32px; border-top: 1px solid #eee; }
+    .related-section h3 { font-size: 20px; margin-bottom: 16px; }
+    .related-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+    .related-card {
+      display: block;
+      padding: 16px 20px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      color: #231f20;
+      text-decoration: none;
+      transition: border-color 0.2s;
+    }
+    .related-card:hover { border-color: #f23a00; text-decoration: none; }
+    .related-card h4 { font-size: 15px; margin-bottom: 0; color: #231f20; }
+    .related-badge {
+      display: inline-block;
+      background: #fff3e0;
+      color: #f23a00;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 8px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    .related-hub { font-size: 14px; margin-top: 8px; }
+
     /* Footer */
     .site-footer {
       border-top: 1px solid #eee;
@@ -695,6 +769,7 @@ function renderShell(page, config, slug, body, stats) {
 
   <main class="page-content">
     ${body}
+    ${relatedHtml}
   </main>
 
   <footer class="site-footer">
@@ -702,6 +777,7 @@ function renderShell(page, config, slug, body, stats) {
     <p>
       <a href="${config.siteUrl}">Home</a>
       <a href="${config.siteUrl}/discovery">Discover</a>
+      <a href="${config.siteUrl}/pages">Resources</a>
       <a href="${config.siteUrl}/ai">AI Docs</a>
       <a href="${config.siteUrl}/llms.txt">llms.txt</a>
     </p>
