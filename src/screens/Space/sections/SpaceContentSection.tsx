@@ -109,7 +109,8 @@ const SpaceInfoSection = ({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const cleanUrl = window.location.href.split('?')[0];
+      await navigator.clipboard.writeText(`${cleanUrl}?utm_source=copus&utm_medium=copy`);
       showToast('Link copied to clipboard!', 'success');
       setShowShareDropdown(false);
     } catch (error) {
@@ -118,7 +119,8 @@ const SpaceInfoSection = ({
   };
 
   const handleShareOnX = () => {
-    const encodedUrl = encodeURIComponent(window.location.href);
+    const cleanUrl = window.location.href.split('?')[0];
+    const encodedUrl = encodeURIComponent(`${cleanUrl}?utm_source=copus&utm_medium=twitter`);
     const encodedText = encodeURIComponent(spaceName);
     window.open(
       `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`,

@@ -448,7 +448,7 @@ export const UserProfileContent: React.FC<UserProfileContentProps> = ({ namespac
   // Handle share
   const handleShare = () => {
     if (userInfo?.namespace) {
-      const url = `${window.location.origin}/u/${userInfo.namespace}`;
+      const url = `${window.location.origin}/u/${userInfo.namespace}?utm_source=copus&utm_medium=copy`;
       navigator.clipboard.writeText(url);
       showToast('Profile link copied to clipboard', 'success');
     }
