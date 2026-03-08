@@ -11,6 +11,11 @@ import { logEnvironmentInfo } from "./utils/envUtils";
 // Log environment info at application startup
 logEnvironmentInfo();
 
+// Capture landing page + UTM params on first visit for signup attribution
+if (!sessionStorage.getItem('copus_landing_page')) {
+  sessionStorage.setItem('copus_landing_page', window.location.pathname + window.location.search);
+}
+
 createRoot(document.getElementById("app") as HTMLElement).render(
   <App />
 );

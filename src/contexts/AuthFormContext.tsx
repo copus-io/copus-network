@@ -338,11 +338,18 @@ export const AuthFormProvider: React.FC<AuthFormProviderProps> = ({ children }) 
         throw new Error('Invalid verification code');
       }
 
+      // Capture signup attribution from URL params and referrer
+      const urlParams = new URLSearchParams(window.location.search);
       const response = await AuthService.register({
         email: state.email,
         username: state.username,
         password: state.password,
         verificationCode: state.verificationCode,
+        referrer: document.referrer || undefined,
+        utmSource: urlParams.get('utm_source') || undefined,
+        utmMedium: urlParams.get('utm_medium') || undefined,
+        utmCampaign: urlParams.get('utm_campaign') || undefined,
+        landingPage: sessionStorage.getItem('copus_landing_page') || window.location.pathname,
       });
 
       if (response.success && response.data) {

@@ -105,13 +105,18 @@ export class AuthService {
   }
 
   /**
-   * User registration
+   * User registration with optional signup attribution
    */
   static async register(params: {
     username: string;
     email: string;
     password: string;
     verificationCode: string;
+    referrer?: string;
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    landingPage?: string;
   }): Promise<any> {
     return apiRequest('/client/common/register', {
       method: 'POST',
