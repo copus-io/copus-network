@@ -9,6 +9,7 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { homedir } from 'os'
 import { createSign } from 'crypto'
+import https from 'https'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -45,6 +46,7 @@ const SITE_URL = siteArg ? siteArg.split('=')[1] : 'https://test.copus.network'
 const CF_TOKEN = process.env.CLOUDFLARE_API_TOKEN || env.CLOUDFLARE_API_TOKEN
 const CF_ZONE = process.env.CLOUDFLARE_ZONE_ID || env.CLOUDFLARE_ZONE_ID
 const GSC_KEY_PATH = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH
+const GA4_PROPERTY_ID = process.env.GA4_PROPERTY_ID || env.GA4_PROPERTY_ID
 
 // --- Extract slugs from _content.js ---
 function getSlugsFromContent() {
@@ -233,34 +235,36 @@ async function checkGoogleIndexing(slugs) {
   const token = await getGoogleAccessToken(serviceAccount)
   if (!token) return
 
-  const siteProperty = SITE_URL.startsWith('https://') ? SITE_URL : `https://${SITE_URL}`
+  // Domain properties in Search Console use sc-domain: format
+  const hostname = new URL(SITE_URL).hostname.replace(/^(test\.|www\.)/, '')
+  const siteProperty = `sc-domain:${hostname}`
+  const inspectBase = SITE_URL.startsWith('https://') ? SITE_URL : `https://${SITE_URL}`
 
   for (const slug of slugs) {
-    const pageUrl = `${siteProperty}/pages/${slug}`
+    const pageUrl = `${inspectBase}/pages/${slug}`
     try {
-      const res = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
-        method: 'POST',
-        headers: {
+      const res = await curlPost(
+        'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect',
+        {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
+        JSON.stringify({
           inspectionUrl: pageUrl,
           siteUrl: siteProperty
         })
-      })
+      )
 
-      if (!res.ok) {
-        const errText = await res.text()
+      if (res.status !== 200) {
         if (res.status === 403) {
           console.log(fail(`${pad(slug, 35)} Permission denied — add service account to Search Console`))
-          return // No point checking more
+          return
         }
         console.log(fail(`${pad(slug, 35)} API error: ${res.status}`))
         continue
       }
 
-      const data = await res.json()
+      const data = JSON.parse(res.body)
       const result = data.inspectionResult?.indexStatusResult
       const verdict = result?.verdict || 'UNKNOWN'
       const coverageState = result?.coverageState || ''
@@ -278,13 +282,32 @@ async function checkGoogleIndexing(slugs) {
   }
 }
 
-async function getGoogleAccessToken(serviceAccount) {
+// Use child_process curl for Google APIs (Node fetch/https timeout issues on some networks)
+import { execSync } from 'child_process'
+
+function curlPost(url, headers, body) {
+  const headerArgs = Object.entries(headers).map(([k, v]) => `-H "${k}: ${v}"`).join(' ')
+  try {
+    const result = execSync(
+      `curl -s -w "\\n%{http_code}" -X POST ${headerArgs} -d '${body.replace(/'/g, "'\\''")}' "${url}" --max-time 15`,
+      { encoding: 'utf-8', timeout: 20000 }
+    )
+    const lines = result.trimEnd().split('\n')
+    const status = parseInt(lines.pop(), 10)
+    const responseBody = lines.join('\n')
+    return { status, body: responseBody }
+  } catch (e) {
+    throw new Error(`curl failed: ${e.message}`)
+  }
+}
+
+async function getGoogleAccessToken(serviceAccount, scope = 'https://www.googleapis.com/auth/webmasters.readonly') {
   try {
     const now = Math.floor(Date.now() / 1000)
     const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url')
     const payload = Buffer.from(JSON.stringify({
       iss: serviceAccount.client_email,
-      scope: 'https://www.googleapis.com/auth/webmasters.readonly',
+      scope,
       aud: 'https://oauth2.googleapis.com/token',
       iat: now,
       exp: now + 3600
@@ -297,18 +320,18 @@ async function getGoogleAccessToken(serviceAccount) {
 
     const jwt = `${signInput}.${signature}`
 
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
-    })
+    const res = await curlPost(
+      'https://oauth2.googleapis.com/token',
+      { 'Content-Type': 'application/x-www-form-urlencoded' },
+      `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+    )
 
-    if (!res.ok) {
+    if (res.status !== 200) {
       console.log(fail(`Failed to get Google access token: ${res.status}`))
       return null
     }
 
-    const data = await res.json()
+    const data = JSON.parse(res.body)
     return data.access_token
   } catch (e) {
     console.log(fail(`Google auth error: ${e.message}`))
@@ -438,94 +461,108 @@ async function checkAICitations(slugs) {
 }
 
 // ═══════════════════════════════════════════════
-// CHECK 7: Cloudflare Analytics
+// CHECK 7: GA4 Traffic (per-page breakdown)
 // ═══════════════════════════════════════════════
-async function checkCloudflareTraffic(slugs) {
-  console.log(bold('\nTRAFFIC (Cloudflare Analytics)'))
+async function checkTraffic(slugs) {
+  console.log(bold('\nTRAFFIC (Google Analytics 4)'))
 
-  if (!CF_TOKEN || CF_TOKEN === 'REPLACE_ME' || !CF_ZONE || CF_ZONE === 'REPLACE_ME') {
-    console.log(dim('  Skipped — Cloudflare API token/zone not configured'))
-    console.log(dim(`  Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID in ${envPath}`))
+  if (!GA4_PROPERTY_ID || GA4_PROPERTY_ID === 'REPLACE_ME') {
+    console.log(dim('  Skipped — GA4_PROPERTY_ID not configured'))
+    console.log(dim(`  Set GA4_PROPERTY_ID in ${envPath}`))
     return
   }
 
+  if (!GSC_KEY_PATH || !existsSync(GSC_KEY_PATH)) {
+    console.log(dim('  Skipped — service account key not configured'))
+    return
+  }
+
+  let serviceAccount
+  try {
+    serviceAccount = JSON.parse(readFileSync(GSC_KEY_PATH, 'utf-8'))
+  } catch (e) {
+    console.log(fail(`Cannot read service account key: ${e.message}`))
+    return
+  }
+
+  // Get token with analytics scope
+  const token = await getGoogleAccessToken(serviceAccount, 'https://www.googleapis.com/auth/analytics.readonly')
+  if (!token) return
+
   const now = new Date()
   const daysBack30 = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  const daysBack7 = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const today = now.toISOString().split('T')[0]
 
-  // Use httpRequests1dGroups (daily aggregation) — works on all plans with 30-day range
-  const query = `
-    query {
-      viewer {
-        zones(filter: { zoneTag: "${CF_ZONE}" }) {
-          httpRequests1dGroups(
-            filter: {
-              date_geq: "${daysBack30}"
-              date_leq: "${today}"
-            }
-            limit: 1000
-            orderBy: [date_ASC]
-          ) {
-            sum {
-              requests
-              pageViews
-            }
-            dimensions {
-              date
-            }
-          }
-        }
+  // Build page path filter for content pages
+  const body = JSON.stringify({
+    dateRanges: [{ startDate: daysBack30, endDate: today }],
+    dimensions: [{ name: 'pagePath' }],
+    metrics: [{ name: 'screenPageViews' }, { name: 'sessions' }],
+    dimensionFilter: {
+      filter: {
+        fieldName: 'pagePath',
+        stringFilter: { matchType: 'BEGINS_WITH', value: '/pages/' }
       }
-    }`
+    },
+    orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+    limit: 100
+  })
 
   try {
-    const res = await fetch('https://api.cloudflare.com/client/v4/graphql', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${CF_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query })
-    })
+    const res = curlPost(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${GA4_PROPERTY_ID}:runReport`,
+      { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body
+    )
 
-    if (!res.ok) {
-      const errText = await res.text()
-      console.log(fail(`Cloudflare API error: ${res.status} — ${errText.slice(0, 200)}`))
+    if (res.status !== 200) {
+      const errMsg = res.body.slice(0, 300)
+      console.log(fail(`GA4 API error ${res.status}: ${errMsg}`))
       return
     }
 
-    const data = await res.json()
+    const data = JSON.parse(res.body)
+    const rows = data.rows || []
 
-    if (data.errors?.length) {
-      console.log(fail(`GraphQL error: ${data.errors[0].message}`))
-      return
-    }
-
-    const zones = data.data?.viewer?.zones
-    if (!zones?.length) {
-      console.log(fail('No zone data returned'))
-      return
-    }
-
-    const groups = zones[0].httpRequests1dGroups || []
-
-    // httpRequests1dGroups gives zone-wide totals per day (no per-path breakdown on free plan)
-    // Sum up total requests and page views across the period
-    let totalRequests = 0
-    let totalPageViews = 0
-    for (const g of groups) {
-      totalRequests += g.sum.requests || 0
-      totalPageViews += g.sum.pageViews || 0
+    // Map path -> { views, sessions }
+    const pathData = {}
+    for (const row of rows) {
+      const path = row.dimensionValues[0].value
+      pathData[path] = {
+        views: parseInt(row.metricValues[0].value, 10),
+        sessions: parseInt(row.metricValues[1].value, 10)
+      }
     }
 
     console.log(dim(`  Last 30 days (${daysBack30} to ${today}):`))
-    console.log(`    Total zone requests: ${totalRequests.toLocaleString()}`)
-    console.log(`    Total page views:    ${totalPageViews.toLocaleString()}`)
-    console.log(dim('    Note: Free plan shows zone-wide totals. Per-path breakdown requires Pro+ plan.'))
-    console.log(dim('    Content page traffic estimated from zone total × content page share.'))
+    let totalViews = 0
+    for (const slug of slugs) {
+      const path = `/pages/${slug}`
+      const d = pathData[path] || { views: 0, sessions: 0 }
+      totalViews += d.views
+
+      const viewStr = String(d.views).padStart(6)
+      const sessStr = String(d.sessions).padStart(4)
+      if (d.views === 0) {
+        console.log(warn(`${pad(slug, 35)} ${viewStr} views  ${sessStr} sessions`))
+      } else if (d.views < 10) {
+        console.log(yellow(`  - ${pad(slug, 35)} ${viewStr} views  ${sessStr} sessions`))
+      } else {
+        console.log(ok(`${pad(slug, 35)} ${viewStr} views  ${sessStr} sessions`))
+      }
+    }
+
+    // Show any other /pages/ paths not in our slug list
+    for (const [path, d] of Object.entries(pathData)) {
+      const slug = path.replace('/pages/', '')
+      if (!slugs.includes(slug)) {
+        console.log(dim(`  ? ${pad(path, 35)} ${String(d.views).padStart(6)} views (not in _content.js)`))
+      }
+    }
+
+    console.log(dim(`  Total: ${totalViews} content page views`))
   } catch (e) {
-    console.log(fail(`Cloudflare error: ${e.message}`))
+    console.log(fail(`GA4 error: ${e.message}`))
   }
 }
 
@@ -599,7 +636,7 @@ async function main() {
 
   // Check 7: Cloudflare Traffic
   if (!SKIP.has('traffic')) {
-    await checkCloudflareTraffic(slugs)
+    await checkTraffic(slugs)
   } else {
     console.log(bold('\nTRAFFIC'))
     console.log(dim('  Skipped via --skip=traffic'))
