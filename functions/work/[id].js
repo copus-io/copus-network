@@ -23,6 +23,12 @@ export async function onRequest(context) {
     // Fetch article data from API
     const articleData = await fetchArticle(articleId)
 
+    // Capture referrer/UTM data for source attribution tracking
+    const referrer = request.headers.get('referer') || '';
+    const utmSource = url.searchParams.get('utm_source') || '';
+    const utmMedium = url.searchParams.get('utm_medium') || '';
+    const utmCampaign = url.searchParams.get('utm_campaign') || '';
+
     if (!articleData) {
       if (wantsJson) {
         return new Response(JSON.stringify({ error: 'Article not found', id: articleId }), {
@@ -31,6 +37,24 @@ export async function onRequest(context) {
         })
       }
       return next()
+    }
+
+    // Fire-and-forget tracking (don't block page render)
+    if (referrer || utmSource) {
+      context.waitUntil(
+        fetch(`${API_BASE}/client/common/article/trackView`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uuid: articleId,
+            referrer,
+            utmSource,
+            utmMedium,
+            utmCampaign,
+            source: 'edge'
+          })
+        }).catch(() => {}) // Silently fail if endpoint doesn't exist yet
+      );
     }
 
     // Parse seoData - prefer seoDataByAi (AI-generated) over seoData (manual)

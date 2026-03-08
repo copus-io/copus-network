@@ -13,6 +13,7 @@ import { useArticleDetail, useArticleDetailActions } from "../../hooks/queries";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { devLog } from "../../utils/devLogger";
+import { trackArticleView } from "../../services/analyticsService";
 import { decodeHtmlEntities } from "../../utils/htmlUtils";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
@@ -754,6 +755,13 @@ export const Content = (): JSX.Element => {
       updateArticleLikeState(article.uuid, article.isLiked || false, article.likeCount || 0);
     }
   }, [content, article, updateArticleLikeState]);
+
+  // Track article view with referrer/UTM source attribution (GA4 + backend)
+  useEffect(() => {
+    if (article?.uuid) {
+      trackArticleView(article.uuid);
+    }
+  }, [article?.uuid]);
 
   // Fetch "Collected in" data - get spaces that contain this article
   // Use article.id directly in useEffect to avoid callback recreation on every article change

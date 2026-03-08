@@ -16,6 +16,8 @@ interface EthereumProvider {
 declare global {
   interface Window {
     ethereum?: EthereumProvider;
+    gtag?: (...args: any[]) => void;
+    dataLayer?: Record<string, any>[];
   }
 }
 
