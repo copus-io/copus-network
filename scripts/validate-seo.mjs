@@ -4,10 +4,10 @@
 // Run: node scripts/validate-seo.mjs [--site=https://copus.network] [--skip=traffic,indexing,citations]
 // Config: ~/.copus-seo/.env
 
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { homedir } from 'os'
+import { homedir, tmpdir } from 'os'
 import { createSign } from 'crypto'
 import https from 'https'
 
@@ -283,21 +283,27 @@ async function checkGoogleIndexing(slugs) {
 }
 
 // Use child_process curl for Google APIs (Node fetch/https timeout issues on some networks)
-import { execSync } from 'child_process'
+import { execSync, spawnSync } from 'child_process'
 
 function curlPost(url, headers, body) {
-  const headerArgs = Object.entries(headers).map(([k, v]) => `-H "${k}: ${v}"`).join(' ')
+  // Write body to temp file to avoid shell escaping issues with long tokens
+  const tmpFile = join(tmpdir(), `copus-seo-${Date.now()}.json`)
+  writeFileSync(tmpFile, body)
   try {
-    const result = execSync(
-      `curl -s -w "\\n%{http_code}" -X POST ${headerArgs} -d '${body.replace(/'/g, "'\\''")}' "${url}" --max-time 15`,
-      { encoding: 'utf-8', timeout: 20000 }
-    )
-    const lines = result.trimEnd().split('\n')
+    const args = ['-s', '-w', '\n%{http_code}', '-X', 'POST', '--max-time', '15', '-d', `@${tmpFile}`]
+    for (const [k, v] of Object.entries(headers)) {
+      args.push('-H', `${k}: ${v}`)
+    }
+    args.push(url)
+    const result = spawnSync('curl', args, { encoding: 'utf-8', timeout: 20000 })
+    if (result.error) throw result.error
+    const output = (result.stdout || '').trimEnd()
+    const lines = output.split('\n')
     const status = parseInt(lines.pop(), 10)
     const responseBody = lines.join('\n')
     return { status, body: responseBody }
-  } catch (e) {
-    throw new Error(`curl failed: ${e.message}`)
+  } finally {
+    try { unlinkSync(tmpFile) } catch {}
   }
 }
 
