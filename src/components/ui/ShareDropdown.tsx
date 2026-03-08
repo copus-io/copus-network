@@ -43,7 +43,7 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(`${shareUrl}?utm_source=copus&utm_medium=copy`);
       showToast('Link copied to clipboard!', 'success');
       setIsOpen(false);
     } catch (error) {
@@ -52,7 +52,7 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
   };
 
   const handleShareOnX = () => {
-    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedUrl = encodeURIComponent(`${shareUrl}?utm_source=copus&utm_medium=twitter`);
     const encodedText = encodeURIComponent(title);
     window.open(
       `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`,
