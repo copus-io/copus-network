@@ -86,14 +86,14 @@ const TreasuryHeaderSection = ({
 
   // Handle copy link
   const handleCopyLink = () => {
-    const profileUrl = `${window.location.origin}/u/${namespace}`;
+    const profileUrl = `${window.location.origin}/u/${namespace}?utm_source=copus&utm_medium=copy`;
     navigator.clipboard.writeText(profileUrl);
     setShowShareDropdown(false);
   };
 
   // Handle share on X
   const handleShareOnX = () => {
-    const profileUrl = `${window.location.origin}/u/${namespace}`;
+    const profileUrl = `${window.location.origin}/u/${namespace}?utm_source=copus&utm_medium=twitter`;
     const text = `Check out ${username}'s profile on Copus!`;
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(profileUrl)}`;
     window.open(twitterUrl, '_blank');
