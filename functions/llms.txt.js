@@ -37,6 +37,16 @@ Search: ${config.siteUrl}/api/search?q=YOUR_QUERY
 - /sitemap.xml - XML sitemap
 - /ai - AI documentation page
 
+## CONTENT GUIDES
+- /pages/what-is-content-curation - What is Content Curation (Complete Guide)
+- /pages/best-content-curation-tools-2026 - Best Content Curation Tools 2026
+- /pages/copus-vs-arena - Copus vs Are.na Comparison
+- /pages/copus-vs-raindrop - Copus vs Raindrop.io Comparison
+- /pages/copus-vs-pocket - Copus vs Pocket Comparison
+- /pages/web3-content-curation-platform - Web3 Content Curation Platform
+- /pages/arena-alternatives - Are.na Alternatives
+- /pages/curation-tools-for-researchers - Curation Tools for Researchers
+
 ## ABOUT
 Copus is a platform where humans curate and share valuable internet resources.
 Each curation includes:
