@@ -80,6 +80,14 @@ export async function onRequest(context) {
     })
   }
 
+  // Add content hub page
+  urls.push({
+    loc: `${config.siteUrl}/pages`,
+    lastmod: today,
+    changefreq: 'weekly',
+    priority: '0.8'
+  })
+
   // Add content marketing pages
   const contentPages = [
     'copus-vs-arena',

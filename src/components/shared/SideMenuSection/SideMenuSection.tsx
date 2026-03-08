@@ -71,6 +71,7 @@ const getMenuItems = (userNamespace?: string) => [
 
 const footerLinks = [
   { label: "About", href: "/about" },
+  { label: "Resources", href: "/pages" },
   { label: "Contact us", href: "#", isContact: true },
   { label: "Terms & Privacy", href: "/terms" }
 ];
