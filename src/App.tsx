@@ -1,5 +1,5 @@
-import React, { lazy, Suspense, startTransition } from "react";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import React, { lazy, Suspense, startTransition, useEffect, useRef } from "react";
+import { RouterProvider, createBrowserRouter, useLocation, Outlet } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
 import { queryClient } from "./lib/queryClient";
@@ -14,6 +14,7 @@ import { CopusLoading } from "./components/ui/copus-loading";
 import { PerformanceMonitor } from "./components/DevTools/PerformanceMonitor";
 import { resourcePreloader } from "./utils/resourcePreloader";
 import { cssOptimizer } from "./utils/cssOptimizer";
+import { trackPageView } from "./services/analyticsService";
 
 // Eagerly loaded - critical path
 import { Discovery } from "./screens/Discovery/Discovery";
@@ -109,169 +110,190 @@ const LazyRoute = ({ children }: { children: React.ReactNode }) => (
   </SuspenseErrorBoundary>
 );
 
+// Track SPA page views on every route change
+const RouteTracker = () => {
+  const location = useLocation();
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    // Skip the initial render — index.tsx already captures landing page
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+
+  return <Outlet />;
+};
+
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <Discovery />,
-  },
-  {
-    path: "/home",
-    element: <Discovery />,
-  },
-  {
-    path: "/copus",
-    element: <Discovery />,
-  },
-  {
-    path: "/subscription",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><Following /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-
-  {
-    path: "/notification",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><Notification /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/setting",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><Setting /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/earning",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <Withdrawal />
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/callback",
-    element: <LazyRoute><OAuthRedirect /></LazyRoute>,
-  },
-  {
-    path: "/newglobal",
-    element: <LazyRoute><OAuthRedirect /></LazyRoute>,
-  },
-  {
-    path: "/explore/new",
-    element: <LazyRoute><NewExplore /></LazyRoute>,
-  },
-  {
-    path: "/my-treasury",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><MyTreasury /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/user/:namespace",
-    element: <LazyRoute><UserProfile /></LazyRoute>,
-  },
-  {
-    path: "/user/:namespace/treasury",
-    element: <LazyRoute><MyTreasury /></LazyRoute>,
-  },
-  {
-    path: "/treasury/:namespace",
-    element: <LazyRoute><Space /></LazyRoute>,
-  },
-  {
-    // Keep old /space route for backwards compatibility
-    path: "/space/:category",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><Space /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/u/:namespace",
-    element: <ShortLinkHandler />, // Short link format: /u/namespace
-  },
-  {
-    path: "/curate",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><Create /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/work/:id",
-    element: <Content />,
-  },
-  {
-    path: "/test/no-access",
-    element: <TestNoAccess />,
-  },
-  {
-    path: "/auth/unauthorized",
-    element: <LazyRoute><NotLogIn /></LazyRoute>,
-  },
-  {
-    path: "/preview/link/:id?",
-    element: <LazyRoute><LinkPreview /></LazyRoute>,
-  },
-  {
-    path: "/account/delete",
-    element: (
-      <AuthGuard requireAuth={true} fallbackPath="/login">
-        <LazyRoute><DeleteAccount /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/published",
-    element: <LazyRoute><Published /></LazyRoute>,
-  },
-  {
-    path: "/signup",
-    element: <LazyRoute><SignUp /></LazyRoute>,
-  },
-  {
-    path: "/seoSet",
-    element: (
-      <AuthGuard requireAuth={true} showUnauthorized={true}>
-        <LazyRoute><SEOSet /></LazyRoute>
-      </AuthGuard>
-    ),
-  },
-  {
-    path: "/taste-test",
-    element: <TasteTest />,
-  },
-  {
-    path: "/about",
-    element: <LazyRoute><AboutPage /></LazyRoute>,
-  },
-  {
-    path: "/terms",
-    element: <LazyRoute><TermsPage /></LazyRoute>,
-  },
-  {
-    path: "/privacy",
-    element: <LazyRoute><TermsPage /></LazyRoute>,
-  },
-  // 404 catch-all route - must be last
-  {
-    path: "*",
-    element: <LazyRoute><NotFoundPage /></LazyRoute>,
+    element: <RouteTracker />,
+    children: [
+      {
+        path: "/",
+        element: <Discovery />,
+      },
+      {
+        path: "/home",
+        element: <Discovery />,
+      },
+      {
+        path: "/copus",
+        element: <Discovery />,
+      },
+      {
+        path: "/subscription",
+        element: (
+          <AuthGuard requireAuth={true} showUnauthorized={true}>
+            <LazyRoute><Following /></LazyRoute>
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/notification",
+        element: (
+          <AuthGuard requireAuth={true} showUnauthorized={true}>
+            <LazyRoute><Notification /></LazyRoute>
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/setting",
+        element: (
+          <AuthGuard requireAuth={true} showUnauthorized={true}>
+            <LazyRoute><Setting /></LazyRoute>
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/earning",
+        element: (
+          <AuthGuard requireAuth={true} showUnauthorized={true}>
+            <Withdrawal />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/login",
+        element: <Login />,
+      },
+      {
+        path: "/callback",
+        element: <LazyRoute><OAuthRedirect /></LazyRoute>,
+      },
+      {
+        path: "/newglobal",
+        element: <LazyRoute><OAuthRedirect /></LazyRoute>,
+      },
+      {
+        path: "/explore/new",
+        element: <LazyRoute><NewExplore /></LazyRoute>,
+      },
+      {
+        path: "/my-treasury",
+        element: (
+          <AuthGuard requireAuth={true} showUnauthorized={true}>
+            <LazyRoute><MyTreasury /></LazyRoute>
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/user/:namespace",
+        element: <LazyRoute><UserProfile /></LazyRoute>,
+      },
+      {
+        path: "/user/:namespace/treasury",
+        element: <LazyRoute><MyTreasury /></LazyRoute>,
+      },
+      {
+        path: "/treasury/:namespace",
+        element: <LazyRoute><Space /></LazyRoute>,
+      },
+      {
+        // Keep old /space route for backwards compatibility
+        path: "/space/:category",
+        element: (
+          <AuthGuard requireAuth={true} showUnauthorized={true}>
+            <LazyRoute><Space /></LazyRoute>
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/u/:namespace",
+        element: <ShortLinkHandler />, // Short link format: /u/namespace
+      },
+      {
+        path: "/curate",
+        element: (
+          <AuthGuard requireAuth={true} showUnauthorized={true}>
+            <LazyRoute><Create /></LazyRoute>
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/work/:id",
+        element: <Content />,
+      },
+      {
+        path: "/test/no-access",
+        element: <TestNoAccess />,
+      },
+      {
+        path: "/auth/unauthorized",
+        element: <LazyRoute><NotLogIn /></LazyRoute>,
+      },
+      {
+        path: "/preview/link/:id?",
+        element: <LazyRoute><LinkPreview /></LazyRoute>,
+      },
+      {
+        path: "/account/delete",
+        element: (
+          <AuthGuard requireAuth={true} fallbackPath="/login">
+            <LazyRoute><DeleteAccount /></LazyRoute>
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/published",
+        element: <LazyRoute><Published /></LazyRoute>,
+      },
+      {
+        path: "/signup",
+        element: <LazyRoute><SignUp /></LazyRoute>,
+      },
+      {
+        path: "/seoSet",
+        element: (
+          <AuthGuard requireAuth={true} showUnauthorized={true}>
+            <LazyRoute><SEOSet /></LazyRoute>
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "/taste-test",
+        element: <TasteTest />,
+      },
+      {
+        path: "/about",
+        element: <LazyRoute><AboutPage /></LazyRoute>,
+      },
+      {
+        path: "/terms",
+        element: <LazyRoute><TermsPage /></LazyRoute>,
+      },
+      {
+        path: "/privacy",
+        element: <LazyRoute><TermsPage /></LazyRoute>,
+      },
+      // 404 catch-all route - must be last
+      {
+        path: "*",
+        element: <LazyRoute><NotFoundPage /></LazyRoute>,
+      },
+    ],
   },
 ]);
 

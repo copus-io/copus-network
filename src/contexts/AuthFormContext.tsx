@@ -338,18 +338,37 @@ export const AuthFormProvider: React.FC<AuthFormProviderProps> = ({ children }) 
         throw new Error('Invalid verification code');
       }
 
-      // Capture signup attribution from URL params and referrer
+      // Capture signup attribution — try localStorage (persisted on landing) then URL fallback
       const urlParams = new URLSearchParams(window.location.search);
+      let utmSource = urlParams.get('utm_source') || undefined;
+      let utmMedium = urlParams.get('utm_medium') || undefined;
+      let utmCampaign = urlParams.get('utm_campaign') || undefined;
+      let referrer = document.referrer || undefined;
+      let landingPage = sessionStorage.getItem('copus_landing_page') || window.location.pathname;
+
+      // Prefer stored UTM data (captured on first visit, survives navigation)
+      try {
+        const stored = localStorage.getItem('copus_utm');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          utmSource = utmSource || parsed.utm_source || undefined;
+          utmMedium = utmMedium || parsed.utm_medium || undefined;
+          utmCampaign = utmCampaign || parsed.utm_campaign || undefined;
+          referrer = referrer || parsed.referrer || undefined;
+          landingPage = landingPage || parsed.landing_page || undefined;
+        }
+      } catch {}
+
       const response = await AuthService.register({
         email: state.email,
         username: state.username,
         password: state.password,
         verificationCode: state.verificationCode,
-        referrer: document.referrer || undefined,
-        utmSource: urlParams.get('utm_source') || undefined,
-        utmMedium: urlParams.get('utm_medium') || undefined,
-        utmCampaign: urlParams.get('utm_campaign') || undefined,
-        landingPage: sessionStorage.getItem('copus_landing_page') || window.location.pathname,
+        referrer,
+        utmSource,
+        utmMedium,
+        utmCampaign,
+        landingPage,
       });
 
       if (response.success && response.data) {
@@ -368,6 +387,12 @@ export const AuthFormProvider: React.FC<AuthFormProviderProps> = ({ children }) 
         } catch (userInfoError) {
           debugLog.error('Failed to fetch user info after registration:', userInfoError);
         }
+
+        // Track successful signup
+        try {
+          const { trackSignupComplete } = await import('../services/analyticsService');
+          trackSignupComplete();
+        } catch {}
 
         showToast('Registration successful! Welcome to Copus!', 'success');
 

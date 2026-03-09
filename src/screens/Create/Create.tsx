@@ -69,7 +69,9 @@ export const Create = (): JSX.Element => {
 
     // Track page load for creation funnel
     if (!isEditMode) {
-      // Analytics tracking removed
+      import('../../services/analyticsService').then(({ trackArticleCreateStart }) => {
+        trackArticleCreateStart();
+      }).catch(() => {});
     }
   }, []); // Only run once when component mounts
   const [editingArticle, setEditingArticle] = useState<any>(null);
@@ -876,13 +878,11 @@ export const Create = (): JSX.Element => {
 
       // Track successful publish for analytics
       if (!isEditMode) {
-        const timeToComplete = Date.now() - pageLoadTime;
-        const hasImages = !!(formData.coverImage || coverImageUrl || autoFetchedCoverUrl);
-        const hasLinks = !!(formData.link);
-
-        // Analytics tracking removed
-
-        // Analytics tracking removed
+        try {
+          const { trackArticlePublish } = await import('../../services/analyticsService');
+          const articleId = typeof response === 'string' ? response : response?.uuid || '';
+          if (articleId) trackArticlePublish(articleId);
+        } catch {}
       }
 
       // Invalidate article caches to ensure fresh data is loaded

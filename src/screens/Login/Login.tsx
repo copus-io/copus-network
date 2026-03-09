@@ -478,7 +478,23 @@ export const Login = (): JSX.Element => {
 
           // Call different login methods based on provider type
           if (provider === 'google') {
-            response = await AuthService.googleLogin(code, state, hasExistingToken);
+            // Retrieve stored UTM attribution data (captured on landing, survives OAuth redirect)
+            let utmData: any = undefined;
+            try {
+              const stored = localStorage.getItem('copus_utm');
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                utmData = {
+                  utmSource: parsed.utm_source || undefined,
+                  utmMedium: parsed.utm_medium || undefined,
+                  utmCampaign: parsed.utm_campaign || undefined,
+                  referrer: parsed.referrer || undefined,
+                  landingPage: parsed.landing_page || undefined,
+                };
+              }
+            } catch {}
+
+            response = await AuthService.googleLogin(code, state, hasExistingToken, utmData);
 
             if (!response.token) {
               throw new Error('No authentication token received from server. The account may need to be registered first.');
@@ -1499,7 +1515,14 @@ export const Login = (): JSX.Element => {
               </div>
 
               <div className="flex flex-col items-center justify-center gap-6 sm:gap-[30px] relative self-stretch w-full flex-[0_0_auto]">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <Tabs value={activeTab} onValueChange={(val) => {
+                  setActiveTab(val);
+                  if (val === 'signup') {
+                    import('../../services/analyticsService').then(({ trackSignupStart }) => {
+                      trackSignupStart();
+                    }).catch(() => {});
+                  }
+                }} className="w-full">
                   <TabsList className="flex w-full justify-center gap-8 bg-transparent h-auto p-0">
                     <TabsTrigger
                       value="login"

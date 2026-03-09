@@ -425,9 +425,24 @@ export class AuthService {
   /**
    * Google login callback handler (supports both login and binding modes)
    */
-  static async googleLogin(code: string, state: string, hasToken: boolean = false): Promise<any> {
+  static async googleLogin(code: string, state: string, hasToken: boolean = false, utmData?: {
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    referrer?: string;
+    landingPage?: string;
+  }): Promise<any> {
 
-    const endpoint = `/client/common/google/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+    let endpoint = `/client/common/google/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+
+    // Append UTM attribution params for registration tracking
+    if (utmData) {
+      if (utmData.utmSource) endpoint += `&utmSource=${encodeURIComponent(utmData.utmSource)}`;
+      if (utmData.utmMedium) endpoint += `&utmMedium=${encodeURIComponent(utmData.utmMedium)}`;
+      if (utmData.utmCampaign) endpoint += `&utmCampaign=${encodeURIComponent(utmData.utmCampaign)}`;
+      if (utmData.referrer) endpoint += `&referrer=${encodeURIComponent(utmData.referrer)}`;
+      if (utmData.landingPage) endpoint += `&landingPage=${encodeURIComponent(utmData.landingPage)}`;
+    }
 
     try {
       // Try request with token (for account binding)
