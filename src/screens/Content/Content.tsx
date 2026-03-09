@@ -13,7 +13,7 @@ import { useArticleDetail, useArticleDetailActions } from "../../hooks/queries";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { devLog } from "../../utils/devLogger";
-import { trackArticleView } from "../../services/analyticsService";
+import { trackArticleView, trackReadDepth } from "../../services/analyticsService";
 import { decodeHtmlEntities } from "../../utils/htmlUtils";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
@@ -761,6 +761,34 @@ export const Content = (): JSX.Element => {
     if (article?.uuid) {
       trackArticleView(article.uuid);
     }
+  }, [article?.uuid]);
+
+  // Read depth tracking — fire at 25/50/75/100% scroll thresholds
+  useEffect(() => {
+    if (!article?.uuid) return;
+
+    const startTime = performance.now();
+    const firedThresholds = new Set<number>();
+    const thresholds = [25, 50, 75, 100];
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+
+      const percent = Math.min(100, Math.round((scrollTop / docHeight) * 100));
+      const elapsed = Math.round(performance.now() - startTime);
+
+      for (const t of thresholds) {
+        if (percent >= t && !firedThresholds.has(t)) {
+          firedThresholds.add(t);
+          trackReadDepth(article.uuid, t, elapsed);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [article?.uuid]);
 
   // Fetch "Collected in" data - get spaces that contain this article

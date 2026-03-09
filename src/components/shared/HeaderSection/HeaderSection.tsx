@@ -24,6 +24,7 @@ import {
   SearchUserItem,
   SearchResult as SearchResultData,
 } from "../../../services/searchService";
+import { trackSearch } from "../../../services/analyticsService";
 
 interface SearchResultItem {
   id: string;
@@ -180,15 +181,19 @@ export const HeaderSection = ({ hideCreateButton = false, showDiscoverNow = fals
         setArticleResults(results.articles);
         setSpaceResults(results.spaces);
         setUserResults(results.users);
+        trackSearch(query, results.articles.totalCount + results.spaces.totalCount + results.users.totalCount);
       } else if (tab === 'works') {
         const results = await searchArticles({ keyword: query, pageSize: 20 });
         setArticleResults(results);
+        trackSearch(query, results.totalCount);
       } else if (tab === 'treasuries') {
         const results = await searchSpaces({ keyword: query, pageSize: 20 });
         setSpaceResults(results);
+        trackSearch(query, results.totalCount);
       } else if (tab === 'users') {
         const results = await searchUsers({ keyword: query, pageSize: 20 });
         setUserResults(results);
+        trackSearch(query, results.totalCount);
       }
     } catch (error) {
       console.error('Search failed:', error);
