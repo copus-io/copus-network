@@ -13,7 +13,7 @@ import { useArticleDetail, useArticleDetailActions } from "../../hooks/queries";
 import { getCategoryStyle, getCategoryInlineStyle } from "../../utils/categoryStyles";
 import { AuthService } from "../../services/authService";
 import { devLog } from "../../utils/devLogger";
-import { trackArticleView, trackReadDepth } from "../../services/analyticsService";
+import { trackArticleView, trackReadDepth, trackVisitClick } from "../../services/analyticsService";
 import { decodeHtmlEntities } from "../../utils/htmlUtils";
 import { TreasureButton } from "../../components/ui/TreasureButton";
 import { ShareDropdown } from "../../components/ui/ShareDropdown";
@@ -2548,6 +2548,7 @@ export const Content = (): JSX.Element => {
               <button
                 onClick={() => {
                   console.log('🔍 Visit button (unlocked) clicked!', unlockedUrl);
+                  trackVisitClick(article?.uuid || id || '', unlockedUrl || '');
                   // Check if it's a taste-test URL and we're in local development
                   if (unlockedUrl && unlockedUrl.includes('taste-test') && window.location.hostname === 'localhost') {
                     console.log('🏠 Local development detected, navigating to /taste-test');
@@ -2574,6 +2575,7 @@ export const Content = (): JSX.Element => {
               <button
                 onClick={() => {
                   console.log('🔍 Visit button (article) clicked!', article.targetUrl);
+                  trackVisitClick(article.uuid, article.targetUrl || '');
                   // Check if it's a taste-test URL and we're in local development
                   if (article.targetUrl && article.targetUrl.includes('taste-test') && window.location.hostname === 'localhost') {
                     console.log('🏠 Local development detected, navigating to /taste-test');

@@ -224,6 +224,10 @@ export function trackSubscribe(targetUserId: string) {
   trackEvent('subscribe', { target_user_id: targetUserId });
 }
 
+export function trackVisitClick(articleUuid: string, targetUrl: string) {
+  trackEvent('visit_click', { article_id: articleUuid, target_url: targetUrl });
+}
+
 export function trackUnlock(articleUuid: string, amount: string) {
   trackEvent('unlock', { article_id: articleUuid, amount });
 }
