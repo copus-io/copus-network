@@ -1055,6 +1055,10 @@ export const SpaceContentSection = (): JSX.Element => {
 
       if (success) {
         setIsFollowing(true);
+        try {
+          const { trackUserFollow } = await import('../../../services/analyticsService');
+          trackUserFollow(spaceId);
+        } catch {}
         showToast(`Successfully subscribed to space! Notifications will be sent to ${userInfo.email}`, 'success');
 
         // Update cache with new subscription status

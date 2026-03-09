@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from './toast';
+import { trackShareClick } from '../../services/analyticsService';
 
 interface ShareDropdownProps {
   title: string;
@@ -44,6 +45,7 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(`${shareUrl}?utm_source=copus&utm_medium=copy`);
+      trackShareClick('copy');
       showToast('Link copied to clipboard!', 'success');
       setIsOpen(false);
     } catch (error) {
@@ -59,6 +61,7 @@ export const ShareDropdown: React.FC<ShareDropdownProps> = ({
       '_blank',
       'noopener,noreferrer'
     );
+    trackShareClick('twitter');
     setIsOpen(false);
   };
 
