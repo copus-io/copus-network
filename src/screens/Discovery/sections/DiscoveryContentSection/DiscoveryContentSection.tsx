@@ -208,15 +208,25 @@ export const DiscoveryContentSection = (): JSX.Element => {
               <li>Scroll through and save what resonates with you</li>
               <li>Follow curators whose taste you trust</li>
               <li>
+                Install the extension for{' '}
                 <a
                   href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#2191FB] hover:underline cursor-pointer"
                 >
-                  Install the extension
-                </a>{' '}
-                to curate as you browse
+                  Chrome
+                </a>
+                {' '}or{' '}
+                <a
+                  href="https://addons.mozilla.org/en-US/firefox/addon/copus-curate-discover-connect/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#2191FB] hover:underline cursor-pointer"
+                >
+                  Firefox
+                </a>
+                {' '}to curate as you browse
               </li>
             </ol>
           </div>

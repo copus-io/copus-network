@@ -986,7 +986,7 @@ export const Create = (): JSX.Element => {
               </span>
             )}
             {!isExtensionInstalled && (
-              <div className="ml-[10px]">
+              <div className="ml-[10px] flex items-center gap-2">
                 <Button
                   variant="outline"
                   className="flex items-center px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
@@ -994,7 +994,18 @@ export const Create = (): JSX.Element => {
                 >
                   <a href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb?authuser=5&hl=en" target="_blank" rel="noopener noreferrer">
                     <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red whitespace-nowrap">
-                      Install browser extension
+                      Chrome extension
+                    </span>
+                  </a>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex items-center px-5 py-2.5 h-auto rounded-[50px] border-red text-red hover:bg-[#F23A001A] hover:text-red transition-colors duration-200"
+                  asChild
+                >
+                  <a href="https://addons.mozilla.org/en-US/firefox/addon/copus-curate-discover-connect/" target="_blank" rel="noopener noreferrer">
+                    <span className="[font-family:'Lato',Helvetica] font-bold text-lg leading-5 text-red whitespace-nowrap">
+                      Firefox add-on
                     </span>
                   </a>
                 </Button>
