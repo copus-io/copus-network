@@ -98,11 +98,13 @@ export const TreasureSection: React.FC<TreasureSectionProps> = ({
       // Update like state based on whether article is now collected or not
       if (isCollected && !isLiked) {
         // Article was collected (liked)
+        import('../services/analyticsService').then(m => m.trackLike(article.uuid));
         onLikeChange(true, collectionCount);
         updateArticleLikeState(article.id.toString(), true);
         showToastMessage('Added to your treasury!', 'success');
       } else if (!isCollected && isLiked) {
         // Article was uncollected (unliked)
+        import('../services/analyticsService').then(m => m.trackUnlike(article.uuid));
         onLikeChange(false, collectionCount);
         updateArticleLikeState(article.id.toString(), false);
         showToastMessage('Removed from your treasury', 'info');

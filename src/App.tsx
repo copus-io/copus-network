@@ -125,6 +125,11 @@ const RouteTracker = () => {
     incrementPageViewCount();
   }, [location.pathname]);
 
+  // Detect returning visitors (1+ day since last visit)
+  useEffect(() => {
+    import('./services/analyticsService').then(m => m.trackReturnVisit());
+  }, []);
+
   // Send session_end via sendBeacon on page unload
   useEffect(() => {
     const handleUnload = () => trackSessionEnd();

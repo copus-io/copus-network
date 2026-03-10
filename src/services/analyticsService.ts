@@ -244,6 +244,36 @@ export function trackReadDepth(articleUuid: string, percent: number, timeSpentMs
   trackEvent('read_depth', { article_id: articleUuid, percent, time_spent_ms: timeSpentMs });
 }
 
+// --- AARRR: Activation milestones ---
+
+export function trackProfileUpdate(fields: string[]) {
+  trackEvent('profile_update', { fields_updated: fields });
+}
+
+export function trackReturnVisit() {
+  const lastVisit = localStorage.getItem('copus_last_visit');
+  const now = new Date().toISOString();
+  localStorage.setItem('copus_last_visit', now);
+
+  if (lastVisit) {
+    const gapMs = Date.now() - new Date(lastVisit).getTime();
+    const gapDays = Math.floor(gapMs / (1000 * 60 * 60 * 24));
+    if (gapDays >= 1) {
+      trackEvent('return_visit', { days_since_last: gapDays, last_visit: lastVisit });
+    }
+  }
+}
+
+// --- AARRR: Revenue ---
+
+export function trackPaymentSuccess(articleUuid: string, amount: string, currency: string) {
+  trackEvent('payment_success', { article_id: articleUuid, amount, currency });
+}
+
+export function trackPaymentFailed(articleUuid: string, error: string) {
+  trackEvent('payment_failed', { article_id: articleUuid, error });
+}
+
 // --- Session lifecycle ---
 
 /** Increment page view counter in sessionStorage */

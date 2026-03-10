@@ -376,6 +376,12 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
           isPaymentInProgress: false,
           isPayConfirmOpen: false
         }));
+        // Track successful payment
+        const articleUuid = state.x402PaymentInfo.resource?.split('/work/')?.pop()?.split('?')[0] || '';
+        import('../services/analyticsService').then(m =>
+          m.trackPaymentSuccess(articleUuid, state.x402PaymentInfo?.amount || '', state.selectedCurrency)
+        );
+
         showToast('Payment successful! Content unlocked.', 'success');
       } else {
         throw new Error('Payment failed');
@@ -383,6 +389,13 @@ export const PaymentProvider: React.FC<PaymentProviderProps> = ({ children }) =>
     } catch (error: any) {
       console.error('❌ Payment failed:', error);
       setState(prev => ({ ...prev, isPaymentInProgress: false }));
+
+      // Track failed payment
+      const articleUuid = state.x402PaymentInfo?.resource?.split('/work/')?.pop()?.split('?')[0] || '';
+      import('../services/analyticsService').then(m =>
+        m.trackPaymentFailed(articleUuid, error.message || 'unknown')
+      );
+
       showToast(error.message || 'Payment failed. Please try again.', 'error');
     }
   }, [state, showToast]);
