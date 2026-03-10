@@ -82,9 +82,15 @@ export function trackEvent(eventName: string, properties: Record<string, any> = 
   }
 
   // 2) Backend tracking with visitor/session/user identity
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   fetch(`${API_BASE_URL}/client/common/trackEvent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       event: eventName,
       visitor_id: getVisitorId(),
