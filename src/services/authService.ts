@@ -437,11 +437,11 @@ export class AuthService {
 
     // Append UTM attribution params for registration tracking
     if (utmData) {
-      if (utmData.utmSource) endpoint += `&utmSource=${encodeURIComponent(utmData.utmSource)}`;
-      if (utmData.utmMedium) endpoint += `&utmMedium=${encodeURIComponent(utmData.utmMedium)}`;
-      if (utmData.utmCampaign) endpoint += `&utmCampaign=${encodeURIComponent(utmData.utmCampaign)}`;
-      if (utmData.referrer) endpoint += `&referrer=${encodeURIComponent(utmData.referrer)}`;
-      if (utmData.landingPage) endpoint += `&landingPage=${encodeURIComponent(utmData.landingPage)}`;
+      endpoint += `&utmSource=${encodeURIComponent(utmData.utmSource || '')}`;
+      endpoint += `&utmMedium=${encodeURIComponent(utmData.utmMedium || '')}`;
+      endpoint += `&utmCampaign=${encodeURIComponent(utmData.utmCampaign || '')}`;
+      endpoint += `&referrer=${encodeURIComponent(utmData.referrer || '')}`;
+      endpoint += `&landingPage=${encodeURIComponent(utmData.landingPage || '')}`;
     }
 
     try {
