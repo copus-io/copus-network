@@ -80,7 +80,7 @@ export const TasteProfileModal: React.FC<TasteProfileModalProps> = ({
   const privateTasteUrl = userUuid ? `https://copus.network/api/taste/${namespace}.json?key=${userUuid}` : publicTasteUrl;
   // Show public URL when public, private URL with key when private
   const tasteProfileUrl = isPublic ? publicTasteUrl : privateTasteUrl;
-  const isUnlocked = totalWorks >= 10;
+  const isUnlocked = true;
 
   const handleToggleVisibility = async () => {
     setIsToggling(true);
