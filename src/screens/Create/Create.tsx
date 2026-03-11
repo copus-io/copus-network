@@ -30,6 +30,7 @@ import { ChooseTreasuriesModal, SelectedSpace } from "../../components/ChooseTre
 import { BindableSpace } from "../../types/space";
 import { CreateSpaceModal } from "../../components/CreateSpaceModal";
 import { SEO } from "../../components/SEO/SEO";
+import { isNativeApp } from "../../utils/platform";
 
 
 export const Create = (): JSX.Element => {
@@ -86,6 +87,19 @@ export const Create = (): JSX.Element => {
     selectedTopicId: 1, // Corresponding ID
     coverImage: null as File | null,
   });
+
+  // Pre-fill from ?url= and ?title= query params (used by iOS share extension)
+  useEffect(() => {
+    const urlParam = searchParams.get('url');
+    const titleParam = searchParams.get('title');
+    if (urlParam) {
+      setFormData(prev => ({
+        ...prev,
+        link: urlParam,
+        ...(titleParam ? { title: titleParam } : {}),
+      }));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // x402 pay-to-unlock states
   const [payToUnlock, setPayToUnlock] = useState(false);
@@ -985,7 +999,7 @@ export const Create = (): JSX.Element => {
                 (Edit Mode)
               </span>
             )}
-            {!isExtensionInstalled && (
+            {!isExtensionInstalled && !isNativeApp() && (
               <div className="ml-[10px] flex items-center gap-2">
                 <Button
                   variant="outline"

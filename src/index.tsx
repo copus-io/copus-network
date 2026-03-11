@@ -8,6 +8,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { logEnvironmentInfo } from "./utils/envUtils";
 import { getVisitorId, getSessionId, incrementPageViewCount } from "./services/analyticsService";
+import { initCapacitorListeners } from "./utils/capacitorInit";
 
 // Log environment info at application startup
 logEnvironmentInfo();
@@ -51,6 +52,9 @@ if (!localStorage.getItem('copus_utm')) {
     }));
   }
 }
+
+// Initialize Capacitor deep link listeners (no-op on web)
+initCapacitorListeners();
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <App />

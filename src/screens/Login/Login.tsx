@@ -22,6 +22,7 @@ import { APP_CONFIG } from "../../config/app";
 import { useVerificationCode } from '../../hooks/useVerificationCode';
 import * as storage from "../../utils/storage";
 import { SEO } from "../../components/SEO/SEO";
+import { isNativeApp } from "../../utils/platform";
 
 const socialProviders = [
   {
@@ -663,7 +664,12 @@ export const Login = (): JSX.Element => {
       const urlWithProvider = oauthUrl.includes('?')
         ? `${oauthUrl}&provider=x`
         : `${oauthUrl}?provider=x`;
-      window.location.href = urlWithProvider;
+      if (isNativeApp()) {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: urlWithProvider });
+      } else {
+        window.location.href = urlWithProvider;
+      }
     } catch (error: any) {
       showToast(`X login failed: ${error.message || 'Please try again'}`, 'error');
     }
@@ -686,7 +692,12 @@ export const Login = (): JSX.Element => {
       const urlWithProvider = oauthUrl.includes('?')
         ? `${oauthUrl}&provider=google`
         : `${oauthUrl}?provider=google`;
-      window.location.href = urlWithProvider;
+      if (isNativeApp()) {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: urlWithProvider });
+      } else {
+        window.location.href = urlWithProvider;
+      }
     } catch (error: any) {
       showToast(`Google login failed: ${error.message || 'Please try again'}`, 'error');
     }

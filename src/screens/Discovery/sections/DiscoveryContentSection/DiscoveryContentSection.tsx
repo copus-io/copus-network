@@ -8,6 +8,7 @@ import { useUser } from "../../../../contexts/UserContext";
 import { ArticleCard, ArticleData } from "../../../../components/ArticleCard";
 import { CollectTreasureModal } from "../../../../components/CollectTreasureModal";
 import profileDefaultAvatar from "../../../../assets/images/profile-default.svg";
+import { isNativeApp } from "../../../../utils/platform";
 import { decodeHtmlEntities } from "../../../../utils/htmlUtils";
 
 // Module-level cache for discovery state — survives component unmount/remount
@@ -207,27 +208,32 @@ export const DiscoveryContentSection = (): JSX.Element => {
             <ol className="[font-family:'Lato',Helvetica] font-normal text-[#454545] text-base tracking-[0] leading-[28px] list-decimal list-inside flex flex-col gap-1">
               <li>Scroll through and save what resonates with you</li>
               <li>Follow curators whose taste you trust</li>
-              <li>
-                Install the extension for{' '}
-                <a
-                  href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#2191FB] hover:underline cursor-pointer"
-                >
-                  Chrome
-                </a>
-                {' '}or{' '}
-                <a
-                  href="https://addons.mozilla.org/en-US/firefox/addon/copus-curate-discover-connect/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#2191FB] hover:underline cursor-pointer"
-                >
-                  Firefox
-                </a>
-                {' '}to curate as you browse
-              </li>
+              {!isNativeApp() && (
+                <li>
+                  Install the extension for{' '}
+                  <a
+                    href="https://chromewebstore.google.com/detail/copus-internet-treasure-m/nmeambahohkondggcpdomcbgdalnkmcb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#2191FB] hover:underline cursor-pointer"
+                  >
+                    Chrome
+                  </a>
+                  {' '}or{' '}
+                  <a
+                    href="https://addons.mozilla.org/en-US/firefox/addon/copus-curate-discover-connect/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#2191FB] hover:underline cursor-pointer"
+                  >
+                    Firefox
+                  </a>
+                  {' '}to curate as you browse
+                </li>
+              )}
+              {isNativeApp() && (
+                <li>Use the Share button in any app to curate as you browse</li>
+              )}
             </ol>
           </div>
         </>
