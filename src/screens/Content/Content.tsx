@@ -885,12 +885,13 @@ export const Content = (): JSX.Element => {
     );
   }
 
-  // Check if the article has been deleted
-  const isArticleDeleted = error && (
+  // Check if the article was not found (likely deleted by the curator)
+  const isArticleNotFound = error && (
     error.includes('not found') ||
     error.includes('deleted') ||
+    error.includes('no data') ||
     error.includes('404')
-  );
+  ) || (!loading && !content);
 
   if (error || (!loading && !content)) {
     return (
@@ -902,18 +903,20 @@ export const Content = (): JSX.Element => {
             <div className="text-center p-8 max-w-md">
               <div className="mb-6">
                 <svg className="w-24 h-24 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  {isArticleNotFound ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  )}
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                {isArticleDeleted ? 'The content has been deleted' : (error ? 'Oops! Something went wrong' : 'Content not found')}
+                {isArticleNotFound ? 'Content Not Found' : 'Something Went Wrong'}
               </h1>
               <p className="text-gray-600 mb-6">
-                {isArticleDeleted
-                  ? 'This content has been removed by the author.'
-                  : (error
-                    ? 'We encountered an issue while loading this content. Please try again later.'
-                    : 'The content you are looking for might have been removed or does not exist.')}
+                {isArticleNotFound
+                  ? 'This content is no longer available. The curator may have removed it.'
+                  : 'We encountered an issue while loading this content. Please try again later.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
@@ -922,7 +925,7 @@ export const Content = (): JSX.Element => {
                 >
                   Explore More Content
                 </Link>
-                {!isArticleDeleted && (
+                {!isArticleNotFound && (
                   <button
                     onClick={() => window.location.reload()}
                     className="px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors font-button"
