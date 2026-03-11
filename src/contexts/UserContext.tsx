@@ -189,41 +189,27 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Logout API call failed:', error);
       // Continue with local logout even if API call fails
     } finally {
-      // Disconnect wallet from MetaMask/Coinbase Wallet
+      // Disconnect wallet from MetaMask/Coinbase Wallet (fire-and-forget, must not block logout)
       try {
         if (typeof window !== 'undefined' && window.ethereum) {
-          // Try to revoke permissions to fully disconnect wallet
-          // This forces MetaMask to show account selection on next login
+          const revokeWithTimeout = (provider: any) =>
+            Promise.race([
+              provider.request({ method: 'wallet_revokePermissions', params: [{ eth_accounts: {} }] }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+            ]).catch(() => {});
+
           if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
-            // Multiple wallets installed - disconnect from all
             for (const provider of window.ethereum.providers) {
-              try {
-                if (provider.isMetaMask || provider.isCoinbaseWallet) {
-                  await provider.request({
-                    method: 'wallet_revokePermissions',
-                    params: [{ eth_accounts: {} }]
-                  });
-                }
-              } catch (err) {
-                // wallet_revokePermissions might not be supported in older versions
-                console.log('Could not revoke permissions from provider:', err);
+              if (provider.isMetaMask || provider.isCoinbaseWallet) {
+                revokeWithTimeout(provider);
               }
             }
           } else if (window.ethereum.isMetaMask || window.ethereum.isCoinbaseWallet) {
-            // Single wallet
-            try {
-              await window.ethereum.request({
-                method: 'wallet_revokePermissions',
-                params: [{ eth_accounts: {} }]
-              });
-            } catch (err) {
-              console.log('Could not revoke permissions:', err);
-            }
+            revokeWithTimeout(window.ethereum);
           }
-          console.log('✅ Wallet permissions revoked');
         }
       } catch (error) {
-        console.log('Wallet disconnect warning (non-critical):', error);
+        // Non-critical, ignore
       }
 
       // Clear local state - set user to null FIRST to trigger AuthGuard
