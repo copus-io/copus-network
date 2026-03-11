@@ -80,7 +80,7 @@ const TreasuryHeaderSection = ({
   const { user } = useUser(); // Add this for subscribe button
   const [bannerImageLoaded, setBannerImageLoaded] = useState(false);
   const [tasteButtonSeen, setTasteButtonSeen] = useState(() => localStorage.getItem('copus_taste_button_seen') === '1');
-  const shouldGlow = isOwnProfile && totalWorks >= 10 && !tasteButtonSeen;
+  const shouldGlow = isOwnProfile && !tasteButtonSeen;
   const [showBannerLoadingSpinner, setShowBannerLoadingSpinner] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
 
