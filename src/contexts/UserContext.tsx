@@ -277,16 +277,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       console.log('✅ Wallet fully disconnected - user will need to reconnect and select account on next login');
 
-      // Redirect to Discovery page if on a protected page
-      const currentPath = window.location.pathname;
-      const protectedPaths = ['/my-treasury', '/notification', '/setting', '/u/'];
-      const isOnProtectedPage = protectedPaths.some(path => currentPath.startsWith(path));
-
-      if (isOnProtectedPage) {
-        // Redirect to discovery page
-        console.log('🔄 Redirecting to Discovery page from protected route:', currentPath);
-        window.location.href = '/';
-      }
+      // Always redirect to Discovery page after logout (full reload ensures clean state)
+      window.location.href = '/';
     }
   }, []); // Empty dependencies since it uses setState and localStorage directly
 
