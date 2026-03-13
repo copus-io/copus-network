@@ -5,7 +5,7 @@ const OAuthRedirect: React.FC = () => {
     // Get current URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    const state = urlParams.get('state');
+    let state = urlParams.get('state');
     const provider = urlParams.get('provider') || 'google'; // Default to google if not specified
 
     const currentOrigin = window.location.origin; // e.g., http://localhost:5177 or https://test.copus.network
@@ -17,10 +17,22 @@ const OAuthRedirect: React.FC = () => {
       currentOrigin
     });
 
-    // Always redirect to the same environment (current origin)
-    // This ensures users stay on the environment they initiated the OAuth flow from
     if (code && state) {
-      // Redirect to /login on the same origin with OAuth parameters
+      // Check if this OAuth was initiated from the native iOS app
+      // Native app appends '__native__' to the state parameter before opening OAuth
+      const isNativeFlow = state.endsWith('__native__');
+      if (isNativeFlow) {
+        // Strip the native marker — backend must see the original state for CSRF validation
+        state = state.slice(0, -'__native__'.length);
+        // Redirect to deep link — iOS intercepts copus:// and sends to the app
+        // This closes SFSafariViewController and hands auth data back to the Capacitor WebView
+        const deepLink = `copus://callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=${provider}`;
+        console.log('🚀 Native OAuth flow, redirecting to deep link:', deepLink);
+        window.location.href = deepLink;
+        return;
+      }
+
+      // Web flow: redirect to /login on the same origin with OAuth parameters
       const redirectUrl = `/login?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}&provider=${provider}`;
       console.log('🚀 Redirecting to login on same origin:', currentOrigin + redirectUrl);
       window.location.href = redirectUrl;
