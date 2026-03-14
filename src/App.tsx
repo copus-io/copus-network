@@ -14,7 +14,7 @@ import { CopusLoading } from "./components/ui/copus-loading";
 import { PerformanceMonitor } from "./components/DevTools/PerformanceMonitor";
 import { resourcePreloader } from "./utils/resourcePreloader";
 import { cssOptimizer } from "./utils/cssOptimizer";
-import { trackPageView } from "./services/analyticsService";
+import { trackPageView, trackSessionEnd, incrementPageViewCount } from "./services/analyticsService";
 
 // Eagerly loaded - critical path
 import { Discovery } from "./screens/Discovery/Discovery";
@@ -122,7 +122,20 @@ const RouteTracker = () => {
       return;
     }
     trackPageView(location.pathname);
+    incrementPageViewCount();
   }, [location.pathname]);
+
+  // Detect returning visitors (1+ day since last visit)
+  useEffect(() => {
+    import('./services/analyticsService').then(m => m.trackReturnVisit());
+  }, []);
+
+  // Send session_end via sendBeacon on page unload
+  useEffect(() => {
+    const handleUnload = () => trackSessionEnd();
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, []);
 
   return <Outlet />;
 };

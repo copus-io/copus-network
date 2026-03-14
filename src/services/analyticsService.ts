@@ -3,6 +3,41 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
+// --- Visitor & session identity ---
+
+/** Persistent anonymous visitor ID (survives browser restarts) */
+export function getVisitorId(): string {
+  let id = localStorage.getItem('copus_visitor_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('copus_visitor_id', id);
+  }
+  return id;
+}
+
+/** Per-tab session ID (new on each tab/window) */
+export function getSessionId(): string {
+  let sid = sessionStorage.getItem('copus_session_id');
+  if (!sid) {
+    sid = crypto.randomUUID();
+    sessionStorage.setItem('copus_session_id', sid);
+    sessionStorage.setItem('copus_session_start', new Date().toISOString());
+  }
+  return sid;
+}
+
+/** Get logged-in user ID from localStorage, or null */
+function getUserId(): number | null {
+  try {
+    const raw = localStorage.getItem('copus_user');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return parsed?.id ?? null;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 // --- Session context helpers ---
 
 function getUtmParams() {
@@ -46,12 +81,21 @@ export function trackEvent(eventName: string, properties: Record<string, any> = 
     window.gtag('event', eventName, eventData);
   }
 
-  // 2) Backend tracking (gracefully fails if endpoint doesn't exist yet)
+  // 2) Backend tracking with visitor/session/user identity
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = localStorage.getItem('copus_token') || sessionStorage.getItem('copus_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   fetch(`${API_BASE_URL}/client/common/trackEvent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       event: eventName,
+      visitor_id: getVisitorId(),
+      session_id: getSessionId(),
+      user_id: getUserId(),
       properties: eventData,
       timestamp,
       landingPage: getLandingPage(),
@@ -158,4 +202,105 @@ export function trackUserFollow(targetUserId: string | number) {
 
 export function trackShareClick(medium: 'copy' | 'twitter') {
   trackEvent('share_click', { medium });
+}
+
+// --- New engagement events ---
+
+export function trackLike(articleUuid: string) {
+  trackEvent('like', { article_id: articleUuid });
+}
+
+export function trackUnlike(articleUuid: string) {
+  trackEvent('unlike', { article_id: articleUuid });
+}
+
+export function trackTreasurySave(articleUuid: string, spaceIds: number[]) {
+  trackEvent('treasury_save', { article_id: articleUuid, space_ids: spaceIds });
+}
+
+export function trackSearch(query: string, resultCount: number) {
+  trackEvent('search', { query, result_count: resultCount });
+}
+
+export function trackComment(articleUuid: string) {
+  trackEvent('comment', { article_id: articleUuid });
+}
+
+export function trackSubscribe(targetUserId: string) {
+  trackEvent('subscribe', { target_user_id: targetUserId });
+}
+
+export function trackVisitClick(articleUuid: string, targetUrl: string) {
+  trackEvent('visit_click', { article_id: articleUuid, target_url: targetUrl });
+}
+
+export function trackUnlock(articleUuid: string, amount: string) {
+  trackEvent('unlock', { article_id: articleUuid, amount });
+}
+
+// --- Engagement depth ---
+
+export function trackReadDepth(articleUuid: string, percent: number, timeSpentMs: number) {
+  trackEvent('read_depth', { article_id: articleUuid, percent, time_spent_ms: timeSpentMs });
+}
+
+// --- AARRR: Activation milestones ---
+
+export function trackProfileUpdate(fields: string[]) {
+  trackEvent('profile_update', { fields_updated: fields });
+}
+
+export function trackReturnVisit() {
+  const lastVisit = localStorage.getItem('copus_last_visit');
+  const now = new Date().toISOString();
+  localStorage.setItem('copus_last_visit', now);
+
+  if (lastVisit) {
+    const gapMs = Date.now() - new Date(lastVisit).getTime();
+    const gapDays = Math.floor(gapMs / (1000 * 60 * 60 * 24));
+    if (gapDays >= 1) {
+      trackEvent('return_visit', { days_since_last: gapDays, last_visit: lastVisit });
+    }
+  }
+}
+
+// --- AARRR: Revenue ---
+
+export function trackPaymentSuccess(articleUuid: string, amount: string, currency: string) {
+  trackEvent('payment_success', { article_id: articleUuid, amount, currency });
+}
+
+export function trackPaymentFailed(articleUuid: string, error: string) {
+  trackEvent('payment_failed', { article_id: articleUuid, error });
+}
+
+// --- Session lifecycle ---
+
+/** Increment page view counter in sessionStorage */
+export function incrementPageViewCount() {
+  const count = parseInt(sessionStorage.getItem('copus_page_count') || '0', 10);
+  sessionStorage.setItem('copus_page_count', String(count + 1));
+}
+
+/** Send session_end event via sendBeacon (reliable on page unload) */
+export function trackSessionEnd() {
+  const sessionStart = sessionStorage.getItem('copus_session_start');
+  const pagesViewed = parseInt(sessionStorage.getItem('copus_page_count') || '0', 10);
+  const durationMs = sessionStart ? Date.now() - new Date(sessionStart).getTime() : 0;
+
+  const payload = JSON.stringify({
+    event: 'session_end',
+    visitor_id: getVisitorId(),
+    session_id: getSessionId(),
+    user_id: getUserId(),
+    properties: { pages_viewed: pagesViewed, duration_ms: durationMs },
+    timestamp: new Date().toISOString(),
+    path: window.location.pathname,
+    landingPage: getLandingPage(),
+  });
+
+  navigator.sendBeacon(
+    `${API_BASE_URL}/client/common/trackEvent`,
+    new Blob([payload], { type: 'application/json' })
+  );
 }

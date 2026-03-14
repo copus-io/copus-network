@@ -4,6 +4,7 @@ import { AuthService } from "../../services/authService";
 import { getArticleDetail } from "../../services/articleService";
 import { useToast } from "../ui/toast";
 import { logger } from "../../utils/logger";
+import { trackTreasurySave } from "../../services/analyticsService";
 import { ImageUploader } from "../ImageUploader/ImageUploader";
 import { BindableSpace } from "../../types/space";
 import { CreateSpaceModal } from "../CreateSpaceModal/CreateSpaceModal";
@@ -305,6 +306,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
       if (isNowCollected) {
         showToast(`Saved to ${userSelectedCount} treasury${userSelectedCount > 1 ? 's' : ''}`, 'success');
+        trackTreasurySave(articleId, selectedSpaceIds);
       } else {
         showToast('Removed from all treasuries', 'success');
       }

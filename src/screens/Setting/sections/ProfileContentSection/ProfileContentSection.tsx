@@ -500,6 +500,10 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
           // Don't throw - the update was successful even if we can't refresh
         }
 
+        import('../../../../services/analyticsService').then(m =>
+          m.trackProfileUpdate(['username', 'bio', 'avatar', 'cover'])
+        );
+
         showToast('Personal information updated successfully', 'success');
         setShowPersonalInfoPopup(false);
         // 延迟刷新页面让用户看到成功消息
@@ -554,6 +558,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       });
 
       if (success) {
+        import('../../../../services/analyticsService').then(m => m.trackProfileUpdate(['name']));
         updateUser({ username: editedName.trim() });
         setFormUsername(editedName.trim());
         setFormData(prev => ({ ...prev, name: editedName.trim() }));
@@ -592,6 +597,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
       });
 
       if (success) {
+        import('../../../../services/analyticsService').then(m => m.trackProfileUpdate(['bio']));
         updateUser({ bio: editedDescription.trim() });
         setFormBio(editedDescription.trim());
         setFormData(prev => ({ ...prev, bio: editedDescription.trim() }));
@@ -646,6 +652,7 @@ export const ProfileContentSection = ({ onLogout }: ProfileContentSectionProps):
     try {
       const success = await AuthService.updateUserNamespace(editedCustomId.trim());
       if (success) {
+        import('../../../../services/analyticsService').then(m => m.trackProfileUpdate(['namespace']));
         updateUser({ namespace: editedCustomId.trim() });
         setFormData(prev => ({ ...prev, username: `@${editedCustomId.trim()}` }));
         setIsEditingCustomId(false);

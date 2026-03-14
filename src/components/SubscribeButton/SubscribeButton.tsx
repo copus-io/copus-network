@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import subscriptionService from '../../services/subscriptionService';
 import { AuthService } from '../../services/authService';
 import { AuthorInfo, SubscribeButtonState, EmailFrequency, SPACE_TYPES } from '../../types/subscription';
+import { trackSubscribe } from '../../services/analyticsService';
 
 interface SubscribeButtonProps {
   authorUserId?: number;
@@ -283,6 +284,11 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
 
         showToast(successMessage, newSubscribedState ? 'success' : 'info');
         onSubscriptionChange?.(newSubscribedState);
+
+        // Track subscribe/unsubscribe event
+        if (newSubscribedState) {
+          trackSubscribe(String(subscriptionType === 'space' ? spaceId : authorUserId));
+        }
 
         // Auto-follow all of the author's treasuries if subscribing to an author (logged-in only, requires auth)
         if (newSubscribedState && subscriptionType === 'author' && authorUserId && getCurrentUser()) {

@@ -489,11 +489,11 @@ export const Login = (): JSX.Element => {
               if (stored) {
                 const parsed = JSON.parse(stored);
                 utmData = {
-                  utmSource: parsed.utm_source || undefined,
-                  utmMedium: parsed.utm_medium || undefined,
-                  utmCampaign: parsed.utm_campaign || undefined,
-                  referrer: parsed.referrer || undefined,
-                  landingPage: parsed.landing_page || undefined,
+                  utmSource: parsed.utm_source ?? '',
+                  utmMedium: parsed.utm_medium ?? '',
+                  utmCampaign: parsed.utm_campaign ?? '',
+                  referrer: parsed.referrer ?? '',
+                  landingPage: parsed.landing_page ?? '',
                 };
               }
             } catch {}

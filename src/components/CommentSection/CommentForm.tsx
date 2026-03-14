@@ -11,6 +11,7 @@ import { AuthService } from '../../services/authService';
 import { useImagePreview } from '../../contexts/ImagePreviewContext';
 import { revokeImagePreview } from '../../utils/imageUtils';
 import { useToast } from '../ui/toast'; // Toast hook for notifications
+import { trackComment } from '../../services/analyticsService';
 
 // 评论图片接口
 interface CommentImage {
@@ -285,6 +286,7 @@ export const CommentForm = forwardRef<CommentFormRef, CommentFormProps>((
       setCurrentReplyInfo({}); // 清除回复状态
       onReplyComplete?.(); // 通知父组件回复完成
       onSubmitSuccess?.();
+      trackComment(targetId);
     } catch (error) {
       console.error('❌ Failed to create comment:', error);
       // 如果提交失败，清理存储的引用信息
