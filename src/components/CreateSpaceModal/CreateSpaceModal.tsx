@@ -220,7 +220,7 @@ export const CreateSpaceModal: React.FC<CreateSpaceModalProps> = ({
             spaceType: resultSpace.spaceType,
             fullData: resultSpace
           });
-          showToast('Space created successfully', 'success');
+          showToast('Sub-treasury created successfully', 'success');
         }
       }
 

@@ -1852,7 +1852,7 @@ export const SpaceContentSection = (): JSX.Element => {
       {/* Organize Mode Floating Action Bar */}
       {organizeMode && (
         <div className="organize-controls fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white rounded-full shadow-xl border border-gray-200 px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-8 max-w-[90vw]">
-          <span className="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">{selectedArticleIds.size > 0 ? `${selectedArticleIds.size} selected` : 'Select'}</span>
+          <span className="text-xs sm:text-sm text-gray-500 font-medium text-left leading-tight">{selectedArticleIds.size > 0 ? `${selectedArticleIds.size} selected` : <>Select or drag<br/>to reorder</>}</span>
           {/* Move button */}
           <button
             className={`flex flex-col items-center gap-1 transition-opacity ${articles.length === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-70'}`}
@@ -2318,7 +2318,7 @@ export const SpaceContentSection = (): JSX.Element => {
             }}
           />
           <div
-            className="flex flex-col w-[582px] max-w-[90vw] max-h-[70vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
+            className="flex flex-col w-[582px] max-w-[90vw] max-h-[85vh] items-center gap-5 p-[30px] relative bg-white rounded-[15px] z-10"
             role="dialog"
             aria-labelledby="move-modal-title"
             aria-modal="true"
@@ -2344,10 +2344,10 @@ export const SpaceContentSection = (): JSX.Element => {
                 id="move-modal-title"
                 className="relative w-fit [font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[33.6px] whitespace-nowrap"
               >
-                Move to space
+                Move to sub-treasury
               </h2>
 
-              <div className="flex-1 overflow-y-auto w-full max-h-[40vh]">
+              <div className="flex-1 overflow-y-auto w-full max-h-[70vh] min-h-[300px]">
                 {loadingMoveSpaces ? (
                   // Loading state
                   <div className="flex flex-col items-center justify-center py-8 gap-3">
@@ -2368,8 +2368,8 @@ export const SpaceContentSection = (): JSX.Element => {
                 ) : (
                   <ul className="flex flex-col w-full">
                     {bindableSpaces.map((space: any) => {
-                      const spaceImage = space.faceUrl || space.coverUrl || '';
-                      const firstLetter = (space.name || 'U').charAt(0).toUpperCase();
+                      const firstCover = space.data?.[0]?.coverUrl || space.data?.[0]?.cover || '';
+                      const spaceImage = (space.faceUrl && space.faceUrl.trim()) || firstCover || (space.coverUrl && space.coverUrl.trim()) || '';
                       return (
                         <li
                           key={space.id}
@@ -2395,13 +2395,12 @@ export const SpaceContentSection = (): JSX.Element => {
                             </div>
                             {/* Profile image */}
                             <div className="relative">
-                              {spaceImage ? (
-                                <img className="w-12 h-12 object-cover rounded-full" alt={space.name} src={spaceImage} />
-                              ) : (
-                                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                                  <span className="text-lg font-medium text-gray-600">{firstLetter}</span>
-                                </div>
-                              )}
+                              <img
+                                className="w-12 h-12 object-cover rounded-full"
+                                alt={space.name}
+                                src={spaceImage || profileDefaultAvatar}
+                                onError={(e) => { (e.target as HTMLImageElement).src = profileDefaultAvatar; }}
+                              />
                             </div>
                             {/* Name */}
                             <span className="[font-family:'Lato',Helvetica] font-normal text-off-black text-lg tracking-[0] leading-[23.4px] whitespace-nowrap">
@@ -2491,11 +2490,11 @@ export const SpaceContentSection = (): JSX.Element => {
 
                       // Show enhanced success message with target space name
                       if (successCount === selectedUuids.length) {
-                        showToast(`Successfully moved ${successCount} article${successCount > 1 ? 's' : ''} to "${targetSpaceName}"`, 'success');
+                        showToast(`Successfully moved ${successCount} link${successCount > 1 ? 's' : ''} to "${targetSpaceName}"`, 'success');
                       } else if (successCount > 0) {
-                        showToast(`Moved ${successCount} of ${selectedUuids.length} articles to "${targetSpaceName}" (${selectedUuids.length - successCount} failed)`, 'warning');
+                        showToast(`Moved ${successCount} of ${selectedUuids.length} links to "${targetSpaceName}" (${selectedUuids.length - successCount} failed)`, 'warning');
                       } else {
-                        showToast(`Failed to move articles to "${targetSpaceName}"`, 'error');
+                        showToast(`Failed to move links to "${targetSpaceName}"`, 'error');
                       }
 
                       console.log(`🚚 Move operation completed: ${successCount}/${selectedUuids.length} successful`);
@@ -2539,7 +2538,7 @@ export const SpaceContentSection = (): JSX.Element => {
                   }}
                 >
                   <span className="[font-family:'Lato',Helvetica] font-bold text-white text-base tracking-[0] leading-[22.4px]">
-                    {isBulkProcessing ? 'Copying...' : 'Copy'}
+                    {isBulkProcessing ? 'Moving...' : 'Move'}
                   </span>
                 </button>
               </div>
@@ -2585,8 +2584,12 @@ export const SpaceContentSection = (): JSX.Element => {
             }));
             const spaceWithData = { ...newSpace, data: previewData, articleCount: bindCount };
             setSubTreasuries(prev => [...prev, spaceWithData]);
+            // Remove moved articles from main treasury view
+            setArticles(prev => prev.filter(a => !selectedArticleIds.has(a.uuid)));
+            setTotalArticleCount(prev => Math.max(0, prev - bindCount));
             setSelectedArticleIds(new Set());
-            showToast(`Created sub-treasury "${newSpace?.name || 'New Sub-treasury'}" and copied ${bindCount} article${bindCount !== 1 ? 's' : ''}`, 'success');
+            setOrganizeMode(false);
+            showToast(`Created sub-treasury "${newSpace?.name || 'New Sub-treasury'}" and moved ${bindCount} link${bindCount !== 1 ? 's' : ''}`, 'success');
           }
         }}
       />

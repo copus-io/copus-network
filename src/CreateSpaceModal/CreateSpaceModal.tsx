@@ -94,7 +94,7 @@ export const CreateSpaceModal = ({ isOpen, onClose, onSuccess }: CreateSpaceModa
         });
       }
 
-      showToast('Space created successfully!', 'success');
+      showToast('Sub-treasury created successfully!', 'success');
       onSuccess(mockSpaceId);
       onClose();
 

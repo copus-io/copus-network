@@ -131,7 +131,7 @@ export const NOTIFICATION_CONFIG = {
     success: {
       spaceUpdated: 'Space updated successfully',
       spaceDeleted: 'Space deleted successfully',
-      spaceCreated: 'Space created successfully',
+      spaceCreated: 'Sub-treasury created successfully',
       articlePublished: 'Article published successfully',
       profileUpdated: 'Profile updated successfully'
     },
