@@ -44,10 +44,6 @@ const socialProviders = [
     name: "OKX Wallet",
     icon: "https://lh3.googleusercontent.com/2bBevW79q6gRZTFdm42CzUetuEKndq4fn41HQGknMpKMF_d-Ae2sJJzgfFUAVb1bJKCBb4ptZ9EAPp-QhWYIvc35yw=s120",
   },
-  {
-    name: "Kite",
-    icon: "data:image/png;base64,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",
-  },
 ];
 
 // Helper function to extract token from various response formats
@@ -604,47 +600,6 @@ export const Login = (): JSX.Element => {
             startTransition(() => {
               navigate('/', { replace: true });
             });
-          } else if (provider === 'kite') {
-            // Kite AI login handling
-            response = await AuthService.kiteLogin(code, state, hasExistingToken);
-
-            if (!response.token) {
-              throw new Error('No authentication token received');
-            }
-
-            // Mark that user logged in via Kite AI
-            localStorage.setItem('copus_auth_method', 'kite');
-
-            // Set remember me preference - OAuth logins default to remember me for cross-tab consistency
-            storage.setRememberMePreference(true);
-            storage.migrateToLocalStorage();
-
-            // Sync Kite profile data to Copus profile
-            if (response.kiteProfile) {
-              setTimeout(async () => {
-                try {
-                  const updateData: any = {};
-                  if (response.kiteProfile.username) {
-                    updateData.userName = response.kiteProfile.username;
-                  }
-                  if (response.kiteProfile.faceUrl) {
-                    updateData.faceUrl = response.kiteProfile.faceUrl;
-                  }
-
-                  if (Object.keys(updateData).length > 0) {
-                    await AuthService.updateUserInfo(updateData);
-                  }
-                } catch (profileError) {
-                  console.warn('Kite profile sync failed (non-critical):', profileError);
-                }
-              }, 1000);
-            }
-
-            await fetchUserInfo(response.token);
-            showToast('Kite login successful! Welcome back', 'success');
-            startTransition(() => {
-              navigate('/', { replace: true });
-            });
           } else {
             // Default fallback (for backward compatibility)
             response = await AuthService.xLogin(code, state, hasExistingToken);
@@ -1193,25 +1148,6 @@ export const Login = (): JSX.Element => {
     }
   };
 
-  // Handle Kite AI login
-  const handleKiteLogin = async () => {
-    try {
-      localStorage.removeItem('copus_token');
-      localStorage.removeItem('copus_user');
-      sessionStorage.removeItem('copus_token');
-      sessionStorage.removeItem('copus_user');
-
-      localStorage.setItem('oauth_provider', 'kite');
-      const oauthUrl = await AuthService.getKiteOAuthUrl();
-      const urlWithProvider = oauthUrl.includes('?')
-        ? `${oauthUrl}&provider=kite`
-        : `${oauthUrl}?provider=kite`;
-      window.location.href = urlWithProvider;
-    } catch (error: any) {
-      showToast(`Kite login failed: ${error.message || 'Please try again'}`, 'error');
-    }
-  };
-
   // Unified social login handler
   const handleSocialLogin = async (provider: string) => {
     switch (provider) {
@@ -1229,9 +1165,6 @@ export const Login = (): JSX.Element => {
         break;
       case 'OKX Wallet':
         await handleOKXWalletLogin();
-        break;
-      case 'Kite':
-        await handleKiteLogin();
         break;
       default:
         showToast(`Unsupported login provider: ${provider}`, 'error');
