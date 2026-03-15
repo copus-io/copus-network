@@ -552,6 +552,7 @@ export const SpaceContentSection = (): JSX.Element => {
               authorName: space.ownerInfo?.username || space.userInfo?.username || user?.username || 'Anonymous',
               authorAvatar: space.ownerInfo?.faceUrl || space.userInfo?.faceUrl || user?.faceUrl || profileDefaultAvatar,
               authorNamespace: space.ownerInfo?.namespace || space.userInfo?.namespace || user?.namespace,
+              authorUserId: space.ownerInfo?.id || space.userInfo?.id || space.userId,
               spaceType: space.spaceType,
               description: space.description,
               coverUrl: space.coverUrl,
@@ -659,6 +660,7 @@ export const SpaceContentSection = (): JSX.Element => {
             authorName: authorUsername,
             authorAvatar: spaceData?.userInfo?.faceUrl || profileDefaultAvatar,
             authorNamespace: spaceData?.userInfo?.namespace,
+            authorUserId: spaceData?.userInfo?.id || spaceData?.ownerInfo?.id || spaceData?.userId,
             spaceType: spaceData?.spaceType,
             description: spaceData?.description, // Add space description
             coverUrl: spaceData?.coverUrl, // Add space cover image
@@ -810,19 +812,20 @@ export const SpaceContentSection = (): JSX.Element => {
   // Load existing sub-treasuries from user's spaces
   useEffect(() => {
     const loadSubTreasuries = async () => {
-      if (!spaceId) return;
+      if (!spaceId || !spaceInfo?.authorUserId) return;
 
       setOperationLoading(prev => ({ ...prev, loadingSubSpaces: true }));
 
       try {
-        console.log('🔍 Loading sub-treasuries for space:', spaceId);
-        // Call pageMySpaces API with pid parameter to get sub-spaces (backend derives user from pid)
-        const response = await AuthService.getMySpaces(1, 100, spaceId);
-        console.log('🔍 Raw API response:', response);
+        const ownerUserId = spaceInfo?.authorUserId;
+        console.log('🔍 Loading sub-treasuries for space:', spaceId, 'owner:', ownerUserId);
+        // Call pageMySpaces API with pid parameter to get sub-spaces
+        const response = await AuthService.getMySpaces(1, 100, spaceId, ownerUserId);
 
-        const subSpaces = response?.data?.data || response?.data || response || [];
+        const responseData = response?.data?.data || response?.data?.records || response?.data || response?.records || response || [];
+        const subSpaces = Array.isArray(responseData) ? responseData : [];
         console.log('🔍 Extracted sub-treasuries:', subSpaces);
-        console.log('🔍 Sub-treasuries count:', Array.isArray(subSpaces) ? subSpaces.length : 'not array');
+        console.log('🔍 Sub-treasuries count:', subSpaces.length);
 
         setSubTreasuries(Array.isArray(subSpaces) ? subSpaces : []);
       } catch (error) {
@@ -834,7 +837,7 @@ export const SpaceContentSection = (): JSX.Element => {
     };
 
     loadSubTreasuries();
-  }, [spaceId, displaySpaceName]);
+  }, [spaceId, spaceInfo?.authorUserId, displaySpaceName]);
 
   // Click outside to exit organize mode
   useEffect(() => {
