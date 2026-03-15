@@ -1921,21 +1921,23 @@ export class AuthService {
 
   /**
    * Get user's spaces (treasuries) using pageMySpaces API
-   * @param targetUserId - Required target user ID
    * @param pageIndex - Optional page number (default: 1)
    * @param pageSize - Optional page size (default: 20)
-   * @param pid - Optional parent ID to get sub-spaces
+   * @param pid - Optional parent ID to get sub-spaces (backend derives user from pid)
+   * @param targetUserId - Optional target user ID (backend derives from pid if not provided)
    */
-  static async getMySpaces(targetUserId: number, pageIndex: number = 1, pageSize: number = 20, pid?: number): Promise<any> {
+  static async getMySpaces(pageIndex: number = 1, pageSize: number = 20, pid?: number, targetUserId?: number): Promise<any> {
     const params = new URLSearchParams({
-      targetUserId: targetUserId.toString(),
       pageIndex: pageIndex.toString(),
       pageSize: pageSize.toString(),
     });
 
-    // Add pid parameter if provided to get sub-spaces
     if (pid !== undefined) {
       params.append('pid', pid.toString());
+    }
+
+    if (targetUserId !== undefined) {
+      params.append('targetUserId', targetUserId.toString());
     }
 
     return apiRequest(`/client/userHome/pageMySpaces?${params.toString()}`, {

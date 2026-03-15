@@ -552,7 +552,7 @@ export const MainContentSection = (): JSX.Element => {
         // Parallel API requests for better performance
         try {
           const [spacesResponse, socialLinksResponse] = await Promise.allSettled([
-            AuthService.getMySpaces(targetUserId),
+            AuthService.getMySpaces(1, 20, undefined, targetUserId),
             AuthService.getSocialLinks(targetUserId)
           ]);
 

@@ -293,7 +293,7 @@ const SubscribeButton: React.FC<SubscribeButtonProps> = ({
         // Auto-follow all of the author's treasuries if subscribing to an author (logged-in only, requires auth)
         if (newSubscribedState && subscriptionType === 'author' && authorUserId && getCurrentUser()) {
           try {
-            const spacesResponse = await AuthService.getMySpaces(authorUserId);
+            const spacesResponse = await AuthService.getMySpaces(1, 20, undefined, authorUserId);
             const spaces = spacesResponse?.data || spacesResponse?.records || spacesResponse || [];
             if (Array.isArray(spaces) && spaces.length > 0) {
               const followPromises = spaces.map((space: any) => {

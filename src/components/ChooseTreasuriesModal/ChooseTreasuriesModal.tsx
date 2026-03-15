@@ -71,7 +71,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
 
         // Step 1: Get all parent spaces using getMySpaces to build hierarchy
         console.log('🔍 Fetching parent spaces for hierarchy...');
-        const parentSpacesResponse = await AuthService.getMySpaces(user.id, 1, 100);
+        const parentSpacesResponse = await AuthService.getMySpaces(1, 100, undefined, user.id);
         const parentSpaces = parentSpacesResponse?.data?.data || parentSpacesResponse?.data || parentSpacesResponse || [];
         console.log('🔍 Found parent spaces:', parentSpaces.length);
 
@@ -232,7 +232,7 @@ export const ChooseTreasuriesModal: React.FC<ChooseTreasuriesModalProps> = ({
 
       try {
         console.log(`🔄 Fetching sub-spaces for parent ID: ${parentId}`);
-        const subSpacesResponse = await AuthService.getMySpaces(user?.id || 0, 1, 100, parentId);
+        const subSpacesResponse = await AuthService.getMySpaces(1, 100, parentId);
         const subSpaces = subSpacesResponse?.data?.data || subSpacesResponse?.data || subSpacesResponse || [];
         console.log(`🔄 Found ${subSpaces.length} sub-spaces for parent ${parentId}`);
 

@@ -181,7 +181,7 @@ export const CollectTreasureModal: React.FC<CollectTreasureModalProps> = ({
 
         await Promise.all(topLevelSpaces.map(async (space) => {
           try {
-            const response = await AuthService.getMySpaces(user.id, 1, 100, space.numericId);
+            const response = await AuthService.getMySpaces(1, 100, space.numericId);
             const subSpaces = response?.data?.data || response?.data || response || [];
             if (Array.isArray(subSpaces) && subSpaces.length > 0) {
               const countBefore = subCollections.length;

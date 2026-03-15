@@ -847,7 +847,7 @@ export const Content = (): JSX.Element => {
 
       try {
         // 🔍 SEARCH: pageMySpaces-api-call-user-card
-        const response = await AuthService.getMySpaces(authorId, 1, 2);
+        const response = await AuthService.getMySpaces(1, 2, undefined, authorId);
         const duration = performance.now() - startTime;
 
         // 🔍 SEARCH: spaces-response-parsing
