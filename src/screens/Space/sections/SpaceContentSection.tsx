@@ -181,8 +181,9 @@ const SpaceInfoSection = ({
         {/* Space name */}
         {(isSubTreasury && parentSpaceName) || (spaceInfo?.parentSpace) ? (
           <>
-            <h1
-              className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0 cursor-pointer hover:text-blue-600 transition-colors duration-200"
+            <h1 className="[font-family:'Lato',Helvetica] font-normal text-off-black text-2xl tracking-[0] leading-[1.4] mb-0">{spaceName}</h1>
+            <h2
+              className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-sm tracking-[0] leading-[1.4] mb-1 cursor-pointer hover:text-blue-600 transition-colors duration-200"
               onClick={async () => {
                 // Priority 1: Use API parentSpace info (most reliable)
                 if (spaceInfo?.parentSpace?.namespace) {
@@ -217,9 +218,8 @@ const SpaceInfoSection = ({
               }}
               title="Go to parent treasury"
             >
-              {parentSpaceName || spaceInfo?.parentSpace?.name}
-            </h1>
-            <h2 className="[font-family:'Lato',Helvetica] font-normal text-gray-500 text-base tracking-[0] leading-[1.4] mb-1">{spaceName}</h2>
+              in {parentSpaceName || spaceInfo?.parentSpace?.name}
+            </h2>
           </>
         ) : (
           <h1
